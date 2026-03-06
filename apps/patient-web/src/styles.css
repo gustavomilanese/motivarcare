@@ -322,30 +322,31 @@ textarea {
 
 button {
   border: 1px solid var(--line-strong);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #1b2d46;
+  border-radius: 10px;
+  background: #fff;
+  color: #1e3048;
   cursor: pointer;
-  padding: 10px 15px;
+  padding: 10px 14px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: all 0.18s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 button:hover {
-  background: #f2f7ff;
-  border-color: #b8c9e0;
+  background: #f5f8fd;
+  border-color: #bfd0e7;
 }
 
 button.primary {
-  background: linear-gradient(135deg, #1f4fc2 0%, #2b63e8 100%);
-  border-color: transparent;
+  background: #1f56d6;
+  border-color: #1b4fbf;
   color: #fff;
-  box-shadow: 0 8px 18px rgba(33, 84, 196, 0.24);
+  box-shadow: none;
 }
 
 button.primary:hover {
-  background: linear-gradient(135deg, #1946ae 0%, #2457d7 100%);
+  background: #184ab8;
+  border-color: #184ab8;
 }
 
 button:disabled {
@@ -480,20 +481,22 @@ button.danger {
   display: inline-flex;
   flex-wrap: nowrap;
   width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--line-strong);
-  border-radius: 16px;
-  overflow: hidden;
+  border-radius: 14px;
+  overflow-x: auto;
   background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .portal-nav a {
   position: relative;
   text-decoration: none;
-  padding: 14px 22px;
+  min-height: 46px;
+  padding: 0 16px;
   border-radius: 0;
   border: 0;
-  color: #304b6b;
+  color: #2d4664;
   background: transparent;
   font-weight: 600;
   transition: all 0.2s ease;
@@ -514,14 +517,14 @@ button.danger {
 }
 
 .portal-nav a:hover {
-  background: #f6f9ff;
+  background: #f7fafe;
 }
 
 .portal-nav a.active {
-  background: #f0f5ff;
-  color: #133b81;
-  font-weight: 700;
-  box-shadow: inset 0 -2px 0 #2b63e8;
+  background: #f3f7ff;
+  color: #123e83;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 #1d4ed8;
 }
 
 .page-stack {

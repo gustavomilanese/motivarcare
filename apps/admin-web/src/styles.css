@@ -77,20 +77,23 @@ button {
   cursor: pointer;
   padding: 10px 14px;
   font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 button:hover {
-  background: #f4f8ff;
+  background: #f5f8fd;
+  border-color: #bfd0e7;
 }
 
 button.primary {
-  border: 0;
+  border-color: #1b4fbf;
   color: #fff;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  background: #1f56d6;
 }
 
 button.primary:hover {
-  background: linear-gradient(135deg, #1a45aa 0%, #2358d8 100%);
+  background: #184ab8;
+  border-color: #184ab8;
 }
 
 button.danger {
@@ -215,18 +218,25 @@ button.danger {
 .nav {
   display: inline-flex;
   width: fit-content;
+  max-width: 100%;
   border-radius: 14px;
   border: 1px solid var(--line-strong);
-  overflow: hidden;
+  overflow-x: auto;
   background: #fff;
 }
 
 .nav a {
   text-decoration: none;
-  color: #304b6b;
-  padding: 13px 20px;
+  color: #2d4664;
+  min-height: 46px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   border-right: 1px solid #d5e1ef;
   font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .nav a:last-child {
@@ -234,8 +244,9 @@ button.danger {
 }
 
 .nav a.active {
-  background: #eff5ff;
-  color: #1e3a8a;
+  background: #f3f7ff;
+  color: #123e83;
+  box-shadow: inset 0 -2px 0 #1d4ed8;
 }
 
 main {
