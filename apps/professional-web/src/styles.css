@@ -87,21 +87,21 @@ ul {
 
 .pro-layout {
   min-height: 100vh;
-  padding: 16px;
+  padding: 10px 12px 18px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
   align-content: start;
 }
 
 .pro-header {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   box-shadow: var(--shadow);
 }
 
@@ -109,12 +109,17 @@ ul {
   color: var(--text-soft);
 }
 
+.pro-header h1 {
+  font-size: 44px;
+  line-height: 1;
+}
+
 .pro-nav {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  align-items: flex-end;
+  gap: 16px;
   width: 100%;
-  padding: 0 4px 8px;
+  padding: 0 2px 2px;
   overflow-x: auto;
   border-bottom: 1px solid #d5e1ef;
 }
@@ -126,7 +131,8 @@ ul {
   justify-content: center;
   white-space: nowrap;
   text-decoration: none;
-  padding: 8px 0 10px;
+  line-height: 1;
+  padding: 0 0 8px;
   background: transparent;
   color: #4a5f7a;
   font-weight: 600;
@@ -144,16 +150,16 @@ ul {
 
 .pro-grid-stack {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .pro-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 14px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   box-shadow: var(--shadow);
 }
 
@@ -168,16 +174,16 @@ ul {
 .pro-kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .pro-kpi-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 11px 12px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .pro-kpi-card span {
@@ -189,7 +195,7 @@ ul {
 }
 
 .pro-kpi-card strong {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.05;
 }
 
@@ -203,8 +209,8 @@ ul {
 
 .pro-list li {
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 9px;
+  padding: 8px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -225,7 +231,7 @@ ul {
 .pro-list button {
   border: 1px solid #bcd0eb;
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   background: #f4f8ff;
   color: #0b57d0;
   font-weight: 700;
@@ -291,12 +297,18 @@ select:focus {
 button {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   font-weight: 600;
   background: #fff;
   color: #0f172a;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+main {
+  display: grid;
+  gap: 10px;
+  align-content: start;
 }
 
 button:hover {
@@ -517,7 +529,7 @@ button:hover {
 
 @media (max-width: 680px) {
   .pro-layout {
-    padding: 10px;
+    padding: 8px;
   }
 
   .pro-header {
@@ -534,7 +546,7 @@ button:hover {
   }
 
   .pro-nav {
-    gap: 16px;
-    padding-bottom: 6px;
+    gap: 12px;
+    padding-bottom: 4px;
   }
 }

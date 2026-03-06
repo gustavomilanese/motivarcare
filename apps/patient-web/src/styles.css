@@ -389,34 +389,34 @@ button.danger {
   max-width: 1420px;
   margin: 0 auto;
   width: 100%;
-  padding: 26px 30px 44px;
+  padding: 14px 16px 24px;
   display: grid;
-  gap: 20px;
+  gap: 12px;
   align-content: start;
 }
 
 .portal-header {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px 26px;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   box-shadow: var(--shadow);
 }
 
 .portal-header h1 {
-  font-size: 42px;
-  line-height: 0.98;
+  font-size: 34px;
+  line-height: 1;
 }
 
 .portal-header p {
   color: var(--text-soft);
-  font-size: 17px;
-  line-height: 1.45;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .header-actions {
@@ -481,9 +481,9 @@ button.danger {
 .portal-nav {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  padding: 0 4px 8px;
+  padding: 0 2px 2px;
   overflow-x: auto;
   border-bottom: 1px solid #d5e1ef;
 }
@@ -492,7 +492,8 @@ button.danger {
   position: relative;
   text-decoration: none;
   white-space: nowrap;
-  padding: 8px 0 10px;
+  line-height: 1;
+  padding: 0 0 8px;
   border: 0;
   color: #4a5f7a;
   background: transparent;
@@ -516,29 +517,35 @@ button.danger {
 
 .page-stack {
   display: grid;
-  gap: 20px;
+  gap: 12px;
 }
 
 .content-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
   box-shadow: var(--shadow);
 }
 
 .content-card h2 {
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.05;
 }
 
 .content-card p,
 .content-card li {
   color: #304257;
-  line-height: 1.7;
-  font-size: 16px;
+  line-height: 1.55;
+  font-size: 15px;
+}
+
+main {
+  display: grid;
+  gap: 12px;
+  align-content: start;
 }
 
 .content-card.danger {
@@ -1352,7 +1359,7 @@ button.danger {
 
 @media (max-width: 680px) {
   .portal-layout {
-    padding: 10px;
+    padding: 8px;
   }
 
   .auth-card,
@@ -1387,8 +1394,8 @@ button.danger {
   }
 
   .portal-nav {
-    gap: 16px;
-    padding-bottom: 6px;
+    gap: 12px;
+    padding-bottom: 4px;
   }
 
   .portal-nav a {
