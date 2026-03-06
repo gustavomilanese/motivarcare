@@ -1,4 +1,4 @@
-import { FormEvent, SyntheticEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { NavLink, Route, Routes, useNavigate, useSearchParams } from "react-router-dom";
 
 type RiskLevel = "low" | "medium" | "high";
@@ -114,7 +114,7 @@ interface PackagePlan {
   description: string;
 }
 
-const STORAGE_KEY = "therapy_patient_demo_v2";
+const STORAGE_KEY = "therapy_patient_portal_v3";
 
 const intakeQuestions: IntakeQuestion[] = [
   {
@@ -427,7 +427,7 @@ function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("register");
   const [fullName, setFullName] = useState("Alex Morgan");
   const [email, setEmail] = useState("alex@example.com");
-  const [password, setPassword] = useState("demoPassword123");
+  const [password, setPassword] = useState("SecurePass123");
   const [error, setError] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -457,7 +457,7 @@ function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
         <div className="visual-hero">
           <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
         </div>
-        <span className="chip">Lado Paciente - Demo Premium</span>
+        <span className="chip">Plataforma de terapia online</span>
         <h1>Terapia online, simple y profesional</h1>
         <p>
           Registrate o ingresa para completar el intake clinico, ver el matching recomendado y reservar sesiones.
@@ -596,7 +596,6 @@ function DashboardPage(props: {
   state: PatientAppState;
   onGoToBooking: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
-  onGoToProfileTab: (tab: ProfileTab) => void;
 }) {
   const nextBooking = getNextBooking(props.state.bookings);
   const unreadTotal = getUnreadCount(props.state.messages);
@@ -708,16 +707,6 @@ function DashboardPage(props: {
         </div>
       </section>
 
-      <section className="content-card">
-        <h2>PERFIL</h2>
-        <div className="pill-row">
-          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("data")}>MIS DATOS</button>
-          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("cards")}>MIS TARJETAS</button>
-          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("subscription")}>MI SUSCRIPCION</button>
-          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("settings")}>AJUSTES</button>
-          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("support")}>SOPORTE</button>
-        </div>
-      </section>
     </div>
   );
 }
@@ -872,7 +861,7 @@ function BookingPage(props: {
     }
 
     props.onAddPackage(plan);
-    setPurchaseMessage(`Pago exitoso en modo demo: ${plan.name}.`);
+    setPurchaseMessage(`Pago acreditado: ${plan.name}.`);
   };
 
   const handleBooking = () => {
@@ -976,7 +965,7 @@ function BookingPage(props: {
             </div>
 
             <button className="primary" type="button" onClick={handlePurchase}>
-              Pagar con Stripe (demo)
+              Pagar con Stripe
             </button>
             {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
           </>
@@ -1019,7 +1008,7 @@ function ChatPage(props: {
 
   useEffect(() => {
     props.onMarkRead(threadProfessional.id);
-  }, [props, threadProfessional.id]);
+  }, [threadProfessional.id]);
 
   const handleSend = () => {
     if (!draft.trim()) {
@@ -1030,47 +1019,72 @@ function ChatPage(props: {
     setDraft("");
   };
 
+  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className="chat-layout">
-      <aside className="content-card chat-sidebar">
-        <h2>Conversaciones</h2>
-
-        {professionalsCatalog.map((professional) => {
-          const unread = getUnreadCount(props.state.messages, professional.id);
-          const lastMessage = props.state.messages
-            .filter((message) => message.professionalId === professional.id)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-
-          return (
-            <button
-              className={professional.id === threadProfessional.id ? "thread-item active" : "thread-item"}
-              key={professional.id}
-              type="button"
-              onClick={() => props.onSetActiveProfessional(professional.id)}
-            >
-              <div>
-                <strong>{professional.fullName}</strong>
-                <p>{lastMessage ? lastMessage.text : "Todavia no hay mensajes"}</p>
-              </div>
-              {unread > 0 ? <span className="badge">{unread}</span> : null}
-            </button>
-          );
-        })}
-      </aside>
-
-      <section className="content-card chat-thread">
-        <header className="chat-header">
-          <h2>{threadProfessional.fullName}</h2>
-          <span>{threadProfessional.title}</span>
+    <div className="wa-shell">
+      <aside className="wa-sidebar">
+        <header className="wa-sidebar-header">
+          <h2>Mensajes</h2>
         </header>
 
-        <div className="messages">
+        <div className="wa-thread-list">
+          {professionalsCatalog.map((professional) => {
+            const unread = getUnreadCount(props.state.messages, professional.id);
+            const lastMessage = props.state.messages
+              .filter((message) => message.professionalId === professional.id)
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+            return (
+              <button
+                className={professional.id === threadProfessional.id ? "wa-thread-item active" : "wa-thread-item"}
+                key={professional.id}
+                type="button"
+                onClick={() => props.onSetActiveProfessional(professional.id)}
+              >
+                <img
+                  src={professionalImageMap[professional.id]}
+                  alt={professional.fullName}
+                  onError={handleImageFallback}
+                />
+                <div>
+                  <strong>{professional.fullName}</strong>
+                  <p>{lastMessage ? lastMessage.text : "Todavia no hay mensajes"}</p>
+                </div>
+                {unread > 0 ? <span className="badge">{unread}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <section className="wa-main">
+        <header className="wa-main-header">
+          <div className="wa-main-profile">
+            <img
+              src={professionalImageMap[threadProfessional.id]}
+              alt={threadProfessional.fullName}
+              onError={handleImageFallback}
+            />
+            <div>
+              <h3>{threadProfessional.fullName}</h3>
+              <span>En linea</span>
+            </div>
+          </div>
+        </header>
+
+        <div className="wa-messages">
           {threadMessages.length === 0 ? (
-            <p>Todavia no hay mensajes en esta conversacion.</p>
+            <p className="wa-empty">Todavia no hay mensajes en esta conversacion.</p>
           ) : (
             threadMessages.map((message) => (
               <article
-                className={message.sender === "patient" ? "message outgoing" : "message incoming"}
+                className={message.sender === "patient" ? "wa-message outgoing" : "wa-message incoming"}
                 key={message.id}
               >
                 <p>{message.text}</p>
@@ -1080,14 +1094,15 @@ function ChatPage(props: {
           )}
         </div>
 
-        <footer className="chat-input">
+        <footer className="wa-composer">
           <textarea
-            placeholder="Escribe tu mensaje"
-            rows={3}
+            placeholder="Escribe un mensaje"
+            rows={2}
             value={draft}
+            onKeyDown={handleComposerKeyDown}
             onChange={(event) => setDraft(event.target.value)}
           />
-          <button className="primary" type="button" onClick={handleSend}>
+          <button className="wa-send" type="button" onClick={handleSend}>
             Enviar
           </button>
         </footer>
@@ -1311,7 +1326,7 @@ function ProfilePage(props: {
               onChange={(event) => setSupportMessage(event.target.value)}
               placeholder="Describe tu consulta"
             />
-            <button className="primary" type="button" onClick={() => setSupportMessage("Solicitud enviada (demo).")}>
+            <button className="primary" type="button" onClick={() => setSupportMessage("Solicitud enviada.")}>
               Enviar solicitud
             </button>
             {supportMessage ? <p className="success-text">{supportMessage}</p> : null}
@@ -1322,85 +1337,13 @@ function ProfilePage(props: {
   );
 }
 
-function VisionPage() {
-  return (
-    <div className="page-stack">
-      <section className="content-card">
-        <span className="chip">Vista para accionistas</span>
-        <h2>Arquitectura modular de la plataforma</h2>
-        <p>Disenada para crecer por modulos, con independencia entre frontends, backend, datos e integraciones externas.</p>
-      </section>
-
-      <section className="architecture-grid">
-        <article className="architecture-layer front">
-          <h3>Frontends</h3>
-          <ul>
-            <li>Portal Paciente (React)</li>
-            <li>Portal Profesional (React)</li>
-            <li>Portal Admin (React)</li>
-          </ul>
-        </article>
-
-        <article className="architecture-layer backend">
-          <h3>Backend API</h3>
-          <ul>
-            <li>Auth y roles</li>
-            <li>Intake y triage de riesgo</li>
-            <li>Matching y perfiles</li>
-            <li>Agenda, booking, chat</li>
-            <li>Payments, video, AI audit</li>
-          </ul>
-        </article>
-
-        <article className="architecture-layer data">
-          <h3>Data Layer</h3>
-          <ul>
-            <li>PostgreSQL + Prisma</li>
-            <li>Redis (colas y cache)</li>
-          </ul>
-        </article>
-
-        <article className="architecture-layer apis">
-          <h3>External APIs</h3>
-          <ul>
-            <li>Stripe (paquetes)</li>
-            <li>Daily (videollamadas)</li>
-            <li>OpenAI (auditoria IA)</li>
-            <li>Email/SMS provider</li>
-          </ul>
-        </article>
-      </section>
-
-      <section className="content-card">
-        <h2>Estado del producto</h2>
-        <div className="status-grid">
-          <article className="status-card ready">
-            <h3>Listo hoy para demo</h3>
-            <ul>
-              <li>UX completa lado paciente</li>
-              <li>Flujo end-to-end con estado real de producto</li>
-              <li>Arquitectura modular ya definida</li>
-            </ul>
-          </article>
-          <article className="status-card evolve">
-            <h3>Evolucion para produccion</h3>
-            <ul>
-              <li>Autenticacion real y hardening de seguridad</li>
-              <li>Webhook Stripe real + conciliacion</li>
-              <li>Daily rooms reales + monitoreo + compliance</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function MainPortal(props: {
   state: PatientAppState;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
+  onLogout: () => void;
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleReserveFromAnywhere = (professionalId: string) => {
     props.onStateChange((current) => ({
@@ -1418,7 +1361,8 @@ function MainPortal(props: {
     navigate("/chat");
   };
 
-  const handleProfileFromAnywhere = (tab: ProfileTab) => {
+  const openProfileTabFromMenu = (tab: ProfileTab) => {
+    setMenuOpen(false);
     navigate(`/profile?tab=${tab}`);
   };
 
@@ -1518,7 +1462,6 @@ function MainPortal(props: {
     <div className="portal-layout">
       <header className="portal-header">
         <div>
-          <span className="chip">Lado paciente listo para demostracion con stakeholders</span>
           <h1>{props.state.session?.fullName}</h1>
           <p>
             Zona horaria: {props.state.profile.timezone} | Creditos: {props.state.subscription.creditsRemaining}
@@ -1530,6 +1473,36 @@ function MainPortal(props: {
             Riesgo: {props.state.intake?.riskLevel ?? "-"}
           </span>
           <span className="chip">Sin leer: {getUnreadCount(props.state.messages)}</span>
+          <div className="menu-wrap">
+            <button
+              aria-label="Abrir menu"
+              className="menu-toggle"
+              type="button"
+              onClick={() => setMenuOpen((current) => !current)}
+            >
+              &#9776;
+            </button>
+            {menuOpen ? (
+              <div className="menu-dropdown">
+                <button type="button" onClick={() => openProfileTabFromMenu("data")}>Perfil</button>
+                <button type="button" onClick={() => openProfileTabFromMenu("cards")}>Tarjetas</button>
+                <button type="button" onClick={() => openProfileTabFromMenu("subscription")}>Suscripcion</button>
+                <button type="button" onClick={() => openProfileTabFromMenu("settings")}>Ajustes</button>
+                <button type="button" onClick={() => openProfileTabFromMenu("support")}>Soporte</button>
+                <button
+                  className="danger"
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    props.onLogout();
+                    navigate("/");
+                  }}
+                >
+                  Cerrar sesion
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -1544,8 +1517,6 @@ function MainPortal(props: {
         <NavLink to="/matching">Profesionales</NavLink>
         <NavLink to="/booking">Reserva + pago</NavLink>
         <NavLink to="/chat">Chat</NavLink>
-        <NavLink to="/profile">Perfil</NavLink>
-        <NavLink to="/vision">Arquitectura</NavLink>
       </nav>
 
       <main>
@@ -1557,7 +1528,6 @@ function MainPortal(props: {
                 state={props.state}
                 onGoToBooking={handleReserveFromAnywhere}
                 onGoToChat={handleChatFromAnywhere}
-                onGoToProfileTab={handleProfileFromAnywhere}
               />
             }
           />
@@ -1615,16 +1585,12 @@ function MainPortal(props: {
                     }))
                   }
                   onLogout={() => {
-                    props.onStateChange(() => defaultState);
+                    props.onLogout();
                     navigate("/");
                   }}
                 />
               ) : null
             }
-          />
-          <Route
-            path="/vision"
-            element={<VisionPage />}
           />
         </Routes>
       </main>
@@ -1677,5 +1643,11 @@ export function App() {
     );
   }
 
-  return <MainPortal state={state} onStateChange={updateState} />;
+  return (
+    <MainPortal
+      state={state}
+      onStateChange={updateState}
+      onLogout={() => setState(defaultState)}
+    />
+  );
 }
