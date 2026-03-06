@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum BookingStatus {
+  REQUESTED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum CreditMovementType {
+  PACKAGE_PURCHASE
+  SESSION_CONSUMED
+  SESSION_REFUND
+  PENALTY
+  ADJUSTMENT
+}
+
+enum ConsentType {
+  AI_TEXT_AUDIT
+  AI_AUDIO_AUDIT
+}
+
+model User {
+  id            String               @id @default(cuid())
+  email         String               @unique
+  passwordHash  String
+  fullName      String
+  role          Role
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  patient       PatientProfile?
+  professional  ProfessionalProfile?
+  admin         AdminProfile?
+  sentMessages  ChatMessage[]        @relation("SentMessages")
+}
+
+model PatientProfile {
+  id             String                   @id @default(cuid())
+  userId         String                   @unique
+  timezone       String                   @default("America/New_York")
+  status         String                   @default("active")
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  user           User                     @relation(fields: [userId], references: [id])
+  intake         PatientIntake?
+  purchases      PatientPackagePurchase[]
+  creditLedger   CreditLedger[]
+  bookings       Booking[]                @relation("PatientBookings")
+  consents       Consent[]
+  chatThreads    ChatThread[]             @relation("PatientThreads")
+  aiAuditJobs    AIAuditJob[]
+}
+
+model ProfessionalProfile {
+  id                    String                   @id @default(cuid())
+  userId                String                   @unique
+  visible               Boolean                  @default(false)
+  bio                   String?
+  therapeuticApproach   String?
+  yearsExperience       Int?
+  photoUrl              String?
+  videoUrl              String?
+  cancellationHours     Int                      @default(24)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  user                  User                     @relation(fields: [userId], references: [id])
+  availabilitySlots     AvailabilitySlot[]
+  bookings              Booking[]                @relation("ProfessionalBookings")
+  chatThreads           ChatThread[]             @relation("ProfessionalThreads")
+  sessionPackages       SessionPackage[]
+  aiAuditJobs           AIAuditJob[]
+}
+
+model AdminProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model PatientIntake {
+  id            String         @id @default(cuid())
+  patientId     String         @unique
+  riskLevel     String         @default("low")
+  answers       Json
+  createdAt     DateTime       @default(now())
+  patient       PatientProfile @relation(fields: [patientId], references: [id])
+}
+
+model SessionPackage {
+  id                String                   @id @default(cuid())
+  professionalId    String?
+  stripePriceId     String                   @unique
+  name              String
+  credits           Int
+  priceCents        Int
+  currency          String                   @default("usd")
+  active            Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  purchases         PatientPackagePurchase[]
+  professional      ProfessionalProfile?     @relation(fields: [professionalId], references: [id])
+}
+
+model PatientPackagePurchase {
+  id                       String         @id @default(cuid())
+  patientId                String
+  packageId                String
+  stripeCheckoutSessionId  String         @unique
+  totalCredits             Int
+  remainingCredits         Int
+  purchasedAt              DateTime       @default(now())
+  patient                  PatientProfile @relation(fields: [patientId], references: [id])
+  sessionPackage           SessionPackage @relation(fields: [packageId], references: [id])
+}
+
+model CreditLedger {
+  id            String             @id @default(cuid())
+  patientId     String
+  bookingId     String?
+  type          CreditMovementType
+  amount        Int
+  note          String?
+  createdAt     DateTime           @default(now())
+  patient       PatientProfile     @relation(fields: [patientId], references: [id])
+  booking       Booking?           @relation(fields: [bookingId], references: [id])
+}
+
+model AvailabilitySlot {
+  id              String               @id @default(cuid())
+  professionalId  String
+  startsAt        DateTime
+  endsAt          DateTime
+  isBlocked       Boolean              @default(false)
+  source          String               @default("internal")
+  createdAt       DateTime             @default(now())
+  professional    ProfessionalProfile  @relation(fields: [professionalId], references: [id])
+
+  @@index([professionalId, startsAt])
+}
+
+model Booking {
+  id                 String               @id @default(cuid())
+  patientId          String
+  professionalId     String
+  startsAt           DateTime
+  endsAt             DateTime
+  status             BookingStatus        @default(REQUESTED)
+  cancellationReason String?
+  cancelledAt        DateTime?
+  completedAt        DateTime?
+  consumedCredits    Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  patient            PatientProfile       @relation("PatientBookings", fields: [patientId], references: [id])
+  professional       ProfessionalProfile  @relation("ProfessionalBookings", fields: [professionalId], references: [id])
+  chatThread         ChatThread?
+  videoSession       VideoSession?
+  creditMovements    CreditLedger[]
+
+  @@index([patientId, startsAt])
+  @@index([professionalId, startsAt])
+}
+
+model ChatThread {
+  id               String               @id @default(cuid())
+  patientId        String
+  professionalId   String
+  bookingId        String?              @unique
+  createdAt        DateTime             @default(now())
+  patient          PatientProfile       @relation("PatientThreads", fields: [patientId], references: [id])
+  professional     ProfessionalProfile  @relation("ProfessionalThreads", fields: [professionalId], references: [id])
+  booking          Booking?             @relation(fields: [bookingId], references: [id])
+  messages         ChatMessage[]
+}
+
+model ChatMessage {
+  id             String    @id @default(cuid())
+  threadId       String
+  senderUserId   String
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+  thread         ChatThread @relation(fields: [threadId], references: [id])
+  sender         User       @relation("SentMessages", fields: [senderUserId], references: [id])
+
+  @@index([threadId, createdAt])
+}
+
+model VideoSession {
+  id                  String    @id @default(cuid())
+  bookingId           String    @unique
+  provider            String    @default("daily")
+  externalRoomId      String
+  joinUrlPatient      String
+  joinUrlProfessional String
+  createdAt           DateTime  @default(now())
+  booking             Booking   @relation(fields: [bookingId], references: [id])
+}
+
+model Consent {
+  id            String       @id @default(cuid())
+  patientId     String
+  type          ConsentType
+  granted       Boolean
+  grantedAt     DateTime     @default(now())
+  patient       PatientProfile @relation(fields: [patientId], references: [id])
+
+  @@unique([patientId, type])
+}
+
+model AIAuditJob {
+  id               String               @id @default(cuid())
+  patientId        String?
+  professionalId   String?
+  bookingId        String?
+  mode             String               @default("text")
+  source           String
+  status           String               @default("queued")
+  payload          Json?
+  result           Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  patient          PatientProfile?      @relation(fields: [patientId], references: [id])
+  professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
+}
+
+model SystemConfig {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  value      Json
+  updatedAt  DateTime @updatedAt
+}
