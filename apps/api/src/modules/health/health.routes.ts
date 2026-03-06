@@ -1,7 +1,16 @@
 import { Router } from "express";
+import { prisma } from "../../lib/prisma.js";
 
 export const healthRouter = Router();
 
-healthRouter.get("/", (_req, res) => {
-  res.json({ ok: true, service: "therapy-api", timestamp: new Date().toISOString() });
+healthRouter.get("/", async (_req, res) => {
+  let database = "ok";
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    database = "error";
+  }
+
+  res.json({ ok: database === "ok", service: "therapy-api", database, timestamp: new Date().toISOString() });
 });
