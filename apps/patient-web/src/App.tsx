@@ -1132,7 +1132,7 @@ function BookingPage(props: {
                   type="button"
                   onClick={() => openStep(item.id)}
                 >
-                  <span>{item.id}</span>
+                  <span>Paso {item.id}</span>
                   <strong>{item.label}</strong>
                 </button>
               </li>
