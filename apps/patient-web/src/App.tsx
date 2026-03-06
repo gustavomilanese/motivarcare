@@ -12,6 +12,20 @@ interface SessionUser {
   email: string;
 }
 
+interface AuthApiUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+  patientProfileId: string | null;
+  professionalProfileId: string | null;
+}
+
+interface AuthApiResponse {
+  token: string;
+  user: AuthApiUser;
+}
+
 interface IntakeQuestion {
   id: string;
   title: string;
@@ -96,6 +110,7 @@ interface PatientProfile {
 
 interface PatientAppState {
   session: SessionUser | null;
+  authToken: string | null;
   intake: IntakeState | null;
   selectedProfessionalId: string;
   activeChatProfessionalId: string;
@@ -104,6 +119,31 @@ interface PatientAppState {
   messages: Message[];
   subscription: SubscriptionState;
   profile: PatientProfile;
+}
+
+interface ApiChatThread {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  counterpartName: string;
+  counterpartUserId: string;
+  lastMessage: {
+    id: string;
+    body: string;
+    createdAt: string;
+    senderUserId: string;
+  } | null;
+  unreadCount: number;
+}
+
+interface ApiChatMessage {
+  id: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+  senderUserId: string;
+  senderName: string;
+  senderRole: "PATIENT" | "PROFESSIONAL" | "ADMIN";
 }
 
 interface PackagePlan {
@@ -115,6 +155,8 @@ interface PackagePlan {
 }
 
 const STORAGE_KEY = "therapy_patient_portal_v3";
+const API_BASE =
+  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
 
 const intakeQuestions: IntakeQuestion[] = [
   {
@@ -318,6 +360,7 @@ const defaultProfile: PatientProfile = {
 
 const defaultState: PatientAppState = {
   session: null,
+  authToken: null,
   intake: null,
   selectedProfessionalId: professionalsCatalog[0].id,
   activeChatProfessionalId: professionalsCatalog[0].id,
@@ -357,6 +400,34 @@ function loadState(): PatientAppState {
 
 function saveState(state: PatientAppState): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+async function apiRequest<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers ?? {})
+    }
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP ${response.status}`;
+
+    try {
+      const payload = (await response.json()) as { error?: string };
+      if (payload.error) {
+        errorMessage = payload.error;
+      }
+    } catch {
+      // ignore parse error
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as T;
 }
 
 function formatDateTime(isoDate: string, timezone: string): string {
@@ -423,14 +494,15 @@ function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   img.src = "/images/hero-therapy.svg";
 }
 
-function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
-  const [mode, setMode] = useState<"login" | "register">("register");
+function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [fullName, setFullName] = useState("Alex Morgan");
   const [email, setEmail] = useState("alex@example.com");
   const [password, setPassword] = useState("SecurePass123");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!email.includes("@") || password.length < 8) {
@@ -444,11 +516,50 @@ function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
     }
 
     setError("");
-    props.onLogin({
-      id: `pat-${Date.now()}`,
-      fullName: mode === "register" ? fullName.trim() : "Alex Morgan",
-      email: email.trim().toLowerCase()
-    });
+    setLoading(true);
+
+    try {
+      const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
+      const payload =
+        mode === "register"
+          ? {
+              fullName: fullName.trim(),
+              email: email.trim().toLowerCase(),
+              password,
+              role: "PATIENT",
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"
+            }
+          : {
+              email: email.trim().toLowerCase(),
+              password
+            };
+
+      const response = await apiRequest<AuthApiResponse>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      if (response.user.role !== "PATIENT") {
+        throw new Error("La cuenta no corresponde al portal paciente.");
+      }
+
+      props.onLogin(
+        {
+          id: response.user.id,
+          fullName: response.user.fullName,
+          email: response.user.email
+        },
+        response.token
+      );
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "No se pudo autenticar contra la API. Revisa que el backend este encendido."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -499,8 +610,8 @@ function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
           </label>
 
           {error ? <p className="error-text">{error}</p> : null}
-          <button className="primary" type="submit">
-            {mode === "register" ? "Crear cuenta" : "Entrar"}
+          <button className="primary" type="submit" disabled={loading}>
+            {loading ? "Validando..." : mode === "register" ? "Crear cuenta" : "Entrar"}
           </button>
         </form>
       </section>
@@ -995,23 +1106,196 @@ function BookingPage(props: {
 
 function ChatPage(props: {
   state: PatientAppState;
+  authToken: string | null;
+  sessionUserId: string;
   onSetActiveProfessional: (professionalId: string) => void;
   onSendMessage: (professionalId: string, text: string) => void;
   onMarkRead: (professionalId: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const [apiThreads, setApiThreads] = useState<ApiChatThread[]>([]);
+  const [apiMessages, setApiMessages] = useState<ApiChatMessage[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState("");
+  const [apiError, setApiError] = useState("");
+
+  const remoteMode = Boolean(props.authToken);
 
   const threadProfessional = findProfessionalById(props.state.activeChatProfessionalId);
   const threadMessages = props.state.messages
     .filter((message) => message.professionalId === threadProfessional.id)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  useEffect(() => {
-    props.onMarkRead(threadProfessional.id);
-  }, [threadProfessional.id]);
+  const apiThreadByProfessional = useMemo(() => {
+    const map = new Map<string, ApiChatThread>();
+    for (const thread of apiThreads) {
+      map.set(thread.professionalId, thread);
+    }
+    return map;
+  }, [apiThreads]);
 
-  const handleSend = () => {
+  useEffect(() => {
+    if (remoteMode) {
+      return;
+    }
+
+    const unread = getUnreadCount(props.state.messages, threadProfessional.id);
+    if (unread > 0) {
+      props.onMarkRead(threadProfessional.id);
+    }
+  }, [remoteMode, threadProfessional.id, props.onMarkRead, props.state.messages]);
+
+  const loadThreads = async () => {
+    if (!props.authToken) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest<{ threads: ApiChatThread[] }>(
+        "/api/chat/threads",
+        {},
+        props.authToken ?? undefined
+      );
+      setApiThreads(response.threads);
+      setApiError("");
+    } catch (requestError) {
+      setApiError(requestError instanceof Error ? requestError.message : "No se pudo cargar el chat");
+    }
+  };
+
+  const loadMessages = async (threadId: string) => {
+    if (!props.authToken) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest<{ messages: ApiChatMessage[] }>(
+        `/api/chat/threads/${threadId}/messages`,
+        {},
+        props.authToken ?? undefined
+      );
+      setApiMessages(response.messages);
+      setApiError("");
+    } catch (requestError) {
+      setApiError(requestError instanceof Error ? requestError.message : "No se pudieron cargar mensajes");
+    }
+  };
+
+  const ensureThreadForProfessional = async (professionalId: string): Promise<string | null> => {
+    if (!props.authToken) {
+      return null;
+    }
+
+    try {
+      const response = await apiRequest<{ threadId: string }>(
+        `/api/chat/threads/by-professional/${professionalId}`,
+        { method: "POST" },
+        props.authToken ?? undefined
+      );
+      setActiveThreadId(response.threadId);
+      return response.threadId;
+    } catch (requestError) {
+      setApiError(requestError instanceof Error ? requestError.message : "No se pudo abrir la conversacion");
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (!remoteMode || !props.authToken) {
+      return;
+    }
+
+    loadThreads();
+    const timer = window.setInterval(() => {
+      loadThreads();
+    }, 3500);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [remoteMode, props.authToken]);
+
+  useEffect(() => {
+    if (!remoteMode || !props.authToken) {
+      return;
+    }
+
+    let active = true;
+
+    const run = async () => {
+      const threadId = await ensureThreadForProfessional(props.state.activeChatProfessionalId);
+      if (!threadId || !active) {
+        return;
+      }
+
+      await loadMessages(threadId);
+      await apiRequest<{ markedAsRead: number }>(
+        `/api/chat/threads/${threadId}/read`,
+        { method: "POST" },
+        props.authToken ?? undefined
+      ).catch(() => undefined);
+    };
+
+    run();
+
+    return () => {
+      active = false;
+    };
+  }, [remoteMode, props.authToken, props.state.activeChatProfessionalId]);
+
+  useEffect(() => {
+    if (!remoteMode || !props.authToken || !activeThreadId) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      loadMessages(activeThreadId);
+    }, 2500);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [remoteMode, props.authToken, activeThreadId]);
+
+  const handleSelectProfessional = async (professionalId: string) => {
+    props.onSetActiveProfessional(professionalId);
+
+    if (!remoteMode || !props.authToken) {
+      return;
+    }
+
+    const threadId = await ensureThreadForProfessional(professionalId);
+    if (threadId) {
+      await loadMessages(threadId);
+      await loadThreads();
+    }
+  };
+
+  const handleSend = async () => {
     if (!draft.trim()) {
+      return;
+    }
+
+    if (remoteMode && props.authToken) {
+      const threadId = activeThreadId || (await ensureThreadForProfessional(threadProfessional.id));
+      if (!threadId) {
+        return;
+      }
+
+      try {
+        await apiRequest(
+          `/api/chat/threads/${threadId}/messages`,
+          {
+            method: "POST",
+            body: JSON.stringify({ body: draft.trim() })
+          },
+          props.authToken ?? undefined
+        );
+        setDraft("");
+        await loadMessages(threadId);
+        await loadThreads();
+      } catch (requestError) {
+        setApiError(requestError instanceof Error ? requestError.message : "No se pudo enviar el mensaje");
+      }
       return;
     }
 
@@ -1035,17 +1319,23 @@ function ChatPage(props: {
 
         <div className="wa-thread-list">
           {professionalsCatalog.map((professional) => {
-            const unread = getUnreadCount(props.state.messages, professional.id);
-            const lastMessage = props.state.messages
-              .filter((message) => message.professionalId === professional.id)
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+            const remoteThread = apiThreadByProfessional.get(professional.id);
+            const unread = remoteMode ? remoteThread?.unreadCount ?? 0 : getUnreadCount(props.state.messages, professional.id);
+            const lastMessageText = remoteMode
+              ? remoteThread?.lastMessage?.body ?? "Todavia no hay mensajes"
+              : props.state.messages
+                  .filter((message) => message.professionalId === professional.id)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.text
+                ?? "Todavia no hay mensajes";
 
             return (
               <button
                 className={professional.id === threadProfessional.id ? "wa-thread-item active" : "wa-thread-item"}
                 key={professional.id}
                 type="button"
-                onClick={() => props.onSetActiveProfessional(professional.id)}
+                onClick={() => {
+                  void handleSelectProfessional(professional.id);
+                }}
               >
                 <img
                   src={professionalImageMap[professional.id]}
@@ -1054,7 +1344,7 @@ function ChatPage(props: {
                 />
                 <div>
                   <strong>{professional.fullName}</strong>
-                  <p>{lastMessage ? lastMessage.text : "Todavia no hay mensajes"}</p>
+                  <p>{lastMessageText}</p>
                 </div>
                 {unread > 0 ? <span className="badge">{unread}</span> : null}
               </button>
@@ -1079,10 +1369,26 @@ function ChatPage(props: {
         </header>
 
         <div className="wa-messages">
-          {threadMessages.length === 0 ? (
+          {remoteMode && apiMessages.length === 0 ? (
+            <p className="wa-empty">Todavia no hay mensajes en esta conversacion.</p>
+          ) : null}
+
+          {remoteMode
+            ? apiMessages.map((message) => (
+                <article
+                  className={message.senderUserId === props.sessionUserId ? "wa-message outgoing" : "wa-message incoming"}
+                  key={message.id}
+                >
+                  <p>{message.body}</p>
+                  <time>{formatDateTime(message.createdAt, props.state.profile.timezone)}</time>
+                </article>
+              ))
+            : null}
+
+          {!remoteMode && threadMessages.length === 0 ? (
             <p className="wa-empty">Todavia no hay mensajes en esta conversacion.</p>
           ) : (
-            threadMessages.map((message) => (
+            !remoteMode ? threadMessages.map((message) => (
               <article
                 className={message.sender === "patient" ? "wa-message outgoing" : "wa-message incoming"}
                 key={message.id}
@@ -1090,7 +1396,7 @@ function ChatPage(props: {
                 <p>{message.text}</p>
                 <time>{formatDateTime(message.createdAt, props.state.profile.timezone)}</time>
               </article>
-            ))
+            )) : null
           )}
         </div>
 
@@ -1107,6 +1413,7 @@ function ChatPage(props: {
           </button>
         </footer>
       </section>
+      {apiError ? <p className="error-text">{apiError}</p> : null}
     </div>
   );
 }
@@ -1562,6 +1869,8 @@ function MainPortal(props: {
             element={
               <ChatPage
                 state={props.state}
+                authToken={props.state.authToken}
+                sessionUserId={props.state.session?.id ?? ""}
                 onSetActiveProfessional={(professionalId) =>
                   props.onStateChange((current) => ({ ...current, activeChatProfessionalId: professionalId }))
                 }
@@ -1612,10 +1921,11 @@ export function App() {
   if (!state.session) {
     return (
       <AuthScreen
-        onLogin={(user) => {
+        onLogin={(user, token) => {
           setState((current) => ({
             ...current,
-            session: user
+            session: user,
+            authToken: token
           }));
         }}
       />
