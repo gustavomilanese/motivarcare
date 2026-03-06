@@ -90,6 +90,7 @@ ul {
   padding: 16px;
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .pro-header {
