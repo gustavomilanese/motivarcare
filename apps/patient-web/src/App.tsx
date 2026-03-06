@@ -805,17 +805,6 @@ function DashboardPage(props: {
         </div>
       </section>
 
-      <section className="content-card premium-banner">
-        <div className="banner-copy">
-          <span className="chip">Experiencia premium</span>
-          <h2>Tu terapia online con acompanamiento continuo</h2>
-          <p>
-            Crea habitos de bienestar con una experiencia ordenada, simple y profesional.
-          </p>
-        </div>
-        <img src={heroImage} alt="Paciente y profesional en sesion online" onError={handleHeroFallback} />
-      </section>
-
       <section className="content-card">
         <h2>Proximas sesiones</h2>
         {props.state.bookings.length === 0 ? (
