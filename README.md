@@ -14,7 +14,7 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
 - `apps/api`: modular API
 - `apps/patient-web`: patient portal (demo-ready)
 - `apps/professional-web`: professional portal (functional MVP)
-- `apps/admin-web`: admin portal scaffold
+- `apps/admin-web`: admin portal (auth + user management)
 - `packages/types`: shared contracts
 - `packages/ui`: shared UI primitives
 
@@ -31,6 +31,12 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
   - Perfil público editable
   - Ingresos (resumen + movimientos)
   - Solapa administrativa
+- Admin portal integrated with backend:
+  - Role gateway (patient/professional/admin selector)
+  - Admin auth against API
+  - Dashboard KPI
+  - User management module (list, create, edit, password reset)
+  - Role-aware profile fields (patient status/timezone, professional visibility/cancellation policy)
 
 ## Patient Side (demo)
 - Register/login against API
@@ -53,6 +59,11 @@ Run only professional app:
 1. `npm install`
 2. `npm run dev -w @therapy/professional-web`
 3. Open [http://localhost:5174](http://localhost:5174)
+
+Run only admin app:
+1. `npm install`
+2. `npm run dev -w @therapy/admin-web`
+3. Open [http://localhost:5175](http://localhost:5175)
 
 ## Product readiness
 - Today: high-quality demo and functional pre-MVP workflow.
@@ -77,6 +88,7 @@ Run only professional app:
 - Professional (Emma): `emma.collins@motivarte.com` / `SecurePass123`
 - Professional (Michael): `michael.rivera@motivarte.com` / `SecurePass123`
 - Professional (Sophia): `sophia.nguyen@motivarte.com` / `SecurePass123`
+- Admin: `admin@motivarte.com` / `SecurePass123`
 
 ## Current policy defaults
 - Free cancellation until 24h before session.

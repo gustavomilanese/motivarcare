@@ -5,6 +5,7 @@ type RiskLevel = "low" | "medium" | "high";
 type PackageId = "starter" | "growth" | "intensive";
 type SenderRole = "patient" | "professional";
 type ProfileTab = "data" | "cards" | "subscription" | "settings" | "support";
+type PortalRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 
 interface SessionUser {
   id: string;
@@ -155,8 +156,11 @@ interface PackagePlan {
 }
 
 const STORAGE_KEY = "therapy_patient_portal_v3";
-const API_BASE =
-  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
+const runtimeEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+const API_BASE = runtimeEnv.VITE_API_URL ?? "http://localhost:4000";
+const PATIENT_PORTAL_URL = runtimeEnv.VITE_PATIENT_PORTAL_URL ?? "http://localhost:5173";
+const PROFESSIONAL_PORTAL_URL = runtimeEnv.VITE_PROFESSIONAL_PORTAL_URL ?? "http://localhost:5174";
+const ADMIN_PORTAL_URL = runtimeEnv.VITE_ADMIN_PORTAL_URL ?? "http://localhost:5175";
 
 const intakeQuestions: IntakeQuestion[] = [
   {
@@ -495,12 +499,31 @@ function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
 }
 
 function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) => void }) {
+  const [portalRole, setPortalRole] = useState<PortalRole>("PATIENT");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [fullName, setFullName] = useState("Alex Morgan");
   const [email, setEmail] = useState("alex@example.com");
   const [password, setPassword] = useState("SecurePass123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const portalRedirect = {
+    PATIENT: {
+      label: "Paciente",
+      url: PATIENT_PORTAL_URL,
+      note: "Completa intake, reserva y chat con tu profesional."
+    },
+    PROFESSIONAL: {
+      label: "Profesional",
+      url: PROFESSIONAL_PORTAL_URL,
+      note: "Administra agenda, pacientes y videollamadas."
+    },
+    ADMIN: {
+      label: "Admin",
+      url: ADMIN_PORTAL_URL,
+      note: "Gestiona usuarios, politicas y operacion."
+    }
+  } as const;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -574,46 +597,71 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
           Registrate o ingresa para completar el intake clinico, ver el matching recomendado y reservar sesiones.
         </p>
 
-        <div className="auth-mode-switch">
-          <button
-            className={mode === "register" ? "active" : ""}
-            type="button"
-            onClick={() => setMode("register")}
-          >
-            Registrarme
-          </button>
-          <button
-            className={mode === "login" ? "active" : ""}
-            type="button"
-            onClick={() => setMode("login")}
-          >
-            Ingresar
-          </button>
+        <div className="portal-role-switch">
+          {(["PATIENT", "PROFESSIONAL", "ADMIN"] as PortalRole[]).map((role) => (
+            <button
+              key={role}
+              className={portalRole === role ? "active" : ""}
+              type="button"
+              onClick={() => setPortalRole(role)}
+            >
+              {portalRedirect[role].label}
+            </button>
+          ))}
         </div>
 
-        <form className="stack" onSubmit={handleSubmit}>
-          {mode === "register" ? (
-            <label>
-              Nombre completo
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
-            </label>
-          ) : null}
+        {portalRole === "PATIENT" ? (
+          <>
+            <div className="auth-mode-switch">
+              <button
+                className={mode === "register" ? "active" : ""}
+                type="button"
+                onClick={() => setMode("register")}
+              >
+                Registrarme
+              </button>
+              <button
+                className={mode === "login" ? "active" : ""}
+                type="button"
+                onClick={() => setMode("login")}
+              >
+                Ingresar
+              </button>
+            </div>
 
-          <label>
-            Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
+            <form className="stack" onSubmit={handleSubmit}>
+              {mode === "register" ? (
+                <label>
+                  Nombre completo
+                  <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+                </label>
+              ) : null}
 
-          <label>
-            Contrasena
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
+              <label>
+                Email
+                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+              </label>
 
-          {error ? <p className="error-text">{error}</p> : null}
-          <button className="primary" type="submit" disabled={loading}>
-            {loading ? "Validando..." : mode === "register" ? "Crear cuenta" : "Entrar"}
-          </button>
-        </form>
+              <label>
+                Contrasena
+                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+              </label>
+
+              {error ? <p className="error-text">{error}</p> : null}
+              <button className="primary" type="submit" disabled={loading}>
+                {loading ? "Validando..." : mode === "register" ? "Crear cuenta" : "Entrar"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <article className="portal-redirect-card">
+            <strong>Portal {portalRedirect[portalRole].label}</strong>
+            <p>{portalRedirect[portalRole].note}</p>
+            <a className="primary-link" href={portalRedirect[portalRole].url}>
+              Abrir portal {portalRedirect[portalRole].label.toLowerCase()}
+            </a>
+          </article>
+        )}
       </section>
     </div>
   );

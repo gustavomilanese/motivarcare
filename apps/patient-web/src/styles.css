@@ -124,6 +124,46 @@ ul {
   color: #fff;
 }
 
+.portal-role-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-role-switch button {
+  min-width: 130px;
+}
+
+.portal-role-switch button.active {
+  background: #f0f5ff;
+  border-color: #7aa4ea;
+  color: #123977;
+}
+
+.portal-redirect-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fbfdff;
+  display: grid;
+  gap: 10px;
+}
+
+.portal-redirect-card p {
+  color: var(--text-soft);
+}
+
+.primary-link {
+  text-decoration: none;
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1f4fc2 0%, #2b63e8 100%);
+}
+
 .stack {
   display: grid;
   gap: 12px;
