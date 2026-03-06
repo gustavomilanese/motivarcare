@@ -354,6 +354,139 @@ button.danger {
   border-color: #fecaca;
 }
 
+.dashboard-hero {
+  grid-template-columns: 1.2fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 42%),
+    #ffffff;
+}
+
+.dashboard-hero-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-hero-copy h2 {
+  font-size: 32px;
+  line-height: 1.08;
+}
+
+.dashboard-progress-card {
+  border: 1px solid #d4e1f2;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-progress-card .label {
+  color: var(--text-soft);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.dashboard-progress-card strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.journey-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.journey-list li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #5a6f8c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.journey-list li.done {
+  color: #1f5134;
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+  display: grid;
+  gap: 6px;
+}
+
+.metric-card .label {
+  color: var(--text-soft);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.metric-card strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.metric-card p {
+  color: #3f536e;
+  font-size: 14px;
+}
+
+.quick-actions-card h2 {
+  margin-bottom: 2px;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-action {
+  border: 1px solid #d0ddf0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fbff;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  text-decoration: none;
+  color: #1c3049;
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick-action:hover {
+  background: #eef5ff;
+  border-color: #b8cceb;
+}
+
+.quick-action strong {
+  font-size: 16px;
+}
+
+.quick-action span {
+  color: #526a87;
+  font-size: 14px;
+}
+
 .premium-banner {
   grid-template-columns: 1.2fr 1fr;
   align-items: center;
@@ -572,6 +705,114 @@ button.danger {
 .slot-button.active {
   border-color: var(--brand-2);
   background: #eef4ff;
+}
+
+.booking-wizard {
+  gap: 14px;
+}
+
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.wizard-header p {
+  color: #4f647f;
+}
+
+.wizard-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.wizard-step {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.wizard-step span {
+  font-size: 12px;
+  color: #4c6481;
+}
+
+.wizard-step strong {
+  font-size: 14px;
+}
+
+.wizard-step.active {
+  border-color: #2f6bdb;
+  background: #eef4ff;
+}
+
+.wizard-step.completed {
+  border-color: #9dd6ad;
+  background: #ecfaf1;
+}
+
+.wizard-step:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wizard-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  background: #fff;
+}
+
+.wizard-panel h3 {
+  font-size: 20px;
+}
+
+.wizard-summary {
+  border: 1px solid #d9e5f5;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fbff;
+  display: grid;
+  gap: 5px;
+}
+
+.wizard-summary p {
+  color: #3f556f;
+}
+
+.wizard-summary span {
+  color: #27569e;
+  font-weight: 700;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wizard-success-box {
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
 }
 
 .wa-shell {
@@ -829,6 +1070,9 @@ button.danger {
 }
 
 @media (max-width: 1080px) {
+  .dashboard-hero,
+  .dashboard-metrics,
+  .quick-actions-grid,
   .premium-banner,
   .hero-grid,
   .filters,
@@ -843,6 +1087,10 @@ button.danger {
 
   .wa-sidebar {
     max-height: 260px;
+  }
+
+  .wizard-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .visual-hero img,
@@ -869,5 +1117,9 @@ button.danger {
   .portal-nav a {
     flex: 1 1 auto;
     text-align: center;
+  }
+
+  .wizard-steps {
+    grid-template-columns: 1fr;
   }
 }

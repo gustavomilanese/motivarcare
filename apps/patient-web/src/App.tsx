@@ -710,57 +710,116 @@ function DashboardPage(props: {
 }) {
   const nextBooking = getNextBooking(props.state.bookings);
   const unreadTotal = getUnreadCount(props.state.messages);
+  const confirmedSessions = props.state.bookings.filter((booking) => booking.status === "confirmed").length;
   const topProfessionals = [...professionalsCatalog].sort((a, b) => b.compatibility - a.compatibility).slice(0, 3);
+  const selectedProfessional = findProfessionalById(props.state.selectedProfessionalId);
+
+  const journeySteps = [
+    { key: "intake", label: "Intake completado", done: Boolean(props.state.intake?.completed) },
+    { key: "match", label: "Profesional asignado", done: Boolean(props.state.selectedProfessionalId) },
+    { key: "credits", label: "Paquete activo", done: props.state.subscription.creditsTotal > 0 },
+    { key: "booking", label: "Reserva confirmada", done: confirmedSessions > 0 }
+  ];
+
+  const journeyDone = journeySteps.filter((step) => step.done).length;
+  const journeyPercent = Math.round((journeyDone / journeySteps.length) * 100);
 
   return (
     <div className="page-stack">
-      <section className="content-card premium-banner">
-        <div className="banner-copy">
-          <span className="chip">Experiencia premium</span>
-          <h2>Tu espacio de bienestar, con tecnologia y seguimiento profesional</h2>
+      <section className="content-card dashboard-hero">
+        <div className="dashboard-hero-copy">
+          <span className="chip">Panel principal</span>
+          <h2>Tu espacio personal de terapia, agenda y seguimiento</h2>
           <p>
-            Desde aca gestionas agenda, mensajes, sesiones y tu suscripcion en un solo lugar.
+            Todo tu proceso en un mismo lugar: reserva, pago, chat y acceso rapido a tus proximas sesiones.
           </p>
           <div className="button-row">
             <button className="primary" type="button" onClick={() => props.onGoToBooking(props.state.selectedProfessionalId)}>
-              Reservar siguiente sesion
+              Reservar ahora
             </button>
             <button type="button" onClick={() => props.onGoToChat(props.state.activeChatProfessionalId)}>
-              Ir al chat
+              Abrir chat
             </button>
           </div>
         </div>
-        <img src={heroImage} alt="Paciente y profesional en sesion online" onError={handleHeroFallback} />
+
+        <aside className="dashboard-progress-card">
+          <span className="label">Progreso del proceso</span>
+          <strong>{journeyPercent}%</strong>
+          <ul className="journey-list">
+            {journeySteps.map((step) => (
+              <li className={step.done ? "done" : ""} key={step.key}>
+                <span>{step.done ? "*" : "-"}</span>
+                <span>{step.label}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
       </section>
 
-      <section className="hero-grid">
-        <article className="hero-card">
+      <section className="dashboard-metrics">
+        <article className="metric-card">
           <span className="label">Sesiones confirmadas</span>
-          <strong>{props.state.bookings.filter((booking) => booking.status === "confirmed").length}</strong>
+          <strong>{confirmedSessions}</strong>
           <p>
             {nextBooking
               ? `Proxima: ${formatDateTime(nextBooking.startsAt, props.state.profile.timezone)}`
-              : "Todavia no tenes sesiones reservadas"}
+              : "Todavia no tienes sesiones agendadas"}
           </p>
         </article>
 
-        <article className="hero-card">
+        <article className="metric-card">
           <span className="label">Creditos disponibles</span>
           <strong>{props.state.subscription.creditsRemaining}</strong>
           <p>{props.state.subscription.packageName}</p>
         </article>
 
-        <article className="hero-card">
+        <article className="metric-card">
           <span className="label">Mensajes sin leer</span>
           <strong>{unreadTotal}</strong>
-          <p>Mensajeria interna 1 a 1 con tu profesional.</p>
+          <p>Mensajeria 1 a 1 con tu profesional.</p>
+        </article>
+
+        <article className="metric-card">
+          <span className="label">Profesional activo</span>
+          <strong>{selectedProfessional.fullName.split(" ")[0]}</strong>
+          <p>{selectedProfessional.compatibility}% compatibilidad</p>
         </article>
       </section>
 
+      <section className="content-card quick-actions-card">
+        <h2>Siguiente paso recomendado</h2>
+        <div className="quick-actions-grid">
+          <button className="quick-action" type="button" onClick={() => props.onGoToBooking(selectedProfessional.id)}>
+            <strong>1. Reserva + pago</strong>
+            <span>Flujo guiado paso a paso para confirmar sesion en minutos.</span>
+          </button>
+          <button className="quick-action" type="button" onClick={() => props.onGoToChat(selectedProfessional.id)}>
+            <strong>2. Enviar mensaje</strong>
+            <span>Confirma objetivos o dudas antes de la proxima sesion.</span>
+          </button>
+          <a className="quick-action" href={nextBooking?.joinUrl ?? "#"}>
+            <strong>3. Entrar a sesion</strong>
+            <span>{nextBooking ? "Acceso directo disponible para tu sesion confirmada." : "Se habilita al confirmar tu reserva."}</span>
+          </a>
+        </div>
+      </section>
+
+      <section className="content-card premium-banner">
+        <div className="banner-copy">
+          <span className="chip">Experiencia premium</span>
+          <h2>Tu terapia online con acompanamiento continuo</h2>
+          <p>
+            Crea habitos de bienestar con una experiencia ordenada, simple y profesional.
+          </p>
+        </div>
+        <img src={heroImage} alt="Paciente y profesional en sesion online" onError={handleHeroFallback} />
+      </section>
+
       <section className="content-card">
-        <h2>HORARIO</h2>
+        <h2>Proximas sesiones</h2>
         {props.state.bookings.length === 0 ? (
-          <p>Aun no hay sesiones agendadas. Elegi profesional y reserva tu primer slot.</p>
+          <p>Aun no hay sesiones agendadas. Elige profesional y confirma tu primer horario.</p>
         ) : (
           <ul className="simple-list">
             {props.state.bookings.map((booking) => {
@@ -782,7 +841,7 @@ function DashboardPage(props: {
       </section>
 
       <section className="content-card">
-        <h2>LISTA (profesionales recomendados)</h2>
+        <h2>Profesionales recomendados</h2>
         <div className="card-grid">
           {topProfessionals.map((professional) => (
             <article className="mini-card" key={professional.id}>
@@ -797,7 +856,7 @@ function DashboardPage(props: {
               <p className="compatibility">{professional.compatibility}% compatibilidad</p>
               <div className="button-row">
                 <button type="button" onClick={() => props.onGoToBooking(professional.id)}>
-                  Reservar
+                  Ir a reservar
                 </button>
                 <button type="button" onClick={() => props.onGoToChat(professional.id)}>
                   Chat
@@ -809,7 +868,7 @@ function DashboardPage(props: {
       </section>
 
       <section className="content-card">
-        <h2>CHAT</h2>
+        <h2>Chat</h2>
         <p>Ultima actividad de tus conversaciones, con notificaciones y estado de lectura.</p>
         <div className="button-row">
           <button type="button" onClick={() => props.onGoToChat(props.state.activeChatProfessionalId)}>
@@ -817,7 +876,6 @@ function DashboardPage(props: {
           </button>
         </div>
       </section>
-
     </div>
   );
 }
@@ -957,31 +1015,80 @@ function BookingPage(props: {
   onAddPackage: (plan: PackagePlan) => void;
   onConfirmBooking: (professionalId: string, slot: TimeSlot) => void;
 }) {
+  type BookingStep = 1 | 2 | 3 | 4;
+
+  const [step, setStep] = useState<BookingStep>(1);
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [selectedPlanId, setSelectedPlanId] = useState<PackageId>("growth");
   const [purchaseMessage, setPurchaseMessage] = useState("");
+  const [confirmedReservation, setConfirmedReservation] = useState<{
+    professionalName: string;
+    startsAt: string;
+    timezone: string;
+  } | null>(null);
 
   const professional = findProfessionalById(props.state.selectedProfessionalId);
   const availableSlots = professional.slots.filter((slot) => !props.state.bookedSlotIds.includes(slot.id));
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
+  const hasCredits = props.state.subscription.creditsRemaining > 0;
+  const selectedPlan = packagePlans.find((plan) => plan.id === selectedPlanId) ?? packagePlans[1];
+  const previewStartsAt = confirmedReservation?.startsAt ?? selectedSlot?.startsAt ?? null;
 
-  const handlePurchase = () => {
-    const plan = packagePlans.find((item) => item.id === selectedPlanId);
-    if (!plan) {
-      return;
+  const stepConfig: Array<{ id: BookingStep; label: string }> = [
+    { id: 1, label: "Profesional" },
+    { id: 2, label: "Horario" },
+    { id: 3, label: "Pago" },
+    { id: 4, label: "Confirmar" }
+  ];
+
+  const canOpenStep = (targetStep: BookingStep): boolean => {
+    if (targetStep <= 2) {
+      return true;
     }
 
-    props.onAddPackage(plan);
-    setPurchaseMessage(`Pago acreditado: ${plan.name}.`);
+    if (targetStep === 3) {
+      return Boolean(selectedSlot);
+    }
+
+    if (targetStep === 4) {
+      return Boolean(confirmedReservation) || (Boolean(selectedSlot) && hasCredits);
+    }
+
+    return false;
+  };
+
+  const openStep = (targetStep: BookingStep) => {
+    if (canOpenStep(targetStep)) {
+      setStep(targetStep);
+    }
+  };
+
+  const handlePurchase = () => {
+    props.onAddPackage(selectedPlan);
+    setPurchaseMessage(`Pago acreditado: ${selectedPlan.name}. Ya puedes confirmar la sesion.`);
   };
 
   const handleBooking = () => {
-    if (!selectedSlot) {
+    if (!selectedSlot || !hasCredits) {
       return;
     }
 
     props.onConfirmBooking(professional.id, selectedSlot);
+    setConfirmedReservation({
+      professionalName: professional.fullName,
+      startsAt: selectedSlot.startsAt,
+      timezone: props.state.profile.timezone
+    });
     setSelectedSlotId("");
+    setStep(4);
+  };
+
+  const resetFlow = () => {
+    setStep(1);
+    setSelectedSlotId("");
+    setPurchaseMessage("");
+    setConfirmedReservation(null);
+    setSelectedPlanId("growth");
   };
 
   if (props.state.intake?.riskBlocked) {
@@ -1002,103 +1109,206 @@ function BookingPage(props: {
 
   return (
     <div className="page-stack">
-      <section className="content-card">
-        <h2>Reserva de sesion</h2>
-        <p>Huso horario de visualizacion: <strong>{props.state.profile.timezone}</strong></p>
-
-        <label>
-          Profesional
-          <select
-            value={professional.id}
-            onChange={(event) => {
-              props.onSelectProfessional(event.target.value);
-              setSelectedSlotId("");
-            }}
-          >
-            {professionalsCatalog.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.fullName} - {item.compatibility}%
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <h3>Slots disponibles</h3>
-        {availableSlots.length === 0 ? (
-          <p>No quedan slots disponibles para este profesional durante la semana actual.</p>
-        ) : (
-          <div className="slot-grid">
-            {availableSlots.map((slot) => (
-              <button
-                className={selectedSlotId === slot.id ? "slot-button active" : "slot-button"}
-                key={slot.id}
-                type="button"
-                onClick={() => setSelectedSlotId(slot.id)}
-              >
-                <span>{formatDateOnly(slot.startsAt, props.state.profile.timezone)}</span>
-                <strong>{formatDateTime(slot.startsAt, props.state.profile.timezone)}</strong>
-              </button>
-            ))}
+      <section className="content-card booking-wizard">
+        <header className="wizard-header">
+          <div>
+            <h2>Reserva + pago guiado</h2>
+            <p>Sigue este paso a paso para agendar y confirmar tu proxima sesion sin perderte.</p>
           </div>
-        )}
-      </section>
+          <span className="chip">Huso horario: {props.state.profile.timezone}</span>
+        </header>
 
-      <section className="content-card">
-        <h2>Pago y creditos de sesiones</h2>
-        <p>
-          Paquete actual: <strong>{props.state.subscription.packageName}</strong>
-        </p>
-        <p>
-          Creditos disponibles: <strong>{props.state.subscription.creditsRemaining}</strong>
-        </p>
+        <ol className="wizard-steps">
+          {stepConfig.map((item) => {
+            const completed = step > item.id || (item.id === 4 && Boolean(confirmedReservation));
+            const active = step === item.id;
+            const locked = !canOpenStep(item.id);
 
-        {props.state.subscription.creditsRemaining === 0 ? (
-          <>
-            <p>Necesitas un paquete activo para confirmar una reserva.</p>
+            return (
+              <li key={item.id}>
+                <button
+                  className={`wizard-step ${active ? "active" : ""} ${completed ? "completed" : ""}`}
+                  disabled={locked}
+                  type="button"
+                  onClick={() => openStep(item.id)}
+                >
+                  <span>{item.id}</span>
+                  <strong>{item.label}</strong>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
 
-            <div className="card-grid">
-              {packagePlans.map((plan) => (
-                <label className={`mini-card selectable ${selectedPlanId === plan.id ? "selected" : ""}`} key={plan.id}>
-                  <input
-                    checked={selectedPlanId === plan.id}
-                    type="radio"
-                    name="package"
-                    value={plan.id}
-                    onChange={() => setSelectedPlanId(plan.id)}
-                  />
-                  <h3>{plan.name}</h3>
-                  <p>{plan.description}</p>
-                  <p>
-                    <strong>${plan.priceUsd}</strong> / {plan.credits} creditos
-                  </p>
-                </label>
-              ))}
+        {step === 1 ? (
+          <article className="wizard-panel">
+            <h3>1. Elige profesional</h3>
+            <p>Selecciona el perfil con el que deseas continuar la proxima sesion.</p>
+
+            <label>
+              Profesional
+              <select
+                value={professional.id}
+                onChange={(event) => {
+                  props.onSelectProfessional(event.target.value);
+                  setSelectedSlotId("");
+                  setConfirmedReservation(null);
+                }}
+              >
+                {professionalsCatalog.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.fullName} - {item.compatibility}%
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="wizard-summary">
+              <strong>{professional.fullName}</strong>
+              <p>{professional.title}</p>
+              <span>{professional.compatibility}% compatibilidad</span>
             </div>
 
-            <button className="primary" type="button" onClick={handlePurchase}>
-              Pagar con Stripe
-            </button>
-            {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
-          </>
-        ) : (
-          <>
-            <p>Se consumira 1 credito al confirmar esta reserva.</p>
-            <button className="primary" disabled={!selectedSlot} type="button" onClick={handleBooking}>
-              Confirmar sesion
-            </button>
-          </>
-        )}
-      </section>
+            <div className="wizard-nav">
+              <span />
+              <button className="primary" type="button" onClick={() => setStep(2)}>
+                Continuar
+              </button>
+            </div>
+          </article>
+        ) : null}
 
-      <section className="content-card">
-        <h2>Post reserva</h2>
-        <p>Luego de reservar, tenes:</p>
-        <ul>
-          <li>Confirmacion automatica de la sesion.</li>
-          <li>Confirmacion por email.</li>
-          <li>Link directo para ingresar.</li>
-          <li>Historial de sesiones en dashboard.</li>
-        </ul>
+        {step === 2 ? (
+          <article className="wizard-panel">
+            <h3>2. Elige horario</h3>
+            <p>Selecciona un slot disponible para {professional.fullName}.</p>
+
+            {availableSlots.length === 0 ? (
+              <p>No quedan slots disponibles para este profesional durante la semana actual.</p>
+            ) : (
+              <div className="slot-grid">
+                {availableSlots.map((slot) => (
+                  <button
+                    className={selectedSlotId === slot.id ? "slot-button active" : "slot-button"}
+                    key={slot.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSlotId(slot.id);
+                      setConfirmedReservation(null);
+                    }}
+                  >
+                    <span>{formatDateOnly(slot.startsAt, props.state.profile.timezone)}</span>
+                    <strong>{formatDateTime(slot.startsAt, props.state.profile.timezone)}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="wizard-nav">
+              <button type="button" onClick={() => setStep(1)}>
+                Volver
+              </button>
+              <button className="primary" disabled={!selectedSlot} type="button" onClick={() => setStep(3)}>
+                Continuar al pago
+              </button>
+            </div>
+          </article>
+        ) : null}
+
+        {step === 3 ? (
+          <article className="wizard-panel">
+            <h3>3. Pago y creditos</h3>
+            <p>Paquete actual: <strong>{props.state.subscription.packageName}</strong></p>
+            <p>Creditos disponibles: <strong>{props.state.subscription.creditsRemaining}</strong></p>
+
+            {!hasCredits ? (
+              <>
+                <p>Necesitas un paquete activo para confirmar la reserva.</p>
+                <div className="card-grid">
+                  {packagePlans.map((plan) => (
+                    <label className={`mini-card selectable ${selectedPlanId === plan.id ? "selected" : ""}`} key={plan.id}>
+                      <input
+                        checked={selectedPlanId === plan.id}
+                        type="radio"
+                        name="package"
+                        value={plan.id}
+                        onChange={() => setSelectedPlanId(plan.id)}
+                      />
+                      <h3>{plan.name}</h3>
+                      <p>{plan.description}</p>
+                      <p>
+                        <strong>${plan.priceUsd}</strong> / {plan.credits} creditos
+                      </p>
+                    </label>
+                  ))}
+                </div>
+
+                <button className="primary" type="button" onClick={handlePurchase}>
+                  Pagar con Stripe
+                </button>
+                {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
+              </>
+            ) : (
+              <div className="wizard-summary">
+                <strong>Listo para confirmar</strong>
+                <p>Tienes creditos suficientes. Se consumira 1 credito al confirmar la sesion.</p>
+              </div>
+            )}
+
+            <div className="wizard-nav">
+              <button type="button" onClick={() => setStep(2)}>
+                Volver
+              </button>
+              <button className="primary" disabled={!hasCredits || !selectedSlot} type="button" onClick={() => setStep(4)}>
+                Revisar confirmacion
+              </button>
+            </div>
+          </article>
+        ) : null}
+
+        {step === 4 ? (
+          <article className="wizard-panel">
+            <h3>4. Confirmacion</h3>
+            <p>Revisa el resumen final y confirma tu sesion.</p>
+
+            <div className="wizard-summary">
+              <p><strong>Profesional:</strong> {confirmedReservation?.professionalName ?? professional.fullName}</p>
+              <p>
+                <strong>Fecha y hora:</strong>{" "}
+                {previewStartsAt ? formatDateTime(previewStartsAt, props.state.profile.timezone) : "Selecciona un horario"}
+              </p>
+              <p><strong>Zona horaria:</strong> {confirmedReservation?.timezone ?? props.state.profile.timezone}</p>
+              <p><strong>Politica de cancelacion:</strong> cancelacion gratuita hasta 24 horas antes.</p>
+            </div>
+
+            {confirmedReservation ? (
+              <div className="wizard-success-box">
+                <p className="success-text">Sesion confirmada correctamente.</p>
+                <p>Ya tienes la sesion en tu dashboard y acceso al link de videollamada.</p>
+              </div>
+            ) : null}
+
+            <div className="wizard-nav">
+              <button type="button" onClick={() => setStep(3)}>
+                Volver
+              </button>
+              <button
+                className="primary"
+                disabled={!selectedSlot || !hasCredits || Boolean(confirmedReservation)}
+                type="button"
+                onClick={handleBooking}
+              >
+                Confirmar sesion
+              </button>
+            </div>
+
+            {confirmedReservation ? (
+              <div className="button-row">
+                <button type="button" onClick={resetFlow}>Nueva reserva</button>
+              </div>
+            ) : null}
+          </article>
+        ) : null}
       </section>
     </div>
   );
