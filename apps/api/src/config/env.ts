@@ -7,7 +7,7 @@ config();
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1).default("postgresql://postgres:postgres@localhost:5432/therapy_platform"),
+  DATABASE_URL: z.string().min(1).default("postgresql://postgres:postgres@localhost:5433/therapy_platform"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   JWT_SECRET: z.string().min(1).default("dev-only-change-me"),
   STRIPE_SECRET_KEY: z.string().optional().default(""),
