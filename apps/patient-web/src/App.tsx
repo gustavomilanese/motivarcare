@@ -507,23 +507,55 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const portalRedirect = {
+  const roleConfig: Record<
+    PortalRole,
+    {
+      label: string;
+      title: string;
+      summary: string;
+      details: string[];
+      ctaLabel: string;
+      url?: string;
+    }
+  > = {
     PATIENT: {
       label: "Paciente",
-      url: PATIENT_PORTAL_URL,
-      note: "Completa intake, reserva y chat con tu profesional."
+      title: "Comienza tu proceso terapeutico",
+      summary: "Intake, matching, reserva y chat en un flujo simple.",
+      details: [
+        "Cuestionario inicial obligatorio con screening de riesgo.",
+        "Reserva guiada con pago por paquetes.",
+        "Mensajeria privada con el profesional asignado."
+      ],
+      ctaLabel: mode === "register" ? "Crear cuenta paciente" : "Entrar como paciente"
     },
     PROFESSIONAL: {
       label: "Profesional",
+      title: "Gestiona agenda, pacientes e ingresos",
+      summary: "Dashboard profesional con disponibilidad y seguimiento.",
+      details: [
+        "Carga de horarios y acceso directo a sesiones.",
+        "Chat 1 a 1 con pacientes.",
+        "Perfil publico editable y reportes de ingresos."
+      ],
+      ctaLabel: "Abrir portal profesional",
       url: PROFESSIONAL_PORTAL_URL,
-      note: "Administra agenda, pacientes y videollamadas."
     },
     ADMIN: {
       label: "Admin",
+      title: "Operacion, usuarios y politicas",
+      summary: "Control central del marketplace de terapia.",
+      details: [
+        "Gestion de usuarios con persistencia en base de datos.",
+        "KPIs de plataforma y monitoreo operativo.",
+        "Configuracion de politicas y modulo IA Audit."
+      ],
+      ctaLabel: "Abrir portal admin",
       url: ADMIN_PORTAL_URL,
-      note: "Gestiona usuarios, politicas y operacion."
     }
-  } as const;
+  };
+
+  const orderedRoles: PortalRole[] = ["PATIENT", "PROFESSIONAL", "ADMIN"];
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -575,11 +607,15 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
         response.token
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "No se pudo autenticar contra la API. Revisa que el backend este encendido."
-      );
+      if (requestError instanceof Error && requestError.message === "Failed to fetch") {
+        setError("No se pudo conectar con la API. Verifica que backend este corriendo en http://localhost:4000.");
+      } else {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "No se pudo autenticar contra la API. Revisa que el backend este encendido."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -587,81 +623,114 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
 
   return (
     <div className="auth-shell">
-      <section className="auth-card">
-        <div className="visual-hero">
-          <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
-        </div>
-        <span className="chip">Plataforma de terapia online</span>
-        <h1>Terapia online, simple y profesional</h1>
-        <p>
-          Registrate o ingresa para completar el intake clinico, ver el matching recomendado y reservar sesiones.
-        </p>
+      <section className="auth-card auth-clean">
+        <header className="auth-clean-hero">
+          <span className="chip">Plataforma de terapia online</span>
+          <h1>Una experiencia simple, limpia y modular</h1>
+          <p>Selecciona tu perfil y abre solo la seccion que necesitas.</p>
+          <div className="auth-hero-image">
+            <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
+          </div>
+        </header>
 
-        <div className="portal-role-switch">
-          {(["PATIENT", "PROFESSIONAL", "ADMIN"] as PortalRole[]).map((role) => (
-            <button
-              key={role}
-              className={portalRole === role ? "active" : ""}
-              type="button"
-              onClick={() => setPortalRole(role)}
-            >
-              {portalRedirect[role].label}
-            </button>
-          ))}
-        </div>
-
-        {portalRole === "PATIENT" ? (
-          <>
-            <div className="auth-mode-switch">
-              <button
-                className={mode === "register" ? "active" : ""}
-                type="button"
-                onClick={() => setMode("register")}
-              >
-                Registrarme
-              </button>
-              <button
-                className={mode === "login" ? "active" : ""}
-                type="button"
-                onClick={() => setMode("login")}
-              >
-                Ingresar
-              </button>
-            </div>
-
-            <form className="stack" onSubmit={handleSubmit}>
-              {mode === "register" ? (
-                <label>
-                  Nombre completo
-                  <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
-                </label>
-              ) : null}
-
-              <label>
-                Email
-                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-              </label>
-
-              <label>
-                Contrasena
-                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-              </label>
-
-              {error ? <p className="error-text">{error}</p> : null}
-              <button className="primary" type="submit" disabled={loading}>
-                {loading ? "Validando..." : mode === "register" ? "Crear cuenta" : "Entrar"}
-              </button>
-            </form>
-          </>
-        ) : (
-          <article className="portal-redirect-card">
-            <strong>Portal {portalRedirect[portalRole].label}</strong>
-            <p>{portalRedirect[portalRole].note}</p>
-            <a className="primary-link" href={portalRedirect[portalRole].url}>
-              Abrir portal {portalRedirect[portalRole].label.toLowerCase()}
-            </a>
+        <div className="auth-summary-grid">
+          <article>
+            <strong>01</strong>
+            <p>Elige rol</p>
           </article>
-        )}
+          <article>
+            <strong>02</strong>
+            <p>Abre seccion</p>
+          </article>
+          <article>
+            <strong>03</strong>
+            <p>Continua flujo</p>
+          </article>
+        </div>
+
+        <section className="role-accordion">
+          {orderedRoles.map((role) => {
+            const active = portalRole === role;
+            const config = roleConfig[role];
+
+            return (
+              <article className={`role-panel ${active ? "open" : ""}`} key={role}>
+                <button
+                  aria-expanded={active}
+                  className="role-panel-trigger"
+                  type="button"
+                  onClick={() => setPortalRole(role)}
+                >
+                  <div>
+                    <span className="role-label">{config.label}</span>
+                    <h2>{config.title}</h2>
+                    <p>{config.summary}</p>
+                  </div>
+                  <span className="role-indicator">{active ? "-" : "+"}</span>
+                </button>
+
+                {active ? (
+                  <div className="role-panel-content">
+                    <ul className="role-detail-list">
+                      {config.details.map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+
+                    {role === "PATIENT" ? (
+                      <>
+                        <div className="auth-mode-switch">
+                          <button
+                            className={mode === "register" ? "active" : ""}
+                            type="button"
+                            onClick={() => setMode("register")}
+                          >
+                            Registrarme
+                          </button>
+                          <button
+                            className={mode === "login" ? "active" : ""}
+                            type="button"
+                            onClick={() => setMode("login")}
+                          >
+                            Ingresar
+                          </button>
+                        </div>
+
+                        <form className="stack patient-auth-form" onSubmit={handleSubmit}>
+                          {mode === "register" ? (
+                            <label>
+                              Nombre completo
+                              <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+                            </label>
+                          ) : null}
+
+                          <label>
+                            Email
+                            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                          </label>
+
+                          <label>
+                            Contrasena
+                            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+                          </label>
+
+                          {error ? <p className="error-text">{error}</p> : null}
+                          <button className="primary" type="submit" disabled={loading}>
+                            {loading ? "Validando..." : roleConfig.PATIENT.ctaLabel}
+                          </button>
+                        </form>
+                      </>
+                    ) : (
+                      <a className="primary-link" href={config.url}>
+                        {config.ctaLabel}
+                      </a>
+                    )}
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </section>
       </section>
     </div>
   );

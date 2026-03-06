@@ -74,6 +74,67 @@ ul {
   box-shadow: var(--shadow);
 }
 
+.auth-card.auth-clean {
+  width: min(1020px, 100%);
+  padding: 30px;
+  gap: 20px;
+}
+
+.auth-clean-hero {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-clean-hero h1 {
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.02;
+  max-width: 16ch;
+}
+
+.auth-clean-hero p {
+  color: var(--text-soft);
+  font-size: 18px;
+  max-width: 54ch;
+}
+
+.auth-hero-image {
+  margin-top: 6px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #d8e2f1;
+}
+
+.auth-hero-image img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+}
+
+.auth-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-summary-grid article {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fbfdff;
+  display: grid;
+  gap: 4px;
+}
+
+.auth-summary-grid strong {
+  font-size: 18px;
+  color: #133f86;
+}
+
+.auth-summary-grid p {
+  color: #3f5673;
+}
+
 .visual-hero {
   border-radius: 12px;
   overflow: hidden;
@@ -124,33 +185,90 @@ ul {
   color: #fff;
 }
 
-.portal-role-switch {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.portal-role-switch button {
-  min-width: 130px;
-}
-
-.portal-role-switch button.active {
-  background: #f0f5ff;
-  border-color: #7aa4ea;
-  color: #123977;
-}
-
-.portal-redirect-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px;
-  background: #fbfdff;
+.role-accordion {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
-.portal-redirect-card p {
-  color: var(--text-soft);
+.role-panel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.role-panel.open {
+  border-color: #c5d6eb;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+}
+
+.role-panel-trigger {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 20px;
+}
+
+.role-panel-trigger:hover {
+  background: #f9fbff;
+}
+
+.role-panel-trigger h2 {
+  font-size: clamp(24px, 2.5vw, 34px);
+  line-height: 1.08;
+  margin-top: 6px;
+}
+
+.role-panel-trigger p {
+  margin-top: 8px;
+  color: #4c6280;
+  max-width: 62ch;
+}
+
+.role-label {
+  color: #114189;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.role-indicator {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid #bfd1e8;
+  background: #f1f6ff;
+  color: #194a96;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.role-panel-content {
+  border-top: 1px solid #e0e9f5;
+  padding: 16px 20px 20px;
+  display: grid;
+  gap: 14px;
+  background: #fcfdff;
+}
+
+.role-detail-list {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.role-detail-list li {
+  color: #435b78;
 }
 
 .primary-link {
@@ -167,6 +285,10 @@ ul {
 .stack {
   display: grid;
   gap: 12px;
+}
+
+.patient-auth-form {
+  gap: 10px;
 }
 
 label {
@@ -1210,6 +1332,12 @@ button.danger {
     max-height: 260px;
   }
 
+  .auth-hero-image img,
+  .visual-hero img,
+  .premium-banner img {
+    height: 190px;
+  }
+
   .wizard-steps {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1230,10 +1358,6 @@ button.danger {
     display: none;
   }
 
-  .visual-hero img,
-  .premium-banner img {
-    height: 170px;
-  }
 }
 
 @media (max-width: 680px) {
@@ -1244,6 +1368,23 @@ button.danger {
   .auth-card,
   .intake-card {
     padding: 16px;
+  }
+
+  .auth-card.auth-clean {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .auth-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-panel-trigger {
+    padding: 14px;
+  }
+
+  .role-panel-content {
+    padding: 12px 14px 14px;
   }
 
   .portal-header h1,
