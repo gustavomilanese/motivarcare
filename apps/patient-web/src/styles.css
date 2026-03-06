@@ -526,6 +526,30 @@ button.danger {
   background: #f8fbff;
 }
 
+.pill-button {
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #f8fbff;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.pill-button:hover {
+  background: #eef4ff;
+}
+
+.menu-button {
+  width: 100%;
+  text-align: left;
+}
+
+.menu-button.active {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-3) 100%);
+  color: white;
+  border-color: transparent;
+}
+
 .slot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

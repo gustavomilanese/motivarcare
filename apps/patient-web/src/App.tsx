@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { FormEvent, SyntheticEvent, useEffect, useMemo, useState } from "react";
+import { NavLink, Route, Routes, useNavigate, useSearchParams } from "react-router-dom";
 
 type RiskLevel = "low" | "medium" | "high";
 type PackageId = "starter" | "growth" | "intensive";
@@ -289,10 +289,12 @@ function buildProfessionals(): Professional[] {
 
 const professionalsCatalog = buildProfessionals();
 const professionalImageMap: Record<string, string> = {
-  "pro-1": "/images/prof-emma.svg",
-  "pro-2": "/images/prof-michael.svg",
-  "pro-3": "/images/prof-sophia.svg"
+  "pro-1": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80",
+  "pro-2": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80",
+  "pro-3": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80"
 };
+
+const heroImage = "https://images.unsplash.com/photo-1527689368864-3a821dbccc34?auto=format&fit=crop&w=1400&q=80";
 
 const initialMessages: Message[] = [
   {
@@ -409,6 +411,18 @@ function getNextBooking(bookings: Booking[]): Booking | null {
   );
 }
 
+function handleImageFallback(event: SyntheticEvent<HTMLImageElement>): void {
+  const img = event.currentTarget;
+  img.onerror = null;
+  img.src = "/images/prof-emma.svg";
+}
+
+function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
+  const img = event.currentTarget;
+  img.onerror = null;
+  img.src = "/images/hero-therapy.svg";
+}
+
 function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("register");
   const [fullName, setFullName] = useState("Alex Morgan");
@@ -441,7 +455,7 @@ function AuthScreen(props: { onLogin: (user: SessionUser) => void }) {
     <div className="auth-shell">
       <section className="auth-card">
         <div className="visual-hero">
-          <img src="/images/hero-therapy.svg" alt="Plataforma de terapia online" />
+          <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
         </div>
         <span className="chip">Lado Paciente - Demo Premium</span>
         <h1>Terapia online, simple y profesional</h1>
@@ -582,6 +596,7 @@ function DashboardPage(props: {
   state: PatientAppState;
   onGoToBooking: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
+  onGoToProfileTab: (tab: ProfileTab) => void;
 }) {
   const nextBooking = getNextBooking(props.state.bookings);
   const unreadTotal = getUnreadCount(props.state.messages);
@@ -605,7 +620,7 @@ function DashboardPage(props: {
             </button>
           </div>
         </div>
-        <img src="/images/hero-therapy.svg" alt="Paciente y profesional en sesion online" />
+        <img src={heroImage} alt="Paciente y profesional en sesion online" onError={handleHeroFallback} />
       </section>
 
       <section className="hero-grid">
@@ -665,6 +680,7 @@ function DashboardPage(props: {
                 className="thumb"
                 src={professionalImageMap[professional.id]}
                 alt={`Perfil de ${professional.fullName}`}
+                onError={handleImageFallback}
               />
               <h3>{professional.fullName}</h3>
               <p>{professional.title}</p>
@@ -685,17 +701,21 @@ function DashboardPage(props: {
       <section className="content-card">
         <h2>CHAT</h2>
         <p>Ultima actividad de tus conversaciones, con notificaciones y estado de lectura.</p>
+        <div className="button-row">
+          <button type="button" onClick={() => props.onGoToChat(props.state.activeChatProfessionalId)}>
+            Abrir conversaciones
+          </button>
+        </div>
       </section>
 
       <section className="content-card">
         <h2>PERFIL</h2>
         <div className="pill-row">
-          <span className="pill">MIS DATOS</span>
-          <span className="pill">MIS TARJETAS</span>
-          <span className="pill">MI SUSCRIPCION</span>
-          <span className="pill">AJUSTES</span>
-          <span className="pill">SOPORTE</span>
-          <span className="pill">SALIR</span>
+          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("data")}>MIS DATOS</button>
+          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("cards")}>MIS TARJETAS</button>
+          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("subscription")}>MI SUSCRIPCION</button>
+          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("settings")}>AJUSTES</button>
+          <button className="pill-button" type="button" onClick={() => props.onGoToProfileTab("support")}>SOPORTE</button>
         </div>
       </section>
     </div>
@@ -785,6 +805,7 @@ function MatchingPage(props: {
                 className="thumb"
                 src={professionalImageMap[professional.id]}
                 alt={`Perfil de ${professional.fullName}`}
+                onError={handleImageFallback}
               />
               <header>
                 <h3>{professional.fullName}</h3>
@@ -801,7 +822,7 @@ function MatchingPage(props: {
 
               <div className="metric-row">
                 <span>{professional.compatibility}% compatibilidad</span>
-                <span>{professional.rating.toFixed(1)} rating</span>
+                <span>{professional.rating.toFixed(1)} valoracion</span>
                 <span>{professional.yearsExperience} anos exp.</span>
               </div>
 
@@ -1082,17 +1103,24 @@ function ProfilePage(props: {
   onUpdateProfile: (profile: PatientProfile) => void;
   onLogout: () => void;
 }) {
-  const [tab, setTab] = useState<ProfileTab>("data");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [localProfile, setLocalProfile] = useState<PatientProfile>(props.profile);
   const [cardBrand, setCardBrand] = useState("Visa");
   const [cardLast4, setCardLast4] = useState("");
   const [cardExpMonth, setCardExpMonth] = useState("");
   const [cardExpYear, setCardExpYear] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
+  const validTabs: ProfileTab[] = ["data", "cards", "subscription", "settings", "support"];
+  const tabParam = searchParams.get("tab");
+  const tab: ProfileTab = validTabs.includes(tabParam as ProfileTab) ? (tabParam as ProfileTab) : "data";
 
   useEffect(() => {
     setLocalProfile(props.profile);
   }, [props.profile]);
+
+  const goToTab = (next: ProfileTab) => {
+    setSearchParams({ tab: next });
+  };
 
   const saveProfile = () => {
     props.onUpdateProfile(localProfile);
@@ -1128,11 +1156,11 @@ function ProfilePage(props: {
       <aside className="content-card">
         <h2>Menu de perfil</h2>
         <div className="stack">
-          <button type="button" onClick={() => setTab("data")}>MIS DATOS</button>
-          <button type="button" onClick={() => setTab("cards")}>MIS TARJETAS</button>
-          <button type="button" onClick={() => setTab("subscription")}>MI SUSCRIPCION</button>
-          <button type="button" onClick={() => setTab("settings")}>AJUSTES</button>
-          <button type="button" onClick={() => setTab("support")}>SOPORTE</button>
+          <button className={tab === "data" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("data")}>MIS DATOS</button>
+          <button className={tab === "cards" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("cards")}>MIS TARJETAS</button>
+          <button className={tab === "subscription" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("subscription")}>MI SUSCRIPCION</button>
+          <button className={tab === "settings" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("settings")}>AJUSTES</button>
+          <button className={tab === "support" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("support")}>SOPORTE</button>
           <button className="danger" type="button" onClick={props.onLogout}>SALIR</button>
         </div>
       </aside>
@@ -1169,7 +1197,7 @@ function ProfilePage(props: {
               />
             </label>
             <label>
-              Timezone
+              Zona horaria
               <input
                 value={localProfile.timezone}
                 onChange={(event) => setLocalProfile((current) => ({ ...current, timezone: event.target.value }))}
@@ -1390,6 +1418,10 @@ function MainPortal(props: {
     navigate("/chat");
   };
 
+  const handleProfileFromAnywhere = (tab: ProfileTab) => {
+    navigate(`/profile?tab=${tab}`);
+  };
+
   const addPackage = (plan: PackagePlan) => {
     props.onStateChange((current) => ({
       ...current,
@@ -1525,6 +1557,7 @@ function MainPortal(props: {
                 state={props.state}
                 onGoToBooking={handleReserveFromAnywhere}
                 onGoToChat={handleChatFromAnywhere}
+                onGoToProfileTab={handleProfileFromAnywhere}
               />
             }
           />
