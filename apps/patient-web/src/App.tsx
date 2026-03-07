@@ -1,11 +1,22 @@
 import { FormEvent, KeyboardEvent, SyntheticEvent, useEffect, useMemo, useState } from "react";
 import { NavLink, Route, Routes, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  SUPPORTED_CURRENCIES,
+  SUPPORTED_LANGUAGES,
+  type AppLanguage,
+  type LocalizedText,
+  type SupportedCurrency,
+  currencyOptionLabel,
+  formatCurrencyAmount,
+  formatDateWithLocale,
+  replaceTemplate,
+  textByLanguage
+} from "@therapy/i18n-config";
 
 type RiskLevel = "low" | "medium" | "high";
 type PackageId = "starter" | "growth" | "intensive";
 type SenderRole = "patient" | "professional";
 type ProfileTab = "data" | "cards" | "subscription" | "settings" | "support";
-type PortalRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 
 interface SessionUser {
   id: string;
@@ -73,6 +84,7 @@ interface Booking {
   status: "confirmed" | "cancelled";
   joinUrl: string;
   createdAt: string;
+  bookingMode?: "credit" | "trial";
 }
 
 interface Message {
@@ -106,17 +118,21 @@ interface PatientProfile {
   emergencyContact: string;
   notificationsEmail: boolean;
   notificationsReminder: boolean;
+  dashboardPhotoDataUrl: string;
   cards: PaymentCard[];
 }
 
 interface PatientAppState {
   session: SessionUser | null;
   authToken: string | null;
+  language: AppLanguage;
+  currency: SupportedCurrency;
   intake: IntakeState | null;
   selectedProfessionalId: string;
   activeChatProfessionalId: string;
   bookedSlotIds: string[];
   bookings: Booking[];
+  trialUsedProfessionalIds: string[];
   messages: Message[];
   subscription: SubscriptionState;
   profile: PatientProfile;
@@ -152,15 +168,13 @@ interface PackagePlan {
   name: string;
   credits: number;
   priceUsd: number;
+  discountPercent: number;
   description: string;
 }
 
 const STORAGE_KEY = "therapy_patient_portal_v3";
-const runtimeEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
-const API_BASE = runtimeEnv.VITE_API_URL ?? "http://localhost:4000";
-const PATIENT_PORTAL_URL = runtimeEnv.VITE_PATIENT_PORTAL_URL ?? "http://localhost:5173";
-const PROFESSIONAL_PORTAL_URL = runtimeEnv.VITE_PROFESSIONAL_PORTAL_URL ?? "http://localhost:5174";
-const ADMIN_PORTAL_URL = runtimeEnv.VITE_ADMIN_PORTAL_URL ?? "http://localhost:5175";
+const API_BASE =
+  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
 
 const intakeQuestions: IntakeQuestion[] = [
   {
@@ -231,6 +245,7 @@ const packagePlans: PackagePlan[] = [
     name: "Inicio - 4 sesiones",
     credits: 4,
     priceUsd: 360,
+    discountPercent: 30,
     description: "Ideal para una primera etapa de trabajo terapeutico."
   },
   {
@@ -238,6 +253,7 @@ const packagePlans: PackagePlan[] = [
     name: "Continuidad - 8 sesiones",
     credits: 8,
     priceUsd: 680,
+    discountPercent: 36,
     description: "Plan recomendado para trabajo mensual sostenido."
   },
   {
@@ -245,9 +261,64 @@ const packagePlans: PackagePlan[] = [
     name: "Intensivo - 12 sesiones",
     credits: 12,
     priceUsd: 960,
+    discountPercent: 40,
     description: "Mayor frecuencia para procesos de alta demanda."
   }
 ];
+
+const packageTextById: Record<PackageId, { name: LocalizedText; description: LocalizedText }> = {
+  starter: {
+    name: {
+      es: "Inicio - 4 sesiones",
+      en: "Starter - 4 sessions",
+      pt: "Inicio - 4 sessoes"
+    },
+    description: {
+      es: "Ideal para una primera etapa de trabajo terapeutico.",
+      en: "Ideal for an initial therapy stage.",
+      pt: "Ideal para uma primeira etapa de trabalho terapeutico."
+    }
+  },
+  growth: {
+    name: {
+      es: "Continuidad - 8 sesiones",
+      en: "Continuity - 8 sessions",
+      pt: "Continuidade - 8 sessoes"
+    },
+    description: {
+      es: "Plan recomendado para trabajo mensual sostenido.",
+      en: "Recommended plan for sustained monthly work.",
+      pt: "Plano recomendado para trabalho mensal sustentado."
+    }
+  },
+  intensive: {
+    name: {
+      es: "Intensivo - 12 sesiones",
+      en: "Intensive - 12 sessions",
+      pt: "Intensivo - 12 sessoes"
+    },
+    description: {
+      es: "Mayor frecuencia para procesos de alta demanda.",
+      en: "Higher frequency for high-demand processes.",
+      pt: "Maior frequencia para processos de alta demanda."
+    }
+  }
+};
+
+function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
+  if (!planId) {
+    return t(language, {
+      es: "Sin paquete activo",
+      en: "No active package",
+      pt: "Sem pacote ativo"
+    });
+  }
+  return packageTextById[planId]?.name[language] ?? fallback;
+}
+
+function localizedPackageDescription(planId: PackageId, fallback: string, language: AppLanguage): string {
+  return packageTextById[planId]?.description[language] ?? fallback;
+}
 
 function buildSlot(professionalId: string, dayOffset: number, hour: number, minute: number): TimeSlot {
   const start = new Date();
@@ -329,6 +400,28 @@ function buildProfessionals(): Professional[] {
         buildSlot("pro-3", 5, 9, 0),
         buildSlot("pro-3", 6, 16, 0)
       ]
+    },
+    {
+      id: "pro-4",
+      fullName: "Dr. Olivia Carter",
+      title: "Trauma Specialist",
+      yearsExperience: 12,
+      compatibility: 83,
+      specialties: ["Trauma recovery", "Anxiety", "Emotional resilience"],
+      languages: ["English"],
+      approach: "Trauma-informed CBT",
+      bio: "Acompana procesos de regulacion del sistema nervioso y reconstruccion de seguridad emocional.",
+      rating: 4.8,
+      activePatients: 34,
+      introVideoUrl: "https://example.com/video/olivia",
+      slots: [
+        buildSlot("pro-4", 1, 8, 30),
+        buildSlot("pro-4", 2, 12, 0),
+        buildSlot("pro-4", 3, 18, 0),
+        buildSlot("pro-4", 4, 9, 30),
+        buildSlot("pro-4", 5, 15, 0),
+        buildSlot("pro-4", 6, 11, 30)
+      ]
     }
   ];
 }
@@ -337,10 +430,11 @@ const professionalsCatalog = buildProfessionals();
 const professionalImageMap: Record<string, string> = {
   "pro-1": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80",
   "pro-2": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80",
-  "pro-3": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80"
+  "pro-3": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80",
+  "pro-4": "https://images.unsplash.com/photo-1594824804732-ca8db7d6e6f8?auto=format&fit=crop&w=900&q=80"
 };
 
-const heroImage = "https://images.unsplash.com/photo-1527689368864-3a821dbccc34?auto=format&fit=crop&w=1400&q=80";
+const heroImage = "https://source.unsplash.com/1600x900/?person,laptop,mountain,lake";
 
 const initialMessages: Message[] = [
   {
@@ -359,17 +453,21 @@ const defaultProfile: PatientProfile = {
   emergencyContact: "",
   notificationsEmail: true,
   notificationsReminder: true,
+  dashboardPhotoDataUrl: "",
   cards: []
 };
 
 const defaultState: PatientAppState = {
   session: null,
   authToken: null,
+  language: "es",
+  currency: "USD",
   intake: null,
   selectedProfessionalId: professionalsCatalog[0].id,
   activeChatProfessionalId: professionalsCatalog[0].id,
   bookedSlotIds: [],
   bookings: [],
+  trialUsedProfessionalIds: [],
   messages: initialMessages,
   subscription: {
     packageId: null,
@@ -391,6 +489,13 @@ function loadState(): PatientAppState {
     return {
       ...defaultState,
       ...parsed,
+      language: (SUPPORTED_LANGUAGES as readonly string[]).includes((parsed as any).language)
+        ? (parsed as any).language
+        : "es",
+      currency: (SUPPORTED_CURRENCIES as readonly string[]).includes((parsed as any).currency)
+        ? (parsed as any).currency
+        : "USD",
+      trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       profile: {
         ...defaultProfile,
         ...parsed.profile,
@@ -434,24 +539,45 @@ async function apiRequest<T>(path: string, options: RequestInit = {}, token?: st
   return (await response.json()) as T;
 }
 
-function formatDateTime(isoDate: string, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: timezone
-  }).format(new Date(isoDate));
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
 }
 
-function formatDateOnly(isoDate: string, timezone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    timeZone: timezone
-  }).format(new Date(isoDate));
+function formatDateTime(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
+  return formatDateWithLocale({
+    value: params.isoDate,
+    language: params.language,
+    timeZone: params.timezone,
+    options: {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }
+  });
+}
+
+function formatDateOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
+  return formatDateWithLocale({
+    value: params.isoDate,
+    language: params.language,
+    timeZone: params.timezone,
+    options: {
+      weekday: "long",
+      month: "long",
+      day: "numeric"
+    }
+  });
+}
+
+function formatMoney(amountInUsd: number, language: AppLanguage, currency: SupportedCurrency): string {
+  return formatCurrencyAmount({
+    amountInUsd,
+    currency,
+    language,
+    maximumFractionDigits: 0
+  });
 }
 
 function evaluateRisk(answers: Record<string, string>): { level: RiskLevel; blocked: boolean } {
@@ -498,8 +624,13 @@ function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   img.src = "/images/hero-therapy.svg";
 }
 
-function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) => void }) {
-  const [portalRole, setPortalRole] = useState<PortalRole>("PATIENT");
+function AuthScreen(props: {
+  language: AppLanguage;
+  currency: SupportedCurrency;
+  onLanguageChange: (language: AppLanguage) => void;
+  onCurrencyChange: (currency: SupportedCurrency) => void;
+  onLogin: (user: SessionUser, token: string | null) => void;
+}) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [fullName, setFullName] = useState("Alex Morgan");
   const [email, setEmail] = useState("alex@example.com");
@@ -507,66 +638,28 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const roleConfig: Record<
-    PortalRole,
-    {
-      label: string;
-      title: string;
-      summary: string;
-      details: string[];
-      ctaLabel: string;
-      url?: string;
-    }
-  > = {
-    PATIENT: {
-      label: "Paciente",
-      title: "Comienza tu proceso terapeutico",
-      summary: "Intake, matching, reserva y chat en un flujo simple.",
-      details: [
-        "Cuestionario inicial obligatorio con screening de riesgo.",
-        "Reserva guiada con pago por paquetes.",
-        "Mensajeria privada con el profesional asignado."
-      ],
-      ctaLabel: mode === "register" ? "Crear cuenta paciente" : "Entrar como paciente"
-    },
-    PROFESSIONAL: {
-      label: "Profesional",
-      title: "Gestiona agenda, pacientes e ingresos",
-      summary: "Dashboard profesional con disponibilidad y seguimiento.",
-      details: [
-        "Carga de horarios y acceso directo a sesiones.",
-        "Chat 1 a 1 con pacientes.",
-        "Perfil publico editable y reportes de ingresos."
-      ],
-      ctaLabel: "Abrir portal profesional",
-      url: PROFESSIONAL_PORTAL_URL,
-    },
-    ADMIN: {
-      label: "Admin",
-      title: "Operacion, usuarios y politicas",
-      summary: "Control central del marketplace de terapia.",
-      details: [
-        "Gestion de usuarios con persistencia en base de datos.",
-        "KPIs de plataforma y monitoreo operativo.",
-        "Configuracion de politicas y modulo IA Audit."
-      ],
-      ctaLabel: "Abrir portal admin",
-      url: ADMIN_PORTAL_URL,
-    }
-  };
-
-  const orderedRoles: PortalRole[] = ["PATIENT", "PROFESSIONAL", "ADMIN"];
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!email.includes("@") || password.length < 8) {
-      setError("Usa un email valido y una contrasena de al menos 8 caracteres.");
+      setError(
+        t(props.language, {
+          es: "Usa un email valido y una contrasena de al menos 8 caracteres.",
+          en: "Use a valid email and a password with at least 8 characters.",
+          pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
+        })
+      );
       return;
     }
 
     if (mode === "register" && fullName.trim().length < 2) {
-      setError("Completa tu nombre y apellido.");
+      setError(
+        t(props.language, {
+          es: "Completa tu nombre y apellido.",
+          en: "Please complete your full name.",
+          pt: "Preencha seu nome completo."
+        })
+      );
       return;
     }
 
@@ -595,7 +688,13 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
       });
 
       if (response.user.role !== "PATIENT") {
-        throw new Error("La cuenta no corresponde al portal paciente.");
+        throw new Error(
+          t(props.language, {
+            es: "La cuenta no corresponde al portal paciente.",
+            en: "This account does not belong to the patient portal.",
+            pt: "Esta conta nao pertence ao portal do paciente."
+          })
+        );
       }
 
       props.onLogin(
@@ -607,15 +706,15 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
         response.token
       );
     } catch (requestError) {
-      if (requestError instanceof Error && requestError.message === "Failed to fetch") {
-        setError("No se pudo conectar con la API. Verifica que backend este corriendo en http://localhost:4000.");
-      } else {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "No se pudo autenticar contra la API. Revisa que el backend este encendido."
-        );
-      }
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo autenticar contra la API. Revisa que el backend este encendido.",
+              en: "Could not authenticate against the API. Check that the backend is running.",
+              pt: "Nao foi possivel autenticar na API. Verifique se o backend esta ativo."
+            })
+      );
     } finally {
       setLoading(false);
     }
@@ -623,114 +722,89 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
 
   return (
     <div className="auth-shell">
-      <section className="auth-card auth-clean">
-        <header className="auth-clean-hero">
-          <span className="chip">Plataforma de terapia online</span>
-          <h1>Una experiencia simple, limpia y modular</h1>
-          <p>Selecciona tu perfil y abre solo la seccion que necesitas.</p>
-          <div className="auth-hero-image">
-            <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
-          </div>
-        </header>
+      <section className="auth-card">
+        <div className="visual-hero">
+          <img src={heroImage} alt="Plataforma de terapia online" onError={handleHeroFallback} />
+        </div>
+        <span className="chip">
+          {t(props.language, { es: "Plataforma de terapia online", en: "Online therapy platform", pt: "Plataforma de terapia online" })}
+        </span>
+        <h1>{t(props.language, { es: "Terapia online, simple y profesional", en: "Online therapy, simple and professional", pt: "Terapia online, simples e profissional" })}</h1>
+        <p>
+          {t(props.language, {
+            es: "Registrate o ingresa para completar el intake clinico, ver el matching recomendado y reservar sesiones.",
+            en: "Sign up or log in to complete the clinical intake, view recommended matching, and book sessions.",
+            pt: "Cadastre-se ou entre para completar o intake clinico, ver o matching recomendado e reservar sessoes."
+          })}
+        </p>
 
-        <div className="auth-summary-grid">
-          <article>
-            <strong>01</strong>
-            <p>Elige rol</p>
-          </article>
-          <article>
-            <strong>02</strong>
-            <p>Abre seccion</p>
-          </article>
-          <article>
-            <strong>03</strong>
-            <p>Continua flujo</p>
-          </article>
+        <div className="locale-controls auth">
+          <label>
+            {t(props.language, { es: "Idioma", en: "Language", pt: "Idioma" })}
+            <select value={props.language} onChange={(event) => props.onLanguageChange(event.target.value as AppLanguage)}>
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <option key={language} value={language}>
+                  {language === "es" ? "Espanol" : language === "en" ? "English" : "Portugues"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t(props.language, { es: "Moneda", en: "Currency", pt: "Moeda" })}
+            <select value={props.currency} onChange={(event) => props.onCurrencyChange(event.target.value as SupportedCurrency)}>
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currencyOptionLabel(currency, props.language)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <section className="role-accordion">
-          {orderedRoles.map((role) => {
-            const active = portalRole === role;
-            const config = roleConfig[role];
+        <div className="auth-mode-switch">
+          <button
+            className={mode === "register" ? "active" : ""}
+            type="button"
+            onClick={() => setMode("register")}
+          >
+            {t(props.language, { es: "Registrarme", en: "Sign up", pt: "Cadastrar" })}
+          </button>
+          <button
+            className={mode === "login" ? "active" : ""}
+            type="button"
+            onClick={() => setMode("login")}
+          >
+            {t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
+          </button>
+        </div>
 
-            return (
-              <article className={`role-panel ${active ? "open" : ""}`} key={role}>
-                <button
-                  aria-expanded={active}
-                  className="role-panel-trigger"
-                  type="button"
-                  onClick={() => setPortalRole(role)}
-                >
-                  <div>
-                    <span className="role-label">{config.label}</span>
-                    <h2>{config.title}</h2>
-                    <p>{config.summary}</p>
-                  </div>
-                  <span className="role-indicator">{active ? "-" : "+"}</span>
-                </button>
+        <form className="stack" onSubmit={handleSubmit}>
+          {mode === "register" ? (
+            <label>
+              {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+              <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+            </label>
+          ) : null}
 
-                {active ? (
-                  <div className="role-panel-content">
-                    <ul className="role-detail-list">
-                      {config.details.map((detail) => (
-                        <li key={detail}>{detail}</li>
-                      ))}
-                    </ul>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
 
-                    {role === "PATIENT" ? (
-                      <>
-                        <div className="auth-mode-switch">
-                          <button
-                            className={mode === "register" ? "active" : ""}
-                            type="button"
-                            onClick={() => setMode("register")}
-                          >
-                            Registrarme
-                          </button>
-                          <button
-                            className={mode === "login" ? "active" : ""}
-                            type="button"
-                            onClick={() => setMode("login")}
-                          >
-                            Ingresar
-                          </button>
-                        </div>
+          <label>
+            {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          </label>
 
-                        <form className="stack patient-auth-form" onSubmit={handleSubmit}>
-                          {mode === "register" ? (
-                            <label>
-                              Nombre completo
-                              <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
-                            </label>
-                          ) : null}
-
-                          <label>
-                            Email
-                            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-                          </label>
-
-                          <label>
-                            Contrasena
-                            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-                          </label>
-
-                          {error ? <p className="error-text">{error}</p> : null}
-                          <button className="primary" type="submit" disabled={loading}>
-                            {loading ? "Validando..." : roleConfig.PATIENT.ctaLabel}
-                          </button>
-                        </form>
-                      </>
-                    ) : (
-                      <a className="primary-link" href={config.url}>
-                        {config.ctaLabel}
-                      </a>
-                    )}
-                  </div>
-                ) : null}
-              </article>
-            );
-          })}
-        </section>
+          {error ? <p className="error-text">{error}</p> : null}
+          <button className="primary" type="submit" disabled={loading}>
+            {loading
+              ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
+              : mode === "register"
+                ? t(props.language, { es: "Crear cuenta", en: "Create account", pt: "Criar conta" })
+                : t(props.language, { es: "Entrar", en: "Sign in", pt: "Entrar" })}
+          </button>
+        </form>
       </section>
     </div>
   );
@@ -738,6 +812,7 @@ function AuthScreen(props: { onLogin: (user: SessionUser, token: string | null) 
 
 function IntakeScreen(props: {
   user: SessionUser;
+  language: AppLanguage;
   onComplete: (answers: Record<string, string>) => void;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
@@ -755,7 +830,13 @@ function IntakeScreen(props: {
 
     const missing = intakeQuestions.filter((question) => !answers[question.id]?.trim());
     if (missing.length > 0) {
-      setError("Completa las 10 preguntas para continuar.");
+      setError(
+        t(props.language, {
+          es: "Completa las 10 preguntas para continuar.",
+          en: "Complete all 10 questions to continue.",
+          pt: "Complete as 10 perguntas para continuar."
+        })
+      );
       return;
     }
 
@@ -766,10 +847,25 @@ function IntakeScreen(props: {
   return (
     <div className="intake-shell">
       <section className="intake-card">
-        <span className="chip">Cuestionario inicial obligatorio</span>
-        <h1>{props.user.fullName}, completemos tu intake clinico</h1>
+        <span className="chip">
+          {t(props.language, { es: "Cuestionario inicial obligatorio", en: "Mandatory initial questionnaire", pt: "Questionario inicial obrigatorio" })}
+        </span>
+        <h1>
+          {replaceTemplate(
+            t(props.language, {
+              es: "{name}, completemos tu intake clinico",
+              en: "{name}, let us complete your clinical intake",
+              pt: "{name}, vamos completar seu intake clinico"
+            }),
+            { name: props.user.fullName }
+          )}
+        </h1>
         <p>
-          Este paso es obligatorio antes del matching. Incluye screening de riesgo para detectar situaciones urgentes.
+          {t(props.language, {
+            es: "Este paso es obligatorio antes del matching. Incluye screening de riesgo para detectar situaciones urgentes.",
+            en: "This step is required before matching. It includes risk screening for urgent situations.",
+            pt: "Este passo e obrigatorio antes do matching. Inclui triagem de risco para situacoes urgentes."
+          })}
         </p>
 
         <form className="stack" onSubmit={handleSubmit}>
@@ -799,7 +895,9 @@ function IntakeScreen(props: {
                     }))
                   }
                 >
-                  <option value="">Seleccionar</option>
+                  <option value="">
+                    {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
+                  </option>
                   {question.options?.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -812,7 +910,11 @@ function IntakeScreen(props: {
 
           {error ? <p className="error-text">{error}</p> : null}
           <button className="primary" type="submit">
-            Finalizar intake y ver profesionales recomendados
+            {t(props.language, {
+              es: "Finalizar intake y ver profesionales recomendados",
+              en: "Finish intake and view recommended professionals",
+              pt: "Finalizar intake e ver profissionais recomendados"
+            })}
           </button>
         </form>
       </section>
@@ -820,134 +922,310 @@ function IntakeScreen(props: {
   );
 }
 
+function SessionDetailModal(props: { booking: Booking; timezone: string; language: AppLanguage; onClose: () => void }) {
+  const professional = findProfessionalById(props.booking.professionalId);
+  const startsAt = new Date(props.booking.startsAt);
+  const endsAt = new Date(props.booking.endsAt);
+  const durationMinutes = Math.max(1, Math.round((endsAt.getTime() - startsAt.getTime()) / (1000 * 60)));
+
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        props.onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [props.onClose]);
+
+  return (
+    <div className="session-modal-backdrop" role="presentation" onClick={props.onClose}>
+      <section
+        aria-label={t(props.language, {
+          es: "Detalle de sesion",
+          en: "Session details",
+          pt: "Detalhes da sessao"
+        })}
+        aria-modal="true"
+        className="session-modal"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="session-modal-header">
+          <div>
+            <span className="chip">
+              {t(props.language, { es: "Sesion confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
+            </span>
+            <h2>{t(props.language, { es: "Detalle de tu sesion", en: "Your session details", pt: "Detalhes da sua sessao" })}</h2>
+          </div>
+          <button type="button" onClick={props.onClose}>
+            {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          </button>
+        </header>
+
+        <div className="session-modal-grid">
+          <article className="session-modal-card">
+            <h3>{professional.fullName}</h3>
+            <p>{professional.title}</p>
+            <p>
+              <strong>{t(props.language, { es: "Tipo:", en: "Type:", pt: "Tipo:" })}</strong>{" "}
+              {props.booking.bookingMode === "trial"
+                ? t(props.language, { es: "Sesion de prueba", en: "Trial session", pt: "Sessao de teste" })
+                : t(props.language, { es: "Sesion regular", en: "Regular session", pt: "Sessao regular" })}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Enfoque:", en: "Approach:", pt: "Abordagem:" })}</strong> {professional.approach}
+            </p>
+          </article>
+
+          <article className="session-modal-card">
+            <p>
+              <strong>{t(props.language, { es: "Fecha:", en: "Date:", pt: "Data:" })}</strong>{" "}
+              {formatDateOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Horario:", en: "Time:", pt: "Horario:" })}</strong>{" "}
+              {formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Duracion:", en: "Duration:", pt: "Duracao:" })}</strong>{" "}
+              {replaceTemplate(t(props.language, { es: "{m} minutos", en: "{m} minutes", pt: "{m} minutos" }), {
+                m: durationMinutes
+              })}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Estado:", en: "Status:", pt: "Status:" })}</strong>{" "}
+              {t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" })}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Reserva ID:", en: "Booking ID:", pt: "ID da reserva:" })}</strong> {props.booking.id}
+            </p>
+            <p>
+              <strong>{t(props.language, { es: "Zona horaria:", en: "Time zone:", pt: "Fuso horario:" })}</strong> {props.timezone}
+            </p>
+          </article>
+        </div>
+
+        <section className="session-modal-footer">
+          <a className="session-link" href={props.booking.joinUrl} rel="noreferrer" target="_blank">
+            {t(props.language, {
+              es: "Entrar a videollamada (simulada)",
+              en: "Join video call (simulated)",
+              pt: "Entrar na videochamada (simulada)"
+            })}
+          </a>
+          <p>
+            {t(props.language, {
+              es: "Politica de cancelacion: puedes cancelar hasta 24 horas antes del inicio.",
+              en: "Cancellation policy: you can cancel up to 24 hours before start.",
+              pt: "Politica de cancelamento: voce pode cancelar ate 24 horas antes."
+            })}
+          </p>
+          <p>
+            {t(props.language, {
+              es: "Tip: conecta 5 minutos antes para probar audio y camara.",
+              en: "Tip: connect 5 minutes early to test audio and camera.",
+              pt: "Dica: conecte 5 minutos antes para testar audio e camera."
+            })}
+          </p>
+        </section>
+      </section>
+    </div>
+  );
+}
+
 function DashboardPage(props: {
   state: PatientAppState;
+  language: AppLanguage;
+  currency: SupportedCurrency;
   onGoToBooking: (professionalId: string) => void;
+  onGoToProfessional: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
+  onGoToUnreadChat: () => void;
+  onOpenBookingDetail: (bookingId: string) => void;
 }) {
   const nextBooking = getNextBooking(props.state.bookings);
   const unreadTotal = getUnreadCount(props.state.messages);
-  const confirmedSessions = props.state.bookings.filter((booking) => booking.status === "confirmed").length;
-  const topProfessionals = [...professionalsCatalog].sort((a, b) => b.compatibility - a.compatibility).slice(0, 3);
-  const selectedProfessional = findProfessionalById(props.state.selectedProfessionalId);
-
-  const journeySteps = [
-    { key: "intake", label: "Intake completado", done: Boolean(props.state.intake?.completed) },
-    { key: "match", label: "Profesional asignado", done: Boolean(props.state.selectedProfessionalId) },
-    { key: "credits", label: "Paquete activo", done: props.state.subscription.creditsTotal > 0 },
-    { key: "booking", label: "Reserva confirmada", done: confirmedSessions > 0 }
-  ];
-
-  const journeyDone = journeySteps.filter((step) => step.done).length;
-  const journeyPercent = Math.round((journeyDone / journeySteps.length) * 100);
+  const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
+  const nextConfirmedBooking = nextBooking ?? confirmedBookings[0] ?? null;
+  const fallbackBooking = confirmedBookings[0] ?? null;
+  const activeProfessionalBooking = nextBooking ?? fallbackBooking;
+  const activeProfessional = activeProfessionalBooking
+    ? findProfessionalById(activeProfessionalBooking.professionalId)
+    : null;
+  const topProfessionals = [...professionalsCatalog].sort((a, b) => b.compatibility - a.compatibility).slice(0, 4);
 
   return (
     <div className="page-stack">
-      <section className="content-card dashboard-hero">
-        <div className="dashboard-hero-copy">
-          <span className="chip">Panel principal</span>
-          <h2>Tu espacio personal de terapia, agenda y seguimiento</h2>
+      <section className="content-card premium-banner">
+        <div className="banner-copy">
+          <span className="chip">{t(props.language, { es: "Experiencia premium", en: "Premium experience", pt: "Experiencia premium" })}</span>
+          <h2>
+            {t(props.language, {
+              es: "Tu espacio de bienestar, con tecnologia y seguimiento profesional",
+              en: "Your wellness space with professional follow-up and technology",
+              pt: "Seu espaco de bem-estar com tecnologia e acompanhamento profissional"
+            })}
+          </h2>
           <p>
-            Todo tu proceso en un mismo lugar: reserva, pago, chat y acceso rapido a tus proximas sesiones.
+            {t(props.language, {
+              es: "Gestiona reserva, seguimiento y mensajes en un solo lugar.",
+              en: "Manage booking, follow-up, and messages in one place.",
+              pt: "Gerencie reserva, acompanhamento e mensagens em um unico lugar."
+            })}
           </p>
           <div className="button-row">
             <button className="primary" type="button" onClick={() => props.onGoToBooking(props.state.selectedProfessionalId)}>
-              Reservar ahora
+              {t(props.language, { es: "Reservar siguiente sesion", en: "Book next session", pt: "Reservar proxima sessao" })}
             </button>
             <button type="button" onClick={() => props.onGoToChat(props.state.activeChatProfessionalId)}>
-              Abrir chat
+              {t(props.language, { es: "Ir al chat", en: "Open chat", pt: "Abrir chat" })}
             </button>
           </div>
         </div>
-
-        <aside className="dashboard-progress-card">
-          <span className="label">Progreso del proceso</span>
-          <strong>{journeyPercent}%</strong>
-          <ul className="journey-list">
-            {journeySteps.map((step) => (
-              <li className={step.done ? "done" : ""} key={step.key}>
-                <span>{step.done ? "*" : "-"}</span>
-                <span>{step.label}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </section>
-
-      <section className="dashboard-metrics">
-        <article className="metric-card">
-          <span className="label">Sesiones confirmadas</span>
-          <strong>{confirmedSessions}</strong>
-          <p>
-            {nextBooking
-              ? `Proxima: ${formatDateTime(nextBooking.startsAt, props.state.profile.timezone)}`
-              : "Todavia no tienes sesiones agendadas"}
-          </p>
-        </article>
-
-        <article className="metric-card">
-          <span className="label">Creditos disponibles</span>
-          <strong>{props.state.subscription.creditsRemaining}</strong>
-          <p>{props.state.subscription.packageName}</p>
-        </article>
-
-        <article className="metric-card">
-          <span className="label">Mensajes sin leer</span>
-          <strong>{unreadTotal}</strong>
-          <p>Mensajeria 1 a 1 con tu profesional.</p>
-        </article>
-
-        <article className="metric-card">
-          <span className="label">Profesional activo</span>
-          <strong>{selectedProfessional.fullName.split(" ")[0]}</strong>
-          <p>{selectedProfessional.compatibility}% compatibilidad</p>
-        </article>
-      </section>
-
-      <section className="content-card quick-actions-card">
-        <h2>Siguiente paso recomendado</h2>
-        <div className="quick-actions-grid">
-          <button className="quick-action" type="button" onClick={() => props.onGoToBooking(selectedProfessional.id)}>
-            <strong>1. Reserva + pago</strong>
-            <span>Flujo guiado paso a paso para confirmar sesion en minutos.</span>
-          </button>
-          <button className="quick-action" type="button" onClick={() => props.onGoToChat(selectedProfessional.id)}>
-            <strong>2. Enviar mensaje</strong>
-            <span>Confirma objetivos o dudas antes de la proxima sesion.</span>
-          </button>
-          <a className="quick-action" href={nextBooking?.joinUrl ?? "#"}>
-            <strong>3. Entrar a sesion</strong>
-            <span>{nextBooking ? "Acceso directo disponible para tu sesion confirmada." : "Se habilita al confirmar tu reserva."}</span>
-          </a>
+        <div className="photo-upload-panel static">
+          <div className="photo-frame">
+            <img src={heroImage} alt="Espacio de terapia online" onError={handleHeroFallback} />
+          </div>
         </div>
       </section>
 
-      <section className="content-card">
-        <h2>Proximas sesiones</h2>
-        {props.state.bookings.length === 0 ? (
-          <p>Aun no hay sesiones agendadas. Elige profesional y confirma tu primer horario.</p>
-        ) : (
-          <ul className="simple-list">
-            {props.state.bookings.map((booking) => {
-              const professional = findProfessionalById(booking.professionalId);
-              return (
-                <li key={booking.id}>
-                  <div>
-                    <strong>{professional.fullName}</strong>
-                    <span>{formatDateTime(booking.startsAt, props.state.profile.timezone)}</span>
-                  </div>
-                  <a href={booking.joinUrl} target="_blank" rel="noreferrer">
-                    Entrar a sesion
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <section className="hero-grid">
+        <button
+          className="hero-card hero-card-button"
+          disabled={!nextConfirmedBooking}
+          type="button"
+          onClick={() => {
+            if (nextConfirmedBooking) {
+              props.onOpenBookingDetail(nextConfirmedBooking.id);
+            }
+          }}
+        >
+          <span className="label">{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</span>
+          <strong>{props.state.bookings.filter((booking) => booking.status === "confirmed").length}</strong>
+          <p>
+            {nextBooking
+              ? `${t(props.language, { es: "Proxima", en: "Next", pt: "Proxima" })}: ${formatDateTime({
+                  isoDate: nextBooking.startsAt,
+                  timezone: props.state.profile.timezone,
+                  language: props.language
+                })}`
+              : t(props.language, {
+                  es: "Todavia no tenes sesiones reservadas",
+                  en: "You do not have any booked sessions yet",
+                  pt: "Voce ainda nao tem sessoes reservadas"
+                })}
+          </p>
+          <span className="hero-card-link">
+            {nextConfirmedBooking
+              ? t(props.language, { es: "Ver detalle", en: "View details", pt: "Ver detalhes" })
+              : t(props.language, { es: "Sin sesiones confirmadas", en: "No confirmed sessions", pt: "Sem sessoes confirmadas" })}
+          </span>
+        </button>
+
+        <button
+          className="hero-card hero-card-button active-professional-card"
+          disabled={!activeProfessional}
+          type="button"
+          onClick={() => {
+            if (activeProfessional) {
+              props.onGoToProfessional(activeProfessional.id);
+            }
+          }}
+        >
+          <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
+          {activeProfessional && activeProfessionalBooking ? (
+            <>
+              <div className="active-professional-row">
+                <img
+                  className="active-professional-avatar"
+                  src={professionalImageMap[activeProfessional.id]}
+                  alt={activeProfessional.fullName}
+                  onError={handleImageFallback}
+                />
+                <div>
+                  <h3>{activeProfessional.fullName}</h3>
+                  <p>{activeProfessional.title}</p>
+                </div>
+              </div>
+              <p>
+                {replaceTemplate(
+                  t(props.language, {
+                    es: "{compat}% compatibilidad · {years} anos de experiencia",
+                    en: "{compat}% match · {years} years of experience",
+                    pt: "{compat}% compatibilidade · {years} anos de experiencia"
+                  }),
+                  { compat: activeProfessional.compatibility, years: activeProfessional.yearsExperience }
+                )}
+              </p>
+              <button
+                className="chat-gradient-button"
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  props.onGoToChat(activeProfessional.id);
+                }}
+              >
+                {t(props.language, { es: "Abrir chat con profesional", en: "Open chat with professional", pt: "Abrir chat com profissional" })}
+              </button>
+            </>
+          ) : (
+            <p>
+              {t(props.language, {
+                es: "Reserva tu primera sesion para ver aqui los datos de tu profesional.",
+                en: "Book your first session to see your professional details here.",
+                pt: "Reserve sua primeira sessao para ver aqui os dados do profissional."
+              })}
+            </p>
+          )}
+        </button>
+
+        <button
+          className="hero-card hero-card-button"
+          type="button"
+          onClick={() => props.onGoToBooking(props.state.selectedProfessionalId)}
+        >
+          <span className="label">{t(props.language, { es: "Sesiones disponibles", en: "Available sessions", pt: "Sessoes disponiveis" })}</span>
+          <strong>{props.state.subscription.creditsRemaining}</strong>
+          <p>
+            {localizedPackageName(
+              props.state.subscription.packageId,
+              props.state.subscription.packageName,
+              props.language
+            )}
+          </p>
+          <span className="hero-card-link">{t(props.language, { es: "Ir a reserva y compra", en: "Go to booking and purchase", pt: "Ir para reserva e compra" })}</span>
+        </button>
+
+        <button
+          className="hero-card hero-card-button unread-messages-card"
+          disabled={unreadTotal === 0}
+          type="button"
+          onClick={props.onGoToUnreadChat}
+        >
+          <span className="label">{t(props.language, { es: "Mensajes sin leer", en: "Unread messages", pt: "Mensagens nao lidas" })}</span>
+          <strong>{unreadTotal}</strong>
+          <p>
+            {unreadTotal > 0
+              ? t(props.language, {
+                  es: "Abrir chat en el primer mensaje pendiente.",
+                  en: "Open chat at the first pending message.",
+                  pt: "Abrir chat na primeira mensagem pendente."
+                })
+              : t(props.language, {
+                  es: "No tienes mensajes pendientes.",
+                  en: "You have no pending messages.",
+                  pt: "Voce nao tem mensagens pendentes."
+                })}
+          </p>
+        </button>
       </section>
 
       <section className="content-card">
-        <h2>Profesionales recomendados</h2>
+        <h2>{t(props.language, { es: "Profesionales Recomendados", en: "Recommended professionals", pt: "Profissionais recomendados" })}</h2>
         <div className="card-grid">
           {topProfessionals.map((professional) => (
             <article className="mini-card" key={professional.id}>
@@ -962,7 +1240,7 @@ function DashboardPage(props: {
               <p className="compatibility">{professional.compatibility}% compatibilidad</p>
               <div className="button-row">
                 <button type="button" onClick={() => props.onGoToBooking(professional.id)}>
-                  Ir a reservar
+                  {t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}
                 </button>
                 <button type="button" onClick={() => props.onGoToChat(professional.id)}>
                   Chat
@@ -973,15 +1251,6 @@ function DashboardPage(props: {
         </div>
       </section>
 
-      <section className="content-card">
-        <h2>Chat</h2>
-        <p>Ultima actividad de tus conversaciones, con notificaciones y estado de lectura.</p>
-        <div className="button-row">
-          <button type="button" onClick={() => props.onGoToChat(props.state.activeChatProfessionalId)}>
-            Abrir conversaciones
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
@@ -1117,97 +1386,82 @@ function MatchingPage(props: {
 
 function BookingPage(props: {
   state: PatientAppState;
+  language: AppLanguage;
+  currency: SupportedCurrency;
   onSelectProfessional: (professionalId: string) => void;
   onAddPackage: (plan: PackagePlan) => void;
-  onConfirmBooking: (professionalId: string, slot: TimeSlot) => void;
+  onConfirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => void;
 }) {
-  type BookingStep = 1 | 2 | 3 | 4;
-
-  const [step, setStep] = useState<BookingStep>(1);
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [selectedPlanId, setSelectedPlanId] = useState<PackageId>("growth");
+  const [useTrialSession, setUseTrialSession] = useState(false);
   const [purchaseMessage, setPurchaseMessage] = useState("");
-  const [confirmedReservation, setConfirmedReservation] = useState<{
-    professionalName: string;
-    startsAt: string;
-    timezone: string;
-  } | null>(null);
 
   const professional = findProfessionalById(props.state.selectedProfessionalId);
   const availableSlots = professional.slots.filter((slot) => !props.state.bookedSlotIds.includes(slot.id));
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
-  const hasCredits = props.state.subscription.creditsRemaining > 0;
-  const selectedPlan = packagePlans.find((plan) => plan.id === selectedPlanId) ?? packagePlans[1];
-  const previewStartsAt = confirmedReservation?.startsAt ?? selectedSlot?.startsAt ?? null;
+  const hasUsedTrialWithProfessional = props.state.trialUsedProfessionalIds.includes(professional.id);
+  const canUseTrialWithProfessional = !hasUsedTrialWithProfessional;
+  const canConfirmBooking =
+    Boolean(selectedSlot) && (useTrialSession ? canUseTrialWithProfessional : props.state.subscription.creditsRemaining > 0);
 
-  const stepConfig: Array<{ id: BookingStep; label: string }> = [
-    { id: 1, label: "Profesional" },
-    { id: 2, label: "Horario" },
-    { id: 3, label: "Pago" },
-    { id: 4, label: "Confirmar" }
-  ];
-
-  const canOpenStep = (targetStep: BookingStep): boolean => {
-    if (targetStep <= 2) {
-      return true;
-    }
-
-    if (targetStep === 3) {
-      return Boolean(selectedSlot);
-    }
-
-    if (targetStep === 4) {
-      return Boolean(confirmedReservation) || (Boolean(selectedSlot) && hasCredits);
-    }
-
-    return false;
-  };
-
-  const openStep = (targetStep: BookingStep) => {
-    if (canOpenStep(targetStep)) {
-      setStep(targetStep);
-    }
-  };
+  useEffect(() => {
+    setUseTrialSession(false);
+    setPurchaseMessage("");
+  }, [professional.id]);
 
   const handlePurchase = () => {
-    props.onAddPackage(selectedPlan);
-    setPurchaseMessage(`Pago acreditado: ${selectedPlan.name}. Ya puedes confirmar la sesion.`);
-  };
-
-  const handleBooking = () => {
-    if (!selectedSlot || !hasCredits) {
+    const plan = packagePlans.find((item) => item.id === selectedPlanId);
+    if (!plan) {
       return;
     }
 
-    props.onConfirmBooking(professional.id, selectedSlot);
-    setConfirmedReservation({
-      professionalName: professional.fullName,
-      startsAt: selectedSlot.startsAt,
-      timezone: props.state.profile.timezone
-    });
-    setSelectedSlotId("");
-    setStep(4);
+    props.onAddPackage(plan);
+    setPurchaseMessage(
+      replaceTemplate(
+        t(props.language, {
+          es: "Pago acreditado: {plan}.",
+          en: "Payment approved: {plan}.",
+          pt: "Pagamento creditado: {plan}."
+        }),
+        {
+          plan: localizedPackageName(plan.id, plan.name, props.language)
+        }
+      )
+    );
   };
 
-  const resetFlow = () => {
-    setStep(1);
+  const handleBooking = () => {
+    if (!selectedSlot || !canConfirmBooking) {
+      return;
+    }
+
+    props.onConfirmBooking(professional.id, selectedSlot, useTrialSession);
     setSelectedSlotId("");
-    setPurchaseMessage("");
-    setConfirmedReservation(null);
-    setSelectedPlanId("growth");
+    setUseTrialSession(false);
   };
 
   if (props.state.intake?.riskBlocked) {
     return (
       <section className="content-card danger">
-        <h2>Reserva deshabilitada por screening de seguridad</h2>
+        <h2>
+          {t(props.language, {
+            es: "Reserva deshabilitada por screening de seguridad",
+            en: "Booking disabled by safety screening",
+            pt: "Reserva desabilitada por triagem de seguranca"
+          })}
+        </h2>
         <p>
-          El intake detecto un posible riesgo urgente. Por seguridad, la agenda queda bloqueada hasta triage manual.
+          {t(props.language, {
+            es: "El intake detecto un posible riesgo urgente. Por seguridad, la agenda queda bloqueada hasta triage manual.",
+            en: "The intake detected possible urgent risk. For safety, booking stays blocked until manual triage.",
+            pt: "O intake detectou possivel risco urgente. Por seguranca, a agenda fica bloqueada ate triagem manual."
+          })}
         </p>
         <ul>
-          <li>Llama o escribe al 988 para apoyo en crisis.</li>
-          <li>Si hay peligro inmediato, llama al 911.</li>
-          <li>Usa recursos de emergencia de tu zona.</li>
+          <li>{t(props.language, { es: "Llama o escribe al 988 para apoyo en crisis.", en: "Call or text 988 for crisis support.", pt: "Ligue ou envie mensagem para 988 para apoio em crise." })}</li>
+          <li>{t(props.language, { es: "Si hay peligro inmediato, llama al 911.", en: "If there is immediate danger, call 911.", pt: "Se houver perigo imediato, ligue para 911." })}</li>
+          <li>{t(props.language, { es: "Usa recursos de emergencia de tu zona.", en: "Use your local emergency resources.", pt: "Use os recursos de emergencia da sua regiao." })}</li>
         </ul>
       </section>
     );
@@ -1215,206 +1469,187 @@ function BookingPage(props: {
 
   return (
     <div className="page-stack">
-      <section className="content-card booking-wizard">
-        <header className="wizard-header">
-          <div>
-            <h2>Reserva + pago guiado</h2>
-            <p>Sigue este paso a paso para agendar y confirmar tu proxima sesion sin perderte.</p>
-          </div>
-          <span className="chip">Huso horario: {props.state.profile.timezone}</span>
-        </header>
+      <section className="content-card">
+        <h2>{t(props.language, { es: "Reserva de sesion", en: "Session booking", pt: "Reserva de sessao" })}</h2>
+        <p>
+          {t(props.language, { es: "Huso horario de visualizacion:", en: "Display time zone:", pt: "Fuso horario de visualizacao:" })}{" "}
+          <strong>{props.state.profile.timezone}</strong>
+        </p>
 
-        <ol className="wizard-steps">
-          {stepConfig.map((item) => {
-            const completed = step > item.id || (item.id === 4 && Boolean(confirmedReservation));
-            const active = step === item.id;
-            const locked = !canOpenStep(item.id);
+        <label>
+          {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
+          <select
+            value={professional.id}
+            onChange={(event) => {
+              props.onSelectProfessional(event.target.value);
+              setSelectedSlotId("");
+            }}
+          >
+            {professionalsCatalog.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.fullName} - {item.compatibility}%
+              </option>
+            ))}
+          </select>
+        </label>
 
-            return (
-              <li key={item.id}>
-                <button
-                  className={`wizard-step ${active ? "active" : ""} ${completed ? "completed" : ""}`}
-                  disabled={locked}
-                  type="button"
-                  onClick={() => openStep(item.id)}
-                >
-                  <span>Paso {item.id}</span>
-                  <strong>{item.label}</strong>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-
-        {step === 1 ? (
-          <article className="wizard-panel">
-            <h3>1. Elige profesional</h3>
-            <p>Selecciona el perfil con el que deseas continuar la proxima sesion.</p>
-
-            <label>
-              Profesional
-              <select
-                value={professional.id}
-                onChange={(event) => {
-                  props.onSelectProfessional(event.target.value);
-                  setSelectedSlotId("");
-                  setConfirmedReservation(null);
-                }}
-              >
-                {professionalsCatalog.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.fullName} - {item.compatibility}%
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="wizard-summary">
-              <strong>{professional.fullName}</strong>
-              <p>{professional.title}</p>
-              <span>{professional.compatibility}% compatibilidad</span>
-            </div>
-
-            <div className="wizard-nav">
-              <span />
-              <button className="primary" type="button" onClick={() => setStep(2)}>
-                Continuar
-              </button>
-            </div>
-          </article>
-        ) : null}
-
-        {step === 2 ? (
-          <article className="wizard-panel">
-            <h3>2. Elige horario</h3>
-            <p>Selecciona un slot disponible para {professional.fullName}.</p>
-
-            {availableSlots.length === 0 ? (
-              <p>No quedan slots disponibles para este profesional durante la semana actual.</p>
-            ) : (
-              <div className="slot-grid">
-                {availableSlots.map((slot) => (
-                  <button
-                    className={selectedSlotId === slot.id ? "slot-button active" : "slot-button"}
-                    key={slot.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSlotId(slot.id);
-                      setConfirmedReservation(null);
-                    }}
-                  >
-                    <span>{formatDateOnly(slot.startsAt, props.state.profile.timezone)}</span>
-                    <strong>{formatDateTime(slot.startsAt, props.state.profile.timezone)}</strong>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="wizard-nav">
-              <button type="button" onClick={() => setStep(1)}>
-                Volver
-              </button>
-              <button className="primary" disabled={!selectedSlot} type="button" onClick={() => setStep(3)}>
-                Continuar al pago
-              </button>
-            </div>
-          </article>
-        ) : null}
-
-        {step === 3 ? (
-          <article className="wizard-panel">
-            <h3>3. Pago y creditos</h3>
-            <p>Paquete actual: <strong>{props.state.subscription.packageName}</strong></p>
-            <p>Creditos disponibles: <strong>{props.state.subscription.creditsRemaining}</strong></p>
-
-            {!hasCredits ? (
-              <>
-                <p>Necesitas un paquete activo para confirmar la reserva.</p>
-                <div className="card-grid">
-                  {packagePlans.map((plan) => (
-                    <label className={`mini-card selectable ${selectedPlanId === plan.id ? "selected" : ""}`} key={plan.id}>
-                      <input
-                        checked={selectedPlanId === plan.id}
-                        type="radio"
-                        name="package"
-                        value={plan.id}
-                        onChange={() => setSelectedPlanId(plan.id)}
-                      />
-                      <h3>{plan.name}</h3>
-                      <p>{plan.description}</p>
-                      <p>
-                        <strong>${plan.priceUsd}</strong> / {plan.credits} creditos
-                      </p>
-                    </label>
-                  ))}
-                </div>
-
-                <button className="primary" type="button" onClick={handlePurchase}>
-                  Pagar con Stripe
-                </button>
-                {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
-              </>
-            ) : (
-              <div className="wizard-summary">
-                <strong>Listo para confirmar</strong>
-                <p>Tienes creditos suficientes. Se consumira 1 credito al confirmar la sesion.</p>
-              </div>
-            )}
-
-            <div className="wizard-nav">
-              <button type="button" onClick={() => setStep(2)}>
-                Volver
-              </button>
-              <button className="primary" disabled={!hasCredits || !selectedSlot} type="button" onClick={() => setStep(4)}>
-                Revisar confirmacion
-              </button>
-            </div>
-          </article>
-        ) : null}
-
-        {step === 4 ? (
-          <article className="wizard-panel">
-            <h3>4. Confirmacion</h3>
-            <p>Revisa el resumen final y confirma tu sesion.</p>
-
-            <div className="wizard-summary">
-              <p><strong>Profesional:</strong> {confirmedReservation?.professionalName ?? professional.fullName}</p>
-              <p>
-                <strong>Fecha y hora:</strong>{" "}
-                {previewStartsAt ? formatDateTime(previewStartsAt, props.state.profile.timezone) : "Selecciona un horario"}
-              </p>
-              <p><strong>Zona horaria:</strong> {confirmedReservation?.timezone ?? props.state.profile.timezone}</p>
-              <p><strong>Politica de cancelacion:</strong> cancelacion gratuita hasta 24 horas antes.</p>
-            </div>
-
-            {confirmedReservation ? (
-              <div className="wizard-success-box">
-                <p className="success-text">Sesion confirmada correctamente.</p>
-                <p>Ya tienes la sesion en tu dashboard y acceso al link de videollamada.</p>
-              </div>
-            ) : null}
-
-            <div className="wizard-nav">
-              <button type="button" onClick={() => setStep(3)}>
-                Volver
-              </button>
+        <h3>{t(props.language, { es: "Slots disponibles", en: "Available slots", pt: "Horarios disponiveis" })}</h3>
+        {availableSlots.length === 0 ? (
+          <p>
+            {t(props.language, {
+              es: "No quedan slots disponibles para este profesional durante la semana actual.",
+              en: "No slots left for this professional this week.",
+              pt: "Nao ha horarios disponiveis para este profissional nesta semana."
+            })}
+          </p>
+        ) : (
+          <div className="slot-grid">
+            {availableSlots.map((slot) => (
               <button
-                className="primary"
-                disabled={!selectedSlot || !hasCredits || Boolean(confirmedReservation)}
+                className={selectedSlotId === slot.id ? "slot-button active" : "slot-button"}
+                key={slot.id}
                 type="button"
-                onClick={handleBooking}
+                onClick={() => setSelectedSlotId(slot.id)}
               >
-                Confirmar sesion
+                <span>
+                  {formatDateOnly({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })}
+                </span>
+                <strong>
+                  {formatDateTime({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })}
+                </strong>
               </button>
-            </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-            {confirmedReservation ? (
-              <div className="button-row">
-                <button type="button" onClick={resetFlow}>Nueva reserva</button>
-              </div>
-            ) : null}
+      <section className="content-card">
+        <h2>{t(props.language, { es: "Pago y sesiones disponibles", en: "Payment and available sessions", pt: "Pagamento e sessoes disponiveis" })}</h2>
+        <div className="booking-payment-layout">
+          <article className={`trial-session-card ${hasUsedTrialWithProfessional ? "used" : ""}`}>
+            <span className="chip">{t(props.language, { es: "Sesion de prueba", en: "Trial session", pt: "Sessao de teste" })}</span>
+            <h3>{t(props.language, { es: "Conoce al profesional antes del proceso completo", en: "Meet the professional before the full process", pt: "Conheca o profissional antes do processo completo" })}</h3>
+            <p>
+              {t(props.language, {
+                es: "Esta sesion inicial te sirve para conocer al terapeuta, su estilo de trabajo y validar si es un buen match para ti.",
+                en: "This initial session helps you meet the therapist, understand their approach, and validate if it is a good match.",
+                pt: "Esta sessao inicial ajuda voce a conhecer o terapeuta, entender o estilo de trabalho e validar se ha um bom match."
+              })}
+            </p>
+            <p className="trial-rule">{t(props.language, { es: "Solo puedes tener 1 sesion de prueba por terapeuta.", en: "You can only have 1 trial session per therapist.", pt: "Voce so pode ter 1 sessao de teste por terapeuta." })}</p>
+
+            {hasUsedTrialWithProfessional ? (
+              <p className="error-text">
+                {replaceTemplate(
+                  t(props.language, {
+                    es: "Ya usaste la sesion de prueba con {name}.",
+                    en: "You already used the trial session with {name}.",
+                    pt: "Voce ja usou a sessao de teste com {name}."
+                  }),
+                  { name: professional.fullName }
+                )}
+              </p>
+            ) : (
+              <button
+                className={useTrialSession ? "primary" : ""}
+                type="button"
+                onClick={() => setUseTrialSession((current) => !current)}
+              >
+                {useTrialSession
+                  ? t(props.language, { es: "Sesion de prueba seleccionada", en: "Trial session selected", pt: "Sessao de teste selecionada" })
+                  : t(props.language, { es: "Usar sesion de prueba", en: "Use trial session", pt: "Usar sessao de teste" })}
+              </button>
+            )}
           </article>
-        ) : null}
+
+          <article className="session-payment-card">
+            <p>
+              {t(props.language, { es: "Paquete actual:", en: "Current package:", pt: "Pacote atual:" })}{" "}
+              <strong>
+                {localizedPackageName(
+                  props.state.subscription.packageId,
+                  props.state.subscription.packageName,
+                  props.language
+                )}
+              </strong>
+            </p>
+            <p>
+              {t(props.language, { es: "Sesiones disponibles:", en: "Available sessions:", pt: "Sessoes disponiveis:" })}{" "}
+              <strong>{props.state.subscription.creditsRemaining}</strong>
+            </p>
+
+            {props.state.subscription.creditsRemaining === 0 ? (
+              useTrialSession ? (
+                <p>Reserva habilitada como sesion de prueba. No hace falta comprar paquete para esta sesion.</p>
+              ) : (
+                <>
+                  <p>Necesitas un paquete activo para confirmar una reserva sin sesion de prueba.</p>
+
+                  <div className="deal-grid">
+                    {packagePlans.map((plan) => (
+                      <label className={`deal-card ${selectedPlanId === plan.id ? "selected" : ""}`} key={plan.id}>
+                        <input
+                          checked={selectedPlanId === plan.id}
+                          type="radio"
+                          name="package"
+                          value={plan.id}
+                          onChange={() => setSelectedPlanId(plan.id)}
+                        />
+                        <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
+                        <p>{localizedPackageDescription(plan.id, plan.description, props.language)}</p>
+                        <div className="deal-pricing-top">
+                          <span className="deal-list-price">
+                            {formatMoney(Math.round(plan.priceUsd / (1 - plan.discountPercent / 100)), props.language, props.currency)}
+                          </span>
+                          <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                        </div>
+                        <p className="deal-from">Desde</p>
+                        <p className="deal-main-price">{formatMoney(plan.priceUsd, props.language, props.currency)}</p>
+                        <p className="deal-caption">{plan.credits} sesiones incluidas.</p>
+                        <span className="deal-cta">
+                          {selectedPlanId === plan.id ? "Paquete seleccionado" : "Seleccionar paquete"}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <button className="primary" type="button" onClick={handlePurchase}>
+                    Pagar con Stripe
+                  </button>
+                </>
+              )
+            ) : (
+              <p>
+                {useTrialSession
+                  ? "Esta reserva se confirmara como sesion de prueba y no consumira sesiones disponibles."
+                  : "Se consumira 1 sesion disponible al confirmar esta reserva."}
+              </p>
+            )}
+            {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
+          </article>
+        </div>
+
+        <div className="booking-confirm-row">
+          <p>
+            {useTrialSession
+              ? "Confirmaras una sesion de prueba para conocer al profesional."
+              : "Confirmaras una sesion regular con consumo de sesiones disponibles."}
+          </p>
+          <button className="primary" disabled={!canConfirmBooking} type="button" onClick={handleBooking}>
+            Confirmar sesion
+          </button>
+        </div>
+      </section>
+
+      <section className="content-card">
+        <h2>Post reserva</h2>
+        <p>Luego de reservar, tenes:</p>
+        <ul>
+          <li>Confirmacion automatica de la sesion.</li>
+          <li>Confirmacion por email.</li>
+          <li>Link directo para ingresar.</li>
+          <li>Historial de sesiones en dashboard.</li>
+        </ul>
       </section>
     </div>
   );
@@ -1422,17 +1657,20 @@ function BookingPage(props: {
 
 function ChatPage(props: {
   state: PatientAppState;
+  language: AppLanguage;
   authToken: string | null;
   sessionUserId: string;
   onSetActiveProfessional: (professionalId: string) => void;
   onSendMessage: (professionalId: string, text: string) => void;
   onMarkRead: (professionalId: string) => void;
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState("");
   const [apiThreads, setApiThreads] = useState<ApiChatThread[]>([]);
   const [apiMessages, setApiMessages] = useState<ApiChatMessage[]>([]);
   const [activeThreadId, setActiveThreadId] = useState("");
   const [apiError, setApiError] = useState("");
+  const [pendingUnreadFocus, setPendingUnreadFocus] = useState(searchParams.get("focus") === "first-unread");
 
   const remoteMode = Boolean(props.authToken);
 
@@ -1450,15 +1688,29 @@ function ChatPage(props: {
   }, [apiThreads]);
 
   useEffect(() => {
+    if (searchParams.get("focus") === "first-unread") {
+      setPendingUnreadFocus(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (remoteMode) {
       return;
     }
 
     const unread = getUnreadCount(props.state.messages, threadProfessional.id);
     if (unread > 0) {
+      if (pendingUnreadFocus) {
+        const timer = window.setTimeout(() => {
+          props.onMarkRead(threadProfessional.id);
+        }, 650);
+        return () => {
+          window.clearTimeout(timer);
+        };
+      }
       props.onMarkRead(threadProfessional.id);
     }
-  }, [remoteMode, threadProfessional.id, props.onMarkRead, props.state.messages]);
+  }, [remoteMode, threadProfessional.id, props.onMarkRead, props.state.messages, pendingUnreadFocus]);
 
   const loadThreads = async () => {
     if (!props.authToken) {
@@ -1626,11 +1878,44 @@ function ChatPage(props: {
     }
   };
 
+  useEffect(() => {
+    if (!pendingUnreadFocus) {
+      return;
+    }
+
+    const firstUnreadMessageId = remoteMode
+      ? apiMessages.find((message) => message.senderUserId !== props.sessionUserId && !message.readAt)?.id ?? null
+      : threadMessages.find((message) => message.sender === "professional" && !message.read)?.id ?? null;
+
+    if (firstUnreadMessageId) {
+      const messageElement = document.getElementById(`chat-msg-${firstUnreadMessageId}`);
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      setPendingUnreadFocus(false);
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    if (!remoteMode || apiMessages.length > 0) {
+      setPendingUnreadFocus(false);
+      setSearchParams({}, { replace: true });
+    }
+  }, [
+    pendingUnreadFocus,
+    remoteMode,
+    apiMessages,
+    threadMessages,
+    props.sessionUserId,
+    setSearchParams
+  ]);
+
   return (
     <div className="wa-shell">
       <aside className="wa-sidebar">
         <header className="wa-sidebar-header">
-          <h2>Mensajes</h2>
+          <h2>{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</h2>
         </header>
 
         <div className="wa-thread-list">
@@ -1638,11 +1923,12 @@ function ChatPage(props: {
             const remoteThread = apiThreadByProfessional.get(professional.id);
             const unread = remoteMode ? remoteThread?.unreadCount ?? 0 : getUnreadCount(props.state.messages, professional.id);
             const lastMessageText = remoteMode
-              ? remoteThread?.lastMessage?.body ?? "Todavia no hay mensajes"
+              ? remoteThread?.lastMessage?.body
+                ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" })
               : props.state.messages
                   .filter((message) => message.professionalId === professional.id)
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.text
-                ?? "Todavia no hay mensajes";
+                ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
 
             return (
               <button
@@ -1679,38 +1965,64 @@ function ChatPage(props: {
             />
             <div>
               <h3>{threadProfessional.fullName}</h3>
-              <span>En linea</span>
+              <span>{t(props.language, { es: "En linea", en: "Online", pt: "Online" })}</span>
             </div>
           </div>
         </header>
 
         <div className="wa-messages">
           {remoteMode && apiMessages.length === 0 ? (
-            <p className="wa-empty">Todavia no hay mensajes en esta conversacion.</p>
+            <p className="wa-empty">
+              {t(props.language, {
+                es: "Todavia no hay mensajes en esta conversacion.",
+                en: "There are no messages in this conversation yet.",
+                pt: "Ainda nao ha mensagens nesta conversa."
+              })}
+            </p>
           ) : null}
 
           {remoteMode
             ? apiMessages.map((message) => (
                 <article
+                  id={`chat-msg-${message.id}`}
                   className={message.senderUserId === props.sessionUserId ? "wa-message outgoing" : "wa-message incoming"}
                   key={message.id}
                 >
                   <p>{message.body}</p>
-                  <time>{formatDateTime(message.createdAt, props.state.profile.timezone)}</time>
+                  <time>
+                    {formatDateTime({
+                      isoDate: message.createdAt,
+                      timezone: props.state.profile.timezone,
+                      language: props.language
+                    })}
+                  </time>
                 </article>
               ))
             : null}
 
           {!remoteMode && threadMessages.length === 0 ? (
-            <p className="wa-empty">Todavia no hay mensajes en esta conversacion.</p>
+            <p className="wa-empty">
+              {t(props.language, {
+                es: "Todavia no hay mensajes en esta conversacion.",
+                en: "There are no messages in this conversation yet.",
+                pt: "Ainda nao ha mensagens nesta conversa."
+              })}
+            </p>
           ) : (
             !remoteMode ? threadMessages.map((message) => (
               <article
+                id={`chat-msg-${message.id}`}
                 className={message.sender === "patient" ? "wa-message outgoing" : "wa-message incoming"}
                 key={message.id}
               >
                 <p>{message.text}</p>
-                <time>{formatDateTime(message.createdAt, props.state.profile.timezone)}</time>
+                <time>
+                  {formatDateTime({
+                    isoDate: message.createdAt,
+                    timezone: props.state.profile.timezone,
+                    language: props.language
+                  })}
+                </time>
               </article>
             )) : null
           )}
@@ -1718,14 +2030,14 @@ function ChatPage(props: {
 
         <footer className="wa-composer">
           <textarea
-            placeholder="Escribe un mensaje"
+            placeholder={t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })}
             rows={2}
             value={draft}
             onKeyDown={handleComposerKeyDown}
             onChange={(event) => setDraft(event.target.value)}
           />
           <button className="wa-send" type="button" onClick={handleSend}>
-            Enviar
+            {t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
           </button>
         </footer>
       </section>
@@ -1736,6 +2048,7 @@ function ChatPage(props: {
 
 function ProfilePage(props: {
   user: SessionUser;
+  language: AppLanguage;
   profile: PatientProfile;
   subscription: SubscriptionState;
   onUpdateProfile: (profile: PatientProfile) => void;
@@ -1792,14 +2105,26 @@ function ProfilePage(props: {
   return (
     <div className="profile-layout">
       <aside className="content-card">
-        <h2>Menu de perfil</h2>
+        <h2>{t(props.language, { es: "Menu de perfil", en: "Profile menu", pt: "Menu de perfil" })}</h2>
         <div className="stack">
-          <button className={tab === "data" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("data")}>MIS DATOS</button>
-          <button className={tab === "cards" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("cards")}>MIS TARJETAS</button>
-          <button className={tab === "subscription" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("subscription")}>MI SUSCRIPCION</button>
-          <button className={tab === "settings" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("settings")}>AJUSTES</button>
-          <button className={tab === "support" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("support")}>SOPORTE</button>
-          <button className="danger" type="button" onClick={props.onLogout}>SALIR</button>
+          <button className={tab === "data" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("data")}>
+            {t(props.language, { es: "MIS DATOS", en: "MY DATA", pt: "MEUS DADOS" })}
+          </button>
+          <button className={tab === "cards" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("cards")}>
+            {t(props.language, { es: "MIS TARJETAS", en: "MY CARDS", pt: "MEUS CARTOES" })}
+          </button>
+          <button className={tab === "subscription" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("subscription")}>
+            {t(props.language, { es: "MI SUSCRIPCION", en: "MY SUBSCRIPTION", pt: "MINHA ASSINATURA" })}
+          </button>
+          <button className={tab === "settings" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("settings")}>
+            {t(props.language, { es: "AJUSTES", en: "SETTINGS", pt: "CONFIGURACOES" })}
+          </button>
+          <button className={tab === "support" ? "menu-button active" : "menu-button"} type="button" onClick={() => goToTab("support")}>
+            {t(props.language, { es: "SOPORTE", en: "SUPPORT", pt: "SUPORTE" })}
+          </button>
+          <button className="danger" type="button" onClick={props.onLogout}>
+            {t(props.language, { es: "SALIR", en: "SIGN OUT", pt: "SAIR" })}
+          </button>
         </div>
       </aside>
 
@@ -1893,9 +2218,13 @@ function ProfilePage(props: {
         {tab === "subscription" ? (
           <>
             <h2>Mi suscripcion</h2>
-            <p><strong>{props.subscription.packageName}</strong></p>
             <p>
-              Creditos: {props.subscription.creditsRemaining} / {props.subscription.creditsTotal}
+              <strong>
+                {localizedPackageName(props.subscription.packageId, props.subscription.packageName, props.language)}
+              </strong>
+            </p>
+            <p>
+              Sesiones disponibles: {props.subscription.creditsRemaining} / {props.subscription.creditsTotal}
             </p>
             <p>
               Fecha de compra: {props.subscription.purchasedAt ? new Date(props.subscription.purchasedAt).toLocaleString() : "-"}
@@ -1967,6 +2296,10 @@ function MainPortal(props: {
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState("");
+  const selectedBooking = selectedBookingId
+    ? props.state.bookings.find((booking) => booking.id === selectedBookingId) ?? null
+    : null;
 
   const handleReserveFromAnywhere = (professionalId: string) => {
     props.onStateChange((current) => ({
@@ -1976,11 +2309,36 @@ function MainPortal(props: {
     navigate("/booking");
   };
 
+  const handleGoToProfessional = (professionalId: string) => {
+    props.onStateChange((current) => ({
+      ...current,
+      selectedProfessionalId: professionalId
+    }));
+    navigate("/matching");
+  };
+
   const handleChatFromAnywhere = (professionalId: string) => {
     props.onStateChange((current) => ({
       ...current,
       activeChatProfessionalId: professionalId
     }));
+    navigate("/chat");
+  };
+
+  const handleUnreadChatFromDashboard = () => {
+    const firstUnread = [...props.state.messages]
+      .filter((message) => message.sender === "professional" && !message.read)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+
+    if (firstUnread) {
+      props.onStateChange((current) => ({
+        ...current,
+        activeChatProfessionalId: firstUnread.professionalId
+      }));
+      navigate("/chat?focus=first-unread");
+      return;
+    }
+
     navigate("/chat");
   };
 
@@ -2002,9 +2360,13 @@ function MainPortal(props: {
     }));
   };
 
-  const confirmBooking = (professionalId: string, slot: TimeSlot) => {
+  const confirmBooking = (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => {
     props.onStateChange((current) => {
-      if (current.subscription.creditsRemaining <= 0) {
+      const trialAlreadyUsed = current.trialUsedProfessionalIds.includes(professionalId);
+      const bookingAsTrial = useTrialSession && !trialAlreadyUsed;
+      const hasCredits = current.subscription.creditsRemaining > 0;
+
+      if (!bookingAsTrial && !hasCredits) {
         return current;
       }
 
@@ -2016,16 +2378,21 @@ function MainPortal(props: {
         endsAt: slot.endsAt,
         status: "confirmed",
         joinUrl: `https://video.therapy.local/session/${bookingId}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        bookingMode: bookingAsTrial ? "trial" : "credit"
       };
 
       return {
         ...current,
         bookings: [newBooking, ...current.bookings],
         bookedSlotIds: [...current.bookedSlotIds, slot.id],
+        trialUsedProfessionalIds:
+          bookingAsTrial && !trialAlreadyUsed
+            ? [...current.trialUsedProfessionalIds, professionalId]
+            : current.trialUsedProfessionalIds,
         subscription: {
           ...current.subscription,
-          creditsRemaining: current.subscription.creditsRemaining - 1
+          creditsRemaining: bookingAsTrial ? current.subscription.creditsRemaining : current.subscription.creditsRemaining - 1
         }
       };
     });
@@ -2082,75 +2449,186 @@ function MainPortal(props: {
   };
 
   return (
-    <div className="portal-layout">
-      <header className="portal-header">
-        <div>
-          <h1>{props.state.session?.fullName}</h1>
-          <p>
-            Zona horaria: {props.state.profile.timezone} | Creditos: {props.state.subscription.creditsRemaining}
-          </p>
-        </div>
-
-        <div className="header-actions">
-          <span className={`risk-pill ${props.state.intake?.riskBlocked ? "blocked" : "safe"}`}>
-            Riesgo: {props.state.intake?.riskLevel ?? "-"}
-          </span>
-          <span className="chip">Sin leer: {getUnreadCount(props.state.messages)}</span>
-          <div className="menu-wrap">
-            <button
-              aria-label="Abrir menu"
-              className="menu-toggle"
-              type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-            >
-              &#9776;
-            </button>
-            {menuOpen ? (
-              <div className="menu-dropdown">
-                <button type="button" onClick={() => openProfileTabFromMenu("data")}>Perfil</button>
-                <button type="button" onClick={() => openProfileTabFromMenu("cards")}>Tarjetas</button>
-                <button type="button" onClick={() => openProfileTabFromMenu("subscription")}>Suscripcion</button>
-                <button type="button" onClick={() => openProfileTabFromMenu("settings")}>Ajustes</button>
-                <button type="button" onClick={() => openProfileTabFromMenu("support")}>Soporte</button>
-                <button
-                  className="danger"
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    props.onLogout();
-                    navigate("/");
-                  }}
-                >
-                  Cerrar sesion
-                </button>
-              </div>
-            ) : null}
+    <div className="portal-shell">
+      <aside className="portal-sidebar">
+        <div className="portal-brand">
+          <span className="portal-brand-mark">M</span>
+          <div>
+            <strong>Motivarte</strong>
+            <p>{t(props.state.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
           </div>
         </div>
-      </header>
 
-      {props.state.intake?.riskBlocked ? (
-        <section className="content-card danger">
-          <strong>Triage de seguridad activo:</strong> la reserva queda deshabilitada hasta revision manual.
-        </section>
-      ) : null}
+        <nav className="portal-sidebar-nav">
+          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
+            {t(props.state.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/matching">
+            {t(props.state.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/booking">
+            {t(props.state.language, { es: "Reserva", en: "Booking", pt: "Reserva" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
+            Chat
+          </NavLink>
+        </nav>
 
-      <nav className="portal-nav">
-        <NavLink end to="/">Inicio</NavLink>
-        <NavLink to="/matching">Profesionales</NavLink>
-        <NavLink to="/booking">Reserva + pago</NavLink>
-        <NavLink to="/chat">Chat</NavLink>
-      </nav>
+        <div className="portal-sidebar-foot">
+          <p>{props.state.session?.email}</p>
+        </div>
+      </aside>
 
-      <main>
-        <Routes>
+      <div className="portal-main">
+        <header className="portal-header">
+          <div>
+            <h1>
+              {replaceTemplate(
+                t(props.state.language, {
+                  es: "Hola, {name}",
+                  en: "Hi, {name}",
+                  pt: "Ola, {name}"
+                }),
+                { name: props.state.session?.fullName ?? "" }
+              )}
+            </h1>
+            <p>
+              {t(props.state.language, {
+                es: "Tu espacio personal de terapia online.",
+                en: "Your personal online therapy space.",
+                pt: "Seu espaco pessoal de terapia online."
+              })}
+            </p>
+          </div>
+
+          <div className="header-actions">
+            <div className="locale-controls">
+              <label>
+                {t(props.state.language, { es: "Idioma", en: "Language", pt: "Idioma" })}
+                <select
+                  value={props.state.language}
+                  onChange={(event) =>
+                    props.onStateChange((current) => ({
+                      ...current,
+                      language: event.target.value as AppLanguage
+                    }))
+                  }
+                >
+                  {SUPPORTED_LANGUAGES.map((language) => (
+                    <option key={language} value={language}>
+                      {language === "es" ? "Espanol" : language === "en" ? "English" : "Portugues"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t(props.state.language, { es: "Moneda", en: "Currency", pt: "Moeda" })}
+                <select
+                  value={props.state.currency}
+                  onChange={(event) =>
+                    props.onStateChange((current) => ({
+                      ...current,
+                      currency: event.target.value as SupportedCurrency
+                    }))
+                  }
+                >
+                  {SUPPORTED_CURRENCIES.map((currency) => (
+                    <option key={currency} value={currency}>
+                      {currencyOptionLabel(currency, props.state.language)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="menu-wrap">
+              <button
+                aria-label={t(props.state.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
+                className="menu-toggle"
+                type="button"
+                onClick={() => setMenuOpen((current) => !current)}
+              >
+                &#9776;
+              </button>
+              {menuOpen ? (
+                <div className="menu-dropdown">
+                  <button className="menu-item" type="button" onClick={() => openProfileTabFromMenu("data")}>
+                    {t(props.state.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
+                  </button>
+                  <button className="menu-item" type="button" onClick={() => openProfileTabFromMenu("cards")}>
+                    {t(props.state.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
+                  </button>
+                  <button className="menu-item" type="button" onClick={() => openProfileTabFromMenu("subscription")}>
+                    {t(props.state.language, { es: "Suscripcion", en: "Subscription", pt: "Assinatura" })}
+                  </button>
+                  <button className="menu-item" type="button" onClick={() => openProfileTabFromMenu("settings")}>
+                    {t(props.state.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+                  </button>
+                  <button className="menu-item" type="button" onClick={() => openProfileTabFromMenu("support")}>
+                    {t(props.state.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
+                  </button>
+                  <button
+                    className="menu-item danger"
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      props.onLogout();
+                      navigate("/");
+                    }}
+                  >
+                    {t(props.state.language, { es: "Cerrar sesion", en: "Sign out", pt: "Sair" })}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </header>
+
+        <nav className="portal-mobile-nav" aria-label="Navegacion principal mobile">
+          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
+            {t(props.state.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/matching">
+            {t(props.state.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/booking">
+            {t(props.state.language, { es: "Reserva", en: "Booking", pt: "Reserva" })}
+          </NavLink>
+          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
+            Chat
+          </NavLink>
+        </nav>
+
+        {props.state.intake?.riskBlocked ? (
+          <section className="content-card danger">
+            <strong>
+              {t(props.state.language, {
+                es: "Triage de seguridad activo:",
+                en: "Safety triage active:",
+                pt: "Triagem de seguranca ativa:"
+              })}
+            </strong>{" "}
+            {t(props.state.language, {
+              es: "la reserva queda deshabilitada hasta revision manual.",
+              en: "booking is disabled until manual review.",
+              pt: "a reserva fica desabilitada ate revisao manual."
+            })}
+          </section>
+        ) : null}
+
+        <main className="portal-main-content">
+          <Routes>
           <Route
             path="/"
             element={
               <DashboardPage
                 state={props.state}
+                language={props.state.language}
+                currency={props.state.currency}
                 onGoToBooking={handleReserveFromAnywhere}
+                onGoToProfessional={handleGoToProfessional}
                 onGoToChat={handleChatFromAnywhere}
+                onGoToUnreadChat={handleUnreadChatFromDashboard}
+                onOpenBookingDetail={(bookingId) => setSelectedBookingId(bookingId)}
               />
             }
           />
@@ -2172,6 +2650,8 @@ function MainPortal(props: {
             element={
               <BookingPage
                 state={props.state}
+                language={props.state.language}
+                currency={props.state.currency}
                 onSelectProfessional={(professionalId) =>
                   props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
                 }
@@ -2185,6 +2665,7 @@ function MainPortal(props: {
             element={
               <ChatPage
                 state={props.state}
+                language={props.state.language}
                 authToken={props.state.authToken}
                 sessionUserId={props.state.session?.id ?? ""}
                 onSetActiveProfessional={(professionalId) =>
@@ -2201,6 +2682,7 @@ function MainPortal(props: {
               props.state.session ? (
                 <ProfilePage
                   user={props.state.session}
+                  language={props.state.language}
                   profile={props.state.profile}
                   subscription={props.state.subscription}
                   onUpdateProfile={(profile) =>
@@ -2217,8 +2699,17 @@ function MainPortal(props: {
               ) : null
             }
           />
-        </Routes>
-      </main>
+          </Routes>
+        </main>
+      </div>
+      {selectedBooking ? (
+        <SessionDetailModal
+          booking={selectedBooking}
+          timezone={props.state.profile.timezone}
+          language={props.state.language}
+          onClose={() => setSelectedBookingId("")}
+        />
+      ) : null}
     </div>
   );
 }
@@ -2237,6 +2728,20 @@ export function App() {
   if (!state.session) {
     return (
       <AuthScreen
+        language={state.language}
+        currency={state.currency}
+        onLanguageChange={(language) => {
+          setState((current) => ({
+            ...current,
+            language
+          }));
+        }}
+        onCurrencyChange={(currency) => {
+          setState((current) => ({
+            ...current,
+            currency
+          }));
+        }}
         onLogin={(user, token) => {
           setState((current) => ({
             ...current,
@@ -2252,6 +2757,7 @@ export function App() {
     return (
       <IntakeScreen
         user={state.session}
+        language={state.language}
         onComplete={(answers) => {
           const riskResult = evaluateRisk(answers);
           setState((current) => ({
