@@ -8,15 +8,19 @@
   ],
   "scripts": {
     "dev": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
+    "dev:all": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
+    "dev:full": "npm run db:up && npm run dev:all",
     "dev:api": "npm run dev -w @therapy/api",
-    "dev:patient": "npm run dev -w @therapy/patient-web",
-    "dev:professional": "npm run dev -w @therapy/professional-web",
-    "dev:admin": "npm run dev -w @therapy/admin-web",
+    "dev:patient": "npm run dev -w @therapy/patient",
+    "dev:professional": "npm run dev -w @therapy/professional",
+    "dev:admin": "npm run dev -w @therapy/admin",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "db:up": "docker compose up -d postgres redis",
-    "db:down": "docker compose down",
-    "db:seed": "npm run prisma:seed -w @therapy/api"
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d mysql redis",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "dev:stop": "npm run db:down",
+    "db:seed": "npm run prisma:seed -w @therapy/api",
+    "dev:landing": "npm run dev -w @therapy/landing"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

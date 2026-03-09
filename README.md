@@ -5,23 +5,39 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
 ## Stack
 - Frontend: React + Vite + TypeScript
 - Backend: Node.js + Express + TypeScript
-- DB: PostgreSQL + Prisma
+- DB: MySQL + Prisma
 - Queue/cache: Redis
 - Payments: Stripe
 - Video: Daily
 
 ## Structure
 - `apps/api`: modular API
-- `apps/patient-web`: patient portal (demo-ready)
-- `apps/professional-web`: professional portal (functional MVP)
-- `apps/admin-web`: admin portal (auth + user management)
+- `apps/landing`: marketing landing
+- `apps/patient`: patient portal (demo-ready)
+- `apps/professional`: professional portal (functional MVP)
+- `apps/admin`: admin portal scaffold
+- `packages/database`: database contracts and integrations (scaffold)
+- `packages/auth`: auth domain and shared flows (scaffold)
 - `packages/types`: shared contracts
 - `packages/ui`: shared UI primitives
+- `packages/utils`: shared locale + currency config and helpers
+- `infra/docker`: local container stack
+- `infra/deploy`: deployment assets
+- `docs`: architecture and product docs
 
 ## Current MVP Capabilities
 - API with real auth (`register`, `login`, `me`) and signed bearer token.
 - Prisma-backed modules for profiles, availability, bookings, professional dashboard, earnings, admin data, and chat.
-- Bidirectional patient-professional chat persisted in PostgreSQL.
+- Bidirectional patient-professional chat persisted in MySQL.
+- Multilanguage UI baseline in patient/professional/admin (`es`, `en`, `pt`).
+- Multicurrency display baseline in patient/professional/admin:
+  - Default: `USD`
+  - Supported: `USD`, `EUR`, `GBP`, `BRL`, `ARS`
+- Admin portal with authenticated user module:
+  - Alta de pacientes
+  - Alta de profesionales
+  - Alta de admins
+  - Edicion de perfiles por rol (incluye video de presentacion profesional)
 - Patient portal integrated with backend auth + backend chat.
 - Professional portal integrated with backend:
   - Dashboard principal (KPIs + próximas sesiones)
@@ -31,12 +47,6 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
   - Perfil público editable
   - Ingresos (resumen + movimientos)
   - Solapa administrativa
-- Admin portal integrated with backend:
-  - Role gateway (patient/professional/admin selector)
-  - Admin auth against API
-  - Dashboard KPI
-  - User management module (list, create, edit, password reset)
-  - Role-aware profile fields (patient status/timezone, professional visibility/cancellation policy)
 
 ## Patient Side (demo)
 - Register/login against API
@@ -52,23 +62,32 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
 
 Run only patient app:
 1. `npm install`
-2. `npm run dev -w @therapy/patient-web`
+2. `npm run dev -w @therapy/patient`
 3. Open [http://localhost:5173](http://localhost:5173)
 
 Run only professional app:
 1. `npm install`
-2. `npm run dev -w @therapy/professional-web`
+2. `npm run dev -w @therapy/professional`
 3. Open [http://localhost:5174](http://localhost:5174)
-
-Run only admin app:
-1. `npm install`
-2. `npm run dev -w @therapy/admin-web`
-3. Open [http://localhost:5175](http://localhost:5175)
 
 ## Product readiness
 - Today: high-quality demo and functional pre-MVP workflow.
-- Not yet production-ready: auth hardening, real Stripe webhooks, compliance controls, monitoring, and security audits are pending.
+- Not yet production-ready: hardening adicional, real Stripe webhooks, compliance controls, monitoring, and security audits are pending.
+- Added security baseline in API:
+  - CORS allowlist via `CORS_ORIGINS`
+  - `Authorization` bearer-only access on protected modules
+  - Security response headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`)
 - Yes, it can evolve directly into production with phased implementation on top of this architecture.
+
+## Scalability / Concurrency / HA status
+- Concurrency: yes (Node.js handles concurrent I/O requests).
+- Horizontal scalability: ready at application level because API is stateless and can run multiple replicas behind a load balancer.
+- High availability: not automatic yet in local setup; requires multi-instance deployment + managed MySQL/Redis + health-check based routing.
+- New API production baseline added:
+  - `GET /health/live` (liveness)
+  - `GET /health/ready` (readiness: DB + draining state)
+  - Graceful shutdown on `SIGINT/SIGTERM` with request draining
+  - Per-IP rate limiting and in-flight request protection
 
 ## Full Local Setup
 1. Copy `.env.example` to `.env` and fill credentials.
@@ -78,19 +97,31 @@ Run only admin app:
    - `npm install`
 4. Prisma:
    - `npm run prisma:generate -w @therapy/api`
-   - `npm run prisma:push -w @therapy/api`
-   - `npm run db:seed`
+   - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:push -w @therapy/api`
+   - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:seed -w @therapy/api`
 5. Run all apps:
    - `npm run dev`
+
+## Stripe multi-currency configuration
+- Legacy USD-only env vars still work:
+  - `STRIPE_PRICE_PACKAGE_4`
+  - `STRIPE_PRICE_PACKAGE_8`
+  - `STRIPE_PRICE_PACKAGE_12`
+- Recommended for multi-currency checkout:
+  - `STRIPE_PRICE_MAP_JSON`
+  - Example:
+    - `{"USD":{"4":"price_usd_4","8":"price_usd_8","12":"price_usd_12"},"EUR":{"4":"price_eur_4","8":"price_eur_8","12":"price_eur_12"}}`
 
 ## Demo Credentials
 - Patient: `alex@example.com` / `SecurePass123`
 - Professional (Emma): `emma.collins@motivarte.com` / `SecurePass123`
 - Professional (Michael): `michael.rivera@motivarte.com` / `SecurePass123`
 - Professional (Sophia): `sophia.nguyen@motivarte.com` / `SecurePass123`
-- Admin: `admin@motivarte.com` / `SecurePass123`
 
 ## Current policy defaults
 - Free cancellation until 24h before session.
 - <24h cancellation penalty: configurable.
-- No-show: consumes one package credit.
+- No-show: consumes one available session from the package.
+
+## Launch runbook
+- See `docs/scaling-ha-checklist.md` for a staged rollout plan focused on scale and high availability.

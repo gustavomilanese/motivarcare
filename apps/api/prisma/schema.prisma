@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -69,11 +69,11 @@ model ProfessionalProfile {
   id                    String                   @id @default(cuid())
   userId                String                   @unique
   visible               Boolean                  @default(false)
-  bio                   String?
-  therapeuticApproach   String?
+  bio                   String?                  @db.Text
+  therapeuticApproach   String?                  @db.Text
   yearsExperience       Int?
-  photoUrl              String?
-  videoUrl              String?
+  photoUrl              String?                  @db.Text
+  videoUrl              String?                  @db.Text
   cancellationHours     Int                      @default(24)
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
@@ -191,7 +191,7 @@ model ChatMessage {
   id             String    @id @default(cuid())
   threadId       String
   senderUserId   String
-  body           String
+  body           String    @db.Text
   readAt         DateTime?
   createdAt      DateTime  @default(now())
   thread         ChatThread @relation(fields: [threadId], references: [id])
@@ -205,8 +205,8 @@ model VideoSession {
   bookingId           String    @unique
   provider            String    @default("daily")
   externalRoomId      String
-  joinUrlPatient      String
-  joinUrlProfessional String
+  joinUrlPatient      String    @db.Text
+  joinUrlProfessional String    @db.Text
   createdAt           DateTime  @default(now())
   booking             Booking   @relation(fields: [bookingId], references: [id])
 }

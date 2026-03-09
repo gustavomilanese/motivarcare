@@ -1,0 +1,39 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="600" y1="0" x2="600" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A9D8FF"/>
+      <stop offset="1" stop-color="#EAF6FF"/>
+    </linearGradient>
+    <linearGradient id="water" x1="600" y1="520" x2="600" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B8ED8"/>
+      <stop offset="1" stop-color="#2B6DA8"/>
+    </linearGradient>
+    <linearGradient id="deck" x1="600" y1="470" x2="600" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FAFF"/>
+      <stop offset="1" stop-color="#DCE7F4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="520" fill="url(#sky)"/>
+  <rect y="520" width="1200" height="280" fill="url(#water)"/>
+  <ellipse cx="610" cy="585" rx="480" ry="120" fill="#8ED2FF" fill-opacity="0.35"/>
+
+  <path d="M120 530C240 395 370 290 602 260C842 292 965 399 1082 530" stroke="#F8FCFF" stroke-width="22" stroke-linecap="round"/>
+  <path d="M180 520C298 408 410 332 602 306C798 334 916 410 1024 520" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+
+  <g opacity="0.95">
+    <path d="M160 530H1040L952 545H248L160 530Z" fill="url(#deck)"/>
+    <path d="M248 545H952L875 595H325L248 545Z" fill="#C7D6EA"/>
+  </g>
+
+  <path d="M602 260L620 540" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M602 260L580 540" stroke="#F4FAFF" stroke-width="8" stroke-linecap="round"/>
+
+  <g opacity="0.8">
+    <path d="M240 640C380 615 820 615 960 640" stroke="#D8F2FF" stroke-width="5"/>
+    <path d="M210 680C360 650 840 650 990 680" stroke="#B8E6FF" stroke-width="4"/>
+  </g>
+
+  <circle cx="980" cy="120" r="44" fill="#7A5CFF" fill-opacity="0.16"/>
+  <circle cx="1050" cy="170" r="26" fill="#7A5CFF" fill-opacity="0.12"/>
+</svg>

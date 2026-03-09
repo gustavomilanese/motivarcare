@@ -6,7 +6,7 @@
 - Perfil profesional publico.
 - Slots + reserva + cancelacion (24h).
 - Checkout Stripe para paquetes.
-- Creditos de sesion y consumo por booking.
+- Sesiones disponibles y consumo por booking.
 - Chat texto basico.
 - Video por sesion (Daily).
 

@@ -2,7 +2,7 @@
 
 ## Setup
 1. Run `npm install`.
-2. Run `npm run dev -w @therapy/patient-web`.
+2. Run `npm run dev -w @therapy/patient`.
 3. Open `http://localhost:5173`.
 
 ## Suggested walkthrough
@@ -25,7 +25,7 @@
 
 5. Booking + payment
 - Select slot with patient timezone rendering.
-- If no credits, buy package from Stripe demo checkout simulation.
+- If no available sessions, buy package from Stripe demo checkout simulation.
 - Confirm booking and show direct session link + history.
 
 6. Chat
@@ -40,4 +40,4 @@
 - Modular architecture by product areas.
 - Ready for Stripe + Daily real integration.
 - Safety-first design with risk triage.
-- Package-credit model implemented at UI state level and mapped to backend modules.
+- Package with available-session model implemented at UI state level and mapped to backend modules.
