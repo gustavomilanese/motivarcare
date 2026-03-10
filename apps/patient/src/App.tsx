@@ -14,7 +14,7 @@ import {
 } from "@therapy/i18n-config";
 
 type RiskLevel = "low" | "medium" | "high";
-type PackageId = "starter" | "growth" | "intensive";
+type PackageId = string;
 type SenderRole = "patient" | "professional";
 type ProfileTab = "data" | "cards" | "subscription" | "settings" | "support";
 type PackagePurchaseSource = "checkout_button";
@@ -37,6 +37,50 @@ interface AuthApiUser {
 interface AuthApiResponse {
   token: string;
   user: AuthApiUser;
+}
+
+interface ProfileMeApiResponse {
+  role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+  profile: {
+    id?: string;
+    timezone?: string;
+    status?: string;
+    intakeRiskLevel?: "low" | "medium" | "high" | null;
+    intakeCompletedAt?: string | null;
+    latestPackage?: {
+      id: string;
+      name: string;
+      remainingCredits: number;
+      totalCredits: number;
+      purchasedAt: string;
+    } | null;
+    activeProfessional?: {
+      id: string;
+      userId: string;
+      fullName: string;
+      email: string;
+    } | null;
+  } | null;
+}
+
+interface SubmitIntakeApiResponse {
+  intake: {
+    id: string;
+    riskLevel: "low" | "medium" | "high";
+    completedAt: string;
+  };
+}
+
+interface BookingsMineApiResponse {
+  bookings: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+    professionalId?: string;
+    joinUrl?: string | null;
+    createdAt: string;
+  }>;
 }
 
 interface IntakeQuestion {
@@ -131,6 +175,7 @@ interface PatientAppState {
   intake: IntakeState | null;
   selectedProfessionalId: string;
   assignedProfessionalId: string | null;
+  assignedProfessionalName: string | null;
   activeChatProfessionalId: string;
   bookedSlotIds: string[];
   bookings: Booking[];
@@ -169,9 +214,35 @@ interface PackagePlan {
   id: PackageId;
   name: string;
   credits: number;
-  priceUsd: number;
+  priceCents: number;
+  currency: string;
   discountPercent: number;
   description: string;
+  professionalId?: string | null;
+  professionalName?: string | null;
+  stripePriceId?: string;
+}
+
+interface PublicSessionPackagesResponse {
+  featuredPackageId: string | null;
+  sessionPackages: Array<{
+    id: string;
+    professionalId: string | null;
+    professionalName: string | null;
+    stripePriceId: string;
+    name: string;
+    credits: number;
+    priceCents: number;
+    discountPercent: number;
+    currency: string;
+    active: boolean;
+    createdAt: string;
+  }>;
+}
+
+interface PublicPackageCatalog {
+  plans: PackagePlan[];
+  featuredPackageId: string | null;
 }
 
 const STORAGE_KEY = "therapy_patient_portal_v3";
@@ -243,12 +314,13 @@ const intakeQuestions: IntakeQuestion[] = [
   }
 ];
 
-const packagePlans: PackagePlan[] = [
+const defaultPackagePlans: PackagePlan[] = [
   {
     id: "starter",
     name: "Inicio - 4 sesiones",
     credits: 4,
-    priceUsd: 360,
+    priceCents: 36000,
+    currency: "usd",
     discountPercent: 30,
     description: "Ideal para una primera etapa de trabajo terapeutico."
   },
@@ -256,7 +328,8 @@ const packagePlans: PackagePlan[] = [
     id: "growth",
     name: "Continuidad - 8 sesiones",
     credits: 8,
-    priceUsd: 680,
+    priceCents: 68000,
+    currency: "usd",
     discountPercent: 36,
     description: "Plan recomendado para trabajo mensual sostenido."
   },
@@ -264,50 +337,12 @@ const packagePlans: PackagePlan[] = [
     id: "intensive",
     name: "Intensivo - 12 sesiones",
     credits: 12,
-    priceUsd: 960,
+    priceCents: 96000,
+    currency: "usd",
     discountPercent: 40,
     description: "Mayor frecuencia para procesos de alta demanda."
   }
 ];
-
-const packageTextById: Record<PackageId, { name: LocalizedText; description: LocalizedText }> = {
-  starter: {
-    name: {
-      es: "Inicio - 4 sesiones",
-      en: "Starter - 4 sessions",
-      pt: "Inicio - 4 sessoes"
-    },
-    description: {
-      es: "Ideal para una primera etapa de trabajo terapeutico.",
-      en: "Ideal for an initial therapy stage.",
-      pt: "Ideal para uma primeira etapa de trabalho terapeutico."
-    }
-  },
-  growth: {
-    name: {
-      es: "Continuidad - 8 sesiones",
-      en: "Continuity - 8 sessions",
-      pt: "Continuidade - 8 sessoes"
-    },
-    description: {
-      es: "Plan recomendado para trabajo mensual sostenido.",
-      en: "Recommended plan for sustained monthly work.",
-      pt: "Plano recomendado para trabalho mensal sustentado."
-    }
-  },
-  intensive: {
-    name: {
-      es: "Intensivo - 12 sesiones",
-      en: "Intensive - 12 sessions",
-      pt: "Intensivo - 12 sessoes"
-    },
-    description: {
-      es: "Mayor frecuencia para procesos de alta demanda.",
-      en: "Higher frequency for high-demand processes.",
-      pt: "Maior frequencia para processos de alta demanda."
-    }
-  }
-};
 
 function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
   if (!planId) {
@@ -317,11 +352,76 @@ function localizedPackageName(planId: PackageId | null, fallback: string, langua
       pt: "Sem pacote ativo"
     });
   }
-  return packageTextById[planId]?.name[language] ?? fallback;
+  return fallback;
 }
 
-function localizedPackageDescription(planId: PackageId, fallback: string, language: AppLanguage): string {
-  return packageTextById[planId]?.description[language] ?? fallback;
+function localizedPackageDescription(_planId: PackageId, fallback: string, _language: AppLanguage): string {
+  return fallback;
+}
+
+function inferPackageDiscountPercent(credits: number): number {
+  if (credits >= 12) {
+    return 40;
+  }
+  if (credits >= 8) {
+    return 36;
+  }
+  if (credits >= 4) {
+    return 30;
+  }
+  return 0;
+}
+
+function describePackagePlan(credits: number, language: AppLanguage): string {
+  if (credits >= 12) {
+    return t(language, {
+      es: "Mayor frecuencia para procesos de alta demanda.",
+      en: "Higher frequency for high-demand processes.",
+      pt: "Maior frequencia para processos de alta demanda."
+    });
+  }
+  if (credits >= 8) {
+    return t(language, {
+      es: "Plan recomendado para trabajo mensual sostenido.",
+      en: "Recommended plan for sustained monthly work.",
+      pt: "Plano recomendado para trabalho mensal sustentado."
+    });
+  }
+  return t(language, {
+    es: "Ideal para una primera etapa de trabajo terapeutico.",
+    en: "Ideal for an initial therapy stage.",
+    pt: "Ideal para uma primeira etapa de trabalho terapeutico."
+  });
+}
+
+async function loadPublicPackagePlans(language: AppLanguage): Promise<PublicPackageCatalog> {
+  try {
+    const response = await fetch(API_BASE + "/api/public/session-packages?channel=patient");
+    if (!response.ok) {
+      return { plans: [], featuredPackageId: null };
+    }
+    const data = (await response.json()) as PublicSessionPackagesResponse;
+    if (!Array.isArray(data.sessionPackages) || data.sessionPackages.length === 0) {
+      return { plans: [], featuredPackageId: null };
+    }
+    return {
+      featuredPackageId: data.featuredPackageId,
+      plans: data.sessionPackages.slice(0, 3).map((item) => ({
+        id: item.id,
+        name: item.name,
+        credits: item.credits,
+        priceCents: item.priceCents,
+        currency: item.currency,
+        discountPercent: item.discountPercent,
+        description: describePackagePlan(item.credits, language),
+        professionalId: item.professionalId,
+        professionalName: item.professionalName,
+        stripePriceId: item.stripePriceId
+      }))
+    };
+  } catch {
+    return { plans: [], featuredPackageId: null };
+  }
 }
 
 function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage): IntakeQuestion {
@@ -680,6 +780,7 @@ const defaultState: PatientAppState = {
   intake: null,
   selectedProfessionalId: professionalsCatalog[0].id,
   assignedProfessionalId: null,
+  assignedProfessionalName: null,
   activeChatProfessionalId: professionalsCatalog[0].id,
   bookedSlotIds: [],
   bookings: [],
@@ -713,6 +814,7 @@ function loadState(): PatientAppState {
         : "USD",
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       assignedProfessionalId: parsed.assignedProfessionalId ?? null,
+      assignedProfessionalName: parsed.assignedProfessionalName ?? null,
       profile: {
         ...defaultProfile,
         ...parsed.profile,
@@ -871,6 +973,7 @@ function AuthScreen(props: {
   const [password, setPassword] = useState("SecurePass123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1055,7 +1158,7 @@ function AuthScreen(props: {
 function IntakeScreen(props: {
   user: SessionUser;
   language: AppLanguage;
-  onComplete: (answers: Record<string, string>) => void;
+  onComplete: (answers: Record<string, string>) => Promise<void>;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -1066,12 +1169,13 @@ function IntakeScreen(props: {
   });
 
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
     [props.language]
   );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const missing = intakeQuestions.filter((question) => !answers[question.id]?.trim());
@@ -1086,8 +1190,24 @@ function IntakeScreen(props: {
       return;
     }
 
+    setSubmitting(true);
     setError("");
-    props.onComplete(answers);
+
+    try {
+      await props.onComplete(answers);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo guardar el intake. Intenta nuevamente.",
+              en: "Could not save intake. Please try again.",
+              pt: "Nao foi possivel salvar o intake. Tente novamente."
+            })
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -1155,12 +1275,14 @@ function IntakeScreen(props: {
           ))}
 
           {error ? <p className="error-text">{error}</p> : null}
-          <button className="primary" type="submit">
-            {t(props.language, {
-              es: "Finalizar intake y ver profesionales recomendados",
-              en: "Finish intake and view recommended professionals",
-              pt: "Finalizar intake e ver profissionais recomendados"
-            })}
+          <button className="primary" type="submit" disabled={submitting}>
+            {submitting
+              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+              : t(props.language, {
+                  es: "Finalizar intake y ver profesionales recomendados",
+                  en: "Finish intake and view recommended professionals",
+                  pt: "Finalizar intake e ver profissionais recomendados"
+                })}
           </button>
         </form>
       </section>
@@ -1300,6 +1422,8 @@ function DashboardPage(props: {
   const [trialProfessionalId, setTrialProfessionalId] = useState(props.state.assignedProfessionalId ?? props.state.selectedProfessionalId);
   const [trialSlotId, setTrialSlotId] = useState("");
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState(DEFAULT_PATIENT_HERO_IMAGE);
+  const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
+  const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const nextBooking = getNextBooking(props.state.bookings);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
   const trialBookings = confirmedBookings.filter((booking) => booking.bookingMode === "trial");
@@ -1319,7 +1443,9 @@ function DashboardPage(props: {
   const activeProfessionalBooking = nextBooking ?? fallbackBooking;
   const activeProfessional = activeProfessionalBooking
     ? findProfessionalById(activeProfessionalBooking.professionalId)
-    : null;
+    : props.state.assignedProfessionalId
+      ? professionalsCatalog.find((item) => item.id === props.state.assignedProfessionalId) ?? null
+      : null;
   const activeTrialProfessional = activeTrialBooking ? findProfessionalById(activeTrialBooking.professionalId) : null;
   const activeTrialSlotId = activeTrialProfessional
     ? activeTrialProfessional.slots.find(
@@ -1393,11 +1519,19 @@ function DashboardPage(props: {
     }
 
     void loadLandingImage();
+    void loadPublicPackagePlans(props.language).then((catalog) => {
+      if (active) {
+        setPackagePlans(catalog.plans);
+        setFeaturedPackageId(catalog.featuredPackageId);
+      }
+    });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [props.language]);
+
+  const featuredPlan = packagePlans.find((plan) => plan.id === featuredPackageId) ?? null;
 
   return (
     <div className="page-stack">
@@ -1529,7 +1663,7 @@ function DashboardPage(props: {
           }}
         >
           <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
-          {activeProfessional && activeProfessionalBooking ? (
+          {activeProfessional ? (
             <>
               <div className="active-professional-row">
                 <img
@@ -1566,69 +1700,84 @@ function DashboardPage(props: {
             </>
           ) : (
             <p>
-              {t(props.language, {
-                es: "Reserva tu primera sesion para ver aqui los datos de tu profesional.",
-                en: "Book your first session to see your professional details here.",
-                pt: "Reserve sua primeira sessao para ver aqui os dados do profissional."
-              })}
+              {props.state.assignedProfessionalName
+                ? replaceTemplate(
+                    t(props.language, {
+                      es: "Profesional asignado desde admin: {name}.",
+                      en: "Professional assigned from admin: {name}.",
+                      pt: "Profissional atribuido pelo admin: {name}."
+                    }),
+                    { name: props.state.assignedProfessionalName }
+                  )
+                : t(props.language, {
+                    es: "Reserva tu primera sesion para ver aqui los datos de tu profesional.",
+                    en: "Book your first session to see your professional details here.",
+                    pt: "Reserve sua primeira sessao para ver aqui os dados do profissional."
+                  })}
             </p>
           )}
         </button>
 
       </section>
 
-      <section className="content-card purchase-section">
-        <header className="purchase-head">
-          <h3>{t(props.language, { es: "Planes para continuar tu proceso", en: "Plans to continue your process", pt: "Planos para continuar seu processo" })}</h3>
-          <p>{t(props.language, { es: "Elige el paquete que mejor se adapte a tu ritmo terapeutico.", en: "Choose the package that best fits your therapeutic rhythm.", pt: "Escolha o pacote que melhor se adapta ao seu ritmo terapeutico." })}</p>
-        </header>
-        <figure className="purchase-art" aria-hidden="true">
-          <img
-            src="/images/miro-constellation.svg"
-            alt=""
-            loading="lazy"
-          />
-          <figcaption>Arte moderno · Inspirado en Miro</figcaption>
-        </figure>
-        <div className="deal-grid">
-          {packagePlans.map((plan) => (
-            <article className={`deal-card dashboard-deal-card ${plan.id === "growth" ? "featured" : ""}`} key={plan.id}>
-              {plan.id === "growth" ? <span className="deal-most-sold">{t(props.language, { es: "Mas vendido", en: "Best seller", pt: "Mais vendido" })}</span> : null}
-              <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
-              <p>{localizedPackageDescription(plan.id, plan.description, props.language)}</p>
-              <div className="deal-pricing-top">
-                <span className="deal-list-price">
-                  {formatMoney(Math.round(plan.priceUsd / (1 - plan.discountPercent / 100)), props.language, props.currency)}
-                </span>
-                <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+      {packagePlans.length > 0 ? (
+        <section className="content-card purchase-section">
+          <header className="purchase-head">
+            <h3>{t(props.language, { es: "Paquetes de sesiones", en: "Session packages", pt: "Pacotes de sessoes" })}</h3>
+            <p>{t(props.language, { es: "Elegi el formato que mejor acompana tu proceso terapeutico.", en: "Choose the format that best supports your therapy process.", pt: "Escolha o formato que melhor acompanha seu processo terapeutico." })}</p>
+          </header>
+          <figure className="purchase-art package-sale-art" aria-hidden="true">
+            <span className="package-sale-art-percent">Ψ</span>
+          </figure>
+          <div className="deal-grid">
+            {packagePlans.slice(0, 3).map((plan) => (
+              <div className={`deal-card-shell ${featuredPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
+                <div className="deal-card-roof" aria-hidden={featuredPackageId !== plan.id}>
+                  {featuredPackageId === plan.id ? (
+                    <span className="deal-card-featured-kicker">{t(props.language, { es: "Mas elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
+                  ) : null}
+                </div>
+                <article className={`deal-card dashboard-deal-card ${featuredPackageId === plan.id ? "featured" : ""}`}>
+                  <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
+                  <p>{localizedPackageDescription(plan.id, plan.description, props.language)}</p>
+                  <div className="deal-pricing-top">
+                    <span className="deal-list-price">
+                      {formatMoney(Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100)), props.language, props.currency)}
+                    </span>
+                    <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                  </div>
+                  <p className="deal-main-price">{formatMoney(plan.priceCents / 100, props.language, props.currency)}</p>
+                  <p className="deal-caption-strong">{replaceTemplate(
+                    t(props.language, {
+                      es: "Incluye {count} sesiones.",
+                      en: "Includes {count} sessions.",
+                      pt: "Inclui {count} sessoes."
+                    }),
+                    { count: String(plan.credits) }
+                  )}</p>
+                  <button
+                    className="deal-select-button"
+                    type="button"
+                    onClick={() => props.onStartPackagePurchase(plan)}
+                  >
+                    {t(props.language, { es: "Elegir plan", en: "Choose plan", pt: "Escolher plano" })}
+                  </button>
+                  <p className="deal-caption">
+                    {replaceTemplate(
+                      t(props.language, {
+                        es: "Incluye {count} sesiones para este ciclo.",
+                        en: "Includes {count} sessions for this cycle.",
+                        pt: "Inclui {count} sessoes para este ciclo."
+                      }),
+                      { count: String(plan.credits) }
+                    )}
+                  </p>
+                </article>
               </div>
-              <p className="deal-main-price">
-                {formatMoney(plan.priceUsd, props.language, props.currency)}
-                <span className="deal-price-suffix">{t(props.language, { es: "/mes", en: "/mo", pt: "/mes" })}</span>
-              </p>
-              <p className="deal-free-months">{t(props.language, { es: "+2 mes(es) gratis", en: "+2 months free", pt: "+2 mes(es) gratis" })}</p>
-              <p className="deal-offer-bar">{t(props.language, { es: "Oferta por tiempo limitado", en: "Limited-time offer", pt: "Oferta por tempo limitado" })}</p>
-              <button
-                className={`deal-select-button ${plan.id === "growth" ? "featured" : ""}`}
-                type="button"
-                onClick={() => props.onStartPackagePurchase(plan)}
-              >
-                {t(props.language, { es: "Elegir plan", en: "Choose plan", pt: "Escolher plano" })}
-              </button>
-              <p className="deal-caption">
-                {replaceTemplate(
-                  t(props.language, {
-                    es: "Incluye {count} sesiones para este ciclo.",
-                    en: "Includes {count} sessions for this cycle.",
-                    pt: "Inclui {count} sessoes para este ciclo."
-                  }),
-                  { count: String(plan.credits) }
-                )}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {trialModalOpen ? (
         <div className="session-modal-backdrop" role="presentation" onClick={() => setTrialModalOpen(false)}>
@@ -1908,7 +2057,9 @@ function BookingPage(props: {
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSlotId, setSelectedSlotId] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState<PackageId>("growth");
+  const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
+  const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<PackageId>("");
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [purchaseMessage, setPurchaseMessage] = useState("");
   const purchaseFlow = searchParams.get("flow");
@@ -1955,13 +2106,30 @@ function BookingPage(props: {
   }, [professional.id]);
 
   useEffect(() => {
-    const validPlanFromQuery =
-      planFromQuery === "starter" || planFromQuery === "growth" || planFromQuery === "intensive"
-        ? (planFromQuery as PackageId)
-        : null;
+    let active = true;
+    void loadPublicPackagePlans(props.language).then((catalog) => {
+      if (!active) {
+        return;
+      }
+      setPackagePlans(catalog.plans);
+      setFeaturedPackageId(catalog.featuredPackageId);
+      setSelectedPlanId((current) => {
+        if (catalog.plans.some((plan) => plan.id === current)) {
+          return current;
+        }
+        return catalog.featuredPackageId && catalog.plans.some((plan) => plan.id === catalog.featuredPackageId)
+          ? catalog.featuredPackageId
+          : catalog.plans[0]?.id ?? "";
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [props.language]);
 
-    if (validPlanFromQuery) {
-      setSelectedPlanId(validPlanFromQuery);
+  useEffect(() => {
+    if (planFromQuery && packagePlans.some((plan) => plan.id === planFromQuery)) {
+      setSelectedPlanId(planFromQuery);
     }
 
     if (purchaseFlow === "checkout") {
@@ -1977,7 +2145,7 @@ function BookingPage(props: {
       nextParams.delete("flow");
       setSearchParams(nextParams, { replace: true });
     }
-  }, [planFromQuery, purchaseFlow, searchParams, setSearchParams]);
+  }, [packagePlans, planFromQuery, purchaseFlow, searchParams, setSearchParams]);
 
   const handlePurchase = () => {
     const plan = packagePlans.find((item) => item.id === selectedPlanId);
@@ -2181,7 +2349,8 @@ function BookingPage(props: {
               </p>
             </div>
 
-            <div className="deal-hostinger-wrap">
+            {packagePlans.length > 0 ? (
+              <div className="deal-hostinger-wrap">
               <p>
                 {t(props.language, {
                   es: "Puedes comprar mas sesiones en cualquier momento.",
@@ -2191,48 +2360,64 @@ function BookingPage(props: {
               </p>
 
               <div className="deal-grid">
-                {packagePlans.map((plan) => (
-                  <label className={`deal-card dashboard-deal-card ${selectedPlanId === plan.id ? "selected" : ""}`} key={plan.id}>
-                    <input
-                      checked={selectedPlanId === plan.id}
-                      type="radio"
-                      name="package"
-                      value={plan.id}
-                      onChange={() => setSelectedPlanId(plan.id)}
-                    />
-                    <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
-                    <p>{localizedPackageDescription(plan.id, plan.description, props.language)}</p>
-                    <div className="deal-pricing-top">
-                      <span className="deal-list-price">
-                        {formatMoney(Math.round(plan.priceUsd / (1 - plan.discountPercent / 100)), props.language, props.currency)}
-                      </span>
-                      <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                {packagePlans.slice(0, 3).map((plan) => (
+                  <div className={`deal-card-shell ${featuredPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
+                    <div className="deal-card-roof" aria-hidden={featuredPackageId !== plan.id}>
+                      {featuredPackageId === plan.id ? (
+                        <span className="deal-card-featured-kicker">{t(props.language, { es: "Mas elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
+                      ) : null}
                     </div>
-                    <p className="deal-from">{t(props.language, { es: "Desde", en: "From", pt: "Desde" })}</p>
-                    <p className="deal-main-price">{formatMoney(plan.priceUsd, props.language, props.currency)}</p>
-                    <p className="deal-caption">
-                      {replaceTemplate(
-                        t(props.language, {
-                          es: "{count} sesiones incluidas.",
-                          en: "{count} sessions included.",
-                          pt: "{count} sessoes incluidas."
-                        }),
-                        { count: String(plan.credits) }
-                      )}
-                    </p>
-                    <span className="deal-cta">
-                      {selectedPlanId === plan.id
-                        ? t(props.language, { es: "Paquete seleccionado", en: "Selected package", pt: "Pacote selecionado" })
-                        : t(props.language, { es: "Seleccionar paquete", en: "Select package", pt: "Selecionar pacote" })}
-                    </span>
-                  </label>
+                    <label className={`deal-card dashboard-deal-card ${selectedPlanId === plan.id ? "selected" : ""} ${featuredPackageId === plan.id ? "featured" : ""}`}>
+                      <input
+                        checked={selectedPlanId === plan.id}
+                        type="radio"
+                        name="package"
+                        value={plan.id}
+                        onChange={() => setSelectedPlanId(plan.id)}
+                      />
+                      <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
+                      <p>{localizedPackageDescription(plan.id, plan.description, props.language)}</p>
+                      <div className="deal-pricing-top">
+                        <span className="deal-list-price">
+                          {formatMoney(Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100)), props.language, props.currency)}
+                        </span>
+                        <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                      </div>
+                      <p className="deal-from">{t(props.language, { es: "Desde", en: "From", pt: "Desde" })}</p>
+                      <p className="deal-main-price">{formatMoney(plan.priceCents / 100, props.language, props.currency)}</p>
+                      <p className="deal-caption">
+                        {replaceTemplate(
+                          t(props.language, {
+                            es: "{count} sesiones incluidas.",
+                            en: "{count} sessions included.",
+                            pt: "{count} sessoes incluidas."
+                          }),
+                          { count: String(plan.credits) }
+                        )}
+                      </p>
+                      <span className="deal-cta">
+                        {selectedPlanId === plan.id
+                          ? t(props.language, { es: "Paquete seleccionado", en: "Selected package", pt: "Pacote selecionado" })
+                          : t(props.language, { es: "Seleccionar paquete", en: "Select package", pt: "Selecionar pacote" })}
+                      </span>
+                    </label>
+                  </div>
                 ))}
               </div>
 
-              <button className="primary stripe-payment-button" type="button" onClick={handlePurchase}>
+              <button className="primary stripe-payment-button" type="button" onClick={handlePurchase} disabled={!selectedPlanId}>
                 {t(props.language, { es: "Pagar con Stripe", en: "Pay with Stripe", pt: "Pagar com Stripe" })}
               </button>
             </div>
+            ) : (
+              <p>
+                {t(props.language, {
+                  es: "Todavia no hay paquetes publicados para este portal.",
+                  en: "There are no published packages for this portal yet.",
+                  pt: "Ainda nao ha pacotes publicados para este portal."
+                })}
+              </p>
+            )}
             {purchaseMessage ? <p className="success-text">{purchaseMessage}</p> : null}
           </article>
         </div>
@@ -3598,6 +3783,7 @@ function MainPortal(props: {
 
 export function App() {
   const [state, setState] = useState<PatientAppState>(() => loadState());
+  const [profileSyncReady, setProfileSyncReady] = useState(false);
 
   useEffect(() => {
     saveState(state);
@@ -3606,6 +3792,116 @@ export function App() {
   const updateState = (updater: (current: PatientAppState) => PatientAppState) => {
     setState((current) => updater(current));
   };
+
+  const sessionId = state.session?.id;
+
+  useEffect(() => {
+    if (!sessionId || !state.authToken) {
+      setProfileSyncReady(false);
+      return;
+    }
+
+    setProfileSyncReady(false);
+
+    let cancelled = false;
+
+    const syncFromApi = async () => {
+      try {
+        const [profileResult, bookingsResult] = await Promise.allSettled([
+          apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, state.authToken ?? undefined),
+          apiRequest<BookingsMineApiResponse>("/api/bookings/mine", {}, state.authToken ?? undefined)
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        const profileResponse = profileResult.status === "fulfilled" ? profileResult.value : null;
+        const bookingsResponse = bookingsResult.status === "fulfilled" ? bookingsResult.value : null;
+
+        const latestPackage = profileResponse?.profile?.latestPackage ?? null;
+        const remoteAssignedProfessional = profileResponse?.profile?.activeProfessional ?? null;
+        const hasCatalogProfessional = remoteAssignedProfessional
+          ? professionalsCatalog.some((item) => item.id === remoteAssignedProfessional.id)
+          : false;
+
+        const bookingsFromApi: Booking[] = (bookingsResponse?.bookings ?? [])
+          .map((booking) => ({
+            id: booking.id,
+            professionalId: booking.professionalId ?? "",
+            startsAt: booking.startsAt,
+            endsAt: booking.endsAt,
+            status: (booking.status === "cancelled" ? "cancelled" : "confirmed") as Booking["status"],
+            joinUrl: booking.joinUrl ?? "",
+            createdAt: booking.createdAt,
+            bookingMode: "credit" as const
+          }))
+          .filter((booking) => booking.professionalId.length > 0);
+
+        setState((current) => {
+          if (!current.session || current.session.id !== sessionId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            assignedProfessionalId: remoteAssignedProfessional?.id ?? current.assignedProfessionalId,
+            assignedProfessionalName: remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName,
+            selectedProfessionalId:
+              hasCatalogProfessional && remoteAssignedProfessional
+                ? remoteAssignedProfessional.id
+                : current.selectedProfessionalId,
+            activeChatProfessionalId:
+              hasCatalogProfessional && remoteAssignedProfessional
+                ? remoteAssignedProfessional.id
+                : current.activeChatProfessionalId,
+            profile: {
+              ...current.profile,
+              timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
+            },
+            intake: profileResponse?.profile?.intakeCompletedAt
+              ? {
+                  completed: true,
+                  completedAt: profileResponse.profile.intakeCompletedAt,
+                  riskLevel: (profileResponse.profile.intakeRiskLevel ?? "low") as RiskLevel,
+                  riskBlocked: (profileResponse.profile.intakeRiskLevel ?? "low") !== "low",
+                  answers: current.intake?.answers ?? {}
+                }
+              : current.intake,
+            subscription: latestPackage
+              ? {
+                  packageId: latestPackage.id,
+                  packageName: latestPackage.name,
+                  creditsTotal: latestPackage.totalCredits,
+                  creditsRemaining: latestPackage.remainingCredits,
+                  purchasedAt: latestPackage.purchasedAt
+                }
+              : current.subscription,
+            bookings: bookingsResponse ? bookingsFromApi : current.bookings
+          };
+        });
+
+        if (profileResult.status === "rejected") {
+          console.error("Could not sync profile from API", profileResult.reason);
+        }
+        if (bookingsResult.status === "rejected") {
+          console.error("Could not sync bookings from API", bookingsResult.reason);
+        }
+      } catch (error) {
+        console.error("Could not sync patient portal from API", error);
+      } finally {
+        if (!cancelled) {
+          setProfileSyncReady(true);
+        }
+      }
+    };
+
+    void syncFromApi();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, state.authToken]);
 
   if (!state.session) {
     return (
@@ -3625,6 +3921,7 @@ export function App() {
           }));
         }}
         onLogin={(user, token) => {
+          setProfileSyncReady(false);
           setState((current) => ({
             ...current,
             session: user,
@@ -3635,23 +3932,65 @@ export function App() {
     );
   }
 
+  if (!profileSyncReady) {
+    return (
+      <div className="intake-shell">
+        <section className="intake-card">
+          <p>{t(state.language, { es: "Cargando tu perfil...", en: "Loading your profile...", pt: "Carregando seu perfil..." })}</p>
+        </section>
+      </div>
+    );
+  }
+
   if (!state.intake?.completed) {
     return (
       <IntakeScreen
         user={state.session}
         language={state.language}
-        onComplete={(answers) => {
-          const riskResult = evaluateRisk(answers);
-          setState((current) => ({
-            ...current,
-            intake: {
-              completed: true,
-              completedAt: new Date().toISOString(),
-              riskLevel: riskResult.level,
-              riskBlocked: riskResult.blocked,
-              answers
+        onComplete={async (answers) => {
+          if (!state.authToken) {
+            throw new Error("No se encontro sesion autenticada");
+          }
+
+          try {
+            const response = await apiRequest<SubmitIntakeApiResponse>(
+              "/api/profiles/me/intake",
+              {
+                method: "POST",
+                body: JSON.stringify({ answers })
+              },
+              state.authToken
+            );
+
+            const riskLevel = response.intake.riskLevel as RiskLevel;
+
+            setState((current) => ({
+              ...current,
+              intake: {
+                completed: true,
+                completedAt: response.intake.completedAt,
+                riskLevel,
+                riskBlocked: riskLevel !== "low",
+                answers
+              }
+            }));
+          } catch (requestError) {
+            if (requestError instanceof Error && requestError.message.includes("Intake already completed")) {
+              setState((current) => ({
+                ...current,
+                intake: {
+                  completed: true,
+                  completedAt: new Date().toISOString(),
+                  riskLevel: current.intake?.riskLevel ?? "low",
+                  riskBlocked: (current.intake?.riskLevel ?? "low") !== "low",
+                  answers: current.intake?.answers ?? {}
+                }
+              }));
+              return;
             }
-          }));
+
+            throw requestError;
+          }
         }}
       />
     );
@@ -3661,7 +4000,10 @@ export function App() {
     <MainPortal
       state={state}
       onStateChange={updateState}
-      onLogout={() => setState(defaultState)}
+      onLogout={() => {
+        setProfileSyncReady(false);
+        setState(defaultState);
+      }}
     />
   );
 }

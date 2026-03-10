@@ -186,20 +186,20 @@ async function seedAvailability() {
 async function seedPackagesAndPurchase() {
   await prisma.sessionPackage.upsert({
     where: { stripePriceId: "pkg-4-demo" },
-    update: { name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-4-demo", name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, currency: "usd", active: true }
+    update: { name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true },
+    create: { stripePriceId: "pkg-4-demo", name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true }
   });
 
   await prisma.sessionPackage.upsert({
     where: { stripePriceId: "pkg-8-demo" },
-    update: { name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-8-demo", name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, currency: "usd", active: true }
+    update: { name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, discountPercent: 36, currency: "usd", active: true },
+    create: { stripePriceId: "pkg-8-demo", name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, discountPercent: 36, currency: "usd", active: true }
   });
 
   await prisma.sessionPackage.upsert({
     where: { stripePriceId: "pkg-12-demo" },
-    update: { name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-12-demo", name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, currency: "usd", active: true }
+    update: { name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, discountPercent: 40, currency: "usd", active: true },
+    create: { stripePriceId: "pkg-12-demo", name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, discountPercent: 40, currency: "usd", active: true }
   });
 
   const growthPackage = await prisma.sessionPackage.findUniqueOrThrow({ where: { stripePriceId: "pkg-8-demo" } });

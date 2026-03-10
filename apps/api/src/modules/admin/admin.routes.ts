@@ -13,7 +13,9 @@ const listUsersQuerySchema = z.object({
     .trim()
     .min(1)
     .max(120)
-    .optional()
+    .optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional()
 });
 
 const createUserSchema = z.object({
@@ -35,6 +37,7 @@ const createUserSchema = z.object({
 const updateUserSchema = z
   .object({
     fullName: z.string().min(2).max(120).optional(),
+    email: z.string().email().optional(),
     password: z.string().min(8).max(120).optional(),
     patientStatus: patientStatusSchema.optional(),
     patientTimezone: z.string().min(2).max(80).optional(),
@@ -53,6 +56,8 @@ const updateUserSchema = z
 const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
+const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
 
 const imageSourceSchema = z
@@ -75,11 +80,12 @@ const reviewSchema = z.object({
   id: z.string().min(2).max(120),
   name: z.string().min(2).max(120),
   role: z.string().min(2).max(80),
+  reviewDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   relativeDate: z.string().min(2).max(80),
   text: z.string().min(5).max(2000),
   rating: z.number().int().min(1).max(5),
   avatar: imageSourceSchema,
-  accent: z.string().trim().min(4).max(32)
+  accent: z.string().trim().min(4).max(32).optional()
 });
 
 const reviewCreateSchema = reviewSchema.omit({ id: true });
@@ -129,6 +135,7 @@ const createPackageSchema = z.object({
   name: z.string().trim().min(2).max(120),
   credits: z.number().int().min(1).max(200),
   priceCents: z.number().int().min(1).max(100000000),
+  discountPercent: z.number().int().min(0).max(100).default(0),
   currency: z.string().trim().min(2).max(8).default("usd"),
   active: z.boolean().default(true)
 });
@@ -140,12 +147,20 @@ const updatePackageSchema = z
     name: z.string().trim().min(2).max(120).optional(),
     credits: z.number().int().min(1).max(200).optional(),
     priceCents: z.number().int().min(1).max(100000000).optional(),
+    discountPercent: z.number().int().min(0).max(100).optional(),
     currency: z.string().trim().min(2).max(8).optional(),
     active: z.boolean().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one field is required"
   });
+
+const sessionPackagesVisibilitySchema = z.object({
+  landing: z.array(z.string().min(1)).max(3),
+  patient: z.array(z.string().min(1)).max(3),
+  featuredLanding: z.string().min(1).nullable().optional(),
+  featuredPatient: z.string().min(1).nullable().optional()
+});
 
 const listBookingsQuerySchema = z.object({
   status: bookingStatusSchema.optional(),
@@ -197,13 +212,31 @@ const createAvailabilitySlotSchema = z.object({
 
 const listPatientsQuerySchema = z.object({
   status: patientStatusSchema.optional(),
-  search: z.string().trim().min(1).max(120).optional()
+  search: z.string().trim().min(1).max(120).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(100).optional()
 });
 
 const creditAdjustmentSchema = z.object({
   amount: z.number().int().min(-100).max(100).refine((value) => value !== 0, "amount must not be 0"),
   note: z.string().trim().max(300).optional()
 });
+
+const patientActiveProfessionalSchema = z.object({
+  professionalId: z.string().min(1).nullable()
+});
+
+const patientSessionsAvailableSchema = z.object({
+  remainingCredits: z.number().int().min(0),
+  reason: z.string().trim().max(200).optional()
+});
+
+const patientSessionsContractedSchema = z.object({
+  totalCredits: z.number().int().min(0),
+  reason: z.string().trim().max(200).optional()
+});
+
+const patientAssignmentsSchema = z.record(z.string(), z.string().min(1).nullable());
 
 type AdminUserRecord = {
   id: string;
@@ -267,8 +300,68 @@ function shapeAdminUser(user: AdminUserRecord) {
   };
 }
 
+function parseSessionPackagesVisibility(value: unknown) {
+  const parsed = sessionPackagesVisibilitySchema.safeParse(value);
+  if (!parsed.success) {
+    return { landing: [] as string[], patient: [] as string[], featuredLanding: null as string | null, featuredPatient: null as string | null };
+  }
+
+  const landing = Array.from(new Set(parsed.data.landing));
+  const patient = Array.from(new Set(parsed.data.patient));
+
+  return {
+    landing,
+    patient,
+    featuredLanding: parsed.data.featuredLanding && landing.includes(parsed.data.featuredLanding) ? parsed.data.featuredLanding : null,
+    featuredPatient: parsed.data.featuredPatient && patient.includes(parsed.data.featuredPatient) ? parsed.data.featuredPatient : null
+  };
+}
+
 function buildId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function parsePatientAssignments(value: unknown): Record<string, string | null> {
+  const parsed = patientAssignmentsSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+async function ensureLatestPurchaseForPatient(patientId: string) {
+  const latestPurchase = await prisma.patientPackagePurchase.findFirst({
+    where: { patientId },
+    include: { sessionPackage: { select: { id: true, name: true } } },
+    orderBy: { purchasedAt: "desc" }
+  });
+
+  if (latestPurchase) {
+    return latestPurchase;
+  }
+
+  const fallbackPackage =
+    (await prisma.sessionPackage.findFirst({
+      where: { active: true },
+      orderBy: { createdAt: "asc" }
+    })) ??
+    (await prisma.sessionPackage.findFirst({
+      orderBy: { createdAt: "asc" }
+    }));
+
+  if (!fallbackPackage) {
+    return null;
+  }
+
+  const manualSessionId = `manual-admin-${patientId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return prisma.patientPackagePurchase.create({
+    data: {
+      patientId,
+      packageId: fallbackPackage.id,
+      stripeCheckoutSessionId: manualSessionId,
+      totalCredits: 0,
+      remainingCredits: 0
+    },
+    include: { sessionPackage: { select: { id: true, name: true } } }
+  });
 }
 
 function parseLandingSettings(value: unknown) {
@@ -325,51 +418,69 @@ adminRouter.get("/users", async (req, res) => {
   }
 
   const search = parsed.data.search?.toLowerCase();
+  const page = parsed.data.page ?? 1;
+  const pageSize = parsed.data.pageSize ?? 10;
+  const skip = (page - 1) * pageSize;
+  const where = {
+    role: parsed.data.role,
+    ...(search
+      ? {
+          OR: [
+            { email: { contains: search } },
+            { fullName: { contains: search } }
+          ]
+        }
+      : {})
+  };
 
-  const users: AdminUserRecord[] = await prisma.user.findMany({
-    where: {
-      role: parsed.data.role,
-      ...(search
-        ? {
-            OR: [
-              { email: { contains: search } },
-              { fullName: { contains: search } }
-            ]
+  const [total, users] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      include: {
+        patient: {
+          select: {
+            id: true,
+            timezone: true,
+            status: true
           }
-        : {})
-    },
-    include: {
-      patient: {
-        select: {
-          id: true,
-          timezone: true,
-          status: true
+        },
+        professional: {
+          select: {
+            id: true,
+            visible: true,
+            cancellationHours: true,
+            bio: true,
+            therapeuticApproach: true,
+            yearsExperience: true,
+            photoUrl: true,
+            videoUrl: true
+          }
+        },
+        admin: {
+          select: {
+            id: true
+          }
         }
       },
-      professional: {
-        select: {
-          id: true,
-          visible: true,
-          cancellationHours: true,
-          bio: true,
-          therapeuticApproach: true,
-          yearsExperience: true,
-          photoUrl: true,
-          videoUrl: true
-        }
-      },
-      admin: {
-        select: {
-          id: true
-        }
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    take: 250
-  });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize
+    })
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return res.json({
-    users: users.map((user: AdminUserRecord) => shapeAdminUser(user))
+    users: users.map((user: AdminUserRecord) => shapeAdminUser(user)),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+      hasPrev: page > 1,
+      hasNext: page < totalPages
+    }
   });
 });
 
@@ -471,6 +582,15 @@ adminRouter.patch("/users/:userId", async (req, res) => {
 
   if (parsed.data.fullName) {
     data.fullName = parsed.data.fullName.trim();
+  }
+
+  if (parsed.data.email) {
+    const normalizedEmail = parsed.data.email.trim().toLowerCase();
+    const existingByEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existingByEmail && existingByEmail.id !== existing.id) {
+      return res.status(409).json({ error: "Email already in use" });
+    }
+    data.email = normalizedEmail;
   }
 
   if (parsed.data.password) {
@@ -577,20 +697,25 @@ adminRouter.get("/session-packages", async (req, res) => {
   }
 
   const search = parsed.data.search?.toLowerCase();
-  const packages = await prisma.sessionPackage.findMany({
-    where: {
-      ...(parsed.data.active ? { active: parsed.data.active === "true" } : {}),
-      ...(parsed.data.professionalId ? { professionalId: parsed.data.professionalId } : {}),
-      ...(search ? { name: { contains: search } } : {})
-    },
-    include: {
-      professional: { select: { id: true, user: { select: { fullName: true } } } },
-      _count: { select: { purchases: true } }
-    },
-    orderBy: [{ active: "desc" }, { createdAt: "desc" }]
-  });
+  const [packages, visibilityConfig] = await Promise.all([
+    prisma.sessionPackage.findMany({
+      where: {
+        ...(parsed.data.active ? { active: parsed.data.active === "true" } : {}),
+        ...(parsed.data.professionalId ? { professionalId: parsed.data.professionalId } : {}),
+        ...(search ? { name: { contains: search } } : {})
+      },
+      include: {
+        professional: { select: { id: true, user: { select: { fullName: true } } } },
+        _count: { select: { purchases: true } }
+      },
+      orderBy: [{ active: "desc" }, { createdAt: "desc" }]
+    }),
+    prisma.systemConfig.findUnique({ where: { key: SESSION_PACKAGES_VISIBILITY_KEY } })
+  ]);
+  const visibility = parseSessionPackagesVisibility(visibilityConfig?.value);
 
   return res.json({
+    visibility,
     sessionPackages: packages.map((item) => ({
       id: item.id,
       professionalId: item.professionalId,
@@ -599,12 +724,58 @@ adminRouter.get("/session-packages", async (req, res) => {
       name: item.name,
       credits: item.credits,
       priceCents: item.priceCents,
+      discountPercent: item.discountPercent,
       currency: item.currency,
       active: item.active,
       createdAt: item.createdAt,
-      purchasesCount: item._count.purchases
+      purchasesCount: item._count.purchases,
+      landingPublished: visibility.landing.includes(item.id),
+      patientPublished: visibility.patient.includes(item.id)
     }))
   });
+});
+
+adminRouter.put("/session-packages/visibility", async (req, res) => {
+  const parsed = sessionPackagesVisibilitySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const requestedIds = Array.from(new Set([...parsed.data.landing, ...parsed.data.patient]));
+  const existingPackages = requestedIds.length
+    ? await prisma.sessionPackage.findMany({
+        where: {
+          id: { in: requestedIds },
+          active: true
+        },
+        select: { id: true }
+      })
+    : [];
+
+  if (existingPackages.length !== requestedIds.length) {
+    return res.status(400).json({ error: "Only active packages can be published." });
+  }
+
+  const visibility = {
+    landing: Array.from(new Set(parsed.data.landing)),
+    patient: Array.from(new Set(parsed.data.patient)),
+    featuredLanding:
+      parsed.data.featuredLanding && parsed.data.landing.includes(parsed.data.featuredLanding)
+        ? parsed.data.featuredLanding
+        : null,
+    featuredPatient:
+      parsed.data.featuredPatient && parsed.data.patient.includes(parsed.data.featuredPatient)
+        ? parsed.data.featuredPatient
+        : null
+  };
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: SESSION_PACKAGES_VISIBILITY_KEY },
+    update: { value: visibility },
+    create: { key: SESSION_PACKAGES_VISIBILITY_KEY, value: visibility }
+  });
+
+  return res.json({ visibility: parseSessionPackagesVisibility(saved.value) });
 });
 
 adminRouter.post("/session-packages", async (req, res) => {
@@ -623,6 +794,7 @@ adminRouter.post("/session-packages", async (req, res) => {
       name: packageData.name.trim(),
       credits: packageData.credits,
       priceCents: packageData.priceCents,
+      discountPercent: packageData.discountPercent,
       currency: packageData.currency.trim().toLowerCase(),
       active: packageData.active
     }
@@ -650,6 +822,7 @@ adminRouter.patch("/session-packages/:packageId", async (req, res) => {
       ...(parsed.data.name !== undefined ? { name: parsed.data.name.trim() } : {}),
       ...(parsed.data.credits !== undefined ? { credits: parsed.data.credits } : {}),
       ...(parsed.data.priceCents !== undefined ? { priceCents: parsed.data.priceCents } : {}),
+      ...(parsed.data.discountPercent !== undefined ? { discountPercent: parsed.data.discountPercent } : {}),
       ...(parsed.data.currency !== undefined ? { currency: parsed.data.currency.trim().toLowerCase() } : {}),
       ...(parsed.data.active !== undefined ? { active: parsed.data.active } : {})
     }
@@ -888,37 +1061,53 @@ adminRouter.get("/patients", async (req, res) => {
     return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
   }
 
-  const search = parsed.data.search?.toLowerCase();
-  const patients = await prisma.patientProfile.findMany({
-    where: {
-      ...(parsed.data.status ? { status: parsed.data.status } : {}),
-      ...(search
-        ? {
-            user: {
-              OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
-            }
+  const rawSearch = parsed.data.search?.toLowerCase().trim();
+  const isWildcardSearch = rawSearch === "*";
+  const search = rawSearch && !isWildcardSearch ? rawSearch : undefined;
+
+  const page = parsed.data.page ?? 1;
+  const defaultPageSize = isWildcardSearch ? 10 : 250;
+  const pageSize = parsed.data.pageSize ?? defaultPageSize;
+  const skip = (page - 1) * pageSize;
+
+  const where = {
+    ...(parsed.data.status ? { status: parsed.data.status } : {}),
+    ...(search
+      ? {
+          user: {
+            OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
           }
-        : {})
-    },
-    include: {
-      user: { select: { id: true, fullName: true, email: true } },
-      purchases: {
-        include: { sessionPackage: { select: { id: true, name: true } } },
-        orderBy: { purchasedAt: "desc" },
-        take: 10
+        }
+      : {})
+  };
+
+  const [total, patients] = await Promise.all([
+    prisma.patientProfile.count({ where }),
+    prisma.patientProfile.findMany({
+      where,
+      include: {
+        user: { select: { id: true, fullName: true, email: true } },
+        purchases: {
+          include: { sessionPackage: { select: { id: true, name: true } } },
+          orderBy: { purchasedAt: "desc" },
+          take: 10
+        },
+        bookings: {
+          orderBy: { startsAt: "desc" },
+          take: 10
+        },
+        creditLedger: {
+          orderBy: { createdAt: "desc" },
+          take: 20
+        }
       },
-      bookings: {
-        orderBy: { startsAt: "desc" },
-        take: 10
-      },
-      creditLedger: {
-        orderBy: { createdAt: "desc" },
-        take: 20
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    take: 250
-  });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize
+    })
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return res.json({
     patients: patients.map((patient) => ({
@@ -947,7 +1136,15 @@ adminRouter.get("/patients", async (req, res) => {
         : null,
       bookingsCount: patient.bookings.length,
       creditBalance: patient.creditLedger.reduce((acc, movement) => acc + movement.amount, 0)
-    }))
+    })),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+      hasPrev: page > 1,
+      hasNext: page < totalPages
+    }
   });
 });
 
@@ -985,6 +1182,260 @@ adminRouter.post("/patients/:patientId/credits", async (req, res) => {
   }
 
   return res.status(201).json({ creditMovement: adjustment });
+});
+
+adminRouter.get("/patients/:patientId/management", async (req, res) => {
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: req.params.patientId },
+    include: {
+      user: { select: { id: true, fullName: true, email: true } },
+      purchases: {
+        include: { sessionPackage: { select: { id: true, name: true } } },
+        orderBy: { purchasedAt: "desc" },
+        take: 1
+      },
+      bookings: {
+        where: { status: "CONFIRMED" },
+        include: { professional: { select: { id: true, user: { select: { fullName: true } } } } },
+        orderBy: { startsAt: "desc" },
+        take: 50
+      }
+    }
+  });
+
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const activeProfessionalId = assignments[patient.id] ?? null;
+
+  let activeProfessionalName: string | null = null;
+  if (activeProfessionalId) {
+    const professional = await prisma.professionalProfile.findUnique({
+      where: { id: activeProfessionalId },
+      include: { user: { select: { fullName: true } } }
+    });
+    activeProfessionalName = professional?.user.fullName ?? null;
+  }
+
+  return res.json({
+    patient: {
+      id: patient.id,
+      userId: patient.userId,
+      fullName: patient.user.fullName,
+      email: patient.user.email,
+      timezone: patient.timezone,
+      status: patient.status,
+      activeProfessionalId,
+      activeProfessionalName,
+      assignmentStatus: activeProfessionalId ? "assigned" : "pending",
+      latestPurchase: patient.purchases[0]
+        ? {
+            id: patient.purchases[0].id,
+            packageId: patient.purchases[0].packageId,
+            packageName: patient.purchases[0].sessionPackage.name,
+            totalCredits: patient.purchases[0].totalCredits,
+            remainingCredits: patient.purchases[0].remainingCredits,
+            purchasedAt: patient.purchases[0].purchasedAt
+          }
+        : null,
+      confirmedBookings: patient.bookings.map((booking) => ({
+        id: booking.id,
+        patientId: booking.patientId,
+        patientName: patient.user.fullName,
+        professionalId: booking.professionalId,
+        professionalName: booking.professional.user.fullName,
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        status: booking.status,
+        consumedCredits: booking.consumedCredits,
+        cancellationReason: booking.cancellationReason,
+        cancelledAt: booking.cancelledAt,
+        completedAt: booking.completedAt
+      }))
+    }
+  });
+});
+
+adminRouter.patch("/patients/:patientId/active-professional", async (req, res) => {
+  const parsed = patientActiveProfessionalSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({ where: { id: req.params.patientId } });
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  let professionalName: string | null = null;
+  if (parsed.data.professionalId) {
+    const professional = await prisma.professionalProfile.findUnique({
+      where: { id: parsed.data.professionalId },
+      include: { user: { select: { fullName: true } } }
+    });
+
+    if (!professional) {
+      return res.status(404).json({ error: "Professional not found" });
+    }
+
+    professionalName = professional.user.fullName;
+  }
+
+  const existingConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+  const currentAssignments = parsePatientAssignments(existingConfig?.value);
+
+  if (parsed.data.professionalId) {
+    currentAssignments[patient.id] = parsed.data.professionalId;
+  } else {
+    delete currentAssignments[patient.id];
+  }
+
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
+    update: { value: currentAssignments },
+    create: {
+      key: PATIENT_ACTIVE_ASSIGNMENTS_KEY,
+      value: currentAssignments
+    }
+  });
+
+  return res.json({
+    patientId: patient.id,
+    activeProfessionalId: parsed.data.professionalId,
+    activeProfessionalName: professionalName,
+    assignmentStatus: parsed.data.professionalId ? "assigned" : "pending"
+  });
+});
+
+adminRouter.patch("/patients/:patientId/sessions-available", async (req, res) => {
+  const parsed = patientSessionsAvailableSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: req.params.patientId },
+    include: {
+      purchases: {
+        include: { sessionPackage: { select: { id: true, name: true } } },
+        orderBy: { purchasedAt: "desc" },
+        take: 1
+      }
+    }
+  });
+
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const latestPurchase = patient.purchases[0] ?? (await ensureLatestPurchaseForPatient(patient.id));
+  if (!latestPurchase) {
+    return res.status(400).json({ error: "No session packages configured. Create one first." });
+  }
+
+  const delta = parsed.data.remainingCredits - latestPurchase.remainingCredits;
+
+  const updatedPurchase = await prisma.patientPackagePurchase.update({
+    where: { id: latestPurchase.id },
+    data: { remainingCredits: parsed.data.remainingCredits }
+  });
+
+  if (delta !== 0) {
+    await prisma.creditLedger.create({
+      data: {
+        patientId: patient.id,
+        bookingId: null,
+        type: "ADJUSTMENT",
+        amount: delta,
+        note:
+          "Admin set remaining sessions to " +
+          parsed.data.remainingCredits +
+          (parsed.data.reason && parsed.data.reason.length > 0 ? " | motivo: " + parsed.data.reason : "")
+      }
+    });
+  }
+
+  return res.json({
+    patientId: patient.id,
+    latestPurchase: {
+      id: updatedPurchase.id,
+      packageId: updatedPurchase.packageId,
+      packageName: latestPurchase.sessionPackage.name,
+      totalCredits: updatedPurchase.totalCredits,
+      remainingCredits: updatedPurchase.remainingCredits,
+      purchasedAt: updatedPurchase.purchasedAt
+    }
+  });
+});
+
+adminRouter.patch("/patients/:patientId/sessions-contracted", async (req, res) => {
+  const parsed = patientSessionsContractedSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: req.params.patientId },
+    include: {
+      purchases: {
+        include: { sessionPackage: { select: { id: true, name: true } } },
+        orderBy: { purchasedAt: "desc" },
+        take: 1
+      }
+    }
+  });
+
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const latestPurchase = patient.purchases[0] ?? (await ensureLatestPurchaseForPatient(patient.id));
+  if (!latestPurchase) {
+    return res.status(400).json({ error: "No session packages configured. Create one first." });
+  }
+
+  const previousTotal = latestPurchase.totalCredits;
+  const nextTotal = parsed.data.totalCredits;
+  const nextRemaining = Math.min(latestPurchase.remainingCredits, nextTotal);
+
+  const updatedPurchase = await prisma.patientPackagePurchase.update({
+    where: { id: latestPurchase.id },
+    data: {
+      totalCredits: nextTotal,
+      remainingCredits: nextRemaining
+    }
+  });
+
+  if (previousTotal !== nextTotal) {
+    await prisma.creditLedger.create({
+      data: {
+        patientId: patient.id,
+        bookingId: null,
+        type: "ADJUSTMENT",
+        amount: nextTotal - previousTotal,
+        note:
+          "Admin set contracted sessions to " +
+          nextTotal +
+          (parsed.data.reason && parsed.data.reason.length > 0 ? " | motivo: " + parsed.data.reason : "")
+      }
+    });
+  }
+
+  return res.json({
+    patientId: patient.id,
+    latestPurchase: {
+      id: updatedPurchase.id,
+      packageId: updatedPurchase.packageId,
+      packageName: latestPurchase.sessionPackage.name,
+      totalCredits: updatedPurchase.totalCredits,
+      remainingCredits: updatedPurchase.remainingCredits,
+      purchasedAt: updatedPurchase.purchasedAt
+    }
+  });
+
 });
 
 adminRouter.get("/landing-settings", async (_req, res) => {
@@ -1067,7 +1518,7 @@ adminRouter.post("/web-content/reviews", async (req, res) => {
   const config = await prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } });
   const current = reviewsCollectionSchema.safeParse(config?.value);
   const reviews = current.success ? current.data : [];
-  const createdReview = { id: buildId("review"), ...parsed.data };
+  const createdReview = { id: buildId("review"), accent: parsed.data.accent ?? "#7a5cff", ...parsed.data };
   const next = [createdReview, ...reviews];
 
   const saved = await prisma.systemConfig.upsert({
@@ -1094,7 +1545,7 @@ adminRouter.put("/web-content/reviews/:reviewId", async (req, res) => {
     return res.status(404).json({ error: "Review not found" });
   }
 
-  const updatedReview = { ...reviews[targetIndex], ...parsed.data };
+  const updatedReview = { ...reviews[targetIndex], ...parsed.data, accent: parsed.data.accent ?? reviews[targetIndex].accent ?? "#7a5cff" };
   const next = [...reviews];
   next[targetIndex] = updatedReview;
 

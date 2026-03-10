@@ -1,15 +1,19 @@
 import { SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 
 const API_BASE =
-  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
+  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL?.trim() || "http://localhost:4000";
 const LEGACY_PATIENT_URL = "http://localhost:5173";
 const LEGACY_PROFESSIONAL_URL = "http://localhost:5174";
 const LEGACY_ADMIN_URL = "http://localhost:5175";
 
-const sessionImage =
-  "https://images.pexels.com/photos/4101143/pexels-photo-4101143.jpeg?auto=compress&cs=tinysrgb&w=1600";
-const defaultPatientHeroImage =
-  "https://images.pexels.com/photos/8148648/pexels-photo-8148648.jpeg?auto=compress&cs=tinysrgb&w=1600";
+const localPatientHeroImage = "/images/patient-hero.jpg";
+const localProfessionalHeroImage = "/images/professional-hero.jpg";
+const fallbackPatientHeroImage = "/images/patient-hero.svg";
+const fallbackProfessionalHeroImage = "/images/professional-hero.svg";
+const heroWidths = [480, 768, 1280, 1600] as const;
+
+const sessionImage = localProfessionalHeroImage;
+const defaultPatientHeroImage = localPatientHeroImage;
 
 const appStoreBadge = "https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg";
 const googlePlayBadge = "https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg";
@@ -21,6 +25,57 @@ function handleImageFallback(event: SyntheticEvent<HTMLImageElement>, fallback: 
   }
   image.dataset.fallbackApplied = "true";
   image.src = fallback;
+}
+
+function buildResponsiveSrcSet(baseName: string, ext: "avif" | "webp" | "jpg") {
+  return heroWidths.map((width) => `/images/${baseName}-${width}.${ext} ${width}w`).join(", ");
+}
+
+function shouldUseOptimizedHeroVariants(imageUrl: string, originalPath: string) {
+  return imageUrl === originalPath || imageUrl.endsWith(originalPath);
+}
+
+function HeroShowcaseImage(props: {
+  src: string;
+  alt: string;
+  fallback: string;
+  originalPath: string;
+  optimizedBaseName: string;
+  loading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
+  sizes?: string;
+}) {
+  const {
+    src,
+    alt,
+    fallback,
+    originalPath,
+    optimizedBaseName,
+    loading = "lazy",
+    fetchPriority = "auto",
+    sizes = "(max-width: 700px) 90vw, 42vw"
+  } = props;
+
+  if (!shouldUseOptimizedHeroVariants(src, originalPath)) {
+    return <img src={src} alt={alt} loading={loading} fetchPriority={fetchPriority} decoding="async" onError={(event) => handleImageFallback(event, fallback)} />;
+  }
+
+  return (
+    <picture>
+      <source type="image/avif" srcSet={buildResponsiveSrcSet(optimizedBaseName, "avif")} sizes={sizes} />
+      <source type="image/webp" srcSet={buildResponsiveSrcSet(optimizedBaseName, "webp")} sizes={sizes} />
+      <img
+        src={`/images/${optimizedBaseName}-1280.jpg`}
+        srcSet={buildResponsiveSrcSet(optimizedBaseName, "jpg")}
+        sizes={sizes}
+        alt={alt}
+        loading={loading}
+        fetchPriority={fetchPriority}
+        decoding="async"
+        onError={(event) => handleImageFallback(event, fallback)}
+      />
+    </picture>
+  );
 }
 
 type BlogStatus = "draft" | "published";
@@ -36,6 +91,7 @@ interface ReviewItem {
   id: string;
   name: string;
   role: string;
+  reviewDate?: string;
   relativeDate: string;
   text: string;
   rating: number;
@@ -112,6 +168,64 @@ interface WebContentResponse {
   };
   reviews: ReviewItem[];
   blogPosts: BlogPost[];
+}
+
+interface SessionPackageCard {
+  id: string;
+  name: string;
+  credits: number;
+  priceCents: number;
+  discountPercent: number;
+  currency: string;
+  professionalName?: string | null;
+}
+
+interface SessionPackagesResponse {
+  featuredPackageId: string | null;
+  sessionPackages: SessionPackageCard[];
+}
+
+function describeLandingPackage(credits: number, language: Language): string {
+  if (credits >= 12) {
+    return language === "en"
+      ? "Higher frequency for high-demand therapy processes."
+      : language === "pt"
+        ? "Maior frequencia para processos terapeuticos de alta demanda."
+        : "Mayor frecuencia para procesos terapeuticos de alta demanda.";
+  }
+  if (credits >= 8) {
+    return language === "en"
+      ? "Recommended for sustained monthly therapeutic work."
+      : language === "pt"
+        ? "Recomendado para um ritmo terapeutico mensal sustentado."
+        : "Recomendado para un ritmo terapeutico mensual sostenido.";
+  }
+  return language === "en"
+    ? "Ideal for a first therapy stage."
+    : language === "pt"
+      ? "Ideal para uma primeira etapa de trabalho terapeutico."
+      : "Ideal para una primera etapa de trabajo terapeutico.";
+}
+
+function localizeLandingPackageName(name: string, credits: number, language: Language): string {
+  if (language === "es") {
+    return name;
+  }
+
+  if (credits >= 24) {
+    return language === "en" ? "Long-term - 24 sessions" : "Longo prazo - 24 sessoes";
+  }
+  if (credits >= 12) {
+    return language === "en" ? "Intensive - 12 sessions" : "Intensivo - 12 sessoes";
+  }
+  if (credits >= 8) {
+    return language === "en" ? "Continuity - 8 sessions" : "Continuidade - 8 sessoes";
+  }
+  if (credits >= 4) {
+    return language === "en" ? "Starter - 4 sessions" : "Inicio - 4 sessoes";
+  }
+
+  return name;
 }
 
 const UI_TEXT: Record<
@@ -611,6 +725,29 @@ const reviewTextByLanguage: Record<"en" | "pt", Record<string, string>> = {
     julieta: "Otima experiencia, me senti acompanhada o tempo todo. Super recomendado.",
     nicolas: "Ter uma opcao online flexivel me ajudou muito a organizar meus horarios.",
     "maria-paz": "A qualidade humana da equipe e da profissional foi chave para minha melhora."
+  }
+};
+
+const reviewTextFallbackByLanguage: Record<"en" | "pt", Record<string, string>> = {
+  en: {
+    "Gracias por ayudarme con este servicio online, que me permite  sesiones con profesionales de primera a menor costo! ":
+      "Thank you for helping me with this online service, which lets me have sessions with top professionals at a lower cost!",
+    "Muy buena plataforma para mantener continuidad terapéutica.":
+      "A very good platform to maintain therapeutic continuity.",
+    "El seguimiento profesional fue claro y cercano desde el inicio.":
+      "Professional follow-up felt clear and close from the very beginning.",
+    "Excelente experiencia. Pude organizar mis sesiones sin friccion.":
+      "Excellent experience. I was able to organize my sessions without friction."
+  },
+  pt: {
+    "Gracias por ayudarme con este servicio online, que me permite  sesiones con profesionales de primera a menor costo! ":
+      "Obrigado por me ajudar com este servico online, que me permite ter sessoes com profissionais de primeira por um custo menor!",
+    "Muy buena plataforma para mantener continuidad terapéutica.":
+      "Muito boa plataforma para manter a continuidade terapeutica.",
+    "El seguimiento profesional fue claro y cercano desde el inicio.":
+      "O acompanhamento profissional foi claro e proximo desde o inicio.",
+    "Excelente experiencia. Pude organizar mis sesiones sin friccion.":
+      "Experiencia excelente. Consegui organizar minhas sessoes sem friccao."
   }
 };
 
@@ -1519,6 +1656,8 @@ export function App() {
   const [professionalHeroDesktopImage, setProfessionalHeroDesktopImage] = useState(sessionImage);
   const [professionalHeroMobileImage, setProfessionalHeroMobileImage] = useState(sessionImage);
   const [managedBlogPosts, setManagedBlogPosts] = useState<BlogPost[]>(blogPosts);
+  const [sessionPackages, setSessionPackages] = useState<SessionPackageCard[]>([]);
+  const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 700);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1536,8 +1675,11 @@ export function App() {
   const [commentsByPost, setCommentsByPost] = useState<Record<string, BlogComment[]>>(initialCommentsByPost);
   const t = UI_TEXT[language];
   const metrics = metricsByLanguage[language];
-  const postsPerPage = isMobile ? 4 : 9;
+  const postsPerPage = isMobile ? 4 : 6;
   const localeByLanguage: Record<Language, string> = { es: "es-AR", en: "en-US", pt: "pt-BR" };
+  const packagesTitle = language === "en" ? "Session Packages" : language === "pt" ? "Pacotes de sessoes" : "Paquetes de sesiones";
+  const packagesIntro = language === "en" ? "Choose the format that best supports your therapy rhythm." : language === "pt" ? "Escolha o formato que melhor acompanha seu ritmo terapeutico." : "Elegi el formato que mejor acompana tu ritmo terapeutico.";
+  const packagesCta = language === "en" ? "Go to patient portal" : language === "pt" ? "Ir para o portal de pacientes" : "Ir al portal de pacientes";
   const languageMeta: Record<Language, { label: string; flag: string }> = {
     es: { label: "Español", flag: "🇦🇷" },
     en: { label: "English", flag: "🇺🇸" },
@@ -1573,11 +1715,14 @@ export function App() {
 
     async function loadLandingSettings() {
       try {
-        const response = await fetch(`${API_BASE}/api/public/web-content`);
-        if (!response.ok) {
+        const [contentResponse, packagesResponse] = await Promise.all([
+          fetch(API_BASE + "/api/public/web-content"),
+          fetch(API_BASE + "/api/public/session-packages?channel=landing")
+        ]);
+        if (!contentResponse.ok) {
           return;
         }
-        const data = (await response.json()) as WebContentResponse;
+        const data = (await contentResponse.json()) as WebContentResponse;
         if (!active) {
           return;
         }
@@ -1599,6 +1744,14 @@ export function App() {
         if (Array.isArray(data.blogPosts) && data.blogPosts.length > 0) {
           setManagedBlogPosts(data.blogPosts);
         }
+
+        if (packagesResponse.ok) {
+          const packageData = (await packagesResponse.json()) as SessionPackagesResponse;
+          if (Array.isArray(packageData.sessionPackages)) {
+            setSessionPackages(packageData.sessionPackages.slice(0, 3));
+            setFeaturedPackageId(packageData.featuredPackageId);
+          }
+        }
       } catch {
         // fallback to default content
       }
@@ -1611,17 +1764,33 @@ export function App() {
     };
   }, []);
 
-  function localizeRelativeDate(relativeDate: string) {
-    const daysMatch = relativeDate.match(/(\d+)/);
+  function localizeRelativeDate(review: ReviewItem) {
+    if (review.reviewDate) {
+      const from = new Date(`${review.reviewDate}T00:00:00`);
+      const to = new Date();
+      const diffMs = Math.max(0, to.getTime() - from.getTime());
+      const days = Math.floor(diffMs / 86400000);
+      if (language === "en") {
+        return `${days} days ago`;
+      }
+      if (language === "pt") {
+        return `ha ${days} dias`;
+      }
+      return `hace ${days} dias`;
+    }
+
+    const daysMatch = review.relativeDate.match(/(\d+)/);
     const days = daysMatch ? Number(daysMatch[1]) : null;
     if (language === "en") {
-      return days ? `${days} days ago` : relativeDate;
+      return days ? `${days} days ago` : review.relativeDate;
     }
     if (language === "pt") {
-      return days ? `ha ${days} dias` : relativeDate;
+      return days ? `ha ${days} dias` : review.relativeDate;
     }
-    return relativeDate;
+    return review.relativeDate;
   }
+
+  const featuredPackage = sessionPackages.find((item) => item.id === featuredPackageId) ?? null;
 
   function localizeReviewRole(role: string) {
     if (language === "en" && role.toLowerCase() === "paciente") {
@@ -1637,7 +1806,7 @@ export function App() {
     if (language === "es") {
       return review.text;
     }
-    return reviewTextByLanguage[language]?.[review.id] ?? review.text;
+    return reviewTextByLanguage[language]?.[review.id] ?? reviewTextFallbackByLanguage[language]?.[review.text] ?? review.text;
   }
 
   function localizeBlogPost(post: BlogPost): BlogPost {
@@ -1842,6 +2011,36 @@ export function App() {
   );
 
   const openPost = openPostIndex >= 0 ? filteredPosts[openPostIndex] : null;
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    const metaName = "description";
+    let meta = document.querySelector(`meta[name="${metaName}"]`) as HTMLMetaElement | null;
+    const previousDescription = meta?.content ?? "";
+
+    if (openPost) {
+      document.title = openPost.seoTitle || openPost.title;
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = metaName;
+        document.head.appendChild(meta);
+      }
+      meta.content = openPost.seoDescription || openPost.excerpt;
+    } else {
+      document.title = "MotivarCare";
+      if (meta) {
+        meta.content = previousDescription || "Terapia online con profesionales certificados.";
+      }
+    }
+
+    return () => {
+      document.title = previousTitle;
+      if (meta) {
+        meta.content = previousDescription;
+      }
+    };
+  }, [openPost]);
+
   const openPostBody = openPost
     ? language !== "es"
       ? openPost.body
@@ -1955,11 +2154,15 @@ export function App() {
             <div className="device-showcase">
               <figure className="macbook-shell">
                 <div className="macbook-screen">
-                  <img
+                  <HeroShowcaseImage
                     src={patientHeroDesktopImage}
                     alt="Sesion remota en MacBook Air"
-                    loading="lazy"
-                    onError={(event) => handleImageFallback(event, defaultPatientHeroImage)}
+                    fallback={fallbackPatientHeroImage}
+                    originalPath={localPatientHeroImage}
+                    optimizedBaseName="patient-hero"
+                    loading="eager"
+                    fetchPriority="high"
+                    sizes="(max-width: 700px) 86vw, 38vw"
                   />
                 </div>
                 <div className="macbook-hinge" aria-hidden="true" />
@@ -1968,11 +2171,13 @@ export function App() {
 
               <figure className="phone-shell">
                 <span className="phone-notch" aria-hidden="true" />
-                <img
+                <HeroShowcaseImage
                   src={patientHeroMobileImage}
                   alt="Sesion remota en celular"
-                  loading="lazy"
-                  onError={(event) => handleImageFallback(event, defaultPatientHeroImage)}
+                  fallback={fallbackPatientHeroImage}
+                  originalPath={localPatientHeroImage}
+                  optimizedBaseName="patient-hero"
+                  sizes="(max-width: 700px) 54vw, 18vw"
                 />
               </figure>
             </div>
@@ -1994,11 +2199,13 @@ export function App() {
             <div className="device-showcase compact-showcase">
               <figure className="macbook-shell compact-macbook">
                 <div className="macbook-screen">
-                  <img
+                  <HeroShowcaseImage
                     src={professionalHeroDesktopImage}
                     alt="Sesion remota desde MacBook Air"
-                    loading="lazy"
-                    onError={(event) => handleImageFallback(event, sessionImage)}
+                    fallback={fallbackProfessionalHeroImage}
+                    originalPath={localProfessionalHeroImage}
+                    optimizedBaseName="professional-hero"
+                    sizes="(max-width: 700px) 86vw, 38vw"
                   />
                 </div>
                 <div className="macbook-hinge" aria-hidden="true" />
@@ -2007,11 +2214,13 @@ export function App() {
 
               <figure className="phone-shell compact-phone">
                 <span className="phone-notch" aria-hidden="true" />
-                <img
+                <HeroShowcaseImage
                   src={professionalHeroMobileImage}
                   alt="Sesion remota desde celular"
-                  loading="lazy"
-                  onError={(event) => handleImageFallback(event, sessionImage)}
+                  fallback={fallbackProfessionalHeroImage}
+                  originalPath={localProfessionalHeroImage}
+                  optimizedBaseName="professional-hero"
+                  sizes="(max-width: 700px) 54vw, 18vw"
                 />
               </figure>
             </div>
@@ -2023,6 +2232,66 @@ export function App() {
             <TrendMetric key={item.id} item={item} index={index} />
           ))}
         </section>
+
+        {sessionPackages.length > 0 ? (
+          <section className="packages-showcase" aria-label={packagesTitle}>
+            <header className="purchase-head packages-showcase-head">
+              <div>
+                <h3>{packagesTitle}</h3>
+                <p>{packagesIntro}</p>
+              </div>
+              <a className="packages-showcase-link" href={LEGACY_PATIENT_URL} target="_blank" rel="noreferrer">
+                {packagesCta} <span aria-hidden="true">→</span>
+              </a>
+            </header>
+            <figure className="purchase-art packages-showcase-art package-sale-art" aria-hidden="true">
+              <span className="package-sale-art-percent">Ψ</span>
+            </figure>
+            <div className="deal-grid packages-showcase-grid">
+              {sessionPackages.slice(0, 3).map((item) => (
+                <div key={item.id} className={"deal-card-shell" + (featuredPackageId === item.id ? " featured" : "")}>
+                  <div className="deal-card-roof" aria-hidden={featuredPackageId !== item.id}>
+                    {featuredPackageId === item.id ? (
+                      <span className="deal-card-featured-kicker">
+                        {language === "en" ? "Best seller" : language === "pt" ? "Mais escolhido" : "Mas elegido"}
+                      </span>
+                    ) : null}
+                  </div>
+                  <article className={"deal-card dashboard-deal-card landing-package-card" + (featuredPackageId === item.id ? " featured" : "")}>
+                    <h3>{localizeLandingPackageName(item.name, item.credits, language)}</h3>
+                    <p>{describeLandingPackage(item.credits, language)}</p>
+                    <div className="deal-pricing-top">
+                      <span className="deal-list-price">
+                        {new Intl.NumberFormat(localeByLanguage[language], { style: "currency", currency: (item.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format(Math.round(item.priceCents / 100 / Math.max(0.01, 1 - item.discountPercent / 100)))}
+                      </span>
+                      <span className="deal-discount-badge">{item.discountPercent}% OFF</span>
+                    </div>
+                    <p className="deal-main-price">
+                      {new Intl.NumberFormat(localeByLanguage[language], { style: "currency", currency: (item.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format(item.priceCents / 100)}
+                    </p>
+                    <p className="deal-caption-strong">
+                      {language === "en"
+                        ? `Includes ${item.credits} sessions.`
+                        : language === "pt"
+                          ? `Inclui ${item.credits} sessoes.`
+                          : `Incluye ${item.credits} sesiones.`}
+                    </p>
+                    <a className="deal-select-button" href={LEGACY_PATIENT_URL} target="_blank" rel="noreferrer">
+                      {language === "en" ? "Choose plan" : language === "pt" ? "Escolher plano" : "Elegir plan"}
+                    </a>
+                    <p className="deal-caption">
+                      {language === "en"
+                        ? `Includes ${item.credits} sessions for this cycle.`
+                        : language === "pt"
+                          ? `Inclui ${item.credits} sessoes para este ciclo.`
+                          : `Incluye ${item.credits} sesiones para este ciclo.`}
+                    </p>
+                  </article>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="reviews" aria-label={t.reviewsAria}>
           <header className="reviews-head">
@@ -2043,14 +2312,14 @@ export function App() {
           <div className="reviews-viewport" ref={reviewsTrackRef}>
             <div className="reviews-grid">
               {reviews.map((review) => (
-                <article key={review.id} className="review-card" style={{ borderColor: `${review.accent}33` }}>
+                <article key={review.id} className="review-card" style={{ borderColor: `${(review.accent ?? "#7a5cff")}33` }}>
                   <header className="review-top">
                     <div className="review-user">
                       <img src={review.avatar} alt={`Avatar de ${review.name}`} loading="lazy" />
                       <div>
                         <strong>{review.name}</strong>
                         <span>
-                        {localizeReviewRole(review.role)} · {localizeRelativeDate(review.relativeDate)}
+                        {localizeReviewRole(review.role)} · {localizeRelativeDate(review)}
                         </span>
                       </div>
                     </div>

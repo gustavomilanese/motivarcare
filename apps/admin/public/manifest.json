@@ -1,0 +1,16 @@
+{
+  "name": "MotivarCare Admin",
+  "short_name": "MotivarCare",
+  "start_url": "/web-admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1E3A8A",
+  "icons": [
+    {
+      "src": "/favicon.svg?v=admin-20260309",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

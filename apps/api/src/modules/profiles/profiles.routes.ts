@@ -4,6 +4,15 @@ import { prisma } from "../../lib/prisma.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 
+const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+const patientAssignmentsSchema = z.record(z.string(), z.string().min(1).nullable());
+
+const submitIntakeSchema = z.object({
+  answers: z.record(z.string().min(1), z.string().trim().min(1)).refine((answers) => Object.keys(answers).length > 0, {
+    message: "Intake answers are required"
+  })
+});
+
 const updatePublicProfileSchema = z.object({
   visible: z.boolean().optional(),
   bio: z.string().max(2000).nullable().optional(),
@@ -13,6 +22,25 @@ const updatePublicProfileSchema = z.object({
   videoUrl: z.string().url().nullable().optional(),
   cancellationHours: z.number().int().min(0).max(168).optional()
 });
+
+function parsePatientAssignments(value: unknown): Record<string, string | null> {
+  const parsed = patientAssignmentsSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function evaluateIntakeRiskLevel(answers: Record<string, string>): "low" | "medium" | "high" {
+  const safetyAnswer = (answers.safetyRisk ?? "").toLowerCase();
+
+  if (["frequently", "frecuentemente", "frequentemente"].includes(safetyAnswer)) {
+    return "high";
+  }
+
+  if (["sometimes", "a veces", "as vezes"].includes(safetyAnswer)) {
+    return "medium";
+  }
+
+  return "low";
+}
 
 function compatibilityScore(professionalId: string): number {
   const seed = professionalId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -89,6 +117,25 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       }
     });
 
+    const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+    const assignments = parsePatientAssignments(assignmentConfig?.value);
+    const activeProfessionalId = patient ? assignments[patient.id] ?? null : null;
+
+    const activeProfessional = activeProfessionalId
+      ? await prisma.professionalProfile.findUnique({
+          where: { id: activeProfessionalId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true
+              }
+            }
+          }
+        })
+      : null;
+
     return res.json({
       role: actor.role,
       profile: {
@@ -96,6 +143,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         timezone: patient?.timezone,
         status: patient?.status,
         intakeRiskLevel: patient?.intake?.riskLevel ?? null,
+        intakeCompletedAt: patient?.intake?.createdAt ?? null,
         latestPackage: patient?.purchases[0]
           ? {
               id: patient.purchases[0].id,
@@ -103,6 +151,14 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
               remainingCredits: patient.purchases[0].remainingCredits,
               totalCredits: patient.purchases[0].totalCredits,
               purchasedAt: patient.purchases[0].purchasedAt
+            }
+          : null,
+        activeProfessional: activeProfessional
+          ? {
+              id: activeProfessional.id,
+              userId: activeProfessional.user.id,
+              fullName: activeProfessional.user.fullName,
+              email: activeProfessional.user.email
             }
           : null
       }
@@ -146,6 +202,48 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
   return res.json({
     role: actor.role,
     profile: null
+  });
+});
+
+profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = submitIntakeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid intake payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can submit intake" });
+  }
+
+  const existing = await prisma.patientIntake.findUnique({
+    where: { patientId: actor.patientProfileId }
+  });
+
+  if (existing) {
+    return res.status(409).json({ error: "Intake already completed" });
+  }
+
+  const riskLevel = evaluateIntakeRiskLevel(parsed.data.answers);
+
+  const intake = await prisma.patientIntake.create({
+    data: {
+      patientId: actor.patientProfileId,
+      riskLevel,
+      answers: parsed.data.answers
+    }
+  });
+
+  return res.status(201).json({
+    intake: {
+      id: intake.id,
+      riskLevel: intake.riskLevel,
+      completedAt: intake.createdAt
+    }
   });
 });
 

@@ -5,7 +5,11 @@ import { prisma } from "../../lib/prisma.js";
 const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
+const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
+const sessionPackagesChannelSchema = z.object({
+  channel: z.enum(["landing", "patient"]).optional()
+});
 
 const imageSourceSchema = z
   .string()
@@ -27,11 +31,12 @@ const reviewSchema = z.object({
   id: z.string().min(2).max(120),
   name: z.string().min(2).max(120),
   role: z.string().min(2).max(80),
+  reviewDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   relativeDate: z.string().min(2).max(80),
   text: z.string().min(5).max(2000),
   rating: z.number().int().min(1).max(5),
   avatar: imageSourceSchema,
-  accent: z.string().trim().min(4).max(32)
+  accent: z.string().trim().min(4).max(32).optional()
 });
 
 const blogPostSchema = z.object({
@@ -77,7 +82,85 @@ function parseLandingSettings(value: unknown) {
   };
 }
 
+function parseSessionPackagesVisibility(value: unknown) {
+  const parsed = z
+    .object({
+      landing: z.array(z.string().min(1)).max(3),
+      patient: z.array(z.string().min(1)).max(3),
+      featuredLanding: z.string().min(1).nullable().optional(),
+      featuredPatient: z.string().min(1).nullable().optional()
+    })
+    .safeParse(value);
+
+  if (!parsed.success) {
+    return { landing: [] as string[], patient: [] as string[], featuredLanding: null as string | null, featuredPatient: null as string | null };
+  }
+
+  const landing = Array.from(new Set(parsed.data.landing));
+  const patient = Array.from(new Set(parsed.data.patient));
+
+  return {
+    landing,
+    patient,
+    featuredLanding: parsed.data.featuredLanding && landing.includes(parsed.data.featuredLanding) ? parsed.data.featuredLanding : null,
+    featuredPatient: parsed.data.featuredPatient && patient.includes(parsed.data.featuredPatient) ? parsed.data.featuredPatient : null
+  };
+}
+
 export const publicRouter = Router();
+
+publicRouter.get("/session-packages", async (req, res) => {
+  const parsed = sessionPackagesChannelSchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
+  }
+
+  const [packages, visibilityConfig] = await Promise.all([
+    prisma.sessionPackage.findMany({
+      where: { active: true },
+      include: {
+        professional: { select: { id: true, user: { select: { fullName: true } } } }
+      },
+      orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
+    }),
+    prisma.systemConfig.findUnique({ where: { key: SESSION_PACKAGES_VISIBILITY_KEY } })
+  ]);
+  const visibility = parseSessionPackagesVisibility(visibilityConfig?.value);
+  const requestedIds =
+    parsed.data.channel === "landing"
+      ? visibility.landing
+      : parsed.data.channel === "patient"
+        ? visibility.patient
+        : [];
+  const orderedPackages =
+    parsed.data.channel
+      ? requestedIds.map((id) => packages.find((item) => item.id === id)).filter((item): item is (typeof packages)[number] => Boolean(item))
+      : packages.slice(0, 3);
+  const featuredPackageId =
+    parsed.data.channel === "landing"
+      ? visibility.featuredLanding
+      : parsed.data.channel === "patient"
+        ? visibility.featuredPatient
+        : null;
+
+  return res.json({
+    featuredPackageId: featuredPackageId && orderedPackages.some((item) => item.id === featuredPackageId) ? featuredPackageId : null,
+    sessionPackages: orderedPackages.map((item) => ({
+      id: item.id,
+      professionalId: item.professionalId,
+      professionalName: item.professional?.user.fullName ?? null,
+      stripePriceId: item.stripePriceId,
+      name: item.name,
+      credits: item.credits,
+      priceCents: item.priceCents,
+      discountPercent: item.discountPercent,
+      currency: item.currency,
+      active: item.active,
+      createdAt: item.createdAt
+    }))
+  });
+});
+
 
 publicRouter.get("/landing-settings", async (_req, res) => {
   const config = await prisma.systemConfig.findUnique({

@@ -1,11 +1,20 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7A67FF"/>
-      <stop offset="1" stop-color="#4D38D9"/>
+    <linearGradient id="adminBg" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E3A8A"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <linearGradient id="adminBadge" x1="40" y1="40" x2="59" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#38BDF8"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#g)"/>
-  <rect x="18" y="22" width="30" height="7" rx="3.5" transform="rotate(32 18 22)" fill="white" fill-opacity="0.9"/>
+
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#adminBg)"/>
+
+  <rect x="18" y="22" width="30" height="7" rx="3.5" transform="rotate(32 18 22)" fill="white" fill-opacity="0.94"/>
   <rect x="21" y="36" width="24" height="7" rx="3.5" transform="rotate(-26 21 36)" fill="white" fill-opacity="0.9"/>
+
+  <circle cx="49.5" cy="49.5" r="9.5" fill="url(#adminBadge)" stroke="#0B1220" stroke-opacity="0.28"/>
+  <path d="M46.7 53V46.1H48.15L50.9 50.55V46.1H52.35V53H50.95L48.15 48.45V53H46.7Z" fill="#0B1220"/>
 </svg>
