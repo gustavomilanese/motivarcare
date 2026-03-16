@@ -16,14 +16,14 @@
    - `API_MAX_INFLIGHT_REQUESTS`
 
 ## Near term (first 2-4 weeks)
-1. Add request metrics and dashboards (p95 latency, error rate, throughput).
-2. Add centralized logs with request id correlation (`x-request-id`).
+1. Wire request metrics endpoint (`/metrics`) to dashboards (p95 latency, error rate, throughput).
+2. Ship centralized logs with request id correlation (`x-request-id`) to your log stack.
 3. Add alerting (availability, DB errors, latency spikes).
 4. Move chat polling to websocket/event model to reduce repeated read load.
-5. Add queue-based background jobs for heavy tasks (IA audit, notifications, webhooks).
+5. Keep outbox worker running as separate process and monitor dead-letter queue.
 
 ## Medium term
 1. Add blue/green or rolling deployment strategy.
-2. Add idempotency keys on write-sensitive endpoints (payments/bookings).
+2. Extend idempotency keys already added in bookings/payments to more write-sensitive endpoints.
 3. Add failover strategy for database region outages.
 4. Introduce WAF/rate limiting at edge (CDN/load balancer).

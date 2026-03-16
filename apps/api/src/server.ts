@@ -3,10 +3,13 @@ import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
 import { markShuttingDown, runtimeState } from "./lib/operational.js";
+import { disconnectRedis } from "./lib/redis.js";
 
 const server = http.createServer(app);
 server.keepAliveTimeout = 65000;
 server.headersTimeout = 70000;
+server.requestTimeout = env.API_REQUEST_TIMEOUT_MS;
+server.maxRequestsPerSocket = env.API_MAX_REQUESTS_PER_SOCKET;
 
 server.listen(env.PORT, () => {
   console.log(`API listening on http://localhost:${env.PORT}`);
@@ -44,7 +47,7 @@ async function shutdown(signal: string): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    await prisma.$disconnect();
+    await Promise.all([prisma.$disconnect(), disconnectRedis()]);
     clearTimeout(forceExitTimer);
     console.log("Graceful shutdown completed.");
     process.exit(0);

@@ -1,18 +1,22 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import Stripe from "stripe";
 import { z } from "zod";
 import { env } from "../../config/env.js";
+import { getActorContext } from "../../lib/actor.js";
+import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
+import { prisma } from "../../lib/prisma.js";
 
 const supportedCurrencySchema = z.enum(["USD", "EUR", "GBP", "BRL", "ARS"]);
 type SupportedCurrency = z.infer<typeof supportedCurrencySchema>;
 type PackageSize = "4" | "8" | "12";
 
 const createCheckoutSchema = z.object({
-  patientId: z.string().min(1),
   packageSize: z.enum(["4", "8", "12"]),
   currency: supportedCurrencySchema.default("USD"),
   successUrl: z.string().url(),
-  cancelUrl: z.string().url()
+  cancelUrl: z.string().url(),
+  idempotencyKey: z.string().trim().min(8).max(120).optional()
 });
 
 const usdLegacyPriceMap: Record<PackageSize, string> = {
@@ -57,16 +61,55 @@ function resolvePriceId(currency: SupportedCurrency, packageSize: PackageSize): 
   return "";
 }
 
+function asBuffer(body: unknown): Buffer {
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+  if (typeof body === "string") {
+    return Buffer.from(body);
+  }
+  return Buffer.from(JSON.stringify(body ?? {}));
+}
+
 const stripe = env.STRIPE_SECRET_KEY
   ? new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" })
   : null;
 
 export const paymentsRouter = Router();
 
-paymentsRouter.post("/stripe/checkout-session", async (req, res) => {
+paymentsRouter.post("/stripe/checkout-session", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can create checkout sessions" });
+  }
+
   const parsed = createCheckoutSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid checkout payload", details: parsed.error.flatten() });
+  }
+
+  const rawIdempotencyKey = parsed.data.idempotencyKey ?? req.header("x-idempotency-key") ?? null;
+  const idempotencyKey = rawIdempotencyKey?.trim() || null;
+  if (rawIdempotencyKey && (!idempotencyKey || idempotencyKey.length < 8 || idempotencyKey.length > 120)) {
+    return res.status(400).json({ error: "Invalid idempotency key. Expected 8-120 characters." });
+  }
+
+  const idempotencyStoreKey = idempotencyKey
+    ? `stripe_checkout:${actor.patientProfileId}:${idempotencyKey}`
+    : null;
+  if (idempotencyStoreKey) {
+    const replay = await getIdempotencyValue(idempotencyStoreKey);
+    if (replay) {
+      try {
+        return res.status(200).json(JSON.parse(replay) as unknown);
+      } catch {
+        // ignore corrupted replay cache
+      }
+    }
   }
 
   const priceId = resolvePriceId(parsed.data.currency, parsed.data.packageSize);
@@ -87,20 +130,69 @@ paymentsRouter.post("/stripe/checkout-session", async (req, res) => {
     success_url: parsed.data.successUrl,
     cancel_url: parsed.data.cancelUrl,
     metadata: {
-      patientId: parsed.data.patientId,
+      patientId: actor.patientProfileId,
       packageSize: parsed.data.packageSize,
-      currency: parsed.data.currency
+      currency: parsed.data.currency,
+      stripePriceId: priceId
     }
   });
 
-  return res.status(201).json({
+  const responsePayload = {
     checkoutUrl: session.url,
     sessionId: session.id,
     currency: parsed.data.currency
-  });
+  };
+
+  if (idempotencyStoreKey) {
+    await setIdempotencyValue({
+      key: idempotencyStoreKey,
+      value: JSON.stringify(responsePayload),
+      ttlSeconds: 24 * 60 * 60
+    });
+  }
+
+  return res.status(201).json(responsePayload);
 });
 
-paymentsRouter.post("/stripe/webhook", (_req, res) => {
-  // TODO: validar firma webhook y acreditar creditos de sesion.
-  res.status(200).send("ok");
+paymentsRouter.post("/stripe/webhook", express.raw({ type: "application/json", limit: "2mb" }), async (req, res) => {
+  if (!stripe) {
+    return res.status(501).json({ error: "Stripe not configured" });
+  }
+
+  const signature = req.header("stripe-signature");
+  const payloadBuffer = asBuffer(req.body);
+  let event: Stripe.Event;
+
+  try {
+    if (env.STRIPE_WEBHOOK_SECRET && env.STRIPE_WEBHOOK_SECRET.trim().length > 0) {
+      if (!signature) {
+        return res.status(400).json({ error: "Missing stripe-signature header" });
+      }
+      event = stripe.webhooks.constructEvent(payloadBuffer, signature, env.STRIPE_WEBHOOK_SECRET);
+    } else {
+      event = JSON.parse(payloadBuffer.toString("utf8")) as Stripe.Event;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid webhook payload";
+    return res.status(400).json({ error: `Webhook signature/payload error: ${message}` });
+  }
+
+  const dedupeKey = `stripe:event:${event.id}`;
+  const existing = await prisma.outboxEvent.findUnique({ where: { dedupeKey } });
+  if (existing) {
+    return res.status(200).json({ received: true, deduplicated: true });
+  }
+
+  await prisma.outboxEvent.create({
+    data: {
+      dedupeKey,
+      eventType: `stripe.${event.type}`,
+      aggregateType: "stripeEvent",
+      aggregateId: event.id,
+      payload: event as unknown as object,
+      status: "PENDING"
+    }
+  });
+
+  return res.status(202).json({ received: true, queued: true });
 });

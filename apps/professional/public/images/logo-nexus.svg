@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nexusBg" x1="84" y1="74" x2="430" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1E47"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+    <linearGradient id="nexusStroke" x1="150" y1="128" x2="367" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8DEEFF"/>
+      <stop offset="1" stop-color="#4F9BFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="74" y="74" width="364" height="364" rx="108" fill="url(#nexusBg)"/>
+  <path d="M256 124L146 190V322L256 388L366 322V190L256 124Z" stroke="url(#nexusStroke)" stroke-width="12"/>
+  <path d="M146 190L256 256L366 190" stroke="#A7EEFF" stroke-opacity="0.9" stroke-width="10" stroke-linecap="round"/>
+  <path d="M146 322L256 256L366 322" stroke="#78C8FF" stroke-opacity="0.85" stroke-width="10" stroke-linecap="round"/>
+  <path d="M256 124V256V388" stroke="#C4F6FF" stroke-opacity="0.9" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="18" fill="#D7FBFF"/>
+</svg>

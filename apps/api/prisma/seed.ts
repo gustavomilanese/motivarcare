@@ -2,6 +2,12 @@ import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/auth.js";
 
 type AppRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
+type SeedContext = {
+  patientProfileId: string;
+  patientUserId: string;
+  professionalProfileIds: [string, string, string];
+  professionalUserIds: [string, string, string];
+};
 
 const defaultPassword = "SecurePass123";
 
@@ -13,7 +19,6 @@ function dateFromNow(dayOffset: number, hour: number, minute: number): Date {
 }
 
 async function upsertUser(params: {
-  id: string;
   email: string;
   fullName: string;
   role: AppRole;
@@ -28,7 +33,6 @@ async function upsertUser(params: {
       passwordHash
     },
     create: {
-      id: params.id,
       email: params.email,
       fullName: params.fullName,
       role: params.role,
@@ -37,9 +41,8 @@ async function upsertUser(params: {
   });
 }
 
-async function seedCoreUsers() {
+async function seedCoreUsers(): Promise<SeedContext> {
   const patientUser = await upsertUser({
-    id: "user-pat-1",
     email: "alex@example.com",
     fullName: "Alex Morgan",
       role: "PATIENT"
@@ -47,40 +50,35 @@ async function seedCoreUsers() {
 
   const professionalUsers = await Promise.all([
     upsertUser({
-      id: "user-pro-1",
       email: "emma.collins@motivarte.com",
       fullName: "Dr. Emma Collins",
       role: "PROFESSIONAL"
     }),
     upsertUser({
-      id: "user-pro-2",
       email: "michael.rivera@motivarte.com",
       fullName: "Dr. Michael Rivera",
       role: "PROFESSIONAL"
     }),
     upsertUser({
-      id: "user-pro-3",
       email: "sophia.nguyen@motivarte.com",
       fullName: "Dr. Sophia Nguyen",
       role: "PROFESSIONAL"
     })
   ]);
 
-  await upsertUser({
-    id: "user-admin-1",
+  const adminUser = await upsertUser({
     email: "admin@motivarte.com",
     fullName: "Motivarte Admin",
     role: "ADMIN"
   });
 
-  await prisma.patientProfile.upsert({
+  const patientProfile = await prisma.patientProfile.upsert({
     where: { userId: patientUser.id },
     update: {
       timezone: "America/New_York",
       status: "active"
     },
     create: {
-      id: "pat-1",
       userId: patientUser.id,
       timezone: "America/New_York",
       status: "active"
@@ -89,7 +87,6 @@ async function seedCoreUsers() {
 
   const professionalConfigs = [
     {
-      id: "pro-1",
       userId: professionalUsers[0].id,
       bio: "Especialista en ansiedad, estres y burnout laboral.",
       therapeuticApproach: "CBT + mindfulness",
@@ -98,7 +95,6 @@ async function seedCoreUsers() {
       videoUrl: "https://example.com/video/emma"
     },
     {
-      id: "pro-2",
       userId: professionalUsers[1].id,
       bio: "Trabajo en vinculos, trauma y regulacion emocional.",
       therapeuticApproach: "Integrativo psicodinamico",
@@ -107,7 +103,6 @@ async function seedCoreUsers() {
       videoUrl: "https://example.com/video/michael"
     },
     {
-      id: "pro-3",
       userId: professionalUsers[2].id,
       bio: "Enfoque breve para depresion y transiciones vitales.",
       therapeuticApproach: "Evidencia + plan de objetivos",
@@ -117,8 +112,9 @@ async function seedCoreUsers() {
     }
   ];
 
+  const professionalProfiles: Array<{ id: string; userId: string }> = [];
   for (const config of professionalConfigs) {
-    await prisma.professionalProfile.upsert({
+    const profile = await prisma.professionalProfile.upsert({
       where: { userId: config.userId },
       update: {
         visible: true,
@@ -130,7 +126,6 @@ async function seedCoreUsers() {
         cancellationHours: 24
       },
       create: {
-        id: config.id,
         userId: config.userId,
         visible: true,
         bio: config.bio,
@@ -141,24 +136,40 @@ async function seedCoreUsers() {
         cancellationHours: 24
       }
     });
+    professionalProfiles.push({ id: profile.id, userId: config.userId });
   }
 
   await prisma.adminProfile.upsert({
-    where: { userId: "user-admin-1" },
+    where: { userId: adminUser.id },
     update: {},
-    create: { userId: "user-admin-1" }
+    create: { userId: adminUser.id }
   });
+
+  return {
+    patientProfileId: patientProfile.id,
+    patientUserId: patientUser.id,
+    professionalProfileIds: [
+      professionalProfiles[0].id,
+      professionalProfiles[1].id,
+      professionalProfiles[2].id
+    ],
+    professionalUserIds: [
+      professionalUsers[0].id,
+      professionalUsers[1].id,
+      professionalUsers[2].id
+    ]
+  };
 }
 
-async function seedAvailability() {
+async function seedAvailability(context: SeedContext) {
   const slots = [
-    { id: "slot-pro1-1", professionalId: "pro-1", startsAt: dateFromNow(1, 9, 0), endsAt: dateFromNow(1, 9, 50) },
-    { id: "slot-pro1-2", professionalId: "pro-1", startsAt: dateFromNow(1, 11, 0), endsAt: dateFromNow(1, 11, 50) },
-    { id: "slot-pro1-3", professionalId: "pro-1", startsAt: dateFromNow(2, 16, 30), endsAt: dateFromNow(2, 17, 20) },
-    { id: "slot-pro2-1", professionalId: "pro-2", startsAt: dateFromNow(1, 14, 0), endsAt: dateFromNow(1, 14, 50) },
-    { id: "slot-pro2-2", professionalId: "pro-2", startsAt: dateFromNow(3, 15, 30), endsAt: dateFromNow(3, 16, 20) },
-    { id: "slot-pro3-1", professionalId: "pro-3", startsAt: dateFromNow(2, 17, 0), endsAt: dateFromNow(2, 17, 50) },
-    { id: "slot-pro3-2", professionalId: "pro-3", startsAt: dateFromNow(5, 9, 0), endsAt: dateFromNow(5, 9, 50) }
+    { id: "slot-pro1-1", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(1, 9, 0), endsAt: dateFromNow(1, 9, 50) },
+    { id: "slot-pro1-2", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(1, 11, 0), endsAt: dateFromNow(1, 11, 50) },
+    { id: "slot-pro1-3", professionalId: context.professionalProfileIds[0], startsAt: dateFromNow(2, 16, 30), endsAt: dateFromNow(2, 17, 20) },
+    { id: "slot-pro2-1", professionalId: context.professionalProfileIds[1], startsAt: dateFromNow(1, 14, 0), endsAt: dateFromNow(1, 14, 50) },
+    { id: "slot-pro2-2", professionalId: context.professionalProfileIds[1], startsAt: dateFromNow(3, 15, 30), endsAt: dateFromNow(3, 16, 20) },
+    { id: "slot-pro3-1", professionalId: context.professionalProfileIds[2], startsAt: dateFromNow(2, 17, 0), endsAt: dateFromNow(2, 17, 50) },
+    { id: "slot-pro3-2", professionalId: context.professionalProfileIds[2], startsAt: dateFromNow(5, 9, 0), endsAt: dateFromNow(5, 9, 50) }
   ];
 
   for (const slot of slots) {
@@ -183,7 +194,7 @@ async function seedAvailability() {
   }
 }
 
-async function seedPackagesAndPurchase() {
+async function seedPackagesAndPurchase(context: SeedContext) {
   await prisma.sessionPackage.upsert({
     where: { stripePriceId: "pkg-4-demo" },
     update: { name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true },
@@ -207,14 +218,13 @@ async function seedPackagesAndPurchase() {
   await prisma.patientPackagePurchase.upsert({
     where: { stripeCheckoutSessionId: "checkout-demo-1" },
     update: {
-      patientId: "pat-1",
+      patientId: context.patientProfileId,
       packageId: growthPackage.id,
       totalCredits: 8,
       remainingCredits: 7
     },
     create: {
-      id: "purchase-demo-1",
-      patientId: "pat-1",
+      patientId: context.patientProfileId,
       packageId: growthPackage.id,
       stripeCheckoutSessionId: "checkout-demo-1",
       totalCredits: 8,
@@ -223,15 +233,15 @@ async function seedPackagesAndPurchase() {
   });
 }
 
-async function seedBookingAndChat() {
+async function seedBookingAndChat(context: SeedContext) {
   const startsAt = dateFromNow(1, 9, 0);
   const endsAt = dateFromNow(1, 9, 50);
 
   await prisma.booking.upsert({
     where: { id: "booking-demo-1" },
     update: {
-      patientId: "pat-1",
-      professionalId: "pro-1",
+      patientId: context.patientProfileId,
+      professionalId: context.professionalProfileIds[0],
       startsAt,
       endsAt,
       status: "CONFIRMED",
@@ -242,8 +252,8 @@ async function seedBookingAndChat() {
     },
     create: {
       id: "booking-demo-1",
-      patientId: "pat-1",
-      professionalId: "pro-1",
+      patientId: context.patientProfileId,
+      professionalId: context.professionalProfileIds[0],
       startsAt,
       endsAt,
       status: "CONFIRMED",
@@ -260,7 +270,6 @@ async function seedBookingAndChat() {
       joinUrlProfessional: "https://demo.daily.co/session-booking-demo-1?role=professional"
     },
     create: {
-      id: "video-demo-1",
       bookingId: "booking-demo-1",
       provider: "daily",
       externalRoomId: "session-booking-demo-1",
@@ -269,17 +278,16 @@ async function seedBookingAndChat() {
     }
   });
 
-  await prisma.chatThread.upsert({
-    where: { id: "thread-demo-1" },
+  const thread = await prisma.chatThread.upsert({
+    where: { bookingId: "booking-demo-1" },
     update: {
-      patientId: "pat-1",
-      professionalId: "pro-1",
+      patientId: context.patientProfileId,
+      professionalId: context.professionalProfileIds[0],
       bookingId: "booking-demo-1"
     },
     create: {
-      id: "thread-demo-1",
-      patientId: "pat-1",
-      professionalId: "pro-1",
+      patientId: context.patientProfileId,
+      professionalId: context.professionalProfileIds[0],
       bookingId: "booking-demo-1"
     }
   });
@@ -287,25 +295,25 @@ async function seedBookingAndChat() {
   await prisma.chatMessage.upsert({
     where: { id: "msg-demo-1" },
     update: {
-      threadId: "thread-demo-1",
-      senderUserId: "user-pro-1",
+      threadId: thread.id,
+      senderUserId: context.professionalUserIds[0],
       body: "Hola Alex, tengo disponibilidad para una intro call breve antes de la sesion completa.",
       readAt: null
     },
     create: {
       id: "msg-demo-1",
-      threadId: "thread-demo-1",
-      senderUserId: "user-pro-1",
+      threadId: thread.id,
+      senderUserId: context.professionalUserIds[0],
       body: "Hola Alex, tengo disponibilidad para una intro call breve antes de la sesion completa."
     }
   });
 }
 
 async function main() {
-  await seedCoreUsers();
-  await seedAvailability();
-  await seedPackagesAndPurchase();
-  await seedBookingAndChat();
+  const context = await seedCoreUsers();
+  await seedAvailability(context);
+  await seedPackagesAndPurchase(context);
+  await seedBookingAndChat(context);
 
   console.log("Seed completed. Demo credentials:");
   console.log("- Patient: alex@example.com / SecurePass123");

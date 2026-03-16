@@ -16,26 +16,129 @@ const listMessagesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(200)
 });
 
+const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+const patientAssignmentsSchema = z.record(z.string(), z.string().min(1).nullable());
+
+function parsePatientAssignments(value: unknown): Record<string, string | null> {
+  const parsed = patientAssignmentsSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+async function getAllowedProfessionalIdsForPatient(patientProfileId: string): Promise<Set<string>> {
+  const [assignmentConfig, bookings, purchases] = await Promise.all([
+    prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
+    prisma.booking.findMany({
+      where: {
+        patientId: patientProfileId,
+        status: { not: "CANCELLED" }
+      },
+      select: { professionalId: true },
+      distinct: ["professionalId"]
+    }),
+    prisma.patientPackagePurchase.findMany({
+      where: {
+        patientId: patientProfileId,
+        sessionPackage: {
+          professionalId: {
+            not: null
+          }
+        }
+      },
+      select: {
+        sessionPackage: {
+          select: { professionalId: true }
+        }
+      }
+    })
+  ]);
+
+  const professionalIds = new Set<string>();
+
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const assignedProfessionalId = assignments[patientProfileId];
+  if (assignedProfessionalId) {
+    professionalIds.add(assignedProfessionalId);
+  }
+
+  bookings.forEach((item) => professionalIds.add(item.professionalId));
+  purchases.forEach((item) => {
+    if (item.sessionPackage.professionalId) {
+      professionalIds.add(item.sessionPackage.professionalId);
+    }
+  });
+
+  return professionalIds;
+}
+
 async function assertThreadAccess(threadId: string, actor: Awaited<ReturnType<typeof getActorContext>>) {
   if (!actor) {
-    return { allowed: false as const, thread: null };
+    return { allowed: false as const, thread: null, relatedThreadIds: [] as string[], canonicalThreadId: null as string | null };
   }
 
   const thread = await prisma.chatThread.findUnique({ where: { id: threadId } });
   if (!thread) {
-    return { allowed: false as const, thread: null };
+    return { allowed: false as const, thread: null, relatedThreadIds: [] as string[], canonicalThreadId: null as string | null };
   }
 
-  const canAccessAsPatient = actor.patientProfileId && thread.patientId === actor.patientProfileId;
+  let canAccessAsPatient = Boolean(actor.patientProfileId && thread.patientId === actor.patientProfileId);
+  if (canAccessAsPatient && actor.patientProfileId) {
+    const allowedProfessionalIds = await getAllowedProfessionalIdsForPatient(actor.patientProfileId);
+    canAccessAsPatient = allowedProfessionalIds.has(thread.professionalId);
+  }
   const canAccessAsProfessional = actor.professionalProfileId && thread.professionalId === actor.professionalProfileId;
+  const allowed = Boolean(canAccessAsPatient || canAccessAsProfessional);
+
+  if (!allowed) {
+    return { allowed: false as const, thread: null, relatedThreadIds: [] as string[], canonicalThreadId: null as string | null };
+  }
+
+  const relatedThreads = await prisma.chatThread.findMany({
+    where: {
+      patientId: thread.patientId,
+      professionalId: thread.professionalId
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true }
+  });
 
   return {
-    allowed: Boolean(canAccessAsPatient || canAccessAsProfessional),
-    thread
+    allowed: true as const,
+    thread,
+    relatedThreadIds: relatedThreads.map((item) => item.id),
+    canonicalThreadId: relatedThreads[0]?.id ?? thread.id
   };
 }
 
 export const chatRouter = Router();
+
+type ThreadRow = {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  createdAt: Date;
+  patient: {
+    user: {
+      id: string;
+      fullName: string;
+    };
+  };
+  professional: {
+    user: {
+      id: string;
+      fullName: string;
+    };
+  };
+  messages: Array<{
+    id: string;
+    body: string;
+    createdAt: Date;
+    senderUserId: string;
+  }>;
+};
+
+function buildPairKey(thread: ThreadRow): string {
+  return `${thread.patientId}:${thread.professionalId}`;
+}
 
 chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
@@ -83,8 +186,38 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
     orderBy: { createdAt: "desc" }
   });
 
-  const mapped = await Promise.all(
-    threads.map(async (thread: any) => {
+  const allowedProfessionalIds =
+    actor.role === "PATIENT" && actor.patientProfileId
+      ? await getAllowedProfessionalIdsForPatient(actor.patientProfileId)
+      : null;
+  const visibleThreads =
+    allowedProfessionalIds && actor.role === "PATIENT"
+      ? threads.filter((thread) => allowedProfessionalIds.has(thread.professionalId))
+      : threads;
+
+  const groups = new Map<
+    string,
+    {
+      canonicalThreadId: string;
+      canonicalThreadCreatedAt: Date;
+      patientId: string;
+      professionalId: string;
+      counterpartName: string;
+      counterpartUserId: string;
+      lastMessage: {
+        id: string;
+        body: string;
+        createdAt: Date;
+        senderUserId: string;
+      } | null;
+      latestActivityAt: Date;
+      unreadCount: number;
+      relatedThreadIds: string[];
+    }
+  >();
+
+  const unreadCounts = await Promise.all(
+    visibleThreads.map(async (thread) => {
       const unreadCount = await prisma.chatMessage.count({
         where: {
           threadId: thread.id,
@@ -92,26 +225,76 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
           readAt: null
         }
       });
-
-      return {
-        id: thread.id,
-        patientId: thread.patientId,
-        professionalId: thread.professionalId,
-        counterpartName: actor.role === "PATIENT" ? thread.professional.user.fullName : thread.patient.user.fullName,
-        counterpartUserId: actor.role === "PATIENT" ? thread.professional.user.id : thread.patient.user.id,
-        lastMessage: thread.messages[0]
-          ? {
-              id: thread.messages[0].id,
-              body: thread.messages[0].body,
-              createdAt: thread.messages[0].createdAt,
-              senderUserId: thread.messages[0].senderUserId
-            }
-          : null,
-        unreadCount,
-        createdAt: thread.createdAt
-      };
+      return { threadId: thread.id, unreadCount };
     })
   );
+  const unreadByThread = new Map(unreadCounts.map((item) => [item.threadId, item.unreadCount]));
+
+  for (const thread of visibleThreads as ThreadRow[]) {
+    const pairKey = buildPairKey(thread);
+    const counterpartName = actor.role === "PATIENT" ? thread.professional.user.fullName : thread.patient.user.fullName;
+    const counterpartUserId = actor.role === "PATIENT" ? thread.professional.user.id : thread.patient.user.id;
+    const threadLastMessage = thread.messages[0]
+      ? {
+          id: thread.messages[0].id,
+          body: thread.messages[0].body,
+          createdAt: thread.messages[0].createdAt,
+          senderUserId: thread.messages[0].senderUserId
+        }
+      : null;
+    const latestActivityAt = threadLastMessage?.createdAt ?? thread.createdAt;
+    const currentUnread = unreadByThread.get(thread.id) ?? 0;
+
+    const current = groups.get(pairKey);
+    if (!current) {
+      groups.set(pairKey, {
+        canonicalThreadId: thread.id,
+        canonicalThreadCreatedAt: thread.createdAt,
+        patientId: thread.patientId,
+        professionalId: thread.professionalId,
+        counterpartName,
+        counterpartUserId,
+        lastMessage: threadLastMessage,
+        latestActivityAt,
+        unreadCount: currentUnread,
+        relatedThreadIds: [thread.id]
+      });
+      continue;
+    }
+
+    current.relatedThreadIds.push(thread.id);
+    current.unreadCount += currentUnread;
+
+    if (thread.createdAt < current.canonicalThreadCreatedAt) {
+      current.canonicalThreadId = thread.id;
+      current.canonicalThreadCreatedAt = thread.createdAt;
+    }
+
+    if (latestActivityAt > current.latestActivityAt) {
+      current.latestActivityAt = latestActivityAt;
+      current.lastMessage = threadLastMessage;
+    }
+  }
+
+  const mapped = Array.from(groups.values())
+    .sort((a, b) => b.latestActivityAt.getTime() - a.latestActivityAt.getTime())
+    .map((group) => ({
+      id: group.canonicalThreadId,
+      patientId: group.patientId,
+      professionalId: group.professionalId,
+      counterpartName: group.counterpartName,
+      counterpartUserId: group.counterpartUserId,
+      lastMessage: group.lastMessage
+        ? {
+            id: group.lastMessage.id,
+            body: group.lastMessage.body,
+            createdAt: group.lastMessage.createdAt,
+            senderUserId: group.lastMessage.senderUserId
+          }
+        : null,
+      unreadCount: group.unreadCount,
+      createdAt: group.latestActivityAt
+    }));
 
   return res.json({ threads: mapped });
 });
@@ -140,12 +323,17 @@ chatRouter.post("/threads/by-professional/:professionalId", requireAuth, async (
     return res.status(404).json({ error: "Professional not found" });
   }
 
+  const allowedProfessionalIds = await getAllowedProfessionalIdsForPatient(actor.patientProfileId);
+  if (!allowedProfessionalIds.has(parsedParams.data.professionalId)) {
+    return res.status(403).json({ error: "You can only chat with assigned professionals" });
+  }
+
   const existingThread = await prisma.chatThread.findFirst({
     where: {
       patientId: actor.patientProfileId,
-      professionalId: parsedParams.data.professionalId,
-      bookingId: null
-    }
+      professionalId: parsedParams.data.professionalId
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }]
   });
 
   const thread =
@@ -177,7 +365,7 @@ chatRouter.get("/threads/:threadId/messages", requireAuth, async (req: Authentic
   }
 
   const messages = await prisma.chatMessage.findMany({
-    where: { threadId: access.thread.id },
+    where: { threadId: { in: access.relatedThreadIds } },
     include: {
       sender: {
         select: {
@@ -192,7 +380,7 @@ chatRouter.get("/threads/:threadId/messages", requireAuth, async (req: Authentic
   });
 
   return res.json({
-    threadId: access.thread.id,
+    threadId: access.canonicalThreadId ?? access.thread.id,
     messages: messages.map((message: any) => ({
       id: message.id,
       body: message.body,
@@ -223,7 +411,7 @@ chatRouter.post("/threads/:threadId/messages", requireAuth, async (req: Authenti
 
   const message = await prisma.chatMessage.create({
     data: {
-      threadId: access.thread.id,
+      threadId: access.canonicalThreadId ?? access.thread.id,
       senderUserId: req.auth.userId,
       body: parsedBody.data.body.trim()
     },
@@ -264,7 +452,7 @@ chatRouter.post("/threads/:threadId/read", requireAuth, async (req: Authenticate
 
   const result = await prisma.chatMessage.updateMany({
     where: {
-      threadId: access.thread.id,
+      threadId: { in: access.relatedThreadIds },
       senderUserId: { not: req.auth.userId },
       readAt: null
     },
@@ -274,7 +462,7 @@ chatRouter.post("/threads/:threadId/read", requireAuth, async (req: Authenticate
   });
 
   return res.json({
-    threadId: access.thread.id,
+    threadId: access.canonicalThreadId ?? access.thread.id,
     markedAsRead: result.count
   });
 });

@@ -72,7 +72,7 @@ Run only professional app:
 
 ## Product readiness
 - Today: high-quality demo and functional pre-MVP workflow.
-- Not yet production-ready: hardening adicional, real Stripe webhooks, compliance controls, monitoring, and security audits are pending.
+- Not yet production-ready: compliance controls, full observability stack (dashboards + alerts + traces), and external security audits are pending.
 - Added security baseline in API:
   - CORS allowlist via `CORS_ORIGINS`
   - `Authorization` bearer-only access on protected modules
@@ -101,6 +101,8 @@ Run only professional app:
    - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:seed -w @therapy/api`
 5. Run all apps:
    - `npm run dev`
+6. Run outbox worker (required for async events like Stripe webhook processing):
+   - `npm run dev:outbox -w @therapy/api`
 
 ## Stripe multi-currency configuration
 - Legacy USD-only env vars still work:
@@ -125,3 +127,4 @@ Run only professional app:
 
 ## Launch runbook
 - See `docs/scaling-ha-checklist.md` for a staged rollout plan focused on scale and high availability.
+- See `docs/design/enterprise-runbook.md` for enterprise operation details (metrics, outbox, retries, DLQ, alerts).

@@ -20,9 +20,12 @@
     "db:down": "docker compose -f infra/docker/docker-compose.yml down",
     "dev:stop": "npm run db:down",
     "db:seed": "npm run prisma:seed -w @therapy/api",
-    "dev:landing": "npm run dev -w @therapy/landing"
+    "dev:landing": "npm run dev -w @therapy/landing",
+    "test": "npm run test --workspaces --if-present",
+    "load:smoke": "node scripts/load/smoke.mjs"
   },
   "devDependencies": {
+    "autocannon": "^8.0.0",
     "concurrently": "^9.2.1"
   }
 }

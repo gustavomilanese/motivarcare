@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(256)">
+      <stop stop-color="#1A315A"/>
+      <stop offset="1" stop-color="#060B16"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(182)">
+      <stop stop-color="#E7F2FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#E7F2FF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="184" fill="url(#glow)"/>
+  <g stroke="white" stroke-width="2.4" stroke-linecap="round" opacity="0.95">
+    <polygon points="256,78 377,148 377,288 256,358 135,288 135,148"/>
+    <polygon points="256,108 350,162 350,270 256,324 162,270 162,162"/>
+    <polygon points="256,58 421,154 421,346 256,442 91,346 91,154"/>
+    <polygon points="256,132 328,174 328,258 256,300 184,258 184,174"/>
+    <line x1="91" y1="154" x2="421" y2="346"/>
+    <line x1="421" y1="154" x2="91" y2="346"/>
+    <line x1="256" y1="58" x2="256" y2="442"/>
+    <line x1="135" y1="148" x2="377" y2="288"/>
+    <line x1="377" y1="148" x2="135" y2="288"/>
+    <line x1="256" y1="78" x2="421" y2="346"/>
+    <line x1="256" y1="78" x2="91" y2="346"/>
+    <line x1="256" y1="442" x2="421" y2="154"/>
+    <line x1="256" y1="442" x2="91" y2="154"/>
+    <circle cx="256" cy="256" r="7" fill="white" stroke="none"/>
+    <circle cx="256" cy="78" r="5.5" fill="white" stroke="none"/>
+    <circle cx="256" cy="442" r="5.5" fill="white" stroke="none"/>
+    <circle cx="91" cy="154" r="5.5" fill="white" stroke="none"/>
+    <circle cx="421" cy="154" r="5.5" fill="white" stroke="none"/>
+    <circle cx="91" cy="346" r="5.5" fill="white" stroke="none"/>
+    <circle cx="421" cy="346" r="5.5" fill="white" stroke="none"/>
+  </g>
+</svg>

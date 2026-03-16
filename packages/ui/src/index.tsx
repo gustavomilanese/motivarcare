@@ -16,3 +16,26 @@ export function PageShell(props: { title: string; subtitle?: string; children: R
     </section>
   );
 }
+
+export function InlineBadge(props: { children: ReactNode; tone?: "brand" | "neutral" }) {
+  const brand = props.tone !== "neutral";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "fit-content",
+        padding: "2px 8px",
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 800,
+        lineHeight: 1.2,
+        background: brand ? "rgba(95, 69, 238, 0.12)" : "rgba(107, 114, 128, 0.12)",
+        color: brand ? "#4f3ed6" : "#4b5563"
+      }}
+    >
+      {props.children}
+    </span>
+  );
+}

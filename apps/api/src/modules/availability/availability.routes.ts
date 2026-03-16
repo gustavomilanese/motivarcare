@@ -16,6 +16,8 @@ const listSlotsQuerySchema = z.object({
   to: z.string().datetime().optional()
 });
 
+const ACTIVE_BOOKING_STATUSES = ["REQUESTED", "CONFIRMED"] as const;
+
 export const availabilityRouter = Router();
 
 availabilityRouter.get("/me/slots", requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -60,9 +62,28 @@ availabilityRouter.get("/:professionalId/slots", async (req, res) => {
     orderBy: { startsAt: "asc" }
   });
 
+  const bookings = await prisma.booking.findMany({
+    where: {
+      professionalId: req.params.professionalId,
+      status: { in: [...ACTIVE_BOOKING_STATUSES] },
+      startsAt: {
+        gte: fromDate,
+        ...(toDate ? { lte: toDate } : {})
+      }
+    },
+    select: {
+      startsAt: true,
+      endsAt: true
+    }
+  });
+
+  const freeSlots = slots.filter((slot) =>
+    !bookings.some((booking) => booking.startsAt < slot.endsAt && booking.endsAt > slot.startsAt)
+  );
+
   return res.json({
     professionalId: req.params.professionalId,
-    slots
+    slots: freeSlots
   });
 });
 
@@ -126,6 +147,19 @@ availabilityRouter.delete("/slots/:slotId", requireAuth, async (req: Authenticat
   const slot = await prisma.availabilitySlot.findUnique({ where: { id: req.params.slotId } });
   if (!slot || slot.professionalId !== actor.professionalProfileId) {
     return res.status(404).json({ error: "Slot not found" });
+  }
+
+  const activeBooking = await prisma.booking.findFirst({
+    where: {
+      professionalId: actor.professionalProfileId,
+      status: { in: [...ACTIVE_BOOKING_STATUSES] },
+      startsAt: { lt: slot.endsAt },
+      endsAt: { gt: slot.startsAt }
+    }
+  });
+
+  if (activeBooking) {
+    return res.status(409).json({ error: "Slot has an active booking and cannot be removed" });
   }
 
   await prisma.availabilitySlot.delete({ where: { id: slot.id } });

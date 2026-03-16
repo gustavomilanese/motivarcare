@@ -37,6 +37,7 @@ enum ConsentType {
 model User {
   id            String               @id @default(cuid())
   email         String               @unique
+  emailVerified Boolean              @default(false) @map("email_verified")
   passwordHash  String
   fullName      String
   role          Role
@@ -46,12 +47,28 @@ model User {
   professional  ProfessionalProfile?
   admin         AdminProfile?
   sentMessages  ChatMessage[]        @relation("SentMessages")
+  verificationTokens VerificationToken[]
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  token      String   @unique
+  type       String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("verification_tokens")
 }
 
 model PatientProfile {
   id             String                   @id @default(cuid())
   userId         String                   @unique
   timezone       String                   @default("America/New_York")
+  lastSeenTimezone String?
   status         String                   @default("active")
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
@@ -63,17 +80,37 @@ model PatientProfile {
   consents       Consent[]
   chatThreads    ChatThread[]             @relation("PatientThreads")
   aiAuditJobs    AIAuditJob[]
+  financeRecords FinanceSessionRecord[]
 }
 
 model ProfessionalProfile {
   id                    String                   @id @default(cuid())
   userId                String                   @unique
+  timezone              String                   @default("America/New_York")
+  lastSeenTimezone      String?
   visible               Boolean                  @default(false)
+  professionalTitle     String?
+  specialization        String?
+  experienceBand        String?
+  practiceBand          String?
+  gender                String?
+  birthCountry          String?
+  focusPrimary          String?
+  languages             Json?
   bio                   String?                  @db.Text
+  shortDescription      String?                  @db.Text
   therapeuticApproach   String?                  @db.Text
   yearsExperience       Int?
+  sessionPriceUsd       Int?
+  discount4             Int?
+  discount12            Int?
+  discount24            Int?
   photoUrl              String?                  @db.Text
   videoUrl              String?                  @db.Text
+  videoCoverUrl         String?                  @db.Text
+  stripeDocUrl          String?                  @db.Text
+  stripeVerified        Boolean                  @default(false)
+  stripeVerificationStarted Boolean             @default(false)
   cancellationHours     Int                      @default(24)
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
@@ -83,6 +120,25 @@ model ProfessionalProfile {
   chatThreads           ChatThread[]             @relation("ProfessionalThreads")
   sessionPackages       SessionPackage[]
   aiAuditJobs           AIAuditJob[]
+  diplomas              ProfessionalDiploma[]
+  financeRecords        FinanceSessionRecord[]
+  payoutLines           FinancePayoutLine[]
+}
+
+model ProfessionalDiploma {
+  id               String               @id @default(cuid())
+  professionalId   String
+  institution      String
+  degree           String
+  startYear        Int
+  graduationYear   Int
+  documentUrl      String?              @db.Text
+  orderIndex       Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  professional     ProfessionalProfile  @relation(fields: [professionalId], references: [id])
+
+  @@index([professionalId, orderIndex])
 }
 
 model AdminProfile {
@@ -114,6 +170,7 @@ model SessionPackage {
   createdAt         DateTime                 @default(now())
   purchases         PatientPackagePurchase[]
   professional      ProfessionalProfile?     @relation(fields: [professionalId], references: [id])
+  financeRecords    FinanceSessionRecord[]
 }
 
 model PatientPackagePurchase {
@@ -126,6 +183,7 @@ model PatientPackagePurchase {
   purchasedAt              DateTime       @default(now())
   patient                  PatientProfile @relation(fields: [patientId], references: [id])
   sessionPackage           SessionPackage @relation(fields: [packageId], references: [id])
+  financeRecords           FinanceSessionRecord[]
 }
 
 model CreditLedger {
@@ -157,6 +215,8 @@ model Booking {
   id                 String               @id @default(cuid())
   patientId          String
   professionalId     String
+  patientTimezoneAtBooking String         @default("UTC")
+  professionalTimezoneAtBooking String    @default("UTC")
   startsAt           DateTime
   endsAt             DateTime
   status             BookingStatus        @default(REQUESTED)
@@ -171,9 +231,83 @@ model Booking {
   chatThread         ChatThread?
   videoSession       VideoSession?
   creditMovements    CreditLedger[]
+  financeRecord      FinanceSessionRecord?
 
   @@index([patientId, startsAt])
   @@index([professionalId, startsAt])
+  @@unique([professionalId, startsAt, endsAt])
+}
+
+model FinanceSessionRecord {
+  id                         String               @id @default(cuid())
+  bookingId                  String               @unique
+  patientId                  String
+  professionalId             String
+  packageId                  String?
+  purchaseId                 String?
+  payoutLineId               String?
+  isTrial                    Boolean              @default(false)
+  currency                   String               @default("usd")
+  sessionPriceCents          Int
+  platformCommissionPercent  Int
+  platformFeeCents           Int
+  professionalNetCents       Int
+  bookingStatus              BookingStatus
+  bookingCompletedAt         DateTime?
+  bookingStartsAt            DateTime
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  booking                    Booking              @relation(fields: [bookingId], references: [id])
+  patient                    PatientProfile       @relation(fields: [patientId], references: [id])
+  professional               ProfessionalProfile  @relation(fields: [professionalId], references: [id])
+  package                    SessionPackage?      @relation(fields: [packageId], references: [id])
+  purchase                   PatientPackagePurchase? @relation(fields: [purchaseId], references: [id])
+  payoutLine                 FinancePayoutLine?   @relation(fields: [payoutLineId], references: [id])
+
+  @@index([bookingCompletedAt])
+  @@index([professionalId, bookingCompletedAt])
+  @@index([patientId, bookingCompletedAt])
+  @@index([packageId, bookingCompletedAt])
+  @@index([payoutLineId])
+}
+
+model FinancePayoutRun {
+  id               String              @id @default(cuid())
+  idempotencyKey   String?             @unique
+  periodStart      DateTime
+  periodEnd        DateTime
+  status           String              @default("DRAFT")
+  totalGrossCents  Int                 @default(0)
+  totalFeeCents    Int                 @default(0)
+  totalNetCents    Int                 @default(0)
+  notes            String?             @db.Text
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  closedAt         DateTime?
+  payoutLines      FinancePayoutLine[]
+
+  @@index([periodStart, periodEnd])
+}
+
+model FinancePayoutLine {
+  id                    String               @id @default(cuid())
+  payoutRunId           String
+  professionalId        String
+  sessionsCount         Int                  @default(0)
+  grossCents            Int                  @default(0)
+  platformFeeCents      Int                  @default(0)
+  professionalNetCents  Int                  @default(0)
+  status                String               @default("PENDING")
+  paidAt                DateTime?
+  payoutReference       String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  payoutRun             FinancePayoutRun     @relation(fields: [payoutRunId], references: [id])
+  professional          ProfessionalProfile  @relation(fields: [professionalId], references: [id])
+  sessionRecords        FinanceSessionRecord[]
+
+  @@index([payoutRunId, professionalId])
+  @@index([status, paidAt])
 }
 
 model ChatThread {
@@ -244,4 +378,38 @@ model SystemConfig {
   key        String   @unique
   value      Json
   updatedAt  DateTime @updatedAt
+}
+
+model FinanceDailyAggregate {
+  id                   String   @id @default(cuid())
+  day                  DateTime
+  currency             String
+  sessionsCount        Int      @default(0)
+  grossCents           Int      @default(0)
+  platformFeeCents     Int      @default(0)
+  professionalNetCents Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([day, currency])
+  @@index([day])
+}
+
+model OutboxEvent {
+  id            String   @id @default(cuid())
+  dedupeKey     String?  @unique
+  eventType     String
+  aggregateType String
+  aggregateId   String?
+  payload       Json
+  status        String   @default("PENDING")
+  attempts      Int      @default(0)
+  availableAt   DateTime @default(now())
+  processedAt   DateTime?
+  errorMessage  String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, availableAt])
+  @@index([createdAt])
 }

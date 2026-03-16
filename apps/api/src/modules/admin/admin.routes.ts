@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
+import { financeRouter } from "../finance/finance.routes.js";
+import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 
 const appRoleSchema = z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]);
 const patientStatusSchema = z.enum(["active", "pause", "cancelled", "trial"]);
@@ -388,17 +390,19 @@ function parseLandingSettings(value: unknown) {
 export const adminRouter = Router();
 
 adminRouter.use(requireAuth, requireRole(["ADMIN"]));
+adminRouter.use("/finance", financeRouter);
 
 adminRouter.get("/kpis", async (_req, res) => {
-  const [activePatients, activeProfessionals, scheduledSessions, completedSessions] = await Promise.all([
+  const [activePatients, activeProfessionals, scheduledSessions, financeSummary] = await Promise.all([
     prisma.patientProfile.count({ where: { status: "active" } }),
     prisma.professionalProfile.count({ where: { visible: true } }),
     prisma.booking.count({ where: { status: "CONFIRMED" } }),
-    prisma.booking.count({ where: { status: "COMPLETED" } })
+    prisma.financeSessionRecord.aggregate({
+      _sum: { platformFeeCents: true },
+      _count: { _all: true }
+    })
   ]);
-
-  const sessionFeeCents = 9000;
-  const monthlyRevenueCents = completedSessions * sessionFeeCents;
+  const monthlyRevenueCents = financeSummary._sum.platformFeeCents ?? 0;
 
   return res.json({
     kpis: {
@@ -934,6 +938,8 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
       ...(nextStatus === "COMPLETED" ? { completedAt: now } : {})
     }
   });
+
+  await upsertFinanceRecordForBooking(updated.id);
 
   return res.json({ booking: updated });
 });

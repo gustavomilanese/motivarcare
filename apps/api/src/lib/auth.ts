@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
+import { sendApiError } from "./http.js";
 
 const PASSWORD_PREFIX = "pbkdf2";
 const PASSWORD_ITERATIONS = 120000;
@@ -138,13 +139,23 @@ function extractBearerToken(request: Request): string | null {
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const token = extractBearerToken(req);
   if (!token) {
-    res.status(401).json({ error: "Missing bearer token" });
+    sendApiError({
+      res,
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Missing bearer token"
+    });
     return;
   }
 
   const payload = verifyAuthToken(token);
   if (!payload) {
-    res.status(401).json({ error: "Invalid or expired token" });
+    sendApiError({
+      res,
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid or expired token"
+    });
     return;
   }
 
@@ -160,12 +171,22 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 export function requireRole(roles: Array<"PATIENT" | "PROFESSIONAL" | "ADMIN">) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.auth) {
-      res.status(401).json({ error: "Unauthorized" });
+      sendApiError({
+        res,
+        status: 401,
+        code: "UNAUTHORIZED",
+        message: "Unauthorized"
+      });
       return;
     }
 
     if (!roles.includes(req.auth.role)) {
-      res.status(403).json({ error: "Forbidden" });
+      sendApiError({
+        res,
+        status: 403,
+        code: "FORBIDDEN",
+        message: "Forbidden"
+      });
       return;
     }
 

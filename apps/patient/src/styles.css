@@ -1494,6 +1494,670 @@ button.danger {
   gap: 8px;
 }
 
+.patient-matching-page {
+  gap: 14px;
+}
+
+.patient-matching-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbddf2;
+  background:
+    radial-gradient(circle at 84% -20%, rgba(111, 89, 245, 0.16) 0%, rgba(111, 89, 245, 0) 52%),
+    linear-gradient(165deg, #f8f9ff 0%, #f3f6ff 58%, #eef3ff 100%);
+}
+
+.patient-matching-hero.first-flow {
+  border-color: #cfc7ff;
+  box-shadow:
+    0 12px 30px rgba(71, 68, 145, 0.08),
+    0 0 0 1px rgba(126, 92, 255, 0.18);
+}
+
+.patient-matching-hero h2 {
+  margin-bottom: 4px;
+}
+
+.patient-matching-count {
+  display: inline-flex;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d3b5c;
+  border-radius: 999px;
+  border: 1px solid #cfd7ee;
+  background: #f4f7ff;
+  padding: 5px 11px;
+}
+
+.patient-matching-filters {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.patient-therapist-list {
+  display: grid;
+  gap: 12px;
+}
+
+.patient-therapist-card {
+  border: 1px solid #d8deef;
+  border-radius: 24px;
+  background: #f8fafe;
+  box-shadow: 0 10px 24px rgba(22, 28, 45, 0.06);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.patient-therapist-card:hover {
+  border-color: #c6cff1;
+  box-shadow: 0 18px 32px rgba(22, 28, 45, 0.09);
+  transform: translateY(-1px);
+}
+
+.patient-therapist-card.selected {
+  border-color: #7c6cff;
+  box-shadow:
+    0 18px 32px rgba(66, 58, 122, 0.14),
+    0 0 0 1px rgba(124, 108, 255, 0.24);
+  background: linear-gradient(180deg, #f8f9ff 0%, #f3f5ff 100%);
+}
+
+.patient-therapist-avatar {
+  width: 190px;
+  height: 190px;
+  border-radius: 24px;
+  object-fit: cover;
+  border: 1px solid #cad5f3;
+}
+
+.patient-therapist-main {
+  display: grid;
+  gap: 12px;
+}
+
+.patient-therapist-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.patient-therapist-head h3 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+.patient-therapist-flag {
+  font-size: 24px;
+}
+
+.patient-therapist-verified {
+  color: #1f293d;
+  font-size: 16px;
+}
+
+.patient-therapist-head p {
+  margin: 4px 0 0;
+  color: #5e6c88;
+  font-size: 16px;
+}
+
+.patient-therapist-metrics {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  font-size: 13px;
+  color: #4e5f83;
+}
+
+.match-badge {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #6a58f2 0%, #7d68ff 100%);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.patient-therapist-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.patient-therapist-price-block {
+  display: grid;
+  gap: 4px;
+}
+
+.patient-therapist-price-block strong {
+  font-size: 38px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #10182e;
+}
+
+.patient-therapist-price-block small {
+  font-size: 14px;
+  color: #67748f;
+}
+
+.patient-therapist-rating-block {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.patient-therapist-rating-block span {
+  font-size: 32px;
+  line-height: 1;
+  color: #1f2a40;
+}
+
+.patient-therapist-rating-block small {
+  font-size: 14px;
+  color: #657591;
+}
+
+.patient-therapist-bio {
+  margin: 0;
+  color: #1e273c;
+  font-size: 16px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.patient-therapist-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.patient-therapist-tags li {
+  border-radius: 999px;
+  padding: 5px 10px;
+  border: 1px solid #bfd1f6;
+  background: #ebf3ff;
+  color: #21427a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.patient-therapist-reasons {
+  display: grid;
+  gap: 5px;
+}
+
+.patient-therapist-reasons p {
+  margin: 0;
+  color: #38537d;
+  font-size: 14px;
+}
+
+.patient-therapist-foot {
+  display: grid;
+  gap: 8px;
+}
+
+.patient-therapist-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.patient-therapist-stats span {
+  border-radius: 999px;
+  border: 1px solid #d5dff5;
+  background: #f5f8ff;
+  color: #2f3f63;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+}
+
+.patient-therapist-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-chip {
+  border-radius: 999px;
+  border: 1px solid #ccd7f5;
+  background: #fff;
+  color: #263252;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 9px 14px;
+}
+
+.slot-chip:hover {
+  border-color: #8aa7e8;
+  color: #183066;
+}
+
+.slot-chip.show-all {
+  border-color: #d4dae8;
+  background: #f7f9fd;
+  color: #2f3b58;
+}
+
+.patient-therapist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choose-button,
+.outline-button,
+.ghost-button {
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.choose-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 10px 20px rgba(95, 68, 235, 0.24);
+}
+
+.choose-button.selected {
+  background: linear-gradient(135deg, #4f36d8 0%, #694cf3 100%);
+}
+
+.outline-button {
+  border: 1px solid #becdf3;
+  color: #223962;
+  background: #f6f9ff;
+}
+
+.ghost-button {
+  border: 1px dashed #c6cee7;
+  color: #3a4e77;
+  background: #fcfdff;
+}
+
+.patient-matching-sticky {
+  position: sticky;
+  bottom: 10px;
+  z-index: 20;
+  border: 1px solid #c9c7f8;
+  border-radius: 14px;
+  background: rgba(248, 249, 255, 0.97);
+  box-shadow: 0 16px 30px rgba(58, 53, 104, 0.18);
+  backdrop-filter: blur(8px);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.patient-matching-sticky strong {
+  display: block;
+  color: #1b2540;
+}
+
+.patient-matching-sticky p {
+  margin: 2px 0 0;
+  color: #4f6085;
+  font-size: 13px;
+}
+
+.patient-matching-sticky button {
+  border-radius: 11px;
+  border: 0;
+  padding: 11px 16px;
+  min-width: 220px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+}
+
+.matching-flow-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 20, 0.52);
+  backdrop-filter: blur(2px);
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.matching-flow-modal {
+  width: min(760px, 100%);
+  max-height: min(92vh, 920px);
+  overflow: auto;
+  background: #f9fbff;
+  border: 1px solid #d6ddf0;
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(8, 12, 20, 0.35);
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.matching-flow-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.matching-flow-header h3 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+}
+
+.matching-flow-header p {
+  margin: 2px 0 0;
+  color: #53627f;
+}
+
+.matching-flow-back-button,
+.matching-flow-close,
+.matching-flow-info {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #cad3ea;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d2640;
+  font-weight: 700;
+}
+
+.matching-flow-close {
+  cursor: pointer;
+}
+
+.matching-flow-info {
+  font-size: 13px;
+}
+
+.availability-month-row strong {
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  text-transform: capitalize;
+}
+
+.availability-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.availability-day-button {
+  border: 1px solid #d3daef;
+  border-radius: 14px;
+  background: #fff;
+  min-height: 68px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  color: #3a4866;
+}
+
+.availability-day-button span {
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #7a87a2;
+}
+
+.availability-day-button strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.availability-day-button.selected {
+  border-color: #2f3341;
+  background: #23262f;
+  color: #fff;
+}
+
+.availability-day-button.selected span {
+  color: #d9dded;
+}
+
+.availability-timezone-note {
+  margin: 0;
+  color: #39455f;
+}
+
+.availability-status-message {
+  margin: 0;
+  color: #2f3f63;
+}
+
+.availability-status-message.error {
+  color: #a02b3a;
+}
+
+.availability-periods {
+  display: grid;
+  gap: 14px;
+}
+
+.availability-period-block h4 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+.availability-slot-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.availability-slot-button {
+  border: 1px solid #cfd7ec;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f2a44;
+  padding: 10px 22px;
+  min-width: 128px;
+  font-size: 22px;
+}
+
+.availability-slot-button.selected {
+  background: #23262f;
+  border-color: #23262f;
+  color: #fff;
+}
+
+.summary-professional-card {
+  border: 1px solid #d4dbf0;
+  border-radius: 16px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.summary-professional-card img {
+  width: 78px;
+  height: 78px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.summary-professional-card h4 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+}
+
+.summary-professional-card p {
+  margin: 0;
+  color: #435371;
+}
+
+.summary-professional-card small {
+  color: #62718d;
+}
+
+.summary-session-card,
+.summary-price-card,
+.payment-amount-card,
+.payment-option-card {
+  border: 1px solid #d4dbf0;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+}
+
+.summary-session-card h5 {
+  margin: 0 0 8px;
+  font-size: 36px;
+  letter-spacing: -0.02em;
+}
+
+.summary-session-card p {
+  margin: 0;
+}
+
+.summary-price-card {
+  display: grid;
+  gap: 8px;
+}
+
+.summary-price-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.summary-price-card strong,
+.payment-amount-card strong {
+  font-size: 38px;
+  letter-spacing: -0.03em;
+}
+
+.payment-amount-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-option-card {
+  display: grid;
+  gap: 12px;
+}
+
+.payment-option-toggle {
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  color: #1f2a44;
+  text-align: left;
+}
+
+.payment-option-toggle span {
+  font-size: 19px;
+}
+
+.payment-option-toggle small {
+  margin-left: auto;
+  border-radius: 8px;
+  border: 1px solid #d6dbea;
+  background: #f8f9ff;
+  font-size: 13px;
+  padding: 3px 8px;
+}
+
+.payment-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid #2e394f;
+}
+
+.payment-check.checked {
+  border-color: #1a5ccf;
+  background: radial-gradient(circle at center, #1f2534 0 58%, transparent 62%);
+}
+
+.payment-card-form {
+  display: grid;
+  gap: 8px;
+}
+
+.payment-card-form input {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #d0d8ee;
+  background: #f7f9ff;
+  padding: 14px 12px;
+  font-size: 18px;
+}
+
+.payment-card-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.payment-option-card.selected {
+  border-color: #8eb4ff;
+  box-shadow: 0 0 0 1px rgba(36, 112, 230, 0.22);
+}
+
+.matching-flow-footer {
+  display: grid;
+  gap: 8px;
+}
+
+.matching-flow-primary {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #20232c 0%, #2e3340 100%);
+}
+
+.matching-flow-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.matching-flow-footer p {
+  margin: 0;
+  font-size: 13px;
+  color: #657491;
+}
+
 .simple-list {
   list-style: none;
   padding: 0;
@@ -1725,6 +2389,57 @@ button.danger {
   margin-top: 8px;
 }
 
+.session-booking-modal {
+  width: min(720px, 100%);
+}
+
+.session-booking-modal .session-modal-header p {
+  display: none;
+}
+
+.session-booking-flow {
+  display: grid;
+  gap: 12px;
+}
+
+.session-booking-field,
+.session-booking-professional,
+.session-booking-package {
+  border: 1px solid #dce1ef;
+  border-radius: 14px;
+  background: #fcfdff;
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.session-booking-field span,
+.session-booking-professional span,
+.session-booking-package span {
+  color: #5e6d86;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.session-booking-professional strong,
+.session-booking-package strong {
+  font-size: 18px;
+  line-height: 1.15;
+  color: #182136;
+}
+
+.session-booking-professional small,
+.session-booking-package small {
+  color: #617089;
+  font-size: 14px;
+}
+
+.session-booking-field.availability select {
+  min-height: 52px;
+}
+
 .session-modal-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1809,6 +2524,622 @@ button.danger {
 
 .booking-session-card > p {
   color: #3f4a66;
+}
+
+.sessions-page-hero {
+  gap: 18px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(111, 89, 245, 0.12), transparent 32%),
+    #f3f4f8;
+}
+
+.sessions-page-layout > section {
+  width: min(80%, 1120px);
+  margin-inline: auto;
+}
+
+.sessions-page-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.sessions-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sessions-hero-title-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.sessions-hero-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(95, 68, 235, 0.14) 0%, rgba(123, 91, 255, 0.28) 100%);
+  border: 1px solid rgba(111, 89, 245, 0.18);
+  color: #5f44eb;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 10px 18px rgba(95, 68, 235, 0.12);
+}
+
+.sessions-hero-misc {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-left: 68px;
+}
+
+.sessions-hero-misc span:nth-child(1) {
+  width: 44px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(95, 68, 235, 0.9) 0%, rgba(123, 91, 255, 0.5) 100%);
+}
+
+.sessions-hero-misc span:nth-child(2) {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.24);
+}
+
+.sessions-hero-misc span:nth-child(3) {
+  width: 22px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.16);
+}
+
+.sessions-section-kicker {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #d8def0;
+  background: #fff;
+  color: #5d6b83;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.sessions-page-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sessions-stat-card {
+  border: 1px solid #dce1ef;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 12px;
+  display: grid;
+  gap: 3px;
+  min-height: 116px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.sessions-stat-card span {
+  color: #607089;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.sessions-stat-card strong {
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: #131b30;
+}
+
+.sessions-stat-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #d8def0;
+}
+
+.sessions-stat-card:last-child strong {
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.sessions-stat-card p {
+  color: #48556b;
+  font-size: 11px;
+}
+
+.sessions-stat-primary {
+  font-size: 12px;
+  font-weight: 700;
+  color: #425066;
+}
+
+.sessions-stat-link {
+  margin-top: 6px;
+  color: #3659a8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sessions-stat-link-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 148px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 10px 20px rgba(95, 68, 235, 0.18);
+}
+
+.sessions-stat-meta {
+  color: #617086;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sessions-stat-chat-button {
+  margin-top: 4px;
+  min-height: 34px;
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
+.sessions-stat-card-professional {
+  gap: 2px;
+}
+
+.sessions-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sessions-panel-head-copy {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  text-align: right;
+}
+
+.sessions-panel-head-copy strong {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.sessions-panel-head-copy span {
+  color: #607089;
+  font-size: 13px;
+  max-width: 180px;
+}
+
+.sessions-empty-state {
+  border: 1px dashed #d8deee;
+  border-radius: 16px;
+  background: #fbfbfe;
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.sessions-empty-state strong {
+  font-size: 18px;
+  color: #162034;
+}
+
+.sessions-confirmed-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sessions-reservations-table-head {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr) 96px;
+  gap: 12px;
+  padding: 0 16px;
+  color: #67758f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session-management-card {
+  border: 1px solid #e2e6ef;
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 10px 24px rgba(34, 47, 72, 0.05);
+}
+
+.session-management-card.editing {
+  border-color: #bcaeff;
+  box-shadow: 0 0 0 2px rgba(111, 89, 245, 0.14);
+}
+
+.session-management-main {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.session-management-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  align-content: center;
+}
+
+.session-management-cell-label {
+  display: none;
+  color: #77839b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session-management-cell-date strong,
+.session-management-meta strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.session-management-cell-time span {
+  color: #5c6a82;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.session-management-meta {
+  min-width: 0;
+  align-content: center;
+}
+
+.session-management-cell-status {
+  justify-items: start;
+}
+
+.session-management-actions-wrap {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.session-management-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.session-management-actions button,
+.session-management-actions .session-link {
+  min-height: 34px;
+}
+
+.session-management-actions .icon-only {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.session-action-icon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.session-action-icon.reschedule::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+
+.session-action-icon.reschedule::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 1px;
+  width: 5px;
+  height: 5px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(35deg);
+}
+
+.session-action-icon.cancel::before,
+.session-action-icon.cancel::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0;
+  width: 1.5px;
+  height: 14px;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.session-action-icon.cancel::before {
+  transform: rotate(45deg);
+}
+
+.session-action-icon.cancel::after {
+  transform: rotate(-45deg);
+}
+
+.sessions-available-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.sessions-available-grid .session-summary-item {
+  gap: 8px;
+  align-content: start;
+}
+
+.sessions-available-grid .session-summary-item p {
+  color: #59667e;
+  font-size: 13px;
+}
+
+.session-booking-panel {
+  border: 1px solid #dadff0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fcfcff 0%, #f7f8fc 100%);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.session-booking-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.session-booking-panel-head h3 {
+  font-size: 23px;
+  line-height: 1.06;
+}
+
+.session-booking-panel-head p {
+  margin-top: 4px;
+  color: #58667e;
+}
+
+.session-booking-timezone {
+  border: 1px solid #dbe1f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 12px;
+  color: #5f6c84;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sessions-calendar-card {
+  padding: 18px;
+}
+
+.sessions-calendar-card.dashboard {
+  margin-top: 4px;
+  background:
+    radial-gradient(circle at top left, rgba(111, 89, 245, 0.08), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.sessions-calendar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sessions-calendar-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sessions-calendar-month-nav strong {
+  min-width: 160px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.sessions-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  gap: 12px;
+}
+
+.sessions-calendar-grid-wrap {
+  border: 1px solid #dde2ef;
+  border-radius: 18px;
+  background: #fff;
+  padding: 12px;
+}
+
+.sessions-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sessions-calendar-grid.month-grid {
+  gap: 7px;
+}
+
+.sessions-calendar-dayname {
+  padding: 0 4px 6px;
+  color: #697790;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sessions-calendar-day {
+  min-height: 92px;
+  border: 1px solid #e2e7f2;
+  border-radius: 14px;
+  background: #fcfcfe;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+}
+
+.sessions-calendar-day:hover:not(:disabled) {
+  background: #f7f8fd;
+  border-color: #d6dcf0;
+}
+
+.sessions-calendar-card.dashboard .sessions-calendar-day {
+  min-height: 82px;
+  padding: 9px;
+}
+
+.sessions-calendar-day.outside {
+  opacity: 0.48;
+}
+
+.sessions-calendar-day.today {
+  border-color: #bdb3ff;
+  box-shadow: 0 0 0 2px rgba(111, 89, 245, 0.12);
+}
+
+.sessions-calendar-day.selected {
+  border-color: #6f59f5;
+  background: linear-gradient(180deg, #f4f0ff 0%, #fcfbff 100%);
+  box-shadow: 0 0 0 3px rgba(111, 89, 245, 0.12);
+}
+
+.sessions-calendar-day.busy {
+  background: linear-gradient(180deg, #f8f6ff 0%, #fdfdff 100%);
+}
+
+.sessions-calendar-day.selected.busy {
+  background: linear-gradient(180deg, #efe9ff 0%, #fbf9ff 100%);
+}
+
+.sessions-calendar-date {
+  font-size: 14px;
+  font-weight: 800;
+  color: #172136;
+}
+
+.sessions-calendar-count {
+  color: #5f45ee;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sessions-calendar-time {
+  color: #48566d;
+  font-size: 12px;
+}
+
+.sessions-calendar-empty {
+  height: 8px;
+}
+
+.sessions-calendar-agenda {
+  border: 1px solid #dde2ef;
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.sessions-calendar-agenda h3 {
+  font-size: 20px;
+  line-height: 1.05;
+}
+
+.sessions-calendar-selected-date {
+  margin: -6px 0 2px;
+  color: #5d6b83;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sessions-agenda-list {
+  display: grid;
+  gap: 8px;
+}
+
+.sessions-agenda-item {
+  border: 1px solid #e1e5f1;
+  border-radius: 16px;
+  background: #fafbff;
+  padding: 12px 14px;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  align-items: start;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.sessions-agenda-date {
+  color: #5d6b83;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sessions-agenda-professional {
+  color: #1b2740;
+  font-weight: 700;
+}
+
+.sessions-agenda-status {
+  color: #476f50;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .sessions-summary-grid {
@@ -2604,10 +3935,15 @@ button.danger {
   .trial-priority-banner,
   .hero-grid,
   .filters,
+  .patient-matching-filters,
   .booking-payment-layout,
   .session-modal-grid,
   .wa-shell,
-  .profile-layout {
+  .profile-layout,
+  .sessions-board,
+  .sessions-calendar-layout,
+  .sessions-page-hero-stats,
+  .sessions-available-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2648,6 +3984,43 @@ button.danger {
 
   .sessions-summary-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .sessions-panel-head,
+  .sessions-calendar-head,
+  .session-booking-panel-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sessions-panel-head-copy {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .sessions-reservations-table-head {
+    display: none;
+  }
+
+  .session-management-card {
+    grid-template-columns: 1fr;
+  }
+
+  .session-management-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-management-cell-label {
+    display: inline-flex;
+  }
+
+  .session-management-actions-wrap {
+    justify-items: start;
+  }
+
+  .sessions-calendar-month-nav {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .booking-inline-fields {
@@ -2695,6 +4068,86 @@ button.danger {
 
   .wa-shell {
     min-height: 680px;
+  }
+
+  .patient-therapist-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .patient-therapist-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 14px;
+  }
+
+  .patient-therapist-head h3 {
+    font-size: 22px;
+  }
+
+  .patient-therapist-head p {
+    font-size: 14px;
+  }
+
+  .patient-therapist-price-block strong {
+    font-size: 24px;
+  }
+
+  .patient-therapist-price-block small {
+    font-size: 12px;
+  }
+
+  .patient-therapist-rating-block span {
+    font-size: 22px;
+  }
+
+  .patient-therapist-rating-block small {
+    font-size: 12px;
+  }
+
+  .slot-chip {
+    font-size: 13px;
+  }
+
+  .patient-matching-sticky {
+    padding: 10px;
+  }
+
+  .patient-matching-sticky button {
+    min-width: 176px;
+  }
+
+  .matching-flow-modal {
+    width: min(640px, 100%);
+  }
+
+  .matching-flow-header h3 {
+    font-size: 26px;
+  }
+
+  .availability-days-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .availability-day-button strong {
+    font-size: 21px;
+  }
+
+  .availability-slot-button {
+    font-size: 16px;
+    min-width: 112px;
+  }
+
+  .summary-professional-card h4 {
+    font-size: 27px;
+  }
+
+  .summary-session-card h5 {
+    font-size: 28px;
+  }
+
+  .summary-price-card strong,
+  .payment-amount-card strong {
+    font-size: 30px;
   }
 
   .wa-sidebar {
@@ -2836,11 +4289,152 @@ button.danger {
   }
 
   .deal-grid,
-  .card-grid {
+  .card-grid,
+  .patient-matching-filters {
     grid-template-columns: 1fr;
   }
 
-  .sessions-summary-grid {
+  .patient-therapist-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .patient-therapist-avatar {
+    width: 100%;
+    height: 210px;
+  }
+
+  .patient-therapist-head {
+    flex-direction: column;
+  }
+
+  .patient-therapist-price-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .patient-therapist-head h3 {
+    font-size: 30px;
+  }
+
+  .patient-therapist-head p {
+    font-size: 15px;
+  }
+
+  .patient-therapist-price-block strong {
+    font-size: 28px;
+  }
+
+  .patient-therapist-price-block small {
+    font-size: 13px;
+  }
+
+  .patient-therapist-rating-block span {
+    font-size: 24px;
+  }
+
+  .patient-therapist-rating-block small {
+    font-size: 13px;
+  }
+
+  .patient-therapist-metrics {
+    justify-items: start;
+  }
+
+  .patient-matching-sticky {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .patient-matching-sticky button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .matching-flow-backdrop {
+    padding: 10px;
+    align-items: end;
+  }
+
+  .matching-flow-modal {
+    width: 100%;
+    max-height: 94vh;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .matching-flow-header h3 {
+    font-size: 19px;
+  }
+
+  .matching-flow-header p {
+    font-size: 13px;
+  }
+
+  .availability-month-row strong {
+    font-size: 24px;
+  }
+
+  .availability-days-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .availability-day-button {
+    min-height: 58px;
+  }
+
+  .availability-day-button strong {
+    font-size: 18px;
+  }
+
+  .availability-period-block h4 {
+    font-size: 22px;
+  }
+
+  .availability-slot-button {
+    font-size: 18px;
+    padding: 9px 16px;
+    min-width: 104px;
+  }
+
+  .summary-professional-card {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  .summary-professional-card img {
+    width: 62px;
+    height: 62px;
+    border-radius: 12px;
+  }
+
+  .summary-professional-card h4 {
+    font-size: 24px;
+  }
+
+  .summary-session-card h5 {
+    font-size: 26px;
+  }
+
+  .summary-price-card strong,
+  .payment-amount-card strong {
+    font-size: 28px;
+  }
+
+  .payment-option-toggle span {
+    font-size: 16px;
+  }
+
+  .payment-card-form input {
+    font-size: 16px;
+  }
+
+  .matching-flow-primary {
+    font-size: 18px;
+  }
+
+  .sessions-summary-grid,
+  .sessions-available-grid,
+  .sessions-page-hero-stats {
     grid-template-columns: 1fr;
   }
 
@@ -2907,6 +4501,36 @@ button.danger {
 
   .booking-inline-fields label {
     grid-template-columns: 1fr;
+  }
+
+  .sessions-page-hero {
+    padding: 18px;
+  }
+
+  .sessions-page-layout > section {
+    width: 100%;
+  }
+
+  .sessions-stat-card strong,
+  .sessions-panel-head-copy strong {
+    font-size: 28px;
+  }
+
+  .session-management-main {
+    grid-template-columns: 1fr;
+  }
+
+  .session-management-actions {
+    flex-wrap: wrap;
+  }
+
+  .sessions-calendar-grid {
+    gap: 6px;
+  }
+
+  .sessions-calendar-day {
+    min-height: 78px;
+    padding: 8px;
   }
 
   .wa-sidebar {

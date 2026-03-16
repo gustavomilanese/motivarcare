@@ -1,7 +1,10 @@
 import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
+import { sendApiError } from "./lib/http.js";
+import { metricsContentType, metricsSnapshot, observeHttpRequest } from "./lib/metrics.js";
 import { runtimeState } from "./lib/operational.js";
+import { rateLimiter } from "./lib/rateLimiter.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { profilesRouter } from "./modules/profiles/profiles.routes.js";
@@ -20,21 +23,23 @@ export const app = express();
 const allowedOrigins = env.CORS_ORIGINS.split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowedLocalHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+
+function isAllowedOrigin(origin: string): boolean {
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    return allowedLocalHosts.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
 
 app.disable("x-powered-by");
 app.set("trust proxy", env.TRUST_PROXY);
-
-const requestCounts = new Map<string, { count: number; resetAt: number }>();
-const rateLimitSweepMs = Math.max(5000, Math.floor(env.API_RATE_LIMIT_WINDOW_MS / 2));
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, tracked] of requestCounts.entries()) {
-    if (tracked.resetAt <= now) {
-      requestCounts.delete(ip);
-    }
-  }
-}, rateLimitSweepMs).unref();
 
 function getRequestIp(req: express.Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -45,6 +50,13 @@ app.use((_req, res, next) => {
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("Cross-Origin-Resource-Policy", "same-site");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  if (env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   next();
 });
 
@@ -56,48 +68,85 @@ app.use(
         return;
       }
 
-      callback(null, allowedOrigins.includes(origin));
+      callback(null, isAllowedOrigin(origin));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Idempotency-Key", "X-Client-Version"],
     maxAge: 86400
   })
 );
-app.use(express.json({ limit: "35mb" }));
+const jsonParser = express.json({ limit: "35mb" });
+app.use((req, res, next) => {
+  if (req.path === "/api/payments/stripe/webhook" || req.path === "/api/v1/payments/stripe/webhook") {
+    next();
+    return;
+  }
+  jsonParser(req, res, next);
+});
+app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!(error instanceof SyntaxError) || !("body" in (error as object))) {
+    next(error);
+    return;
+  }
+  sendApiError({
+    res,
+    status: 400,
+    code: "BAD_REQUEST",
+    message: "Invalid JSON payload"
+  });
+});
 
 app.use((req, res, next) => {
   if (runtimeState.shuttingDown) {
-    res.status(503).json({ error: "Service is shutting down, retry shortly." });
+    sendApiError({
+      res,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+      message: "Service is shutting down, retry shortly."
+    });
     return;
   }
 
-  const requestIp = getRequestIp(req);
-  const now = Date.now();
-  const tracked = requestCounts.get(requestIp);
-
-  if (!tracked || tracked.resetAt <= now) {
-    requestCounts.set(requestIp, {
-      count: 1,
-      resetAt: now + env.API_RATE_LIMIT_WINDOW_MS
-    });
+  if (req.path.startsWith("/health") || (env.API_METRICS_ENABLED && req.path === "/metrics")) {
     next();
     return;
   }
 
-  if (tracked.count >= env.API_RATE_LIMIT_MAX_REQUESTS) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((tracked.resetAt - now) / 1000));
-    res.setHeader("Retry-After", String(retryAfterSeconds));
-    res.status(429).json({ error: "Too many requests. Please retry later." });
-    return;
-  }
+  void rateLimiter.consume(getRequestIp(req)).then((result) => {
+    res.setHeader("X-RateLimit-Limit", String(result.limit));
+    res.setHeader("X-RateLimit-Remaining", String(result.remaining));
+    res.setHeader("X-RateLimit-Reset", String(Math.floor(result.resetAt / 1000)));
 
-  tracked.count += 1;
-  next();
+    if (!result.allowed) {
+      res.setHeader("Retry-After", String(result.retryAfterSeconds));
+      sendApiError({
+        res,
+        status: 429,
+        code: "TOO_MANY_REQUESTS",
+        message: "Too many requests. Please retry later."
+      });
+      return;
+    }
+
+    next();
+  }).catch(() => {
+    sendApiError({
+      res,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+      message: "Rate limiter unavailable. Retry shortly."
+    });
+  });
 });
 
 app.use((req, res, next) => {
   if (runtimeState.inFlightRequests >= env.API_MAX_INFLIGHT_REQUESTS) {
-    res.status(503).json({ error: "Server is busy. Please retry shortly." });
+    sendApiError({
+      res,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+      message: "Server is busy. Please retry shortly."
+    });
     return;
   }
 
@@ -121,19 +170,70 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  if (!env.API_ACCESS_LOG_ENABLED) {
+    next();
+    return;
+  }
+
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    const elapsedMs = Date.now() - startedAt;
+    const requestId = String(res.getHeader("x-request-id") ?? "");
+    const logLine = {
+      level: "info",
+      type: "http_access",
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      elapsedMs,
+      ip: getRequestIp(req),
+      requestId,
+      timestamp: new Date().toISOString()
+    };
+    console.log(JSON.stringify(logLine));
+  });
+
+  next();
+});
+
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    observeHttpRequest({
+      req,
+      statusCode: res.statusCode,
+      elapsedMs: Date.now() - startedAt
+    });
+  });
+  next();
+});
+
 app.get("/", (_req, res) => {
   res.json({ service: "therapy-api", status: "running" });
 });
 
+if (env.API_METRICS_ENABLED) {
+  app.get("/metrics", async (_req, res) => {
+    res.setHeader("Content-Type", metricsContentType());
+    res.send(await metricsSnapshot());
+  });
+}
+
 app.use("/health", healthRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/profiles", profilesRouter);
-app.use("/api/availability", availabilityRouter);
-app.use("/api/bookings", bookingsRouter);
-app.use("/api/payments", paymentsRouter);
-app.use("/api/video", videoRouter);
-app.use("/api/ai-audit", aiAuditRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/chat", chatRouter);
-app.use("/api/professional", professionalRouter);
-app.use("/api/public", publicRouter);
+function mountApiRoutes(prefix: "/api" | "/api/v1") {
+  app.use(`${prefix}/auth`, authRouter);
+  app.use(`${prefix}/profiles`, profilesRouter);
+  app.use(`${prefix}/availability`, availabilityRouter);
+  app.use(`${prefix}/bookings`, bookingsRouter);
+  app.use(`${prefix}/payments`, paymentsRouter);
+  app.use(`${prefix}/video`, videoRouter);
+  app.use(`${prefix}/ai-audit`, aiAuditRouter);
+  app.use(`${prefix}/admin`, adminRouter);
+  app.use(`${prefix}/chat`, chatRouter);
+  app.use(`${prefix}/professional`, professionalRouter);
+  app.use(`${prefix}/public`, publicRouter);
+}
+
+mountApiRoutes("/api");
+mountApiRoutes("/api/v1");

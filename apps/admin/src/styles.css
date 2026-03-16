@@ -1560,6 +1560,206 @@ label {
   transition: width 0.3s ease;
 }
 
+.finance-page .finance-kpis .kpi-card h3 {
+  font-size: 13px;
+}
+
+.finance-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.finance-table th,
+.finance-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.finance-table th {
+  font-size: 12px;
+  color: #44536b;
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.finance-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.finance-breakdown-card {
+  border: 1px solid #dce4f4;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.finance-breakdown-card h4 {
+  font-size: 14px;
+  color: #1e3053;
+}
+
+.finance-breakdown-empty {
+  font-size: 13px;
+  color: #60708f;
+}
+
+.finance-breakdown-list {
+  display: grid;
+  gap: 10px;
+}
+
+.finance-breakdown-row {
+  border: 1px solid #e2e9f6;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.finance-breakdown-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.finance-breakdown-top strong {
+  color: #152748;
+  font-size: 13px;
+}
+
+.finance-breakdown-top small {
+  display: block;
+  color: #5f6f90;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.finance-breakdown-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: #e7edfb;
+  overflow: hidden;
+}
+
+.finance-breakdown-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #61d6ea 0%, #6d56ff 100%);
+}
+
+.finance-breakdown-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.finance-breakdown-meta small {
+  color: #5c6a86;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.finance-inline-field {
+  display: grid;
+  gap: 4px;
+  min-width: 130px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #344364;
+}
+
+.finance-pagination-caption {
+  font-size: 13px;
+  font-weight: 700;
+  color: #405071;
+}
+
+.finance-stripe-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.finance-stripe-kpi {
+  border: 1px solid #dbe5f6;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.finance-stripe-kpi small {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b6b89;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.finance-stripe-kpi strong {
+  font-size: 20px;
+  color: #152748;
+}
+
+.finance-subcaption {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f5f80;
+}
+
+.finance-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #dbe3f2;
+  background: #f8faff;
+  color: #45557a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+}
+
+.finance-status-pill.pending {
+  border-color: #c6d4fb;
+  background: #edf2ff;
+  color: #36559d;
+}
+
+.finance-status-pill.processing {
+  border-color: #bde4f2;
+  background: #e7f8fd;
+  color: #20617c;
+}
+
+.finance-status-pill.processed {
+  border-color: #cfead8;
+  background: #ebfbf0;
+  color: #1f7450;
+}
+
+.finance-status-pill.dead {
+  border-color: #f7cad1;
+  background: #fff1f3;
+  color: #a7324a;
+}
+
 @media (max-width: 980px) {
   .dashboard-hero-card,
   .dashboard-chart-grid {
@@ -1576,6 +1776,14 @@ label {
 
   .dashboard-line-legend {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .finance-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-stripe-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1596,6 +1804,10 @@ label {
 
   .dashboard-bar-row strong {
     text-align: right;
+  }
+
+  .finance-stripe-kpis {
+    grid-template-columns: 1fr;
   }
 }
 

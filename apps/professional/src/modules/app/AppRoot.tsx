@@ -1,0 +1,307 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  SUPPORTED_CURRENCIES,
+  SUPPORTED_LANGUAGES,
+  type AppLanguage,
+  type SupportedCurrency
+} from "@therapy/i18n-config";
+import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
+import {
+  createDefaultOnboardingPatchDraft,
+  type OnboardingPatchDraft
+} from "../onboarding";
+import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
+import { ProfessionalPortal } from "./pages/ProfessionalPortal";
+import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
+import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
+import {
+  API_BASE,
+  CURRENCY_KEY,
+  LANGUAGE_KEY,
+  TOKEN_KEY,
+  USER_KEY,
+  apiRequest
+} from "./services/api";
+import type { AuthUser } from "./types";
+
+function readStoredUser(): AuthUser | null {
+  const token = window.localStorage.getItem(TOKEN_KEY);
+  const rawUser = window.localStorage.getItem(USER_KEY);
+  if (!token || !rawUser) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser) as AuthUser;
+    const user: AuthUser = {
+      ...parsed,
+      emailVerified:
+        typeof (parsed as { emailVerified?: unknown }).emailVerified === "boolean"
+          ? Boolean((parsed as { emailVerified?: unknown }).emailVerified)
+          : true
+    };
+    if (!user?.professionalProfileId || user.role !== "PROFESSIONAL") {
+      return null;
+    }
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+export function App() {
+  const [token, setToken] = useState<string>(() => window.localStorage.getItem(TOKEN_KEY) ?? "");
+  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
+  const [authSyncReady, setAuthSyncReady] = useState(() => !window.localStorage.getItem(TOKEN_KEY) || !readStoredUser());
+  const [pendingOnboardingSync, setPendingOnboardingSync] = useState(false);
+  const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
+    createDefaultOnboardingPatchDraft()
+  );
+  const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
+  const isVerifyEmailRoute = useMemo(() => window.location.pathname === "/verify-email", []);
+  const [language, setLanguage] = useState<AppLanguage>(() => {
+    const saved = window.localStorage.getItem(LANGUAGE_KEY);
+    return (SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "") ? (saved as AppLanguage) : "es";
+  });
+  const [currency, setCurrency] = useState<SupportedCurrency>(() => {
+    const saved = window.localStorage.getItem(CURRENCY_KEY);
+    return (SUPPORTED_CURRENCIES as readonly string[]).includes(saved ?? "") ? (saved as SupportedCurrency) : "USD";
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_KEY, language);
+  }, [language]);
+
+  useEffect(() => {
+    window.localStorage.setItem(CURRENCY_KEY, currency);
+  }, [currency]);
+
+  useEffect(() => {
+    document.title = "MotivarCare | Professional Portal";
+
+    const faviconHref = "/favicon.svg?v=20260311-professional";
+    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.rel = "icon";
+      favicon.type = "image/svg+xml";
+      document.head.appendChild(favicon);
+    }
+
+    if (favicon.href !== `${window.location.origin}${faviconHref}`) {
+      favicon.href = faviconHref;
+    }
+  }, []);
+
+  const handleAuthSuccess = (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => {
+    window.localStorage.setItem(TOKEN_KEY, params.token);
+    window.localStorage.setItem(USER_KEY, JSON.stringify(params.user));
+    setToken(params.token);
+    setUser(params.user);
+    setEmailVerificationRequired(params.emailVerificationRequired);
+    setAuthSyncReady(true);
+  };
+
+  const handleUserChange = (nextUser: AuthUser) => {
+    window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
+
+  const handleLogout = () => {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
+    if (window.location.pathname === "/verify-email-required") {
+      window.history.replaceState({}, "", "/");
+    }
+    setToken("");
+    setUser(null);
+    setEmailVerificationRequired(false);
+    setAuthSyncReady(true);
+  };
+
+  const handlePrepareOnboardingSync = (draft: OnboardingPatchDraft) => {
+    setOnboardingPatchDraft(draft);
+    setPendingOnboardingSync(true);
+  };
+
+  useEffect(() => {
+    if (!token || !user) {
+      return;
+    }
+
+    void syncUserTimezone({
+      baseUrl: API_BASE,
+      token,
+      timezone: sessionTimezone,
+      persistPreference: false
+    }).catch((error) => {
+      console.error("Could not sync professional timezone from session", error);
+    });
+  }, [sessionTimezone, token, user]);
+
+  useEffect(() => {
+    if (!token || !user) {
+      setAuthSyncReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setAuthSyncReady(false);
+
+    const syncAuthState = async () => {
+      try {
+        const response = await apiRequest<{
+          user: {
+            id: string;
+            fullName: string;
+            email: string;
+            role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+            emailVerified: boolean;
+            professionalProfileId: string | null;
+          };
+          emailVerificationRequired: boolean;
+        }>("/api/auth/me", token);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
+          handleLogout();
+          return;
+        }
+
+        const nextUser: AuthUser = {
+          id: response.user.id,
+          fullName: response.user.fullName,
+          email: response.user.email,
+          emailVerified: response.user.emailVerified,
+          role: "PROFESSIONAL",
+          professionalProfileId: response.user.professionalProfileId
+        };
+
+        window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+        setUser(nextUser);
+        setEmailVerificationRequired(response.emailVerificationRequired);
+      } catch (error) {
+        console.error("Could not sync professional auth state", error);
+      } finally {
+        if (!cancelled) {
+          setAuthSyncReady(true);
+        }
+      }
+    };
+
+    void syncAuthState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!pendingOnboardingSync || !token || !user?.professionalProfileId) {
+      return;
+    }
+
+    let ignore = false;
+
+    const syncOnboarding = async () => {
+      try {
+        await apiRequest(
+          `/api/profiles/professional/${user.professionalProfileId}/public-profile`,
+          token,
+          {
+            method: "PATCH",
+            body: JSON.stringify(onboardingPatchDraft)
+          }
+        );
+      } catch (error) {
+        console.error("Could not sync onboarding profile draft", error);
+      } finally {
+        if (!ignore) {
+          setPendingOnboardingSync(false);
+        }
+      }
+    };
+
+    void syncOnboarding();
+
+    return () => {
+      ignore = true;
+    };
+  }, [pendingOnboardingSync, token, user?.professionalProfileId, onboardingPatchDraft]);
+
+  useEffect(() => {
+    if (!user || window.location.pathname === "/verify-email") {
+      return;
+    }
+
+    const shouldRedirectToVerification = emailVerificationRequired && !user.emailVerified;
+    if (shouldRedirectToVerification && window.location.pathname !== "/verify-email-required") {
+      window.history.replaceState({}, "", "/verify-email-required");
+      return;
+    }
+
+    if (!shouldRedirectToVerification && window.location.pathname === "/verify-email-required") {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [emailVerificationRequired, user?.emailVerified, user?.id]);
+
+  if (isVerifyEmailRoute) {
+    return <VerifyEmailTokenScreen language={language} />;
+  }
+
+  if (!token || !user) {
+    return (
+      <ProfessionalAuthFlow
+        language={language}
+        currency={currency}
+        onLanguageChange={setLanguage}
+        onCurrencyChange={setCurrency}
+        onAuthSuccess={handleAuthSuccess}
+        onPrepareOnboardingSync={handlePrepareOnboardingSync}
+      />
+    );
+  }
+
+  if (!authSyncReady) {
+    return (
+      <div className="pro-auth-shell">
+        <section className="pro-auth-card">
+          <p>Cargando tu perfil...</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (emailVerificationRequired && !user.emailVerified) {
+    return (
+      <VerifyEmailRequiredScreen
+        language={language}
+        token={token}
+        email={user.email}
+        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
+        onVerified={() => {
+          const verifiedUser = { ...user, emailVerified: true };
+          window.localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
+          setUser(verifiedUser);
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  return (
+    <ProfessionalPortal
+      token={token}
+      user={user}
+      onLogout={handleLogout}
+      language={language}
+      currency={currency}
+      onUserChange={handleUserChange}
+    />
+  );
+}

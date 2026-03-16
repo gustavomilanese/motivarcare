@@ -1,0 +1,114 @@
+import type {
+  OnboardingPatchDraft,
+  ProfessionalMobileOnboardingInputs,
+  ProfessionalWebOnboardingPayload
+} from "./types";
+
+function trimOrNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parseNumericOrNull(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
+  return {
+    bio: null,
+    therapeuticApproach: null,
+    yearsExperience: null,
+    professionalTitle: null,
+    specialization: null,
+    experienceBand: null,
+    practiceBand: null,
+    gender: null,
+    birthCountry: null,
+    focusPrimary: null,
+    languages: null,
+    shortDescription: null,
+    sessionPriceUsd: null,
+    discount4: null,
+    discount12: null,
+    discount24: null,
+    photoUrl: null,
+    videoUrl: null,
+    videoCoverUrl: null,
+    stripeDocUrl: null,
+    stripeVerified: false,
+    stripeVerificationStarted: false,
+    visible: true,
+    diplomas: []
+  };
+}
+
+export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboardingPayload): OnboardingPatchDraft {
+  return {
+    bio: trimOrNull(payload.bio) ?? null,
+    therapeuticApproach: trimOrNull(payload.therapeuticApproach) ?? null,
+    yearsExperience: payload.yearsExperience,
+    professionalTitle: trimOrNull(payload.professionalTitle),
+    specialization: trimOrNull(payload.specialization),
+    experienceBand: trimOrNull(payload.experienceBand),
+    practiceBand: trimOrNull(payload.practiceBand),
+    gender: trimOrNull(payload.gender),
+    birthCountry: trimOrNull(payload.birthCountry),
+    focusPrimary: trimOrNull(payload.focusPrimary),
+    languages: payload.languages.length ? payload.languages : [],
+    shortDescription: trimOrNull(payload.shortDescription),
+    sessionPriceUsd: payload.sessionPriceUsd,
+    discount4: payload.discount4,
+    discount12: payload.discount12,
+    discount24: payload.discount24,
+    photoUrl: payload.photoUrl,
+    videoUrl: payload.videoUrl,
+    videoCoverUrl: payload.videoCoverUrl,
+    stripeDocUrl: payload.stripeDocUrl,
+    stripeVerified: payload.stripeVerified,
+    stripeVerificationStarted: payload.stripeVerificationStarted,
+    visible: true,
+    diplomas: payload.diplomas
+  };
+}
+
+export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboardingInputs): OnboardingPatchDraft {
+  return {
+    bio: trimOrNull(inputs.aboutText),
+    therapeuticApproach: trimOrNull(inputs.therapyDescriptionText),
+    yearsExperience: parseNumericOrNull(inputs.personalData.yearsExperience),
+    professionalTitle: null,
+    specialization: trimOrNull(inputs.selectedSpecialization),
+    experienceBand: trimOrNull(inputs.selectedExperience),
+    practiceBand: trimOrNull(inputs.selectedPracticeHours),
+    gender: trimOrNull(inputs.personalData.gender),
+    birthCountry: trimOrNull(inputs.personalData.birthCountry),
+    focusPrimary: null,
+    languages: inputs.workLanguages.length ? inputs.workLanguages : [],
+    shortDescription: trimOrNull(inputs.summaryText),
+    sessionPriceUsd: parseNumericOrNull(inputs.priceData.sessionPrice),
+    discount4: parseNumericOrNull(inputs.priceData.discount4),
+    discount12: parseNumericOrNull(inputs.priceData.discount12),
+    discount24: parseNumericOrNull(inputs.priceData.discount24),
+    photoUrl: null,
+    videoUrl: null,
+    videoCoverUrl: null,
+    stripeDocUrl: null,
+    stripeVerified: true,
+    stripeVerificationStarted: true,
+    visible: true,
+    diplomas: [
+      {
+        institution: inputs.educationData.institution.trim(),
+        degree: inputs.educationData.specialty.trim(),
+        startYear: Number(inputs.educationData.startYear),
+        graduationYear: Number(inputs.educationData.graduationYear),
+        documentUrl: null
+      }
+    ]
+  };
+}
