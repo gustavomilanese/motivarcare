@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import {
   type AppLanguage,
@@ -7,7 +8,8 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { AdminPage } from "./AdminPage";
-import { AgendaPage, PublishedAvailabilityPage } from "./PublishedAvailabilityPage";
+import { AvailabilityMonthPage } from "./AvailabilityMonthPage";
+import { AgendaPage } from "./PublishedAvailabilityPage";
 import { ChatPage } from "./ChatPage";
 import { DashboardPage } from "./DashboardPage";
 import { IncomePage } from "./IncomePage";
@@ -31,13 +33,24 @@ export function ProfessionalPortal(props: {
 }) {
   const links: Array<{ to: PortalSection; label: string }> = [
     { to: "/", label: t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" }) },
-    { to: "/agenda", label: t(props.language, { es: "Agenda", en: "Agenda", pt: "Agenda" }) },
-    { to: "/horarios", label: t(props.language, { es: "Configurar Horarios", en: "Set Schedule", pt: "Configurar Horarios" }) },
+    { to: "/horarios", label: t(props.language, { es: "Horario", en: "Schedule", pt: "Horario" }) },
     { to: "/disponibilidad", label: t(props.language, { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" }) },
+    { to: "/agenda", label: t(props.language, { es: "Agenda de Sesiones", en: "Session Agenda", pt: "Agenda de Sessoes" }) },
     { to: "/pacientes", label: t(props.language, { es: "Pacientes", en: "Patients", pt: "Pacientes" }) },
     { to: "/chat", label: t(props.language, { es: "Chat", en: "Chat", pt: "Chat" }) },
     { to: "/ingresos", label: t(props.language, { es: "Ingresos", en: "Earnings", pt: "Receitas" }) }
   ];
+
+  const handlePortalNavClick = (target: PortalSection) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (target !== "/horarios") {
+      return;
+    }
+
+    if (window.location.pathname === "/horarios") {
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent("professional:schedule-reset"));
+    }
+  };
 
   return (
     <div className="pro-shell">
@@ -52,7 +65,13 @@ export function ProfessionalPortal(props: {
 
         <nav className="pro-sidebar-nav">
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")} end={link.to === "/"}>
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={handlePortalNavClick(link.to)}
+              className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")}
+              end={link.to === "/"}
+            >
               {link.label}
             </NavLink>
           ))}
@@ -106,6 +125,7 @@ export function ProfessionalPortal(props: {
             <NavLink
               key={`mobile-${link.to}`}
               to={link.to}
+              onClick={handlePortalNavClick(link.to)}
               className={({ isActive }) => (isActive ? "pro-mobile-link active" : "pro-mobile-link")}
               end={link.to === "/"}
             >
@@ -119,7 +139,7 @@ export function ProfessionalPortal(props: {
             <Route path="/" element={<DashboardPage token={props.token} language={props.language} currency={props.currency} user={props.user} />} />
             <Route path="/agenda" element={<AgendaPage token={props.token} language={props.language} />} />
             <Route path="/horarios" element={<SchedulePage token={props.token} language={props.language} />} />
-            <Route path="/disponibilidad" element={<PublishedAvailabilityPage token={props.token} language={props.language} />} />
+            <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route path="/pacientes" element={<PatientsPage token={props.token} language={props.language} />} />
             <Route path="/chat" element={<ChatPage token={props.token} user={props.user} language={props.language} />} />
             <Route path="/ingresos" element={<IncomePage token={props.token} language={props.language} currency={props.currency} />} />

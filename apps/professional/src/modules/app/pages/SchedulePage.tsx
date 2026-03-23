@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -7,270 +8,582 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { apiRequest } from "../services/api";
-import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
+import type { AvailabilitySlot, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatDateHeading(value: string, language: AppLanguage): string {
+const DAY_KEYS = [1, 2, 3, 4, 5, 6, 0] as const;
+const DAY_INDEX = {
+  0: 6,
+  1: 0,
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5
+} as const;
+const TIME_OPTIONS = Array.from({ length: 16 }, (_, index) => `${String(index + 7).padStart(2, "0")}:00`);
+const SLOT_DURATION_MINUTES = 60;
+const FORWARD_WEEKS = 8;
+const MIN_BOOKING_NOTICE_HOURS = 24;
+const MAX_VACATION_RANGE_DAYS = 120;
+const VACATION_MARKER_HOUR = 6;
+const VACATION_MARKER_DURATION_MINUTES = 30;
+
+function formatWeekday(dayKey: number, language: AppLanguage) {
+  const labels: Record<number, LocalizedText> = {
+    1: { es: "LUN", en: "MON", pt: "SEG" },
+    2: { es: "MAR", en: "TUE", pt: "TER" },
+    3: { es: "MIE", en: "WED", pt: "QUA" },
+    4: { es: "JUE", en: "THU", pt: "QUI" },
+    5: { es: "VIE", en: "FRI", pt: "SEX" },
+    6: { es: "SAB", en: "SAT", pt: "SAB" },
+    0: { es: "DOM", en: "SUN", pt: "DOM" }
+  };
+  return t(language, labels[dayKey]);
+}
+
+function startOfDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function addDays(value: Date, days: number) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function dayKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function getTemplateFromSlots(slots: AvailabilitySlot[]) {
+  const initial = DAY_KEYS.map(() => new Set<string>());
+  const now = Date.now();
+  const maxFutureMs = now + 45 * 24 * 60 * 60 * 1000;
+
+  for (const slot of slots) {
+    if (slot.isBlocked) {
+      continue;
+    }
+
+    const slotDate = new Date(slot.startsAt);
+    const slotTime = slotDate.getTime();
+    if (slotTime < now || slotTime > maxFutureMs) {
+      continue;
+    }
+
+    const weekDay = slotDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    const index = DAY_INDEX[weekDay];
+    const hour = String(slotDate.getHours()).padStart(2, "0");
+    const minute = String(slotDate.getMinutes()).padStart(2, "0");
+    const label = `${hour}:${minute}`;
+
+    if (TIME_OPTIONS.includes(label)) {
+      initial[index].add(label);
+    }
+  }
+
+  return initial;
+}
+
+function summarizeTemplate(template: Array<Set<string>>) {
+  return template.reduce((total, daySet) => total + daySet.size, 0);
+}
+
+function buildForwardTemplateSlots(template: Array<Set<string>>) {
+  const slotsPerWeek = summarizeTemplate(template);
+  const weeks = slotsPerWeek > 0 ? FORWARD_WEEKS : 0;
+  const result: Array<{ startsAt: string; endsAt: string; startMs: number }> = [];
+
+  if (weeks === 0) {
+    return { weeks, result };
+  }
+
+  const today = startOfDay(new Date());
+  const endDate = addDays(today, weeks * 7);
+
+  for (let cursor = new Date(today); cursor < endDate; cursor = addDays(cursor, 1)) {
+    const weekDay = cursor.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    const daySlots = template[DAY_INDEX[weekDay]];
+
+    if (!daySlots || daySlots.size === 0) {
+      continue;
+    }
+
+    for (const timeLabel of Array.from(daySlots).sort()) {
+      const [hours, minutes] = timeLabel.split(":").map(Number);
+      const startsAt = new Date(cursor);
+      startsAt.setHours(hours, minutes, 0, 0);
+
+      if (startsAt.getTime() < Date.now()) {
+        continue;
+      }
+
+      const endsAt = new Date(startsAt.getTime() + SLOT_DURATION_MINUTES * 60000);
+      result.push({
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        startMs: startsAt.getTime()
+      });
+    }
+  }
+
+  return { weeks, result };
+}
+
+function cloneTemplate(template: Array<Set<string>>) {
+  return template.map((daySet) => new Set(daySet));
+}
+
+function formatTimeWithAmPm(timeLabel: string) {
+  const [rawHour, rawMinute] = timeLabel.split(":").map(Number);
+  const hour = Number.isFinite(rawHour) ? rawHour : 0;
+  const minute = Number.isFinite(rawMinute) ? rawMinute : 0;
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
+}
+
+function toDayIndex(day: number) {
+  return DAY_INDEX[day as 0 | 1 | 2 | 3 | 4 | 5 | 6];
+}
+
+function dateFromDayKey(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function dayKeyFromIso(value: string) {
+  return value.slice(0, 10);
+}
+
+function isNextDay(previous: string, next: string) {
+  const previousDate = dateFromDayKey(previous);
+  const nextDate = dateFromDayKey(next);
+  const expected = new Date(previousDate);
+  expected.setDate(expected.getDate() + 1);
+  return expected.getTime() === nextDate.getTime();
+}
+
+function formatVacationDayLabel(dayKeyValue: string, language: AppLanguage) {
+  const date = dateFromDayKey(dayKeyValue);
   return formatDateWithLocale({
-    value,
+    value: date.toISOString(),
     language,
     options: {
-      weekday: "long",
-      month: "short",
-      day: "numeric"
+      day: "numeric",
+      month: "long"
     }
   });
 }
 
-function formatTime(value: string, language: AppLanguage): string {
-  return formatDateWithLocale({
-    value,
-    language,
-    options: {
-      hour: "numeric",
-      minute: "2-digit"
+type VacationRange = {
+  id: string;
+  startKey: string;
+  endKey: string;
+  dayCount: number;
+  slotIds: string[];
+};
+
+function buildVacationRanges(slots: AvailabilitySlot[]): VacationRange[] {
+  const dayToSlotIds = new Map<string, string[]>();
+  for (const slot of slots) {
+    const key = slot.startsAt.slice(0, 10);
+    const current = dayToSlotIds.get(key) ?? [];
+    current.push(slot.id);
+    dayToSlotIds.set(key, current);
+  }
+
+  const orderedDayKeys = Array.from(dayToSlotIds.keys()).sort();
+  const ranges: VacationRange[] = [];
+  let index = 0;
+
+  while (index < orderedDayKeys.length) {
+    const startKey = orderedDayKeys[index];
+    let endKey = startKey;
+    const slotIds = [...(dayToSlotIds.get(startKey) ?? [])];
+    let cursor = index;
+
+    while (cursor + 1 < orderedDayKeys.length && isNextDay(orderedDayKeys[cursor], orderedDayKeys[cursor + 1])) {
+      cursor += 1;
+      endKey = orderedDayKeys[cursor];
+      slotIds.push(...(dayToSlotIds.get(endKey) ?? []));
     }
+
+    const startDate = dateFromDayKey(startKey);
+    const endDate = dateFromDayKey(endKey);
+    const dayCount = Math.floor((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+
+    ranges.push({
+      id: `${startKey}_${endKey}`,
+      startKey,
+      endKey,
+      dayCount,
+      slotIds
+    });
+
+    index = cursor + 1;
+  }
+
+  return ranges;
+}
+
+function formatDateInput(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return null;
+  }
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function buildVacationMarkerSlots(startDate: Date, endDate: Date) {
+  const ranges: Array<{ dayKey: string; startsAt: string; endsAt: string }> = [];
+  for (let cursor = new Date(startDate); cursor <= endDate; cursor.setDate(cursor.getDate() + 1)) {
+    const startsAt = new Date(cursor);
+    startsAt.setHours(VACATION_MARKER_HOUR, 0, 0, 0);
+    const endsAt = new Date(startsAt.getTime() + VACATION_MARKER_DURATION_MINUTES * 60000);
+    ranges.push({
+      dayKey: dayKey(cursor),
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString()
+    });
+  }
+  return ranges;
+}
+
+function buildTemplateSlotsForDateRange(template: Array<Set<string>>, startDate: Date, endDate: Date) {
+  const result: Array<{ startsAt: string; endsAt: string; startMs: number }> = [];
+  const todayStart = startOfDay(new Date()).getTime();
+
+  for (let cursor = new Date(startDate); cursor <= endDate; cursor = addDays(cursor, 1)) {
+    if (startOfDay(cursor).getTime() < todayStart) {
+      continue;
+    }
+
+    const weekDay = cursor.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    const daySlots = template[DAY_INDEX[weekDay]];
+    if (!daySlots || daySlots.size === 0) {
+      continue;
+    }
+
+    for (const timeLabel of Array.from(daySlots).sort()) {
+      const [hours, minutes] = timeLabel.split(":").map(Number);
+      const startsAt = new Date(cursor);
+      startsAt.setHours(hours, minutes, 0, 0);
+      if (startsAt.getTime() < Date.now()) {
+        continue;
+      }
+
+      const endsAt = new Date(startsAt.getTime() + SLOT_DURATION_MINUTES * 60000);
+      result.push({
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        startMs: startsAt.getTime()
+      });
+    }
+  }
+
+  return result;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
   });
+}
+
+function isRateLimitError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /too many requests|rate limit/i.test(error.message);
+}
+
+async function apiRequestWithRetry<T>(
+  path: string,
+  token: string,
+  options?: Parameters<typeof apiRequest<T>>[2],
+  retries = 4
+) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await apiRequest<T>(path, token, options);
+    } catch (requestError) {
+      if (attempt >= retries || !isRateLimitError(requestError)) {
+        throw requestError;
+      }
+      await wait(400 * 2 ** attempt);
+      attempt += 1;
+    }
+  }
+}
+
+function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "vacation" | "notice" | "workload" }) {
+  if (props.kind === "work") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M7.5 3.5V7.5M16.5 3.5V7.5M3.5 9.5H20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M8 13H10M12 13H14M16 13H16.01M8 16.5H10M12 16.5H14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (props.kind === "published") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M7.5 2.5V6.5M16.5 2.5V6.5M3.5 8.5H20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M8 13.5H16M8 16.5H13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (props.kind === "notice") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M12 7.5V12L15.3 13.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (props.kind === "vacation") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4.5 17.5H19.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M8 17.5V10.5C8 8.29086 9.79086 6.5 12 6.5C14.2091 6.5 16 8.29086 16 10.5V17.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M12 3.5V6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M6 9.8C7 9.2 8.3 9 9.3 9.3M18 9.8C17 9.2 15.7 9 14.7 9.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (props.kind === "settings") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4.5 7.5H14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M4.5 16.5H10.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="17" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="13" cy="16.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M16.5 20.5V18.8C16.5 17.1431 15.1569 15.8 13.5 15.8H7C5.34315 15.8 4 17.1431 4 18.8V20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="10.3" cy="9.1" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M17.8 9.8C19.2334 10.2729 20.2 11.6131 20.2 13.1V14.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16.7 6.3C17.6027 6.3 18.3344 7.03177 18.3344 7.9345C18.3344 8.83724 17.6027 9.569 16.7 9.569" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 export function SchedulePage(props: { token: string; language: AppLanguage }) {
+  const [view, setView] = useState<"home" | "workHours" | "settings" | "vacations" | "bookingNotice">("home");
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingVacations, setSavingVacations] = useState(false);
+  const [savingNotice, setSavingNotice] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedDay, setSelectedDay] = useState<number>(1);
+  const [professionalId, setProfessionalId] = useState("");
+  const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
+  const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
+  const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
+  const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
+  const [removingVacationRangeId, setRemovingVacationRangeId] = useState<string | null>(null);
+  const [weekTemplate, setWeekTemplate] = useState<Array<Set<string>>>(() => DAY_KEYS.map(() => new Set<string>()));
 
-  const [agendaStartDate, setAgendaStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [selectedWeekDays, setSelectedWeekDays] = useState<boolean[]>([false, true, true, true, true, true, false]);
-  const [rangeStart, setRangeStart] = useState("09:00");
-  const [rangeEnd, setRangeEnd] = useState("17:00");
-  const [duration, setDuration] = useState(50);
-  const [breakMinutes, setBreakMinutes] = useState(10);
-  const [repeatWeeks, setRepeatWeeks] = useState(2);
-  const [builderStep, setBuilderStep] = useState<1 | 2 | 3>(1);
-  const [quickDayPreset, setQuickDayPreset] = useState("");
-  const [quickShiftPreset, setQuickShiftPreset] = useState("");
-  const [removedPreviewSlots, setRemovedPreviewSlots] = useState<number[]>([]);
-  const [previewMonthDate, setPreviewMonthDate] = useState(() => new Date());
+  const selectedDayIndex = useMemo(() => toDayIndex(selectedDay), [selectedDay]);
+  const openSlotsPerWeek = useMemo(() => summarizeTemplate(weekTemplate), [weekTemplate]);
+  const { weeks: forwardWeeks, result: plannedSlots } = useMemo(() => buildForwardTemplateSlots(weekTemplate), [weekTemplate]);
+  const existingStarts = useMemo(() => new Set(slots.map((slot) => new Date(slot.startsAt).getTime())), [slots]);
+  const vacationDayKeys = useMemo(
+    () => new Set(slots.filter((slot) => slot.isBlocked && slot.source === "vacation").map((slot) => slot.startsAt.slice(0, 10))),
+    [slots]
+  );
+  const slotsToCreate = useMemo(
+    () =>
+      plannedSlots.filter(
+        (item) => !existingStarts.has(item.startMs) && !vacationDayKeys.has(item.startsAt.slice(0, 10))
+      ),
+    [plannedSlots, existingStarts, vacationDayKeys]
+  );
+  const vacationSlots = useMemo(
+    () => slots.filter((slot) => slot.isBlocked && slot.source === "vacation" && new Date(slot.endsAt).getTime() >= Date.now()),
+    [slots]
+  );
+  const vacationRanges = useMemo(() => buildVacationRanges(vacationSlots), [vacationSlots]);
+  const vacationDaysCount = useMemo(() => new Set(vacationSlots.map((slot) => slot.startsAt.slice(0, 10))).size, [vacationSlots]);
+  const editingVacationRange = useMemo(
+    () => vacationRanges.find((range) => range.id === editingVacationRangeId) ?? null,
+    [editingVacationRangeId, vacationRanges]
+  );
+  const shouldShowVacationEditor = Boolean(editingVacationRange) || vacationRanges.length === 0;
 
-  const weekDays = [
-    { index: 1, label: t(props.language, { es: "Lun", en: "Mon", pt: "Seg" }) },
-    { index: 2, label: t(props.language, { es: "Mar", en: "Tue", pt: "Ter" }) },
-    { index: 3, label: t(props.language, { es: "Mie", en: "Wed", pt: "Qua" }) },
-    { index: 4, label: t(props.language, { es: "Jue", en: "Thu", pt: "Qui" }) },
-    { index: 5, label: t(props.language, { es: "Vie", en: "Fri", pt: "Sex" }) },
-    { index: 6, label: t(props.language, { es: "Sab", en: "Sat", pt: "Sab" }) },
-    { index: 0, label: t(props.language, { es: "Dom", en: "Sun", pt: "Dom" }) }
-  ] as const;
-
-  const parseTimeToMinutes = (value: string): number => {
-    const [hours, minutes] = value.split(":").map(Number);
-    return hours * 60 + minutes;
+  const load = async (showError = true) => {
+    setLoading(true);
+    try {
+      const [slotsResponse, profileResponse] = await Promise.all([
+        apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token),
+        apiRequest<{ role: string; profile: ProfessionalProfile | null }>("/api/profiles/me", props.token)
+      ]);
+      setSlots(slotsResponse.slots);
+      setWeekTemplate((current) => {
+        const next = getTemplateFromSlots(slotsResponse.slots);
+        const hasAny = summarizeTemplate(next) > 0;
+        if (!hasAny && summarizeTemplate(current) > 0) {
+          return current;
+        }
+        return hasAny ? next : current;
+      });
+      if (profileResponse.profile?.id) {
+        setProfessionalId(profileResponse.profile.id);
+      }
+      setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
+      setError("");
+    } catch (requestError) {
+      if (showError) {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : t(props.language, {
+                es: "No se pudieron cargar los horarios.",
+                en: "Could not load schedule slots.",
+                pt: "Nao foi possivel carregar os horarios."
+              })
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loadSlots = async (showLoading = false) => {
-    try {
-      const slotsResponse = await apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token);
-      setSlots(slotsResponse.slots);
+  useEffect(() => {
+    void load();
+  }, [props.token]);
+
+  useEffect(() => {
+    const resetToHome = () => {
+      setView("home");
       setError("");
+      setMessage("");
+    };
+
+    window.addEventListener("professional:schedule-reset", resetToHome);
+    return () => window.removeEventListener("professional:schedule-reset", resetToHome);
+  }, []);
+
+  const toggleHour = (timeLabel: string) => {
+    setWeekTemplate((current) => {
+      const next = cloneTemplate(current);
+      if (next[selectedDayIndex].has(timeLabel)) {
+        next[selectedDayIndex].delete(timeLabel);
+      } else {
+        next[selectedDayIndex].add(timeLabel);
+      }
+      return next;
+    });
+  };
+
+  const toggleDay = (day: number) => {
+    setSelectedDay(day);
+  };
+
+  const handleSaveBookingNotice = async () => {
+    if (!professionalId) {
+      setError(
+        t(props.language, {
+          es: "No se encontró el perfil profesional.",
+          en: "Professional profile was not found.",
+          pt: "Perfil profissional nao encontrado."
+        })
+      );
+      return;
+    }
+
+    const normalizedValue = Math.max(MIN_BOOKING_NOTICE_HOURS, Math.min(168, Math.round(Number(bookingNoticeHours || MIN_BOOKING_NOTICE_HOURS))));
+
+    setSavingNotice(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest<{ message: string }>(`/api/profiles/professional/${professionalId}/public-profile`, props.token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          cancellationHours: normalizedValue
+        })
+      });
+
+      setBookingNoticeHours(normalizedValue);
+      setMessage(
+        replaceTemplate(
+          t(props.language, {
+            es: "Tiempo mínimo para agendar actualizado: {hours} horas.",
+            en: "Minimum booking notice updated: {hours} hours.",
+            pt: "Tempo minimo para agendar atualizado: {hours} horas."
+          }),
+          { hours: String(normalizedValue) }
+        )
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : t(props.language, {
-              es: "No se pudieron cargar los horarios.",
-              en: "Could not load schedule slots.",
-              pt: "Nao foi possivel carregar os horarios."
+              es: "No se pudo guardar el tiempo mínimo.",
+              en: "Could not save minimum notice.",
+              pt: "Nao foi possivel salvar o tempo minimo."
             })
       );
+    } finally {
+      setSavingNotice(false);
     }
   };
 
-  useEffect(() => {
-    void loadSlots();
-  }, [props.token]);
-
-  const plannedSlots = useMemo(() => {
-    const result: Array<{ startsAt: string; endsAt: string; startMs: number }> = [];
-    const baseDate = new Date(`${agendaStartDate}T00:00:00`);
-    if (Number.isNaN(baseDate.getTime())) {
-      return result;
-    }
-
-    const startMinutes = parseTimeToMinutes(rangeStart);
-    const endMinutes = parseTimeToMinutes(rangeEnd);
-    const cleanDuration = Math.max(30, Math.min(120, duration));
-    const cleanBreak = Math.max(0, Math.min(30, breakMinutes));
-    const cleanWeeks = Math.max(1, Math.min(8, repeatWeeks));
-
-    if (startMinutes >= endMinutes) {
-      return result;
-    }
-
-    for (let dayOffset = 0; dayOffset < cleanWeeks * 7; dayOffset += 1) {
-      const currentDate = new Date(baseDate);
-      currentDate.setDate(baseDate.getDate() + dayOffset);
-
-      if (!selectedWeekDays[currentDate.getDay()]) {
-        continue;
-      }
-
-      let currentMinute = startMinutes;
-      while (currentMinute + cleanDuration <= endMinutes) {
-        const startsAt = new Date(currentDate);
-        startsAt.setHours(Math.floor(currentMinute / 60), currentMinute % 60, 0, 0);
-        const endsAt = new Date(startsAt.getTime() + cleanDuration * 60000);
-
-        result.push({
-          startsAt: startsAt.toISOString(),
-          endsAt: endsAt.toISOString(),
-          startMs: startsAt.getTime()
-        });
-
-        currentMinute += cleanDuration + cleanBreak;
-        if (result.length > 400) {
-          return result;
-        }
-      }
-    }
-
-    return result;
-  }, [agendaStartDate, breakMinutes, duration, rangeEnd, rangeStart, repeatWeeks, selectedWeekDays]);
-
-  const existingStartTimes = useMemo(() => {
-    return new Set(slots.map((slot) => new Date(slot.startsAt).getTime()));
-  }, [slots]);
-
-  const visiblePlannedSlots = useMemo(() => {
-    if (removedPreviewSlots.length === 0) {
-      return plannedSlots;
-    }
-    const removedSet = new Set(removedPreviewSlots);
-    return plannedSlots.filter((slot) => !removedSet.has(slot.startMs));
-  }, [plannedSlots, removedPreviewSlots]);
-
-  const slotsToCreate = useMemo(() => {
-    return visiblePlannedSlots.filter((slot) => !existingStartTimes.has(slot.startMs));
-  }, [visiblePlannedSlots, existingStartTimes]);
-
-  const duplicateCount = visiblePlannedSlots.length - slotsToCreate.length;
-  const previewMonthKey = `${previewMonthDate.getFullYear()}-${String(previewMonthDate.getMonth() + 1).padStart(2, "0")}`;
-  const previewMonths = useMemo(() => {
-    return Array.from(new Set(slotsToCreate.map((slot) => slot.startsAt.slice(0, 7)))).sort();
-  }, [slotsToCreate]);
-  const previewSlots = useMemo(
-    () => slotsToCreate.filter((slot) => slot.startsAt.slice(0, 7) === previewMonthKey),
-    [previewMonthKey, slotsToCreate]
-  );
-  const previewMonthIndex = previewMonths.indexOf(previewMonthKey);
-
-  useEffect(() => {
-    if (plannedSlots.length === 0) {
-      setRemovedPreviewSlots([]);
+  const handleSaveTemplate = async () => {
+    if (openSlotsPerWeek === 0) {
+      setError(
+        t(props.language, {
+          es: "Selecciona al menos un horario semanal.",
+          en: "Select at least one weekly time.",
+          pt: "Selecione ao menos um horario semanal."
+        })
+      );
       return;
     }
 
-    const validStartTimes = new Set(plannedSlots.map((slot) => slot.startMs));
-    setRemovedPreviewSlots((current) => current.filter((startMs) => validStartTimes.has(startMs)));
-  }, [plannedSlots]);
-
-  useEffect(() => {
-    const baseDate = new Date(`${agendaStartDate}T00:00:00`);
-    if (!Number.isNaN(baseDate.getTime())) {
-      setPreviewMonthDate(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
-    }
-  }, [agendaStartDate]);
-
-  const configuredDaysLabel = useMemo(() => {
-    const activeDays = weekDays.filter((day) => selectedWeekDays[day.index]).map((day) => day.label);
-    return activeDays.length > 0 ? activeDays.join(" · ") : t(props.language, { es: "Sin dias", en: "No days", pt: "Sem dias" });
-  }, [props.language, selectedWeekDays, weekDays]);
-  const removedCount = Math.max(0, plannedSlots.length - visiblePlannedSlots.length);
-  const sessionTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
-
-  const toggleWeekDay = (dayIndex: number) => {
-    setSelectedWeekDays((current) => current.map((enabled, index) => (index === dayIndex ? !enabled : enabled)));
-  };
-
-  const applyWeekPreset = (preset: "workdays" | "weekend" | "all") => {
-    if (preset === "workdays") {
-      setSelectedWeekDays([false, true, true, true, true, true, false]);
-      return;
-    }
-
-    if (preset === "weekend") {
-      setSelectedWeekDays([true, false, false, false, false, false, true]);
-      return;
-    }
-
-    setSelectedWeekDays([true, true, true, true, true, true, true]);
-  };
-
-  const applyTimePreset = (preset: "morning" | "afternoon" | "full") => {
-    if (preset === "morning") {
-      setRangeStart("09:00");
-      setRangeEnd("13:00");
-      setDuration(50);
-      setBreakMinutes(10);
-      return;
-    }
-
-    if (preset === "afternoon") {
-      setRangeStart("14:00");
-      setRangeEnd("18:00");
-      setDuration(50);
-      setBreakMinutes(10);
-      return;
-    }
-
-    setRangeStart("09:00");
-    setRangeEnd("17:00");
-    setDuration(50);
-    setBreakMinutes(10);
-  };
-
-  const resetBuilder = () => {
-    setSelectedWeekDays([false, true, true, true, true, true, false]);
-    setRangeStart("09:00");
-    setRangeEnd("17:00");
-    setDuration(50);
-    setBreakMinutes(10);
-    setRepeatWeeks(2);
-    setBuilderStep(1);
-    setQuickDayPreset("");
-    setQuickShiftPreset("");
-    setRemovedPreviewSlots([]);
-    setPreviewMonthDate(new Date());
-    setMessage("");
-    setError("");
-  };
-
-  const handlePublishSlots = async () => {
     if (slotsToCreate.length === 0) {
-      setError(
+      setMessage(
         t(props.language, {
-          es: "No hay nuevos horarios para publicar con esta configuracion.",
-          en: "There are no new slots to publish with this setup.",
-          pt: "Nao ha novos horarios para publicar com esta configuracao."
+          es: "Tu horario semanal ya estaba aplicado para las proximas semanas.",
+          en: "Your weekly schedule was already applied for upcoming weeks.",
+          pt: "Seu horario semanal ja estava aplicado para as proximas semanas."
         })
       );
+      setError("");
       return;
     }
 
-    if (slotsToCreate.length > 180) {
-      setError(
-        t(props.language, {
-          es: "La carga es muy grande. Reduce semanas o dias para publicar hasta 180 horarios por vez.",
-          en: "The batch is too large. Reduce weeks or days to publish up to 180 slots per run.",
-          pt: "A carga e muito grande. Reduza semanas ou dias para publicar ate 180 horarios por vez."
-        })
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
+    setSaving(true);
     setError("");
     setMessage("");
 
@@ -285,7 +598,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
               body: JSON.stringify({
                 startsAt: slot.startsAt,
                 endsAt: slot.endsAt,
-                source: "professional-web"
+                source: "weekly-template"
               })
             })
           )
@@ -295,447 +608,749 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
       setMessage(
         replaceTemplate(
           t(props.language, {
-            es: "Disponibilidad publicada: {count} horarios nuevos.",
-            en: "Availability published: {count} new slots.",
-            pt: "Disponibilidade publicada: {count} novos horarios."
+            es: "Horario semanal guardado: {count} horarios nuevos para las proximas {weeks} semanas.",
+            en: "Weekly schedule saved: {count} new slots for the next {weeks} weeks.",
+            pt: "Horario semanal salvo: {count} novos horarios para as proximas {weeks} semanas."
           }),
-          { count: String(slotsToCreate.length) }
+          { count: String(slotsToCreate.length), weeks: String(forwardWeeks) }
         )
       );
-      await loadSlots();
+      await load();
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : t(props.language, {
-              es: "No se pudo publicar disponibilidad.",
-              en: "Could not publish availability.",
-              pt: "Nao foi possivel publicar a disponibilidade."
+              es: "No se pudo guardar el horario semanal.",
+              en: "Could not save weekly schedule.",
+              pt: "Nao foi possivel salvar o horario semanal."
             })
       );
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="pro-grid-stack">
-      <section className="pro-card schedule-builder">
-        <h2>{t(props.language, { es: "Configura tu Disponibilidad", en: "Set your availability", pt: "Configure sua disponibilidade" })}</h2>
-        <p>
-          {t(props.language, {
-            es: "Arma tu agenda en ",
-            en: "Build your schedule in ",
-            pt: "Monte sua agenda em "
-          })}
-          <span className="schedule-builder-highlight">
-            {t(props.language, {
-              es: "tres pasos",
-              en: "three steps",
-              pt: "tres passos"
-            })}
-          </span>
-          {t(props.language, {
-            es: ": elige dias, horarios, revisas y publicas.",
-            en: ": choose days, hours, review and publish.",
-            pt: ": escolha dias, horarios, revise e publique."
-          })}
-        </p>
+  const handleSaveVacations = async () => {
+    const start = parseDateInput(vacationStartDate);
+    const end = parseDateInput(vacationEndDate);
 
-        <div className="schedule-stepper">
-          <button type="button" className={`schedule-step-chip ${builderStep === 1 ? "active" : builderStep > 1 ? "done" : ""}`} onClick={() => setBuilderStep(1)}>
-            <strong>{t(props.language, { es: "1. Dias", en: "1. Days", pt: "1. Dias" })}</strong>
-            <span>{t(props.language, { es: "Inicio, semanas y dias", en: "Start, weeks and days", pt: "Inicio, semanas e dias" })}</span>
-          </button>
-          <button type="button" className={`schedule-step-chip ${builderStep === 2 ? "active" : builderStep > 2 ? "done" : ""}`} onClick={() => setBuilderStep(2)}>
-            <strong>{t(props.language, { es: "2. Horario", en: "2. Hours", pt: "2. Horario" })}</strong>
-            <span>{t(props.language, { es: "Franja, duracion y pausa", en: "Range, duration and break", pt: "Faixa, duracao e pausa" })}</span>
-          </button>
-          <button type="button" className={`schedule-step-chip ${builderStep === 3 ? "active" : ""}`} onClick={() => setBuilderStep(3)}>
-            <strong>{t(props.language, { es: "3. Publicar", en: "3. Publish", pt: "3. Publicar" })}</strong>
-            <span>{t(props.language, { es: "Revision final", en: "Final review", pt: "Revisao final" })}</span>
-          </button>
-        </div>
+    if (!start || !end) {
+      setError(
+        t(props.language, {
+          es: "Selecciona un rango de fechas valido.",
+          en: "Select a valid date range.",
+          pt: "Selecione um intervalo de datas valido."
+        })
+      );
+      return;
+    }
 
-        {builderStep === 1 ? (
-          <div className="schedule-step-panel">
-            <div className="schedule-step-head">
-              <div className="schedule-step-copy">
-                <span>{t(props.language, { es: "Paso 1", en: "Step 1", pt: "Passo 1" })}</span>
-                <h3>{t(props.language, { es: "Elige desde cuando y que dias quieres abrir agenda", en: "Choose when your schedule starts and which days are open", pt: "Escolha quando sua agenda comeca e quais dias ficam abertos" })}</h3>
-              </div>
-              <label className="schedule-inline-select">
-                <span>{t(props.language, { es: "Dias rapidos", en: "Quick days", pt: "Dias rapidos" })}</span>
-                <select
-                  value={quickDayPreset}
-                  onChange={(event) => {
-                    const preset = event.target.value as "" | "workdays" | "weekend" | "all";
-                    setQuickDayPreset(preset);
-                    if (preset) {
-                      applyWeekPreset(preset);
-                    }
-                  }}
-                >
-                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                  <option value="workdays">{t(props.language, { es: "Lun a Vie", en: "Mon to Fri", pt: "Seg a Sex" })}</option>
-                  <option value="weekend">{t(props.language, { es: "Fin de semana", en: "Weekend", pt: "Fim de semana" })}</option>
-                  <option value="all">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
-                </select>
-              </label>
-            </div>
+    if (start > end) {
+      setError(
+        t(props.language, {
+          es: "La fecha de inicio no puede ser mayor que la fecha de fin.",
+          en: "Start date cannot be after end date.",
+          pt: "A data de inicio nao pode ser maior que a data final."
+        })
+      );
+      return;
+    }
 
-            <div className="schedule-controls">
-              <label>
-                {t(props.language, { es: "Inicio de agenda", en: "Schedule start", pt: "Inicio da agenda" })}
-                <input type="date" value={agendaStartDate} onChange={(event) => setAgendaStartDate(event.target.value)} />
-              </label>
+    const selectedDays = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    if (selectedDays > MAX_VACATION_RANGE_DAYS) {
+      setError(
+        replaceTemplate(
+          t(props.language, {
+            es: "El rango maximo por guardado es de {days} dias.",
+            en: "Maximum range per save is {days} days.",
+            pt: "O intervalo maximo por salvamento e de {days} dias."
+          }),
+          { days: String(MAX_VACATION_RANGE_DAYS) }
+        )
+      );
+      return;
+    }
 
-              <label>
-                {t(props.language, { es: "Repetir semanas", en: "Repeat weeks", pt: "Repetir semanas" })}
-                <input
-                  type="number"
-                  min={1}
-                  max={8}
-                  value={repeatWeeks}
-                  onChange={(event) => setRepeatWeeks(Number(event.target.value || 2))}
-                />
-              </label>
-            </div>
+    const todayStartMs = startOfDay(new Date()).getTime();
+    const requestedRanges = buildVacationMarkerSlots(start, end).filter((range) => dateFromDayKey(range.dayKey).getTime() >= todayStartMs);
+    if (requestedRanges.length === 0) {
+      setError(
+        t(props.language, {
+          es: "No hay horarios futuros para bloquear en ese rango.",
+          en: "There are no future slots to block in that range.",
+          pt: "Nao ha horarios futuros para bloquear nesse intervalo."
+        })
+      );
+      return;
+    }
 
-            <div className="schedule-day-picker">
-              {weekDays.map((day) => (
-                <button
-                  key={day.index}
-                  className={selectedWeekDays[day.index] ? "day-chip active" : "day-chip"}
-                  type="button"
-                  onClick={() => toggleWeekDay(day.index)}
-                >
-                  {day.label}
-                </button>
-              ))}
-            </div>
+    setSavingVacations(true);
+    setError("");
+    setMessage("");
 
-            <div className="schedule-step-footer">
-              <span className="pro-muted">
-                {replaceTemplate(
+    const editSlotIds = new Set((editingVacationRange?.slotIds ?? []));
+    const scopedSlots = slots.filter((slot) => !editSlotIds.has(slot.id));
+    const existingByDay = new Map<string, AvailabilitySlot[]>();
+    for (const slot of scopedSlots) {
+      const key = dayKeyFromIso(slot.startsAt);
+      const current = existingByDay.get(key) ?? [];
+      current.push(slot);
+      existingByDay.set(key, current);
+    }
+    let blockedCount = 0;
+    let alreadyVacationCount = 0;
+    let failedCount = 0;
+
+    try {
+      if (editingVacationRange && editingVacationRange.slotIds.length > 0) {
+        for (const slotId of editingVacationRange.slotIds) {
+          try {
+            await apiRequestWithRetry<{ message: string }>(`/api/availability/slots/${slotId}`, props.token, {
+              method: "DELETE"
+            });
+          } catch {
+            failedCount += 1;
+          }
+          await wait(40);
+        }
+      }
+
+      for (const range of requestedRanges) {
+        const daySlots = [...(existingByDay.get(range.dayKey) ?? [])];
+
+        if (daySlots.some((slot) => slot.isBlocked && slot.source === "vacation")) {
+          alreadyVacationCount += 1;
+          continue;
+        }
+
+        try {
+          await apiRequestWithRetry<{ slot: AvailabilitySlot }>("/api/availability/slots", props.token, {
+            method: "POST",
+            body: JSON.stringify({
+              startsAt: range.startsAt,
+              endsAt: range.endsAt,
+              isBlocked: true,
+              source: "vacation"
+            })
+          });
+          blockedCount += 1;
+          daySlots.push({
+            id: `local-vacation-${range.dayKey}`,
+            startsAt: range.startsAt,
+            endsAt: range.endsAt,
+            isBlocked: true,
+            source: "vacation"
+          });
+        } catch {
+          failedCount += 1;
+        }
+
+        existingByDay.set(range.dayKey, daySlots);
+        await wait(40);
+      }
+
+      if (blockedCount > 0) {
+        setMessage(
+          replaceTemplate(
+            t(props.language, {
+              es: "Vacaciones guardadas: {count} dias bloqueados.",
+              en: "Vacation saved: {count} days blocked.",
+              pt: "Ferias salvas: {count} dias bloqueados."
+            }),
+            { count: String(blockedCount) }
+          )
+        );
+      } else {
+        setMessage(
+          t(props.language, {
+            es: "No hubo cambios nuevos para guardar en vacaciones.",
+            en: "No new vacation changes to save.",
+            pt: "Nao houve novas alteracoes para salvar em ferias."
+          })
+        );
+      }
+
+      if (failedCount > 0 || alreadyVacationCount > 0) {
+        const notes: string[] = [];
+        if (alreadyVacationCount > 0) {
+          notes.push(
+            replaceTemplate(
+              t(props.language, {
+                es: "{count} dias ya estaban en vacaciones",
+                en: "{count} days were already on vacation",
+                pt: "{count} dias ja estavam em ferias"
+              }),
+              { count: String(alreadyVacationCount) }
+            )
+          );
+        }
+        if (failedCount > 0) {
+          notes.push(
+            replaceTemplate(
+              t(props.language, {
+                es: "{count} operaciones no se pudieron completar (reservados, conflicto o limite)",
+                en: "{count} operations could not be completed (booked, conflict or rate limit)",
+                pt: "{count} operacoes nao puderam ser concluidas (reservados, conflito ou limite)"
+              }),
+              { count: String(failedCount) }
+            )
+          );
+        }
+        setMessage((current) => [current, notes.join(" · ")].filter(Boolean).join(" "));
+      }
+
+      setEditingVacationRangeId(null);
+      await load(false);
+      setError("");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudieron guardar las vacaciones.",
+              en: "Could not save vacation settings.",
+              pt: "Nao foi possivel salvar as ferias."
+            })
+      );
+    } finally {
+      setSavingVacations(false);
+    }
+  };
+
+  const handleEditVacationRange = (range: VacationRange) => {
+    setEditingVacationRangeId(range.id);
+    setVacationStartDate(range.startKey);
+    setVacationEndDate(range.endKey);
+    setError("");
+    setMessage("");
+  };
+
+  const handleCancelVacationEdit = () => {
+    setEditingVacationRangeId(null);
+    const today = formatDateInput(new Date());
+    setVacationStartDate(today);
+    setVacationEndDate(today);
+  };
+
+  const handleRemoveVacationRange = async (range: VacationRange) => {
+    if (range.slotIds.length === 0) {
+      return;
+    }
+
+    setRemovingVacationRangeId(range.id);
+    setSavingVacations(true);
+    setError("");
+    setMessage("");
+
+    let removedCount = 0;
+    let failedCount = 0;
+    let restoredCount = 0;
+    let failedRestoreCount = 0;
+
+    try {
+      const chunkSize = 10;
+      for (let index = 0; index < range.slotIds.length; index += chunkSize) {
+        const chunk = range.slotIds.slice(index, index + chunkSize);
+        await Promise.all(
+          chunk.map(async (slotId) => {
+            try {
+              await apiRequestWithRetry<{ message: string }>(`/api/availability/slots/${slotId}`, props.token, {
+                method: "DELETE"
+              });
+              removedCount += 1;
+            } catch {
+              failedCount += 1;
+            }
+          })
+        );
+      }
+
+      const restoreCandidates = buildTemplateSlotsForDateRange(
+        weekTemplate,
+        dateFromDayKey(range.startKey),
+        dateFromDayKey(range.endKey)
+      );
+      const existingStartMs = new Set(
+        slots
+          .filter((slot) => !range.slotIds.includes(slot.id))
+          .map((slot) => new Date(slot.startsAt).getTime())
+      );
+      const slotsToRestore = restoreCandidates.filter((candidate) => !existingStartMs.has(candidate.startMs));
+
+      for (const slot of slotsToRestore) {
+        try {
+          await apiRequestWithRetry<{ slot: AvailabilitySlot }>("/api/availability/slots", props.token, {
+            method: "POST",
+            body: JSON.stringify({
+              startsAt: slot.startsAt,
+              endsAt: slot.endsAt,
+              source: "weekly-template"
+            })
+          });
+          restoredCount += 1;
+          existingStartMs.add(slot.startMs);
+        } catch {
+          failedRestoreCount += 1;
+        }
+        await wait(20);
+      }
+
+      if (editingVacationRangeId === range.id) {
+        handleCancelVacationEdit();
+      }
+
+      if (removedCount > 0) {
+        setMessage(
+          replaceTemplate(
+            t(props.language, {
+              es: "Vacaciones anuladas: {count} horarios desbloqueados.",
+              en: "Vacation canceled: {count} slots unblocked.",
+              pt: "Ferias anuladas: {count} horarios desbloqueados."
+            }),
+            { count: String(removedCount) }
+          )
+        );
+      }
+
+      if (restoredCount > 0) {
+        setMessage((current) =>
+          [
+            current,
+            replaceTemplate(
+              t(props.language, {
+                es: "Se restauraron {count} horarios segun tu semana de trabajo.",
+                en: "{count} slots were restored based on your weekly schedule.",
+                pt: "{count} horarios foram restaurados com base na sua semana de trabalho."
+              }),
+              { count: String(restoredCount) }
+            )
+          ].filter(Boolean).join(" ")
+        );
+      }
+
+      if (failedCount > 0 || failedRestoreCount > 0) {
+        setMessage((current) =>
+          [
+            current,
+            failedCount > 0
+              ? replaceTemplate(
                   t(props.language, {
-                    es: "{count} dias activos por semana",
-                    en: "{count} active days per week",
-                    pt: "{count} dias ativos por semana"
+                    es: "{count} horarios no se pudieron desbloquear.",
+                    en: "{count} slots could not be unblocked.",
+                    pt: "{count} horarios nao puderam ser desbloqueados."
                   }),
-                  { count: String(selectedWeekDays.filter(Boolean).length) }
-                )}
+                  { count: String(failedCount) }
+                )
+              : "",
+            failedRestoreCount > 0
+              ? replaceTemplate(
+                  t(props.language, {
+                    es: "{count} horarios no se pudieron restaurar (conflicto o reserva).",
+                    en: "{count} slots could not be restored (conflict or booking).",
+                    pt: "{count} horarios nao puderam ser restaurados (conflito ou reserva)."
+                  }),
+                  { count: String(failedRestoreCount) }
+                )
+              : ""
+          ]
+            .filter(Boolean)
+            .join(" ")
+        );
+      }
+
+      await load(false);
+      setError("");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudieron anular las vacaciones.",
+              en: "Could not cancel vacation.",
+              pt: "Nao foi possivel anular as ferias."
+            })
+      );
+    } finally {
+      setRemovingVacationRangeId(null);
+      setSavingVacations(false);
+    }
+  };
+
+  if (view === "home") {
+    return (
+      <div className="pro-grid-stack">
+        <section className="pro-card schedule-home-card">
+          <h2>{t(props.language, { es: "Configuracion de horario", en: "Schedule settings", pt: "Configuracao de horario" })}</h2>
+
+          {error ? <p className="pro-error">{error}</p> : null}
+          {message ? <p className="pro-success">{message}</p> : null}
+
+          <div className="schedule-home-list">
+            <button type="button" className="schedule-home-item" onClick={() => setView("workHours")}>
+              <span className="schedule-home-icon work">
+                <ScheduleMenuIcon kind="work" />
               </span>
-              <button className="pro-primary" type="button" onClick={() => setBuilderStep(2)}>
-                {t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {builderStep === 2 ? (
-          <div className="schedule-step-panel">
-            <div className="schedule-step-head">
-              <div className="schedule-step-copy">
-                <span>{t(props.language, { es: "Paso 2", en: "Step 2", pt: "Passo 2" })}</span>
-                <h3>{t(props.language, { es: "Define en que franja atiendes y cada cuanto se abre un turno", en: "Define your working range and how often a slot opens", pt: "Defina sua faixa de atendimento e a cadencia dos horarios" })}</h3>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Configurar horarios de trabajo", en: "Configure work schedule", pt: "Configurar horario de trabalho" })}</strong>
+                <span>
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "{hours} horarios por semana",
+                      en: "{hours} weekly slots",
+                      pt: "{hours} horarios por semana"
+                    }),
+                    { hours: String(openSlotsPerWeek) }
+                  )}
+                </span>
               </div>
-              <label className="schedule-inline-select">
-                <span>{t(props.language, { es: "Turnos", en: "Shifts", pt: "Turnos" })}</span>
-                <select
-                  value={quickShiftPreset}
-                  onChange={(event) => {
-                    const preset = event.target.value as "" | "morning" | "afternoon" | "full";
-                    setQuickShiftPreset(preset);
-                    if (preset) {
-                      applyTimePreset(preset);
-                    }
-                  }}
-                >
-                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                  <option value="morning">{t(props.language, { es: "Manana", en: "Morning", pt: "Manha" })}</option>
-                  <option value="afternoon">{t(props.language, { es: "Tarde", en: "Afternoon", pt: "Tarde" })}</option>
-                  <option value="full">{t(props.language, { es: "Jornada completa", en: "Full day", pt: "Dia completo" })}</option>
-                </select>
-              </label>
-            </div>
-            <div className="schedule-controls">
-              <label>
-                {t(props.language, { es: "Desde", en: "From", pt: "Desde" })}
-                <input type="time" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} />
-              </label>
+              <em aria-hidden="true">›</em>
+            </button>
 
-              <label>
-                {t(props.language, { es: "Hasta", en: "To", pt: "Ate" })}
-                <input type="time" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} />
-              </label>
+            <NavLink className="schedule-home-item" to="/disponibilidad">
+              <span className="schedule-home-icon published">
+                <ScheduleMenuIcon kind="published" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Disponibilidad publicada", en: "Published availability", pt: "Disponibilidade publicada" })}</strong>
+                <span>
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "{count} horarios activos",
+                      en: "{count} active slots",
+                      pt: "{count} horarios ativos"
+                    }),
+                    { count: String(slots.length) }
+                  )}
+                </span>
+              </div>
+              <em aria-hidden="true">›</em>
+            </NavLink>
 
-              <label>
-                {t(props.language, { es: "Duracion por sesion (min)", en: "Session duration (min)", pt: "Duracao por sessao (min)" })}
-                <input
-                  type="number"
-                  min={30}
-                  max={120}
-                  value={duration}
-                  onChange={(event) => setDuration(Number(event.target.value || 50))}
-                />
-              </label>
-
-              <label>
-                {t(props.language, { es: "Pausa entre sesiones (min)", en: "Break between sessions (min)", pt: "Pausa entre sessoes (min)" })}
-                <input
-                  type="number"
-                  min={0}
-                  max={30}
-                  value={breakMinutes}
-                  onChange={(event) => setBreakMinutes(Number(event.target.value || 0))}
-                />
-              </label>
-            </div>
-
-            <div className="schedule-step-footer">
-              <button
-                type="button"
-                aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-                onClick={() => setBuilderStep(1)}
-              >
-                ←
-              </button>
-              <button className="pro-primary" type="button" onClick={() => setBuilderStep(3)}>
-                {t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
-              </button>
-            </div>
+            <button type="button" className="schedule-home-item" onClick={() => setView("settings")}>
+              <span className="schedule-home-icon settings">
+                <ScheduleMenuIcon kind="settings" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Ajustes", en: "Settings", pt: "Ajustes" })}</strong>
+                <span>
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "Tiempo minimo: {hours}h, vacaciones y carga de trabajo",
+                      en: "Minimum notice: {hours}h, vacation and workload",
+                      pt: "Tempo minimo: {hours}h, ferias e carga de trabalho"
+                    }),
+                    { hours: String(bookingNoticeHours) }
+                  )}
+                </span>
+              </div>
+              <em aria-hidden="true">›</em>
+            </button>
           </div>
-        ) : null}
 
-        {builderStep === 3 ? (
-          <div className="schedule-step-panel">
-            <div className="schedule-step-copy">
-              <span>{t(props.language, { es: "Paso 3", en: "Step 3", pt: "Passo 3" })}</span>
-              <h3>{t(props.language, { es: "Revisa el resultado final y publica solo los horarios nuevos", en: "Review the final result and publish only new slots", pt: "Revise o resultado final e publique apenas os novos horarios" })}</h3>
-              <p className="pro-muted">
-                {t(props.language, {
-                  es: "Verifica la configuración y confirma exactamente qué se va a publicar.",
-                  en: "Check your setup and confirm exactly what will be published.",
-                  pt: "Verifique a configuracao e confirme exatamente o que sera publicado."
+          {loading ? <p className="pro-muted">{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
+  if (view === "bookingNotice") {
+    return (
+      <div className="pro-grid-stack">
+        <section className="pro-card schedule-work-card">
+          <header className="schedule-work-head">
+            <button type="button" className="schedule-back" onClick={() => setView("settings")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+              ‹
+            </button>
+            <div>
+              <h2>{t(props.language, { es: "Tiempo mínimo para agendar", en: "Minimum booking notice", pt: "Tempo minimo para agendar" })}</h2>
+            </div>
+          </header>
+
+          <div className="schedule-notice-copy">
+            <p className="pro-muted">
+              {t(props.language, {
+                es: "Define con cuántas horas de anticipación se puede reservar una sesión. El mínimo permitido es 24 horas.",
+                en: "Set how many hours in advance a session can be booked. Minimum allowed is 24 hours.",
+                pt: "Defina com quantas horas de antecedencia uma sessao pode ser agendada. O minimo permitido e 24 horas."
+              })}
+            </p>
+          </div>
+
+          <label className="schedule-notice-field">
+            {t(props.language, { es: "Horas mínimas", en: "Minimum hours", pt: "Horas minimas" })}
+            <input
+              type="number"
+              min={MIN_BOOKING_NOTICE_HOURS}
+              max={168}
+              step={1}
+              value={bookingNoticeHours}
+              onChange={(event) => setBookingNoticeHours(Number(event.target.value || MIN_BOOKING_NOTICE_HOURS))}
+            />
+          </label>
+
+          <button
+            type="button"
+            className="pro-primary schedule-save schedule-notice-save"
+            disabled={loading || savingNotice}
+            onClick={() => void handleSaveBookingNotice()}
+          >
+            {savingNotice
+              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+              : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
+          </button>
+
+          {error ? <p className="pro-error">{error}</p> : null}
+          {message ? <p className="pro-success">{message}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
+  if (view === "vacations") {
+    return (
+      <div className="pro-grid-stack">
+        <section className="pro-card schedule-work-card">
+          <header className="schedule-work-head">
+            <button type="button" className="schedule-back" onClick={() => setView("settings")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+              ‹
+            </button>
+            <div>
+              <h2>{t(props.language, { es: "Vacaciones", en: "Vacation", pt: "Ferias" })}</h2>
+            </div>
+          </header>
+
+          {vacationRanges.length > 0 ? (
+            <section className="schedule-vacation-list">
+              <ul className="schedule-vacation-ranges">
+                {vacationRanges.map((range) => {
+                  const label =
+                    range.startKey === range.endKey
+                      ? formatVacationDayLabel(range.startKey, props.language)
+                      : `${formatVacationDayLabel(range.startKey, props.language)} - ${formatVacationDayLabel(range.endKey, props.language)}`;
+                  const isEditing = editingVacationRangeId === range.id;
+                  const isRemoving = removingVacationRangeId === range.id;
+
+                  return (
+                    <li key={range.id} className={isEditing ? "editing" : ""}>
+                      <div className="schedule-vacation-range-copy">
+                        <strong>{label}</strong>
+                        <span>
+                          {replaceTemplate(
+                            t(props.language, {
+                              es: "{days} dias bloqueados",
+                              en: "{days} blocked days",
+                              pt: "{days} dias bloqueados"
+                            }),
+                            { days: String(range.dayCount) }
+                          )}
+                        </span>
+                      </div>
+                      <div className="schedule-vacation-range-actions">
+                        <button type="button" disabled={savingVacations} onClick={() => handleEditVacationRange(range)}>
+                          {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                        </button>
+                        <button type="button" disabled={savingVacations} onClick={() => void handleRemoveVacationRange(range)}>
+                          {isRemoving
+                            ? t(props.language, { es: "Anulando...", en: "Canceling...", pt: "Anulando..." })
+                            : t(props.language, { es: "Anular", en: "Cancel", pt: "Anular" })}
+                        </button>
+                      </div>
+                    </li>
+                  );
                 })}
-              </p>
-            </div>
+              </ul>
+            </section>
+          ) : null}
 
-            <div className="schedule-summary-grid">
-              <article className="schedule-summary-card">
-                <span>{t(props.language, { es: "Inicio", en: "Start", pt: "Inicio" })}</span>
-                <strong>{agendaStartDate}</strong>
-              </article>
-              <article className="schedule-summary-card">
-                <span>{t(props.language, { es: "Dias", en: "Days", pt: "Dias" })}</span>
-                <strong>{configuredDaysLabel}</strong>
-              </article>
-              <article className="schedule-summary-card">
-                <span>{t(props.language, { es: "Horario", en: "Hours", pt: "Horario" })}</span>
-                <strong>{rangeStart} - {rangeEnd}</strong>
-              </article>
-              <article className="schedule-summary-card">
-                <span>{t(props.language, { es: "Sesion / pausa", en: "Session / break", pt: "Sessao / pausa" })}</span>
-                <strong>{duration} / {breakMinutes} min</strong>
-              </article>
-            </div>
-
-            <div className="schedule-confirm-result-grid">
-              <article className="schedule-confirm-result-card accent">
-                <span>{t(props.language, { es: "Horarios generados", en: "Generated slots", pt: "Horarios gerados" })}</span>
-                <strong>{visiblePlannedSlots.length}</strong>
-              </article>
-              <article className="schedule-confirm-result-card success">
-                <span>{t(props.language, { es: "Nuevos a publicar", en: "New to publish", pt: "Novos para publicar" })}</span>
-                <strong>{slotsToCreate.length}</strong>
-              </article>
-              <article className="schedule-confirm-result-card muted">
-                <span>{t(props.language, { es: "Ya publicados", en: "Already published", pt: "Ja publicados" })}</span>
-                <strong>{duplicateCount}</strong>
-              </article>
-              <article className="schedule-confirm-result-card warning">
-                <span>{t(props.language, { es: "Descartados por ti", en: "Removed by you", pt: "Removidos por voce" })}</span>
-                <strong>{removedCount}</strong>
-              </article>
-            </div>
-
-            <div className={`schedule-confirm-banner ${slotsToCreate.length > 0 ? "ready" : "warning"}`}>
-              <div>
-                <strong>
-                  {slotsToCreate.length > 0
-                    ? t(props.language, {
-                        es: "Listo para publicar",
-                        en: "Ready to publish",
-                        pt: "Pronto para publicar"
-                      })
-                    : t(props.language, {
-                        es: "Sin horarios nuevos para publicar",
-                        en: "No new slots to publish",
-                        pt: "Sem novos horarios para publicar"
-                      })}
-                </strong>
-                <p>
-                  {slotsToCreate.length > 0
-                    ? replaceTemplate(
-                        t(props.language, {
-                          es: "Se publicarán {count} horarios nuevos en la zona horaria {timezone}.",
-                          en: "{count} new slots will be published in {timezone} time zone.",
-                          pt: "{count} novos horarios serao publicados no fuso {timezone}."
-                        }),
-                        { count: String(slotsToCreate.length), timezone: sessionTimezone }
-                      )
-                    : t(props.language, {
-                        es: "Todos los horarios ya existen o fueron descartados. Ajusta configuración o vuelve al paso anterior.",
-                        en: "All slots already exist or were removed. Adjust setup or go back.",
-                        pt: "Todos os horarios ja existem ou foram removidos. Ajuste a configuracao ou volte."
-                      })}
-                </p>
+          {shouldShowVacationEditor ? (
+            <>
+              <div className="schedule-vacation-grid">
+                <label className="schedule-notice-field">
+                  {t(props.language, { es: "Desde", en: "From", pt: "De" })}
+                  <input type="date" value={vacationStartDate} onChange={(event) => setVacationStartDate(event.target.value)} />
+                </label>
+                <label className="schedule-notice-field">
+                  {t(props.language, { es: "Hasta", en: "To", pt: "Ate" })}
+                  <input type="date" value={vacationEndDate} onChange={(event) => setVacationEndDate(event.target.value)} />
+                </label>
               </div>
-            </div>
 
-            <div className="schedule-actions">
-              <button
-                type="button"
-                aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-                onClick={() => setBuilderStep(2)}
-              >
-                ←
-              </button>
-              <button type="button" onClick={resetBuilder}>
-                {t(props.language, { es: "Reiniciar", en: "Reset", pt: "Reiniciar" })}
-              </button>
-              <button className="pro-primary" disabled={isSubmitting || slotsToCreate.length === 0} type="button" onClick={handlePublishSlots}>
-                {isSubmitting
-                  ? t(props.language, { es: "Publicando...", en: "Publishing...", pt: "Publicando..." })
-                  : replaceTemplate(
-                      t(props.language, {
-                        es: "Publicar {count} horarios",
-                        en: "Publish {count} slots",
-                        pt: "Publicar {count} horarios"
-                      }),
-                      { count: String(slotsToCreate.length) }
-                    )}
-              </button>
-              <span className="pro-muted">
-                {replaceTemplate(
-                  t(props.language, {
-                    es: "{planned} nuevos · {duplicates} previamente publicados",
-                    en: "{planned} new · {duplicates} previously published",
-                    pt: "{planned} novos · {duplicates} publicados anteriormente"
-                  }),
-                  { planned: String(slotsToCreate.length), duplicates: String(duplicateCount) }
-                )}
-              </span>
-            </div>
-
-            {visiblePlannedSlots.length > 0 ? (
-              <div className="schedule-preview">
-                <div className="schedule-preview-head">
-                  <div>
-                    <h3>{t(props.language, { es: "Vista previa de horarios", en: "Slot preview", pt: "Previa de horarios" })}</h3>
-                    <p className="pro-muted">
-                      {replaceTemplate(
-                        t(props.language, {
-                          es: "Mes visible: {month} · {count} horarios nuevos",
-                          en: "Visible month: {month} · {count} new slots",
-                          pt: "Mes visivel: {month} · {count} novos horarios"
-                        }),
-                        {
-                          month: formatDateWithLocale({
-                            value: new Date(previewMonthDate.getFullYear(), previewMonthDate.getMonth(), 1).toISOString(),
-                            language: props.language,
-                            options: { month: "long", year: "numeric" }
-                          }),
-                          count: String(previewSlots.length)
-                        }
-                      )}
-                    </p>
-                  </div>
-                  <div className="schedule-preview-nav">
-                    <button
-                      type="button"
-                      disabled={previewMonthIndex <= 0}
-                      onClick={() => {
-                        const previousKey = previewMonths[previewMonthIndex - 1];
-                        if (!previousKey) {
-                          return;
-                        }
-                        const [year, month] = previousKey.split("-").map(Number);
-                        setPreviewMonthDate(new Date(year, month - 1, 1));
-                      }}
-                    >
-                      {t(props.language, { es: "Anterior", en: "Prev", pt: "Anterior" })}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={previewMonthIndex === -1 || previewMonthIndex >= previewMonths.length - 1}
-                      onClick={() => {
-                        const nextKey = previewMonths[previewMonthIndex + 1];
-                        if (!nextKey) {
-                          return;
-                        }
-                        const [year, month] = nextKey.split("-").map(Number);
-                        setPreviewMonthDate(new Date(year, month - 1, 1));
-                      }}
-                    >
-                      {t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
-                    </button>
-                  </div>
-                </div>
-                {previewSlots.length > 0 ? (
-                  <ul>
-                    {previewSlots.map((slot) => {
-                      return (
-                        <li key={slot.startMs}>
-                          <span>
-                            {formatDateHeading(slot.startsAt, props.language)} · {formatTime(slot.startsAt, props.language)} - {formatTime(slot.endsAt, props.language)}
-                          </span>
-                          <div className="schedule-preview-row-actions">
-                            <em>{t(props.language, { es: "Nuevo", en: "New", pt: "Novo" })}</em>
-                            <button
-                              type="button"
-                              className="schedule-preview-remove"
-                              aria-label={t(props.language, { es: "Quitar horario", en: "Remove slot", pt: "Remover horario" })}
-                              onClick={() => {
-                                setRemovedPreviewSlots((current) => current.includes(slot.startMs) ? current : [...current, slot.startMs]);
-                              }}
-                            >
-                              <span aria-hidden="true" />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="pro-muted">
-                    {t(props.language, {
-                      es: "Este mes no tiene horarios nuevos para publicar. Puedes navegar a otro mes o ajustar la configuracion.",
-                      en: "This month has no new slots to publish. You can move to another month or adjust the setup.",
-                      pt: "Este mes nao tem novos horarios para publicar. Voce pode ir para outro mes ou ajustar a configuracao."
-                    })}
-                  </p>
-                )}
-                <div className="schedule-preview-footer">
-                  <button
-                    type="button"
-                    className="schedule-preview-clear"
-                    onClick={() => setRemovedPreviewSlots(plannedSlots.map((slot) => slot.startMs))}
-                  >
-                    {t(props.language, { es: "Borrar todos", en: "Clear all", pt: "Apagar todos" })}
+              {editingVacationRange ? (
+                <div className="schedule-vacation-edit-actions">
+                  <button type="button" className="pro-secondary schedule-save" disabled={savingVacations} onClick={handleCancelVacationEdit}>
+                    {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                  </button>
+                  <button type="button" className="pro-primary schedule-save" disabled={loading || savingVacations} onClick={() => void handleSaveVacations()}>
+                    {savingVacations
+                      ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                      : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
                   </button>
                 </div>
+              ) : (
+                <button type="button" className="pro-primary schedule-save" disabled={loading || savingVacations} onClick={() => void handleSaveVacations()}>
+                  {savingVacations
+                    ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                    : t(props.language, { es: "Guardar vacaciones", en: "Save vacation", pt: "Salvar ferias" })}
+                </button>
+              )}
+            </>
+          ) : null}
+
+          {error ? <p className="pro-error">{error}</p> : null}
+          {message ? <p className="pro-success">{message}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
+  if (view === "settings") {
+    return (
+      <div className="pro-grid-stack">
+        <section className="pro-card schedule-home-card">
+          <header className="schedule-work-head">
+            <button type="button" className="schedule-back" onClick={() => setView("home")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+              ‹
+            </button>
+            <div>
+              <h2>{t(props.language, { es: "Ajustes", en: "Settings", pt: "Ajustes" })}</h2>
+            </div>
+          </header>
+
+          <div className="schedule-home-list">
+            <button type="button" className="schedule-home-item" onClick={() => setView("bookingNotice")}>
+              <span className="schedule-home-icon notice">
+                <ScheduleMenuIcon kind="notice" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Tiempo minimo", en: "Minimum notice", pt: "Tempo minimo" })}</strong>
+                <span>
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "{hours} horas antes de la sesión",
+                      en: "{hours} hours before session",
+                      pt: "{hours} horas antes da sessao"
+                    }),
+                    { hours: String(bookingNoticeHours) }
+                  )}
+                </span>
               </div>
-            ) : null}
+              <em aria-hidden="true">›</em>
+            </button>
+
+            <button type="button" className="schedule-home-item" onClick={() => setView("vacations")}>
+              <span className="schedule-home-icon vacation">
+                <ScheduleMenuIcon kind="vacation" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Vacaciones", en: "Vacation", pt: "Ferias" })}</strong>
+                <span>
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "{days} dias con bloqueo por vacaciones",
+                      en: "{days} days blocked for vacation",
+                      pt: "{days} dias bloqueados por ferias"
+                    }),
+                    { days: String(vacationDaysCount) }
+                  )}
+                </span>
+              </div>
+              <em aria-hidden="true">›</em>
+            </button>
+
+            <article className="schedule-home-item muted" aria-disabled="true">
+              <span className="schedule-home-icon workload">
+                <ScheduleMenuIcon kind="workload" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Carga de trabajo", en: "Workload", pt: "Carga de trabalho" })}</strong>
+                <span>{t(props.language, { es: "Max. clientes simultaneos", en: "Max concurrent clients", pt: "Max. clientes simultaneos" })}</span>
+              </div>
+            </article>
           </div>
-        ) : null}
+
+          {error ? <p className="pro-error">{error}</p> : null}
+          {message ? <p className="pro-success">{message}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pro-grid-stack">
+      <section className="pro-card schedule-work-card">
+        <header className="schedule-work-head">
+          <button type="button" className="schedule-back" onClick={() => setView("home")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+            ‹
+          </button>
+          <div>
+            <h2>{t(props.language, { es: "Horario de trabajo", en: "Work schedule", pt: "Horario de trabalho" })}</h2>
+          </div>
+        </header>
+
+        <div className="schedule-work-days" aria-label={t(props.language, { es: "Dias de la semana", en: "Week days", pt: "Dias da semana" })}>
+          {DAY_KEYS.map((day) => {
+            const isActive = selectedDay === day;
+            return (
+              <button
+                type="button"
+                key={day}
+                aria-pressed={isActive}
+                className={isActive ? "active" : ""}
+                onClick={() => toggleDay(day)}
+              >
+                {formatWeekday(day, props.language)}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="schedule-work-grid">
+          {TIME_OPTIONS.map((timeLabel) => {
+            const selected = weekTemplate[selectedDayIndex].has(timeLabel);
+            return (
+              <button
+                type="button"
+                key={timeLabel}
+                className={selected ? "active" : ""}
+                onClick={() => toggleHour(timeLabel)}
+                aria-pressed={selected}
+              >
+                {formatTimeWithAmPm(timeLabel)}
+              </button>
+            );
+          })}
+        </div>
+
+        <footer className="schedule-work-footer">
+          <p className="pro-muted">
+            {replaceTemplate(
+              t(props.language, {
+                es: "Se aplicara recurrente hacia adelante durante {weeks} semanas y sin duplicar horarios ya publicados.",
+                en: "It will be applied forward for {weeks} weeks without duplicating already published slots.",
+                pt: "Sera aplicado para frente por {weeks} semanas sem duplicar horarios ja publicados."
+              }),
+              { weeks: String(forwardWeeks) }
+            )}
+          </p>
+          <button type="button" className="pro-primary schedule-save" disabled={saving || loading} onClick={() => void handleSaveTemplate()}>
+            {saving
+              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+              : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
+          </button>
+        </footer>
 
         {error ? <p className="pro-error">{error}</p> : null}
         {message ? <p className="pro-success">{message}</p> : null}
       </section>
-
     </div>
   );
 }
 
+export function getDayKey(value: Date) {
+  return dayKey(value);
+}
+
+export function getTimeOptions() {
+  return TIME_OPTIONS;
+}

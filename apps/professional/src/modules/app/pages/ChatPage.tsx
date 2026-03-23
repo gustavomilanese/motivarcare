@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { apiRequest } from "../services/api";
 import type { AuthUser, ThreadMessage, ThreadSummary } from "../types";
@@ -55,20 +55,28 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const selectedThreadRef = useRef<string>("");
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? threads[0] ?? null,
     [threads, selectedThreadId]
   );
 
-  const loadThreads = async () => {
+  useEffect(() => {
+    selectedThreadRef.current = selectedThreadId;
+  }, [selectedThreadId]);
+
+  const loadThreads = useCallback(async () => {
     try {
       const response = await apiRequest<{ threads: ThreadSummary[] }>("/api/chat/threads", props.token);
       const mergedThreads = mergeThreadsByCounterpart(response.threads);
       setThreads(mergedThreads);
-      if (!selectedThreadId && mergedThreads[0]) {
-        setSelectedThreadId(mergedThreads[0].id);
-      }
+      setSelectedThreadId((current) => {
+        if (current && mergedThreads.some((thread) => thread.id === current)) {
+          return current;
+        }
+        return mergedThreads[0]?.id ?? "";
+      });
       setError("");
     } catch (requestError) {
       setError(
@@ -81,12 +89,14 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
             })
       );
     }
-  };
+  }, [props.token, props.language]);
 
-  const loadMessages = async (threadId: string) => {
+  const loadMessages = useCallback(async (threadId: string) => {
     try {
       const response = await apiRequest<{ messages: ThreadMessage[] }>(`/api/chat/threads/${threadId}/messages`, props.token);
-      setMessages(response.messages);
+      if (selectedThreadRef.current === threadId) {
+        setMessages(response.messages);
+      }
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -98,13 +108,13 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
             })
       );
     }
-  };
+  }, [props.token, props.language]);
 
   useEffect(() => {
-    loadThreads();
+    void loadThreads();
     const timer = window.setInterval(loadThreads, 3000);
     return () => window.clearInterval(timer);
-  }, [props.token]);
+  }, [loadThreads]);
 
   useEffect(() => {
     if (!selectedThread) {
@@ -113,27 +123,28 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
     }
 
     let active = true;
+    const threadId = selectedThread.id;
 
     const readAndLoad = async () => {
       if (!active) {
         return;
       }
-      await apiRequest<{ markedAsRead: number }>(`/api/chat/threads/${selectedThread.id}/read`, props.token, {
+      await apiRequest<{ markedAsRead: number }>(`/api/chat/threads/${threadId}/read`, props.token, {
         method: "POST"
       }).catch(() => undefined);
-      await loadMessages(selectedThread.id);
+      await loadMessages(threadId);
     };
 
-    readAndLoad();
+    void readAndLoad();
     const timer = window.setInterval(() => {
-      readAndLoad();
+      void readAndLoad();
     }, 2500);
 
     return () => {
       active = false;
       window.clearInterval(timer);
     };
-  }, [selectedThread?.id, props.token]);
+  }, [selectedThread?.id, props.token, loadMessages]);
 
   const handleSend = async () => {
     if (!draft.trim() || !selectedThread) {
@@ -176,7 +187,7 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
               type="button"
               onClick={() => setSelectedThreadId(thread.id)}
             >
-              <div>
+              <div title={thread.counterpartName}>
                 <strong>{thread.counterpartName}</strong>
                 <p>{thread.lastMessage?.body ?? t(props.language, { es: "Sin mensajes", en: "No messages", pt: "Sem mensagens" })}</p>
               </div>

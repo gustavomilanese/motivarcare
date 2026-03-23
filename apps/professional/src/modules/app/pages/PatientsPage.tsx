@@ -44,7 +44,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
   }, [props.token]);
 
   return (
-    <section className="pro-card">
+    <section className="pro-card pro-patients-card">
       <h2>{t(props.language, { es: "Clientes / Pacientes", en: "Clients / Patients", pt: "Clientes / Pacientes" })}</h2>
       {error ? <p className="pro-error">{error}</p> : null}
       {!data ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}

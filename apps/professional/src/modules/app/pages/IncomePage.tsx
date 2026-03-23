@@ -76,7 +76,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
         </article>
       </section>
 
-      <section className="pro-card">
+      <section className="pro-card income-details-card">
         <h2>{t(props.language, { es: "Detalle de sesiones", en: "Session details", pt: "Detalhe das sessoes" })}</h2>
         {error ? <p className="pro-error">{error}</p> : null}
         {!data ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}

@@ -3030,18 +3030,14 @@ ul {
 }
 
 .pro-dashboard-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 360px);
-  align-items: center;
-  gap: 14px;
-  padding: 2px 4px 6px;
+  display: block;
+  padding: 0 4px 2px;
   background: transparent;
 }
 
 .pro-dashboard-hero-copy {
-  display: grid;
-  gap: 8px;
-  padding: 2px 0;
+  display: block;
+  padding: 0;
 }
 
 .pro-dashboard-hero h2 {
@@ -3079,7 +3075,7 @@ ul {
 .pro-dashboard-hero-media {
   margin: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
 }
 
@@ -3173,10 +3169,35 @@ ul {
   gap: 12px;
 }
 
+.agenda-calendar-head h2 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
 .agenda-calendar-nav {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.agenda-calendar-nav button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: #7a5cff;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.agenda-calendar-nav button:hover {
+  background: transparent;
+  color: #6b4ff1;
 }
 
 .agenda-calendar-nav strong {
@@ -3825,12 +3846,969 @@ ul {
   letter-spacing: -0.02em;
 }
 
+.pro-card.pro-patients-card h2 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.income-details-card h2 {
+  font-size: 24px;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
 .pro-section-break p {
   max-width: none;
   color: #55647d;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.schedule-home-card,
+.schedule-work-card,
+.availability-month-card {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.schedule-home-card h2,
+.schedule-work-card h2,
+.availability-month-card h2 {
+  margin: 0;
+  font-size: 44px;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.schedule-work-card h2 {
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.schedule-home-card h2 {
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.schedule-home-list {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-home-item {
+  border: 1px solid #e1e4ec;
+  border-radius: 18px;
+  background: #fff;
+  min-height: 84px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #101828;
+}
+
+button.schedule-home-item {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.schedule-home-copy {
+  min-width: 0;
+}
+
+.schedule-home-icon {
+  width: 30px;
+  height: 30px;
+  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-home-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.schedule-home-icon.work {
+  color: #5f44eb;
+}
+
+.schedule-home-icon.published {
+  color: #6a4de9;
+}
+
+.schedule-home-icon.notice {
+  color: #7a5cff;
+}
+
+.schedule-home-icon.vacation {
+  color: #6f56ff;
+}
+
+.schedule-home-icon.workload {
+  color: #8566ff;
+}
+
+.schedule-home-item strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.08;
+}
+
+.schedule-home-item span {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+  font-size: 15px;
+}
+
+.schedule-home-item em {
+  font-style: normal;
+  color: #98a2b3;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.schedule-home-item.muted {
+  background: #f7f8fb;
+  color: #4b5565;
+}
+
+.schedule-home-item.muted .schedule-home-icon {
+  color: #725ad9;
+}
+
+.schedule-home-item.muted strong,
+.schedule-home-item.muted span {
+  color: #7a8699;
+}
+
+.schedule-work-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-work-head p {
+  margin-top: 4px;
+  color: #6a7384;
+}
+
+.schedule-back {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #101828;
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.schedule-work-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.schedule-work-days button {
+  min-height: 42px;
+  border: 1px solid #d9cdfc;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f8f5ff 0%, #efe8ff 56%, #e2d7ff 100%);
+  color: #4f3c8f;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  padding: 0 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 4px 10px rgba(95, 68, 235, 0.16);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.schedule-work-days button:hover {
+  transform: translateY(-1px);
+  border-color: #c8b6ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 7px 14px rgba(95, 68, 235, 0.24);
+}
+
+.schedule-work-days button:focus-visible {
+  outline: 2px solid rgba(115, 89, 245, 0.35);
+  outline-offset: 2px;
+}
+
+.schedule-work-days button.active {
+  color: #ffffff;
+  border-color: #181a1f;
+  background: #181a1f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 16px rgba(24, 26, 31, 0.28);
+}
+
+.schedule-work-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.schedule-work-grid button {
+  min-height: 52px;
+  border: 1px solid #e4e7ee;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.schedule-work-grid button.active {
+  background: #181a1f;
+  color: #fff;
+  border-color: #181a1f;
+}
+
+.schedule-work-grid button.partial {
+  border-color: #b9a5fa;
+  background: linear-gradient(135deg, #f8f5ff 0%, #efe9ff 100%);
+  color: #4d35ab;
+}
+
+.schedule-work-footer {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-work-footer .schedule-save {
+  justify-self: end;
+}
+
+.schedule-notice-copy {
+  margin-top: 2px;
+}
+
+.schedule-notice-copy .pro-muted {
+  margin: 0;
+}
+
+.schedule-vacation-copy {
+  margin-top: 2px;
+}
+
+.schedule-vacation-copy .pro-muted {
+  margin: 0;
+}
+
+.schedule-vacation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.schedule-vacation-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.schedule-vacation-edit-actions .schedule-save {
+  min-width: 152px;
+  justify-content: center;
+}
+
+.schedule-vacation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.schedule-vacation-ranges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-vacation-ranges li {
+  border: 1px solid #e0e6f2;
+  border-radius: 14px;
+  background: #f8faff;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-vacation-ranges li.editing {
+  border-color: #cdbdff;
+  background: #f5f1ff;
+}
+
+.schedule-vacation-range-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.schedule-vacation-range-copy strong {
+  font-size: 15px;
+  color: #121a2c;
+  text-transform: capitalize;
+}
+
+.schedule-vacation-range-copy span {
+  font-size: 12px;
+  color: #5f6f87;
+}
+
+.schedule-vacation-range-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-vacation-range-actions button {
+  min-height: 32px;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.schedule-notice-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #344054;
+}
+
+.schedule-notice-field input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d0d5dd;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 16px;
+  color: #101828;
+  background: #fff;
+}
+
+.schedule-notice-field input:focus {
+  outline: 2px solid rgba(99, 102, 241, 0.2);
+  border-color: #7c88ff;
+}
+
+.schedule-save {
+  width: auto;
+  min-height: 44px;
+  padding: 0 26px;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.schedule-notice-save {
+  justify-self: start;
+}
+
+.availability-month-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--availability-check-col);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding: 0 10px;
+}
+
+.availability-month-title {
+  display: grid;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.availability-month-title h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.availability-month-topline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.availability-month-back {
+  text-decoration: none;
+}
+
+.availability-month-back.schedule-back {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  font-size: 30px;
+  line-height: 1;
+  color: #111827;
+}
+
+.availability-month-nav {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.availability-month-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: #8b94a7;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.availability-month-nav button:hover {
+  color: #6d7688;
+}
+
+.availability-month-today {
+  border: 2px solid #111827;
+  border-radius: 999px;
+  background: #fff;
+  min-height: 44px;
+  padding: 0 20px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.availability-month-tip {
+  border: 1px solid #dbe7f8;
+  border-radius: 18px;
+  padding: 14px;
+  background: #eff5ff;
+}
+
+.availability-month-tip p {
+  color: #354a67;
+}
+
+.availability-month-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.availability-month-card {
+  --availability-remove-col: 108px;
+  --availability-check-col: 42px;
+}
+
+.availability-month-day {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  border: 1px solid #e6eaf1;
+  border-radius: 14px;
+  margin-top: 0;
+  padding: 10px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(95, 68, 235, 0.03),
+    0 6px 14px rgba(95, 68, 235, 0.045);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.availability-month-day:hover {
+  border-color: #dbe2ec;
+  box-shadow:
+    0 1px 2px rgba(95, 68, 235, 0.04),
+    0 8px 16px rgba(95, 68, 235, 0.06);
+}
+
+.availability-month-content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.availability-group-check {
+  justify-self: center;
+  align-self: center;
+}
+
+.availability-month-content h3 {
+  text-transform: capitalize;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.availability-month-content header button {
+  border: 0;
+  background: transparent;
+  color: #101828;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.availability-day-edit-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #5f44eb;
+}
+
+.availability-day-edit-button:hover {
+  background: #f6f2ff;
+}
+
+.availability-day-edit-button span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.availability-day-slot-list {
+  display: grid;
+  gap: 10px;
+}
+
+.availability-bulk-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin-top: 10px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(244, 245, 249, 0) 0%, rgba(244, 245, 249, 0.95) 26%, rgba(244, 245, 249, 1) 100%);
+}
+
+.availability-bulk-sticky-inner {
+  border: 1px solid #ddd6fe;
+  border-radius: 14px;
+  background: #f7f4ff;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.availability-bulk-sticky p {
+  color: #4a3a92;
+  font-weight: 700;
+}
+
+.availability-bulk-sticky .pro-primary {
+  min-height: 38px;
+  border-radius: 10px;
+  padding: 0 14px;
+}
+
+.availability-day-slot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--availability-remove-col) var(--availability-check-col);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dbe2ec;
+  border-radius: 10px;
+  background: #f2f5fa;
+  padding: 11px 10px;
+  box-shadow:
+    0 1px 1px rgba(95, 68, 235, 0.02),
+    0 2px 8px rgba(95, 68, 235, 0.035);
+  transition: box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.availability-day-slot-row:hover {
+  background: #edf2f8;
+  box-shadow:
+    0 1px 1px rgba(95, 68, 235, 0.025),
+    0 4px 10px rgba(95, 68, 235, 0.045);
+}
+
+.availability-day-slot-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.availability-day-slot-time-inline {
+  color: #121a2c;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.availability-day-slot-row.selected {
+  border-color: #cdbdff;
+  background: #f5f0ff;
+}
+
+.availability-day-slot-row.vacation {
+  border-color: #d3dae6;
+  background: #eceff5;
+}
+
+.availability-day-group-toggle {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.availability-day-group-toggle.static {
+  cursor: default;
+}
+
+.availability-day-group-toggle.vacation {
+  background: linear-gradient(180deg, #fbfcff 0%, #f2f5fb 100%);
+  border: 1px solid #e1e6f0;
+}
+
+.availability-day-group-meta {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.availability-day-group-label {
+  color: #101828;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.availability-day-group-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.availability-day-group-badge {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #ddd6fe;
+  background: #f7f4ff;
+  color: #5f44eb;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.availability-day-group-badge.unavailable {
+  min-width: 104px;
+  border-color: #d7dde8;
+  background: #eef2f8;
+  color: #55637b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.availability-day-group-caret {
+  color: #6d7688;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.availability-day-slot-state {
+  width: fit-content;
+  min-height: 22px;
+  border-radius: 999px;
+  border: 1px solid #d7ddec;
+  background: #f4f7ff;
+  color: #375385;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.availability-day-slot-state.free {
+  border-color: #d6cffc;
+  background: #f5f1ff;
+  color: #5f44eb;
+}
+
+.availability-day-slot-state.reserved {
+  border-color: #c8e5d4;
+  background: #eefaf2;
+  color: #22543a;
+}
+
+.availability-day-slot-state.blocked {
+  border-color: #eed6aa;
+  background: #fef7e8;
+  color: #8d5f17;
+}
+
+.availability-day-slot-state.vacation {
+  border-color: #d6dce9;
+  background: #edf1f8;
+  color: #4f5f79;
+}
+
+.availability-day-slot-remove {
+  border: 1px solid #d8cdfc;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #5f44eb;
+  min-height: 34px;
+  width: 100%;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.availability-day-slot-check {
+  width: var(--availability-check-col);
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+
+.availability-day-slot-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.availability-day-slot-check input:disabled {
+  cursor: not-allowed;
+}
+
+.availability-day-slot-check.header {
+  height: 30px;
+  justify-self: center;
+  margin-top: 0;
+}
+
+.availability-day-slot-remove:hover {
+  background: #f6f2ff;
+}
+
+.availability-day-slot-remove:disabled,
+.availability-day-slot-remove:disabled:hover {
+  border-color: #e4e7f0;
+  background: #f7f8fb;
+  color: #9aa3b2;
+}
+
+.availability-remove-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 120;
+}
+
+.availability-remove-modal {
+  width: min(440px, 100%);
+  border-radius: 16px;
+  border: 1px solid #e3e8f1;
+  background: #ffffff;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.2);
+  padding: 18px 18px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.availability-remove-modal h3 {
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.availability-remove-modal p {
+  color: #4a556b;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.availability-remove-modal-meta {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.availability-remove-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.availability-remove-modal-actions > button:first-child {
+  border-color: #d0d7e3;
+  background: #fff;
+  color: #24334f;
+}
+
+.availability-remove-modal-actions .pro-primary {
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #5f44eb;
+  box-shadow: none;
+}
+
+.availability-day-editor {
+  border-top: 1px solid #edf0f4;
+  padding-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.availability-day-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.availability-day-editor-grid button {
+  min-height: 38px;
+  border: 1px solid #dbe0ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #273244;
+  cursor: pointer;
+}
+
+.availability-day-editor-grid button.active {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.availability-day-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-upcoming-list-compact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-upcoming-list-compact li {
+  border: 1px solid #e2e6ef;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.dashboard-upcoming-list-compact li > strong {
+  color: #5d6472;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-upcoming-list-compact li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-upcoming-list-compact li > div span {
+  color: #7a8291;
+  font-size: 14px;
+}
+
+.dashboard-upcoming-list-compact li > div p {
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.dashboard-upcoming-list-compact a {
+  border: 1px solid #d6deec;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 14px;
+  color: #111827;
+  background: #fff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
 }
 
 .schedule-builder h2 {
@@ -4378,6 +5356,12 @@ ul {
   border: 1px solid #f1d7a7;
 }
 
+.schedule-slot-badge.vacation {
+  color: #4f5f79;
+  background: #edf1f8;
+  border: 1px solid #d2dae8;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -4521,6 +5505,25 @@ button:disabled {
   border-radius: 0;
 }
 
+.pro-thread > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pro-thread strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.24;
+  font-size: 14px;
+  color: #121b2d;
+}
+
 .pro-thread:hover {
   background: #f5f7fa;
 }
@@ -4562,14 +5565,7 @@ button:disabled {
 
 .pro-chat-messages {
   padding: 16px;
-  background-color: #efeae2;
-  background-image:
-    linear-gradient(45deg, rgba(255, 255, 255, 0.35) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.35) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.35) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.35) 75%);
-  background-size: 26px 26px;
-  background-position: 0 0, 0 13px, 13px -13px, -13px 0;
+  background: #f7f8fc;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -6104,6 +7100,32 @@ button:disabled {
     font-size: 27px;
   }
 
+  .schedule-home-card h2,
+  .schedule-work-card h2,
+  .availability-month-card h2 {
+    font-size: 34px;
+  }
+
+  .schedule-work-card h2 {
+    font-size: 22px;
+  }
+
+  .schedule-home-card h2 {
+    font-size: 22px;
+  }
+
+  .availability-month-title h2 {
+    font-size: 22px;
+  }
+
+  .schedule-work-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .availability-month-content h3 {
+    font-size: 15px;
+  }
+
   .pro-chat-shell {
     grid-template-columns: 1fr;
     min-height: 680px;
@@ -6744,6 +7766,24 @@ button:disabled {
     font-size: 24px;
   }
 
+  .schedule-home-card h2,
+  .schedule-work-card h2,
+  .availability-month-card h2 {
+    font-size: 32px;
+  }
+
+  .schedule-work-card h2 {
+    font-size: 20px;
+  }
+
+  .schedule-home-card h2 {
+    font-size: 20px;
+  }
+
+  .availability-month-title h2 {
+    font-size: 20px;
+  }
+
   .pro-section-break p {
     white-space: normal;
     overflow: visible;
@@ -6780,6 +7820,135 @@ button:disabled {
   .pro-list li {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .schedule-home-item {
+    min-height: 74px;
+    padding: 12px 14px;
+  }
+
+  .schedule-home-item strong {
+    font-size: 16px;
+  }
+
+  .schedule-home-item span {
+    font-size: 14px;
+  }
+
+  .schedule-work-days {
+    gap: 6px;
+  }
+
+  .schedule-vacation-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .schedule-vacation-ranges li {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .schedule-vacation-range-actions {
+    justify-content: flex-start;
+  }
+
+  .schedule-work-days button {
+    min-height: 38px;
+    padding: 0 4px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .schedule-work-grid button {
+    min-height: 46px;
+    font-size: 15px;
+  }
+
+  .availability-month-day {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .availability-day-slot-row {
+    grid-template-columns: minmax(0, 1fr) var(--availability-remove-col) var(--availability-check-col);
+  }
+
+  .availability-day-group-toggle {
+    padding: 5px 6px;
+  }
+
+  .availability-day-group-label {
+    font-size: 14px;
+  }
+
+  .availability-day-group-badge {
+    min-width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .availability-day-slot-time-inline {
+    font-size: 14px;
+  }
+
+  .availability-month-card {
+    --availability-remove-col: 96px;
+    --availability-check-col: 38px;
+  }
+
+  .availability-slot-table-head {
+    gap: 8px;
+    padding: 0 0 2px;
+  }
+
+  .availability-slot-table-head > span {
+    font-size: 10px;
+  }
+
+  .availability-bulk-sticky-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .availability-bulk-sticky .pro-primary {
+    width: 100%;
+  }
+
+  .availability-remove-modal {
+    padding: 16px;
+  }
+
+  .availability-remove-modal h3 {
+    font-size: 17px;
+  }
+
+  .availability-remove-modal p {
+    font-size: 14px;
+  }
+
+  .availability-remove-modal-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .availability-remove-modal-actions button {
+    flex: 1;
+  }
+
+  .availability-day-editor-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-upcoming-list-compact li {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .dashboard-upcoming-list-compact li a,
+  .dashboard-upcoming-list-compact li .pro-muted {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 
   .pro-chat-shell {

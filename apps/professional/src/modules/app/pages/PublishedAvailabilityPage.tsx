@@ -343,7 +343,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
   return (
     <div className="pro-grid-stack">
       <section className="pro-section-break">
-        <h2>{t(props.language, { es: "Agenda", en: "Agenda", pt: "Agenda" })}</h2>
+        <h2>{t(props.language, { es: "Agenda de Sesiones", en: "Session Agenda", pt: "Agenda de Sessoes" })}</h2>
         <p>
           {t(props.language, {
             es: "Aqui ves todas tus sesiones con paciente, horario, estado y acceso rapido a la llamada cuando corresponde.",
@@ -371,12 +371,12 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
       <section className="pro-card agenda-calendar-card">
         <div className="agenda-calendar-head">
           <div>
-            <span className="sessions-section-kicker">{t(props.language, { es: "Semana actual y siguiente", en: "Current and next week", pt: "Semana atual e seguinte" })}</span>
             <h2>{t(props.language, { es: "Calendar", en: "Calendar", pt: "Calendar" })}</h2>
           </div>
           <div className="agenda-calendar-nav">
             <button
               type="button"
+              aria-label={t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
               onClick={() =>
                 setViewDate((current) => {
                   const next = new Date(current);
@@ -385,11 +385,12 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
                 })
               }
             >
-              {t(props.language, { es: "Anterior", en: "Prev", pt: "Anterior" })}
+              ‹
             </button>
             <strong>{getTwoWeekLabel(viewDate, props.language)}</strong>
             <button
               type="button"
+              aria-label={t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
               onClick={() =>
                 setViewDate((current) => {
                   const next = new Date(current);
@@ -398,7 +399,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
                 })
               }
             >
-              {t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+              ›
             </button>
           </div>
         </div>
@@ -624,7 +625,7 @@ export function PublishedAvailabilityPage(props: { token: string; language: AppL
                             <strong>{formatTime(slot.startsAt, props.language)} - {formatTime(slot.endsAt, props.language)}</strong>
                           </div>
                           <div className="schedule-slot-status">
-                            <span className={`schedule-slot-badge ${slot.reservation ? "reserved" : slot.isBlocked ? "blocked" : "free"}`}>
+                            <span className={`schedule-slot-badge ${slot.reservation ? "reserved" : slot.isBlocked ? (slot.source === "vacation" ? "vacation" : "blocked") : "free"}`}>
                               {slot.reservation
                                 ? replaceTemplate(
                                     t(props.language, {
@@ -635,7 +636,9 @@ export function PublishedAvailabilityPage(props: { token: string; language: AppL
                                     { name: slot.reservation.counterpartName ?? "Paciente" }
                                   )
                                 : slot.isBlocked
-                                  ? t(props.language, { es: "Bloqueado", en: "Blocked", pt: "Bloqueado" })
+                                  ? slot.source === "vacation"
+                                    ? t(props.language, { es: "Vacaciones", en: "Vacation", pt: "Ferias" })
+                                    : t(props.language, { es: "Bloqueado", en: "Blocked", pt: "Bloqueado" })
                                   : t(props.language, { es: "Libre", en: "Free", pt: "Livre" })}
                             </span>
                           </div>

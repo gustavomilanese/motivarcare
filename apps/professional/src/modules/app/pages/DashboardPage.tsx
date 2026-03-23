@@ -29,14 +29,14 @@ function formatDateTime(value: string, language: AppLanguage): string {
   });
 }
 
-function formatDateHeading(value: string, language: AppLanguage): string {
+function formatDateCompact(value: string, language: AppLanguage): string {
   return formatDateWithLocale({
     value,
     language,
     options: {
-      weekday: "long",
-      month: "short",
-      day: "numeric"
+      weekday: "short",
+      day: "numeric",
+      month: "short"
     }
   });
 }
@@ -66,11 +66,6 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const [error, setError] = useState("");
   const location = useLocation();
   const upcomingSectionRef = useRef<HTMLElement | null>(null);
-
-  const getLocalDayKey = (value: string | Date) => {
-    const date = value instanceof Date ? value : new Date(value);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  };
 
   useEffect(() => {
     let active = true;
@@ -132,22 +127,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     );
   }
 
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const todayKey = getLocalDayKey(today);
-  const tomorrowKey = getLocalDayKey(tomorrow);
-  const todaySessions = data.upcomingSessions.filter((session) => getLocalDayKey(session.startsAt) === todayKey);
-  const tomorrowSessions = data.upcomingSessions.filter((session) => getLocalDayKey(session.startsAt) === tomorrowKey);
-  const upcomingGroups = Array.from(
-    data.upcomingSessions.reduce((map, session) => {
-      const key = getLocalDayKey(session.startsAt);
-      const current = map.get(key) ?? [];
-      current.push(session);
-      map.set(key, current);
-      return map;
-    }, new Map<string, DashboardResponse["upcomingSessions"]>())
-  );
+  const nextSessions = data.upcomingSessions.slice(0, 8);
 
   return (
     <div className="pro-grid-stack">
@@ -156,25 +136,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           <h2>
             {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
           </h2>
-          <p>
-            {t(props.language, {
-              es: "Consulta pacientes, sesiones y disponibilidad desde un solo lugar, con foco en lo inmediato.",
-              en: "Review patients, sessions, and availability from one place with focus on what is immediate.",
-              pt: "Consulte pacientes, sessoes e disponibilidade em um so lugar, com foco no imediato."
-            })}
-          </p>
-          <div className="pro-dashboard-hero-chips">
-            <span>{replaceTemplate(t(props.language, { es: "Hoy: {count}", en: "Today: {count}", pt: "Hoje: {count}" }), { count: String(todaySessions.length) })}</span>
-            <span>{replaceTemplate(t(props.language, { es: "Manana: {count}", en: "Tomorrow: {count}", pt: "Amanha: {count}" }), { count: String(tomorrowSessions.length) })}</span>
-            <span>{replaceTemplate(t(props.language, { es: "Libres: {count}", en: "Free: {count}", pt: "Livres: {count}" }), { count: String(data.kpis.hoursAvailable) })}</span>
-          </div>
         </div>
-        <figure className="pro-dashboard-hero-media">
-          <img
-            src="https://picsum.photos/seed/motivarte-sunrise/1200/540"
-            alt={t(props.language, { es: "Amanecer sereno", en: "Calm sunrise", pt: "Nascer do sol sereno" })}
-          />
-        </figure>
       </section>
 
       {data.trialSession ? (
@@ -242,38 +204,28 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       <section className="pro-card" id="sesiones-agendadas" ref={upcomingSectionRef} tabIndex={-1}>
         <div className="dashboard-upcoming-head">
           <h2>{t(props.language, { es: "Proximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}</h2>
-          <div className="dashboard-upcoming-days">
-            <span>{replaceTemplate(t(props.language, { es: "Hoy: {count}", en: "Today: {count}", pt: "Hoje: {count}" }), { count: String(todaySessions.length) })}</span>
-            <span>{replaceTemplate(t(props.language, { es: "Manana: {count}", en: "Tomorrow: {count}", pt: "Amanha: {count}" }), { count: String(tomorrowSessions.length) })}</span>
-          </div>
         </div>
-        {data.upcomingSessions.length === 0 ? (
+        {nextSessions.length === 0 ? (
           <p>{t(props.language, { es: "Todavia no hay sesiones proximas.", en: "There are no upcoming sessions yet.", pt: "Ainda nao ha sessoes futuras." })}</p>
         ) : (
-          <div className="dashboard-upcoming-groups">
-            {upcomingGroups.map(([dayKey, sessions]) => (
-              <section className="dashboard-upcoming-group" key={dayKey}>
-                <h3>{formatDateHeading(`${dayKey}T00:00:00`, props.language)}</h3>
-                <ul className="pro-list">
-                  {sessions.map((session) => (
-                    <li key={session.id}>
-                      <div>
-                        <strong>{session.patientName}</strong>
-                        <span>{formatTime(session.startsAt, props.language)}</span>
-                      </div>
-                      {session.joinUrl ? (
-                        <a href={session.joinUrl} target="_blank" rel="noreferrer">
-                          {t(props.language, { es: "Entrar", en: "Join", pt: "Entrar" })}
-                        </a>
-                      ) : (
-                        <span className="pro-muted">{t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+          <ul className="dashboard-upcoming-list-compact">
+            {nextSessions.map((session) => (
+              <li key={session.id}>
+                <strong>{formatTime(session.startsAt, props.language)}</strong>
+                <div>
+                  <span>{formatDateCompact(session.startsAt, props.language)}</span>
+                  <p>{session.patientName}</p>
+                </div>
+                {session.joinUrl ? (
+                  <a href={session.joinUrl} target="_blank" rel="noreferrer">
+                    {t(props.language, { es: "Entrar", en: "Join", pt: "Entrar" })}
+                  </a>
+                ) : (
+                  <span className="pro-muted">{t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}</span>
+                )}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
     </div>
