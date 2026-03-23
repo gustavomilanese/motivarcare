@@ -33,6 +33,7 @@ const completeBookingSchema = z.object({
 });
 
 const FREE_CANCELLATION_HOURS = 24;
+const MIN_BOOKING_NOTICE_HOURS = 24;
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
   CONFIRMED: "CONFIRMED",
@@ -41,6 +42,16 @@ const BOOKING_STATUS = {
   NO_SHOW: "NO_SHOW"
 } as const;
 type BookingWithVideoSession = Prisma.BookingGetPayload<{ include: { videoSession: true } }>;
+
+function resolveMinimumBookingNoticeHours(configuredHours: number | null | undefined): number {
+  const safeHours = Number.isFinite(Number(configuredHours)) ? Number(configuredHours) : MIN_BOOKING_NOTICE_HOURS;
+  return Math.max(MIN_BOOKING_NOTICE_HOURS, Math.round(safeHours));
+}
+
+function hasMinimumBookingNotice(startsAt: Date, minimumHours: number): boolean {
+  const minimumStartMs = Date.now() + minimumHours * 60 * 60 * 1000;
+  return startsAt.getTime() >= minimumStartMs;
+}
 
 function normalizeStatus(status: string): string {
   return status.toLowerCase();
@@ -86,6 +97,33 @@ async function findAvailableSlotForRange(params: {
       endsAt: { gte: params.endsAt }
     }
   });
+}
+
+async function hasVacationBlockForDay(params: {
+  professionalId: string;
+  startsAt: Date;
+}) {
+  const dayStart = new Date(params.startsAt);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const dayEnd = new Date(params.startsAt);
+  dayEnd.setUTCHours(23, 59, 59, 999);
+
+  const marker = await prisma.availabilitySlot.findFirst({
+    where: {
+      professionalId: params.professionalId,
+      isBlocked: true,
+      source: "vacation",
+      startsAt: {
+        gte: dayStart,
+        lte: dayEnd
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+
+  return Boolean(marker);
 }
 
 async function findBookingOverlap(params: {
@@ -280,6 +318,14 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
     return res.status(404).json({ error: "Professional not found" });
   }
 
+  const minimumBookingNoticeHours = resolveMinimumBookingNoticeHours(professional.cancellationHours);
+  if (!hasMinimumBookingNotice(startsAt, minimumBookingNoticeHours)) {
+    return res.status(409).json({
+      error: `Bookings must be scheduled at least ${minimumBookingNoticeHours} hours in advance.`,
+      minimumBookingNoticeHours
+    });
+  }
+
   const bookingLockKey = `booking_create:${professional.id}:${startsAt.toISOString()}:${endsAt.toISOString()}`;
 
   let createdBooking:
@@ -306,6 +352,14 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       ttlMs: env.API_BOOKING_LOCK_TTL_MS,
       work: async () => {
         return prisma.$transaction(async (tx) => {
+          const blockedByVacation = await hasVacationBlockForDay({
+            professionalId: professional.id,
+            startsAt
+          });
+          if (blockedByVacation) {
+            throw new Error("VACATION_BLOCKED");
+          }
+
           const matchingAvailability = await tx.availabilitySlot.findFirst({
             where: {
               professionalId: professional.id,
@@ -500,6 +554,9 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       if (error.message === "SLOT_UNAVAILABLE") {
         return res.status(409).json({ error: "Selected time is no longer available" });
       }
+      if (error.message === "VACATION_BLOCKED") {
+        return res.status(409).json({ error: "This day is blocked by vacation." });
+      }
       if (error.message === "SLOT_OVERLAP") {
         return res.status(409).json({ error: "Professional already booked at that time" });
       }
@@ -590,6 +647,20 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
     return res.status(400).json({ error: "startsAt must be before endsAt" });
   }
 
+  if (canRescheduleAsPatient) {
+    const professionalConfig = await prisma.professionalProfile.findUnique({
+      where: { id: booking.professionalId },
+      select: { cancellationHours: true }
+    });
+    const minimumBookingNoticeHours = resolveMinimumBookingNoticeHours(professionalConfig?.cancellationHours);
+    if (!hasMinimumBookingNotice(startsAt, minimumBookingNoticeHours)) {
+      return res.status(409).json({
+        error: `Bookings must be rescheduled at least ${minimumBookingNoticeHours} hours in advance.`,
+        minimumBookingNoticeHours
+      });
+    }
+  }
+
   const lockKey = `booking_reschedule:${booking.professionalId}:${startsAt.toISOString()}:${endsAt.toISOString()}`;
 
   let updated: BookingWithVideoSession;
@@ -598,6 +669,14 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
       key: lockKey,
       ttlMs: env.API_BOOKING_LOCK_TTL_MS,
       work: async () => {
+        const blockedByVacation = await hasVacationBlockForDay({
+          professionalId: booking.professionalId,
+          startsAt
+        });
+        if (blockedByVacation) {
+          throw new Error("VACATION_BLOCKED");
+        }
+
         const matchingAvailability = await findAvailableSlotForRange({
           professionalId: booking.professionalId,
           startsAt,
@@ -677,6 +756,9 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
     }
     if (error instanceof Error && error.message === "SLOT_UNAVAILABLE") {
       return res.status(409).json({ error: "Selected time is no longer available" });
+    }
+    if (error instanceof Error && error.message === "VACATION_BLOCKED") {
+      return res.status(409).json({ error: "This day is blocked by vacation." });
     }
     if (error instanceof Error && error.message === "SLOT_OVERLAP") {
       return res.status(409).json({ error: "Professional already booked at that time" });

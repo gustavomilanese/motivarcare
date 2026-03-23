@@ -17,6 +17,7 @@ const listSlotsQuerySchema = z.object({
 });
 
 const ACTIVE_BOOKING_STATUSES = ["REQUESTED", "CONFIRMED"] as const;
+const MIN_BOOKING_NOTICE_HOURS = 24;
 
 export const availabilityRouter = Router();
 
@@ -47,8 +48,30 @@ availabilityRouter.get("/:professionalId/slots", async (req, res) => {
     return res.status(400).json({ error: "Invalid query", details: parsedQuery.error.flatten() });
   }
 
-  const fromDate = parsedQuery.data.from ? new Date(parsedQuery.data.from) : new Date();
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: req.params.professionalId },
+    select: { cancellationHours: true }
+  });
+
+  if (!professional) {
+    return res.status(404).json({ error: "Professional not found" });
+  }
+
+  const configuredHours = Number.isFinite(Number(professional.cancellationHours)) ? Number(professional.cancellationHours) : MIN_BOOKING_NOTICE_HOURS;
+  const minimumBookingNoticeHours = Math.max(MIN_BOOKING_NOTICE_HOURS, Math.round(configuredHours));
+  const minimumBookableDate = new Date(Date.now() + minimumBookingNoticeHours * 60 * 60 * 1000);
+
+  const requestedFromDate = parsedQuery.data.from ? new Date(parsedQuery.data.from) : new Date();
+  const fromDate = requestedFromDate > minimumBookableDate ? requestedFromDate : minimumBookableDate;
   const toDate = parsedQuery.data.to ? new Date(parsedQuery.data.to) : null;
+
+  if (toDate && toDate < fromDate) {
+    return res.json({
+      professionalId: req.params.professionalId,
+      minimumBookingNoticeHours,
+      slots: []
+    });
+  }
 
   const slots = await prisma.availabilitySlot.findMany({
     where: {
@@ -77,12 +100,38 @@ availabilityRouter.get("/:professionalId/slots", async (req, res) => {
     }
   });
 
+  const vacationFromDate = new Date(fromDate);
+  vacationFromDate.setHours(0, 0, 0, 0);
+  const vacationToDate = toDate ? new Date(toDate) : null;
+  if (vacationToDate) {
+    vacationToDate.setHours(23, 59, 59, 999);
+  }
+
+  const vacationSlots = await prisma.availabilitySlot.findMany({
+    where: {
+      professionalId: req.params.professionalId,
+      isBlocked: true,
+      source: "vacation",
+      startsAt: {
+        gte: vacationFromDate,
+        ...(vacationToDate ? { lte: vacationToDate } : {})
+      }
+    },
+    select: {
+      startsAt: true
+    }
+  });
+
+  const vacationDayKeys = new Set(vacationSlots.map((slot) => slot.startsAt.toISOString().slice(0, 10)));
+
   const freeSlots = slots.filter((slot) =>
-    !bookings.some((booking) => booking.startsAt < slot.endsAt && booking.endsAt > slot.startsAt)
+    !bookings.some((booking) => booking.startsAt < slot.endsAt && booking.endsAt > slot.startsAt) &&
+    !vacationDayKeys.has(slot.startsAt.toISOString().slice(0, 10))
   );
 
   return res.json({
     professionalId: req.params.professionalId,
+    minimumBookingNoticeHours,
     slots: freeSlots
   });
 });
