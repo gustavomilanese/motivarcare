@@ -331,7 +331,7 @@ async function apiRequestWithRetry<T>(
   }
 }
 
-function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "vacation" | "notice" | "workload" }) {
+function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "vacation" | "notice" | "workload" | "rate" }) {
   if (props.kind === "work") {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -383,6 +383,17 @@ function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "va
     );
   }
 
+  if (props.kind === "rate") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6.5 7.5H17.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M6.5 12H14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M6.5 16.5H12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M4.5 20.5L19.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M16.5 20.5V18.8C16.5 17.1431 15.1569 15.8 13.5 15.8H7C5.34315 15.8 4 17.1431 4 18.8V20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -394,7 +405,7 @@ function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "va
 }
 
 export function SchedulePage(props: { token: string; language: AppLanguage }) {
-  const [view, setView] = useState<"home" | "workHours" | "settings" | "vacations" | "bookingNotice">("home");
+  const [view, setView] = useState<"home" | "workHours" | "settings" | "vacations" | "bookingNotice" | "sessionRate">("home");
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -405,6 +416,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [professionalId, setProfessionalId] = useState("");
   const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
+  const [sessionPriceUsd, setSessionPriceUsd] = useState<number>(0);
   const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
   const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
   const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
@@ -458,6 +470,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
         setProfessionalId(profileResponse.profile.id);
       }
       setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
+      setSessionPriceUsd(Math.max(0, Number(profileResponse.profile?.sessionPriceUsd ?? 0)));
       setError("");
     } catch (requestError) {
       if (showError) {
@@ -552,6 +565,58 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
               es: "No se pudo guardar el tiempo mínimo.",
               en: "Could not save minimum notice.",
               pt: "Nao foi possivel salvar o tempo minimo."
+            })
+      );
+    } finally {
+      setSavingNotice(false);
+    }
+  };
+
+  const handleSaveSessionRate = async () => {
+    if (!professionalId) {
+      setError(
+        t(props.language, {
+          es: "No se encontró el perfil profesional.",
+          en: "Professional profile was not found.",
+          pt: "Perfil profissional nao encontrado."
+        })
+      );
+      return;
+    }
+
+    const normalizedRate = Math.max(0, Math.min(100000, Math.round(Number(sessionPriceUsd || 0))));
+
+    setSavingNotice(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await apiRequest<{ message: string }>(`/api/profiles/professional/${professionalId}/public-profile`, props.token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          sessionPriceUsd: normalizedRate
+        })
+      });
+
+      setSessionPriceUsd(normalizedRate);
+      setMessage(
+        replaceTemplate(
+          t(props.language, {
+            es: "Valor por sesión actualizado: USD {amount}.",
+            en: "Session rate updated: USD {amount}.",
+            pt: "Valor por sessao atualizado: USD {amount}."
+          }),
+          { amount: String(normalizedRate) }
+        )
+      );
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo guardar el valor por sesión.",
+              en: "Could not save session rate.",
+              pt: "Nao foi possivel salvar o valor por sessao."
             })
       );
     } finally {
@@ -1036,11 +1101,11 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
                 <span>
                   {replaceTemplate(
                     t(props.language, {
-                      es: "Tiempo minimo: {hours}h, vacaciones y carga de trabajo",
-                      en: "Minimum notice: {hours}h, vacation and workload",
-                      pt: "Tempo minimo: {hours}h, ferias e carga de trabalho"
+                      es: "Tiempo mínimo: {hours}h, valor: USD {rate}, vacaciones y carga de trabajo",
+                      en: "Minimum notice: {hours}h, rate: USD {rate}, vacation and workload",
+                      pt: "Tempo minimo: {hours}h, valor: USD {rate}, ferias e carga de trabalho"
                     }),
-                    { hours: String(bookingNoticeHours) }
+                    { hours: String(bookingNoticeHours), rate: String(sessionPriceUsd) }
                   )}
                 </span>
               </div>
@@ -1094,6 +1159,49 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
             className="pro-primary schedule-save schedule-notice-save"
             disabled={loading || savingNotice}
             onClick={() => void handleSaveBookingNotice()}
+          >
+            {savingNotice
+              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+              : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
+          </button>
+
+          {error ? <p className="pro-error">{error}</p> : null}
+          {message ? <p className="pro-success">{message}</p> : null}
+        </section>
+      </div>
+    );
+  }
+
+  if (view === "sessionRate") {
+    return (
+      <div className="pro-grid-stack">
+        <section className="pro-card schedule-work-card">
+          <header className="schedule-work-head">
+            <button type="button" className="schedule-back" onClick={() => setView("settings")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+              ‹
+            </button>
+            <div>
+              <h2>{t(props.language, { es: "Valor de sesión", en: "Session rate", pt: "Valor da sessao" })}</h2>
+            </div>
+          </header>
+
+          <label className="schedule-notice-field">
+            {t(props.language, { es: "Monto en USD", en: "Amount in USD", pt: "Valor em USD" })}
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              step={1}
+              value={sessionPriceUsd}
+              onChange={(event) => setSessionPriceUsd(Number(event.target.value || 0))}
+            />
+          </label>
+
+          <button
+            type="button"
+            className="pro-primary schedule-save schedule-notice-save"
+            disabled={loading || savingNotice}
+            onClick={() => void handleSaveSessionRate()}
           >
             {savingNotice
               ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
@@ -1234,6 +1342,17 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
                     { hours: String(bookingNoticeHours) }
                   )}
                 </span>
+              </div>
+              <em aria-hidden="true">›</em>
+            </button>
+
+            <button type="button" className="schedule-home-item" onClick={() => setView("sessionRate")}>
+              <span className="schedule-home-icon rate">
+                <ScheduleMenuIcon kind="rate" />
+              </span>
+              <div className="schedule-home-copy">
+                <strong>{t(props.language, { es: "Valor de sesión", en: "Session rate", pt: "Valor da sessao" })}</strong>
+                <span>{`USD ${sessionPriceUsd}`}</span>
               </div>
               <em aria-hidden="true">›</em>
             </button>

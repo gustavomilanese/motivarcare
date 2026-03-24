@@ -52,13 +52,56 @@ Modular monorepo for an online therapy platform (USA): patient, professional, an
 - Register/login against API
 - Mandatory 10-question intake
 - Safety risk screening (blocks booking if risk is detected)
-- Professional matching with compatibility score
+- Professional matching fully server-side (`patient vs professional`) with compatibility score
 - Internal 1:1 chat (real backend)
 - Slot booking with timezone rendering
 - Stripe package checkout simulation
 - Post-booking confirmation + session history
 - Profile sections: my data, cards, subscription, settings, support, logout
 - Premium visual UI with custom illustrations
+
+## Matching Architecture (server-side)
+- Endpoint used by patient portal:
+  - `GET /api/profiles/me/matching?language=es|en|pt`
+- Public directory endpoint (no patient scoring):
+  - `GET /api/profiles/professionals`
+- Matching score is computed in backend and returned to frontend:
+  - `matchScore`
+  - `matchReasons`
+  - `matchedTopics`
+  - `suggestedSlots`
+- Main scoring factors:
+  - Clinical topics extracted from patient intake answers
+  - Professional profile keywords (bio, specialization, focus, therapeutic approach)
+  - Preferred therapeutic approach
+  - Preferred language
+  - Availability window preference
+  - Professional experience
+  - Base compatibility + rating adjustment
+- Frontend now only filters/sorts the server-ranked data (no duplicated local scoring logic).
+
+## Admin-configurable professional card data
+Admin can configure the matching card data shown to patients per professional:
+- `birthCountry` (flag in card)
+- `sessionPriceUsd` (price in card)
+- `ratingAverage` and `reviewsCount` (stars/opinions)
+- `sessionDurationMinutes`
+- `activePatientsCount`
+- `sessionsCount`
+- `completedSessionsCount`
+
+These overrides are stored in `system_config` under:
+- `professional-display-overrides`
+
+## Componentization Notes
+Current patient matching UI is split into reusable pieces:
+- `MatchingHeader` (filters/sort/favorites actions)
+- `ProfessionalMatchCard` (professional card + favorite toggle + slots)
+- `PatientMatchingPage` (screen orchestration and booking flow)
+- `PortalNavigation` (toolbar including favorites access)
+
+Professional schedule settings are also modular:
+- `SchedulePage` > `Ajustes` > `Valor de sesión` (source for patient card pricing)
 
 Run only patient app:
 1. `npm install`

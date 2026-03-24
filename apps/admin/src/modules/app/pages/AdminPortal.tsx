@@ -1,4 +1,5 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
@@ -19,6 +20,7 @@ import { SessionsOpsPage } from "./SessionsOpsPage";
 import { SessionPackagesAdminPage } from "./SessionPackagesAdminPage";
 import { UsersPage } from "./UsersPage";
 import { WebAdminPage } from "./WebAdminPage";
+import { apiRequest } from "../services/api";
 import type { PortalPath } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -33,6 +35,41 @@ export function AdminPortal(props: {
   onLanguageChange: (language: AppLanguage) => void;
   onCurrencyChange: (currency: SupportedCurrency) => void;
 }) {
+  const location = useLocation();
+  const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPendingRiskTriage = async () => {
+      try {
+        const response = await apiRequest<{ pending: number }>(
+          "/api/admin/patients/risk-triage",
+          {},
+          props.token
+        );
+        if (!active) {
+          return;
+        }
+        setPendingRiskTriageCount(Number(response.pending) || 0);
+      } catch {
+        if (active) {
+          setPendingRiskTriageCount(0);
+        }
+      }
+    };
+
+    void loadPendingRiskTriage();
+    const intervalId = window.setInterval(() => {
+      void loadPendingRiskTriage();
+    }, 30000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [props.token, location.pathname]);
+
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
       return t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
@@ -92,7 +129,12 @@ export function AdminPortal(props: {
               className={({ isActive }) => (isActive ? "admin-link active" : "admin-link")}
               end={link.to === "/"}
             >
-              {labelForLink(link.to)}
+              <span className="admin-link-content">
+                <span>{labelForLink(link.to)}</span>
+                {link.to === "/patients" && pendingRiskTriageCount > 0 ? (
+                  <small className="admin-link-badge">{pendingRiskTriageCount}</small>
+                ) : null}
+              </span>
             </NavLink>
           ))}
         </nav>
@@ -120,7 +162,12 @@ export function AdminPortal(props: {
               className={({ isActive }) => (isActive ? "admin-mobile-link active" : "admin-mobile-link")}
               end={link.to === "/"}
             >
-              {labelForLink(link.to)}
+              <span className="admin-link-content">
+                <span>{labelForLink(link.to)}</span>
+                {link.to === "/patients" && pendingRiskTriageCount > 0 ? (
+                  <small className="admin-link-badge">{pendingRiskTriageCount}</small>
+                ) : null}
+              </span>
             </NavLink>
           ))}
         </nav>

@@ -2,8 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { AdminBookingOps, AdminProfessionalOps } from "../../types";
 
 export interface ProfessionalSlotDraft {
-  startsAt: string;
-  endsAt: string;
+  slotDate: string;
+  slotTime: string;
 }
 
 export interface ProfessionalBookingDraft {
@@ -21,9 +21,24 @@ export interface ProfessionalEditDraft {
   bio: string;
   therapeuticApproach: string;
   yearsExperience: string;
+  birthCountry: string;
+  sessionPriceUsd: string;
+  ratingAverage: string;
+  reviewsCount: string;
+  sessionDurationMinutes: string;
+  activePatientsCount: string;
+  sessionsCount: string;
+  completedSessionsCount: string;
   photoUrl: string;
   videoUrl: string;
 }
+
+const SLOT_TIME_OPTIONS = Array.from({ length: 34 }, (_, index) => {
+  const totalMinutes = (6 * 60) + (index * 30);
+  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+  const minutes = String(totalMinutes % 60).padStart(2, "0");
+  return `${hours}:${minutes}`;
+});
 
 export function ProfessionalEditModal(props: {
   open: boolean;
@@ -56,6 +71,13 @@ export function ProfessionalEditModal(props: {
 
   const selectedProfessional = props.selectedProfessional;
   const selectedProfessionalDraft = props.selectedProfessionalDraft;
+  const slotDraft = props.professionalSlotDrafts[selectedProfessional.id] ?? {
+    slotDate: "",
+    slotTime: "09:00"
+  };
+  const sortedSlots = [...selectedProfessional.slots]
+    .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime())
+    .slice(0, 80);
 
   return (
     <div className="patient-modal-backdrop" onClick={props.onClose}>
@@ -146,6 +168,132 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
+            Pais origen
+            <input
+              value={selectedProfessionalDraft.birthCountry}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, birthCountry: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Valor sesion (USD)
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              value={selectedProfessionalDraft.sessionPriceUsd}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, sessionPriceUsd: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Ranking (0 a 5)
+            <input
+              type="number"
+              min={0}
+              max={5}
+              step={0.1}
+              value={selectedProfessionalDraft.ratingAverage}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, ratingAverage: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Opiniones
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              value={selectedProfessionalDraft.reviewsCount}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, reviewsCount: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Duracion sesion (min)
+            <input
+              type="number"
+              min={15}
+              max={120}
+              value={selectedProfessionalDraft.sessionDurationMinutes}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, sessionDurationMinutes: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Clientes activos (card)
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              value={selectedProfessionalDraft.activePatientsCount}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, activePatientsCount: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Sesiones (card)
+            <input
+              type="number"
+              min={0}
+              max={1000000}
+              value={selectedProfessionalDraft.sessionsCount}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, sessionsCount: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            Sesiones completadas (card)
+            <input
+              type="number"
+              min={0}
+              max={1000000}
+              value={selectedProfessionalDraft.completedSessionsCount}
+              onChange={(event) =>
+                props.setProfessionalEditDrafts((current) => ({
+                  ...current,
+                  [selectedProfessional.id]: { ...selectedProfessionalDraft, completedSessionsCount: event.target.value }
+                }))
+              }
+            />
+          </label>
+
+          <label>
             Enfoque terapeutico
             <input
               value={selectedProfessionalDraft.therapeuticApproach}
@@ -199,52 +347,78 @@ export function ProfessionalEditModal(props: {
           />
         </label>
 
-        <section className="card stack">
+        <section className="card stack ops-slot-card">
           <h4>Disponibilidad</h4>
-          <div className="grid-form">
+          <div className="ops-slot-create-grid">
             <label>
-              Slot inicio
+              Dia
               <input
-                type="datetime-local"
-                value={props.professionalSlotDrafts[selectedProfessional.id]?.startsAt ?? ""}
+                type="date"
+                value={slotDraft.slotDate}
                 onChange={(event) =>
                   props.setProfessionalSlotDrafts((current) => ({
                     ...current,
                     [selectedProfessional.id]: {
-                      startsAt: event.target.value,
-                      endsAt: current[selectedProfessional.id]?.endsAt ?? ""
+                      ...slotDraft,
+                      slotDate: event.target.value
                     }
                   }))
                 }
               />
             </label>
             <label>
-              Slot fin
-              <input
-                type="datetime-local"
-                value={props.professionalSlotDrafts[selectedProfessional.id]?.endsAt ?? ""}
+              Hora
+              <select
+                value={slotDraft.slotTime}
                 onChange={(event) =>
                   props.setProfessionalSlotDrafts((current) => ({
                     ...current,
                     [selectedProfessional.id]: {
-                      startsAt: current[selectedProfessional.id]?.startsAt ?? "",
-                      endsAt: event.target.value
+                      ...slotDraft,
+                      slotTime: event.target.value
                     }
                   }))
                 }
-              />
+              >
+                {SLOT_TIME_OPTIONS.map((timeOption) => (
+                  <option key={timeOption} value={timeOption}>
+                    {timeOption}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <div className="button-row ops-actions">
-            <button type="button" onClick={props.onCreateSlot}>Crear slot</button>
+            <button className="primary" type="button" onClick={props.onCreateSlot}>Agregar slot</button>
           </div>
-          <div className="stack">
-            {selectedProfessional.slots.slice(0, 20).map((slot) => (
-              <div key={slot.id} className="toolbar ops-slot-row">
-                <p>{props.formatDate(slot.startsAt)} - {props.formatDate(slot.endsAt)}</p>
-                <button type="button" onClick={() => props.onDeleteSlot(slot.id)}>Eliminar</button>
+          <div className="ops-slot-list">
+            {sortedSlots.length === 0 ? <p>No hay slots cargados.</p> : null}
+            {sortedSlots.length > 0 ? (
+              <div className="ops-slot-table-wrap">
+                <table className="ops-slot-table">
+                  <thead>
+                    <tr>
+                      <th>Inicio</th>
+                      <th>Fin</th>
+                      <th>Estado</th>
+                      <th aria-label="Acciones" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedSlots.map((slot) => (
+                      <tr key={slot.id}>
+                        <td>{props.formatDate(slot.startsAt)}</td>
+                        <td>{props.formatDate(slot.endsAt)}</td>
+                        <td>{slot.isBlocked ? "No disponible / bloqueado" : "Disponible"}</td>
+                        <td>
+                          <button type="button" onClick={() => props.onDeleteSlot(slot.id)}>Eliminar</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            ) : null}
           </div>
         </section>
 
@@ -255,7 +429,7 @@ export function ProfessionalEditModal(props: {
             disabled={props.professionalSaveLoading}
             onClick={props.onSaveProfessional}
           >
-            {props.professionalSaveLoading ? "Guardando..." : "Guardar profesional"}
+            {props.professionalSaveLoading ? "Guardando..." : "Guardar"}
           </button>
           <button type="button" onClick={props.onToggleConfirmedSessions}>
             {props.showConfirmedSessions ? "Ocultar sesiones confirmadas" : "Ver sesiones confirmadas"}

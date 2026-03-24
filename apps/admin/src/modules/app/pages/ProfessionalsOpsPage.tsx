@@ -46,6 +46,26 @@ function isoToInputDateTime(value: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function createEmptySlotDraft(): ProfessionalSlotDraft {
+  return {
+    slotDate: "",
+    slotTime: "09:00"
+  };
+}
+
+function parseLocalDateAndTime(slotDate: string, slotTime: string): Date | null {
+  const [year, month, day] = slotDate.split("-").map((part) => Number(part));
+  const [hours, minutes] = slotTime.split(":").map((part) => Number(part));
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
+  }
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+    return null;
+  }
+  const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function ProfessionalsOpsPage(props: { token: string; language: AppLanguage }) {
   const [professionals, setProfessionals] = useState<AdminProfessionalOps[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,6 +100,32 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
               professional.yearsExperience === null || professional.yearsExperience === undefined
                 ? ""
                 : String(professional.yearsExperience),
+            birthCountry: professional.birthCountry ?? "",
+            sessionPriceUsd:
+              professional.sessionPriceUsd === null || professional.sessionPriceUsd === undefined
+                ? ""
+                : String(professional.sessionPriceUsd),
+            ratingAverage:
+              professional.ratingAverage === null || professional.ratingAverage === undefined
+                ? ""
+                : String(professional.ratingAverage),
+            reviewsCount: String(professional.reviewsCount ?? 0),
+            sessionDurationMinutes:
+              professional.sessionDurationMinutes === null || professional.sessionDurationMinutes === undefined
+                ? ""
+                : String(professional.sessionDurationMinutes),
+            activePatientsCount:
+              professional.activePatientsCount === null || professional.activePatientsCount === undefined
+                ? ""
+                : String(professional.activePatientsCount),
+            sessionsCount:
+              professional.sessionsCount === null || professional.sessionsCount === undefined
+                ? ""
+                : String(professional.sessionsCount),
+            completedSessionsCount:
+              professional.completedSessionsCount === null || professional.completedSessionsCount === undefined
+                ? ""
+                : String(professional.completedSessionsCount),
             photoUrl: professional.photoUrl ?? "",
             videoUrl: professional.videoUrl ?? ""
           };
@@ -92,7 +138,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       const next = { ...current };
       for (const professional of nextProfessionals) {
         if (!next[professional.id]) {
-          next[professional.id] = { startsAt: "", endsAt: "" };
+          next[professional.id] = createEmptySlotDraft();
+        } else {
+          next[professional.id] = { ...createEmptySlotDraft(), ...next[professional.id] };
         }
       }
       return next;
@@ -199,6 +247,55 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       return;
     }
 
+    const sessionPriceRaw = draft.sessionPriceUsd.trim();
+    const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
+    if (sessionPriceRaw.length > 0 && (!Number.isInteger(sessionPriceUsd ?? 0) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)) {
+      setError("Valor sesion debe estar entre 0 y 100000");
+      return;
+    }
+
+    const ratingRaw = draft.ratingAverage.trim();
+    const ratingAverage = ratingRaw.length > 0 ? Number(ratingRaw) : null;
+    if (ratingRaw.length > 0 && (!Number.isFinite(ratingAverage ?? 0) || (ratingAverage ?? 0) < 0 || (ratingAverage ?? 0) > 5)) {
+      setError("Ranking debe estar entre 0 y 5");
+      return;
+    }
+
+    const reviewsRaw = draft.reviewsCount.trim();
+    const reviewsCount = reviewsRaw.length > 0 ? Number(reviewsRaw) : 0;
+    if (!Number.isInteger(reviewsCount) || reviewsCount < 0 || reviewsCount > 100000) {
+      setError("Opiniones debe estar entre 0 y 100000");
+      return;
+    }
+
+    const sessionDurationRaw = draft.sessionDurationMinutes.trim();
+    const sessionDurationMinutes = sessionDurationRaw.length > 0 ? Number(sessionDurationRaw) : null;
+    if (sessionDurationRaw.length > 0 && (!Number.isInteger(sessionDurationMinutes ?? 0) || (sessionDurationMinutes ?? 0) < 15 || (sessionDurationMinutes ?? 0) > 120)) {
+      setError("Duracion sesion debe estar entre 15 y 120");
+      return;
+    }
+
+    const activePatientsRaw = draft.activePatientsCount.trim();
+    const activePatientsCount = activePatientsRaw.length > 0 ? Number(activePatientsRaw) : null;
+    if (activePatientsRaw.length > 0 && (!Number.isInteger(activePatientsCount ?? 0) || (activePatientsCount ?? 0) < 0 || (activePatientsCount ?? 0) > 100000)) {
+      setError("Clientes activos debe estar entre 0 y 100000");
+      return;
+    }
+
+    const sessionsRaw = draft.sessionsCount.trim();
+    const sessionsCount = sessionsRaw.length > 0 ? Number(sessionsRaw) : null;
+    if (sessionsRaw.length > 0 && (!Number.isInteger(sessionsCount ?? 0) || (sessionsCount ?? 0) < 0 || (sessionsCount ?? 0) > 1000000)) {
+      setError("Sesiones debe estar entre 0 y 1000000");
+      return;
+    }
+
+    const completedRaw = draft.completedSessionsCount.trim();
+    const completedSessionsCount = completedRaw.length > 0 ? Number(completedRaw) : null;
+    if (completedRaw.length > 0 && (!Number.isInteger(completedSessionsCount ?? 0) || (completedSessionsCount ?? 0) < 0 || (completedSessionsCount ?? 0) > 1000000)) {
+      setError("Sesiones completadas debe estar entre 0 y 1000000");
+      return;
+    }
+
     setError("");
     setSuccess("");
     setProfessionalSaveLoading(true);
@@ -226,6 +323,14 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
             bio: draft.bio.trim().length > 0 ? draft.bio.trim() : null,
             therapeuticApproach: draft.therapeuticApproach.trim().length > 0 ? draft.therapeuticApproach.trim() : null,
             yearsExperience,
+            birthCountry: draft.birthCountry.trim().length > 0 ? draft.birthCountry.trim() : null,
+            sessionPriceUsd,
+            ratingAverage,
+            reviewsCount,
+            sessionDurationMinutes,
+            activePatientsCount,
+            sessionsCount,
+            completedSessionsCount,
             photoUrl: draft.photoUrl.trim().length > 0 ? draft.photoUrl.trim() : null,
             videoUrl: draft.videoUrl.trim().length > 0 ? draft.videoUrl.trim() : null
           })
@@ -234,6 +339,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       );
 
       setSuccess("Profesional actualizado");
+      setIsProfessionalEditModalOpen(false);
       await load(professionalSearch);
       if (showConfirmedSessions) {
         await loadProfessionalBookings(professional.id);
@@ -246,9 +352,34 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   };
 
   const createSlot = async (professionalId: string) => {
-    const draft = professionalSlotDrafts[professionalId];
-    if (!draft?.startsAt || !draft?.endsAt) {
-      setError("Slot requiere inicio y fin");
+    const draft = professionalSlotDrafts[professionalId] ?? createEmptySlotDraft();
+    if (draft.slotDate.trim().length === 0 || draft.slotTime.trim().length === 0) {
+      setError("Completa dia y hora para crear el slot.");
+      return;
+    }
+
+    const profileDraft = professionalEditDrafts[professionalId];
+    const currentProfessional = professionals.find((item) => item.id === professionalId) ?? null;
+    const fallbackDuration = currentProfessional?.sessionDurationMinutes ?? 60;
+    const durationMinutes = Number(profileDraft?.sessionDurationMinutes?.trim() || fallbackDuration);
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 240) {
+      setError("Duracion de sesion invalida. Ajustala entre 15 y 240 minutos.");
+      return;
+    }
+
+    const startsAt = parseLocalDateAndTime(draft.slotDate, draft.slotTime);
+    if (!startsAt) {
+      setError("Fecha u hora invalida para crear el slot.");
+      return;
+    }
+    const endsAt = new Date(startsAt.getTime() + (durationMinutes * 60_000));
+
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+      setError("Slot invalido: revisa fecha y hora.");
+      return;
+    }
+    if (endsAt <= startsAt) {
+      setError("El horario de fin debe ser posterior al de inicio.");
       return;
     }
 
@@ -260,12 +391,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         "/api/admin/professionals/" + professionalId + "/slots",
         {
           method: "POST",
-          body: JSON.stringify({ startsAt: new Date(draft.startsAt).toISOString(), endsAt: new Date(draft.endsAt).toISOString() })
+          body: JSON.stringify({ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() })
         },
         props.token
       );
 
-      setProfessionalSlotDrafts((current) => ({ ...current, [professionalId]: { startsAt: "", endsAt: "" } }));
+      setProfessionalSlotDrafts((current) => ({ ...current, [professionalId]: createEmptySlotDraft() }));
       setSuccess("Slot creado");
       await load(professionalSearch);
     } catch (requestError) {
@@ -430,6 +561,30 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
               <label>
                 Sesiones confirmadas
                 <input value={String(confirmedSessionsCount)} readOnly />
+              </label>
+              <label>
+                Valor sesion USD
+                <input value={selectedProfessionalDraft.sessionPriceUsd || "-"} readOnly />
+              </label>
+              <label>
+                Ranking / opiniones
+                <input value={`${selectedProfessionalDraft.ratingAverage || "-"} · ${selectedProfessionalDraft.reviewsCount}`} readOnly />
+              </label>
+              <label>
+                Duracion sesion
+                <input value={selectedProfessionalDraft.sessionDurationMinutes || "-"} readOnly />
+              </label>
+              <label>
+                Clientes activos (card)
+                <input value={selectedProfessionalDraft.activePatientsCount || "-"} readOnly />
+              </label>
+              <label>
+                Sesiones (card)
+                <input value={selectedProfessionalDraft.sessionsCount || "-"} readOnly />
+              </label>
+              <label>
+                Completadas (card)
+                <input value={selectedProfessionalDraft.completedSessionsCount || "-"} readOnly />
               </label>
             </div>
           </section>

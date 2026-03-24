@@ -12,16 +12,19 @@ import {
 import {
   PatientsSearchHeader,
   PatientsSearchResults,
+  RiskTriageQueueSection,
   SelectedPatientSummaryCard
 } from "../components/patients/PatientsOpsSections";
 import { apiRequest } from "../services/api";
 import type {
   AdminBookingOps,
   AdminPatientOps,
+  AdminPatientRiskTriageItem,
   AdminProfessionalOps,
   AdminSessionPackage,
   AdminUser,
   PatientManagementResponse,
+  PatientRiskTriageResponse,
   PatientStatus,
   PatientsResponse,
   ProfessionalsResponse,
@@ -112,6 +115,9 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const [patientSearch, setPatientSearch] = useState("");
   const [patientPage, setPatientPage] = useState(1);
   const [patientPagination, setPatientPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number; hasPrev: boolean; hasNext: boolean } | null>(null);
+  const [riskTriageItems, setRiskTriageItems] = useState<AdminPatientRiskTriageItem[]>([]);
+  const [riskTriageLoading, setRiskTriageLoading] = useState(false);
+  const [riskTriageActionPatientId, setRiskTriageActionPatientId] = useState<string | null>(null);
 
   const syncPatientDrafts = (nextPatients: AdminPatientOps[]) => {
     setActiveProfessionalDrafts((current) => {
@@ -137,6 +143,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
 
   const load = async (searchValue?: string, pageValue?: number) => {
     setLoading(true);
+    setRiskTriageLoading(true);
     setError("");
     try {
       const normalizedSearch = (searchValue ?? patientSearch).trim();
@@ -156,10 +163,11 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         return apiRequest<PatientsResponse>("/api/admin/patients?search=" + encodeURIComponent(normalizedSearch), {}, props.token);
       })();
 
-      const [packagesResponse, professionalsResponse, patientsResponse] = await Promise.all([
+      const [packagesResponse, professionalsResponse, patientsResponse, riskTriageResponse] = await Promise.all([
         apiRequest<SessionPackagesResponse>("/api/admin/session-packages", {}, props.token),
         apiRequest<ProfessionalsResponse>("/api/admin/professionals", {}, props.token),
-        patientsRequest
+        patientsRequest,
+        apiRequest<PatientRiskTriageResponse>("/api/admin/patients/risk-triage", {}, props.token)
       ]);
 
       setPackages(packagesResponse.sessionPackages);
@@ -168,10 +176,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setPatientPagination(patientsResponse.pagination ?? null);
       setPatientPage(patientsResponse.pagination?.page ?? requestedPage);
       syncPatientDrafts(patientsResponse.patients);
+      setRiskTriageItems(riskTriageResponse.items);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not load patient operations");
     } finally {
       setLoading(false);
+      setRiskTriageLoading(false);
     }
   };
 
@@ -608,6 +618,31 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     void saveRemainingSessions(editingPatient.id);
   };
 
+  const resolvePatientRiskTriage = async (patientId: string, decision: "approved" | "cancelled") => {
+    setError("");
+    setSuccess("");
+    setRiskTriageActionPatientId(patientId);
+    try {
+      await apiRequest<{ triageDecision: string }>(
+        "/api/admin/patients/" + patientId + "/risk-triage",
+        {
+          method: "PATCH",
+          body: JSON.stringify({ decision })
+        },
+        props.token
+      );
+      setSuccess(decision === "approved" ? "Paciente aprobado en triage" : "Paciente cancelado por triage");
+      await load(patientSearch, patientPage);
+      if (editingPatientId === patientId) {
+        await loadPatientManagement(patientId);
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar el triage");
+    } finally {
+      setRiskTriageActionPatientId(null);
+    }
+  };
+
   return (
     <div className="stack-lg ops-page">
       <section className="card stack ops-panel patient-search-section">
@@ -622,6 +657,24 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
         {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+
+        <RiskTriageQueueSection
+          loading={riskTriageLoading}
+          items={riskTriageItems}
+          actionPatientId={riskTriageActionPatientId}
+          onOpenPatient={(patientId) => {
+            setEditingPatientId(patientId);
+            setIsPatientEditModalOpen(true);
+            void loadPatientManagement(patientId);
+          }}
+          onApprove={(patientId) => {
+            void resolvePatientRiskTriage(patientId, "approved");
+          }}
+          onCancel={(patientId) => {
+            void resolvePatientRiskTriage(patientId, "cancelled");
+          }}
+        />
+
         <PatientsSearchResults
           language={props.language}
           loading={loading}

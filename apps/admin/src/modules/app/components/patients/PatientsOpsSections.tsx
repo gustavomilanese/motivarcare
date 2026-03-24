@@ -2,6 +2,7 @@ import type { AppLanguage } from "@therapy/i18n-config";
 import type { Dispatch, SetStateAction } from "react";
 import { PATIENT_EMPTY_ART_URL } from "../../constants";
 import type {
+  AdminPatientRiskTriageItem,
   AdminPatientOps,
   AdminProfessionalOps,
   PatientStatus
@@ -188,6 +189,65 @@ export function SelectedPatientSummaryCard(props: {
           <input value={props.editingPatientDraft.remainingCredits} readOnly />
         </label>
       </div>
+    </section>
+  );
+}
+
+export function RiskTriageQueueSection(props: {
+  loading: boolean;
+  items: AdminPatientRiskTriageItem[];
+  actionPatientId: string | null;
+  onOpenPatient: (patientId: string) => void;
+  onApprove: (patientId: string) => void;
+  onCancel: (patientId: string) => void;
+}) {
+  return (
+    <section className="ops-section risk-triage-section">
+      <header className="ops-section-head risk-triage-head">
+        <h3>Triage de riesgo</h3>
+        <span>{props.items.length} pendientes</span>
+      </header>
+
+      {props.loading ? <p>Cargando casos de riesgo...</p> : null}
+      {!props.loading && props.items.length === 0 ? (
+        <p className="risk-triage-empty">No hay pacientes pendientes de triage.</p>
+      ) : null}
+
+      {!props.loading ? (
+        <div className="risk-triage-list">
+          {props.items.map((item) => (
+            <article key={item.patientId} className="risk-triage-row">
+              <div className="risk-triage-main">
+                <strong>{item.fullName}</strong>
+                <span>
+                  {item.email}
+                  {item.intakeCompletedAt ? ` · ${new Date(item.intakeCompletedAt).toLocaleString("es-AR")}` : ""}
+                </span>
+              </div>
+              <span className={`risk-level-pill ${item.intakeRiskLevel}`}>Riesgo {item.intakeRiskLevel}</span>
+              <div className="risk-triage-actions">
+                <button type="button" onClick={() => props.onOpenPatient(item.patientId)}>Ver paciente</button>
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={props.actionPatientId === item.patientId}
+                  onClick={() => props.onApprove(item.patientId)}
+                >
+                  Aprobar
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={props.actionPatientId === item.patientId}
+                  onClick={() => props.onCancel(item.patientId)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

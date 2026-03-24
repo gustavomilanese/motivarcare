@@ -3948,6 +3948,10 @@ button.schedule-home-item {
   color: #7a5cff;
 }
 
+.schedule-home-icon.rate {
+  color: #6748ec;
+}
+
 .schedule-home-icon.vacation {
   color: #6f56ff;
 }

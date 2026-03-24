@@ -1,5 +1,6 @@
 export type Role = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 export type PatientStatus = "active" | "pause" | "cancelled" | "trial";
+export type RiskTriageDecision = "pending" | "approved" | "cancelled";
 export type RoleFilter = Role | "ALL";
 export type PortalPath =
   | "/"
@@ -184,6 +185,10 @@ export interface AdminPatientOps {
   email: string;
   timezone: string;
   status: string;
+  intakeRiskLevel?: "low" | "medium" | "high" | null;
+  intakeCompletedAt?: string | null;
+  riskTriageDecision?: RiskTriageDecision | null;
+  riskBlocked?: boolean;
   activeProfessionalId?: string | null;
   activeProfessionalName?: string | null;
   assignmentStatus?: "assigned" | "pending";
@@ -217,6 +222,25 @@ export interface PatientManagementResponse {
   };
 }
 
+export interface AdminPatientRiskTriageItem {
+  patientId: string;
+  fullName: string;
+  email: string;
+  patientStatus: string;
+  intakeRiskLevel: "medium" | "high";
+  intakeCompletedAt: string | null;
+  triageDecision: RiskTriageDecision;
+  triageUpdatedAt: string | null;
+  triageNote: string | null;
+  riskBlocked: boolean;
+}
+
+export interface PatientRiskTriageResponse {
+  items: AdminPatientRiskTriageItem[];
+  total: number;
+  pending: number;
+}
+
 export interface AdminProfessionalOps {
   id: string;
   userId: string;
@@ -227,6 +251,14 @@ export interface AdminProfessionalOps {
   bio: string | null;
   therapeuticApproach: string | null;
   yearsExperience: number | null;
+  birthCountry: string | null;
+  sessionPriceUsd: number | null;
+  ratingAverage: number | null;
+  reviewsCount: number;
+  sessionDurationMinutes: number | null;
+  activePatientsCount: number | null;
+  sessionsCount: number | null;
+  completedSessionsCount: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   bookingsCount: number;
