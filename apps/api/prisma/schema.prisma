@@ -180,6 +180,15 @@ model PatientPackagePurchase {
   stripeCheckoutSessionId  String         @unique
   totalCredits             Int
   remainingCredits         Int
+  packageNameSnapshot      String?
+  packageCreditsSnapshot   Int?
+  packageListPriceCentsSnapshot Int?
+  packagePriceCentsSnapshot Int?
+  packageDiscountPercentSnapshot Int?
+  packageCurrencySnapshot  String?
+  platformCommissionPercentSnapshot Int?
+  trialPlatformPercentSnapshot Int?
+  professionalIdSnapshot   String?
   purchasedAt              DateTime       @default(now())
   patient                  PatientProfile @relation(fields: [patientId], references: [id])
   sessionPackage           SessionPackage @relation(fields: [packageId], references: [id])
@@ -215,6 +224,7 @@ model Booking {
   id                 String               @id @default(cuid())
   patientId          String
   professionalId     String
+  consumedPurchaseId String?
   patientTimezoneAtBooking String         @default("UTC")
   professionalTimezoneAtBooking String    @default("UTC")
   startsAt           DateTime
@@ -235,6 +245,7 @@ model Booking {
 
   @@index([patientId, startsAt])
   @@index([professionalId, startsAt])
+  @@index([consumedPurchaseId])
   @@unique([professionalId, startsAt, endsAt])
 }
 

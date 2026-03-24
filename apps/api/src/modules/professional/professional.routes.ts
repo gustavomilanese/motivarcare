@@ -13,7 +13,6 @@ const adminPayloadSchema = z.object({
   notes: z.string().max(1000).optional()
 });
 
-const SESSION_FEE_CENTS = 9000;
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
   CONFIRMED: "CONFIRMED",
@@ -117,7 +116,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   startOfToday.setHours(0, 0, 0, 0);
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const [upcomingBookings, upcomingBookingsCount, weeklySessionsCount, allBookings, futureSlots] = await Promise.all([
+  const [upcomingBookings, upcomingBookingsCount, weeklySessionsCount, allBookings, futureSlots, pendingPayoutSummary] = await Promise.all([
     prisma.booking.findMany({
       where: {
         professionalId: actor.professionalProfileId,
@@ -171,6 +170,16 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         isBlocked: false,
         startsAt: { gte: now }
       }
+    }),
+    prisma.financeSessionRecord.aggregate({
+      where: {
+        professionalId: actor.professionalProfileId,
+        bookingStatus: BOOKING_STATUS.COMPLETED,
+        payoutLineId: null
+      },
+      _sum: {
+        professionalNetCents: true
+      }
     })
   ]);
 
@@ -200,7 +209,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
 
   const weeklySessions = weeklySessionsCount;
 
-  const pendingPayoutCents = allBookings.filter((booking: any) => booking.status === BOOKING_STATUS.CONFIRMED).length * SESSION_FEE_CENTS;
+  const pendingPayoutCents = pendingPayoutSummary._sum.professionalNetCents ?? 0;
   const activeBookingsByPatient = new Map<string, number>();
 
   for (const booking of allBookings) {
@@ -295,10 +304,10 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const bookings = await prisma.booking.findMany({
+  const records = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId: actor.professionalProfileId,
-      status: { in: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.COMPLETED] }
+      bookingStatus: BOOKING_STATUS.COMPLETED
     },
     include: {
       patient: {
@@ -307,27 +316,31 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
         }
       }
     },
-    orderBy: { startsAt: "desc" }
+    orderBy: [{ bookingCompletedAt: "desc" }, { bookingStartsAt: "desc" }]
   });
 
-  const totalCents = bookings.length * SESSION_FEE_CENTS;
-  const currentPeriodBookings = bookings.filter((booking: any) => booking.startsAt >= monthStart);
-  const currentPeriodCents = currentPeriodBookings.length * SESSION_FEE_CENTS;
+  const totalCents = records.reduce((sum, record) => sum + record.professionalNetCents, 0);
+  const currentPeriodRecords = records.filter((record) => {
+    const referenceDate = record.bookingCompletedAt ?? record.bookingStartsAt;
+    return referenceDate >= monthStart;
+  });
+  const currentPeriodCents = currentPeriodRecords.reduce((sum, record) => sum + record.professionalNetCents, 0);
+  const averageSessionCents = records.length > 0 ? Math.round(totalCents / records.length) : 0;
 
   return res.json({
     summary: {
       totalCents,
       currentPeriodCents,
-      totalSessions: bookings.length,
-      currentPeriodSessions: currentPeriodBookings.length,
-      sessionFeeCents: SESSION_FEE_CENTS
+      totalSessions: records.length,
+      currentPeriodSessions: currentPeriodRecords.length,
+      sessionFeeCents: averageSessionCents
     },
-    movements: currentPeriodBookings.slice(0, 20).map((booking: any) => ({
-      bookingId: booking.id,
-      patientName: booking.patient.user.fullName,
-      startsAt: booking.startsAt,
-      amountCents: SESSION_FEE_CENTS,
-      status: booking.status.toLowerCase()
+    movements: currentPeriodRecords.slice(0, 20).map((record) => ({
+      bookingId: record.bookingId,
+      patientName: record.patient.user.fullName,
+      startsAt: record.bookingStartsAt,
+      amountCents: record.professionalNetCents,
+      status: record.bookingStatus.toLowerCase()
     }))
   });
 });

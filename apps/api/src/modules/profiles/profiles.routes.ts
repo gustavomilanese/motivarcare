@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { getFinanceRules } from "../finance/finance.service.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
@@ -91,6 +92,9 @@ const syncTimezoneSchema = z.object({
 const updateActiveProfessionalSchema = z.object({
   professionalId: z.string().trim().min(1).nullable()
 });
+const purchasePackageSchema = z.object({
+  packageId: z.string().trim().min(1)
+});
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()
 });
@@ -160,6 +164,59 @@ function evaluateIntakeRiskLevel(answers: Record<string, string>): "low" | "medi
 function compatibilityScore(professionalId: string): number {
   const seed = professionalId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return 80 + (seed % 18);
+}
+
+function resolvePackageDiscountPercent(params: {
+  credits: number;
+  fallbackDiscountPercent: number;
+  profileDiscount4: number | null | undefined;
+  profileDiscount12: number | null | undefined;
+  profileDiscount24: number | null | undefined;
+}): number {
+  if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
+    return params.profileDiscount4;
+  }
+  if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
+    return params.profileDiscount12;
+  }
+  if (params.credits === 24 && params.profileDiscount24 !== null && params.profileDiscount24 !== undefined) {
+    return params.profileDiscount24;
+  }
+  return params.fallbackDiscountPercent;
+}
+
+function resolvePackagePricing(params: {
+  credits: number;
+  fallbackPriceCents: number;
+  fallbackDiscountPercent: number;
+  sessionPriceUsd: number | null | undefined;
+  profileDiscount4: number | null | undefined;
+  profileDiscount12: number | null | undefined;
+  profileDiscount24: number | null | undefined;
+}) {
+  const discountPercent = resolvePackageDiscountPercent({
+    credits: params.credits,
+    fallbackDiscountPercent: params.fallbackDiscountPercent,
+    profileDiscount4: params.profileDiscount4,
+    profileDiscount12: params.profileDiscount12,
+    profileDiscount24: params.profileDiscount24
+  });
+
+  if (!params.sessionPriceUsd || params.sessionPriceUsd <= 0) {
+    return {
+      discountPercent,
+      listPriceCents: params.fallbackPriceCents,
+      priceCents: params.fallbackPriceCents
+    };
+  }
+
+  const listPriceCents = params.sessionPriceUsd * params.credits * 100;
+  const priceCents = Math.max(0, Math.round(listPriceCents * (1 - discountPercent / 100)));
+  return {
+    discountPercent,
+    listPriceCents,
+    priceCents
+  };
 }
 
 interface DirectoryProfessional {
@@ -377,19 +434,25 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
   }
 
   if (actor.role === "PATIENT" && actor.patientProfileId) {
-    const patient = await prisma.patientProfile.findUnique({
-      where: { id: actor.patientProfileId },
-      include: {
-        intake: true,
-        purchases: {
-          orderBy: { purchasedAt: "desc" },
-          take: 1,
-          include: { sessionPackage: true }
+    const [patient, creditSummary, assignmentConfig, triageConfig] = await Promise.all([
+      prisma.patientProfile.findUnique({
+        where: { id: actor.patientProfileId },
+        include: {
+          intake: true,
+          purchases: {
+            orderBy: { purchasedAt: "desc" },
+            take: 1,
+            include: { sessionPackage: true }
+          }
         }
-      }
-    });
-
-    const [assignmentConfig, triageConfig] = await Promise.all([
+      }),
+      prisma.patientPackagePurchase.aggregate({
+        where: { patientId: actor.patientProfileId },
+        _sum: {
+          totalCredits: true,
+          remainingCredits: true
+        }
+      }),
       prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
       prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } })
     ]);
@@ -432,8 +495,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
           ? {
               id: patient.purchases[0].id,
               name: patient.purchases[0].sessionPackage.name,
-              remainingCredits: patient.purchases[0].remainingCredits,
-              totalCredits: patient.purchases[0].totalCredits,
+              remainingCredits: creditSummary._sum.remainingCredits ?? patient.purchases[0].remainingCredits,
+              totalCredits: creditSummary._sum.totalCredits ?? patient.purchases[0].totalCredits,
               purchasedAt: patient.purchases[0].purchasedAt
             }
           : null,
@@ -651,6 +714,155 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
   return res.json({
     patientId: patient.id,
     activeProfessional
+  });
+});
+
+profilesRouter.post("/me/purchase-package", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = purchasePackageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can purchase session packages" });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: actor.patientProfileId },
+    select: { id: true }
+  });
+  if (!patient) {
+    return res.status(404).json({ error: "Patient profile not found" });
+  }
+
+  const sessionPackage = await prisma.sessionPackage.findUnique({
+    where: { id: parsed.data.packageId },
+    select: {
+      id: true,
+      name: true,
+      credits: true,
+      active: true,
+      priceCents: true,
+      discountPercent: true,
+      currency: true,
+      professionalId: true
+    }
+  });
+  if (!sessionPackage) {
+    return res.status(404).json({ error: "Session package not found" });
+  }
+  if (!sessionPackage.active) {
+    return res.status(409).json({ error: "Session package is not active" });
+  }
+
+  const [assignmentConfig, packageProfessional, financeRules] = await Promise.all([
+    prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
+    sessionPackage.professionalId
+      ? prisma.professionalProfile.findUnique({
+          where: { id: sessionPackage.professionalId },
+          select: { id: true, sessionPriceUsd: true, discount4: true, discount12: true, discount24: true }
+        })
+      : Promise.resolve(null),
+    getFinanceRules()
+  ]);
+
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const activeProfessionalId = assignments[patient.id] ?? null;
+  const activeProfessional = activeProfessionalId
+    ? await prisma.professionalProfile.findUnique({
+        where: { id: activeProfessionalId },
+        select: { id: true, sessionPriceUsd: true, discount4: true, discount12: true, discount24: true }
+      })
+    : null;
+
+  const pricingProfessional = activeProfessional ?? packageProfessional;
+  const pricing = resolvePackagePricing({
+    credits: sessionPackage.credits,
+    fallbackPriceCents: sessionPackage.priceCents,
+    fallbackDiscountPercent: sessionPackage.discountPercent,
+    sessionPriceUsd: pricingProfessional?.sessionPriceUsd,
+    profileDiscount4: pricingProfessional?.discount4,
+    profileDiscount12: pricingProfessional?.discount12,
+    profileDiscount24: pricingProfessional?.discount24
+  });
+
+  const purchase = await prisma.$transaction(async (tx) => {
+    const creditSummary = await tx.patientPackagePurchase.aggregate({
+      where: { patientId: patient.id },
+      _sum: {
+        remainingCredits: true
+      }
+    });
+    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
+
+    if (carryOverCredits > 0) {
+      await tx.patientPackagePurchase.updateMany({
+        where: {
+          patientId: patient.id,
+          remainingCredits: { gt: 0 }
+        },
+        data: {
+          remainingCredits: 0
+        }
+      });
+    }
+
+    const nextWalletCredits = carryOverCredits + sessionPackage.credits;
+    const checkoutSessionId = [
+      "manual-checkout",
+      patient.id,
+      Date.now().toString(36),
+      Math.random().toString(36).slice(2, 8)
+    ].join("-");
+
+    const createdPurchase = await tx.patientPackagePurchase.create({
+      data: {
+        patientId: patient.id,
+        packageId: sessionPackage.id,
+        stripeCheckoutSessionId: checkoutSessionId,
+        totalCredits: nextWalletCredits,
+        remainingCredits: nextWalletCredits,
+        packageNameSnapshot: sessionPackage.name,
+        packageCreditsSnapshot: sessionPackage.credits,
+        packageListPriceCentsSnapshot: pricing.listPriceCents,
+        packagePriceCentsSnapshot: pricing.priceCents,
+        packageDiscountPercentSnapshot: pricing.discountPercent,
+        packageCurrencySnapshot: sessionPackage.currency?.toLowerCase() ?? "usd",
+        platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
+        trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
+        professionalIdSnapshot: pricingProfessional?.id ?? null
+      }
+    });
+
+    await tx.creditLedger.create({
+      data: {
+        patientId: patient.id,
+        bookingId: null,
+        type: "PACKAGE_PURCHASE",
+        amount: sessionPackage.credits,
+        note: `Portal package purchase ${createdPurchase.id}`
+      }
+    });
+
+    return createdPurchase;
+  });
+
+  return res.status(201).json({
+    purchase: {
+      id: purchase.id,
+      packageId: sessionPackage.id,
+      packageName: sessionPackage.name,
+      packagePriceCents: pricing.priceCents,
+      packageDiscountPercent: pricing.discountPercent,
+      totalCredits: purchase.totalCredits,
+      remainingCredits: purchase.remainingCredits,
+      purchasedAt: purchase.purchasedAt
+    }
   });
 });
 

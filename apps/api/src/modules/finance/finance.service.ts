@@ -50,23 +50,28 @@ export async function upsertFinanceRecordForBooking(bookingId: string): Promise<
     return;
   }
 
-  const [rules, firstCompletedForPatient, purchases] = await Promise.all([
+  const [rules, firstCompletedForPatient, purchaseById, purchases] = await Promise.all([
     getFinanceRules(),
     financeRepository.findFirstCompletedBookingByPatient(booking.patientId),
+    booking.consumedPurchaseId ? financeRepository.findPurchaseById(booking.consumedPurchaseId) : Promise.resolve(null),
     financeRepository.findLatestPurchaseByPatientUntil(booking.patientId, booking.startsAt)
   ]);
 
   const isTrial = firstCompletedForPatient?.id === booking.id;
-  const purchase = purchases[0] ?? null;
-  const packageCurrency = purchase?.sessionPackage.currency?.toLowerCase() ?? "usd";
+  const purchase = purchaseById ?? purchases[0] ?? null;
+  const packageCurrency = purchase?.packageCurrencySnapshot?.toLowerCase() ?? purchase?.sessionPackage.currency?.toLowerCase() ?? "usd";
+  const packageCredits = purchase?.packageCreditsSnapshot ?? purchase?.sessionPackage.credits ?? null;
+  const packagePriceCents = purchase?.packagePriceCentsSnapshot ?? purchase?.sessionPackage.priceCents ?? null;
   const packageSessionPrice =
-    purchase?.sessionPackage.priceCents && purchase?.sessionPackage.credits
-      ? roundCents(purchase.sessionPackage.priceCents / purchase.sessionPackage.credits)
+    packagePriceCents !== null && packageCredits !== null && packageCredits > 0
+      ? roundCents(packagePriceCents / packageCredits)
       : null;
-  const sessionPriceCents = booking.professional.sessionPriceUsd
-    ? booking.professional.sessionPriceUsd * 100
-    : packageSessionPrice ?? rules.defaultSessionPriceCents;
-  const commissionPercent = isTrial ? rules.trialPlatformPercent : rules.platformCommissionPercent;
+  const sessionPriceCents =
+    packageSessionPrice
+    ?? (booking.professional.sessionPriceUsd ? booking.professional.sessionPriceUsd * 100 : rules.defaultSessionPriceCents);
+  const regularCommissionPercent = purchase?.platformCommissionPercentSnapshot ?? rules.platformCommissionPercent;
+  const trialCommissionPercent = purchase?.trialPlatformPercentSnapshot ?? rules.trialPlatformPercent;
+  const commissionPercent = isTrial ? trialCommissionPercent : regularCommissionPercent;
   const platformFeeCents = roundCents((sessionPriceCents * commissionPercent) / 100);
   const professionalNetCents = Math.max(0, sessionPriceCents - platformFeeCents);
 

@@ -12,6 +12,7 @@ import {
 import { FinancesPage } from "../../finance";
 import { links } from "../constants";
 import { ModulePlaceholderPage } from "../components/ModulePlaceholderPage";
+import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { AdminDashboardPage } from "./AdminDashboardPage";
 import { InfoPage } from "./InfoPage";
 import { PatientsOpsPage } from "./PatientsOpsPage";
@@ -21,6 +22,8 @@ import { SessionPackagesAdminPage } from "./SessionPackagesAdminPage";
 import { UsersPage } from "./UsersPage";
 import { WebAdminPage } from "./WebAdminPage";
 import { apiRequest } from "../services/api";
+import { fetchFinanceSettings, patchFinanceSettings } from "../../finance/services/financeApi";
+import type { FinanceRules } from "../../finance/types/finance.types";
 import type { PortalPath } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -37,6 +40,10 @@ export function AdminPortal(props: {
 }) {
   const location = useLocation();
   const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
+  const [financeRules, setFinanceRules] = useState<FinanceRules | null>(null);
+  const [financeRulesLoading, setFinanceRulesLoading] = useState(false);
+  const [financeRulesSaving, setFinanceRulesSaving] = useState(false);
+  const [financeRulesFeedback, setFinanceRulesFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -69,6 +76,42 @@ export function AdminPortal(props: {
       window.clearInterval(intervalId);
     };
   }, [props.token, location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname !== "/settings") {
+      return;
+    }
+
+    let active = true;
+    setFinanceRulesLoading(true);
+
+    fetchFinanceSettings(props.token)
+      .then((rules) => {
+        if (!active) {
+          return;
+        }
+        setFinanceRules(rules);
+        setFinanceRulesFeedback(null);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setFinanceRulesFeedback({
+          type: "error",
+          message: error instanceof Error ? error.message : "No se pudo cargar la configuracion de comisiones."
+        });
+      })
+      .finally(() => {
+        if (active) {
+          setFinanceRulesLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [location.pathname, props.token]);
 
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
@@ -108,6 +151,40 @@ export function AdminPortal(props: {
       return t(props.language, { es: "Configuracion", en: "Settings", pt: "Configuracoes" });
     }
     return t(props.language, { es: "Auditoria IA", en: "AI audit", pt: "Auditoria IA" });
+  };
+
+  const updateFinanceRule = (key: keyof FinanceRules, value: number) => {
+    setFinanceRules((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        [key]: Number.isFinite(value) ? value : current[key]
+      };
+    });
+  };
+
+  const saveFinanceRulesInSettings = async () => {
+    if (!financeRules) {
+      return;
+    }
+
+    setFinanceRulesSaving(true);
+    setFinanceRulesFeedback(null);
+
+    try {
+      const saved = await patchFinanceSettings(props.token, financeRules);
+      setFinanceRules(saved);
+      setFinanceRulesFeedback({ type: "ok", message: "Comisiones actualizadas." });
+    } catch (error) {
+      setFinanceRulesFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "No se pudieron guardar las comisiones."
+      });
+    } finally {
+      setFinanceRulesSaving(false);
+    }
   };
 
   return (
@@ -278,6 +355,92 @@ export function AdminPortal(props: {
                       </label>
                     </div>
                   </section>
+
+                  <section className="card stack">
+                    <h2>{t(props.language, { es: "Comisiones y reparto", en: "Commissions and split", pt: "Comissoes e divisao" })}</h2>
+                    <p>
+                      {t(props.language, {
+                        es: "Define cuanto retiene la plataforma y cuanto recibe el profesional por sesion completada.",
+                        en: "Define how much the platform retains and how much the professional receives per completed session.",
+                        pt: "Defina quanto a plataforma retem e quanto o profissional recebe por sessao concluida."
+                      })}
+                    </p>
+                    {financeRulesLoading && !financeRules ? (
+                      <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p>
+                    ) : null}
+                    {financeRules ? (
+                      <>
+                        <div className="grid-form">
+                          <label>
+                            {t(props.language, {
+                              es: "Comision plataforma (%)",
+                              en: "Platform commission (%)",
+                              pt: "Comissao da plataforma (%)"
+                            })}
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={financeRules.platformCommissionPercent}
+                              onChange={(event) => updateFinanceRule("platformCommissionPercent", Number(event.target.value || 0))}
+                            />
+                          </label>
+                          <label>
+                            {t(props.language, {
+                              es: "Comision sesion de prueba (%)",
+                              en: "Trial session commission (%)",
+                              pt: "Comissao sessao de teste (%)"
+                            })}
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={financeRules.trialPlatformPercent}
+                              onChange={(event) => updateFinanceRule("trialPlatformPercent", Number(event.target.value || 0))}
+                            />
+                          </label>
+                          <label>
+                            {t(props.language, {
+                              es: "Profesional recibe (%)",
+                              en: "Professional receives (%)",
+                              pt: "Profissional recebe (%)"
+                            })}
+                            <input
+                              type="number"
+                              value={Math.max(0, 100 - financeRules.platformCommissionPercent)}
+                              readOnly
+                            />
+                          </label>
+                          <label>
+                            {t(props.language, {
+                              es: "Precio fallback por sesion (centavos USD)",
+                              en: "Fallback session price (USD cents)",
+                              pt: "Preco fallback por sessao (centavos USD)"
+                            })}
+                            <input
+                              type="number"
+                              min={100}
+                              max={200000}
+                              value={financeRules.defaultSessionPriceCents}
+                              onChange={(event) => updateFinanceRule("defaultSessionPriceCents", Number(event.target.value || 9000))}
+                            />
+                          </label>
+                        </div>
+                        <div className="toolbar-actions">
+                          <button className="primary" type="button" onClick={() => void saveFinanceRulesInSettings()} disabled={financeRulesSaving}>
+                            {financeRulesSaving
+                              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                              : t(props.language, { es: "Guardar comisiones", en: "Save commissions", pt: "Salvar comissoes" })}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                    {financeRulesFeedback ? (
+                      <p className={financeRulesFeedback.type === "ok" ? "success-text" : "error-text"}>{financeRulesFeedback.message}</p>
+                    ) : null}
+                  </section>
+
+                  <PortalHeroSettingsSection token={props.token} language={props.language} target="patient" />
 
                   <section className="card stack">
                     <h2>{t(props.language, { es: "Administracion", en: "Administration", pt: "Administracao" })}</h2>

@@ -1,7 +1,6 @@
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useEffect, useState } from "react";
 import { SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../constants";
-import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import {
   type BookingDraft,
   CreatePatientModal,
@@ -12,8 +11,7 @@ import {
 import {
   PatientsSearchHeader,
   PatientsSearchResults,
-  RiskTriageQueueSection,
-  SelectedPatientSummaryCard
+  RiskTriageQueueSection
 } from "../components/patients/PatientsOpsSections";
 import { apiRequest } from "../services/api";
 import type {
@@ -116,6 +114,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const [patientPage, setPatientPage] = useState(1);
   const [patientPagination, setPatientPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number; hasPrev: boolean; hasNext: boolean } | null>(null);
   const [riskTriageItems, setRiskTriageItems] = useState<AdminPatientRiskTriageItem[]>([]);
+  const [riskTriagePendingCount, setRiskTriagePendingCount] = useState(0);
   const [riskTriageLoading, setRiskTriageLoading] = useState(false);
   const [riskTriageActionPatientId, setRiskTriageActionPatientId] = useState<string | null>(null);
 
@@ -123,7 +122,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     setActiveProfessionalDrafts((current) => {
       const next = { ...current };
       for (const patient of nextPatients) {
-        if (next[patient.id] === undefined) {
+        const isEditingThisPatient = isPatientEditModalOpen && editingPatientId === patient.id;
+        if (!isEditingThisPatient || next[patient.id] === undefined) {
           next[patient.id] = patient.activeProfessionalId ?? "";
         }
       }
@@ -133,7 +133,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     setRemainingSessionsDrafts((current) => {
       const next = { ...current };
       for (const patient of nextPatients) {
-        if (next[patient.id] === undefined) {
+        const isEditingThisPatient = isPatientEditModalOpen && editingPatientId === patient.id;
+        if (!isEditingThisPatient || next[patient.id] === undefined) {
           next[patient.id] = String(patient.latestPurchase?.remainingCredits ?? 0);
         }
       }
@@ -177,6 +178,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setPatientPage(patientsResponse.pagination?.page ?? requestedPage);
       syncPatientDrafts(patientsResponse.patients);
       setRiskTriageItems(riskTriageResponse.items);
+      setRiskTriagePendingCount(Number(riskTriageResponse.pending) || 0);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not load patient operations");
     } finally {
@@ -290,6 +292,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         patient.id === patientId
           ? {
               ...patient,
+              intakeAnswers: response.patient.intakeAnswers ?? null,
               activeProfessionalId: response.patient.activeProfessionalId ?? null,
               activeProfessionalName: response.patient.activeProfessionalName ?? null,
               assignmentStatus: response.patient.assignmentStatus ?? "pending",
@@ -444,33 +447,6 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     }
   };
 
-  const saveRemainingSessions = async (patientId: string) => {
-    const raw = remainingSessionsDrafts[patientId] ?? "";
-    const remainingCredits = Number(raw);
-    if (!Number.isInteger(remainingCredits) || remainingCredits < 0) {
-      setError("Sesiones disponibles debe ser un entero mayor o igual a 0");
-      return;
-    }
-
-    setError("");
-    setSuccess("");
-    try {
-      await apiRequest<{ latestPurchase: AdminPatientOps["latestPurchase"] }>(
-        "/api/admin/patients/" + patientId + "/sessions-available",
-        {
-          method: "PATCH",
-          body: JSON.stringify({ remainingCredits, reason: getSessionReason(patientId) })
-        },
-        props.token
-      );
-      setSuccess("Sesiones disponibles actualizadas");
-      await load();
-      await loadPatientManagement(patientId);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update sessions available");
-    }
-  };
-
   const savePatientProfile = async (patient: AdminPatientOps) => {
     const draft = patientDetailDrafts[patient.id];
     if (!draft) {
@@ -489,6 +465,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
 
     if (draft.timezone.trim().length === 0) {
       setError("Selecciona una zona horaria");
+      return;
+    }
+
+    const remainingCredits = Number(draft.remainingCredits);
+    if (!Number.isInteger(remainingCredits) || remainingCredits < 0) {
+      setError("Sesiones disponibles debe ser un entero mayor o igual a 0");
       return;
     }
 
@@ -520,6 +502,31 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         },
         props.token
       );
+
+      const sessionsResponse = await apiRequest<{ latestPurchase: AdminPatientOps["latestPurchase"] }>(
+        "/api/admin/patients/" + patient.id + "/sessions-available",
+        {
+          method: "PATCH",
+          body: JSON.stringify({ remainingCredits, reason: getSessionReason(patient.id) })
+        },
+        props.token
+      );
+
+      const nextRemainingCredits = sessionsResponse.latestPurchase?.remainingCredits ?? remainingCredits;
+      setRemainingSessionsDrafts((current) => ({ ...current, [patient.id]: String(nextRemainingCredits) }));
+      setPatientDetailDrafts((current) => {
+        const currentDraft = current[patient.id];
+        if (!currentDraft) {
+          return current;
+        }
+        return {
+          ...current,
+          [patient.id]: {
+            ...currentDraft,
+            remainingCredits: String(nextRemainingCredits)
+          }
+        };
+      });
 
       setSuccess("Paciente actualizado");
       await load(patientSearch, patientPage);
@@ -603,21 +610,6 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const confirmedSessionsCount = editingBookings.filter((booking) => booking.status === "CONFIRMED").length;
   const loadingEditingBookings = editingPatient ? patientBookingsLoading[editingPatient.id] === true : false;
 
-  const saveRemainingSessionsFromModal = () => {
-    if (!editingPatient || !editingPatientDraft) {
-      return;
-    }
-
-    const value = Number(editingPatientDraft.remainingCredits);
-    if (!Number.isInteger(value) || value < 0) {
-      setError("Sesiones disponibles debe ser un entero mayor o igual a 0");
-      return;
-    }
-
-    setRemainingSessionsDrafts((current) => ({ ...current, [editingPatient.id]: String(value) }));
-    void saveRemainingSessions(editingPatient.id);
-  };
-
   const resolvePatientRiskTriage = async (patientId: string, decision: "approved" | "cancelled") => {
     setError("");
     setSuccess("");
@@ -631,7 +623,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         },
         props.token
       );
-      setSuccess(decision === "approved" ? "Paciente aprobado en triage" : "Paciente cancelado por triage");
+      setSuccess(decision === "approved" ? "Paciente aprobado en triage" : "Paciente rechazado por triage");
       await load(patientSearch, patientPage);
       if (editingPatientId === patientId) {
         await loadPatientManagement(patientId);
@@ -657,23 +649,6 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
         {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
-
-        <RiskTriageQueueSection
-          loading={riskTriageLoading}
-          items={riskTriageItems}
-          actionPatientId={riskTriageActionPatientId}
-          onOpenPatient={(patientId) => {
-            setEditingPatientId(patientId);
-            setIsPatientEditModalOpen(true);
-            void loadPatientManagement(patientId);
-          }}
-          onApprove={(patientId) => {
-            void resolvePatientRiskTriage(patientId, "approved");
-          }}
-          onCancel={(patientId) => {
-            void resolvePatientRiskTriage(patientId, "cancelled");
-          }}
-        />
 
         <PatientsSearchResults
           language={props.language}
@@ -706,14 +681,6 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           }}
         />
 
-        <SelectedPatientSummaryCard
-          editingPatient={editingPatient}
-          editingPatientDraft={editingPatientDraft}
-          professionals={professionals}
-          confirmedSessionsCount={confirmedSessionsCount}
-          onOpenEdit={() => setIsPatientEditModalOpen(true)}
-        />
-
         <CreatePatientModal
           open={isCreatePatientModalOpen}
           createPatientForm={createPatientForm}
@@ -737,6 +704,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           sessionReasonDrafts={sessionReasonDrafts}
           sessionOpsLoading={sessionOpsLoading}
           patientSaveLoading={patientSaveLoading}
+          triagePending={editingPatient?.riskTriageDecision !== "approved"}
+          triageActionLoading={editingPatient ? riskTriageActionPatientId === editingPatient.id : false}
           setPatientDetailDrafts={setPatientDetailDrafts}
           setBookingDrafts={setBookingDrafts}
           setSessionReasonDrafts={setSessionReasonDrafts}
@@ -750,7 +719,6 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
             }
             void savePatientProfile(editingPatient);
           }}
-          onSaveRemainingSessions={saveRemainingSessionsFromModal}
           onSaveBooking={(bookingId) => {
             if (!editingPatient) {
               return;
@@ -763,10 +731,38 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
             }
             void cancelConfirmedBooking(editingPatient.id, bookingId);
           }}
+          onApproveTriage={() => {
+            if (!editingPatient) {
+              return;
+            }
+            void resolvePatientRiskTriage(editingPatient.id, "approved");
+          }}
+          onRejectTriage={() => {
+            if (!editingPatient) {
+              return;
+            }
+            void resolvePatientRiskTriage(editingPatient.id, "cancelled");
+          }}
         />
       </section>
 
-      <PortalHeroSettingsSection token={props.token} language={props.language} target="patient" />
+      <RiskTriageQueueSection
+        loading={riskTriageLoading}
+        items={riskTriageItems}
+        pendingCount={riskTriagePendingCount}
+        actionPatientId={riskTriageActionPatientId}
+        onOpenPatient={(patientId) => {
+          setEditingPatientId(patientId);
+          setIsPatientEditModalOpen(true);
+          void loadPatientManagement(patientId);
+        }}
+        onApprovePatient={(patientId) => {
+          void resolvePatientRiskTriage(patientId, "approved");
+        }}
+        onRejectPatient={(patientId) => {
+          void resolvePatientRiskTriage(patientId, "cancelled");
+        }}
+      />
     </div>
   );
 }

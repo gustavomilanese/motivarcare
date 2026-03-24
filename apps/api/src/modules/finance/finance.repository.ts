@@ -49,6 +49,16 @@ export const financeRepository = {
       take: 1
     });
   },
+  findPurchaseById(purchaseId: string) {
+    return prisma.patientPackagePurchase.findUnique({
+      where: { id: purchaseId },
+      include: {
+        sessionPackage: {
+          select: { id: true, currency: true, priceCents: true, credits: true }
+        }
+      }
+    });
+  },
   deleteFinanceRecordByBooking(bookingId: string) {
     return prisma.financeSessionRecord.deleteMany({ where: { bookingId } });
   },
@@ -70,4 +80,3 @@ export const financeRepository = {
     });
   }
 };
-

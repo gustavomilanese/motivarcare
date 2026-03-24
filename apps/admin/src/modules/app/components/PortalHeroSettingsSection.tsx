@@ -113,12 +113,12 @@ export function PortalHeroSettingsSection(props: { token: string; language: AppL
 
   const sectionTitle =
     props.target === "patient"
-      ? "Hero del Portal Paciente"
+      ? "Configuracion portal de paciente"
       : "Hero del Portal Psicologo";
 
   const sectionSubtitle =
     props.target === "patient"
-      ? "Imagenes de cabecera para el portal paciente (laptop y telefono)."
+      ? "Hero del portal paciente (laptop y telefono)."
       : "Imagenes de cabecera para el portal psicologo (laptop y telefono).";
 
   return (

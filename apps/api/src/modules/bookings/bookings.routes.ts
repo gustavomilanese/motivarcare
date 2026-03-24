@@ -458,7 +458,10 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
           }
 
           const latestPurchase = await tx.patientPackagePurchase.findFirst({
-            where: { patientId: patientProfileId },
+            where: {
+              patientId: patientProfileId,
+              remainingCredits: { gt: 0 }
+            },
             orderBy: { purchasedAt: "desc" },
             select: { id: true, remainingCredits: true }
           });
@@ -499,6 +502,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             data: {
               patientId: patientProfileId,
               professionalId: professional.id,
+              consumedPurchaseId: latestPurchase.id,
               patientTimezoneAtBooking,
               professionalTimezoneAtBooking,
               startsAt,
@@ -911,15 +915,23 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
     });
 
     if (shouldRefundCredits) {
-      const latestPurchase = await tx.patientPackagePurchase.findFirst({
-        where: { patientId: booking.patientId },
-        orderBy: { purchasedAt: "desc" },
-        select: { id: true }
-      });
+      const purchaseToRefund = booking.consumedPurchaseId
+        ? await tx.patientPackagePurchase.findFirst({
+            where: {
+              id: booking.consumedPurchaseId,
+              patientId: booking.patientId
+            },
+            select: { id: true }
+          })
+        : await tx.patientPackagePurchase.findFirst({
+            where: { patientId: booking.patientId },
+            orderBy: { purchasedAt: "desc" },
+            select: { id: true }
+          });
 
-      if (latestPurchase) {
+      if (purchaseToRefund) {
         await tx.patientPackagePurchase.update({
-          where: { id: latestPurchase.id },
+          where: { id: purchaseToRefund.id },
           data: {
             remainingCredits: { increment: booking.consumedCredits }
           }
