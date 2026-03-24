@@ -34,6 +34,7 @@ const completeBookingSchema = z.object({
 
 const FREE_CANCELLATION_HOURS = 24;
 const MIN_BOOKING_NOTICE_HOURS = 24;
+const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
   CONFIRMED: "CONFIRMED",
@@ -42,6 +43,14 @@ const BOOKING_STATUS = {
   NO_SHOW: "NO_SHOW"
 } as const;
 type BookingWithVideoSession = Prisma.BookingGetPayload<{ include: { videoSession: true } }>;
+const intakeTriageDecisionSchema = z.enum(["pending", "approved", "cancelled"]);
+const intakeTriageRecordSchema = z.object({
+  decision: intakeTriageDecisionSchema,
+  updatedAt: z.string().datetime(),
+  note: z.string().trim().max(500).optional(),
+  updatedByAdminId: z.string().trim().min(1).optional()
+});
+const patientIntakeTriageSchema = z.record(z.string(), intakeTriageRecordSchema);
 
 function resolveMinimumBookingNoticeHours(configuredHours: number | null | undefined): number {
   const safeHours = Number.isFinite(Number(configuredHours)) ? Number(configuredHours) : MIN_BOOKING_NOTICE_HOURS;
@@ -78,6 +87,27 @@ function normalizeIdempotencyKey(value: string | undefined | null): string | nul
   }
 
   return normalized;
+}
+
+function parsePatientIntakeTriage(value: unknown): Record<string, {
+  decision: "pending" | "approved" | "cancelled";
+  updatedAt: string;
+  note?: string;
+  updatedByAdminId?: string;
+}> {
+  const parsed = patientIntakeTriageSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function resolveIntakeTriageDecision(
+  triage: Record<string, { decision: "pending" | "approved" | "cancelled" }>,
+  patientId: string,
+  riskLevel: string | null | undefined
+): "pending" | "approved" | "cancelled" | null {
+  if (!riskLevel || riskLevel === "low") {
+    return null;
+  }
+  return triage[patientId]?.decision ?? "pending";
 }
 
 function toIdempotencyStoreKey(scope: string, actorId: string, rawKey: string) {
@@ -307,6 +337,34 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
   const endsAt = new Date(parsed.data.endsAt);
   if (startsAt >= endsAt) {
     return res.status(400).json({ error: "startsAt must be before endsAt" });
+  }
+
+  const patientWithIntake = await prisma.patientProfile.findUnique({
+    where: { id: patientProfileId },
+    include: {
+      intake: {
+        select: {
+          riskLevel: true
+        }
+      }
+    }
+  });
+  if (!patientWithIntake) {
+    return res.status(404).json({ error: "Patient profile not found" });
+  }
+
+  const patientRiskLevel = patientWithIntake.intake?.riskLevel ?? "low";
+  if (patientRiskLevel !== "low") {
+    const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+    const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+    const triageDecision = resolveIntakeTriageDecision(triageByPatient, patientProfileId, patientRiskLevel);
+    if (triageDecision !== "approved") {
+      return res.status(409).json({
+        error: "Booking blocked by intake risk triage. Requires admin approval.",
+        intakeRiskLevel: patientRiskLevel,
+        triageDecision
+      });
+    }
   }
 
   const professional = await prisma.professionalProfile.findUnique({
@@ -648,6 +706,30 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
   }
 
   if (canRescheduleAsPatient) {
+    const patientWithIntake = await prisma.patientProfile.findUnique({
+      where: { id: booking.patientId },
+      include: {
+        intake: {
+          select: {
+            riskLevel: true
+          }
+        }
+      }
+    });
+    const patientRiskLevel = patientWithIntake?.intake?.riskLevel ?? "low";
+    if (patientRiskLevel !== "low") {
+      const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+      const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+      const triageDecision = resolveIntakeTriageDecision(triageByPatient, booking.patientId, patientRiskLevel);
+      if (triageDecision !== "approved") {
+        return res.status(409).json({
+          error: "Reschedule blocked by intake risk triage. Requires admin approval.",
+          intakeRiskLevel: patientRiskLevel,
+          triageDecision
+        });
+      }
+    }
+
     const professionalConfig = await prisma.professionalProfile.findUnique({
       where: { id: booking.professionalId },
       select: { cancellationHours: true }

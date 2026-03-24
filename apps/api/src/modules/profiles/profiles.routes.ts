@@ -4,9 +4,29 @@ import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
+const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
 const patientAssignmentsSchema = z.record(z.string(), z.string().min(1).nullable());
+const intakeTriageDecisionSchema = z.enum(["pending", "approved", "cancelled"]);
+const intakeTriageRecordSchema = z.object({
+  decision: intakeTriageDecisionSchema,
+  updatedAt: z.string().datetime(),
+  note: z.string().trim().max(500).optional(),
+  updatedByAdminId: z.string().trim().min(1).optional()
+});
+const patientIntakeTriageSchema = z.record(z.string(), intakeTriageRecordSchema);
+const professionalDisplayOverrideSchema = z.object({
+  ratingAverage: z.number().min(0).max(5).optional(),
+  reviewsCount: z.number().int().min(0).max(100000).optional(),
+  sessionDurationMinutes: z.number().int().min(15).max(120).optional(),
+  activePatientsCount: z.number().int().min(0).max(100000).optional(),
+  sessionsCount: z.number().int().min(0).max(1000000).optional(),
+  completedSessionsCount: z.number().int().min(0).max(1000000).optional()
+});
+const professionalDisplayOverridesSchema = z.record(z.string(), professionalDisplayOverrideSchema);
 
 const submitIntakeSchema = z.object({
   answers: z.record(z.string().min(1), z.string().trim().min(1)).refine((answers) => Object.keys(answers).length > 0, {
@@ -68,6 +88,12 @@ const syncTimezoneSchema = z.object({
   timezone: z.string().trim().min(3).max(120),
   persistPreference: z.boolean().optional()
 });
+const updateActiveProfessionalSchema = z.object({
+  professionalId: z.string().trim().min(1).nullable()
+});
+const matchingQuerySchema = z.object({
+  language: z.enum(["es", "en", "pt"]).optional()
+});
 
 function sanitizeTimezone(timezone: string): string {
   const candidate = timezone.trim();
@@ -82,6 +108,39 @@ function sanitizeTimezone(timezone: string): string {
 function parsePatientAssignments(value: unknown): Record<string, string | null> {
   const parsed = patientAssignmentsSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
+}
+
+function parseProfessionalDisplayOverrides(value: unknown): Record<string, {
+  ratingAverage?: number;
+  reviewsCount?: number;
+  sessionDurationMinutes?: number;
+  activePatientsCount?: number;
+  sessionsCount?: number;
+  completedSessionsCount?: number;
+}> {
+  const parsed = professionalDisplayOverridesSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function parsePatientIntakeTriage(value: unknown): Record<string, {
+  decision: "pending" | "approved" | "cancelled";
+  updatedAt: string;
+  note?: string;
+  updatedByAdminId?: string;
+}> {
+  const parsed = patientIntakeTriageSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function resolveIntakeTriageDecision(
+  triage: Record<string, { decision: "pending" | "approved" | "cancelled" }>,
+  patientId: string,
+  riskLevel: string | null | undefined
+): "pending" | "approved" | "cancelled" | null {
+  if (!riskLevel || riskLevel === "low") {
+    return null;
+  }
+  return triage[patientId]?.decision ?? "pending";
 }
 
 function evaluateIntakeRiskLevel(answers: Record<string, string>): "low" | "medium" | "high" {
@@ -103,9 +162,38 @@ function compatibilityScore(professionalId: string): number {
   return 80 + (seed % 18);
 }
 
-export const profilesRouter = Router();
+interface DirectoryProfessional {
+  id: string;
+  userId: string;
+  fullName: string;
+  title: string;
+  specialization: string | null;
+  focusPrimary: string | null;
+  birthCountry: string | null;
+  bio: string | null;
+  therapeuticApproach: string | null;
+  languages: string[];
+  yearsExperience: number | null;
+  sessionPriceUsd: number | null;
+  photoUrl: string | null;
+  videoUrl: string | null;
+  stripeVerified: boolean;
+  cancellationHours: number;
+  compatibility: number;
+  sessionDurationMinutes: number;
+  activePatientsCount: number;
+  completedSessionsCount: number;
+  sessionsCount: number;
+  ratingAverage: number | null;
+  reviewsCount: number;
+  slots: Array<{
+    id: string;
+    startsAt: Date;
+    endsAt: Date;
+  }>;
+}
 
-profilesRouter.get("/professionals", async (_req, res) => {
+async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
   const professionals = await prisma.professionalProfile.findMany({
     where: { visible: true },
     include: {
@@ -129,7 +217,7 @@ profilesRouter.get("/professionals", async (_req, res) => {
   });
 
   const professionalIds = professionals.map((professional) => professional.id);
-  const [sessionsByProfessional, completedByProfessional, activePatientPairs] = await Promise.all([
+  const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig] = await Promise.all([
     professionalIds.length > 0
       ? prisma.booking.groupBy({
           by: ["professionalId"],
@@ -162,12 +250,15 @@ profilesRouter.get("/professionals", async (_req, res) => {
           },
           distinct: ["professionalId", "patientId"]
         })
-      : []
+      : [],
+    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
   ]);
 
+  const displayOverrides = parseProfessionalDisplayOverrides(displayConfig?.value);
   const sessionsCountByProfessional = new Map(sessionsByProfessional.map((item) => [item.professionalId, item._count._all]));
   const completedCountByProfessional = new Map(completedByProfessional.map((item) => [item.professionalId, item._count._all]));
   const activePatientsByProfessional = new Map<string, number>();
+
   activePatientPairs.forEach((item) => {
     activePatientsByProfessional.set(
       item.professionalId,
@@ -175,37 +266,103 @@ profilesRouter.get("/professionals", async (_req, res) => {
     );
   });
 
-  return res.json({
-    professionals: professionals.map((professional: any) => ({
-      id: professional.id,
-      userId: professional.user.id,
-      fullName: professional.user.fullName,
-      title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
-      specialization: professional.specialization ?? null,
-      focusPrimary: professional.focusPrimary ?? null,
-      birthCountry: professional.birthCountry ?? null,
-      bio: professional.bio ?? professional.shortDescription ?? null,
-      therapeuticApproach: professional.therapeuticApproach,
-      languages: Array.isArray(professional.languages) ? professional.languages : [],
-      yearsExperience: professional.yearsExperience,
-      sessionPriceUsd: professional.sessionPriceUsd,
-      photoUrl: professional.photoUrl,
-      videoUrl: professional.videoUrl,
-      stripeVerified: professional.stripeVerified,
-      cancellationHours: professional.cancellationHours,
-      compatibility: compatibilityScore(professional.id),
-      sessionDurationMinutes: 50,
-      activePatientsCount: activePatientsByProfessional.get(professional.id) ?? 0,
-      completedSessionsCount: completedCountByProfessional.get(professional.id) ?? 0,
-      sessionsCount: sessionsCountByProfessional.get(professional.id) ?? 0,
-      ratingAverage: null,
-      reviewsCount: 0,
-      slots: professional.availabilitySlots.map((slot: any) => ({
-        id: slot.id,
-        startsAt: slot.startsAt,
-        endsAt: slot.endsAt
-      }))
+  return professionals.map((professional) => ({
+    id: professional.id,
+    userId: professional.user.id,
+    fullName: professional.user.fullName,
+    title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
+    specialization: professional.specialization ?? null,
+    focusPrimary: professional.focusPrimary ?? null,
+    birthCountry: professional.birthCountry ?? null,
+    bio: professional.bio ?? professional.shortDescription ?? null,
+    therapeuticApproach: professional.therapeuticApproach,
+    languages: Array.isArray(professional.languages)
+      ? professional.languages.filter((value): value is string => typeof value === "string")
+      : [],
+    yearsExperience: professional.yearsExperience,
+    sessionPriceUsd: professional.sessionPriceUsd,
+    photoUrl: professional.photoUrl,
+    videoUrl: professional.videoUrl,
+    stripeVerified: professional.stripeVerified,
+    cancellationHours: professional.cancellationHours,
+    compatibility: compatibilityScore(professional.id),
+    sessionDurationMinutes: displayOverrides[professional.id]?.sessionDurationMinutes ?? 50,
+    activePatientsCount: displayOverrides[professional.id]?.activePatientsCount ?? (activePatientsByProfessional.get(professional.id) ?? 0),
+    completedSessionsCount: displayOverrides[professional.id]?.completedSessionsCount ?? (completedCountByProfessional.get(professional.id) ?? 0),
+    sessionsCount: displayOverrides[professional.id]?.sessionsCount ?? (sessionsCountByProfessional.get(professional.id) ?? 0),
+    ratingAverage: displayOverrides[professional.id]?.ratingAverage ?? null,
+    reviewsCount: displayOverrides[professional.id]?.reviewsCount ?? 0,
+    slots: professional.availabilitySlots.map((slot) => ({
+      id: slot.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt
     }))
+  }));
+}
+
+export const profilesRouter = Router();
+
+profilesRouter.get("/professionals", async (_req, res) => {
+  const professionals = await listDirectoryProfessionals();
+  return res.json({
+    professionals
+  });
+});
+
+profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const queryParsed = matchingQuerySchema.safeParse(req.query);
+  if (!queryParsed.success) {
+    return res.status(400).json({ error: "Invalid matching query", details: queryParsed.error.flatten() });
+  }
+  const language: MatchingLanguage = queryParsed.data.language ?? "es";
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can access matching" });
+  }
+
+  const [patientIntake, professionals] = await Promise.all([
+    prisma.patientIntake.findUnique({ where: { patientId: actor.patientProfileId } }),
+    listDirectoryProfessionals()
+  ]);
+
+  const rankedProfessionals = professionals
+    .map((professional) => {
+      const match = rankProfessionalMatch({
+        professional: {
+          id: professional.id,
+          fullName: professional.fullName,
+          title: professional.title,
+          specialization: professional.specialization,
+          focusPrimary: professional.focusPrimary,
+          bio: professional.bio,
+          therapeuticApproach: professional.therapeuticApproach,
+          languages: professional.languages,
+          yearsExperience: professional.yearsExperience,
+          ratingAverage: professional.ratingAverage,
+          compatibilityBase: professional.compatibility,
+          slots: professional.slots
+        },
+        intakeAnswers: patientIntake?.answers ?? {},
+        language
+      });
+
+      return {
+        ...professional,
+        matchScore: match.score,
+        matchReasons: match.reasons,
+        matchedTopics: match.matchedTopics,
+        suggestedSlots: match.suggestedSlots
+      };
+    })
+    .sort((left, right) => right.matchScore - left.matchScore);
+
+  return res.json({
+    professionals: rankedProfessionals
   });
 });
 
@@ -232,9 +389,18 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       }
     });
 
-    const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+    const [assignmentConfig, triageConfig] = await Promise.all([
+      prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
+      prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } })
+    ]);
     const assignments = parsePatientAssignments(assignmentConfig?.value);
+    const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
     const activeProfessionalId = patient ? assignments[patient.id] ?? null : null;
+    const intakeRiskLevel = patient?.intake?.riskLevel ?? null;
+    const intakeTriageDecision = patient
+      ? resolveIntakeTriageDecision(triageByPatient, patient.id, intakeRiskLevel)
+      : null;
+    const intakeRiskBlocked = Boolean(intakeRiskLevel && intakeRiskLevel !== "low" && intakeTriageDecision !== "approved");
 
     const activeProfessional = activeProfessionalId
       ? await prisma.professionalProfile.findUnique({
@@ -258,7 +424,9 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
         status: patient?.status,
-        intakeRiskLevel: patient?.intake?.riskLevel ?? null,
+        intakeRiskLevel,
+        intakeTriageDecision,
+        intakeRiskBlocked,
         intakeCompletedAt: patient?.intake?.createdAt ?? null,
         latestPackage: patient?.purchases[0]
           ? {
@@ -406,6 +574,86 @@ profilesRouter.patch("/me/timezone", requireAuth, async (req: AuthenticatedReque
   return res.status(403).json({ error: "Role cannot sync timezone" });
 });
 
+profilesRouter.patch("/me/active-professional", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = updateActiveProfessionalSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can update active professional" });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: actor.patientProfileId },
+    select: { id: true }
+  });
+  if (!patient) {
+    return res.status(404).json({ error: "Patient profile not found" });
+  }
+
+  let activeProfessional: {
+    id: string;
+    userId: string;
+    fullName: string;
+    email: string;
+  } | null = null;
+
+  if (parsed.data.professionalId) {
+    const professional = await prisma.professionalProfile.findUnique({
+      where: { id: parsed.data.professionalId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (!professional) {
+      return res.status(404).json({ error: "Professional not found" });
+    }
+
+    activeProfessional = {
+      id: professional.id,
+      userId: professional.user.id,
+      fullName: professional.user.fullName,
+      email: professional.user.email
+    };
+  }
+
+  const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+
+  if (activeProfessional) {
+    assignments[patient.id] = activeProfessional.id;
+  } else {
+    delete assignments[patient.id];
+  }
+
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
+    update: { value: assignments },
+    create: {
+      key: PATIENT_ACTIVE_ASSIGNMENTS_KEY,
+      value: assignments
+    }
+  });
+
+  return res.json({
+    patientId: patient.id,
+    activeProfessional
+  });
+});
+
 profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -438,6 +686,32 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
       answers: parsed.data.answers
     }
   });
+
+  if (riskLevel !== "low") {
+    const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+    const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+    triageByPatient[actor.patientProfileId] = {
+      decision: "pending",
+      updatedAt: new Date().toISOString(),
+      note: "Creado automaticamente por intake de riesgo"
+    };
+    await prisma.systemConfig.upsert({
+      where: { key: PATIENT_INTAKE_TRIAGE_KEY },
+      update: { value: triageByPatient },
+      create: { key: PATIENT_INTAKE_TRIAGE_KEY, value: triageByPatient }
+    });
+  } else {
+    const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+    const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+    if (triageByPatient[actor.patientProfileId]) {
+      delete triageByPatient[actor.patientProfileId];
+      await prisma.systemConfig.upsert({
+        where: { key: PATIENT_INTAKE_TRIAGE_KEY },
+        update: { value: triageByPatient },
+        create: { key: PATIENT_INTAKE_TRIAGE_KEY, value: triageByPatient }
+      });
+    }
+  }
 
   return res.status(201).json({
     intake: {

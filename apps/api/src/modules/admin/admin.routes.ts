@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { hashPassword, requireAuth, requireRole } from "../../lib/auth.js";
+import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
 import { financeRouter } from "../finance/finance.routes.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
@@ -59,6 +59,8 @@ const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
+const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
 
@@ -198,6 +200,14 @@ const updateProfessionalSchema = z
     bio: z.string().trim().max(2000).nullable().optional(),
     therapeuticApproach: z.string().trim().max(500).nullable().optional(),
     yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
+    birthCountry: z.string().trim().max(120).nullable().optional(),
+    sessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
+    ratingAverage: z.number().min(0).max(5).nullable().optional(),
+    reviewsCount: z.number().int().min(0).max(100000).nullable().optional(),
+    sessionDurationMinutes: z.number().int().min(15).max(120).nullable().optional(),
+    activePatientsCount: z.number().int().min(0).max(100000).nullable().optional(),
+    sessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
+    completedSessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
     photoUrl: z.string().url().nullable().optional(),
     videoUrl: z.string().url().nullable().optional()
   })
@@ -217,6 +227,23 @@ const listPatientsQuerySchema = z.object({
   search: z.string().trim().min(1).max(120).optional(),
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).optional()
+});
+const intakeRiskLevelSchema = z.enum(["low", "medium", "high"]);
+const intakeTriageDecisionSchema = z.enum(["pending", "approved", "cancelled"]);
+const intakeTriageRecordSchema = z.object({
+  decision: intakeTriageDecisionSchema,
+  updatedAt: z.string().datetime(),
+  note: z.string().trim().max(500).optional(),
+  updatedByAdminId: z.string().trim().min(1).optional()
+});
+const patientIntakeTriageSchema = z.record(z.string(), intakeTriageRecordSchema);
+const listRiskTriageQuerySchema = z.object({
+  status: intakeTriageDecisionSchema.optional(),
+  search: z.string().trim().min(1).max(120).optional()
+});
+const updatePatientRiskTriageSchema = z.object({
+  decision: intakeTriageDecisionSchema,
+  note: z.string().trim().max(500).optional()
 });
 
 const creditAdjustmentSchema = z.object({
@@ -239,6 +266,15 @@ const patientSessionsContractedSchema = z.object({
 });
 
 const patientAssignmentsSchema = z.record(z.string(), z.string().min(1).nullable());
+const professionalDisplayOverrideSchema = z.object({
+  ratingAverage: z.number().min(0).max(5).optional(),
+  reviewsCount: z.number().int().min(0).max(100000).optional(),
+  sessionDurationMinutes: z.number().int().min(15).max(120).optional(),
+  activePatientsCount: z.number().int().min(0).max(100000).optional(),
+  sessionsCount: z.number().int().min(0).max(1000000).optional(),
+  completedSessionsCount: z.number().int().min(0).max(1000000).optional()
+});
+const professionalDisplayOverridesSchema = z.record(z.string(), professionalDisplayOverrideSchema);
 
 type AdminUserRecord = {
   id: string;
@@ -326,6 +362,39 @@ function buildId(prefix: string): string {
 function parsePatientAssignments(value: unknown): Record<string, string | null> {
   const parsed = patientAssignmentsSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
+}
+
+function parseProfessionalDisplayOverrides(value: unknown): Record<string, {
+  ratingAverage?: number;
+  reviewsCount?: number;
+  sessionDurationMinutes?: number;
+  activePatientsCount?: number;
+  sessionsCount?: number;
+  completedSessionsCount?: number;
+}> {
+  const parsed = professionalDisplayOverridesSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function parsePatientIntakeTriage(value: unknown): Record<string, {
+  decision: "pending" | "approved" | "cancelled";
+  updatedAt: string;
+  note?: string;
+  updatedByAdminId?: string;
+}> {
+  const parsed = patientIntakeTriageSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
+
+function resolveIntakeTriageDecision(
+  triage: Record<string, { decision: "pending" | "approved" | "cancelled" }>,
+  patientId: string,
+  riskLevel: string | null | undefined
+): "pending" | "approved" | "cancelled" | null {
+  if (!riskLevel || riskLevel === "low") {
+    return null;
+  }
+  return triage[patientId]?.decision ?? "pending";
 }
 
 async function ensureLatestPurchaseForPatient(patientId: string) {
@@ -951,29 +1020,33 @@ adminRouter.get("/professionals", async (req, res) => {
   }
 
   const search = parsed.data.search?.toLowerCase();
-  const professionals = await prisma.professionalProfile.findMany({
-    where: {
-      ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
-      ...(search
-        ? {
-            user: {
-              OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
+  const [professionals, displayOverridesConfig] = await Promise.all([
+    prisma.professionalProfile.findMany({
+      where: {
+        ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
+        ...(search
+          ? {
+              user: {
+                OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
+              }
             }
-          }
-        : {})
-    },
-    include: {
-      user: { select: { id: true, fullName: true, email: true } },
-      availabilitySlots: {
-        where: { startsAt: { gte: new Date(Date.now() - 1000 * 60 * 60 * 24) } },
-        orderBy: { startsAt: "asc" },
-        take: 60
+          : {})
       },
-      _count: { select: { bookings: true } }
-    },
-    orderBy: { createdAt: "desc" },
-    take: 200
-  });
+      include: {
+        user: { select: { id: true, fullName: true, email: true } },
+        availabilitySlots: {
+          where: { startsAt: { gte: new Date(Date.now() - 1000 * 60 * 60 * 24) } },
+          orderBy: { startsAt: "asc" },
+          take: 60
+        },
+        _count: { select: { bookings: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200
+    }),
+    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
+  ]);
+  const displayOverrides = parseProfessionalDisplayOverrides(displayOverridesConfig?.value);
 
   return res.json({
     professionals: professionals.map((item) => ({
@@ -986,6 +1059,14 @@ adminRouter.get("/professionals", async (req, res) => {
       bio: item.bio,
       therapeuticApproach: item.therapeuticApproach,
       yearsExperience: item.yearsExperience,
+      birthCountry: item.birthCountry,
+      sessionPriceUsd: item.sessionPriceUsd,
+      ratingAverage: displayOverrides[item.id]?.ratingAverage ?? null,
+      reviewsCount: displayOverrides[item.id]?.reviewsCount ?? 0,
+      sessionDurationMinutes: displayOverrides[item.id]?.sessionDurationMinutes ?? null,
+      activePatientsCount: displayOverrides[item.id]?.activePatientsCount ?? null,
+      sessionsCount: displayOverrides[item.id]?.sessionsCount ?? null,
+      completedSessionsCount: displayOverrides[item.id]?.completedSessionsCount ?? null,
       photoUrl: item.photoUrl,
       videoUrl: item.videoUrl,
       bookingsCount: item._count.bookings,
@@ -1013,10 +1094,87 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
       ...(parsed.data.bio !== undefined ? { bio: parsed.data.bio } : {}),
       ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),
       ...(parsed.data.yearsExperience !== undefined ? { yearsExperience: parsed.data.yearsExperience } : {}),
+      ...(parsed.data.birthCountry !== undefined ? { birthCountry: parsed.data.birthCountry } : {}),
+      ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
       ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
       ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})
     }
   });
+
+  if (
+    parsed.data.ratingAverage !== undefined
+    || parsed.data.reviewsCount !== undefined
+    || parsed.data.sessionDurationMinutes !== undefined
+    || parsed.data.activePatientsCount !== undefined
+    || parsed.data.sessionsCount !== undefined
+    || parsed.data.completedSessionsCount !== undefined
+  ) {
+    const displayConfig = await prisma.systemConfig.findUnique({
+      where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY }
+    });
+    const overrides = parseProfessionalDisplayOverrides(displayConfig?.value);
+    const professionalOverrides = { ...(overrides[existing.id] ?? {}) };
+
+    if (parsed.data.ratingAverage !== undefined) {
+      if (parsed.data.ratingAverage === null) {
+        delete professionalOverrides.ratingAverage;
+      } else {
+        professionalOverrides.ratingAverage = parsed.data.ratingAverage;
+      }
+    }
+
+    if (parsed.data.reviewsCount !== undefined) {
+      if (parsed.data.reviewsCount === null) {
+        delete professionalOverrides.reviewsCount;
+      } else {
+        professionalOverrides.reviewsCount = parsed.data.reviewsCount;
+      }
+    }
+
+    if (parsed.data.sessionDurationMinutes !== undefined) {
+      if (parsed.data.sessionDurationMinutes === null) {
+        delete professionalOverrides.sessionDurationMinutes;
+      } else {
+        professionalOverrides.sessionDurationMinutes = parsed.data.sessionDurationMinutes;
+      }
+    }
+
+    if (parsed.data.activePatientsCount !== undefined) {
+      if (parsed.data.activePatientsCount === null) {
+        delete professionalOverrides.activePatientsCount;
+      } else {
+        professionalOverrides.activePatientsCount = parsed.data.activePatientsCount;
+      }
+    }
+
+    if (parsed.data.sessionsCount !== undefined) {
+      if (parsed.data.sessionsCount === null) {
+        delete professionalOverrides.sessionsCount;
+      } else {
+        professionalOverrides.sessionsCount = parsed.data.sessionsCount;
+      }
+    }
+
+    if (parsed.data.completedSessionsCount !== undefined) {
+      if (parsed.data.completedSessionsCount === null) {
+        delete professionalOverrides.completedSessionsCount;
+      } else {
+        professionalOverrides.completedSessionsCount = parsed.data.completedSessionsCount;
+      }
+    }
+
+    if (Object.keys(professionalOverrides).length === 0) {
+      delete overrides[existing.id];
+    } else {
+      overrides[existing.id] = professionalOverrides;
+    }
+
+    await prisma.systemConfig.upsert({
+      where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY },
+      create: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY, value: overrides },
+      update: { value: overrides }
+    });
+  }
 
   return res.json({ professional: updated });
 });
@@ -1093,6 +1251,12 @@ adminRouter.get("/patients", async (req, res) => {
       where,
       include: {
         user: { select: { id: true, fullName: true, email: true } },
+        intake: {
+          select: {
+            riskLevel: true,
+            createdAt: true
+          }
+        },
         purchases: {
           include: { sessionPackage: { select: { id: true, name: true } } },
           orderBy: { purchasedAt: "desc" },
@@ -1112,6 +1276,8 @@ adminRouter.get("/patients", async (req, res) => {
       take: pageSize
     })
   ]);
+  const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+  const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -1123,6 +1289,16 @@ adminRouter.get("/patients", async (req, res) => {
       email: patient.user.email,
       timezone: patient.timezone,
       status: patient.status,
+      intakeRiskLevel: patient.intake?.riskLevel ?? null,
+      intakeCompletedAt: patient.intake?.createdAt ?? null,
+      riskTriageDecision: resolveIntakeTriageDecision(
+        triageByPatient,
+        patient.id,
+        patient.intake?.riskLevel ?? null
+      ),
+      riskBlocked:
+        (patient.intake?.riskLevel ?? "low") !== "low"
+        && resolveIntakeTriageDecision(triageByPatient, patient.id, patient.intake?.riskLevel ?? null) !== "approved",
       purchases: patient.purchases.map((purchase) => ({
         id: purchase.id,
         packageId: purchase.packageId,
@@ -1151,6 +1327,71 @@ adminRouter.get("/patients", async (req, res) => {
       hasPrev: page > 1,
       hasNext: page < totalPages
     }
+  });
+});
+
+adminRouter.get("/patients/risk-triage", async (req, res) => {
+  const parsed = listRiskTriageQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
+  }
+
+  const search = parsed.data.search?.toLowerCase().trim();
+  const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+  const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+
+  const patients = await prisma.patientProfile.findMany({
+    where: {
+      intake: {
+        is: {
+          riskLevel: { in: ["medium", "high"] }
+        }
+      },
+      ...(search
+        ? {
+            user: {
+              OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
+            }
+          }
+        : {})
+    },
+    include: {
+      user: { select: { fullName: true, email: true } },
+      intake: {
+        select: {
+          riskLevel: true,
+          createdAt: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const items = patients
+    .map((patient) => {
+      const riskLevel = patient.intake?.riskLevel ?? "low";
+      const decision = resolveIntakeTriageDecision(triageByPatient, patient.id, riskLevel);
+      return {
+        patientId: patient.id,
+        fullName: patient.user.fullName,
+        email: patient.user.email,
+        patientStatus: patient.status,
+        intakeRiskLevel: riskLevel,
+        intakeCompletedAt: patient.intake?.createdAt ?? null,
+        triageDecision: decision ?? "pending",
+        triageUpdatedAt: triageByPatient[patient.id]?.updatedAt ?? patient.intake?.createdAt ?? null,
+        triageNote: triageByPatient[patient.id]?.note ?? null,
+        riskBlocked: decision !== "approved"
+      };
+    })
+    .filter((item) => (parsed.data.status ? item.triageDecision === parsed.data.status : item.triageDecision === "pending"));
+
+  const pending = items.filter((item) => item.triageDecision === "pending").length;
+
+  return res.json({
+    items,
+    total: items.length,
+    pending
   });
 });
 
@@ -1195,6 +1436,12 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
     where: { id: req.params.patientId },
     include: {
       user: { select: { id: true, fullName: true, email: true } },
+      intake: {
+        select: {
+          riskLevel: true,
+          createdAt: true
+        }
+      },
       purchases: {
         include: { sessionPackage: { select: { id: true, name: true } } },
         orderBy: { purchasedAt: "desc" },
@@ -1216,6 +1463,9 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
   const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const assignments = parsePatientAssignments(assignmentConfig?.value);
   const activeProfessionalId = assignments[patient.id] ?? null;
+  const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+  const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+  const riskTriageDecision = resolveIntakeTriageDecision(triageByPatient, patient.id, patient.intake?.riskLevel ?? null);
 
   let activeProfessionalName: string | null = null;
   if (activeProfessionalId) {
@@ -1234,6 +1484,10 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
       email: patient.user.email,
       timezone: patient.timezone,
       status: patient.status,
+      intakeRiskLevel: patient.intake?.riskLevel ?? null,
+      intakeCompletedAt: patient.intake?.createdAt ?? null,
+      riskTriageDecision,
+      riskBlocked: (patient.intake?.riskLevel ?? "low") !== "low" && riskTriageDecision !== "approved",
       activeProfessionalId,
       activeProfessionalName,
       assignmentStatus: activeProfessionalId ? "assigned" : "pending",
@@ -1262,6 +1516,64 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
         completedAt: booking.completedAt
       }))
     }
+  });
+});
+
+adminRouter.patch("/patients/:patientId/risk-triage", async (req: AuthenticatedRequest, res) => {
+  const parsed = updatePatientRiskTriageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: req.params.patientId },
+    include: {
+      intake: {
+        select: {
+          riskLevel: true,
+          createdAt: true
+        }
+      }
+    }
+  });
+
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const riskLevel = patient.intake?.riskLevel ?? null;
+  if (!riskLevel || riskLevel === "low") {
+    return res.status(409).json({ error: "Patient has no medium/high intake risk to triage" });
+  }
+
+  const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
+  const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+  triageByPatient[patient.id] = {
+    decision: parsed.data.decision,
+    updatedAt: new Date().toISOString(),
+    ...(parsed.data.note ? { note: parsed.data.note } : {}),
+    ...(req.auth?.userId ? { updatedByAdminId: req.auth.userId } : {})
+  };
+
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_INTAKE_TRIAGE_KEY },
+    update: { value: triageByPatient },
+    create: { key: PATIENT_INTAKE_TRIAGE_KEY, value: triageByPatient }
+  });
+
+  if (parsed.data.decision === "cancelled" && patient.status !== "cancelled") {
+    await prisma.patientProfile.update({
+      where: { id: patient.id },
+      data: { status: "cancelled" }
+    });
+  }
+
+  return res.json({
+    patientId: patient.id,
+    intakeRiskLevel: riskLevel,
+    triageDecision: parsed.data.decision,
+    riskBlocked: parsed.data.decision !== "approved",
+    patientStatus: parsed.data.decision === "cancelled" ? "cancelled" : patient.status
   });
 });
 
