@@ -56,6 +56,7 @@ const defaultState: PatientAppState = {
   assignedProfessionalName: null,
   activeChatProfessionalId: professionalsCatalog[0].id,
   bookedSlotIds: [],
+  favoriteProfessionalIds: [],
   bookings: [],
   trialUsedProfessionalIds: [],
   messages: initialMessages,
@@ -113,6 +114,9 @@ function loadState(): PatientAppState {
       therapistSelectionCompleted: inferredTherapistSelectionCompleted,
       assignedProfessionalId: parsed.assignedProfessionalId ?? null,
       assignedProfessionalName: parsed.assignedProfessionalName ?? null,
+      favoriteProfessionalIds: Array.isArray(parsed.favoriteProfessionalIds)
+        ? parsed.favoriteProfessionalIds.filter((value): value is string => typeof value === "string")
+        : [],
       profile: {
         ...defaultProfile,
         ...parsed.profile,
@@ -235,7 +239,11 @@ export function App() {
                   completed: true,
                   completedAt: profileResponse.profile.intakeCompletedAt,
                   riskLevel: (profileResponse.profile.intakeRiskLevel ?? "low") as RiskLevel,
-                  riskBlocked: (profileResponse.profile.intakeRiskLevel ?? "low") !== "low",
+                  riskBlocked:
+                    typeof profileResponse.profile.intakeRiskBlocked === "boolean"
+                      ? profileResponse.profile.intakeRiskBlocked
+                      : (profileResponse.profile.intakeRiskLevel ?? "low") !== "low",
+                  triageDecision: profileResponse.profile.intakeTriageDecision ?? null,
                   answers: current.intake?.answers ?? {}
                 }
               : current.intake,
@@ -316,25 +324,18 @@ export function App() {
     return (
       <AuthScreen
         language={state.language}
-        currency={state.currency}
         heroImage={heroImage}
         onHeroFallback={handleHeroFallback}
-        onLanguageChange={(language) => {
-          setState((current) => ({
-            ...current,
-            language
-          }));
-        }}
-        onCurrencyChange={(currency) => {
-          setState((current) => ({
-            ...current,
-            currency
-          }));
-        }}
         onLogin={({ user, token, emailVerificationRequired }) => {
           setProfileSyncReady(false);
           setState((current) => ({
-            ...current,
+            ...defaultState,
+            language: current.language,
+            currency: current.currency,
+            profile: {
+              ...defaultProfile,
+              timezone: sessionTimezone
+            },
             session: user,
             authToken: token,
             emailVerificationRequired
@@ -383,6 +384,14 @@ export function App() {
       <IntakeScreen
         user={state.session}
         language={state.language}
+        onBack={() => {
+          setProfileSyncReady(false);
+          setState(defaultState);
+        }}
+        onCancel={() => {
+          setProfileSyncReady(false);
+          setState(defaultState);
+        }}
         onComplete={async (answers) => {
           if (!state.authToken) {
             throw new Error("No se encontro sesion autenticada");
@@ -402,11 +411,16 @@ export function App() {
 
             setState((current) => ({
               ...current,
+              onboardingFinalCompleted: false,
+              therapistSelectionCompleted: false,
+              assignedProfessionalId: null,
+              assignedProfessionalName: null,
               intake: {
                 completed: true,
                 completedAt: response.intake.completedAt,
                 riskLevel,
                 riskBlocked: riskLevel !== "low",
+                triageDecision: riskLevel === "low" ? null : "pending",
                 answers
               }
             }));
@@ -419,6 +433,7 @@ export function App() {
                   completedAt: new Date().toISOString(),
                   riskLevel: current.intake?.riskLevel ?? "low",
                   riskBlocked: (current.intake?.riskLevel ?? "low") !== "low",
+                  triageDecision: current.intake?.triageDecision ?? null,
                   answers: current.intake?.answers ?? {}
                 }
               }));

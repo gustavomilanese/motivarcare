@@ -1,5 +1,5 @@
 import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -88,11 +88,15 @@ export function MainPortal(props: {
   onLogout: () => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState("");
   const unreadMessagesCount = getUnreadCount(props.state.messages);
+  const favoriteCount = props.state.favoriteProfessionalIds.length;
   const needsOnboardingFinalFlow = !props.state.intake?.riskBlocked && !props.state.onboardingFinalCompleted;
+  const isOnboardingMatchingView = location.pathname.startsWith("/onboarding/final/matching");
+  const hideSidebar = isOnboardingMatchingView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
     && !props.state.assignedProfessionalId
@@ -210,7 +214,7 @@ export function MainPortal(props: {
         }
       | null = null;
 
-    if (!useTrialSession && authToken) {
+    if (!bookingAsTrial && authToken) {
       try {
         const idempotencyKey = `booking-${professionalId}-${slot.startsAt}-${slot.endsAt}`;
         const response = await apiRequest<{
@@ -236,6 +240,21 @@ export function MainPortal(props: {
       } catch (error) {
         console.error("Could not create booking", error);
         return false;
+      }
+    }
+
+    if (bookingAsTrial && authToken) {
+      try {
+        await apiRequest(
+          "/api/profiles/me/active-professional",
+          {
+            method: "PATCH",
+            body: JSON.stringify({ professionalId })
+          },
+          authToken
+        );
+      } catch (error) {
+        console.error("Could not sync active professional assignment", error);
       }
     }
 
@@ -582,8 +601,20 @@ export function MainPortal(props: {
     }));
   };
 
+  const toggleFavoriteProfessional = (professionalId: string) => {
+    props.onStateChange((current) => {
+      const alreadyFavorite = current.favoriteProfessionalIds.includes(professionalId);
+      return {
+        ...current,
+        favoriteProfessionalIds: alreadyFavorite
+          ? current.favoriteProfessionalIds.filter((id) => id !== professionalId)
+          : [...current.favoriteProfessionalIds, professionalId]
+      };
+    });
+  };
+
   return (
-    <div className="portal-shell">
+    <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : ""}`}>
       <PortalNavigation
         language={props.state.language}
         sessionEmail={props.state.session?.email}
@@ -592,6 +623,7 @@ export function MainPortal(props: {
         menuOpen={menuOpen}
         languageSummary={languageChoices.find((item) => item.value === props.state.language)?.nativeLabel ?? "Espanol"}
         currencySummary={currencySymbolOnly(props.state.currency)}
+        favoriteCount={favoriteCount}
         onToggleMenu={() => setMenuOpen((current) => !current)}
         onOpenProfileTab={openProfileTabFromMenu}
         onOpenPreferences={() => {
@@ -603,6 +635,7 @@ export function MainPortal(props: {
           props.onLogout();
           navigate("/");
         }}
+        hideSidebar={hideSidebar}
       >
         {props.state.intake?.riskBlocked ? (
           <section className="content-card danger">
@@ -652,7 +685,30 @@ export function MainPortal(props: {
             element={
               needsOnboardingFinalFlow
                 ? <Navigate replace to="/onboarding/final/matching" />
-                : <Navigate replace to="/sessions" />
+                : (
+                    <MatchingPage
+                      language={props.state.language}
+                      authToken={props.state.authToken}
+                      mode="portal"
+                      intakeAnswers={props.state.intake?.answers ?? {}}
+                      isFirstSelectionRequired={false}
+                      showOnlyFavorites={false}
+                      favoriteProfessionalIds={props.state.favoriteProfessionalIds}
+                      selectedProfessionalId={props.state.selectedProfessionalId}
+                      onToggleFavorite={toggleFavoriteProfessional}
+                      onToggleFavoritesView={(showOnlyFavorites) => {
+                        navigate(showOnlyFavorites ? "/favorites" : "/matching");
+                      }}
+                      onSelectProfessional={(professionalId) =>
+                        props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
+                      }
+                      onCompleteFirstSelection={() => {}}
+                      onCreateBooking={async () => {}}
+                      onReserve={handleReserveFromAnywhere}
+                      onChat={handleChatFromAnywhere}
+                      onImageFallback={handleImageFallback}
+                    />
+                  )
             }
           />
           <Route path="/onboarding/final" element={<Navigate replace to="/onboarding/final/matching" />} />
@@ -667,7 +723,13 @@ export function MainPortal(props: {
                       mode="onboarding-final"
                       intakeAnswers={props.state.intake?.answers ?? {}}
                       isFirstSelectionRequired={needsInitialTherapistSelection}
+                      showOnlyFavorites={false}
+                      favoriteProfessionalIds={props.state.favoriteProfessionalIds}
                       selectedProfessionalId={props.state.selectedProfessionalId}
+                      onToggleFavorite={toggleFavoriteProfessional}
+                      onToggleFavoritesView={(showOnlyFavorites) => {
+                        navigate(showOnlyFavorites ? "/favorites" : "/onboarding/final/matching");
+                      }}
                       onSelectProfessional={(professionalId) =>
                         props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
                       }
@@ -704,6 +766,37 @@ export function MainPortal(props: {
                     />
                   )
                 : <Navigate replace to="/" />
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              needsOnboardingFinalFlow
+                ? <Navigate replace to="/onboarding/final/matching" />
+                : (
+                    <MatchingPage
+                      language={props.state.language}
+                      authToken={props.state.authToken}
+                      mode="portal"
+                      intakeAnswers={props.state.intake?.answers ?? {}}
+                      isFirstSelectionRequired={false}
+                      showOnlyFavorites
+                      favoriteProfessionalIds={props.state.favoriteProfessionalIds}
+                      selectedProfessionalId={props.state.selectedProfessionalId}
+                      onToggleFavorite={toggleFavoriteProfessional}
+                      onToggleFavoritesView={(showOnlyFavorites) => {
+                        navigate(showOnlyFavorites ? "/favorites" : "/matching");
+                      }}
+                      onSelectProfessional={(professionalId) =>
+                        props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
+                      }
+                      onCompleteFirstSelection={() => {}}
+                      onCreateBooking={async () => {}}
+                      onReserve={handleReserveFromAnywhere}
+                      onChat={handleChatFromAnywhere}
+                      onImageFallback={handleImageFallback}
+                    />
+                  )
             }
           />
           <Route

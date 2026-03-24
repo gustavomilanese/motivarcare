@@ -231,6 +231,8 @@ export function IntakeScreen(props: {
   user: SessionUser;
   language: AppLanguage;
   onComplete: (answers: Record<string, string>) => Promise<void>;
+  onBack?: () => void;
+  onCancel?: () => void;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -246,6 +248,27 @@ export function IntakeScreen(props: {
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
     [props.language]
   );
+  const handleBack = () => {
+    if (props.onBack) {
+      props.onBack();
+      return;
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    if (props.onCancel) {
+      props.onCancel();
+    }
+  };
+
+  const handleCancel = () => {
+    if (props.onCancel) {
+      props.onCancel();
+      return;
+    }
+    handleBack();
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -285,6 +308,11 @@ export function IntakeScreen(props: {
   return (
     <div className="intake-shell">
       <section className="intake-card">
+        <div className="intake-header-actions">
+          <button className="ghost intake-top-button" type="button" onClick={handleBack}>
+            {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+          </button>
+        </div>
         <span className="chip">
           {t(props.language, { es: "Cuestionario inicial obligatorio", en: "Mandatory initial questionnaire", pt: "Questionario inicial obrigatorio" })}
         </span>
@@ -347,15 +375,20 @@ export function IntakeScreen(props: {
           ))}
 
           {error ? <p className="error-text">{error}</p> : null}
-          <button className="primary" type="submit" disabled={submitting}>
-            {submitting
-              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-              : t(props.language, {
-                  es: "Finalizar perfil clínico y ver profesionales recomendados",
-                  en: "Finish clinical profile and view recommended professionals",
-                  pt: "Finalizar perfil clínico e ver profissionais recomendados"
-                })}
-          </button>
+          <div className="intake-submit-row">
+            <button className="ghost" type="button" onClick={handleCancel} disabled={submitting}>
+              {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+            </button>
+            <button className="primary" type="submit" disabled={submitting}>
+              {submitting
+                ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                : t(props.language, {
+                    es: "Finalizar perfil clínico y ver profesionales recomendados",
+                    en: "Finish clinical profile and view recommended professionals",
+                    pt: "Finalizar perfil clínico e ver profissionais recomendados"
+                  })}
+            </button>
+          </div>
         </form>
       </section>
     </div>

@@ -127,4 +127,5 @@ export const professionalImageMap: Record<string, string> = {
   "pro-4": "https://images.unsplash.com/photo-1594824804732-ca8db7d6e6f8?auto=format&fit=crop&w=900&q=80"
 };
 
-export const heroImage = "https://source.unsplash.com/1600x900/?person,laptop,mountain,lake";
+export const heroImage =
+  "https://images.pexels.com/photos/5699466/pexels-photo-5699466.jpeg?auto=compress&cs=tinysrgb&w=1600";

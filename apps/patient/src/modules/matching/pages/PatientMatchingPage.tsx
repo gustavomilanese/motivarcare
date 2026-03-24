@@ -10,7 +10,6 @@ import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
 import { fetchProfessionalAvailability } from "../services/availability";
 import { fetchProfessionalDirectory } from "../services/professionals";
 import type {
-  FilterOption,
   MatchCardProfessional,
   MatchingPageProps,
   MatchTimeSlot,
@@ -25,10 +24,8 @@ function t(language: MatchingPageProps["language"], values: LocalizedText): stri
 export function PatientMatchingPage(props: MatchingPageProps) {
   const mode = props.mode ?? "portal";
   const bookingFlowEnabled = mode === "onboarding-final";
-  const [search, setSearch] = useState("");
-  const [specialtyFilter, setSpecialtyFilter] = useState("all");
-  const [languageFilter, setLanguageFilter] = useState("all");
-  const [sortMode, setSortMode] = useState<SortMode>("match");
+  const [sortMode, setSortMode] = useState<SortMode>("price-asc");
+  const [sortOpen, setSortOpen] = useState(false);
   const [professionals, setProfessionals] = useState<MatchCardProfessional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,7 +43,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     let active = true;
     setLoading(true);
 
-    fetchProfessionalDirectory(props.authToken)
+    fetchProfessionalDirectory(props.authToken, props.language)
       .then((rows) => {
         if (!active) {
           return;
@@ -80,75 +77,75 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     };
   }, [props.authToken, props.language]);
 
-  const { ordered, specialties, languages } = useProfessionalMatching({
+  const { ordered } = useProfessionalMatching({
     professionals,
     intakeAnswers: props.intakeAnswers,
     language: props.language,
-    search,
-    specialtyFilter,
-    languageFilter,
+    search: "",
+    specialtyFilter: "all",
     sortMode,
     isFirstSelectionRequired: props.isFirstSelectionRequired
   });
+  const favoriteIds = useMemo(() => new Set(props.favoriteProfessionalIds), [props.favoriteProfessionalIds]);
+  const visibleOrdered = useMemo(
+    () =>
+      props.showOnlyFavorites
+        ? ordered.filter((item) => favoriteIds.has(item.professional.id))
+        : ordered,
+    [favoriteIds, ordered, props.showOnlyFavorites]
+  );
 
   useEffect(() => {
-    if (ordered.length === 0) {
+    if (visibleOrdered.length === 0) {
       return;
     }
-    const selectedVisible = ordered.some((item) => item.professional.id === props.selectedProfessionalId);
+    const selectedVisible = visibleOrdered.some((item) => item.professional.id === props.selectedProfessionalId);
     if (!selectedVisible) {
-      props.onSelectProfessional(ordered[0].professional.id);
+      props.onSelectProfessional(visibleOrdered[0].professional.id);
     }
-  }, [ordered, props.onSelectProfessional, props.selectedProfessionalId]);
+  }, [visibleOrdered, props.onSelectProfessional, props.selectedProfessionalId]);
 
-  const selected = ordered.find((item) => item.professional.id === props.selectedProfessionalId) ?? ordered[0] ?? null;
-
-  const specialtyOptions = useMemo<FilterOption[]>(() => [
-    {
-      value: "all",
-      label: t(props.language, { es: "Todas las especialidades", en: "All specialties", pt: "Todas as especialidades" })
-    },
-    ...specialties.map((value) => ({ value, label: value }))
-  ], [props.language, specialties]);
-
-  const languageOptions = useMemo<FilterOption[]>(() => [
-    {
-      value: "all",
-      label: t(props.language, { es: "Todos los idiomas", en: "All languages", pt: "Todos os idiomas" })
-    },
-    ...languages.map((value) => ({ value, label: value }))
-  ], [languages, props.language]);
+  const selected = visibleOrdered.find((item) => item.professional.id === props.selectedProfessionalId) ?? visibleOrdered[0] ?? null;
 
   const sortOptions = useMemo<SortOption[]>(() => [
-    { value: "match", label: t(props.language, { es: "Mejor match", en: "Best match", pt: "Melhor match" }) },
-    { value: "next-slot", label: t(props.language, { es: "Próximo horario", en: "Next slot", pt: "Proximo horario" }) },
-    { value: "price-asc", label: t(props.language, { es: "Menor precio", en: "Lowest price", pt: "Menor preco" }) },
-    { value: "experience", label: t(props.language, { es: "Más experiencia", en: "Most experience", pt: "Mais experiencia" }) }
+    { value: "price-asc", label: t(props.language, { es: "Precio más bajo", en: "Lowest price", pt: "Menor preco" }) },
+    { value: "price-desc", label: t(props.language, { es: "Precio más alto", en: "Highest price", pt: "Maior preco" }) },
+    { value: "rating-desc", label: t(props.language, { es: "Calificación más alta", en: "Highest rating", pt: "Maior classificacao" }) },
+    { value: "reviews-desc", label: t(props.language, { es: "Mayor cantidad de reseñas", en: "Most reviews", pt: "Maior quantidade de avaliacoes" }) }
   ], [props.language]);
 
-  const heading = t(props.language, {
-    es: "Hemos encontrado especialistas para tu solicitud",
-    en: "We found specialists for your request",
-    pt: "Encontramos especialistas para sua necessidade"
-  });
-  const description = props.isFirstSelectionRequired
+  const heading = props.showOnlyFavorites
     ? t(props.language, {
-        es: "Este es tu primer paso: elige tu terapeuta para comenzar.",
-        en: "This is your first step: choose your therapist to start.",
-        pt: "Este e seu primeiro passo: escolha seu terapeuta para comecar."
+        es: "Tus profesionales favoritos",
+        en: "Your favorite professionals",
+        pt: "Seus profissionais favoritos"
       })
     : t(props.language, {
-        es: "Ordenamos los perfiles según tu perfil clínico y los datos reales que cada terapeuta cargó en su onboarding.",
-        en: "Profiles are ranked by your clinical profile and real therapist data from onboarding.",
-        pt: "Os perfis sao ordenados pelo seu perfil clinico e pelos dados reais do onboarding dos terapeutas."
+        es: "Hemos encontrado especialistas para tu solicitud",
+        en: "We found specialists for your request",
+        pt: "Encontramos especialistas para sua necessidade"
       });
+  const description = props.showOnlyFavorites
+    ? t(props.language, {
+        es: "Accede rápido a los terapeutas que guardaste para volver a reservar.",
+        en: "Quickly access the therapists you saved to book again.",
+        pt: "Acesse rapidamente os terapeutas que voce salvou para reservar novamente."
+      })
+    : mode === "onboarding-final"
+      ? ""
+      : t(props.language, {
+          es: "Ordenamos los perfiles según tu perfil clínico y los datos reales que cada terapeuta cargó en su onboarding.",
+          en: "Profiles are ranked by your clinical profile and real therapist data from onboarding.",
+          pt: "Os perfis sao ordenados pelo seu perfil clinico e pelos dados reais do onboarding dos terapeutas."
+        });
 
-  const countLabel = t(props.language, {
-    es: `${ordered.length} especialistas están disponibles actualmente`,
-    en: `${ordered.length} specialists are currently available`,
-    pt: `${ordered.length} especialistas estao disponiveis agora`
-  });
-
+  const countLabel = mode === "onboarding-final"
+    ? ""
+    : t(props.language, {
+        es: `${visibleOrdered.length} especialistas están disponibles actualmente`,
+        en: `${visibleOrdered.length} specialists are currently available`,
+        pt: `${visibleOrdered.length} especialistas estao disponiveis agora`
+      });
   const bookingProfessional = useMemo(
     () => professionals.find((item) => item.id === bookingProfessionalId) ?? null,
     [bookingProfessionalId, professionals]
@@ -237,27 +234,19 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   };
 
   return (
-    <div className="page-stack patient-matching-page">
+    <div className={`page-stack patient-matching-page ${mode === "onboarding-final" ? "onboarding-focus" : ""}`}>
       <MatchingHeader
-        firstFlow={props.isFirstSelectionRequired}
+        minimal={mode === "onboarding-final"}
         heading={heading}
         description={description}
         countLabel={countLabel}
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder={t(props.language, {
-          es: "Buscar por nombre, especialidad o síntoma",
-          en: "Search by name, specialty, or symptom",
-          pt: "Buscar por nome, especialidade ou sintoma"
-        })}
-        specialtyFilter={specialtyFilter}
-        onSpecialtyFilterChange={setSpecialtyFilter}
-        specialtyOptions={specialtyOptions}
-        languageFilter={languageFilter}
-        onLanguageFilterChange={setLanguageFilter}
-        languageOptions={languageOptions}
+        sortOpen={sortOpen}
+        onToggleSort={() => setSortOpen((current) => !current)}
         sortMode={sortMode}
-        onSortModeChange={(value) => setSortMode(value as SortMode)}
+        onSortModeChange={(value) => {
+          setSortMode(value as SortMode);
+          setSortOpen(false);
+        }}
         sortOptions={sortOptions}
         t={(values) => t(props.language, values)}
       />
@@ -276,13 +265,15 @@ export function PatientMatchingPage(props: MatchingPageProps) {
 
       {!loading && !error ? (
         <div className="patient-therapist-list">
-          {ordered.map((item) => (
+          {visibleOrdered.map((item) => (
             <ProfessionalMatchCard
               key={item.professional.id}
               item={item}
               language={props.language}
+              isFavorite={favoriteIds.has(item.professional.id)}
               selected={item.professional.id === props.selectedProfessionalId}
               onSelect={props.onSelectProfessional}
+              onToggleFavorite={props.onToggleFavorite}
               onSelectSuggestedSlot={openSummaryFromSuggestedSlot}
               onShowAllSlots={openAvailabilityFlow}
               onChat={props.onChat}
@@ -293,14 +284,20 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         </div>
       ) : null}
 
-      {!loading && !error && ordered.length === 0 ? (
+      {!loading && !error && visibleOrdered.length === 0 ? (
         <section className="content-card">
           <p>
-            {t(props.language, {
-              es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
-              en: "No results with those filters. Remove one to see more options.",
-              pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
-            })}
+            {props.showOnlyFavorites
+              ? t(props.language, {
+                  es: "Todavía no guardaste profesionales en favoritos.",
+                  en: "You have not saved favorite professionals yet.",
+                  pt: "Voce ainda nao salvou profissionais favoritos."
+                })
+              : t(props.language, {
+                  es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
+                  en: "No results with those filters. Remove one to see more options.",
+                  pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
+                })}
           </p>
         </section>
       ) : null}

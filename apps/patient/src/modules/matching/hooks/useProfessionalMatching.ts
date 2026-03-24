@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
-import { rankProfessionalsForPatient, type RankedProfessional } from "../matchingEngine";
 import type { MatchCardProfessional, SortMode } from "../types";
 
 function normalize(value: string): string {
@@ -11,24 +10,45 @@ function normalize(value: string): string {
     .trim();
 }
 
+interface RankedProfessionalView {
+  professional: MatchCardProfessional;
+  score: number;
+  reasons: string[];
+  matchedTopics: string[];
+  suggestedSlots: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
+  }>;
+}
+
+function sortFutureSlots(slots: Array<{ id: string; startsAt: string; endsAt: string }>): Array<{ id: string; startsAt: string; endsAt: string }> {
+  const now = Date.now();
+  return [...slots]
+    .filter((slot) => new Date(slot.startsAt).getTime() > now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+}
+
 export function useProfessionalMatching(params: {
   professionals: MatchCardProfessional[];
   intakeAnswers: Record<string, string>;
   language: AppLanguage;
   search: string;
   specialtyFilter: string;
-  languageFilter: string;
   sortMode: SortMode;
   isFirstSelectionRequired: boolean;
 }) {
   const ranked = useMemo(
-    () =>
-      rankProfessionalsForPatient({
-        professionals: params.professionals,
-        intakeAnswers: params.intakeAnswers,
-        language: params.language
-      }),
-    [params.intakeAnswers, params.language, params.professionals]
+    () => params.professionals.map((professional) => ({
+      professional,
+      score: Math.max(1, Math.min(99, Math.round(professional.matchScore ?? professional.compatibilityBase ?? 50))),
+      reasons: (professional.matchReasons ?? []).length > 0 ? (professional.matchReasons ?? []) : ["Perfil compatible por disponibilidad y perfil clínico."],
+      matchedTopics: professional.matchedTopics ?? [],
+      suggestedSlots: sortFutureSlots(
+        ((professional.suggestedSlots ?? []).length > 0 ? (professional.suggestedSlots ?? []) : professional.slots).slice(0, 6)
+      )
+    })),
+    [params.professionals]
   );
 
   const specialties = useMemo(() => {
@@ -66,24 +86,18 @@ export function useProfessionalMatching(params: {
       const matchesSpecialty =
         params.specialtyFilter === "all"
         || specialtyTokens.some((value) => value === params.specialtyFilter);
-      const matchesLanguage =
-        params.languageFilter === "all"
-        || professional.languages.includes(params.languageFilter);
-
-      return matchesSearch && matchesSpecialty && matchesLanguage;
+      return matchesSearch && matchesSpecialty;
     });
-  }, [params.languageFilter, params.search, params.specialtyFilter, ranked]);
+  }, [params.search, params.specialtyFilter, ranked]);
 
   const ordered = useMemo(() => {
-    const clinicallyMatched = filtered.filter((item) => item.matchedTopics.length > 0);
-    const source =
-      params.isFirstSelectionRequired && clinicallyMatched.length > 0
-        ? clinicallyMatched
-        : filtered;
-    const list = [...source];
+    const list = [...filtered];
     list.sort((left, right) => sortResults(left, right, params.sortMode));
     return list;
-  }, [filtered, params.isFirstSelectionRequired, params.sortMode]);
+  }, [
+    filtered,
+    params.sortMode
+  ]);
 
   return {
     ranked,
@@ -93,7 +107,7 @@ export function useProfessionalMatching(params: {
   };
 }
 
-function sortResults(left: RankedProfessional, right: RankedProfessional, sortMode: SortMode): number {
+function sortResults(left: RankedProfessionalView, right: RankedProfessionalView, sortMode: SortMode): number {
   if (sortMode === "price-asc") {
     const leftPrice = left.professional.sessionPriceUsd ?? Number.MAX_SAFE_INTEGER;
     const rightPrice = right.professional.sessionPriceUsd ?? Number.MAX_SAFE_INTEGER;
@@ -102,17 +116,27 @@ function sortResults(left: RankedProfessional, right: RankedProfessional, sortMo
     }
   }
 
-  if (sortMode === "experience") {
-    if (right.professional.yearsExperience !== left.professional.yearsExperience) {
-      return right.professional.yearsExperience - left.professional.yearsExperience;
+  if (sortMode === "price-desc") {
+    const leftPrice = left.professional.sessionPriceUsd ?? -1;
+    const rightPrice = right.professional.sessionPriceUsd ?? -1;
+    if (leftPrice !== rightPrice) {
+      return rightPrice - leftPrice;
     }
   }
 
-  if (sortMode === "next-slot") {
-    const leftNext = left.suggestedSlots[0] ? new Date(left.suggestedSlots[0].startsAt).getTime() : Number.MAX_SAFE_INTEGER;
-    const rightNext = right.suggestedSlots[0] ? new Date(right.suggestedSlots[0].startsAt).getTime() : Number.MAX_SAFE_INTEGER;
-    if (leftNext !== rightNext) {
-      return leftNext - rightNext;
+  if (sortMode === "rating-desc") {
+    const leftRating = left.professional.ratingAverage ?? 0;
+    const rightRating = right.professional.ratingAverage ?? 0;
+    if (leftRating !== rightRating) {
+      return rightRating - leftRating;
+    }
+  }
+
+  if (sortMode === "reviews-desc") {
+    const leftReviews = left.professional.reviewsCount ?? 0;
+    const rightReviews = right.professional.reviewsCount ?? 0;
+    if (leftReviews !== rightReviews) {
+      return rightReviews - leftReviews;
     }
   }
 

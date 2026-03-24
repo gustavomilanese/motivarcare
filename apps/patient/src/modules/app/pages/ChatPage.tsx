@@ -435,7 +435,19 @@ export function ChatPage(props: {
                   <strong>{professional.fullName}</strong>
                   <p>{lastMessageText}</p>
                 </div>
-                {unread > 0 ? <span className="badge">{unread}</span> : null}
+                {unread > 0 ? (
+                  <div
+                    className="wa-thread-unread"
+                    aria-label={t(props.language, {
+                      es: `${unread} mensajes nuevos`,
+                      en: `${unread} new messages`,
+                      pt: `${unread} novas mensagens`
+                    })}
+                  >
+                    <span className="wa-thread-unread-dot" aria-hidden="true" />
+                    <span className="badge">{unread}</span>
+                  </div>
+                ) : null}
               </button>
             );
           })}
@@ -558,8 +570,17 @@ export function ChatPage(props: {
             onKeyDown={handleComposerKeyDown}
             onChange={(event) => setDraft(event.target.value)}
           />
-          <button className="wa-send" type="button" onClick={handleSend} disabled={!threadProfessional}>
-            {t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
+          <button
+            className="wa-send"
+            type="button"
+            onClick={handleSend}
+            disabled={!threadProfessional}
+            aria-label={t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
+            title={t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.8 11.4 19.6 4.6c.9-.4 1.8.5 1.4 1.4l-6.8 15.8c-.4 1-1.8.9-2.1-.1l-1.7-5.7-5.7-1.7c-1-.3-1.1-1.7-.1-2.1Zm7.6 2.2 1.2 4 4.8-11.1-11.1 4.8 4 1.2 5.7-5.7a.9.9 0 1 1 1.2 1.2l-5.8 5.6Z" />
+            </svg>
           </button>
         </footer>
       </section>

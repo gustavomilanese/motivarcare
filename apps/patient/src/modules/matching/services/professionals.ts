@@ -9,9 +9,12 @@ function safeString(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export async function fetchProfessionalDirectory(token?: string | null): Promise<MatchCardProfessional[]> {
+export async function fetchProfessionalDirectory(token?: string | null, language: "es" | "en" | "pt" = "es"): Promise<MatchCardProfessional[]> {
+  const endpoint = token
+    ? `/api/profiles/me/matching?language=${encodeURIComponent(language)}`
+    : "/api/profiles/professionals";
   const response = await apiRequest<ProfessionalDirectoryApiResponse>(
-    "/api/profiles/professionals",
+    endpoint,
     {},
     token ?? undefined
   );
@@ -32,6 +35,10 @@ export async function fetchProfessionalDirectory(token?: string | null): Promise
     stripeVerified: item.stripeVerified === true,
     ratingAverage: item.ratingAverage ?? null,
     reviewsCount: item.reviewsCount ?? 0,
+    matchScore: item.matchScore ?? (item.compatibility ?? 0),
+    matchReasons: Array.isArray(item.matchReasons) ? item.matchReasons : [],
+    matchedTopics: Array.isArray(item.matchedTopics) ? item.matchedTopics : [],
+    suggestedSlots: Array.isArray(item.suggestedSlots) ? item.suggestedSlots : [],
     sessionDurationMinutes: item.sessionDurationMinutes ?? 50,
     activePatientsCount: item.activePatientsCount ?? 0,
     completedSessionsCount: item.completedSessionsCount ?? 0,

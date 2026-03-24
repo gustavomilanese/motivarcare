@@ -45,6 +45,8 @@ export interface ProfileMeApiResponse {
     lastSeenTimezone?: string | null;
     status?: string;
     intakeRiskLevel?: "low" | "medium" | "high" | null;
+    intakeTriageDecision?: "pending" | "approved" | "cancelled" | null;
+    intakeRiskBlocked?: boolean;
     intakeCompletedAt?: string | null;
     latestPackage?: {
       id: string;
@@ -106,6 +108,7 @@ export interface IntakeState {
   completedAt: string;
   riskLevel: RiskLevel;
   riskBlocked: boolean;
+  triageDecision?: "pending" | "approved" | "cancelled" | null;
   answers: Record<string, string>;
 }
 
@@ -196,6 +199,7 @@ export interface PatientAppState {
   assignedProfessionalName: string | null;
   activeChatProfessionalId: string;
   bookedSlotIds: string[];
+  favoriteProfessionalIds: string[];
   bookings: Booking[];
   trialUsedProfessionalIds: string[];
   messages: Message[];

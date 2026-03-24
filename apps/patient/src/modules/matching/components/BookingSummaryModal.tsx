@@ -43,6 +43,12 @@ export function BookingSummaryModal(props: {
     options: { hour: "2-digit", minute: "2-digit", hour12: false }
   })}`;
 
+  const reviewsLabel = t(props.language, {
+    es: "opiniones",
+    en: "reviews",
+    pt: "avaliacoes"
+  });
+
   return (
     <div className="matching-flow-backdrop" role="presentation" onClick={props.onClose}>
       <section className="matching-flow-modal summary-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
@@ -52,45 +58,33 @@ export function BookingSummaryModal(props: {
           </button>
           <div>
             <h3>{t(props.language, { es: "Resumen de reserva", en: "Booking summary", pt: "Resumo da reserva" })}</h3>
-            <p>{t(props.language, { es: "Revisa antes de pagar", en: "Review before paying", pt: "Revise antes de pagar" })}</p>
           </div>
           <button type="button" className="matching-flow-close" onClick={props.onClose}>
             ×
           </button>
         </header>
 
-        <section className="summary-professional-card">
-          <img src={props.professional.photoUrl ?? "/images/prof-emma.svg"} alt={props.professional.fullName} />
-          <div>
-            <h4>{props.professional.fullName}</h4>
-            <p>{props.professional.title}</p>
-            <small>
-              ★ {props.professional.ratingAverage ? props.professional.ratingAverage.toFixed(1) : "—"} ·{" "}
-              {props.professional.reviewsCount} {t(props.language, { es: "opiniones", en: "reviews", pt: "avaliacoes" })}
-            </small>
+        <section className="summary-compact-card">
+          <div className="summary-compact-prof">
+            <img src={props.professional.photoUrl ?? "/images/prof-emma.svg"} alt={props.professional.fullName} />
+            <div>
+              <h4>{props.professional.fullName}</h4>
+              <small>
+                ★ {props.professional.ratingAverage ? props.professional.ratingAverage.toFixed(1) : "—"} ·{" "}
+                {props.professional.reviewsCount} {reviewsLabel}
+              </small>
+            </div>
           </div>
-        </section>
 
-        <section className="summary-session-card">
-          <h5>{t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao teste" })}</h5>
-          <p>
-            <strong>{dateLabel}</strong> · {timeRange}
-          </p>
-          <p>{replaceTimezoneNote(props.language, props.timezone)}</p>
-        </section>
+          <div className="summary-compact-row">
+            <span>{t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}</span>
+            <strong>{dateLabel} · {timeRange}</strong>
+          </div>
 
-        <section className="summary-price-card">
-          <div>
+          <div className="summary-compact-row total">
             <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
             <strong>{formatAmount(props.professional.sessionPriceUsd, props.language)}</strong>
           </div>
-          <p>
-            {t(props.language, {
-              es: "Puedes cancelar o reprogramar con 24 horas de anticipación.",
-              en: "You can cancel or reschedule up to 24 hours before the session.",
-              pt: "Voce pode cancelar ou reagendar com ate 24 horas de antecedencia."
-            })}
-          </p>
         </section>
 
         <footer className="matching-flow-footer">
@@ -101,12 +95,4 @@ export function BookingSummaryModal(props: {
       </section>
     </div>
   );
-}
-
-function replaceTimezoneNote(language: AppLanguage, timezone: string): string {
-  return t(language, {
-    es: `La fecha y hora se muestran en tu zona horaria: ${timezone}.`,
-    en: `Date and time are shown in your timezone: ${timezone}.`,
-    pt: `Data e horario sao exibidos no seu fuso horario: ${timezone}.`
-  });
 }

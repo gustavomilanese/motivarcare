@@ -161,7 +161,7 @@ export function rankProfessionalsForPatient(params: {
     .map((professional) => {
       const professionalTopics = extractProfessionalTopics(professional);
       const matchedTopics = patientTopics.filter((topic) => professionalTopics.includes(topic));
-      const suggestedSlots = sortFutureSlots(professional.slots).slice(0, 3);
+      const suggestedSlots = sortFutureSlots(professional.slots).slice(0, 6);
       const availabilityMatches = suggestedSlots.some((slot) => slotMatchesAvailability(slot, availabilityPreference));
 
       let score = 35;

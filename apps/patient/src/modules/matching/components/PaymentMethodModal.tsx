@@ -53,7 +53,9 @@ export function PaymentMethodModal(props: {
         <section className={`payment-option-card ${paymentMode === "new-card" ? "selected" : ""}`}>
           <button type="button" className="payment-option-toggle" onClick={() => setPaymentMode("new-card")}>
             <span className={`payment-check ${paymentMode === "new-card" ? "checked" : ""}`} />
-            <span>{t(props.language, { es: "Añadir una nueva tarjeta", en: "Add a new card", pt: "Adicionar novo cartao" })}</span>
+            <span className="payment-option-label">
+              {t(props.language, { es: "Tarjeta nueva", en: "New card", pt: "Novo cartao" })}
+            </span>
           </button>
 
           {paymentMode === "new-card" ? (
@@ -84,8 +86,10 @@ export function PaymentMethodModal(props: {
         <section className={`payment-option-card ${paymentMode === "one-click" ? "selected" : ""}`}>
           <button type="button" className="payment-option-toggle" onClick={() => setPaymentMode("one-click")}>
             <span className={`payment-check ${paymentMode === "one-click" ? "checked" : ""}`} />
-            <span>{t(props.language, { es: "Pago con un solo clic", en: "One-click pay", pt: "Pagamento com um clique" })}</span>
-            <small>GPay</small>
+            <span className="payment-option-label">
+              {t(props.language, { es: "Pago rápido", en: "Quick pay", pt: "Pagamento rapido" })}
+            </span>
+            <small className="payment-option-badge">GPay</small>
           </button>
         </section>
 
@@ -104,13 +108,6 @@ export function PaymentMethodModal(props: {
               ? t(props.language, { es: "Procesando...", en: "Processing...", pt: "Processando..." })
               : t(props.language, { es: "Pagar", en: "Pay", pt: "Pagar" })}
           </button>
-          <p>
-            {t(props.language, {
-              es: "Los pagos se procesan de forma segura con Stripe.",
-              en: "Payments are securely processed by Stripe.",
-              pt: "Pagamentos processados com seguranca via Stripe."
-            })}
-          </p>
         </footer>
       </section>
     </div>

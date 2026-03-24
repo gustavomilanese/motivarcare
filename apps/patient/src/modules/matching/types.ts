@@ -25,6 +25,14 @@ export interface ProfessionalDirectoryApiItem {
   sessionsCount: number;
   ratingAverage: number | null;
   reviewsCount: number;
+  matchScore?: number;
+  matchReasons?: string[];
+  matchedTopics?: string[];
+  suggestedSlots?: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
+  }>;
   slots: Array<{
     id: string;
     startsAt: string;
@@ -52,6 +60,14 @@ export interface MatchCardProfessional {
   stripeVerified: boolean;
   ratingAverage: number | null;
   reviewsCount: number;
+  matchScore?: number;
+  matchReasons?: string[];
+  matchedTopics?: string[];
+  suggestedSlots?: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
+  }>;
   sessionDurationMinutes: number;
   activePatientsCount: number;
   completedSessionsCount: number;
@@ -76,8 +92,12 @@ export interface MatchingPageProps {
   mode?: "portal" | "onboarding-final";
   intakeAnswers: Record<string, string>;
   isFirstSelectionRequired: boolean;
+  showOnlyFavorites?: boolean;
+  favoriteProfessionalIds: string[];
   selectedProfessionalId: string;
   onSelectProfessional: (professionalId: string) => void;
+  onToggleFavorite: (professionalId: string) => void;
+  onToggleFavoritesView?: (showOnlyFavorites: boolean) => void;
   onCompleteFirstSelection: (payload: { professionalId: string; professionalName: string }) => void;
   onCreateBooking: (professionalId: string, slot: MatchTimeSlot) => Promise<void> | void;
   onReserve: (professionalId: string) => void;
@@ -90,7 +110,7 @@ export interface FilterOption {
   label: string;
 }
 
-export type SortMode = "match" | "price-asc" | "experience" | "next-slot";
+export type SortMode = "match" | "price-asc" | "price-desc" | "rating-desc" | "reviews-desc";
 
 export interface SortOption {
   value: SortMode;

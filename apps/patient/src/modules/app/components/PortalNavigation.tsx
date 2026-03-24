@@ -17,6 +17,7 @@ export function PortalNavigation(props: {
   sessionEmail?: string;
   sessionFullName?: string;
   unreadMessagesCount: number;
+  favoriteCount: number;
   menuOpen: boolean;
   languageSummary: string;
   currencySummary: string;
@@ -24,38 +25,41 @@ export function PortalNavigation(props: {
   onOpenProfileTab: (tab: ProfileTab) => void;
   onOpenPreferences: () => void;
   onLogout: () => void;
+  hideSidebar?: boolean;
   children: ReactNode;
 }) {
   return (
     <>
-      <aside className="portal-sidebar">
-        <div className="portal-brand">
-          <span className="portal-brand-mark">M</span>
-          <div>
-            <strong>Motivarte</strong>
-            <p>{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
+      {!props.hideSidebar ? (
+        <aside className="portal-sidebar">
+          <div className="portal-brand">
+            <span className="portal-brand-mark">M</span>
+            <div>
+              <strong>Motivarte</strong>
+              <p>{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
+            </div>
           </div>
-        </div>
 
-        <nav className="portal-sidebar-nav">
-          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
-            {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
-            {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
-            <span className="nav-link-with-badge">
-              {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-              {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
-            </span>
-          </NavLink>
-        </nav>
+          <nav className="portal-sidebar-nav">
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
+              {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
+              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
+              <span className="nav-link-with-badge">
+                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
+              </span>
+            </NavLink>
+          </nav>
 
-        <div className="portal-sidebar-foot">
-          <p>{props.sessionEmail}</p>
-        </div>
-      </aside>
+          <div className="portal-sidebar-foot">
+            <p>{props.sessionEmail}</p>
+          </div>
+        </aside>
+      ) : null}
 
       <div className="portal-main">
         <header className="portal-header">
@@ -73,6 +77,16 @@ export function PortalNavigation(props: {
           </div>
 
           <div className="header-actions">
+            <NavLink
+              to="/favorites"
+              className={({ isActive }) => `header-icon-link ${isActive ? "active" : ""}`}
+              aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
+            >
+              <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
+              </svg>
+              {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
+            </NavLink>
             <div className="menu-wrap">
               <button
                 aria-label={t(props.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
@@ -123,27 +137,29 @@ export function PortalNavigation(props: {
           </div>
         </header>
 
-        <nav
-          className="portal-mobile-nav"
-          aria-label={t(props.language, {
-            es: "Navegacion principal mobile",
-            en: "Main mobile navigation",
-            pt: "Navegacao principal mobile"
-          })}
-        >
-          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
-            {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
-            {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
-            <span className="nav-link-with-badge">
-              {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-              {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
-            </span>
-          </NavLink>
-        </nav>
+        {!props.hideSidebar ? (
+          <nav
+            className="portal-mobile-nav"
+            aria-label={t(props.language, {
+              es: "Navegacion principal mobile",
+              en: "Main mobile navigation",
+              pt: "Navegacao principal mobile"
+            })}
+          >
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
+              {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
+              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
+              <span className="nav-link-with-badge">
+                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
+              </span>
+            </NavLink>
+          </nav>
+        ) : null}
         {props.children}
       </div>
     </>
