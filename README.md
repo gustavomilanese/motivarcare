@@ -218,6 +218,5 @@ Run only professional app:
   - Order of attempts: professional connected calendar, then patient calendar, then platform calendar (`GOOGLE_REFRESH_TOKEN` + `GOOGLE_CALENDAR_ID`). If a step fails (expired token, API error), the next option is tried; only if all fail do Daily.co URLs stay on the booking.
   - On reschedule/cancel, the same calendar event is updated/cancelled and Google sends attendee updates.
 
-## Launch runbook
-- See `docs/scaling-ha-checklist.md` for a staged rollout plan focused on scale and high availability.
-- See `docs/design/enterprise-runbook.md` for enterprise operation details (metrics, outbox, retries, DLQ, alerts).
+## Architecture and launch notes
+- See **`docs/presentacion-arquitectura-motivcare.md`** for the consolidated technical architecture (API, data model, outbox, scaling, operations, and evolution roadmap).
