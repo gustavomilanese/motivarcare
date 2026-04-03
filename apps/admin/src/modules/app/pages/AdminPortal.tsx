@@ -1,29 +1,17 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import {
-  SUPPORTED_CURRENCIES,
-  SUPPORTED_LANGUAGES,
-  type AppLanguage,
-  type LocalizedText,
-  type SupportedCurrency,
-  currencyOptionLabel,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import { FinancesPage } from "../../finance";
 import { links } from "../constants";
 import { ModulePlaceholderPage } from "../components/ModulePlaceholderPage";
-import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { AdminDashboardPage } from "./AdminDashboardPage";
 import { InfoPage } from "./InfoPage";
 import { PatientsOpsPage } from "./PatientsOpsPage";
 import { ProfessionalsOpsPage } from "./ProfessionalsOpsPage";
 import { SessionsOpsPage } from "./SessionsOpsPage";
-import { SessionPackagesAdminPage } from "./SessionPackagesAdminPage";
-import { UsersPage } from "./UsersPage";
-import { WebAdminPage } from "./WebAdminPage";
+import { SettingsPage } from "./SettingsPage";
+import { SettingsOutletLayout } from "./SettingsOutletLayout";
 import { apiRequest } from "../services/api";
-import { fetchFinanceSettings, patchFinanceSettings } from "../../finance/services/financeApi";
-import type { FinanceRules } from "../../finance/types/finance.types";
 import type { PortalPath } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -40,10 +28,6 @@ export function AdminPortal(props: {
 }) {
   const location = useLocation();
   const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
-  const [financeRules, setFinanceRules] = useState<FinanceRules | null>(null);
-  const [financeRulesLoading, setFinanceRulesLoading] = useState(false);
-  const [financeRulesSaving, setFinanceRulesSaving] = useState(false);
-  const [financeRulesFeedback, setFinanceRulesFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -77,42 +61,6 @@ export function AdminPortal(props: {
     };
   }, [props.token, location.pathname]);
 
-  useEffect(() => {
-    if (location.pathname !== "/settings") {
-      return;
-    }
-
-    let active = true;
-    setFinanceRulesLoading(true);
-
-    fetchFinanceSettings(props.token)
-      .then((rules) => {
-        if (!active) {
-          return;
-        }
-        setFinanceRules(rules);
-        setFinanceRulesFeedback(null);
-      })
-      .catch((error) => {
-        if (!active) {
-          return;
-        }
-        setFinanceRulesFeedback({
-          type: "error",
-          message: error instanceof Error ? error.message : "No se pudo cargar la configuracion de comisiones."
-        });
-      })
-      .finally(() => {
-        if (active) {
-          setFinanceRulesLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [location.pathname, props.token]);
-
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
       return t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
@@ -138,53 +86,17 @@ export function AdminPortal(props: {
     if (to === "/imports") {
       return t(props.language, { es: "Importaciones", en: "Imports", pt: "Importacoes" });
     }
-    if (to === "/users") {
-      return t(props.language, { es: "Usuarios", en: "Users", pt: "Usuarios" });
-    }
-    if (to === "/plans-packages") {
-      return t(props.language, { es: "Planes y paquetes de sesiones", en: "Session plans and packages", pt: "Planos e pacotes de sessoes" });
-    }
-    if (to === "/web-admin") {
-      return t(props.language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" });
-    }
     if (to === "/settings") {
       return t(props.language, { es: "Configuracion", en: "Settings", pt: "Configuracoes" });
     }
-    return t(props.language, { es: "Auditoria IA", en: "AI audit", pt: "Auditoria IA" });
-  };
-
-  const updateFinanceRule = (key: keyof FinanceRules, value: number) => {
-    setFinanceRules((current) => {
-      if (!current) {
-        return current;
-      }
-      return {
-        ...current,
-        [key]: Number.isFinite(value) ? value : current[key]
-      };
-    });
-  };
-
-  const saveFinanceRulesInSettings = async () => {
-    if (!financeRules) {
-      return;
-    }
-
-    setFinanceRulesSaving(true);
-    setFinanceRulesFeedback(null);
-
-    try {
-      const saved = await patchFinanceSettings(props.token, financeRules);
-      setFinanceRules(saved);
-      setFinanceRulesFeedback({ type: "ok", message: "Comisiones actualizadas." });
-    } catch (error) {
-      setFinanceRulesFeedback({
-        type: "error",
-        message: error instanceof Error ? error.message : "No se pudieron guardar las comisiones."
+    if (to === "/ai") {
+      return t(props.language, {
+        es: "Auditoría IA · Próximamente",
+        en: "AI audit · Coming soon",
+        pt: "Auditoria IA · Em breve"
       });
-    } finally {
-      setFinanceRulesSaving(false);
     }
+    return t(props.language, { es: "Auditoria IA", en: "AI audit", pt: "Auditoria IA" });
   };
 
   return (
@@ -193,7 +105,7 @@ export function AdminPortal(props: {
         <div className="admin-brand">
           <span className="admin-brand-mark" aria-hidden="true" />
           <div>
-            <strong>motivarcare</strong>
+            <strong>MotivarCare</strong>
             <p>{t(props.language, { es: "Admin", en: "Admin", pt: "Admin" })}</p>
           </div>
         </div>
@@ -264,12 +176,7 @@ export function AdminPortal(props: {
                 <ProfessionalsOpsPage token={props.token} language={props.language} />
               }
             />
-            <Route
-              path="/plans-packages"
-              element={
-                <SessionPackagesAdminPage token={props.token} language={props.language} currency={props.currency} />
-              }
-            />
+            <Route path="/plans-packages" element={<Navigate to={{ pathname: "/settings", hash: "cfg-plans-packages" }} replace />} />
             <Route
               path="/sessions"
               element={
@@ -287,11 +194,20 @@ export function AdminPortal(props: {
               element={
                 <ModulePlaceholderPage
                   language={props.language}
+                  variant="calendar"
                   title={{ es: "Calendario", en: "Calendar", pt: "Calendario" }}
                   description={{
                     es: "Vista de agenda operativa para sesiones, ocupacion y disponibilidad.",
                     en: "Operational agenda view for sessions, occupancy, and availability.",
                     pt: "Visao de agenda operacional para sessoes, ocupacao e disponibilidade."
+                  }}
+                  relatedTo={{
+                    path: "/sessions",
+                    label: {
+                      es: "Ir a Sesiones",
+                      en: "Open Sessions",
+                      pt: "Ir para Sessoes"
+                    }
                   }}
                 />
               }
@@ -301,11 +217,20 @@ export function AdminPortal(props: {
               element={
                 <ModulePlaceholderPage
                   language={props.language}
+                  variant="library"
                   title={{ es: "Biblioteca admin", en: "Admin library", pt: "Biblioteca admin" }}
                   description={{
                     es: "Recursos internos, guias y materiales de soporte para operacion clinica.",
                     en: "Internal resources, guides, and support materials for clinical operations.",
                     pt: "Recursos internos, guias e materiais de apoio para operacao clinica."
+                  }}
+                  relatedTo={{
+                    path: "/settings",
+                    label: {
+                      es: "Abrir configuración",
+                      en: "Open settings",
+                      pt: "Abrir configuracoes"
+                    }
                   }}
                 />
               }
@@ -315,154 +240,57 @@ export function AdminPortal(props: {
               element={
                 <ModulePlaceholderPage
                   language={props.language}
+                  variant="imports"
                   title={{ es: "Importaciones", en: "Imports", pt: "Importacoes" }}
                   description={{
                     es: "Carga masiva y procesos de importacion para datos operativos del portal.",
                     en: "Bulk upload and import workflows for portal operational data.",
                     pt: "Carga em massa e processos de importacao para dados operacionais do portal."
                   }}
+                  relatedTo={{
+                    path: "/patients",
+                    label: {
+                      es: "Gestionar pacientes",
+                      en: "Manage patients",
+                      pt: "Gerenciar pacientes"
+                    }
+                  }}
                 />
               }
             />
-            <Route path="/users" element={<UsersPage token={props.token} language={props.language} />} />
-            <Route path="/web-admin" element={<WebAdminPage token={props.token} language={props.language} />} />
-            <Route
-              path="/settings"
-              element={
-                <div className="stack-lg">
-                  <section className="card stack">
-                    <h2>{t(props.language, { es: "Configuracion regional", en: "Regional settings", pt: "Configuracoes regionais" })}</h2>
-                    <div className="grid-form">
-                      <label>
-                        {t(props.language, { es: "Idioma", en: "Language", pt: "Idioma" })}
-                        <select value={props.language} onChange={(event) => props.onLanguageChange(event.target.value as AppLanguage)}>
-                          {SUPPORTED_LANGUAGES.map((language) => (
-                            <option key={language} value={language}>
-                              {language === "es" ? "Espanol" : language === "en" ? "English" : "Portugues"}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {t(props.language, { es: "Moneda", en: "Currency", pt: "Moeda" })}
-                        <select value={props.currency} onChange={(event) => props.onCurrencyChange(event.target.value as SupportedCurrency)}>
-                          {SUPPORTED_CURRENCIES.map((currency) => (
-                            <option key={currency} value={currency}>
-                              {currencyOptionLabel(currency, props.language)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </section>
-
-                  <section className="card stack">
-                    <h2>{t(props.language, { es: "Comisiones y reparto", en: "Commissions and split", pt: "Comissoes e divisao" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Define cuanto retiene la plataforma y cuanto recibe el profesional por sesion completada.",
-                        en: "Define how much the platform retains and how much the professional receives per completed session.",
-                        pt: "Defina quanto a plataforma retem e quanto o profissional recebe por sessao concluida."
-                      })}
-                    </p>
-                    {financeRulesLoading && !financeRules ? (
-                      <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p>
-                    ) : null}
-                    {financeRules ? (
-                      <>
-                        <div className="grid-form">
-                          <label>
-                            {t(props.language, {
-                              es: "Comision plataforma (%)",
-                              en: "Platform commission (%)",
-                              pt: "Comissao da plataforma (%)"
-                            })}
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={financeRules.platformCommissionPercent}
-                              onChange={(event) => updateFinanceRule("platformCommissionPercent", Number(event.target.value || 0))}
-                            />
-                          </label>
-                          <label>
-                            {t(props.language, {
-                              es: "Comision sesion de prueba (%)",
-                              en: "Trial session commission (%)",
-                              pt: "Comissao sessao de teste (%)"
-                            })}
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={financeRules.trialPlatformPercent}
-                              onChange={(event) => updateFinanceRule("trialPlatformPercent", Number(event.target.value || 0))}
-                            />
-                          </label>
-                          <label>
-                            {t(props.language, {
-                              es: "Profesional recibe (%)",
-                              en: "Professional receives (%)",
-                              pt: "Profissional recebe (%)"
-                            })}
-                            <input
-                              type="number"
-                              value={Math.max(0, 100 - financeRules.platformCommissionPercent)}
-                              readOnly
-                            />
-                          </label>
-                          <label>
-                            {t(props.language, {
-                              es: "Precio fallback por sesion (centavos USD)",
-                              en: "Fallback session price (USD cents)",
-                              pt: "Preco fallback por sessao (centavos USD)"
-                            })}
-                            <input
-                              type="number"
-                              min={100}
-                              max={200000}
-                              value={financeRules.defaultSessionPriceCents}
-                              onChange={(event) => updateFinanceRule("defaultSessionPriceCents", Number(event.target.value || 9000))}
-                            />
-                          </label>
-                        </div>
-                        <div className="toolbar-actions">
-                          <button className="primary" type="button" onClick={() => void saveFinanceRulesInSettings()} disabled={financeRulesSaving}>
-                            {financeRulesSaving
-                              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-                              : t(props.language, { es: "Guardar comisiones", en: "Save commissions", pt: "Salvar comissoes" })}
-                          </button>
-                        </div>
-                      </>
-                    ) : null}
-                    {financeRulesFeedback ? (
-                      <p className={financeRulesFeedback.type === "ok" ? "success-text" : "error-text"}>{financeRulesFeedback.message}</p>
-                    ) : null}
-                  </section>
-
-                  <PortalHeroSettingsSection token={props.token} language={props.language} target="patient" />
-
-                  <section className="card stack">
-                    <h2>{t(props.language, { es: "Administracion", en: "Administration", pt: "Administracao" })}</h2>
-                    <p>{t(props.language, { es: "Accesos y herramientas avanzadas del panel.", en: "Access and advanced admin tools.", pt: "Acessos e ferramentas avancadas do painel." })}</p>
-                    <div className="toolbar-actions">
-                      <NavLink to="/users" className="primary">
-                        {t(props.language, { es: "Ir a Usuarios", en: "Open Users", pt: "Abrir Usuarios" })}
-                      </NavLink>
-                    </div>
-                  </section>
-                </div>
-              }
-            />
+            <Route path="/users" element={<Navigate to={{ pathname: "/settings", hash: "cfg-users-admin" }} replace />} />
+            <Route path="/web-admin" element={<Navigate to={{ pathname: "/settings", hash: "cfg-landing" }} replace />} />
+            <Route path="/settings" element={<SettingsOutletLayout />}>
+              <Route
+                index
+                element={
+                  <SettingsPage
+                    token={props.token}
+                    language={props.language}
+                    currency={props.currency}
+                    onLanguageChange={props.onLanguageChange}
+                    onCurrencyChange={props.onCurrencyChange}
+                  />
+                }
+              />
+              <Route path="users" element={<Navigate to={{ pathname: "/settings", hash: "cfg-users-admin" }} replace />} />
+              <Route
+                path="plans-packages"
+                element={<Navigate to={{ pathname: "/settings", hash: "cfg-plans-packages" }} replace />}
+              />
+              <Route path="web-admin" element={<Navigate to={{ pathname: "/settings", hash: "cfg-landing" }} replace />} />
+            </Route>
             <Route
               path="/ai"
               element={
                 <InfoPage
+                  language={props.language}
                   title={t(props.language, { es: "Auditoria IA", en: "AI audit", pt: "Auditoria IA" })}
+                  badge={{ es: "Próximamente", en: "Coming soon", pt: "Em breve" }}
                   description={t(props.language, {
-                    es: "Cola de auditoria IA con consentimiento explicito y revision humana.",
-                    en: "AI audit queue with explicit consent and human review.",
-                    pt: "Fila de auditoria de IA com consentimento explicito e revisao humana."
+                    es: "Estamos preparando la cola de auditoría con consentimiento explícito y revisión humana.",
+                    en: "We’re building the audit queue with explicit consent and human review.",
+                    pt: "Estamos preparando a fila de auditoria com consentimento explicito e revisao humana."
                   })}
                 />
               }

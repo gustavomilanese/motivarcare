@@ -1,12 +1,29 @@
 import type { AppLanguage } from "@therapy/i18n-config";
 import type { Dispatch, SetStateAction } from "react";
 import { PATIENT_EMPTY_ART_URL } from "../../constants";
+import { resolveApiAssetUrl } from "../../services/api";
 import type {
   AdminPatientRiskTriageItem,
   AdminPatientOps,
   AdminProfessionalOps,
   PatientStatus
 } from "../../types";
+
+export function PatientOpsAvatar(props: { url?: string | null; label: string; size?: "md" | "lg" }) {
+  const size = props.size ?? "md";
+  const cls = size === "lg" ? "patient-ops-avatar patient-ops-avatar--lg" : "patient-ops-avatar";
+  const src = resolveApiAssetUrl(props.url ?? null);
+  if (src) {
+    return <img src={src} alt="" className={cls} />;
+  }
+  return (
+    <div
+      className={cls + " patient-ops-avatar--empty"}
+      aria-hidden
+      title={props.label}
+    />
+  );
+}
 
 export function PatientsSearchHeader(props: {
   language: AppLanguage;
@@ -76,9 +93,11 @@ export function PatientsSearchResults(props: {
                 className={"patient-result-row" + (props.editingPatientId === patient.id ? " active" : "")}
                 onClick={() => props.onSelectPatient(patient.id)}
               >
-                <div className="patient-result-main">
-                  <strong>{patient.fullName}</strong>
-                  <span>{patient.email} · {patient.status} · {patient.timezone}</span>
+                <div className="patient-result-row-body">
+                  <PatientOpsAvatar url={patient.avatarUrl} label={patient.fullName} />
+                  <div className="patient-result-main">
+                    <strong>{patient.fullName}</strong>
+                  </div>
                 </div>
                 <div className="patient-result-actions">
                   <button
@@ -145,50 +164,56 @@ export function SelectedPatientSummaryCard(props: {
     <section className="patient-inline-panel record-panel">
       <div className="record-badge">Paciente seleccionado</div>
       <div className="patient-inline-head">
-        <h3>{props.editingPatient.fullName}</h3>
+        <div className="patient-inline-head-main">
+          <PatientOpsAvatar url={props.editingPatient.avatarUrl} label={props.editingPatient.fullName} size="lg" />
+          <h3>{props.editingPatient.fullName}</h3>
+        </div>
         <button type="button" onClick={props.onOpenEdit}>Editar</button>
       </div>
-      <div className="grid-form">
-        <label>
-          Nombre completo
-          <input value={props.editingPatientDraft.fullName} readOnly />
-        </label>
-        <label>
-          Email
-          <input value={props.editingPatientDraft.email} readOnly />
-        </label>
-        <label>
-          Contrasena
-          <input value={props.editingPatientDraft.password || "(sin cambio)"} readOnly />
-        </label>
-        <label>
-          Zona horaria
-          <input value={props.editingPatientDraft.timezone || "Pendiente"} readOnly />
-        </label>
-        <label>
-          Estado
-          <input value={props.editingPatientDraft.status} readOnly />
-        </label>
-        <label>
-          Profesional asignado
-          <input
-            value={
-              props.editingPatientDraft.activeProfessionalId
-                ? props.professionals.find((professional) => professional.id === props.editingPatientDraft?.activeProfessionalId)?.fullName ?? props.editingPatientDraft.activeProfessionalId
-                : "Pendiente de asignacion"
-            }
-            readOnly
-          />
-        </label>
-        <label>
-          Sesiones confirmadas (solo lectura)
-          <input value={String(props.confirmedSessionsCount)} readOnly />
-        </label>
-        <label>
-          Saldo disponible (solo lectura)
-          <input value={props.editingPatientDraft.remainingCredits} readOnly />
-        </label>
-      </div>
+      <details className="patient-inline-details">
+        <summary>Ver detalle</summary>
+        <div className="grid-form">
+          <label>
+            Nombre completo
+            <input value={props.editingPatientDraft.fullName} readOnly />
+          </label>
+          <label>
+            Email
+            <input value={props.editingPatientDraft.email} readOnly />
+          </label>
+          <label>
+            Contrasena
+            <input value={props.editingPatientDraft.password || "(sin cambio)"} readOnly />
+          </label>
+          <label>
+            Zona horaria
+            <input value={props.editingPatientDraft.timezone || "Pendiente"} readOnly />
+          </label>
+          <label>
+            Estado
+            <input value={props.editingPatientDraft.status} readOnly />
+          </label>
+          <label>
+            Profesional asignado
+            <input
+              value={
+                props.editingPatientDraft.activeProfessionalId
+                  ? props.professionals.find((professional) => professional.id === props.editingPatientDraft?.activeProfessionalId)?.fullName ?? props.editingPatientDraft.activeProfessionalId
+                  : "Pendiente de asignacion"
+              }
+              readOnly
+            />
+          </label>
+          <label>
+            Sesiones confirmadas (solo lectura)
+            <input value={String(props.confirmedSessionsCount)} readOnly />
+          </label>
+          <label>
+            Saldo disponible (solo lectura)
+            <input value={props.editingPatientDraft.remainingCredits} readOnly />
+          </label>
+        </div>
+      </details>
     </section>
   );
 }
@@ -196,58 +221,89 @@ export function SelectedPatientSummaryCard(props: {
 export function RiskTriageQueueSection(props: {
   loading: boolean;
   items: AdminPatientRiskTriageItem[];
+  pendingCount: number;
   actionPatientId: string | null;
   onOpenPatient: (patientId: string) => void;
-  onApprove: (patientId: string) => void;
-  onCancel: (patientId: string) => void;
+  onApprovePatient: (patientId: string) => void;
+  onRejectPatient: (patientId: string) => void;
 }) {
+  const blockedCount = props.items.length;
+
   return (
-    <section className="ops-section risk-triage-section">
-      <header className="ops-section-head risk-triage-head">
-        <h3>Triage de riesgo</h3>
-        <span>{props.items.length} pendientes</span>
-      </header>
-
-      {props.loading ? <p>Cargando casos de riesgo...</p> : null}
-      {!props.loading && props.items.length === 0 ? (
-        <p className="risk-triage-empty">No hay pacientes pendientes de triage.</p>
-      ) : null}
-
-      {!props.loading ? (
-        <div className="risk-triage-list">
-          {props.items.map((item) => (
-            <article key={item.patientId} className="risk-triage-row">
-              <div className="risk-triage-main">
-                <strong>{item.fullName}</strong>
-                <span>
-                  {item.email}
-                  {item.intakeCompletedAt ? ` · ${new Date(item.intakeCompletedAt).toLocaleString("es-AR")}` : ""}
-                </span>
-              </div>
-              <span className={`risk-level-pill ${item.intakeRiskLevel}`}>Riesgo {item.intakeRiskLevel}</span>
-              <div className="risk-triage-actions">
-                <button type="button" onClick={() => props.onOpenPatient(item.patientId)}>Ver paciente</button>
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={props.actionPatientId === item.patientId}
-                  onClick={() => props.onApprove(item.patientId)}
-                >
-                  Aprobar
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  disabled={props.actionPatientId === item.patientId}
-                  onClick={() => props.onCancel(item.patientId)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </article>
-          ))}
+    <details className="card stack web-admin-accordion risk-triage-accordion" open={blockedCount > 0}>
+      <summary className="web-admin-accordion-summary risk-triage-accordion-summary">
+        <div>
+          <h2>Analisis de pacientes de Riesgo</h2>
+          <p>Lista de pacientes bloqueados por triage para aprobar, rechazar y revisar sus caracteristicas.</p>
         </div>
-      ) : null}
-    </section>
+        <span className="risk-triage-summary-count">{blockedCount} bloqueados · {props.pendingCount} pendientes</span>
+      </summary>
+
+      <div className="web-admin-accordion-content stack">
+        {props.loading ? <p>Cargando casos de riesgo...</p> : null}
+        {!props.loading && blockedCount === 0 ? (
+          <p className="risk-triage-empty">No hay pacientes bloqueados por triage.</p>
+        ) : null}
+
+        {!props.loading ? (
+          <div className="risk-triage-list">
+            {props.items.map((item) => {
+              const actionLoading = props.actionPatientId === item.patientId;
+              return (
+                <article key={item.patientId} className="risk-triage-row">
+                  <div className="risk-triage-main">
+                    <div className="risk-triage-name-block">
+                      <PatientOpsAvatar url={item.avatarUrl} label={item.fullName} />
+                      <div className="risk-triage-name-stack">
+                    <div className="risk-triage-name-row">
+                      <strong>{item.fullName}</strong>
+                      <span className={`risk-level-pill ${item.intakeRiskLevel}`}>Riesgo {item.intakeRiskLevel}</span>
+                    </div>
+                    <span>
+                      {item.email}
+                      {item.intakeCompletedAt ? ` · ${new Date(item.intakeCompletedAt).toLocaleString("es-AR")}` : ""}
+                    </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="risk-triage-row-side">
+                    <div className="risk-triage-actions">
+                      <button
+                        type="button"
+                        className="risk-triage-detail-button"
+                        onClick={() => props.onOpenPatient(item.patientId)}
+                        disabled={actionLoading}
+                      >
+                        Ver detalle
+                      </button>
+                      <button
+                        type="button"
+                        className="risk-triage-icon-action approve"
+                        aria-label="Aprobar paciente"
+                        title="Aprobar paciente"
+                        onClick={() => props.onApprovePatient(item.patientId)}
+                        disabled={actionLoading}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        className="risk-triage-icon-action reject"
+                        aria-label="Rechazar paciente"
+                        title="Rechazar paciente"
+                        onClick={() => props.onRejectPatient(item.patientId)}
+                        disabled={actionLoading}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </details>
   );
 }

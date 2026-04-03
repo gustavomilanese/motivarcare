@@ -9,7 +9,6 @@ import {
   fetchStripeOperations,
   markPayoutLinePaid,
   patchFinanceSettings,
-  rebuildFinanceSessionRecords,
   retryStripeEvent
 } from "../services/financeApi";
 import {
@@ -60,7 +59,6 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
   const [createPayoutDraft, setCreatePayoutDraft] = useState<CreatePayoutDraft>(EMPTY_CREATE_PAYOUT_DRAFT);
   const [loading, setLoading] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
-  const [rebuilding, setRebuilding] = useState(false);
   const [creatingRun, setCreatingRun] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -129,21 +127,6 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       setError(requestError instanceof Error ? requestError.message : "No se pudieron guardar las reglas");
     } finally {
       setSavingRules(false);
-    }
-  };
-
-  const rebuildLedger = async () => {
-    setRebuilding(true);
-    setError("");
-    setSuccess("");
-    try {
-      const response = await rebuildFinanceSessionRecords(token);
-      setSuccess(`Ledger reconstruido. Registros procesados: ${response.processed}`);
-      await loadAll();
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo reconstruir el ledger financiero");
-    } finally {
-      setRebuilding(false);
     }
   };
 
@@ -266,13 +249,56 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
     URL.revokeObjectURL(url);
   };
 
-  const professionals = useMemo(() => overview?.byProfessional ?? [], [overview]);
-  const patients = useMemo(() => overview?.byPatient ?? [], [overview]);
-  const packages = useMemo(() => overview?.byPackage ?? [], [overview]);
+  const professionals = useMemo((): FinanceOverviewResponse["byProfessional"] => {
+    const pl = overview?.filterPicklist?.professionals;
+    if (pl && pl.length > 0) {
+      return pl.map((row) => ({
+        professionalId: row.professionalId,
+        professionalName: row.professionalName,
+        professionalEmail: row.professionalEmail,
+        sessions: 0,
+        grossCents: 0,
+        platformFeeCents: 0,
+        professionalNetCents: 0
+      }));
+    }
+    return overview?.byProfessional ?? [];
+  }, [overview]);
+
+  const patients = useMemo((): FinanceOverviewResponse["byPatient"] => {
+    const pl = overview?.filterPicklist?.patients;
+    if (pl && pl.length > 0) {
+      return pl.map((row) => ({
+        patientId: row.patientId,
+        patientName: row.patientName,
+        patientEmail: row.patientEmail,
+        sessions: 0,
+        grossCents: 0,
+        platformFeeCents: 0,
+        professionalNetCents: 0
+      }));
+    }
+    return overview?.byPatient ?? [];
+  }, [overview]);
+
+  const packages = useMemo((): FinanceOverviewResponse["byPackage"] => {
+    const pl = overview?.filterPicklist?.packages;
+    if (pl && pl.length > 0) {
+      return pl.map((row) => ({
+        packageId: row.packageId,
+        packageName: row.packageName,
+        sessions: 0,
+        grossCents: 0,
+        platformFeeCents: 0,
+        professionalNetCents: 0
+      }));
+    }
+    return overview?.byPackage ?? [];
+  }, [overview]);
 
   const topProfessionals = useMemo(
     () =>
-      professionals
+      (overview?.byProfessional ?? [])
         .slice()
         .sort((a, b) => b.professionalNetCents - a.professionalNetCents)
         .slice(0, 8)
@@ -285,12 +311,12 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
           platformFeeCents: row.platformFeeCents,
           professionalNetCents: row.professionalNetCents
         })),
-    [professionals]
+    [overview?.byProfessional]
   );
 
   const topPatients = useMemo(
     () =>
-      patients
+      (overview?.byPatient ?? [])
         .slice()
         .sort((a, b) => b.grossCents - a.grossCents)
         .slice(0, 8)
@@ -303,12 +329,12 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
           platformFeeCents: row.platformFeeCents,
           professionalNetCents: row.professionalNetCents
         })),
-    [patients]
+    [overview?.byPatient]
   );
 
   const topPackages = useMemo(
     () =>
-      packages
+      (overview?.byPackage ?? [])
         .slice()
         .sort((a, b) => b.grossCents - a.grossCents)
         .slice(0, 8)
@@ -320,7 +346,7 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
           platformFeeCents: row.platformFeeCents,
           professionalNetCents: row.professionalNetCents
         })),
-    [packages]
+    [overview?.byPackage]
   );
 
   const overviewTotalPages = Math.max(1, Math.ceil((overview?.total ?? 0) / overviewPageSize));
@@ -360,7 +386,6 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
     setCreatePayoutDraft,
     loading,
     savingRules,
-    rebuilding,
     creatingRun,
     error,
     success,
@@ -380,7 +405,6 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
     loadStripeOperations,
     loadRunDetail,
     saveRules,
-    rebuildLedger,
     submitCreatePayoutRun,
     markLineAsPaid,
     closeSelectedRun,

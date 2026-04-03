@@ -6,14 +6,11 @@ export type PortalPath =
   | "/"
   | "/patients"
   | "/professionals"
-  | "/plans-packages"
   | "/sessions"
   | "/finances"
   | "/calendar"
   | "/library"
   | "/imports"
-  | "/users"
-  | "/web-admin"
   | "/settings"
   | "/ai";
 
@@ -43,6 +40,9 @@ export interface AdminUser {
   email: string;
   fullName: string;
   role: Role;
+  isActive: boolean;
+  isTestUser: boolean;
+  deactivatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   patientProfile: {
@@ -82,9 +82,37 @@ export interface KpisResponse {
     activePatients: number;
     activeProfessionals: number;
     scheduledSessions: number;
+    /** Comision plataforma (mes UTC), sesiones completadas */
     monthlyRevenueCents: number;
+    /** Ingreso bruto pacientes: paquetes comprados en el mes (snapshot) */
+    packagePurchasesMonthCents: number;
+    packagePurchasesMonthCount: number;
+    /** Comisión plataforma imputada al mes según cada compra (precio × % snapshot) */
+    packagePlatformFeeFromPurchasesMonthCents?: number;
+    /** Neto profesional asignado por compras del mes (bruto paquete − comisión) */
+    packageProfessionalNetFromPurchasesMonthCents?: number;
+    platformFeeMonthCents: number;
+    professionalNetMonthCents: number;
+    grossSessionsMonthCents: number;
+    completedSessionsMonthCount: number;
+    platformFeeAllTimeCents: number;
+    /** Neto profesional acumulado sin asignar a un payout run */
+    professionalNetUnpaidCents: number;
+    unpaidSessionRecordsCount: number;
+    /** Comisión plataforma devengada en filas sin línea de payout (mismas filas que neto pendiente) */
+    platformFeeUnpaidCents?: number;
+    /** Estimado mes: sesiones REQUESTED/CONFIRMED con inicio en el mes UTC */
+    plannedMonetizableSessionsMonthCount?: number;
+    plannedGrossMonthCents?: number;
+    plannedPlatformFeeMonthCents?: number;
+    plannedProfessionalNetMonthCents?: number;
   };
-  note: string;
+  period?: {
+    /** YYYY-MM (calendario UTC) */
+    month?: string;
+    monthStart: string;
+    monthEnd: string;
+  };
 }
 
 export interface LandingSettingsResponse {
@@ -183,10 +211,13 @@ export interface AdminPatientOps {
   userId: string;
   fullName: string;
   email: string;
+  /** Foto de perfil del usuario (demo: URLs Unsplash en seed). */
+  avatarUrl?: string | null;
   timezone: string;
   status: string;
   intakeRiskLevel?: "low" | "medium" | "high" | null;
   intakeCompletedAt?: string | null;
+  intakeAnswers?: Record<string, string> | null;
   riskTriageDecision?: RiskTriageDecision | null;
   riskBlocked?: boolean;
   activeProfessionalId?: string | null;
@@ -226,6 +257,7 @@ export interface AdminPatientRiskTriageItem {
   patientId: string;
   fullName: string;
   email: string;
+  avatarUrl?: string | null;
   patientStatus: string;
   intakeRiskLevel: "medium" | "high";
   intakeCompletedAt: string | null;
@@ -285,6 +317,7 @@ export interface AdminBookingOps {
   endsAt: string;
   status: "REQUESTED" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
   consumedCredits: number;
+  consumedPurchaseId?: string | null;
   cancellationReason: string | null;
   cancelledAt: string | null;
   completedAt: string | null;
@@ -296,6 +329,7 @@ export interface AdminBookingsResponse {
 
 export interface CreateUserFormState {
   role: Role;
+  isTestUser: boolean;
   fullName: string;
   email: string;
   password: string;
@@ -312,6 +346,7 @@ export interface CreateUserFormState {
 
 export interface EditUserDraft {
   role: Role;
+  isTestUser: boolean;
   fullName: string;
   password: string;
   patientStatus: PatientStatus;

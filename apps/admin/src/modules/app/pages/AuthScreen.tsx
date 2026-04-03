@@ -23,7 +23,7 @@ export function AuthScreen(props: {
   onAuthSuccess: (token: string, user: AuthUser) => void;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [fullName, setFullName] = useState("Motivarte Admin");
+  const [fullName, setFullName] = useState("MotivarCare Admin");
   const [email, setEmail] = useState("admin@motivarte.com");
   const [password, setPassword] = useState("SecurePass123");
   const [error, setError] = useState("");
@@ -81,17 +81,18 @@ export function AuthScreen(props: {
   return (
     <div className="auth-shell">
       <section className="auth-card">
-        <span className="chip">{t(props.language, { es: "Portal admin", en: "Admin portal", pt: "Portal admin" })}</span>
+        <p className="admin-auth-eyebrow">MotivarCare</p>
+        <span className="chip">{t(props.language, { es: "Consola admin", en: "Admin console", pt: "Console admin" })}</span>
         <h1>{t(props.language, { es: "Gestion centralizada", en: "Centralized management", pt: "Gestao centralizada" })}</h1>
-        <p>
+        <p className="admin-auth-lead">
           {t(props.language, {
-            es: "Administra pacientes, profesionales, sesiones, finanzas y contenido desde una sola consola.",
-            en: "Manage patients, professionals, sessions, finances, and content from one console.",
-            pt: "Gerencie pacientes, profissionais, sessoes, financas e conteudo em um unico console."
+            es: "Pacientes, profesionales, finanzas y contenido en una sola experiencia operativa.",
+            en: "Patients, professionals, finances, and content in one operational experience.",
+            pt: "Pacientes, profissionais, financas e conteudo em uma unica experiencia operacional."
           })}
         </p>
 
-        <div className="locale-controls auth">
+        <div className="admin-locale-panel">
           <label>
             {t(props.language, { es: "Idioma", en: "Language", pt: "Idioma" })}
             <select value={props.language} onChange={(event) => props.onLanguageChange(event.target.value as AppLanguage)}>
@@ -116,42 +117,50 @@ export function AuthScreen(props: {
         </div>
 
         <div className="auth-mode-switch">
-          <button
-            className={mode === "login" ? "active" : ""}
-            type="button"
-            onClick={() => setMode("login")}
-          >
+          <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>
             {t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
           </button>
-          <button
-            className={mode === "register" ? "active" : ""}
-            type="button"
-            onClick={() => setMode("register")}
-          >
+          <button className={mode === "register" ? "active" : ""} type="button" onClick={() => setMode("register")}>
             {t(props.language, { es: "Crear admin", en: "Create admin", pt: "Criar admin" })}
           </button>
+        </div>
+
+        <div className="admin-auth-divider" aria-hidden="true">
+          <span />
+          <span>{t(props.language, { es: "Credenciales", en: "Credentials", pt: "Credenciais" })}</span>
+          <span />
         </div>
 
         <form className="stack" onSubmit={handleSubmit}>
           {mode === "register" ? (
             <label>
               {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+              <input name="name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
             </label>
           ) : null}
 
           <label>
             Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
 
           <label>
             {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input
+              type="password"
+              name="password"
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
           </label>
 
-          {error ? <p className="error-text">{error}</p> : null}
-          <button className="primary" type="submit" disabled={loading}>
+          {error ? (
+            <p className="error-text admin-auth-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button className="primary admin-auth-submit" type="submit" disabled={loading}>
             {loading
               ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
               : mode === "login"

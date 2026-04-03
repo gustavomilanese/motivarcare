@@ -2,6 +2,8 @@ export interface FinanceRules {
   platformCommissionPercent: number;
   trialPlatformPercent: number;
   defaultSessionPriceCents: number;
+  sessionPriceMinUsd: number;
+  sessionPriceMaxUsd: number;
 }
 
 export interface FinanceOverviewResponse {
@@ -15,6 +17,13 @@ export interface FinanceOverviewResponse {
     platformFeeCents: number;
     professionalNetCents: number;
   };
+  /** REQUESTED/CONFIRMED con startsAt entre dateFrom y dateTo (mismo rango que filtros); estimación aprox. */
+  plannedInRange?: {
+    sessions: number;
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+  } | null;
   records: Array<{
     id: string;
     bookingId: string;
@@ -57,6 +66,12 @@ export interface FinanceOverviewResponse {
     platformFeeCents: number;
     professionalNetCents: number;
   }>;
+  /** Opciones de filtro amplias (sin profesional/paciente/búsqueda) para que los combos no queden vacíos. */
+  filterPicklist?: {
+    professionals: Array<{ professionalId: string; professionalName: string; professionalEmail: string }>;
+    patients: Array<{ patientId: string; patientName: string; patientEmail: string }>;
+    packages: Array<{ packageId: string | null; packageName: string }>;
+  };
 }
 
 export interface FinancePayoutRunSummary {

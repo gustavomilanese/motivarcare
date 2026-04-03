@@ -292,6 +292,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         patient.id === patientId
           ? {
               ...patient,
+              avatarUrl: response.patient.avatarUrl ?? patient.avatarUrl ?? null,
               intakeAnswers: response.patient.intakeAnswers ?? null,
               activeProfessionalId: response.patient.activeProfessionalId ?? null,
               activeProfessionalName: response.patient.activeProfessionalName ?? null,
@@ -323,14 +324,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setBookingDrafts((current) => {
         const next = { ...current };
         for (const booking of response.patient.confirmedBookings) {
-          if (!next[booking.id]) {
-            next[booking.id] = {
-              status: booking.status,
-              startsAt: isoToInputDateTime(booking.startsAt),
-              endsAt: isoToInputDateTime(booking.endsAt),
-              professionalId: booking.professionalId
-            };
-          }
+          next[booking.id] = {
+            status: booking.status,
+            startsAt: isoToInputDateTime(booking.startsAt),
+            endsAt: isoToInputDateTime(booking.endsAt),
+            professionalId: booking.professionalId
+          };
         }
         return next;
       });
@@ -604,6 +603,42 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     }
   };
 
+  const reactivateCancelledBooking = async (patientId: string, bookingId: string) => {
+    const draft = bookingDrafts[bookingId];
+    if (!draft) {
+      setError("No se encontro la sesion");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setSessionOpsLoading(true);
+    try {
+      await apiRequest<{ booking: AdminBookingOps }>(
+        "/api/admin/bookings/" + bookingId,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: "CONFIRMED",
+            startsAt: new Date(draft.startsAt).toISOString(),
+            endsAt: new Date(draft.endsAt).toISOString(),
+            professionalId: draft.professionalId,
+            cancellationReason: null
+          })
+        },
+        props.token
+      );
+
+      setSuccess("Sesion reactivada");
+      await loadPatientManagement(patientId);
+      await load(patientSearch, patientPage);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo reactivar la sesion");
+    } finally {
+      setSessionOpsLoading(false);
+    }
+  };
+
   const editingPatient = editingPatientId ? patients.find((patient) => patient.id === editingPatientId) ?? null : null;
   const editingPatientDraft = editingPatient ? patientDetailDrafts[editingPatient.id] : undefined;
   const editingBookings = editingPatient ? patientBookings[editingPatient.id] ?? [] : [];
@@ -730,6 +765,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
               return;
             }
             void cancelConfirmedBooking(editingPatient.id, bookingId);
+          }}
+          onReactivateBooking={(bookingId) => {
+            if (!editingPatient) {
+              return;
+            }
+            void reactivateCancelledBooking(editingPatient.id, bookingId);
           }}
           onApproveTriage={() => {
             if (!editingPatient) {

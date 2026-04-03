@@ -22,10 +22,7 @@ export function UsersCreateSection(props: {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <section className="card stack">
-      <h2>{props.t({ es: "Alta de usuarios", en: "Create users", pt: "Criar usuarios" })}</h2>
-      <p>{props.t({ es: "Registra pacientes, profesionales o admins desde este modulo.", en: "Register patients, professionals, or admins from this module.", pt: "Cadastre pacientes, profissionais ou admins neste modulo." })}</p>
-
+    <div className="stack">
       <form className="stack" onSubmit={props.onSubmit}>
         <div className="grid-form">
           <label>
@@ -66,6 +63,17 @@ export function UsersCreateSection(props: {
               value={props.createForm.password}
               onChange={(event) => props.setCreateForm((current) => ({ ...current, password: event.target.value }))}
             />
+          </label>
+
+          <label className="inline-toggle">
+            <input
+              checked={props.createForm.isTestUser}
+              type="checkbox"
+              onChange={(event) =>
+                props.setCreateForm((current) => ({ ...current, isTestUser: event.target.checked }))
+              }
+            />
+            {props.t({ es: "Usuario de prueba (permite borrado total)", en: "Test user (allows full delete)", pt: "Usuario de teste (permite exclusao total)" })}
           </label>
 
           {props.createForm.role === "PATIENT" ? (
@@ -184,7 +192,7 @@ export function UsersCreateSection(props: {
             : props.t({ es: "Crear usuario", en: "Create user", pt: "Criar usuario" })}
         </button>
       </form>
-    </section>
+    </div>
   );
 }
 
@@ -201,6 +209,7 @@ export function UsersListSection(props: {
   editingUserId: string | null;
   editDrafts: Record<string, EditUserDraft>;
   saveLoading: boolean;
+  deleteLoadingUserId: string | null;
   setRoleFilter: Dispatch<SetStateAction<RoleFilter>>;
   setSearchInput: Dispatch<SetStateAction<string>>;
   setUsersPage: Dispatch<SetStateAction<number>>;
@@ -214,6 +223,7 @@ export function UsersListSection(props: {
   formatDate: (value: string) => string;
   t: (values: { es: string; en: string; pt: string }) => string;
   onSaveEdit: (user: AdminUser) => void;
+  onDeleteUser: (user: AdminUser) => void;
 }) {
   const toggleExpand = (user: AdminUser) => {
     if (props.editingUserId === user.id) {
@@ -228,6 +238,7 @@ export function UsersListSection(props: {
       ...current,
       [user.id]: {
         role: user.role,
+        isTestUser: user.isTestUser,
         fullName: user.fullName,
         password: "",
         patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
@@ -247,19 +258,8 @@ export function UsersListSection(props: {
   };
 
   return (
-    <section className="card stack">
-      <header className="toolbar">
-        <div>
-          <h2>{props.t({ es: "Listado de usuarios", en: "Users list", pt: "Lista de usuarios" })}</h2>
-          <p>
-            {props.t({
-              es: "Vista compacta: 1 linea por usuario, con expansion para ver y editar.",
-              en: "Compact view: 1 line per user, expandable to view and edit.",
-              pt: "Vista compacta: 1 linha por usuario, expansivel para ver e editar."
-            })}
-          </p>
-        </div>
-
+    <div className="stack">
+      <header className="toolbar toolbar--wrap">
         <div className="toolbar-actions">
           <select
             value={props.roleFilter}
@@ -316,7 +316,11 @@ export function UsersListSection(props: {
                   <div className="user-row-main">
                     <strong>{user.fullName}</strong>
                     <span>
-                      {user.email} · {props.roleLabel(user.role)} · {props.formatDate(user.createdAt)}
+                      {user.email} · {props.roleLabel(user.role)} · {user.isActive
+                        ? props.t({ es: "Activo", en: "Active", pt: "Ativo" })
+                        : props.t({ es: "Desactivado", en: "Disabled", pt: "Desativado" })} · {user.isTestUser
+                        ? props.t({ es: "Test", en: "Test", pt: "Teste" })
+                        : props.t({ es: "Real", en: "Real", pt: "Real" })} · {props.formatDate(user.createdAt)}
                     </span>
                   </div>
 
@@ -340,6 +344,20 @@ export function UsersListSection(props: {
                         <strong>{props.t({ es: "Actualizado", en: "Updated", pt: "Atualizado" })}</strong>
                         <p>{props.formatDate(user.updatedAt)}</p>
                       </div>
+                      <div>
+                        <strong>{props.t({ es: "Cuenta", en: "Account", pt: "Conta" })}</strong>
+                        <p>
+                          {user.isActive
+                            ? props.t({ es: "Activa", en: "Active", pt: "Ativa" })
+                            : props.t({ es: "Desactivada", en: "Disabled", pt: "Desativada" })}
+                        </p>
+                      </div>
+                      {!user.isActive && user.deactivatedAt ? (
+                        <div>
+                          <strong>{props.t({ es: "Desactivada el", en: "Disabled on", pt: "Desativada em" })}</strong>
+                          <p>{props.formatDate(user.deactivatedAt)}</p>
+                        </div>
+                      ) : null}
 
                       {user.patientProfile ? (
                         <>
@@ -408,6 +426,23 @@ export function UsersListSection(props: {
                             }))
                           }
                         />
+                      </label>
+
+                      <label className="inline-toggle">
+                        <input
+                          checked={draft.isTestUser}
+                          type="checkbox"
+                          onChange={(event) =>
+                            props.setEditDrafts((current) => ({
+                              ...current,
+                              [user.id]: {
+                                ...draft,
+                                isTestUser: event.target.checked
+                              }
+                            }))
+                          }
+                        />
+                        {props.t({ es: "Usuario de prueba (permite borrado total)", en: "Test user (allows full delete)", pt: "Usuario de teste (permite exclusao total)" })}
                       </label>
 
                       {draft.role === "PATIENT" ? (
@@ -587,6 +622,16 @@ export function UsersListSection(props: {
                         >
                           {props.t({ es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
                         </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          disabled={props.deleteLoadingUserId === user.id}
+                          onClick={() => props.onDeleteUser(user)}
+                        >
+                          {props.deleteLoadingUserId === user.id
+                            ? props.t({ es: "Eliminando...", en: "Deleting...", pt: "Excluindo..." })
+                            : props.t({ es: "Eliminar usuario", en: "Delete user", pt: "Excluir usuario" })}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -602,8 +647,9 @@ export function UsersListSection(props: {
             type="button"
             disabled={!props.usersPagination.hasPrev || props.listLoading}
             onClick={() => props.setUsersPage((current) => Math.max(1, current - 1))}
+            aria-label={props.t({ es: "Pagina anterior", en: "Previous page", pt: "Pagina anterior" })}
           >
-            {props.t({ es: "Anterior", en: "Previous", pt: "Anterior" })}
+            ‹
           </button>
           <span>
             {props.t({
@@ -616,12 +662,12 @@ export function UsersListSection(props: {
             type="button"
             disabled={!props.usersPagination.hasNext || props.listLoading}
             onClick={() => props.setUsersPage((current) => current + 1)}
+            aria-label={props.t({ es: "Pagina siguiente", en: "Next page", pt: "Pagina seguinte" })}
           >
-            {props.t({ es: "Siguiente", en: "Next", pt: "Seguinte" })}
+            ›
           </button>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
-

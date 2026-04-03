@@ -1,5 +1,12 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
+import {
+  WEB_ADMIN_SCROLL_SECTION_IDS,
+  WebAdminPageSubnav,
+  type WebAdminScrollSectionId
+} from "../components/WebAdminPageSubnav";
+import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { apiRequest } from "../services/api";
 import type { AdminBlogPost, AdminReview, WebContentResponse, WebLandingSettings } from "../types";
 import { compressImageDataUrl, fileToDataUrl, normalizeWebLandingSettings } from "../utils/media";
@@ -33,7 +40,15 @@ function inferReviewDate(relativeDate: string): string {
   return `${year}-${month}-${day}`;
 }
 
-export function WebAdminPage({ token, language }: { token: string; language: AppLanguage }) {
+export function WebAdminPage({
+  token,
+  language,
+  embedded = false
+}: {
+  token: string;
+  language: AppLanguage;
+  embedded?: boolean;
+}) {
   const emptySettings: WebLandingSettings = {
     patientHeroImageUrl: null,
     patientDesktopImageUrl: null,
@@ -89,8 +104,10 @@ export function WebAdminPage({ token, language }: { token: string; language: App
   const [postSearch, setPostSearch] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-
-  const webListPageSize = 3;
+  const { activeSection: activeWebSection, scrollToSection: scrollToWebSection } = useStickySectionNavigation(
+    WEB_ADMIN_SCROLL_SECTION_IDS,
+    { loading: loading || embedded }
+  );
 
   async function loadWebContent() {
     setLoading(true);
@@ -401,10 +418,6 @@ export function WebAdminPage({ token, language }: { token: string; language: App
     { key: "professionalMobileImageUrl", label: "Psicologos · telefono" }
   ];
 
-  if (loading) {
-    return <section className="card"><p>{t(language, { es: "Cargando contenido web...", en: "Loading web content...", pt: "Carregando conteudo web..." })}</p></section>;
-  }
-
   function openCreateReviewModal() {
     setEditingReviewId(null);
     setReviewForm(emptyReview);
@@ -438,23 +451,42 @@ export function WebAdminPage({ token, language }: { token: string; language: App
     setIsPostModalOpen(true);
   }
 
-  return (
-    <div className="stack-lg">
-      <section className="card stack">
-        <h2>{t(language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" })}</h2>
-        <p>{t(language, { es: "Gestiona reviews y articulos de la landing desde un solo modulo.", en: "Manage landing reviews and blog articles from one module.", pt: "Gerencie reviews e artigos da landing em um unico modulo." })}</p>
-        {error ? <p className="error-text">{error}</p> : null}
-        {success ? <p className="success-text">{success}</p> : null}
-      </section>
+  if (loading) {
+    if (embedded) {
+      return (
+        <p className="settings-section-lead">
+          {t(language, { es: "Cargando contenido web…", en: "Loading web content…", pt: "Carregando conteudo web…" })}
+        </p>
+      );
+    }
+    return (
+      <div className="ops-page finance-page web-admin-page">
+        <section className="card stack finance-kpi-card finance-page-hero">
+          <header className="toolbar">
+            <h2>{t(language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" })}</h2>
+          </header>
+          <p className="settings-section-lead">
+            {t(language, { es: "Cargando contenido web…", en: "Loading web content…", pt: "Carregando conteudo web…" })}
+          </p>
+        </section>
+      </div>
+    );
+  }
 
-      <details className="card stack web-admin-accordion">
-        <summary className="web-admin-accordion-summary">
-          <div>
-            <h2>{t(language, { es: "Imagenes hero landing", en: "Landing hero images", pt: "Imagens hero landing" })}</h2>
-            <p>{t(language, { es: "Gestiona las 4 imagenes de la landing: pacientes y psicologos (laptop + telefono).", en: "Manage the 4 landing images: patients and psychologists (laptop + phone).", pt: "Gerencie as 4 imagens da landing: pacientes e psicologos (laptop + telefone)." })}</p>
-          </div>
-        </summary>
-        <div className="web-admin-accordion-content stack">
+  const webAdminMain = (
+    <>
+      <CollapsiblePageSection
+        sectionId="web-imagenes"
+        summary={t(language, { es: "Imágenes hero", en: "Hero images", pt: "Imagens hero" })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Las cuatro imágenes de la landing: pacientes y psicólogos (laptop y teléfono).",
+            en: "The four landing images: patients and psychologists (laptop and phone).",
+            pt: "As quatro imagens da landing: pacientes e psicólogos (laptop e telefone)."
+          })}
+        </p>
           <div className="upload-grid">
             {imageSlots.map((slot) => {
               const inputId = `upload-${slot.key}`;
@@ -496,17 +528,24 @@ export function WebAdminPage({ token, language }: { token: string; language: App
           {settingsFeedback ? (
             <p className={settingsFeedback.type === "ok" ? "success-text" : "error-text"}>{settingsFeedback.message}</p>
           ) : null}
-        </div>
-      </details>
+      </CollapsiblePageSection>
 
-      <details className="card stack web-admin-accordion">
-        <summary className="web-admin-accordion-summary">
-          <div>
-            <h2>{t(language, { es: `ABM Reviews (${reviews.length})`, en: `Reviews CRUD (${reviews.length})`, pt: `ABM Reviews (${reviews.length})` })}</h2>
-            <p>{t(language, { es: "Crear, editar o eliminar reviews de la landing.", en: "Create, edit, or delete landing reviews.", pt: "Criar, editar ou excluir reviews da landing." })}</p>
-          </div>
-        </summary>
-        <div className="web-admin-accordion-content stack">
+      <CollapsiblePageSection
+        sectionId="web-reviews"
+        summary={t(language, {
+          es: `Reviews (${reviews.length})`,
+          en: `Reviews (${reviews.length})`,
+          pt: `Reviews (${reviews.length})`
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Crear, editar o eliminar reviews de la landing.",
+            en: "Create, edit, or delete landing reviews.",
+            pt: "Criar, editar ou excluir reviews da landing."
+          })}
+        </p>
           <div className="web-admin-list-toolbar">
             <input
               type="search"
@@ -554,17 +593,24 @@ export function WebAdminPage({ token, language }: { token: string; language: App
               ))
             )}
           </div>
-        </div>
-      </details>
+      </CollapsiblePageSection>
 
-      <details className="card stack web-admin-accordion">
-        <summary className="web-admin-accordion-summary">
-          <div>
-            <h2>{t(language, { es: `ABM Articulos (${posts.length})`, en: `Articles CRUD (${posts.length})`, pt: `ABM Artigos (${posts.length})` })}</h2>
-            <p>{t(language, { es: "Gestiona articulos del blog y su SEO desde un solo bloque.", en: "Manage blog posts and SEO in one block.", pt: "Gerencie artigos do blog e SEO em um unico bloco." })}</p>
-          </div>
-        </summary>
-        <div className="web-admin-accordion-content stack">
+      <CollapsiblePageSection
+        sectionId="web-articulos"
+        summary={t(language, {
+          es: `Artículos (${posts.length})`,
+          en: `Articles (${posts.length})`,
+          pt: `Artigos (${posts.length})`
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Artículos del blog y metadatos SEO.",
+            en: "Blog posts and SEO metadata.",
+            pt: "Artigos do blog e metadados SEO."
+          })}
+        </p>
           <div className="web-admin-list-toolbar">
             <input
               type="search"
@@ -609,8 +655,7 @@ export function WebAdminPage({ token, language }: { token: string; language: App
               ))
             )}
           </div>
-        </div>
-      </details>
+      </CollapsiblePageSection>
 
       {isReviewModalOpen ? (
         <div className="patient-modal-backdrop" onClick={() => setIsReviewModalOpen(false)}>
@@ -733,6 +778,39 @@ export function WebAdminPage({ token, language }: { token: string; language: App
           </section>
         </div>
       ) : null}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="ops-page finance-page web-admin-page web-admin-page--embedded">{webAdminMain}</div>;
+  }
+
+  return (
+    <div className="ops-page finance-page web-admin-page">
+      <section className="card stack finance-kpi-card finance-page-hero">
+        <header className="toolbar">
+          <h2>{t(language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" })}</h2>
+        </header>
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Gestiona imágenes hero, reviews y artículos de la landing desde un solo módulo.",
+            en: "Manage hero images, reviews, and blog articles from one module.",
+            pt: "Gerencie imagens hero, reviews e artigos da landing em um único módulo."
+          })}
+        </p>
+        {error ? <p className="error-text">{error}</p> : null}
+        {success ? <p className="success-text">{success}</p> : null}
+      </section>
+
+      <div className="finance-page-subnav-sticky">
+        <WebAdminPageSubnav
+          language={language}
+          activeId={activeWebSection}
+          onSectionClick={(id: WebAdminScrollSectionId) => scrollToWebSection(id)}
+        />
+      </div>
+
+      {webAdminMain}
     </div>
   );
 }

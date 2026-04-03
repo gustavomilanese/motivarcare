@@ -278,7 +278,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     const activePatientsRaw = draft.activePatientsCount.trim();
     const activePatientsCount = activePatientsRaw.length > 0 ? Number(activePatientsRaw) : null;
     if (activePatientsRaw.length > 0 && (!Number.isInteger(activePatientsCount ?? 0) || (activePatientsCount ?? 0) < 0 || (activePatientsCount ?? 0) > 100000)) {
-      setError("Clientes activos debe estar entre 0 y 100000");
+      setError("Pacientes activos debe estar entre 0 y 100000");
       return;
     }
 
@@ -575,7 +575,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <input value={selectedProfessionalDraft.sessionDurationMinutes || "-"} readOnly />
               </label>
               <label>
-                Clientes activos (card)
+                Pacientes activos (card)
                 <input value={selectedProfessionalDraft.activePatientsCount || "-"} readOnly />
               </label>
               <label>

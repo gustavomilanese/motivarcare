@@ -1,7 +1,9 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { defaultCreateForm } from "../constants";
 import { UsersCreateSection, UsersListSection } from "../components/users/UsersPageSections";
+import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { apiRequest } from "../services/api";
 import type {
   AdminUser,
@@ -48,6 +50,7 @@ function parseIntField(rawValue: string): number | null {
 function buildEditDraft(user: AdminUser): EditUserDraft {
   return {
     role: user.role,
+    isTestUser: user.isTestUser,
     fullName: user.fullName,
     password: "",
     patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
@@ -97,7 +100,10 @@ function yesNoLabel(value: boolean, language: AppLanguage): string {
     : t(language, { es: "No", en: "No", pt: "Nao" });
 }
 
-export function UsersPage(props: { token: string; language: AppLanguage }) {
+const USERS_SECTION_IDS = ["users-list", "users-create"] as const;
+
+export function UsersPage(props: { token: string; language: AppLanguage; embedded?: boolean }) {
+  const embedded = props.embedded ?? false;
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -117,6 +123,11 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoadingUserId, setDeleteLoadingUserId] = useState<string | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<AdminUser | null>(null);
+  const [purgeHistoricalOnDelete, setPurgeHistoricalOnDelete] = useState(false);
+
+  const { scrollToSection } = useStickySectionNavigation(USERS_SECTION_IDS, { loading: embedded });
 
   const loadUsers = async (requestedPage = usersPage) => {
     setListLoading(true);
@@ -206,6 +217,7 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
       fullName: string;
       password: string;
       role: Role;
+      isTestUser?: boolean;
       timezone?: string;
       patientStatus?: PatientStatus;
       professionalVisible?: boolean;
@@ -219,7 +231,8 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
       email: createForm.email.trim().toLowerCase(),
       fullName: createForm.fullName.trim(),
       password: createForm.password,
-      role: createForm.role
+      role: createForm.role,
+      isTestUser: createForm.isTestUser
     };
 
     if (createForm.role === "PATIENT") {
@@ -315,6 +328,7 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
     const payload: {
       fullName: string;
       password?: string;
+      isTestUser?: boolean;
       patientStatus?: PatientStatus;
       patientTimezone?: string;
       professionalVisible?: boolean;
@@ -331,6 +345,7 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
     if (draft.password.trim().length > 0) {
       payload.password = draft.password.trim();
     }
+    payload.isTestUser = draft.isTestUser;
 
     if (draft.role === "PATIENT") {
       payload.patientStatus = draft.patientStatus;
@@ -409,47 +424,229 @@ export function UsersPage(props: { token: string; language: AppLanguage }) {
     }
   };
 
-  return (
-    <div className="stack-lg">
-      <UsersCreateSection
-        language={props.language}
-        createForm={createForm}
-        createError={createError}
-        createSuccess={createSuccess}
-        createLoading={createLoading}
-        setCreateForm={setCreateForm}
-        patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
-        t={(values) => t(props.language, values)}
-        onSubmit={handleCreateUser}
-      />
+  const requestDeleteUser = (user: AdminUser) => {
+    setPurgeHistoricalOnDelete(false);
+    setPendingDeleteUser(user);
+  };
 
-      <UsersListSection
-        language={props.language}
-        roleFilter={roleFilter}
-        searchInput={searchInput}
-        users={users}
-        usersPagination={usersPagination}
-        listLoading={listLoading}
-        listError={listError}
-        editError={editError}
-        editSuccess={editSuccess}
-        editingUserId={editingUserId}
-        editDrafts={editDrafts}
-        saveLoading={saveLoading}
-        setRoleFilter={setRoleFilter}
-        setSearchInput={setSearchInput}
-        setUsersPage={setUsersPage}
-        setSearch={setSearch}
-        setEditDrafts={setEditDrafts}
-        setEditingUserId={setEditingUserId}
-        setEditError={setEditError}
-        roleLabel={(role) => roleLabel(role, props.language)}
-        patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
-        yesNoLabel={(value) => yesNoLabel(value, props.language)}
-        formatDate={(value) => formatDate(value, props.language)}
-        t={(values) => t(props.language, values)}
-        onSaveEdit={(user) => void saveEdit(user)}
-      />
+  const closeDeleteModal = () => {
+    if (deleteLoadingUserId) {
+      return;
+    }
+    setPendingDeleteUser(null);
+    setPurgeHistoricalOnDelete(false);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!pendingDeleteUser) {
+      return;
+    }
+
+    const user = pendingDeleteUser;
+
+    setEditError("");
+    setEditSuccess("");
+    setDeleteLoadingUserId(user.id);
+
+    try {
+      const response = await apiRequest<{
+        ok: true;
+        action?: "deleted" | "deactivated";
+        message?: string;
+      }>(
+        `/api/admin/users/${user.id}`,
+        {
+          method: "DELETE",
+          body: JSON.stringify({ purgeHistoricalData: purgeHistoricalOnDelete })
+        },
+        props.token
+      );
+
+      if (response.message) {
+        setEditSuccess(response.message);
+      } else if (response.action === "deactivated") {
+        setEditSuccess(
+          t(props.language, {
+            es: "Usuario desactivado. Se conservo el historial.",
+            en: "User disabled. History was preserved.",
+            pt: "Usuario desativado. O historico foi preservado."
+          })
+        );
+      } else {
+        setEditSuccess(
+          t(props.language, {
+            es: "Usuario eliminado correctamente.",
+            en: "User deleted successfully.",
+            pt: "Usuario excluido com sucesso."
+          })
+        );
+      }
+      setPendingDeleteUser(null);
+
+      if (editingUserId === user.id) {
+        setEditingUserId(null);
+      }
+
+      await loadUsers(usersPage);
+    } catch (requestError) {
+      setEditError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo eliminar el usuario.",
+              en: "Could not delete the user.",
+              pt: "Nao foi possivel excluir o usuario."
+            })
+      );
+    } finally {
+      setDeleteLoadingUserId(null);
+    }
+  };
+
+  const collapsiblesAndModal = (
+    <>
+      <CollapsiblePageSection
+        sectionId="users-list"
+        summary={t(props.language, { es: "Listado de usuarios", en: "Users list", pt: "Lista de usuarios" })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <UsersListSection
+          language={props.language}
+          roleFilter={roleFilter}
+          searchInput={searchInput}
+          users={users}
+          usersPagination={usersPagination}
+          listLoading={listLoading}
+          listError={listError}
+          editError={editError}
+          editSuccess={editSuccess}
+          editingUserId={editingUserId}
+          editDrafts={editDrafts}
+          saveLoading={saveLoading}
+          deleteLoadingUserId={deleteLoadingUserId}
+          setRoleFilter={setRoleFilter}
+          setSearchInput={setSearchInput}
+          setUsersPage={setUsersPage}
+          setSearch={setSearch}
+          setEditDrafts={setEditDrafts}
+          setEditingUserId={setEditingUserId}
+          setEditError={setEditError}
+          roleLabel={(role) => roleLabel(role, props.language)}
+          patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
+          yesNoLabel={(value) => yesNoLabel(value, props.language)}
+          formatDate={(value) => formatDate(value, props.language)}
+          t={(values) => t(props.language, values)}
+          onSaveEdit={(user) => void saveEdit(user)}
+          onDeleteUser={(user) => requestDeleteUser(user)}
+        />
+      </CollapsiblePageSection>
+
+      <CollapsiblePageSection
+        sectionId="users-create"
+        summary={t(props.language, { es: "Alta de usuarios", en: "Create users", pt: "Criar usuarios" })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <UsersCreateSection
+          language={props.language}
+          createForm={createForm}
+          createError={createError}
+          createSuccess={createSuccess}
+          createLoading={createLoading}
+          setCreateForm={setCreateForm}
+          patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
+          t={(values) => t(props.language, values)}
+          onSubmit={handleCreateUser}
+        />
+      </CollapsiblePageSection>
+
+      {pendingDeleteUser ? (
+        <div className="patient-modal-backdrop" onClick={closeDeleteModal}>
+          <section className="patient-modal patient-create-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="patient-modal-head">
+              <h2>{t(props.language, { es: "Eliminar usuario", en: "Delete user", pt: "Excluir usuario" })}</h2>
+              <button type="button" onClick={closeDeleteModal} disabled={Boolean(deleteLoadingUserId)}>
+                {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+              </button>
+            </header>
+            <p>
+              {pendingDeleteUser.isTestUser
+                ? t(props.language, {
+                    es: "Este usuario esta marcado como prueba. Se eliminara de forma definitiva aunque tenga actividad.",
+                    en: "This user is marked as test. It will be permanently deleted even with activity.",
+                    pt: "Este usuario esta marcado como teste. Sera excluido permanentemente mesmo com atividade."
+                  })
+                : t(props.language, {
+                    es: "Si el usuario tiene pagos o reservas, por defecto solo se desactiva y se conserva el historial. Podés forzar borrado total con la opcion de abajo (sesiones, compras, ledger).",
+                    en: "If the user has bookings or payments, by default we only disable the account and keep history. You can force a full wipe with the option below (sessions, purchases, ledger).",
+                    pt: "Se o usuario tiver historico, por padrao apenas desativamos. Voce pode forcar exclusao total com a opcao abaixo."
+                  })}
+            </p>
+            <p>
+              <strong>{pendingDeleteUser.fullName}</strong> · {pendingDeleteUser.email}
+            </p>
+            <label className="inline-toggle user-purge-toggle">
+              <input
+                type="checkbox"
+                checked={purgeHistoricalOnDelete}
+                disabled={Boolean(deleteLoadingUserId)}
+                onChange={(event) => setPurgeHistoricalOnDelete(event.target.checked)}
+              />
+              {t(props.language, {
+                es: "Borrar tambien reservas, finanzas y compras vinculadas (irreversible).",
+                en: "Also delete bookings, finance rows, and linked purchases (irreversible).",
+                pt: "Excluir tambem reservas, financas e compras (irreversivel)."
+              })}
+            </label>
+            <div className="button-row">
+              <button type="button" onClick={closeDeleteModal} disabled={Boolean(deleteLoadingUserId)}>
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => void confirmDeleteUser()}
+                disabled={Boolean(deleteLoadingUserId)}
+              >
+                {deleteLoadingUserId === pendingDeleteUser.id
+                  ? t(props.language, { es: "Eliminando...", en: "Deleting...", pt: "Excluindo..." })
+                  : t(props.language, { es: "Si, eliminar", en: "Yes, delete", pt: "Sim, excluir" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="users-admin-page users-admin-page--embedded stack-lg">{collapsiblesAndModal}</div>;
+  }
+
+  return (
+    <div className="ops-page finance-page users-admin-page">
+      <section className="card stack finance-kpi-card finance-page-hero">
+        <header className="toolbar">
+          <h2>{t(props.language, { es: "Usuarios", en: "Users", pt: "Usuarios" })}</h2>
+          <button
+            type="button"
+            className="users-admin-add-button"
+            title={t(props.language, { es: "Alta de usuario", en: "Create user", pt: "Cadastro de usuario" })}
+            aria-label={t(props.language, { es: "Alta de usuario", en: "Create user", pt: "Cadastro de usuario" })}
+            onClick={() => scrollToSection("users-create")}
+          >
+            +
+          </button>
+        </header>
+        <p className="settings-section-lead">
+          {t(props.language, {
+            es: "Alta, edición y baja de cuentas del ecosistema.",
+            en: "Create, edit, and remove accounts across the ecosystem.",
+            pt: "Criacao, edicao e exclusao de contas do ecossistema."
+          })}
+        </p>
+      </section>
+
+      {collapsiblesAndModal}
     </div>
   );
 }

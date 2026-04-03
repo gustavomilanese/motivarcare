@@ -246,7 +246,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Clientes activos (card)
+            Pacientes activos (card)
             <input
               type="number"
               min={0}

@@ -2,6 +2,19 @@ import { createApiClient } from "@therapy/auth";
 
 export const API_BASE =
   (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
+
+/** Para `<img src>` cuando el API devuelve ruta relativa (`/api/public/...`). */
+export function resolveApiAssetUrl(url: string | null | undefined): string | undefined {
+  const s = url?.trim();
+  if (!s) {
+    return undefined;
+  }
+  if (/^https?:\/\//i.test(s)) {
+    return s;
+  }
+  const base = API_BASE.replace(/\/$/, "");
+  return `${base}${s.startsWith("/") ? s : `/${s}`}`;
+}
 export const TOKEN_KEY = "therapy_admin_token";
 export const USER_KEY = "therapy_admin_user";
 export const LANGUAGE_KEY = "therapy_admin_language";

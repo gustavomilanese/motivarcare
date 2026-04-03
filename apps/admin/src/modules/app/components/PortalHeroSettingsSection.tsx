@@ -8,7 +8,14 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-export function PortalHeroSettingsSection(props: { token: string; language: AppLanguage; target: "patient" | "professional" }) {
+export function PortalHeroSettingsSection(props: {
+  token: string;
+  language: AppLanguage;
+  target: "patient" | "professional";
+  /** Sin acordeón propio: para anidar dentro de otra sección (p. ej. Configuración). */
+  layout?: "accordion" | "embedded";
+}) {
+  const layout = props.layout ?? "accordion";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -121,6 +128,80 @@ export function PortalHeroSettingsSection(props: { token: string; language: AppL
       ? "Hero del portal paciente (laptop y telefono)."
       : "Imagenes de cabecera para el portal psicologo (laptop y telefono).";
 
+  const body = (
+    <>
+      {loading ? <p>Cargando configuracion...</p> : null}
+      {error ? <p className="error-text">{error}</p> : null}
+      {success ? <p className="success-text">{success}</p> : null}
+
+      {!loading ? (
+        <>
+          <div className="upload-grid">
+            <article className="upload-card">
+              <header>
+                <h3>{props.target === "patient" ? "Pacientes · laptop" : "Psicologos · laptop"}</h3>
+                <span className={`upload-status ${settings[desktopKey] ? "ok" : ""}`}>{settings[desktopKey] ? "Imagen cargada" : "Sin imagen"}</span>
+              </header>
+              <label className="upload-trigger" htmlFor={`hero-${props.target}-desktop`}>
+                Seleccionar imagen
+              </label>
+              <input
+                id={`hero-${props.target}-desktop`}
+                className="upload-input-hidden"
+                type="file"
+                accept="image/*"
+                onChange={(event) => void setImageFromFile(event, desktopKey)}
+              />
+              {settings[desktopKey] ? (
+                <div className="upload-preview">
+                  <img src={settings[desktopKey] ?? ""} alt={`${props.target} desktop hero`} loading="lazy" />
+                </div>
+              ) : (
+                <div className="upload-preview empty">Preview disponible al cargar imagen</div>
+              )}
+            </article>
+
+            <article className="upload-card">
+              <header>
+                <h3>{props.target === "patient" ? "Pacientes · telefono" : "Psicologos · telefono"}</h3>
+                <span className={`upload-status ${settings[mobileKey] ? "ok" : ""}`}>{settings[mobileKey] ? "Imagen cargada" : "Sin imagen"}</span>
+              </header>
+              <label className="upload-trigger" htmlFor={`hero-${props.target}-mobile`}>
+                Seleccionar imagen
+              </label>
+              <input
+                id={`hero-${props.target}-mobile`}
+                className="upload-input-hidden"
+                type="file"
+                accept="image/*"
+                onChange={(event) => void setImageFromFile(event, mobileKey)}
+              />
+              {settings[mobileKey] ? (
+                <div className="upload-preview">
+                  <img src={settings[mobileKey] ?? ""} alt={`${props.target} mobile hero`} loading="lazy" />
+                </div>
+              ) : (
+                <div className="upload-preview empty">Preview disponible al cargar imagen</div>
+              )}
+            </article>
+          </div>
+
+          <button className="primary" type="button" onClick={() => void save()} disabled={saving || !hasPendingChanges}>
+            {saving
+              ? "Guardando imagenes..."
+              : hasPendingChanges
+                ? "Guardar imagenes"
+                : "Sin cambios por guardar"}
+          </button>
+        </>
+      ) : null}
+    </>
+  );
+
+  if (layout === "embedded") {
+    return <div className="stack portal-hero-settings-embedded">{body}</div>;
+  }
+
   return (
     <details className="card stack web-admin-accordion">
       <summary className="web-admin-accordion-summary">
@@ -129,73 +210,7 @@ export function PortalHeroSettingsSection(props: { token: string; language: AppL
           <p>{sectionSubtitle}</p>
         </div>
       </summary>
-      <div className="web-admin-accordion-content stack">
-        {loading ? <p>Cargando configuracion...</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
-        {success ? <p className="success-text">{success}</p> : null}
-
-        {!loading ? (
-          <>
-            <div className="upload-grid">
-              <article className="upload-card">
-                <header>
-                  <h3>{props.target === "patient" ? "Pacientes · laptop" : "Psicologos · laptop"}</h3>
-                  <span className={`upload-status ${settings[desktopKey] ? "ok" : ""}`}>{settings[desktopKey] ? "Imagen cargada" : "Sin imagen"}</span>
-                </header>
-                <label className="upload-trigger" htmlFor={`hero-${props.target}-desktop`}>
-                  Seleccionar imagen
-                </label>
-                <input
-                  id={`hero-${props.target}-desktop`}
-                  className="upload-input-hidden"
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => void setImageFromFile(event, desktopKey)}
-                />
-                {settings[desktopKey] ? (
-                  <div className="upload-preview">
-                    <img src={settings[desktopKey] ?? ""} alt={`${props.target} desktop hero`} loading="lazy" />
-                  </div>
-                ) : (
-                  <div className="upload-preview empty">Preview disponible al cargar imagen</div>
-                )}
-              </article>
-
-              <article className="upload-card">
-                <header>
-                  <h3>{props.target === "patient" ? "Pacientes · telefono" : "Psicologos · telefono"}</h3>
-                  <span className={`upload-status ${settings[mobileKey] ? "ok" : ""}`}>{settings[mobileKey] ? "Imagen cargada" : "Sin imagen"}</span>
-                </header>
-                <label className="upload-trigger" htmlFor={`hero-${props.target}-mobile`}>
-                  Seleccionar imagen
-                </label>
-                <input
-                  id={`hero-${props.target}-mobile`}
-                  className="upload-input-hidden"
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => void setImageFromFile(event, mobileKey)}
-                />
-                {settings[mobileKey] ? (
-                  <div className="upload-preview">
-                    <img src={settings[mobileKey] ?? ""} alt={`${props.target} mobile hero`} loading="lazy" />
-                  </div>
-                ) : (
-                  <div className="upload-preview empty">Preview disponible al cargar imagen</div>
-                )}
-              </article>
-            </div>
-
-            <button className="primary" type="button" onClick={() => void save()} disabled={saving || !hasPendingChanges}>
-              {saving
-                ? "Guardando imagenes..."
-                : hasPendingChanges
-                  ? "Guardar imagenes"
-                  : "Sin cambios por guardar"}
-            </button>
-          </>
-        ) : null}
-      </div>
+      <div className="web-admin-accordion-content stack">{body}</div>
     </details>
   );
 }

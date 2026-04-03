@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { PatientOpsAvatar } from "./PatientsOpsSections";
 import { SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../../constants";
 import type {
   AdminBookingOps,
@@ -6,6 +7,17 @@ import type {
   AdminProfessionalOps,
   PatientStatus
 } from "../../types";
+
+function formatIntakeQuestionLabel(rawKey: string): string {
+  const normalized = rawKey
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+  if (!normalized) {
+    return "Pregunta";
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
 
 export interface CreatePatientFormState {
   fullName: string;
@@ -135,6 +147,8 @@ export function PatientEditModal(props: {
   sessionReasonDrafts: Record<string, string>;
   sessionOpsLoading: boolean;
   patientSaveLoading: boolean;
+  triagePending: boolean;
+  triageActionLoading: boolean;
   setPatientDetailDrafts: Dispatch<SetStateAction<Record<string, PatientDetailDraft>>>;
   setBookingDrafts: Dispatch<SetStateAction<Record<string, BookingDraft>>>;
   setSessionReasonDrafts: Dispatch<SetStateAction<Record<string, string>>>;
@@ -143,9 +157,11 @@ export function PatientEditModal(props: {
   isoToInputDateTime: (value: string) => string;
   onClose: () => void;
   onSavePatient: () => void;
-  onSaveRemainingSessions: () => void;
   onSaveBooking: (bookingId: string) => void;
   onCancelBooking: (bookingId: string) => void;
+  onReactivateBooking: (bookingId: string) => void;
+  onApproveTriage: () => void;
+  onRejectTriage: () => void;
 }) {
   if (!props.open || !props.editingPatient || !props.editingPatientDraft) {
     return null;
@@ -153,12 +169,16 @@ export function PatientEditModal(props: {
 
   const editingPatient = props.editingPatient;
   const editingPatientDraft = props.editingPatientDraft;
+  const intakeEntries = Object.entries(editingPatient.intakeAnswers ?? {});
 
   return (
     <div className="patient-modal-backdrop" onClick={props.onClose}>
       <div className="patient-modal" onClick={(event) => event.stopPropagation()}>
         <div className="patient-modal-head">
-          <h3>{editingPatient.fullName}</h3>
+          <div className="patient-modal-head-main">
+            <PatientOpsAvatar url={editingPatient.avatarUrl} label={editingPatient.fullName} size="lg" />
+            <h3>{editingPatient.fullName}</h3>
+          </div>
           <button type="button" onClick={props.onClose}>Cerrar</button>
         </div>
 
@@ -263,6 +283,27 @@ export function PatientEditModal(props: {
 
         </div>
 
+        <section className="risk-intake-section">
+          <div className="risk-intake-head">
+            <h4>Detalle del cuestionario de riesgo</h4>
+            <span className={`risk-level-pill ${editingPatient.intakeRiskLevel ?? "medium"}`}>
+              Riesgo {editingPatient.intakeRiskLevel ?? "medium"}
+            </span>
+          </div>
+          {intakeEntries.length === 0 ? (
+            <p className="risk-intake-empty">No hay respuestas de screening cargadas para este paciente.</p>
+          ) : (
+            <div className="risk-intake-grid">
+              {intakeEntries.map(([key, answer]) => (
+                <label key={key}>
+                  {formatIntakeQuestionLabel(key)}
+                  <textarea value={answer} readOnly rows={3} />
+                </label>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="sessions-subsection">
           <div className="sessions-subsection-head">
             <h4>Subseccion de sesiones</h4>
@@ -338,17 +379,24 @@ export function PatientEditModal(props: {
 
           <details className="card stack sessions-confirmed-accordion">
             <summary className="patient-inline-head">
-              <h4>Ver sesiones confirmadas ({props.confirmedSessionsCount})</h4>
+              <h4>Ver sesiones ({props.confirmedSessionsCount} confirmadas)</h4>
               <span>Expandir</span>
             </summary>
-            {props.loadingEditingBookings ? <p>Cargando sesiones confirmadas...</p> : null}
-            {!props.loadingEditingBookings && props.editingBookings.length === 0 ? <p>No hay sesiones confirmadas para este paciente.</p> : null}
+            {props.loadingEditingBookings ? <p>Cargando sesiones...</p> : null}
+            {!props.loadingEditingBookings && props.editingBookings.length === 0 ? <p>No hay sesiones para este paciente.</p> : null}
 
             {props.editingBookings.map((booking) => {
               const draft = props.bookingDrafts[booking.id];
               if (!draft) {
                 return null;
               }
+              const bookingEndsAt = new Date(draft.endsAt).getTime();
+              const isFutureBooking = Number.isFinite(bookingEndsAt) ? bookingEndsAt >= Date.now() : false;
+              const isTrialBooking = booking.consumedPurchaseId == null || booking.consumedCredits === 0;
+              const isCancelled = draft.status === "CANCELLED";
+              const blockedCancellationForFutureTrial = isTrialBooking && isFutureBooking;
+              const canCancelBooking = !isCancelled && !blockedCancellationForFutureTrial;
+              const canReactivateBooking = isCancelled && blockedCancellationForFutureTrial;
               const draftProfessional = props.professionals.find((professional) => professional.id === draft.professionalId) ?? null;
               const draftSlotValue = draft.startsAt + "__" + draft.endsAt;
 
@@ -451,13 +499,23 @@ export function PatientEditModal(props: {
                       />
                     </label>
                   </div>
+                  {blockedCancellationForFutureTrial ? (
+                    <p>Sesion de prueba futura: no se permite cancelar, solo modificar o reactivar.</p>
+                  ) : null}
                   <div className="button-row ops-actions">
                     <button className="primary" type="button" onClick={() => props.onSaveBooking(booking.id)}>
                       Guardar sesion
                     </button>
-                    <button className="danger" type="button" onClick={() => props.onCancelBooking(booking.id)} disabled={props.sessionOpsLoading}>
-                      Cancelar sesion
-                    </button>
+                    {canCancelBooking ? (
+                      <button className="danger" type="button" onClick={() => props.onCancelBooking(booking.id)} disabled={props.sessionOpsLoading}>
+                        Cancelar sesion
+                      </button>
+                    ) : null}
+                    {canReactivateBooking ? (
+                      <button className="primary" type="button" onClick={() => props.onReactivateBooking(booking.id)} disabled={props.sessionOpsLoading}>
+                        Reactivar sesion
+                      </button>
+                    ) : null}
                   </div>
                 </details>
               );
@@ -465,20 +523,32 @@ export function PatientEditModal(props: {
           </details>
         </section>
 
-        <div className="button-row ops-actions">
+        <div className="button-row ops-actions patient-modal-footer-actions">
           <button className="primary" type="button" disabled={props.patientSaveLoading} onClick={props.onSavePatient}>
-            {props.patientSaveLoading ? "Guardando..." : "Guardar paciente"}
+            {props.patientSaveLoading ? "Guardando..." : "Guardar cambios"}
           </button>
-          <button
-            type="button"
-            onClick={props.onSaveRemainingSessions}
-            disabled={props.sessionOpsLoading}
-          >
-            Guardar sesiones disponibles
-          </button>
+          {props.triagePending ? (
+            <div className="risk-triage-form-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={props.onApproveTriage}
+                disabled={props.triageActionLoading}
+              >
+                {props.triageActionLoading ? "Procesando..." : "Aprobar"}
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={props.onRejectTriage}
+                disabled={props.triageActionLoading}
+              >
+                Rechazar
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
-

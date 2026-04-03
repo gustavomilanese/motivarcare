@@ -1,7 +1,7 @@
 {
   "name": "MotivarCare Admin",
   "short_name": "MotivarCare",
-  "start_url": "/web-admin",
+  "start_url": "/settings",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1E3A8A",

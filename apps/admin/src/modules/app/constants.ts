@@ -4,15 +4,15 @@ export const links: Array<{ to: PortalPath; label: string }> = [
   { to: "/", label: "Dashboard" },
   { to: "/patients", label: "Pacientes" },
   { to: "/professionals", label: "Psicologos" },
-  { to: "/plans-packages", label: "Planes y paquetes de sesiones" },
-  { to: "/web-admin", label: "Gestion Landing Page" },
+  { to: "/sessions", label: "Sesiones" },
   { to: "/finances", label: "Finanzas" },
   { to: "/settings", label: "Configuracion" },
-  { to: "/ai", label: "IA Audit" }
+  { to: "/ai", label: "Auditoria IA (prox.)" }
 ];
 
 export const defaultCreateForm: CreateUserFormState = {
   role: "PATIENT",
+  isTestUser: false,
   fullName: "",
   email: "",
   password: "",
