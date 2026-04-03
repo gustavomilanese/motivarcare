@@ -21,6 +21,7 @@ export type ApiClient = <T>(path: string, init?: RequestInit, token?: string | n
 
 export async function apiRequestJson<T>(params: ApiRequestJsonParams): Promise<T> {
   const response = await fetch(`${params.baseUrl}${params.path}`, {
+    credentials: params.init?.credentials ?? "include",
     ...params.init,
     headers: {
       "Content-Type": "application/json",
