@@ -73,7 +73,8 @@ export function AuthScreen(props: {
           email: response.user.email,
           emailVerified: response.user.emailVerified,
           role: "PROFESSIONAL",
-          professionalProfileId: response.user.professionalProfileId
+          professionalProfileId: response.user.professionalProfileId,
+          avatarUrl: response.user.avatarUrl ?? null
         },
         emailVerificationRequired: response.emailVerificationRequired
       });
@@ -95,6 +96,7 @@ export function AuthScreen(props: {
   return (
     <div className="pro-auth-shell">
       <section className="pro-auth-card">
+        <p className="pro-auth-eyebrow">MotivarCare</p>
         <div className="pro-auth-head">
           <span className="pro-chip">{t(props.language, { es: "Acceso profesional", en: "Professional access", pt: "Acesso profissional" })}</span>
           {props.onBack ? (
@@ -104,26 +106,36 @@ export function AuthScreen(props: {
           ) : null}
         </div>
         <h1>{t(props.language, { es: "Accede a tu cuenta profesional", en: "Access your professional account", pt: "Acesse sua conta profissional" })}</h1>
-        <p>
+        <p className="pro-auth-lead">
           {t(props.language, {
-            es: "Ingresa con tus credenciales para continuar con pacientes, agenda y sesiones.",
-            en: "Sign in with your credentials to continue with patients, schedule, and sessions.",
-            pt: "Entre com suas credenciais para continuar com pacientes, agenda e sessoes."
+            es: "Pacientes, agenda, disponibilidad e ingresos en un solo lugar.",
+            en: "Patients, schedule, availability, and earnings in one place.",
+            pt: "Pacientes, agenda, disponibilidade e receitas em um so lugar."
           })}
         </p>
+
+        <div className="pro-auth-divider" aria-hidden="true">
+          <span />
+          <span>{t(props.language, { es: "Continuar con email", en: "Continue with email", pt: "Continuar com email" })}</span>
+          <span />
+        </div>
 
         <form className="pro-stack pro-auth-simple-form" onSubmit={handleSubmit}>
           <label>
             {t(props.language, { es: "Usuario (email)", en: "User (email)", pt: "Usuario (e-mail)" })}
-            <input type="email" value={email} autoComplete="email" onChange={(event) => setEmail(event.target.value)} />
+            <input type="email" name="email" value={email} autoComplete="email" inputMode="email" onChange={(event) => setEmail(event.target.value)} />
           </label>
 
           <label>
             {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
-            <input type="password" value={password} autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} />
+            <input type="password" name="password" value={password} autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} />
           </label>
 
-          {error ? <p className="pro-error">{error}</p> : null}
+          {error ? (
+            <p className="pro-error pro-auth-error-banner" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <button className="pro-primary" type="submit" disabled={loading}>
             {loading

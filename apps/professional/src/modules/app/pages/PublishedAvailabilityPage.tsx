@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { InlineBadge } from "@therapy/ui";
+import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 
@@ -29,6 +30,26 @@ function formatTime(value: string, language: AppLanguage): string {
       minute: "2-digit"
     }
   });
+}
+
+function buildSlotKey(startsAt: string, endsAt: string): string {
+  return `${startsAt}__${endsAt}`;
+}
+
+function formatBookingStatus(status: string, language: AppLanguage): string {
+  if (status === "confirmed") {
+    return t(language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
+  }
+  if (status === "requested") {
+    return t(language, { es: "Solicitada", en: "Requested", pt: "Solicitada" });
+  }
+  if (status === "completed") {
+    return t(language, { es: "Completada", en: "Completed", pt: "Concluida" });
+  }
+  if (status === "cancelled") {
+    return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });
+  }
+  return status;
 }
 
 function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
@@ -193,15 +214,26 @@ function usePublishedAvailabilityData(token: string, language: AppLanguage) {
 export function AgendaPage(props: { token: string; language: AppLanguage }) {
   const [bookings, setBookings] = useState<ProfessionalBookingsResponse["bookings"]>([]);
   const [loading, setLoading] = useState(true);
-  const [completingBookingId, setCompletingBookingId] = useState("");
   const [error, setError] = useState("");
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDayKey, setSelectedDayKey] = useState(() => getCalendarDayKey(new Date()));
-
-  const loadBookings = async () => {
-    const response = await apiRequest<ProfessionalBookingsResponse>("/api/bookings/mine", props.token);
-    setBookings(response.bookings ?? []);
-  };
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+  const [isQuickAgendaOpen, setIsQuickAgendaOpen] = useState(false);
+  const [quickAgendaDate, setQuickAgendaDate] = useState(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleTargetBooking, setRescheduleTargetBooking] = useState<UpcomingReservationItem | null>(null);
+  const [rescheduleSlots, setRescheduleSlots] = useState<AvailabilitySlot[]>([]);
+  const [selectedRescheduleSlotKey, setSelectedRescheduleSlotKey] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelTargetBooking, setCancelTargetBooking] = useState<UpcomingReservationItem | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [bookingActionInProgressId, setBookingActionInProgressId] = useState<string | null>(null);
+  const [bookingActionError, setBookingActionError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -241,29 +273,6 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
     };
   }, [props.language, props.token]);
 
-  const handleMarkCompleted = async (bookingId: string) => {
-    setCompletingBookingId(bookingId);
-    setError("");
-    try {
-      await apiRequest(`/api/bookings/${bookingId}/complete`, props.token, {
-        method: "POST"
-      });
-      await loadBookings();
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo marcar la sesión como completada.",
-              en: "Could not mark session as completed.",
-              pt: "Nao foi possivel marcar a sessao como concluida."
-            })
-      );
-    } finally {
-      setCompletingBookingId("");
-    }
-  };
-
   const now = Date.now();
   const calendarDays = useMemo(() => {
     const currentWeek = getWeekCalendarDays(viewDate);
@@ -300,8 +309,26 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
     }
   }, [calendarDays, selectedDayKey]);
 
-  const selectedDayBookings = bookingsByDay.get(selectedDayKey) ?? [];
-  const selectedDayDate = new Date(`${selectedDayKey}T00:00:00`);
+  const quickAgendaDayKey = getCalendarDayKey(quickAgendaDate);
+  const quickAgendaBookings = bookingsByDay.get(quickAgendaDayKey) ?? [];
+  const todayKey = getCalendarDayKey(new Date());
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowKey = getCalendarDayKey(tomorrowDate);
+  const quickAgendaDateLabel =
+    quickAgendaDayKey === todayKey
+      ? t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" })
+      : quickAgendaDayKey === tomorrowKey
+        ? t(props.language, { es: "Mañana", en: "Tomorrow", pt: "Amanhã" })
+        : formatDateHeading(quickAgendaDate.toISOString(), props.language);
+  const quickAgendaBadge = replaceTemplate(
+    t(props.language, {
+      es: "{count} sesiones",
+      en: "{count} sessions",
+      pt: "{count} sessões"
+    }),
+    { count: String(quickAgendaBookings.length) }
+  );
   const dayNames = useMemo(
     () => [
       t(props.language, { es: "Lun", en: "Mon", pt: "Seg" }),
@@ -314,20 +341,6 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
     ],
     [props.language]
   );
-  const weekTimeline = useMemo(() => {
-    const start = getStartOfWeek(viewDate).getTime();
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const minStart = Math.max(start, startOfToday.getTime());
-    const end = start + 14 * 24 * 60 * 60 * 1000;
-    return bookings
-      .filter((booking) => {
-        const time = new Date(booking.startsAt).getTime();
-        return time >= minStart && time < end;
-      })
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-  }, [bookings, viewDate]);
-
   const summary = useMemo(() => {
     const upcoming = bookings.filter(
       (booking) =>
@@ -339,6 +352,234 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
 
     return { upcoming, completed, cancelled };
   }, [bookings, now]);
+
+  const upcomingReservations = useMemo(
+    () =>
+      bookings
+        .filter(
+          (booking) =>
+            new Date(booking.endsAt).getTime() >= now &&
+            (booking.status === "confirmed" || booking.status === "requested")
+        )
+        .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime()),
+    [bookings, now]
+  );
+  const upcomingReservationItems = useMemo<UpcomingReservationItem[]>(
+    () =>
+      upcomingReservations.map((booking) => ({
+        id: booking.id,
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        patientName: booking.counterpartName ?? "-",
+        patientEmail: booking.counterpartEmail ?? "",
+        status: booking.status,
+        joinUrl: booking.joinUrl ?? null
+      })),
+    [upcomingReservations]
+  );
+
+  useEffect(() => {
+    if (!isQuickAgendaOpen) {
+      return;
+    }
+
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsQuickAgendaOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isQuickAgendaOpen]);
+
+  useEffect(() => {
+    if (!isCancelModalOpen) {
+      return;
+    }
+
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCancelModalOpen(false);
+        setCancelTargetBooking(null);
+        setCancelReason("");
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isCancelModalOpen]);
+
+  const openTodayQuickAgenda = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setQuickAgendaDate(today);
+    setIsQuickAgendaOpen(true);
+  };
+
+  const shiftQuickAgendaDay = (delta: number) => {
+    setQuickAgendaDate((current) => {
+      const next = new Date(current);
+      next.setDate(current.getDate() + delta);
+      return next;
+    });
+  };
+
+  const openRescheduleModal = async (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setBookingActionInProgressId(booking.id);
+    try {
+      const response = await apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token);
+      const nowDate = new Date();
+      const options = (response.slots ?? []).filter((slot) => {
+        if (slot.isBlocked) {
+          return false;
+        }
+        if (new Date(slot.startsAt).getTime() < nowDate.getTime()) {
+          return false;
+        }
+        return !bookings.some(
+          (existingBooking) =>
+            existingBooking.id !== booking.id
+            && (existingBooking.status === "confirmed" || existingBooking.status === "requested")
+            && rangesOverlap(slot.startsAt, slot.endsAt, existingBooking.startsAt, existingBooking.endsAt)
+        );
+      });
+
+      setRescheduleTargetBooking(booking);
+      setRescheduleSlots(options);
+      setSelectedRescheduleSlotKey(options[0] ? buildSlotKey(options[0].startsAt, options[0].endsAt) : "");
+      setRescheduleReason("");
+      setIsRescheduleModalOpen(true);
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo cargar la disponibilidad para reagendar.",
+              en: "Could not load availability to reschedule.",
+              pt: "Nao foi possivel carregar disponibilidade para reagendar."
+            })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const submitReschedule = async () => {
+    if (!rescheduleTargetBooking || !selectedRescheduleSlotKey) {
+      return;
+    }
+
+    const [startsAt, endsAt] = selectedRescheduleSlotKey.split("__");
+    if (!startsAt || !endsAt) {
+      return;
+    }
+
+    setBookingActionError("");
+    setBookingActionInProgressId(rescheduleTargetBooking.id);
+    try {
+      const response = await apiRequest<{
+        booking: {
+          id: string;
+          startsAt: string;
+          endsAt: string;
+          status: string;
+          joinUrlProfessional?: string | null;
+        };
+      }>(
+        `/api/bookings/${rescheduleTargetBooking.id}/reschedule`,
+        props.token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            startsAt,
+            endsAt,
+            professionalTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            reason: rescheduleReason.trim() || undefined
+          })
+        }
+      );
+
+      setBookings((current) =>
+        current.map((item) =>
+          item.id === rescheduleTargetBooking.id
+            ? {
+                ...item,
+                startsAt: response.booking.startsAt,
+                endsAt: response.booking.endsAt,
+                status: response.booking.status,
+                joinUrl: response.booking.joinUrlProfessional ?? item.joinUrl
+              }
+            : item
+        )
+      );
+      setIsRescheduleModalOpen(false);
+      setRescheduleTargetBooking(null);
+      setRescheduleSlots([]);
+      setSelectedRescheduleSlotKey("");
+      setRescheduleReason("");
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo reagendar la reserva.",
+              en: "Could not reschedule booking.",
+              pt: "Nao foi possivel reagendar a reserva."
+            })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const openCancelModal = (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setCancelTargetBooking(booking);
+    setCancelReason("");
+    setIsCancelModalOpen(true);
+  };
+
+  const submitCancelBooking = async () => {
+    if (!cancelTargetBooking) {
+      return;
+    }
+
+    setBookingActionError("");
+    setBookingActionInProgressId(cancelTargetBooking.id);
+    try {
+      await apiRequest<{ message: string }>(
+        `/api/bookings/${cancelTargetBooking.id}/cancel`,
+        props.token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            reason: cancelReason.trim() || "cancelled_by_professional"
+          })
+        }
+      );
+
+      setBookings((current) =>
+        current.map((item) => (item.id === cancelTargetBooking.id ? { ...item, status: "cancelled" } : item))
+      );
+      setIsCancelModalOpen(false);
+      setCancelTargetBooking(null);
+      setCancelReason("");
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo cancelar la reserva.",
+              en: "Could not cancel booking.",
+              pt: "Nao foi possivel cancelar a reserva."
+            })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
 
   return (
     <div className="pro-grid-stack">
@@ -368,191 +609,237 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
         </article>
       </section>
 
-      <section className="pro-card agenda-calendar-card">
-        <div className="agenda-calendar-head">
-          <div>
-            <h2>{t(props.language, { es: "Calendar", en: "Calendar", pt: "Calendar" })}</h2>
-          </div>
-          <div className="agenda-calendar-nav">
-            <button
-              type="button"
-              aria-label={t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
-              onClick={() =>
-                setViewDate((current) => {
-                  const next = new Date(current);
-                  next.setDate(current.getDate() - 14);
-                  return next;
-                })
-              }
-            >
-              ‹
-            </button>
-            <strong>{getTwoWeekLabel(viewDate, props.language)}</strong>
-            <button
-              type="button"
-              aria-label={t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
-              onClick={() =>
-                setViewDate((current) => {
-                  const next = new Date(current);
-                  next.setDate(current.getDate() + 14);
-                  return next;
-                })
-              }
-            >
-              ›
-            </button>
-          </div>
+      <section className="pro-card agenda-upcoming-panel">
+        <div className="agenda-upcoming-head">
+          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
+          <button
+            type="button"
+            className="agenda-today-button"
+            onClick={openTodayQuickAgenda}
+          >
+            {t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" })}
+          </button>
         </div>
-        {loading ? <p>{t(props.language, { es: "Cargando agenda...", en: "Loading agenda...", pt: "Carregando agenda..." })}</p> : null}
-        {error ? <p className="pro-error">{error}</p> : null}
-        {!loading && !error && bookings.length === 0 ? (
-          <p>{t(props.language, { es: "Todavia no hay sesiones registradas.", en: "There are no sessions yet.", pt: "Ainda nao ha sessoes registradas." })}</p>
-        ) : null}
-        {!loading && !error && bookings.length > 0 ? (
-          <div className="agenda-calendar-layout">
-            <div className="agenda-calendar-grid-wrap">
-              <div className="agenda-calendar-grid">
-                {dayNames.map((day) => (
-                  <span className="agenda-calendar-dayname" key={day}>{day}</span>
-                ))}
-                {calendarDays.map((day) => {
-                  const dayKey = getCalendarDayKey(day);
-                  const dayBookings = bookingsByDay.get(dayKey) ?? [];
-                  const isToday = dayKey === getCalendarDayKey(new Date());
-                  const isActive = dayKey === selectedDayKey;
-                  const nextBooking = dayBookings[0];
-
-                  return (
-                    <button
-                      className={`agenda-calendar-day ${isToday ? "today" : ""} ${dayBookings.length > 0 ? "busy" : ""} ${isActive ? "active" : ""}`}
-                      key={dayKey}
-                      type="button"
-                      onClick={() => setSelectedDayKey(dayKey)}
-                    >
-                      <span className="agenda-calendar-date">{day.getDate()}</span>
-                      {isToday ? (
-                        <InlineBadge>
-                          {t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" })}
-                        </InlineBadge>
-                      ) : null}
-                      {dayBookings.length > 0 ? (
-                        <>
-                          <span className="agenda-calendar-count">
-                            {replaceTemplate(
-                              t(props.language, {
-                                es: "{count} sesion",
-                                en: "{count} session",
-                                pt: "{count} sessao"
-                              }),
-                              { count: String(dayBookings.length) }
-                            )}
-                          </span>
-                          <span className="agenda-calendar-time">
-                            {nextBooking ? formatTime(nextBooking.startsAt, props.language) : ""}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="agenda-calendar-empty" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <UpcomingReservationsList
+          language={props.language}
+          reservations={upcomingReservationItems}
+          loading={loading}
+          error={error}
+          busyBookingId={bookingActionInProgressId}
+          onRequestReschedule={openRescheduleModal}
+          onRequestCancel={openCancelModal}
+        />
+        {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
       </section>
 
-      {!loading && !error && bookings.length > 0 ? (
-        <section className="pro-card agenda-calendar-aside">
-          <h3>
-            {formatDateHeading(selectedDayDate.toISOString(), props.language)}
-            {selectedDayKey === getCalendarDayKey(new Date())
-              ? ` · ${t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" })}`
-              : ""}
-          </h3>
-          {selectedDayBookings.length === 0 ? (
-            <p>
-              {t(props.language, {
-                es: "No hay sesiones en este dia.",
-                en: "There are no sessions on this day.",
-                pt: "Nao ha sessoes neste dia."
-              })}
-            </p>
-          ) : (
-            <div className="agenda-day-list">
-              {selectedDayBookings.map((booking) => (
-                <article className="agenda-day-item" key={booking.id}>
-                  <strong className="agenda-day-time">
-                    {formatTime(booking.startsAt, props.language)} - {formatTime(booking.endsAt, props.language)}
-                  </strong>
-                  <div className="agenda-day-patient">
-                    <span>{booking.counterpartName ?? "-"}</span>
-                    <small>{booking.counterpartEmail ?? ""}</small>
-                  </div>
-                  <span className={`agenda-status agenda-status-${booking.status}`}>{booking.status}</span>
-                  <div className="agenda-day-actions">
+      {isQuickAgendaOpen ? (
+        <div className="agenda-quick-modal-backdrop" onClick={() => setIsQuickAgendaOpen(false)}>
+          <section
+            className="agenda-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t(props.language, { es: "Agenda rápida", en: "Quick agenda", pt: "Agenda rápida" })}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="agenda-quick-modal-head">
+              <div>
+                <h3>{t(props.language, { es: "Agenda rápida", en: "Quick agenda", pt: "Agenda rápida" })}</h3>
+                <p>{formatDateHeading(quickAgendaDate.toISOString(), props.language)}</p>
+              </div>
+              <button type="button" onClick={() => setIsQuickAgendaOpen(false)}>
+                {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+              </button>
+            </header>
+
+            <div className="agenda-quick-modal-nav">
+              <button
+                type="button"
+                aria-label={t(props.language, { es: "Día anterior", en: "Previous day", pt: "Dia anterior" })}
+                onClick={() => shiftQuickAgendaDay(-1)}
+              >
+                ‹
+              </button>
+              <strong>{quickAgendaDateLabel}</strong>
+              <button
+                type="button"
+                aria-label={t(props.language, { es: "Día siguiente", en: "Next day", pt: "Dia seguinte" })}
+                onClick={() => shiftQuickAgendaDay(1)}
+              >
+                ›
+              </button>
+              <span className="agenda-quick-modal-badge">{quickAgendaBadge}</span>
+            </div>
+
+            {quickAgendaBookings.length === 0 ? (
+              <div className="agenda-quick-modal-empty">
+                <strong>{t(props.language, { es: "Sin sesiones para este día", en: "No sessions for this day", pt: "Sem sessões para este dia" })}</strong>
+                <p>{t(props.language, { es: "Navega a mañana para revisar la continuidad.", en: "Move to tomorrow to review upcoming activity.", pt: "Navegue para amanhã para revisar a continuidade." })}</p>
+              </div>
+            ) : (
+              <div className="agenda-quick-modal-list">
+                {quickAgendaBookings.map((booking) => (
+                  <article className="agenda-quick-modal-item" key={booking.id}>
+                    <div className="agenda-quick-modal-time">
+                      <strong>{formatTime(booking.startsAt, props.language)}</strong>
+                      <span>{formatTime(booking.endsAt, props.language)}</span>
+                    </div>
+                    <div className="agenda-quick-modal-patient">
+                      <strong>{booking.counterpartName ?? "-"}</strong>
+                      <small>{booking.counterpartEmail ?? ""}</small>
+                    </div>
+                    <span className={`agenda-status agenda-status-${booking.status}`}>{formatBookingStatus(booking.status, props.language)}</span>
                     {(booking.status === "confirmed" || booking.status === "requested") && booking.joinUrl ? (
                       <a href={booking.joinUrl} target="_blank" rel="noreferrer" className="agenda-join-button">
-                        {t(props.language, { es: "Acceder videollamada", en: "Open video call", pt: "Acessar videochamada" })}
+                        {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}
                       </a>
                     ) : (
-                      <span className="pro-muted">
-                        {t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}
-                      </span>
+                      <span className="pro-muted">{t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}</span>
                     )}
-                    {booking.status === "confirmed" && new Date(booking.startsAt).getTime() <= now ? (
-                      <button
-                        type="button"
-                        className="agenda-complete-button"
-                        disabled={completingBookingId === booking.id}
-                        onClick={() => void handleMarkCompleted(booking.id)}
-                      >
-                        {completingBookingId === booking.id
-                          ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-                          : t(props.language, { es: "Marcar completada", en: "Mark completed", pt: "Marcar concluida" })}
-                      </button>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       ) : null}
 
-      {!loading && !error && weekTimeline.length > 0 ? (
-        <section className="pro-card agenda-week-list-card">
-          <h2>{t(props.language, { es: "Sesiones de estas dos semanas", en: "Sessions in these two weeks", pt: "Sessoes destas duas semanas" })}</h2>
-          <ul className="agenda-week-list">
-            {weekTimeline.map((booking) => (
-              <li key={booking.id}>
-                <div>
-                  <strong>{booking.counterpartName ?? "-"}</strong>
-                  <span>
-                    {formatDateHeading(booking.startsAt, props.language)} · {formatTime(booking.startsAt, props.language)}
-                  </span>
-                </div>
-                <div className="agenda-week-item-actions">
-                  <span className={`agenda-status agenda-status-${booking.status}`}>{booking.status}</span>
-                  {booking.status === "confirmed" && new Date(booking.startsAt).getTime() <= now ? (
-                    <button
-                      type="button"
-                      className="agenda-complete-button"
-                      disabled={completingBookingId === booking.id}
-                      onClick={() => void handleMarkCompleted(booking.id)}
-                    >
-                      {completingBookingId === booking.id
-                        ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-                        : t(props.language, { es: "Completar", en: "Complete", pt: "Concluir" })}
-                    </button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {isCancelModalOpen ? (
+        <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => setIsCancelModalOpen(false)}>
+          <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h3>{t(props.language, { es: "Cancelar reserva", en: "Cancel booking", pt: "Cancelar reserva" })}</h3>
+              <button type="button" onClick={() => setIsCancelModalOpen(false)} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>×</button>
+            </header>
+            <label>
+              <span>{t(props.language, { es: "Motivo para el paciente (opcional)", en: "Reason for the patient (optional)", pt: "Motivo para o paciente (opcional)" })}</span>
+              <textarea
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder={t(props.language, { es: "Ej: hoy no podré atender por un imprevisto.", en: "e.g. I cannot attend today due to an unforeseen issue.", pt: "Ex: hoje não poderei atender por um imprevisto." })}
+              />
+            </label>
+            <div className="pro-reschedule-modal-actions">
+              <button type="button" onClick={() => setIsCancelModalOpen(false)}>
+                {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+              </button>
+              <button type="button" className="danger" disabled={bookingActionInProgressId === cancelTargetBooking?.id} onClick={() => void submitCancelBooking()}>
+                {bookingActionInProgressId === cancelTargetBooking?.id
+                  ? t(props.language, { es: "Cancelando...", en: "Cancelling...", pt: "Cancelando..." })
+                  : t(props.language, { es: "Confirmar cancelación", en: "Confirm cancellation", pt: "Confirmar cancelamento" })}
+              </button>
+            </div>
+          </section>
+        </div>
       ) : null}
+
+      <section className="pro-card agenda-calendar-card agenda-calendar-collapsible">
+        <button
+          type="button"
+          className="agenda-calendar-toggle"
+          aria-expanded={isCalendarExpanded}
+          onClick={() => setIsCalendarExpanded((current) => !current)}
+        >
+          <h2>{t(props.language, { es: "Calendario", en: "Calendar", pt: "Calendário" })}</h2>
+          <span>{isCalendarExpanded
+            ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
+            : t(props.language, { es: "Expandir", en: "Expand", pt: "Expandir" })}
+          </span>
+        </button>
+
+        {isCalendarExpanded ? (
+          <>
+            <div className="agenda-calendar-head">
+              <div className="agenda-calendar-nav">
+                <button
+                  type="button"
+                  aria-label={t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
+                  onClick={() =>
+                    setViewDate((current) => {
+                      const next = new Date(current);
+                      next.setDate(current.getDate() - 14);
+                      return next;
+                    })
+                  }
+                >
+                  ‹
+                </button>
+                <strong>{getTwoWeekLabel(viewDate, props.language)}</strong>
+                <button
+                  type="button"
+                  aria-label={t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+                  onClick={() =>
+                    setViewDate((current) => {
+                      const next = new Date(current);
+                      next.setDate(current.getDate() + 14);
+                      return next;
+                    })
+                  }
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+            {loading ? <p>{t(props.language, { es: "Cargando agenda...", en: "Loading agenda...", pt: "Carregando agenda..." })}</p> : null}
+            {error ? <p className="pro-error">{error}</p> : null}
+            {!loading && !error && bookings.length === 0 ? (
+              <p>{t(props.language, { es: "Todavia no hay sesiones registradas.", en: "There are no sessions yet.", pt: "Ainda nao ha sessoes registradas." })}</p>
+            ) : null}
+            {!loading && !error && bookings.length > 0 ? (
+              <div className="agenda-calendar-layout">
+                <div className="agenda-calendar-grid-wrap">
+                  <div className="agenda-calendar-grid">
+                    {dayNames.map((day) => (
+                      <span className="agenda-calendar-dayname" key={day}>{day}</span>
+                    ))}
+                    {calendarDays.map((day) => {
+                      const dayKey = getCalendarDayKey(day);
+                      const dayBookings = bookingsByDay.get(dayKey) ?? [];
+                      const isToday = dayKey === getCalendarDayKey(new Date());
+                      const isActive = dayKey === selectedDayKey;
+                      const nextBooking = dayBookings[0];
+
+                      return (
+                        <button
+                          className={`agenda-calendar-day ${isToday ? "today" : ""} ${dayBookings.length > 0 ? "busy" : ""} ${isActive ? "active" : ""}`}
+                          key={dayKey}
+                          type="button"
+                          onClick={() => setSelectedDayKey(dayKey)}
+                        >
+                          <span className="agenda-calendar-date">{day.getDate()}</span>
+                          {isToday ? (
+                            <InlineBadge>
+                              {t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" })}
+                            </InlineBadge>
+                          ) : null}
+                          {dayBookings.length > 0 ? (
+                            <>
+                              <span className="agenda-calendar-count">
+                                {replaceTemplate(
+                                  t(props.language, {
+                                    es: "{count} sesion",
+                                    en: "{count} session",
+                                    pt: "{count} sessao"
+                                  }),
+                                  { count: String(dayBookings.length) }
+                                )}
+                              </span>
+                              <span className="agenda-calendar-time">
+                                {nextBooking ? formatTime(nextBooking.startsAt, props.language) : ""}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="agenda-calendar-empty" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }

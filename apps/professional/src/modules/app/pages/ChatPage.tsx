@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
 import type { AuthUser, ThreadMessage, ThreadSummary } from "../types";
 
@@ -50,6 +51,8 @@ function mergeThreadsByCounterpart(threads: ThreadSummary[]): ThreadSummary[] {
 }
 
 export function ChatPage(props: { token: string; user: AuthUser; language: AppLanguage }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedPatientId = searchParams.get("patientId")?.trim() ?? "";
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string>("");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
@@ -65,6 +68,22 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
   useEffect(() => {
     selectedThreadRef.current = selectedThreadId;
   }, [selectedThreadId]);
+
+  useEffect(() => {
+    if (!requestedPatientId || threads.length === 0) {
+      return;
+    }
+    const requestedThread = threads.find((thread) => thread.patientId === requestedPatientId);
+    if (!requestedThread) {
+      return;
+    }
+
+    setSelectedThreadId(requestedThread.id);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("patientId");
+    setSearchParams(nextParams, { replace: true });
+  }, [requestedPatientId, searchParams, setSearchParams, threads]);
 
   const loadThreads = useCallback(async () => {
     try {
@@ -172,6 +191,13 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
     }
   };
 
+  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void handleSend();
+    }
+  };
+
   return (
     <section className="pro-chat-shell">
       <aside className="pro-chat-sidebar">
@@ -221,9 +247,19 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
             placeholder={t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })}
             rows={2}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleComposerKeyDown}
           />
-          <button className="pro-primary" type="button" onClick={handleSend}>
-            {t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
+          <button
+            className="wa-send"
+            type="button"
+            onClick={handleSend}
+            disabled={!draft.trim() || !selectedThread}
+            aria-label={t(props.language, { es: "Enviar mensaje", en: "Send message", pt: "Enviar mensagem" })}
+            title={t(props.language, { es: "Enviar", en: "Send", pt: "Enviar" })}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m4.2 20.3 15.8-8.3L4.2 3.7l.2 6.1 9.1 2.2-9.1 2.2-.2 6.1Z" />
+            </svg>
           </button>
         </footer>
       </div>

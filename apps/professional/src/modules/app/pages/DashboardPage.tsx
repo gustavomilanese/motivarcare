@@ -9,8 +9,15 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
+import {
+  buildProfessionalStatsQuery,
+  type RevenuePreset,
+  ymLocal,
+  ymdLocal
+} from "../lib/professionalStatsRangeQuery";
 import { apiRequest } from "../services/api";
-import type { AuthUser, DashboardResponse } from "../types";
+import type { AuthUser, AvailabilitySlot, DashboardResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -29,18 +36,6 @@ function formatDateTime(value: string, language: AppLanguage): string {
   });
 }
 
-function formatDateCompact(value: string, language: AppLanguage): string {
-  return formatDateWithLocale({
-    value,
-    language,
-    options: {
-      weekday: "short",
-      day: "numeric",
-      month: "short"
-    }
-  });
-}
-
 function formatTime(value: string, language: AppLanguage): string {
   return formatDateWithLocale({
     value,
@@ -50,6 +45,14 @@ function formatTime(value: string, language: AppLanguage): string {
       minute: "2-digit"
     }
   });
+}
+
+function buildSlotKey(startsAt: string, endsAt: string): string {
+  return `${startsAt}__${endsAt}`;
+}
+
+function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+  return new Date(startA).getTime() < new Date(endB).getTime() && new Date(endA).getTime() > new Date(startB).getTime();
 }
 
 function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
@@ -63,18 +66,47 @@ function formatMoneyCents(cents: number, language: AppLanguage, currency: Suppor
 
 export function DashboardPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency; user: AuthUser }) {
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [upcomingReservations, setUpcomingReservations] = useState<UpcomingReservationItem[]>([]);
   const [error, setError] = useState("");
+  const [bookingActionInProgressId, setBookingActionInProgressId] = useState<string | null>(null);
+  const [bookingActionError, setBookingActionError] = useState("");
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleTargetBooking, setRescheduleTargetBooking] = useState<UpcomingReservationItem | null>(null);
+  const [rescheduleSlots, setRescheduleSlots] = useState<AvailabilitySlot[]>([]);
+  const [selectedRescheduleSlotKey, setSelectedRescheduleSlotKey] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelTargetBooking, setCancelTargetBooking] = useState<UpcomingReservationItem | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [revenuePreset, setRevenuePreset] = useState<RevenuePreset>("month");
+  const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
+  const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
+  const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
   const location = useLocation();
   const upcomingSectionRef = useRef<HTMLElement | null>(null);
+
+  const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       try {
-        const response = await apiRequest<DashboardResponse>("/api/professional/dashboard", props.token);
+        const response = await apiRequest<DashboardResponse>(`/api/professional/dashboard${revenueQuery}`, props.token);
         if (active) {
           setData(response);
+          setUpcomingReservations(
+            (response.upcomingSessions ?? []).slice(0, 8).map((session) => ({
+              id: session.id,
+              startsAt: session.startsAt,
+              endsAt: session.endsAt,
+              patientName: session.patientName,
+              patientEmail: session.patientEmail,
+              patientAvatarUrl: session.patientAvatarUrl ?? null,
+              status: session.status,
+              joinUrl: session.joinUrl
+            }))
+          );
           setError("");
         }
       } catch (requestError) {
@@ -99,7 +131,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       active = false;
       window.clearInterval(timer);
     };
-  }, [props.token]);
+  }, [props.language, props.token, revenueQuery]);
 
   useEffect(() => {
     if (location.hash !== "#sesiones-agendadas") {
@@ -113,7 +145,43 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
 
     section.scrollIntoView({ behavior: "smooth", block: "start" });
     section.focus({ preventScroll: true });
-  }, [location.hash, data]);
+  }, [location.hash, upcomingReservations]);
+
+  useEffect(() => {
+    if (!isRescheduleModalOpen) {
+      return;
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsRescheduleModalOpen(false);
+        setRescheduleTargetBooking(null);
+        setRescheduleSlots([]);
+        setSelectedRescheduleSlotKey("");
+        setRescheduleReason("");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isRescheduleModalOpen]);
+
+  useEffect(() => {
+    if (!isCancelModalOpen) {
+      return;
+    }
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCancelModalOpen(false);
+        setCancelTargetBooking(null);
+        setCancelReason("");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isCancelModalOpen]);
 
   if (error) {
     return <section className="pro-card"><p className="pro-error">{error}</p></section>;
@@ -127,72 +195,278 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     );
   }
 
-  const nextSessions = data.upcomingSessions.slice(0, 8);
+  const openRescheduleModal = async (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setBookingActionInProgressId(booking.id);
+    try {
+      const response = await apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token);
+      const nowDate = new Date();
+      const options = (response.slots ?? []).filter((slot) => {
+        if (slot.isBlocked) {
+          return false;
+        }
+        if (new Date(slot.startsAt).getTime() < nowDate.getTime()) {
+          return false;
+        }
+        return !upcomingReservations.some(
+          (existingBooking) =>
+            existingBooking.id !== booking.id
+            && (existingBooking.status === "confirmed" || existingBooking.status === "requested")
+            && rangesOverlap(slot.startsAt, slot.endsAt, existingBooking.startsAt, existingBooking.endsAt)
+        );
+      });
+
+      setRescheduleTargetBooking(booking);
+      setRescheduleSlots(options);
+      setSelectedRescheduleSlotKey(options[0] ? buildSlotKey(options[0].startsAt, options[0].endsAt) : "");
+      setRescheduleReason("");
+      setIsRescheduleModalOpen(true);
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo cargar la disponibilidad para reagendar.",
+              en: "Could not load availability to reschedule.",
+              pt: "Nao foi possivel carregar disponibilidade para reagendar."
+            })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const submitReschedule = async () => {
+    if (!rescheduleTargetBooking || !selectedRescheduleSlotKey) {
+      return;
+    }
+    const [startsAt, endsAt] = selectedRescheduleSlotKey.split("__");
+    if (!startsAt || !endsAt) {
+      return;
+    }
+
+    setBookingActionError("");
+    setBookingActionInProgressId(rescheduleTargetBooking.id);
+    try {
+      const response = await apiRequest<{
+        booking: {
+          id: string;
+          startsAt: string;
+          endsAt: string;
+          status: string;
+          joinUrlProfessional?: string | null;
+        };
+      }>(
+        `/api/bookings/${rescheduleTargetBooking.id}/reschedule`,
+        props.token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            startsAt,
+            endsAt,
+            professionalTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            reason: rescheduleReason.trim() || undefined
+          })
+        }
+      );
+
+      setUpcomingReservations((current) =>
+        current.map((item) =>
+          item.id === rescheduleTargetBooking.id
+            ? {
+                ...item,
+                startsAt: response.booking.startsAt,
+                endsAt: response.booking.endsAt,
+                status: response.booking.status,
+                joinUrl: response.booking.joinUrlProfessional ?? item.joinUrl
+              }
+            : item
+        )
+      );
+      setIsRescheduleModalOpen(false);
+      setRescheduleTargetBooking(null);
+      setRescheduleSlots([]);
+      setSelectedRescheduleSlotKey("");
+      setRescheduleReason("");
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo reagendar la reserva.",
+              en: "Could not reschedule booking.",
+              pt: "Nao foi possivel reagendar a reserva."
+            })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const openCancelModal = (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setCancelTargetBooking(booking);
+    setCancelReason("");
+    setIsCancelModalOpen(true);
+  };
+
+  const submitCancelBooking = async () => {
+    if (!cancelTargetBooking) {
+      return;
+    }
+
+    setBookingActionError("");
+    setBookingActionInProgressId(cancelTargetBooking.id);
+    try {
+      await apiRequest<{ message: string }>(
+        `/api/bookings/${cancelTargetBooking.id}/cancel`,
+        props.token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            reason: cancelReason.trim() || "cancelled_by_professional"
+          })
+        }
+      );
+
+      setUpcomingReservations((current) =>
+        current.map((item) => (item.id === cancelTargetBooking.id ? { ...item, status: "cancelled" } : item))
+      );
+      setIsCancelModalOpen(false);
+      setCancelTargetBooking(null);
+      setCancelReason("");
+    } catch (requestError) {
+      setBookingActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo cancelar la reserva.",
+              en: "Could not cancel booking.",
+              pt: "Nao foi possivel cancelar a reserva."
+          })
+      );
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const periodGroupLabel = t(props.language, { es: "Periodo de ingresos", en: "Revenue period", pt: "Periodo de receita" });
+  const presetAria = t(props.language, { es: "Intervalo del resumen", en: "Summary range", pt: "Intervalo do resumo" });
+  const dateAria =
+    revenuePreset === "week"
+      ? t(props.language, { es: "Fecha en la semana a mostrar", en: "Date within week to show", pt: "Data na semana a exibir" })
+      : t(props.language, { es: "Dia a mostrar", en: "Day to show", pt: "Dia a exibir" });
+  const monthAria = t(props.language, { es: "Mes a mostrar", en: "Month to show", pt: "Mes a exibir" });
+  const yearAria = t(props.language, { es: "Año a mostrar", en: "Year to show", pt: "Ano a exibir" });
 
   return (
-    <div className="pro-grid-stack">
-      <section className="pro-dashboard-hero">
-        <div className="pro-dashboard-hero-copy">
-          <h2>
+    <div className="pro-grid-stack pro-dashboard-stack">
+      <section
+        className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating"
+        aria-labelledby="pro-revenue-heading"
+      >
+        <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
+          <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
             {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
           </h2>
         </div>
+        <div
+          className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
+          role="group"
+          aria-label={periodGroupLabel}
+        >
+          <select
+            className="pro-dashboard-revenue-control"
+            value={revenuePreset}
+            aria-label={presetAria}
+            onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
+          >
+            <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
+            <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
+            <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
+            <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
+            <option value="all">{t(props.language, { es: "Todo", en: "All", pt: "Todo" })}</option>
+          </select>
+          {revenuePreset === "day" || revenuePreset === "week" ? (
+            <input
+              className="pro-dashboard-revenue-control"
+              type="date"
+              value={revenueDay}
+              aria-label={dateAria}
+              onChange={(event) => setRevenueDay(event.target.value)}
+            />
+          ) : null}
+          {revenuePreset === "month" ? (
+            <input
+              className="pro-dashboard-revenue-control"
+              type="month"
+              value={revenueMonth}
+              aria-label={monthAria}
+              onChange={(event) => setRevenueMonth(event.target.value)}
+            />
+          ) : null}
+          {revenuePreset === "year" ? (
+            <input
+              className="pro-dashboard-revenue-control pro-dashboard-revenue-control--year"
+              type="number"
+              min={2020}
+              max={2035}
+              value={revenueYear}
+              aria-label={yearAria}
+              onChange={(event) => setRevenueYear(event.target.value)}
+            />
+          ) : null}
+        </div>
+        <div className="pro-kpi-grid pro-kpi-grid--revenue">
+          <article className="pro-kpi-card">
+            <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
+            <strong>{formatMoneyCents(data.revenueStats.grossCents, props.language, props.currency)}</strong>
+            <small className="pro-kpi-card-hint">
+              {replaceTemplate(
+                t(props.language, {
+                  es: "{n} sesiones en el periodo",
+                  en: "{n} sessions in period",
+                  pt: "{n} sessoes no periodo"
+                }),
+                { n: String(data.revenueStats.completedSessions) }
+              )}
+            </small>
+          </article>
+          <article className="pro-kpi-card">
+            <span>{t(props.language, { es: "Comision plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
+            <strong>{formatMoneyCents(data.revenueStats.platformFeeCents, props.language, props.currency)}</strong>
+            <small className="pro-kpi-card-hint">
+              {t(props.language, {
+                es: "Retenida por MotivarCare en estas sesiones.",
+                en: "Retained by MotivarCare on these sessions.",
+                pt: "Retida pelo MotivarCare nestas sessoes."
+              })}
+            </small>
+          </article>
+          <article className="pro-kpi-card">
+            <span>{t(props.language, { es: "Tu parte (periodo)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+            <strong>{formatMoneyCents(data.revenueStats.professionalNetCents, props.language, props.currency)}</strong>
+            <small className="pro-kpi-card-hint">
+              {t(props.language, {
+                es: "Neto profesional en el rango elegido (no es solo lo pendiente de pago).",
+                en: "Professional net in the selected range (not the same as unpaid balance).",
+                pt: "Liquido profissional no intervalo (nao e so o saldo pendente)."
+              })}
+            </small>
+          </article>
+        </div>
       </section>
 
-      {data.trialSession ? (
-        <section className="pro-card pro-trial-banner">
-          <h2>
-            <span className="pro-trial-icon" aria-hidden="true" />
-            {t(props.language, {
-              es: "Sesion de prueba confirmada",
-              en: "Confirmed trial session",
-              pt: "Sessao de teste confirmada"
-            })}
-          </h2>
-          <p>
-            {replaceTemplate(
-              t(props.language, {
-                es: "{patient} · {date}",
-                en: "{patient} · {date}",
-                pt: "{patient} · {date}"
-              }),
-              {
-                patient: data.trialSession.patientName,
-                date: formatDateTime(data.trialSession.startsAt, props.language)
-              }
-            )}
-          </p>
-          <NavLink className="pro-trial-action" to="/agenda">
-            {t(props.language, { es: "Ver agenda", en: "View agenda", pt: "Ver agenda" })}
-          </NavLink>
-        </section>
-      ) : null}
-
       <section className="pro-kpi-grid">
+        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
+          <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
+          <strong>{data.kpis.sessionsScheduled}</strong>
+          <em>{t(props.language, { es: "Ver próximas reservas", en: "View upcoming bookings", pt: "Ver próximas reservas" })}</em>
+        </NavLink>
         <NavLink className="pro-kpi-card pro-kpi-card-link" to="/pacientes">
           <span>{t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}</span>
           <strong>{data.kpis.activePatients}</strong>
           <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
-          <span>{t(props.language, { es: "Sesiones completadas", en: "Completed sessions", pt: "Sessoes concluidas" })}</span>
-          <strong>{data.kpis.sessionsCompleted}</strong>
-          <em>{t(props.language, { es: "Ver ingresos", en: "View earnings", pt: "Ver receitas" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/agenda">
-          <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
-          <strong>{data.kpis.sessionsScheduled}</strong>
-          <em>{t(props.language, { es: "Ver sesiones agendadas", en: "View scheduled sessions", pt: "Ver sessoes agendadas" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/disponibilidad">
-          <span>{t(props.language, { es: "Horas disponibles", en: "Available hours", pt: "Horas disponiveis" })}</span>
-          <strong>{data.kpis.hoursAvailable}</strong>
-          <em>{t(props.language, { es: "Ver disponibilidad", en: "View availability", pt: "Ver disponibilidade" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/horarios">
-          <span>{t(props.language, { es: "Conversion", en: "Conversion", pt: "Conversao" })}</span>
-          <strong>{data.kpis.conversionRate}%</strong>
-          <em>{t(props.language, { es: "Configurar horarios", en: "Set schedule", pt: "Configurar horarios" })}</em>
         </NavLink>
         <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
           <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
@@ -201,33 +475,92 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
         </NavLink>
       </section>
 
-      <section className="pro-card" id="sesiones-agendadas" ref={upcomingSectionRef} tabIndex={-1}>
-        <div className="dashboard-upcoming-head">
-          <h2>{t(props.language, { es: "Proximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}</h2>
+      <section className="pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap" id="sesiones-agendadas" ref={upcomingSectionRef} tabIndex={-1}>
+        <div className="agenda-upcoming-head">
+          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
         </div>
-        {nextSessions.length === 0 ? (
-          <p>{t(props.language, { es: "Todavia no hay sesiones proximas.", en: "There are no upcoming sessions yet.", pt: "Ainda nao ha sessoes futuras." })}</p>
-        ) : (
-          <ul className="dashboard-upcoming-list-compact">
-            {nextSessions.map((session) => (
-              <li key={session.id}>
-                <strong>{formatTime(session.startsAt, props.language)}</strong>
-                <div>
-                  <span>{formatDateCompact(session.startsAt, props.language)}</span>
-                  <p>{session.patientName}</p>
-                </div>
-                {session.joinUrl ? (
-                  <a href={session.joinUrl} target="_blank" rel="noreferrer">
-                    {t(props.language, { es: "Entrar", en: "Join", pt: "Entrar" })}
-                  </a>
-                ) : (
-                  <span className="pro-muted">{t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <UpcomingReservationsList
+          language={props.language}
+          reservations={upcomingReservations}
+          busyBookingId={bookingActionInProgressId}
+          onRequestReschedule={openRescheduleModal}
+          onRequestCancel={openCancelModal}
+        />
+        {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
       </section>
+
+      {isRescheduleModalOpen ? (
+        <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => setIsRescheduleModalOpen(false)}>
+          <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h3>{t(props.language, { es: "Reagendar reserva", en: "Reschedule booking", pt: "Reagendar reserva" })}</h3>
+              <button type="button" onClick={() => setIsRescheduleModalOpen(false)} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>×</button>
+            </header>
+            <label>
+              <span>{t(props.language, { es: "Nuevo horario", en: "New time", pt: "Novo horario" })}</span>
+              <select value={selectedRescheduleSlotKey} onChange={(event) => setSelectedRescheduleSlotKey(event.target.value)}>
+                <option value="">
+                  {rescheduleSlots.length === 0
+                    ? t(props.language, { es: "Sin horarios disponibles", en: "No available slots", pt: "Sem horarios disponiveis" })
+                    : t(props.language, { es: "Selecciona un horario", en: "Select a slot", pt: "Selecione um horario" })}
+                </option>
+                {rescheduleSlots.map((slot) => (
+                  <option key={buildSlotKey(slot.startsAt, slot.endsAt)} value={buildSlotKey(slot.startsAt, slot.endsAt)}>
+                    {formatDateTime(slot.startsAt, props.language)} · {formatTime(slot.endsAt, props.language)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{t(props.language, { es: "Motivo (opcional)", en: "Reason (optional)", pt: "Motivo (opcional)" })}</span>
+              <textarea
+                value={rescheduleReason}
+                onChange={(event) => setRescheduleReason(event.target.value)}
+                placeholder={t(props.language, { es: "Ej: ajuste de agenda clínica.", en: "e.g. schedule adjustment.", pt: "Ex: ajuste de agenda clinica." })}
+              />
+            </label>
+            <div className="pro-reschedule-modal-actions">
+              <button type="button" onClick={() => setIsRescheduleModalOpen(false)}>
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+              <button type="button" className="primary" disabled={!selectedRescheduleSlotKey || bookingActionInProgressId === rescheduleTargetBooking?.id} onClick={() => void submitReschedule()}>
+                {bookingActionInProgressId === rescheduleTargetBooking?.id
+                  ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                  : t(props.language, { es: "Guardar cambio", en: "Save change", pt: "Salvar alteracao" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isCancelModalOpen ? (
+        <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => setIsCancelModalOpen(false)}>
+          <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h3>{t(props.language, { es: "Cancelar reserva", en: "Cancel booking", pt: "Cancelar reserva" })}</h3>
+              <button type="button" onClick={() => setIsCancelModalOpen(false)} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>×</button>
+            </header>
+            <label>
+              <span>{t(props.language, { es: "Motivo para el paciente (opcional)", en: "Reason for the patient (optional)", pt: "Motivo para o paciente (opcional)" })}</span>
+              <textarea
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder={t(props.language, { es: "Ej: hoy no podré atender por un imprevisto.", en: "e.g. I cannot attend today due to an unforeseen issue.", pt: "Ex: hoje não poderei atender por um imprevisto." })}
+              />
+            </label>
+            <div className="pro-reschedule-modal-actions">
+              <button type="button" onClick={() => setIsCancelModalOpen(false)}>
+                {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+              </button>
+              <button type="button" className="danger" disabled={bookingActionInProgressId === cancelTargetBooking?.id} onClick={() => void submitCancelBooking()}>
+                {bookingActionInProgressId === cancelTargetBooking?.id
+                  ? t(props.language, { es: "Cancelando...", en: "Cancelling...", pt: "Cancelando..." })
+                  : t(props.language, { es: "Confirmar cancelación", en: "Confirm cancellation", pt: "Confirmar cancelamento" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

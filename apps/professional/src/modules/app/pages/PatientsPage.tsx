@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
-import { apiRequest } from "../services/api";
+import { useNavigate } from "react-router-dom";
+import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import type { PatientsResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -21,6 +22,7 @@ function patientStatusLabel(status: PatientsResponse["patients"][number]["status
 }
 
 export function PatientsPage(props: { token: string; language: AppLanguage }) {
+  const navigate = useNavigate();
   const [data, setData] = useState<PatientsResponse | null>(null);
   const [error, setError] = useState("");
 
@@ -51,9 +53,17 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
       {data && data.patients.length === 0 ? <p>{t(props.language, { es: "Todavia no hay pacientes asignados.", en: "There are no assigned patients yet.", pt: "Ainda nao ha pacientes atribuidos." })}</p> : null}
       {data && data.patients.length > 0 ? (
         <ul className="pro-list">
-          {data.patients.map((patient) => (
+          {data.patients.map((patient) => {
+            const avatarSrc = resolveApiAssetUrl(patient.avatarUrl ?? null);
+            return (
             <li key={patient.patientId}>
-              <div>
+              <div className="pro-patient-row-main">
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="" className="pro-patient-avatar" />
+                ) : (
+                  <div className="pro-patient-avatar pro-patient-avatar--empty" aria-hidden />
+                )}
+                <div>
                 <strong>{patient.patientName}</strong>
                 <span>{patient.patientEmail}</span>
                 <span>
@@ -70,9 +80,19 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
                     }
                   )}
                 </span>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigate(`/chat?patientId=${encodeURIComponent(patient.patientId)}`);
+                }}
+              >
+                {t(props.language, { es: "Ir al chat", en: "Go to chat", pt: "Ir ao chat" })}
+              </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : null}
     </section>

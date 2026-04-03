@@ -58,6 +58,8 @@ export function App() {
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
     createDefaultOnboardingPatchDraft()
   );
+  const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
+  const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => window.location.pathname === "/verify-email", []);
   const [language, setLanguage] = useState<AppLanguage>(() => {
@@ -126,6 +128,27 @@ export function App() {
     setPendingOnboardingSync(true);
   };
 
+  const handleConnectCalendarFromOnboarding = async () => {
+    if (!token) {
+      return;
+    }
+    setCalendarOnboardingLoading(true);
+    try {
+      const response = await apiRequest<{ authUrl: string }>(
+        "/api/auth/google/calendar/connect",
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({ clientOrigin: window.location.origin })
+        }
+      );
+      window.location.href = response.authUrl;
+    } catch (error) {
+      console.error("Could not start calendar onboarding OAuth", error);
+      setCalendarOnboardingLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!token || !user) {
       return;
@@ -160,6 +183,7 @@ export function App() {
             role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
             emailVerified: boolean;
             professionalProfileId: string | null;
+            avatarUrl?: string | null;
           };
           emailVerificationRequired: boolean;
         }>("/api/auth/me", token);
@@ -179,7 +203,8 @@ export function App() {
           email: response.user.email,
           emailVerified: response.user.emailVerified,
           role: "PROFESSIONAL",
-          professionalProfileId: response.user.professionalProfileId
+          professionalProfileId: response.user.professionalProfileId,
+          avatarUrl: response.user.avatarUrl ?? null
         };
 
         window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
@@ -235,6 +260,26 @@ export function App() {
   }, [pendingOnboardingSync, token, user?.professionalProfileId, onboardingPatchDraft]);
 
   useEffect(() => {
+    if (!showCalendarOnboarding || !token || !user) {
+      return;
+    }
+
+    let cancelled = false;
+    void apiRequest<{ connected: boolean }>("/api/auth/google/calendar/status", token)
+      .then((response) => {
+        if (!cancelled && response.connected) {
+          setShowCalendarOnboarding(false);
+        }
+      })
+      .catch(() => {
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showCalendarOnboarding, token, user]);
+
+  useEffect(() => {
     if (!user || window.location.pathname === "/verify-email") {
       return;
     }
@@ -262,6 +307,7 @@ export function App() {
         onLanguageChange={setLanguage}
         onCurrencyChange={setCurrency}
         onAuthSuccess={handleAuthSuccess}
+        onRegistrationAuthSuccess={() => setShowCalendarOnboarding(true)}
         onPrepareOnboardingSync={handlePrepareOnboardingSync}
       />
     );
@@ -272,6 +318,36 @@ export function App() {
       <div className="pro-auth-shell">
         <section className="pro-auth-card">
           <p>Cargando tu perfil...</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (showCalendarOnboarding) {
+    return (
+      <div className="pro-auth-shell">
+        <section className="pro-auth-card">
+          <h2>Conecta Google Calendar</h2>
+          <p>
+            Sincroniza reservas, reprogramaciones y cancelaciones automáticamente con tu calendario.
+          </p>
+          <div className="button-row">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => void handleConnectCalendarFromOnboarding()}
+              disabled={calendarOnboardingLoading}
+            >
+              {calendarOnboardingLoading ? "Conectando..." : "Conectar ahora"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCalendarOnboarding(false)}
+              disabled={calendarOnboardingLoading}
+            >
+              Lo hago después
+            </button>
+          </div>
         </section>
       </div>
     );

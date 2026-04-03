@@ -19,6 +19,7 @@ export interface AuthUser {
   emailVerified: boolean;
   role: "PROFESSIONAL";
   professionalProfileId: string;
+  avatarUrl?: string | null;
 }
 
 export interface AuthResponse {
@@ -30,6 +31,7 @@ export interface AuthResponse {
     emailVerified: boolean;
     role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
     professionalProfileId: string | null;
+    avatarUrl?: string | null;
   };
   emailVerificationRequired: boolean;
   devEmailVerificationBypassEnabled?: boolean;
@@ -46,11 +48,24 @@ export interface DashboardResponse {
     weeklySessions: number;
     pendingPayoutCents: number;
   };
+  /** Sesiones COMPLETED con filas en finance: precios efectivos por paquete / lista. */
+  revenueStats: {
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    completedSessions: number;
+    range: {
+      from: string | null;
+      to: string;
+      allTime: boolean;
+    };
+  };
   trialSession: {
     id: string;
     patientId: string;
     patientName: string;
     patientEmail: string;
+    patientAvatarUrl?: string | null;
     startsAt: string;
     endsAt: string;
     status: string;
@@ -60,6 +75,7 @@ export interface DashboardResponse {
     patientId: string;
     patientName: string;
     patientEmail: string;
+    patientAvatarUrl?: string | null;
     startsAt: string;
     endsAt: string;
     status: string;
@@ -94,6 +110,7 @@ export interface PatientsResponse {
     patientId: string;
     patientName: string;
     patientEmail: string;
+    avatarUrl?: string | null;
     totalSessions: number;
     completedSessions: number;
     cancelledSessions: number;
@@ -104,16 +121,31 @@ export interface PatientsResponse {
 
 export interface EarningsResponse {
   summary: {
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    completedSessions: number;
+    averageNetPerSessionCents: number;
+    lifetimeProfessionalNetCents: number;
+    lifetimeCompletedSessions: number;
+    /** Neto en el rango (alias de professionalNetCents) */
     totalCents: number;
     currentPeriodCents: number;
     totalSessions: number;
     currentPeriodSessions: number;
     sessionFeeCents: number;
   };
+  range: {
+    from: string | null;
+    to: string;
+    allTime: boolean;
+  };
   movements: Array<{
     bookingId: string;
     patientName: string;
     startsAt: string;
+    grossCents: number;
+    platformFeeCents: number;
     amountCents: number;
     status: string;
   }>;
@@ -125,6 +157,7 @@ export interface ThreadSummary {
   professionalId: string;
   counterpartName: string;
   counterpartUserId: string;
+  counterpartPhotoUrl?: string | null;
   lastMessage: {
     id: string;
     body: string;

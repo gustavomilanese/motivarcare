@@ -1,5 +1,5 @@
-import type { MouseEvent } from "react";
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -7,9 +7,12 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { ProMobileNavIcon } from "../components/ProMobileNavIcon";
+import { PORTAL_NAV_GROUP_AGENDA_LABEL, getPortalNavLinks } from "../config/portalNav";
+import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
+import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
 import { AdminPage } from "./AdminPage";
 import { AvailabilityMonthPage } from "./AvailabilityMonthPage";
-import { AgendaPage } from "./PublishedAvailabilityPage";
 import { ChatPage } from "./ChatPage";
 import { DashboardPage } from "./DashboardPage";
 import { IncomePage } from "./IncomePage";
@@ -31,15 +34,32 @@ export function ProfessionalPortal(props: {
   currency: SupportedCurrency;
   onUserChange: (user: AuthUser) => void;
 }) {
-  const links: Array<{ to: PortalSection; label: string }> = [
-    { to: "/", label: t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" }) },
-    { to: "/horarios", label: t(props.language, { es: "Horario", en: "Schedule", pt: "Horario" }) },
-    { to: "/disponibilidad", label: t(props.language, { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" }) },
-    { to: "/agenda", label: t(props.language, { es: "Agenda de Sesiones", en: "Session Agenda", pt: "Agenda de Sessoes" }) },
-    { to: "/pacientes", label: t(props.language, { es: "Pacientes", en: "Patients", pt: "Pacientes" }) },
-    { to: "/chat", label: t(props.language, { es: "Chat", en: "Chat", pt: "Chat" }) },
-    { to: "/ingresos", label: t(props.language, { es: "Ingresos", en: "Earnings", pt: "Receitas" }) }
-  ];
+  const navigate = useNavigate();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const links = useMemo(() => getPortalNavLinks(props.language), [props.language]);
+  const { threads, unreadMessagesCount } = usePortalChatThreads(props.token);
+
+  const notificationItems = useMemo(
+    () => buildPatientMessageNotificationItems(props.language, threads),
+    [props.language, threads]
+  );
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNotificationsOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [notificationsOpen]);
+
+  const notificationsUnreadCount = notificationItems.filter((item) => item.unread).length;
 
   const handlePortalNavClick = (target: PortalSection) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (target !== "/horarios") {
@@ -52,29 +72,63 @@ export function ProfessionalPortal(props: {
     }
   };
 
+  const newMessagesLabel = t(props.language, {
+    es: "Mensajes nuevos",
+    en: "New messages",
+    pt: "Novas mensagens"
+  });
+
   return (
     <div className="pro-shell">
       <aside className="pro-sidebar">
         <div className="pro-brand">
-          <span className="pro-brand-mark">M</span>
+          <span className="pro-brand-mark" aria-hidden="true">
+            M
+          </span>
           <div>
-            <strong>Motivarte</strong>
+            <strong>MotivarCare</strong>
             <p>{t(props.language, { es: "Portal profesional", en: "Professional portal", pt: "Portal profissional" })}</p>
           </div>
         </div>
 
         <nav className="pro-sidebar-nav">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={handlePortalNavClick(link.to)}
-              className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")}
-              end={link.to === "/"}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          {links.flatMap((link, index) => {
+            const showAgendaLabel =
+              link.group === "agenda" && (index === 0 || links[index - 1]?.group !== "agenda");
+            const navLink = (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                onClick={handlePortalNavClick(link.to)}
+                className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")}
+                end={link.to === "/"}
+              >
+                {link.to === "/chat" ? (
+                  <span className="pro-nav-link-with-badge">
+                    {link.label}
+                    {unreadMessagesCount > 0 ? (
+                      <span className="pro-chat-badge-pill" aria-label={newMessagesLabel}>
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : (
+                  link.label
+                )}
+              </NavLink>
+            );
+
+            if (!showAgendaLabel) {
+              return [navLink];
+            }
+
+            return [
+              <span key="sidebar-agenda-label" className="pro-sidebar-nav-group-label">
+                {t(props.language, PORTAL_NAV_GROUP_AGENDA_LABEL)}
+              </span>,
+              navLink
+            ];
+          })}
         </nav>
 
         <div className="pro-sidebar-foot">
@@ -107,7 +161,56 @@ export function ProfessionalPortal(props: {
             >
               <span className="pro-header-icon settings" aria-hidden="true" />
             </NavLink>
-            <button className="pro-danger" type="button" onClick={props.onLogout}>
+            <div className="pro-notifications-wrap">
+              <button
+                type="button"
+                className={`pro-header-icon-link pro-notifications-trigger ${notificationsOpen ? "active" : ""}`}
+                aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
+                onClick={() => setNotificationsOpen((current) => !current)}
+              >
+                <svg className="pro-header-bell-icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                  <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
+                  <path d="M10 18a2 2 0 0 0 4 0" />
+                </svg>
+                {notificationsUnreadCount > 0 ? (
+                  <small>{notificationsUnreadCount > 99 ? "99+" : notificationsUnreadCount}</small>
+                ) : null}
+              </button>
+              {notificationsOpen ? (
+                <div className="pro-notifications-dropdown">
+                  <div className="pro-notifications-head">
+                    <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
+                  </div>
+                  <div className="menu-sep" />
+                  {notificationItems.length === 0 ? (
+                    <p className="pro-notifications-empty">
+                      {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
+                    </p>
+                  ) : (
+                    <ul className="pro-notifications-list">
+                      {notificationItems.slice(0, 8).map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            className={`pro-notification-item ${item.unread ? "unread" : ""}`}
+                            onClick={() => {
+                              setNotificationsOpen(false);
+                              navigate(`/chat?patientId=${encodeURIComponent(item.patientId)}`);
+                            }}
+                          >
+                            <span>{item.title}</span>
+                            <strong>{item.body}</strong>
+                            {item.detail ? <em>{item.detail}</em> : null}
+                            <small>{item.meta}</small>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <button className="pro-danger pro-header-logout" type="button" onClick={props.onLogout}>
               {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
             </button>
           </div>
@@ -116,9 +219,9 @@ export function ProfessionalPortal(props: {
         <nav
           className="pro-mobile-nav"
           aria-label={t(props.language, {
-            es: "Navegacion mobile profesional",
-            en: "Professional mobile navigation",
-            pt: "Navegacao mobile profissional"
+            es: "Navegacion principal",
+            en: "Main navigation",
+            pt: "Navegacao principal"
           })}
         >
           {links.map((link) => (
@@ -129,7 +232,24 @@ export function ProfessionalPortal(props: {
               className={({ isActive }) => (isActive ? "pro-mobile-link active" : "pro-mobile-link")}
               end={link.to === "/"}
             >
-              {link.label}
+              {link.to === "/chat" ? (
+                <>
+                  <span className="pro-mobile-link-inner">
+                    <ProMobileNavIcon section={link.to} />
+                    {unreadMessagesCount > 0 ? (
+                      <span className="pro-chat-badge-pill" aria-label={newMessagesLabel}>
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="pro-mobile-nav-label">{link.label}</span>
+                </>
+              ) : (
+                <>
+                  <ProMobileNavIcon section={link.to} />
+                  <span className="pro-mobile-nav-label">{link.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -137,7 +257,6 @@ export function ProfessionalPortal(props: {
         <main className="pro-main-content">
           <Routes>
             <Route path="/" element={<DashboardPage token={props.token} language={props.language} currency={props.currency} user={props.user} />} />
-            <Route path="/agenda" element={<AgendaPage token={props.token} language={props.language} />} />
             <Route path="/horarios" element={<SchedulePage token={props.token} language={props.language} />} />
             <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route path="/pacientes" element={<PatientsPage token={props.token} language={props.language} />} />

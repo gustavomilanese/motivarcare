@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function replaceCalendarConnectedLabel(language: AppLanguage, email: string): string {
+  const label = t(language, {
+    es: "Conectado como {email}.",
+    en: "Connected as {email}.",
+    pt: "Conectado como {email}."
+  });
+  return label.replace("{email}", email || "-");
 }
 
 export function SettingsPage(props: { token: string; onLogout: () => void; language: AppLanguage }) {
@@ -14,6 +23,30 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarEmail, setCalendarEmail] = useState("");
+  const [calendarLoading, setCalendarLoading] = useState(true);
+
+  const loadCalendarStatus = async () => {
+    setCalendarLoading(true);
+    try {
+      const response = await apiRequest<{
+        connected: boolean;
+        connection: { providerEmail: string | null } | null;
+      }>("/api/auth/google/calendar/status", props.token);
+      setCalendarConnected(response.connected);
+      setCalendarEmail(response.connection?.providerEmail ?? "");
+    } catch {
+      setCalendarConnected(false);
+      setCalendarEmail("");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadCalendarStatus();
+  }, [props.token]);
 
   const handleChangePassword = async () => {
     setError("");
@@ -63,6 +96,53 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
     }
   };
 
+  const handleConnectCalendar = async () => {
+    try {
+      const response = await apiRequest<{ authUrl: string }>("/api/auth/google/calendar/connect", props.token, {
+        method: "POST",
+        body: JSON.stringify({ clientOrigin: window.location.origin })
+      });
+      window.location.href = response.authUrl;
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo iniciar conexión con Google Calendar.",
+              en: "Could not start Google Calendar connection.",
+              pt: "Nao foi possivel iniciar conexao com Google Calendar."
+            })
+      );
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    try {
+      await apiRequest<{ message: string }>("/api/auth/google/calendar/disconnect", props.token, {
+        method: "POST"
+      });
+      setCalendarConnected(false);
+      setCalendarEmail("");
+      setMessage(
+        t(props.language, {
+          es: "Google Calendar desconectado.",
+          en: "Google Calendar disconnected.",
+          pt: "Google Calendar desconectado."
+        })
+      );
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo desconectar Google Calendar.",
+              en: "Could not disconnect Google Calendar.",
+              pt: "Nao foi possivel desconectar Google Calendar."
+            })
+      );
+    }
+  };
+
   return (
     <section className="pro-card">
       <h2>{t(props.language, { es: "Ajustes generales", en: "General settings", pt: "Configuracoes gerais" })}</h2>
@@ -76,6 +156,26 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
       </label>
 
       <div className="pro-settings-password">
+        <h3>{t(props.language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</h3>
+        <p>
+          {calendarLoading
+            ? t(props.language, { es: "Revisando conexión...", en: "Checking connection...", pt: "Verificando conexao..." })
+            : calendarConnected
+              ? replaceCalendarConnectedLabel(props.language, calendarEmail)
+              : t(props.language, { es: "No conectado.", en: "Not connected.", pt: "Nao conectado." })}
+        </p>
+        <div className="button-row">
+          {!calendarConnected ? (
+            <button type="button" onClick={() => void handleConnectCalendar()}>
+              {t(props.language, { es: "Conectar Google Calendar", en: "Connect Google Calendar", pt: "Conectar Google Calendar" })}
+            </button>
+          ) : (
+            <button type="button" className="pro-danger" onClick={() => void handleDisconnectCalendar()}>
+              {t(props.language, { es: "Desconectar Google Calendar", en: "Disconnect Google Calendar", pt: "Desconectar Google Calendar" })}
+            </button>
+          )}
+        </div>
+
         <h3>{t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}</h3>
         <label>
           {t(props.language, { es: "Contrasena actual", en: "Current password", pt: "Senha atual" })}
