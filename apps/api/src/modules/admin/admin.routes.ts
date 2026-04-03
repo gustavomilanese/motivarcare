@@ -3,7 +3,20 @@ import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
 import { financeRouter } from "../finance/finance.routes.js";
-import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+
+const deleteAdminUserBodySchema = z.object({
+  purgeHistoricalData: z.boolean().optional()
+});
+
+const kpisQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
+  professionalId: z.string().min(1).optional(),
+  patientId: z.string().min(1).optional()
+});
 
 const appRoleSchema = z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]);
 const patientStatusSchema = z.enum(["active", "pause", "cancelled", "trial"]);
@@ -25,6 +38,7 @@ const createUserSchema = z.object({
   fullName: z.string().min(2).max(120),
   password: z.string().min(8).max(120),
   role: appRoleSchema,
+  isTestUser: z.boolean().optional(),
   timezone: z.string().min(2).max(80).optional(),
   patientStatus: patientStatusSchema.optional(),
   professionalVisible: z.boolean().optional(),
@@ -41,6 +55,7 @@ const updateUserSchema = z
     fullName: z.string().min(2).max(120).optional(),
     email: z.string().email().optional(),
     password: z.string().min(8).max(120).optional(),
+    isTestUser: z.boolean().optional(),
     patientStatus: patientStatusSchema.optional(),
     patientTimezone: z.string().min(2).max(80).optional(),
     professionalVisible: z.boolean().optional(),
@@ -280,7 +295,11 @@ type AdminUserRecord = {
   id: string;
   email: string;
   fullName: string;
+  avatarUrl: string | null;
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+  isActive: boolean;
+  isTestUser: boolean;
+  deactivatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   patient: {
@@ -308,7 +327,11 @@ function shapeAdminUser(user: AdminUserRecord) {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    avatarUrl: user.avatarUrl,
     role: user.role,
+    isActive: user.isActive,
+    isTestUser: user.isTestUser,
+    deactivatedAt: user.deactivatedAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     patientProfile: user.patient
@@ -461,26 +484,215 @@ export const adminRouter = Router();
 adminRouter.use(requireAuth, requireRole(["ADMIN"]));
 adminRouter.use("/finance", financeRouter);
 
-adminRouter.get("/kpis", async (_req, res) => {
-  const [activePatients, activeProfessionals, scheduledSessions, financeSummary] = await Promise.all([
-    prisma.patientProfile.count({ where: { status: "active" } }),
-    prisma.professionalProfile.count({ where: { visible: true } }),
-    prisma.booking.count({ where: { status: "CONFIRMED" } }),
+function utcMonthRange(reference = new Date()) {
+  const start = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+  return { start, end };
+}
+
+function utcMonthRangeFromYearMonth(year: number, month1to12: number) {
+  const start = new Date(Date.UTC(year, month1to12 - 1, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month1to12, 0, 23, 59, 59, 999));
+  return { start, end };
+}
+
+adminRouter.get("/kpis", async (req, res) => {
+  const parsed = kpisQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
+  }
+
+  let monthStart: Date;
+  let monthEnd: Date;
+  let monthKey: string;
+  if (parsed.data.month) {
+    const [yearStr, monthStr] = parsed.data.month.split("-");
+    const year = Number(yearStr);
+    const monthNum = Number(monthStr);
+    ({ start: monthStart, end: monthEnd } = utcMonthRangeFromYearMonth(year, monthNum));
+    monthKey = parsed.data.month;
+  } else {
+    ({ start: monthStart, end: monthEnd } = utcMonthRange());
+    monthKey = `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+
+  const scopePro = parsed.data.professionalId;
+  const scopePat = parsed.data.patientId;
+  const hasEntityScope = Boolean(scopePro || scopePat);
+  const financeRecordScope =
+    hasEntityScope ?
+      {
+        ...(scopePro ? { professionalId: scopePro } : {}),
+        ...(scopePat ? { patientId: scopePat } : {})
+      }
+    : {};
+
+  const [
+    activePatients,
+    activeProfessionals,
+    scheduledSessions,
+    packagePurchasesMonthRows,
+    financeFeesMonth,
+    financeFeesAllTime,
+    unpaidSessionFinanceAgg,
+    plannedMonthBookings,
+    rules
+  ] = await Promise.all([
+    hasEntityScope && scopePat
+      ? prisma.patientProfile
+          .count({ where: { id: scopePat, status: "active" } })
+          .then((n) => (n > 0 ? 1 : 0))
+      : hasEntityScope && scopePro
+        ? prisma.booking
+            .groupBy({
+              by: ["patientId"],
+              where: {
+                professionalId: scopePro,
+                startsAt: { gte: monthStart, lte: monthEnd }
+              }
+            })
+            .then((rows) => rows.length)
+        : prisma.patientProfile.count({ where: { status: "active" } }),
+    hasEntityScope && scopePro
+      ? prisma.professionalProfile
+          .count({ where: { id: scopePro, visible: true } })
+          .then((n) => (n > 0 ? 1 : 0))
+      : hasEntityScope && scopePat
+        ? prisma.booking
+            .groupBy({
+              by: ["professionalId"],
+              where: {
+                patientId: scopePat,
+                startsAt: { gte: monthStart, lte: monthEnd }
+              }
+            })
+            .then((rows) => rows.length)
+        : prisma.professionalProfile.count({ where: { visible: true } }),
+    hasEntityScope
+      ? prisma.booking.count({
+          where: {
+            status: "CONFIRMED",
+            startsAt: { gte: monthStart, lte: monthEnd },
+            ...(scopePro ? { professionalId: scopePro } : {}),
+            ...(scopePat ? { patientId: scopePat } : {})
+          }
+        })
+      : prisma.booking.count({ where: { status: "CONFIRMED" } }),
+    prisma.patientPackagePurchase.findMany({
+      where: {
+        purchasedAt: { gte: monthStart, lte: monthEnd },
+        ...(scopePat ? { patientId: scopePat } : {}),
+        ...(scopePro ? { professionalIdSnapshot: scopePro } : {})
+      },
+      select: {
+        packagePriceCentsSnapshot: true,
+        platformCommissionPercentSnapshot: true
+      }
+    }),
     prisma.financeSessionRecord.aggregate({
+      where: {
+        bookingCompletedAt: { not: null, gte: monthStart, lte: monthEnd },
+        ...financeRecordScope
+      },
+      _sum: {
+        platformFeeCents: true,
+        professionalNetCents: true,
+        sessionPriceCents: true
+      },
+      _count: { _all: true }
+    }),
+    prisma.financeSessionRecord.aggregate({
+      where: hasEntityScope ? financeRecordScope : {},
       _sum: { platformFeeCents: true },
       _count: { _all: true }
-    })
+    }),
+    prisma.financeSessionRecord.aggregate({
+      where: {
+        payoutLineId: null,
+        ...financeRecordScope
+      },
+      _sum: { professionalNetCents: true, platformFeeCents: true },
+      _count: { _all: true }
+    }),
+    prisma.booking.findMany({
+      where: {
+        status: { in: ["CONFIRMED", "REQUESTED"] },
+        startsAt: { gte: monthStart, lte: monthEnd },
+        ...(scopePro ? { professionalId: scopePro } : {}),
+        ...(scopePat ? { patientId: scopePat } : {})
+      },
+      select: { professional: { select: { sessionPriceUsd: true } } }
+    }),
+    getFinanceRules()
   ]);
-  const monthlyRevenueCents = financeSummary._sum.platformFeeCents ?? 0;
+
+  let plannedGrossMonthCents = 0;
+  let plannedPlatformFeeMonthCents = 0;
+  let plannedProfessionalNetMonthCents = 0;
+  for (const row of plannedMonthBookings) {
+    const sessionPriceCents =
+      row.professional.sessionPriceUsd != null
+        ? row.professional.sessionPriceUsd * 100
+        : rules.defaultSessionPriceCents;
+    const fee = Math.round((sessionPriceCents * rules.platformCommissionPercent) / 100);
+    plannedGrossMonthCents += sessionPriceCents;
+    plannedPlatformFeeMonthCents += fee;
+    plannedProfessionalNetMonthCents += Math.max(0, sessionPriceCents - fee);
+  }
+
+  let packagePurchasesMonthCents = 0;
+  let packagePlatformFeeFromPurchasesMonthCents = 0;
+  let packageProfessionalNetFromPurchasesMonthCents = 0;
+  for (const row of packagePurchasesMonthRows) {
+    const price = row.packagePriceCentsSnapshot ?? 0;
+    packagePurchasesMonthCents += price;
+    if (price <= 0) {
+      continue;
+    }
+    const pct = row.platformCommissionPercentSnapshot ?? rules.platformCommissionPercent;
+    const fee = Math.round((price * pct) / 100);
+    packagePlatformFeeFromPurchasesMonthCents += fee;
+    packageProfessionalNetFromPurchasesMonthCents += Math.max(0, price - fee);
+  }
+  const packagePurchasesMonthCount = packagePurchasesMonthRows.length;
+  const platformFeeMonthCents = financeFeesMonth._sum.platformFeeCents ?? 0;
+  const professionalNetMonthCents = financeFeesMonth._sum.professionalNetCents ?? 0;
+  const grossSessionsMonthCents = financeFeesMonth._sum.sessionPriceCents ?? 0;
+  const platformFeeAllTimeCents = financeFeesAllTime._sum.platformFeeCents ?? 0;
+  const professionalNetUnpaidCents = unpaidSessionFinanceAgg._sum.professionalNetCents ?? 0;
+  const platformFeeUnpaidCents = unpaidSessionFinanceAgg._sum.platformFeeCents ?? 0;
+
+  /** @deprecated Use platformFeeMonthCents; kept for older admin bundles */
+  const monthlyRevenueCents = platformFeeMonthCents;
 
   return res.json({
     kpis: {
       activePatients,
       activeProfessionals,
       scheduledSessions,
-      monthlyRevenueCents
+      monthlyRevenueCents,
+      packagePurchasesMonthCents,
+      packagePurchasesMonthCount,
+      packagePlatformFeeFromPurchasesMonthCents,
+      packageProfessionalNetFromPurchasesMonthCents,
+      platformFeeMonthCents,
+      professionalNetMonthCents,
+      grossSessionsMonthCents,
+      completedSessionsMonthCount: financeFeesMonth._count._all,
+      platformFeeAllTimeCents,
+      professionalNetUnpaidCents,
+      unpaidSessionRecordsCount: unpaidSessionFinanceAgg._count._all,
+      platformFeeUnpaidCents,
+      plannedMonetizableSessionsMonthCount: plannedMonthBookings.length,
+      plannedGrossMonthCents,
+      plannedPlatformFeeMonthCents,
+      plannedProfessionalNetMonthCents
     },
-    note: "KPI values sourced from current database snapshot"
+    period: {
+      month: monthKey,
+      monthStart: monthStart.toISOString(),
+      monthEnd: monthEnd.toISOString()
+    }
   });
 });
 
@@ -575,6 +787,7 @@ adminRouter.post("/users", async (req, res) => {
       fullName: parsed.data.fullName.trim(),
       passwordHash: hashPassword(parsed.data.password),
       role: parsed.data.role,
+      isTestUser: parsed.data.isTestUser ?? false,
       patient:
         parsed.data.role === "PATIENT"
           ? {
@@ -670,6 +883,10 @@ adminRouter.patch("/users/:userId", async (req, res) => {
     data.passwordHash = hashPassword(parsed.data.password);
   }
 
+  if (parsed.data.isTestUser !== undefined) {
+    data.isTestUser = parsed.data.isTestUser;
+  }
+
   if (existing.role === "PATIENT" && (parsed.data.patientStatus || parsed.data.patientTimezone)) {
     data.patient = {
       upsert: {
@@ -760,6 +977,285 @@ adminRouter.patch("/users/:userId", async (req, res) => {
 
   return res.json({
     user: shapeAdminUser(updated)
+  });
+});
+
+adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
+  const userId = req.params.userId;
+
+  if (!userId) {
+    return res.status(400).json({ error: "User id is required" });
+  }
+
+  if (req.auth?.userId && req.auth.userId === userId) {
+    return res.status(400).json({ error: "You cannot delete your own admin user" });
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      isActive: true,
+      isTestUser: true,
+      patient: { select: { id: true } },
+      professional: { select: { id: true } },
+      admin: { select: { id: true } },
+      googleCalendarConnection: {
+        select: {
+          refreshToken: true
+        }
+      }
+    }
+  });
+
+  if (!existing) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  let hasHistoricalActivity = false;
+
+  if (existing.patient?.id) {
+    const patientId = existing.patient.id;
+    const [patientBookingsCount, purchasesCount] = await Promise.all([
+      prisma.booking.count({ where: { patientId } }),
+      prisma.patientPackagePurchase.count({ where: { patientId } })
+    ]);
+    hasHistoricalActivity = hasHistoricalActivity || patientBookingsCount > 0 || purchasesCount > 0;
+  }
+
+  if (existing.professional?.id) {
+    const professionalId = existing.professional.id;
+    const [bookingsCount, financeRecordsCount, payoutLinesCount] = await Promise.all([
+      prisma.booking.count({ where: { professionalId } }),
+      prisma.financeSessionRecord.count({ where: { professionalId } }),
+      prisma.financePayoutLine.count({ where: { professionalId } })
+    ]);
+    hasHistoricalActivity = hasHistoricalActivity || bookingsCount > 0 || financeRecordsCount > 0 || payoutLinesCount > 0;
+  }
+
+  const googleRefreshToken = existing.googleCalendarConnection?.refreshToken?.trim();
+  if (googleRefreshToken) {
+    // Best effort revocation in Google before local deletion.
+    try {
+      await fetch("https://oauth2.googleapis.com/revoke", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({ token: googleRefreshToken }).toString()
+      });
+    } catch (error) {
+      console.error("Could not revoke Google token while deleting user", error);
+    }
+  }
+
+  const bodyParsed = deleteAdminUserBodySchema.safeParse(req.body ?? {});
+  const purgeHistoricalData = bodyParsed.success && Boolean(bodyParsed.data.purgeHistoricalData);
+
+  if (hasHistoricalActivity && !existing.isTestUser && !purgeHistoricalData) {
+    if (!existing.isActive) {
+      return res.json({
+        ok: true,
+        action: "deactivated",
+        message: "User already disabled. Historical records are preserved."
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (existing.patient?.id) {
+        await tx.patientProfile.update({
+          where: { id: existing.patient.id },
+          data: { status: "cancelled" }
+        });
+      }
+
+      if (existing.professional?.id) {
+        await tx.professionalProfile.update({
+          where: { id: existing.professional.id },
+          data: { visible: false }
+        });
+      }
+
+      await tx.googleCalendarConnection.deleteMany({
+        where: { userId: existing.id }
+      });
+
+      await tx.user.update({
+        where: { id: existing.id },
+        data: {
+          isActive: false,
+          deactivatedAt: new Date()
+        }
+      });
+    });
+
+    return res.json({
+      ok: true,
+      action: "deactivated",
+      message: "User has booking/payment history and was disabled. Historical records were preserved."
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (existing.patient?.id) {
+      const patientId = existing.patient.id;
+
+      const patientBookings = await tx.booking.findMany({
+        where: { patientId },
+        select: { id: true }
+      });
+      const bookingIds = patientBookings.map((item) => item.id);
+
+      await tx.chatMessage.deleteMany({
+        where: {
+          OR: [
+            {
+              thread: {
+                patientId
+              }
+            },
+            bookingIds.length > 0
+              ? {
+                  thread: {
+                    bookingId: {
+                      in: bookingIds
+                    }
+                  }
+                }
+              : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      await tx.chatThread.deleteMany({
+        where: {
+          OR: [
+            { patientId },
+            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      if (bookingIds.length > 0) {
+        await tx.videoSession.deleteMany({
+          where: { bookingId: { in: bookingIds } }
+        });
+      }
+      await tx.financeSessionRecord.deleteMany({
+        where: {
+          OR: [
+            { patientId },
+            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      await tx.creditLedger.deleteMany({
+        where: {
+          OR: [
+            { patientId },
+            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      if (bookingIds.length > 0) {
+        await tx.booking.deleteMany({
+          where: { id: { in: bookingIds } }
+        });
+      }
+      await tx.patientPackagePurchase.deleteMany({ where: { patientId } });
+      await tx.consent.deleteMany({ where: { patientId } });
+      await tx.aIAuditJob.deleteMany({ where: { patientId } });
+      await tx.patientIntake.deleteMany({ where: { patientId } });
+      await tx.patientProfile.delete({ where: { id: patientId } });
+    }
+
+    if (existing.professional?.id) {
+      const professionalId = existing.professional.id;
+      const professionalBookings = await tx.booking.findMany({
+        where: { professionalId },
+        select: { id: true }
+      });
+      const professionalBookingIds = professionalBookings.map((item) => item.id);
+
+      await tx.chatMessage.deleteMany({
+        where: {
+          OR: [
+            {
+              thread: {
+                professionalId
+              }
+            },
+            professionalBookingIds.length > 0
+              ? {
+                  thread: {
+                    bookingId: {
+                      in: professionalBookingIds
+                    }
+                  }
+                }
+              : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      await tx.chatThread.deleteMany({
+        where: {
+          OR: [
+            { professionalId },
+            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      if (professionalBookingIds.length > 0) {
+        await tx.videoSession.deleteMany({
+          where: { bookingId: { in: professionalBookingIds } }
+        });
+      }
+      await tx.financeSessionRecord.deleteMany({
+        where: {
+          OR: [
+            { professionalId },
+            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        }
+      });
+      if (professionalBookingIds.length > 0) {
+        await tx.creditLedger.deleteMany({
+          where: { bookingId: { in: professionalBookingIds } }
+        });
+      }
+      if (professionalBookingIds.length > 0) {
+        await tx.booking.deleteMany({
+          where: { id: { in: professionalBookingIds } }
+        });
+      }
+      await tx.financePayoutLine.deleteMany({
+        where: { professionalId }
+      });
+      await tx.aIAuditJob.deleteMany({ where: { professionalId } });
+      await tx.availabilitySlot.deleteMany({ where: { professionalId } });
+      await tx.professionalDiploma.deleteMany({ where: { professionalId } });
+      await tx.sessionPackage.updateMany({
+        where: { professionalId },
+        data: { professionalId: null }
+      });
+      await tx.professionalProfile.delete({ where: { id: professionalId } });
+    }
+
+    if (existing.admin?.id) {
+      await tx.adminProfile.delete({ where: { id: existing.admin.id } });
+    }
+
+    await tx.chatMessage.deleteMany({ where: { senderUserId: existing.id } });
+    await tx.user.delete({ where: { id: existing.id } });
+  });
+
+  return res.json({
+    ok: true,
+    action: "deleted",
+    message: purgeHistoricalData
+      ? "Usuario eliminado definitivamente (incluye reservas, finanzas y compras vinculadas)."
+      : existing.isTestUser && hasHistoricalActivity
+        ? "Test user deleted permanently with all related records."
+        : "User deleted permanently because no booking/payment history was found."
   });
 });
 
@@ -968,6 +1464,7 @@ adminRouter.get("/bookings", async (req, res) => {
       endsAt: booking.endsAt,
       status: booking.status,
       consumedCredits: booking.consumedCredits,
+      consumedPurchaseId: booking.consumedPurchaseId,
       cancellationReason: booking.cancellationReason,
       cancelledAt: booking.cancelledAt,
       completedAt: booking.completedAt,
@@ -992,6 +1489,23 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
   const endsAt = parsed.data.endsAt ? new Date(parsed.data.endsAt) : null;
   const nextStatus = parsed.data.status ?? existing.status;
   const now = new Date();
+  const isTrialBooking = existing.consumedPurchaseId === null || existing.consumedCredits === 0;
+  const nextCancelledAt =
+    nextStatus === "CANCELLED"
+      ? existing.status === "CANCELLED" && existing.cancelledAt
+        ? existing.cancelledAt
+        : now
+      : null;
+  const nextCompletedAt =
+    nextStatus === "COMPLETED"
+      ? existing.status === "COMPLETED" && existing.completedAt
+        ? existing.completedAt
+        : now
+      : null;
+
+  if (nextStatus === "CANCELLED" && isTrialBooking) {
+    return res.status(409).json({ error: "Trial sessions cannot be cancelled. Please reschedule or reactivate it." });
+  }
 
   const updated = await prisma.booking.update({
     where: { id: existing.id },
@@ -1003,8 +1517,8 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
       ...(parsed.data.consumedCredits !== undefined ? { consumedCredits: parsed.data.consumedCredits } : {}),
       ...(parsed.data.cancellationReason !== undefined ? { cancellationReason: parsed.data.cancellationReason } : {}),
       status: nextStatus,
-      ...(nextStatus === "CANCELLED" ? { cancelledAt: now } : {}),
-      ...(nextStatus === "COMPLETED" ? { completedAt: now } : {})
+      cancelledAt: nextCancelledAt,
+      completedAt: nextCompletedAt
     }
   });
 
@@ -1250,7 +1764,7 @@ adminRouter.get("/patients", async (req, res) => {
     prisma.patientProfile.findMany({
       where,
       include: {
-        user: { select: { id: true, fullName: true, email: true } },
+        user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
         intake: {
           select: {
             riskLevel: true,
@@ -1278,6 +1792,28 @@ adminRouter.get("/patients", async (req, res) => {
   ]);
   const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });
   const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
+  const patientIds = patients.map((patient) => patient.id);
+  const purchaseSummaries = patientIds.length > 0
+    ? await prisma.patientPackagePurchase.groupBy({
+        by: ["patientId"],
+        where: {
+          patientId: { in: patientIds }
+        },
+        _sum: {
+          totalCredits: true,
+          remainingCredits: true
+        }
+      })
+    : [];
+  const purchaseSummaryByPatient = new Map(
+    purchaseSummaries.map((summary) => [
+      summary.patientId,
+      {
+        totalCredits: summary._sum.totalCredits ?? 0,
+        remainingCredits: summary._sum.remainingCredits ?? 0
+      }
+    ])
+  );
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -1287,6 +1823,7 @@ adminRouter.get("/patients", async (req, res) => {
       userId: patient.userId,
       fullName: patient.user.fullName,
       email: patient.user.email,
+      avatarUrl: patient.user.avatarUrl ?? null,
       timezone: patient.timezone,
       status: patient.status,
       intakeRiskLevel: patient.intake?.riskLevel ?? null,
@@ -1311,8 +1848,8 @@ adminRouter.get("/patients", async (req, res) => {
         ? {
             id: patient.purchases[0].id,
             packageName: patient.purchases[0].sessionPackage.name,
-            totalCredits: patient.purchases[0].totalCredits,
-            remainingCredits: patient.purchases[0].remainingCredits,
+            totalCredits: purchaseSummaryByPatient.get(patient.id)?.totalCredits ?? patient.purchases[0].totalCredits,
+            remainingCredits: purchaseSummaryByPatient.get(patient.id)?.remainingCredits ?? patient.purchases[0].remainingCredits,
             purchasedAt: patient.purchases[0].purchasedAt
           }
         : null,
@@ -1356,7 +1893,7 @@ adminRouter.get("/patients/risk-triage", async (req, res) => {
         : {})
     },
     include: {
-      user: { select: { fullName: true, email: true } },
+      user: { select: { fullName: true, email: true, avatarUrl: true } },
       intake: {
         select: {
           riskLevel: true,
@@ -1375,6 +1912,7 @@ adminRouter.get("/patients/risk-triage", async (req, res) => {
         patientId: patient.id,
         fullName: patient.user.fullName,
         email: patient.user.email,
+        avatarUrl: patient.user.avatarUrl,
         patientStatus: patient.status,
         intakeRiskLevel: riskLevel,
         intakeCompletedAt: patient.intake?.createdAt ?? null,
@@ -1384,7 +1922,7 @@ adminRouter.get("/patients/risk-triage", async (req, res) => {
         riskBlocked: decision !== "approved"
       };
     })
-    .filter((item) => (parsed.data.status ? item.triageDecision === parsed.data.status : item.triageDecision === "pending"));
+    .filter((item) => (parsed.data.status ? item.triageDecision === parsed.data.status : item.triageDecision !== "approved"));
 
   const pending = items.filter((item) => item.triageDecision === "pending").length;
 
@@ -1432,14 +1970,16 @@ adminRouter.post("/patients/:patientId/credits", async (req, res) => {
 });
 
 adminRouter.get("/patients/:patientId/management", async (req, res) => {
+  const now = new Date();
   const patient = await prisma.patientProfile.findUnique({
     where: { id: req.params.patientId },
     include: {
-      user: { select: { id: true, fullName: true, email: true } },
+      user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
       intake: {
         select: {
           riskLevel: true,
-          createdAt: true
+          createdAt: true,
+          answers: true
         }
       },
       purchases: {
@@ -1448,7 +1988,16 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
         take: 1
       },
       bookings: {
-        where: { status: "CONFIRMED" },
+        where: {
+          OR: [
+            { status: "CONFIRMED" },
+            {
+              status: "CANCELLED",
+              OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }],
+              endsAt: { gte: now }
+            }
+          ]
+        },
         include: { professional: { select: { id: true, user: { select: { fullName: true } } } } },
         orderBy: { startsAt: "desc" },
         take: 50
@@ -1459,6 +2008,15 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
   if (!patient) {
     return res.status(404).json({ error: "Patient not found" });
   }
+
+  const latestPurchase = patient.purchases[0] ?? (await ensureLatestPurchaseForPatient(patient.id));
+  const purchaseSummary = await prisma.patientPackagePurchase.aggregate({
+    where: { patientId: patient.id },
+    _sum: {
+      totalCredits: true,
+      remainingCredits: true
+    }
+  });
 
   const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const assignments = parsePatientAssignments(assignmentConfig?.value);
@@ -1476,29 +2034,41 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
     activeProfessionalName = professional?.user.fullName ?? null;
   }
 
+  const intakeAnswers =
+    patient.intake?.answers && typeof patient.intake.answers === "object" && !Array.isArray(patient.intake.answers)
+      ? Object.entries(patient.intake.answers as Record<string, unknown>).reduce<Record<string, string>>((acc, [key, value]) => {
+          if (typeof value === "string" && value.trim().length > 0) {
+            acc[key] = value.trim();
+          }
+          return acc;
+        }, {})
+      : null;
+
   return res.json({
     patient: {
       id: patient.id,
       userId: patient.userId,
       fullName: patient.user.fullName,
       email: patient.user.email,
+      avatarUrl: patient.user.avatarUrl,
       timezone: patient.timezone,
       status: patient.status,
       intakeRiskLevel: patient.intake?.riskLevel ?? null,
       intakeCompletedAt: patient.intake?.createdAt ?? null,
+      intakeAnswers,
       riskTriageDecision,
       riskBlocked: (patient.intake?.riskLevel ?? "low") !== "low" && riskTriageDecision !== "approved",
       activeProfessionalId,
       activeProfessionalName,
       assignmentStatus: activeProfessionalId ? "assigned" : "pending",
-      latestPurchase: patient.purchases[0]
+      latestPurchase: latestPurchase
         ? {
-            id: patient.purchases[0].id,
-            packageId: patient.purchases[0].packageId,
-            packageName: patient.purchases[0].sessionPackage.name,
-            totalCredits: patient.purchases[0].totalCredits,
-            remainingCredits: patient.purchases[0].remainingCredits,
-            purchasedAt: patient.purchases[0].purchasedAt
+            id: latestPurchase.id,
+            packageId: latestPurchase.packageId,
+            packageName: latestPurchase.sessionPackage.name,
+            totalCredits: purchaseSummary._sum.totalCredits ?? latestPurchase.totalCredits,
+            remainingCredits: purchaseSummary._sum.remainingCredits ?? latestPurchase.remainingCredits,
+            purchasedAt: latestPurchase.purchasedAt
           }
         : null,
       confirmedBookings: patient.bookings.map((booking) => ({
@@ -1511,6 +2081,7 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
         endsAt: booking.endsAt,
         status: booking.status,
         consumedCredits: booking.consumedCredits,
+        consumedPurchaseId: booking.consumedPurchaseId,
         cancellationReason: booking.cancellationReason,
         cancelledAt: booking.cancelledAt,
         completedAt: booking.completedAt
@@ -1654,11 +2225,31 @@ adminRouter.patch("/patients/:patientId/sessions-available", async (req, res) =>
     return res.status(400).json({ error: "No session packages configured. Create one first." });
   }
 
-  const delta = parsed.data.remainingCredits - latestPurchase.remainingCredits;
+  const currentWalletSummary = await prisma.patientPackagePurchase.aggregate({
+    where: { patientId: patient.id },
+    _sum: {
+      totalCredits: true,
+      remainingCredits: true
+    }
+  });
+  const currentWalletRemaining = currentWalletSummary._sum.remainingCredits ?? 0;
+  const delta = parsed.data.remainingCredits - currentWalletRemaining;
 
-  const updatedPurchase = await prisma.patientPackagePurchase.update({
-    where: { id: latestPurchase.id },
-    data: { remainingCredits: parsed.data.remainingCredits }
+  const updatedPurchase = await prisma.$transaction(async (tx) => {
+    await tx.patientPackagePurchase.updateMany({
+      where: {
+        patientId: patient.id,
+        remainingCredits: { gt: 0 }
+      },
+      data: {
+        remainingCredits: 0
+      }
+    });
+
+    return tx.patientPackagePurchase.update({
+      where: { id: latestPurchase.id },
+      data: { remainingCredits: parsed.data.remainingCredits }
+    });
   });
 
   if (delta !== 0) {
@@ -1682,7 +2273,7 @@ adminRouter.patch("/patients/:patientId/sessions-available", async (req, res) =>
       id: updatedPurchase.id,
       packageId: updatedPurchase.packageId,
       packageName: latestPurchase.sessionPackage.name,
-      totalCredits: updatedPurchase.totalCredits,
+      totalCredits: currentWalletSummary._sum.totalCredits ?? updatedPurchase.totalCredits,
       remainingCredits: updatedPurchase.remainingCredits,
       purchasedAt: updatedPurchase.purchasedAt
     }

@@ -40,6 +40,19 @@ financeRouter.patch("/settings", async (req, res) => {
   if (!parsed.success) {
     return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid payload", details: parsed.error.flatten() });
   }
+  const current = await getFinanceRules();
+  const nextMin = parsed.data.sessionPriceMinUsd ?? current.sessionPriceMinUsd;
+  const nextMax = parsed.data.sessionPriceMaxUsd ?? current.sessionPriceMaxUsd;
+
+  if (nextMin > nextMax) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Session price minimum cannot be greater than maximum"
+    });
+  }
+
   const rules = await saveFinanceRules(parsed.data);
   return res.json({ rules, message: "Finance settings updated" });
 });

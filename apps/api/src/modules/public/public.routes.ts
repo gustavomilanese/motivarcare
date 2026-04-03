@@ -1,6 +1,11 @@
-import { Router } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import express, { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
+
+const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
+const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
 
 const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
@@ -8,7 +13,8 @@ const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
 const sessionPackagesChannelSchema = z.object({
-  channel: z.enum(["landing", "patient"]).optional()
+  channel: z.enum(["landing", "patient"]).optional(),
+  professionalId: z.string().trim().min(1).optional()
 });
 
 const imageSourceSchema = z
@@ -109,21 +115,88 @@ function parseSessionPackagesVisibility(value: unknown) {
 
 export const publicRouter = Router();
 
+/** Fotos demo servidas por el mismo host que el API (útil en Expo: misma IP/LAN que login). */
+publicRouter.use("/demo-avatars", express.static(demoAvatarsDir, { index: false, maxAge: "7d" }));
+
+function resolvePackageDiscountPercent(params: {
+  credits: number;
+  fallbackDiscountPercent: number;
+  profileDiscount4: number | null | undefined;
+  profileDiscount12: number | null | undefined;
+  profileDiscount24: number | null | undefined;
+}): number {
+  if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
+    return params.profileDiscount4;
+  }
+  if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
+    return params.profileDiscount12;
+  }
+  if (params.credits === 24 && params.profileDiscount24 !== null && params.profileDiscount24 !== undefined) {
+    return params.profileDiscount24;
+  }
+  return params.fallbackDiscountPercent;
+}
+
+function resolvePackagePriceCents(params: {
+  credits: number;
+  fallbackPriceCents: number;
+  sessionPriceUsd: number | null | undefined;
+  discountPercent: number;
+}): number {
+  if (!params.sessionPriceUsd || params.sessionPriceUsd <= 0) {
+    return params.fallbackPriceCents;
+  }
+  const listPriceCents = params.sessionPriceUsd * params.credits * 100;
+  return Math.max(0, Math.round(listPriceCents * (1 - params.discountPercent / 100)));
+}
+
+function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Continuidad" | "Intensivo" {
+  if (credits <= 4) {
+    return "Inicio";
+  }
+  if (credits <= 8) {
+    return "Continuidad";
+  }
+  return "Intensivo";
+}
+
 publicRouter.get("/session-packages", async (req, res) => {
   const parsed = sessionPackagesChannelSchema.safeParse(req.query);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
   }
 
-  const [packages, visibilityConfig] = await Promise.all([
+  const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
       where: { active: true },
       include: {
-        professional: { select: { id: true, user: { select: { fullName: true } } } }
+        professional: {
+          select: {
+            id: true,
+            sessionPriceUsd: true,
+            discount4: true,
+            discount12: true,
+            discount24: true,
+            user: { select: { fullName: true } }
+          }
+        }
       },
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     }),
-    prisma.systemConfig.findUnique({ where: { key: SESSION_PACKAGES_VISIBILITY_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: SESSION_PACKAGES_VISIBILITY_KEY } }),
+    parsed.data.professionalId
+      ? prisma.professionalProfile.findUnique({
+          where: { id: parsed.data.professionalId },
+          select: {
+            id: true,
+            sessionPriceUsd: true,
+            discount4: true,
+            discount12: true,
+            discount24: true,
+            user: { select: { fullName: true } }
+          }
+        })
+      : Promise.resolve(null)
   ]);
   const visibility = parseSessionPackagesVisibility(visibilityConfig?.value);
   const requestedIds =
@@ -145,19 +218,37 @@ publicRouter.get("/session-packages", async (req, res) => {
 
   return res.json({
     featuredPackageId: featuredPackageId && orderedPackages.some((item) => item.id === featuredPackageId) ? featuredPackageId : null,
-    sessionPackages: orderedPackages.map((item) => ({
-      id: item.id,
-      professionalId: item.professionalId,
-      professionalName: item.professional?.user.fullName ?? null,
-      stripePriceId: item.stripePriceId,
-      name: item.name,
-      credits: item.credits,
-      priceCents: item.priceCents,
-      discountPercent: item.discountPercent,
-      currency: item.currency,
-      active: item.active,
-      createdAt: item.createdAt
-    }))
+    sessionPackages: orderedPackages.map((item) => {
+      const pricingProfile = selectedProfessional ?? item.professional;
+      const discountPercent = resolvePackageDiscountPercent({
+        credits: item.credits,
+        fallbackDiscountPercent: item.discountPercent,
+        profileDiscount4: pricingProfile?.discount4,
+        profileDiscount12: pricingProfile?.discount12,
+        profileDiscount24: pricingProfile?.discount24
+      });
+      const priceCents = resolvePackagePriceCents({
+        credits: item.credits,
+        fallbackPriceCents: item.priceCents,
+        sessionPriceUsd: pricingProfile?.sessionPriceUsd,
+        discountPercent
+      });
+
+      return {
+        id: item.id,
+        professionalId: item.professionalId,
+        professionalName: item.professional?.user.fullName ?? null,
+        stripePriceId: item.stripePriceId,
+        name: item.name,
+        credits: item.credits,
+        priceCents,
+        discountPercent,
+        marketingLabel: resolveSessionPackageMarketingLabel(item.credits),
+        currency: item.currency,
+        active: item.active,
+        createdAt: item.createdAt
+      };
+    })
   });
 });
 

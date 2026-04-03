@@ -8,6 +8,18 @@ import { LockNotAcquiredError, withDistributedLock } from "../../lib/distributed
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
 import { prisma } from "../../lib/prisma.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import { notifyPatientOnProfessionalBookingChange } from "../notifications/bookingLifecycleNotifications.js";
+import { sendProfessionalInAppBookingCancellation } from "../notifications/professionalInAppNotifications.js";
+import {
+  cancelGoogleMeetEventForPlatformCalendar,
+  cancelGoogleMeetEventForUserCalendar,
+  createLinkedCalendarEventForUserCalendar,
+  createGoogleMeetForPlatformCalendar,
+  createGoogleMeetForUserCalendar,
+  isPlatformGoogleMeetEnabled,
+  rescheduleGoogleMeetEventForPlatformCalendar,
+  rescheduleGoogleMeetEventForUserCalendar
+} from "../video/googleMeet.service.js";
 
 const createBookingSchema = z.object({
   professionalId: z.string().min(1),
@@ -21,7 +33,8 @@ const rescheduleBookingSchema = z.object({
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
   patientTimezone: z.string().trim().min(3).max(120).optional(),
-  professionalTimezone: z.string().trim().min(3).max(120).optional()
+  professionalTimezone: z.string().trim().min(3).max(120).optional(),
+  reason: z.string().trim().min(3).max(500).optional()
 });
 
 const cancelBookingSchema = z.object({
@@ -34,6 +47,7 @@ const completeBookingSchema = z.object({
 
 const FREE_CANCELLATION_HOURS = 24;
 const MIN_BOOKING_NOTICE_HOURS = 24;
+const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
@@ -66,6 +80,10 @@ function normalizeStatus(status: string): string {
   return status.toLowerCase();
 }
 
+function resolveBookingMode(consumedPurchaseId: string | null, consumedCredits: number): "trial" | "credit" {
+  return consumedPurchaseId === null || consumedCredits === 0 ? "trial" : "credit";
+}
+
 function sanitizeTimezone(timezone: string): string {
   const candidate = timezone.trim();
   try {
@@ -87,6 +105,96 @@ function normalizeIdempotencyKey(value: string | undefined | null): string | nul
   }
 
   return normalized;
+}
+
+function encodeGoogleMeetOwnerEventId(ownerUserId: string, eventId: string): string {
+  return `${ownerUserId}|${eventId}`;
+}
+
+function decodeGoogleMeetOwnerEventId(value: string): { ownerUserId: string; eventId: string } | null {
+  const separatorIndex = value.indexOf("|");
+  if (separatorIndex <= 0 || separatorIndex >= value.length - 1) {
+    return null;
+  }
+  return {
+    ownerUserId: value.slice(0, separatorIndex),
+    eventId: value.slice(separatorIndex + 1)
+  };
+}
+
+type GoogleMeetOwnerTarget = { ownerUserId: string; eventId: string };
+type GoogleMeetSyncTargets = {
+  primary: GoogleMeetOwnerTarget;
+  mirror?: GoogleMeetOwnerTarget;
+};
+
+function encodeGoogleMeetSyncTargets(targets: GoogleMeetSyncTargets): string {
+  if (!targets.mirror) {
+    return encodeGoogleMeetOwnerEventId(targets.primary.ownerUserId, targets.primary.eventId);
+  }
+
+  const payload = Buffer.from(JSON.stringify(targets), "utf8").toString("base64url");
+  return `v2:${payload}`;
+}
+
+function decodeGoogleMeetSyncTargets(value: string): GoogleMeetSyncTargets | null {
+  if (value.startsWith("v2:")) {
+    const payload = value.slice(3);
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as unknown;
+      if (!parsed || typeof parsed !== "object") {
+        return null;
+      }
+
+      const primary = (parsed as { primary?: GoogleMeetOwnerTarget }).primary;
+      const mirror = (parsed as { mirror?: GoogleMeetOwnerTarget }).mirror;
+
+      if (!primary || typeof primary.ownerUserId !== "string" || typeof primary.eventId !== "string") {
+        return null;
+      }
+
+      if (!mirror) {
+        return { primary };
+      }
+
+      if (typeof mirror.ownerUserId !== "string" || typeof mirror.eventId !== "string") {
+        return { primary };
+      }
+
+      return { primary, mirror };
+    } catch {
+      return null;
+    }
+  }
+
+  const legacy = decodeGoogleMeetOwnerEventId(value);
+  if (!legacy) {
+    return null;
+  }
+
+  return { primary: legacy };
+}
+
+function listGoogleMeetSyncTargets(value: string): GoogleMeetOwnerTarget[] {
+  const decoded = decodeGoogleMeetSyncTargets(value);
+  if (!decoded) {
+    return [];
+  }
+
+  const targets = [decoded.primary];
+  if (decoded.mirror) {
+    targets.push(decoded.mirror);
+  }
+
+  const deduped = new Map<string, GoogleMeetOwnerTarget>();
+  for (const target of targets) {
+    deduped.set(`${target.ownerUserId}|${target.eventId}`, target);
+  }
+  return Array.from(deduped.values());
 }
 
 function parsePatientIntakeTriage(value: unknown): Record<string, {
@@ -227,9 +335,11 @@ bookingsRouter.get("/mine", requireAuth, async (req: AuthenticatedRequest, res) 
         startsAt: booking.startsAt,
         endsAt: booking.endsAt,
         status: normalizeStatus(booking.status),
+        bookingMode: resolveBookingMode(booking.consumedPurchaseId, booking.consumedCredits),
         professionalId: booking.professionalId,
         counterpartName: booking.professional.user.fullName,
         counterpartEmail: booking.professional.user.email,
+        counterpartPhotoUrl: booking.professional.photoUrl ?? null,
         joinUrl: booking.videoSession?.joinUrlPatient ?? null,
         joinUrlProfessional: booking.videoSession?.joinUrlProfessional ?? null,
         patientTimezoneAtBooking: booking.patientTimezoneAtBooking,
@@ -262,6 +372,7 @@ bookingsRouter.get("/mine", requireAuth, async (req: AuthenticatedRequest, res) 
         startsAt: booking.startsAt,
         endsAt: booking.endsAt,
         status: normalizeStatus(booking.status),
+        bookingMode: resolveBookingMode(booking.consumedPurchaseId, booking.consumedCredits),
         patientId: booking.patientId,
         counterpartName: booking.patient.user.fullName,
         counterpartEmail: booking.patient.user.email,
@@ -321,6 +432,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             startsAt: replayBooking.startsAt,
             endsAt: replayBooking.endsAt,
             status: normalizeStatus(replayBooking.status),
+            bookingMode: resolveBookingMode(replayBooking.consumedPurchaseId, replayBooking.consumedCredits),
             patientTimezoneAtBooking: replayBooking.patientTimezoneAtBooking,
             professionalTimezoneAtBooking: replayBooking.professionalTimezoneAtBooking,
             threadId: null,
@@ -369,7 +481,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
 
   const professional = await prisma.professionalProfile.findUnique({
     where: { id: parsed.data.professionalId },
-    include: { user: { select: { fullName: true } } }
+    include: { user: { select: { id: true, fullName: true, email: true } } }
   });
 
   if (!professional) {
@@ -392,6 +504,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
           id: string;
           patientId: string;
           professionalId: string;
+          consumedPurchaseId: string | null;
+          consumedCredits: number;
           startsAt: Date;
           endsAt: Date;
           status: string;
@@ -465,9 +579,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             orderBy: { purchasedAt: "desc" },
             select: { id: true, remainingCredits: true }
           });
-          if (!latestPurchase || latestPurchase.remainingCredits <= 0) {
-            throw new Error("NO_AVAILABLE_CREDITS");
-          }
+          let consumedPurchaseId: string | null = null;
+          let consumedCredits = 0;
 
           if (parsed.data.patientTimezone) {
             const nextSeenTimezone = sanitizeTimezone(parsed.data.patientTimezone);
@@ -482,17 +595,32 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             }
           }
 
-          const decremented = await tx.patientPackagePurchase.updateMany({
-            where: {
-              id: latestPurchase.id,
-              remainingCredits: { gt: 0 }
-            },
-            data: {
-              remainingCredits: { decrement: 1 }
+          if (latestPurchase && latestPurchase.remainingCredits > 0) {
+            const decremented = await tx.patientPackagePurchase.updateMany({
+              where: {
+                id: latestPurchase.id,
+                remainingCredits: { gt: 0 }
+              },
+              data: {
+                remainingCredits: { decrement: 1 }
+              }
+            });
+            if (decremented.count === 0) {
+              throw new Error("NO_AVAILABLE_CREDITS");
             }
-          });
-          if (decremented.count === 0) {
-            throw new Error("NO_AVAILABLE_CREDITS");
+            consumedPurchaseId = latestPurchase.id;
+            consumedCredits = 1;
+          } else {
+            const existingTrialBooking = await tx.booking.findFirst({
+              where: {
+                patientId: patientProfileId,
+                OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }]
+              },
+              select: { id: true }
+            });
+            if (existingTrialBooking) {
+              throw new Error("TRIAL_ALREADY_USED");
+            }
           }
 
           const patientTimezoneAtBooking = sanitizeTimezone(patient.lastSeenTimezone ?? patient.timezone ?? "UTC");
@@ -502,25 +630,27 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             data: {
               patientId: patientProfileId,
               professionalId: professional.id,
-              consumedPurchaseId: latestPurchase.id,
+              consumedPurchaseId,
               patientTimezoneAtBooking,
               professionalTimezoneAtBooking,
               startsAt,
               endsAt,
               status: BOOKING_STATUS.CONFIRMED,
-              consumedCredits: 1
+              consumedCredits
             }
           });
 
-          await tx.creditLedger.create({
-            data: {
-              patientId: patientProfileId,
-              bookingId: booking.id,
-              type: "SESSION_CONSUMED",
-              amount: -1,
-              note: `Booking ${booking.id}`
-            }
-          });
+          if (consumedCredits > 0) {
+            await tx.creditLedger.create({
+              data: {
+                patientId: patientProfileId,
+                bookingId: booking.id,
+                type: "SESSION_CONSUMED",
+                amount: -1,
+                note: `Booking ${booking.id}`
+              }
+            });
+          }
 
           const existingThread = await tx.chatThread.findFirst({
             where: {
@@ -557,6 +687,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               id: booking.id,
               patientId: booking.patientId,
               professionalId: booking.professionalId,
+              consumedPurchaseId: booking.consumedPurchaseId,
+              consumedCredits: booking.consumedCredits,
               startsAt: booking.startsAt,
               endsAt: booking.endsAt,
               status: booking.status,
@@ -597,6 +729,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
                 startsAt: replayBooking.startsAt,
                 endsAt: replayBooking.endsAt,
                 status: normalizeStatus(replayBooking.status),
+                bookingMode: resolveBookingMode(replayBooking.consumedPurchaseId, replayBooking.consumedCredits),
                 patientTimezoneAtBooking: replayBooking.patientTimezoneAtBooking,
                 professionalTimezoneAtBooking: replayBooking.professionalTimezoneAtBooking,
                 threadId: null,
@@ -628,6 +761,9 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       if (error.message === "NO_AVAILABLE_CREDITS") {
         return res.status(402).json({ error: "No available session credits. Purchase a package to continue." });
       }
+      if (error.message === "TRIAL_ALREADY_USED") {
+        return res.status(409).json({ error: "Trial session already used. Purchase a package to continue." });
+      }
     }
 
     throw error;
@@ -635,6 +771,180 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
 
   if (!createdBooking) {
     return res.status(500).json({ error: "Booking could not be created" });
+  }
+
+  let joinUrlPatient = createdBooking.joinUrlPatient;
+  let joinUrlProfessional = createdBooking.joinUrlProfessional;
+
+  const [professionalCalendarConnection, patientCalendarConnection] = await Promise.all([
+    prisma.googleCalendarConnection.findUnique({
+      where: { userId: professional.user.id }
+    }),
+    prisma.googleCalendarConnection.findUnique({
+      where: { userId: actor.userId }
+    })
+  ]);
+
+  const googleOAuthReady = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+  let meetProvisioned = false;
+
+  // Try professional calendar first; on failure fall through to patient calendar, then platform.
+  // (Previously an else-if chain skipped patient/platform when the pro had a broken/stale connection.)
+  if (googleOAuthReady && professionalCalendarConnection) {
+    try {
+      const meet = await createGoogleMeetForUserCalendar({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        refreshToken: professionalCalendarConnection.refreshToken,
+        calendarId: professionalCalendarConnection.calendarId,
+        bookingId: createdBooking.booking.id,
+        startsAt: createdBooking.booking.startsAt,
+        endsAt: createdBooking.booking.endsAt,
+        professionalName: professional.user.fullName,
+        patientName: actor.fullName,
+        participants: [
+          { email: actor.email, displayName: actor.fullName },
+          { email: professional.user.email, displayName: professional.user.fullName }
+        ]
+      });
+
+      let mirrorTarget: GoogleMeetOwnerTarget | undefined;
+      if (patientCalendarConnection) {
+        try {
+          const mirrored = await createLinkedCalendarEventForUserCalendar({
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            refreshToken: patientCalendarConnection.refreshToken,
+            calendarId: patientCalendarConnection.calendarId,
+            startsAt: createdBooking.booking.startsAt,
+            endsAt: createdBooking.booking.endsAt,
+            professionalName: professional.user.fullName,
+            patientName: actor.fullName,
+            joinUrl: meet.joinUrl
+          });
+          mirrorTarget = {
+            ownerUserId: actor.userId,
+            eventId: mirrored.eventId
+          };
+        } catch (googleCalendarMirrorError) {
+          console.error("Could not mirror Google Meet event into patient calendar", googleCalendarMirrorError);
+        }
+      }
+
+      await prisma.videoSession.update({
+        where: { bookingId: createdBooking.booking.id },
+        data: {
+          provider: "google_meet_user",
+          externalRoomId: encodeGoogleMeetSyncTargets({
+            primary: {
+              ownerUserId: professional.user.id,
+              eventId: meet.eventId
+            },
+            mirror: mirrorTarget
+          }),
+          joinUrlPatient: meet.joinUrl,
+          joinUrlProfessional: meet.joinUrl
+        }
+      });
+
+      joinUrlPatient = meet.joinUrl;
+      joinUrlProfessional = meet.joinUrl;
+      meetProvisioned = true;
+    } catch (googleMeetError) {
+      console.error(
+        "Could not provision Google Meet on professional calendar; trying patient calendar or platform",
+        googleMeetError
+      );
+    }
+  }
+
+  if (!meetProvisioned && googleOAuthReady && patientCalendarConnection) {
+    try {
+      const meet = await createGoogleMeetForUserCalendar({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        refreshToken: patientCalendarConnection.refreshToken,
+        calendarId: patientCalendarConnection.calendarId,
+        bookingId: createdBooking.booking.id,
+        startsAt: createdBooking.booking.startsAt,
+        endsAt: createdBooking.booking.endsAt,
+        professionalName: professional.user.fullName,
+        patientName: actor.fullName,
+        participants: [
+          { email: actor.email, displayName: actor.fullName },
+          { email: professional.user.email, displayName: professional.user.fullName }
+        ]
+      });
+
+      await prisma.videoSession.update({
+        where: { bookingId: createdBooking.booking.id },
+        data: {
+          provider: "google_meet_user",
+          externalRoomId: encodeGoogleMeetSyncTargets({
+            primary: {
+              ownerUserId: actor.userId,
+              eventId: meet.eventId
+            }
+          }),
+          joinUrlPatient: meet.joinUrl,
+          joinUrlProfessional: meet.joinUrl
+        }
+      });
+
+      joinUrlPatient = meet.joinUrl;
+      joinUrlProfessional = meet.joinUrl;
+      meetProvisioned = true;
+    } catch (googleMeetError) {
+      console.error(
+        "Could not provision Google Meet on patient calendar; trying platform calendar if configured",
+        googleMeetError
+      );
+    }
+  }
+
+  if (!meetProvisioned && isPlatformGoogleMeetEnabled()) {
+    try {
+      const meet = await createGoogleMeetForPlatformCalendar({
+        bookingId: createdBooking.booking.id,
+        startsAt: createdBooking.booking.startsAt,
+        endsAt: createdBooking.booking.endsAt,
+        professionalName: professional.user.fullName,
+        patientName: actor.fullName,
+        participants: [
+          { email: actor.email, displayName: actor.fullName },
+          { email: professional.user.email, displayName: professional.user.fullName }
+        ]
+      });
+
+      await prisma.videoSession.update({
+        where: { bookingId: createdBooking.booking.id },
+        data: {
+          provider: "google_meet_platform",
+          externalRoomId: meet.eventId,
+          joinUrlPatient: meet.joinUrl,
+          joinUrlProfessional: meet.joinUrl
+        }
+      });
+
+      joinUrlPatient = meet.joinUrl;
+      joinUrlProfessional = meet.joinUrl;
+      meetProvisioned = true;
+    } catch (googleMeetError) {
+      console.error("Could not provision Google Meet on platform calendar; Daily.co URLs remain", googleMeetError);
+    }
+  }
+
+  if (!meetProvisioned) {
+    console.warn(
+      "[bookings] Meet not provisioned — patient/pro will see Daily.co URLs for this booking. " +
+        "Check: (1) API restarted after code/env changes, (2) NEW booking (old rows keep old links), " +
+        "(3) GOOGLE_CLIENT_ID+SECRET set, and either users connected Google Calendar in the app OR " +
+        "GOOGLE_REFRESH_TOKEN+GOOGLE_CALENDAR_ID for platform fallback. " +
+        `bookingId=${createdBooking.booking.id} googleOAuthReady=${googleOAuthReady} ` +
+        `proCalendarLinked=${Boolean(professionalCalendarConnection)} ` +
+        `patientCalendarLinked=${Boolean(patientCalendarConnection)} ` +
+        `platformCalendarEnvOk=${isPlatformGoogleMeetEnabled()}`
+    );
   }
 
   if (idempotencyStoreKey) {
@@ -658,11 +968,12 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       startsAt: createdBooking.booking.startsAt,
       endsAt: createdBooking.booking.endsAt,
       status: normalizeStatus(createdBooking.booking.status),
+      bookingMode: resolveBookingMode(createdBooking.booking.consumedPurchaseId, createdBooking.booking.consumedCredits),
       patientTimezoneAtBooking: createdBooking.booking.patientTimezoneAtBooking,
       professionalTimezoneAtBooking: createdBooking.booking.professionalTimezoneAtBooking,
       threadId: createdBooking.threadId,
-      joinUrlPatient: createdBooking.joinUrlPatient,
-      joinUrlProfessional: createdBooking.joinUrlProfessional,
+      joinUrlPatient,
+      joinUrlProfessional,
       professionalName: professional.user.fullName
     }
   });
@@ -699,9 +1010,17 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.COMPLETED) {
+  if (booking.status === BOOKING_STATUS.CANCELLED) {
     return res.status(409).json({ error: "Booking cannot be rescheduled in its current state" });
   }
+
+  if (
+    canRescheduleAsPatient
+    && (booking.status === BOOKING_STATUS.COMPLETED || booking.status === BOOKING_STATUS.NO_SHOW)
+  ) {
+    return res.status(409).json({ error: "Booking cannot be rescheduled in its current state" });
+  }
+  const previousStartsAt = booking.startsAt;
 
   const startsAt = new Date(parsed.data.startsAt);
   const endsAt = new Date(parsed.data.endsAt);
@@ -710,6 +1029,13 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
   }
 
   if (canRescheduleAsPatient) {
+    if (!hasMinimumBookingNotice(booking.startsAt, PATIENT_RESCHEDULE_NOTICE_HOURS)) {
+      return res.status(409).json({
+        error: `Bookings must be rescheduled at least ${PATIENT_RESCHEDULE_NOTICE_HOURS} hours before session start.`,
+        minimumBookingNoticeHours: PATIENT_RESCHEDULE_NOTICE_HOURS
+      });
+    }
+
     const patientWithIntake = await prisma.patientProfile.findUnique({
       where: { id: booking.patientId },
       include: {
@@ -734,17 +1060,6 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
       }
     }
 
-    const professionalConfig = await prisma.professionalProfile.findUnique({
-      where: { id: booking.professionalId },
-      select: { cancellationHours: true }
-    });
-    const minimumBookingNoticeHours = resolveMinimumBookingNoticeHours(professionalConfig?.cancellationHours);
-    if (!hasMinimumBookingNotice(startsAt, minimumBookingNoticeHours)) {
-      return res.status(409).json({
-        error: `Bookings must be rescheduled at least ${minimumBookingNoticeHours} hours in advance.`,
-        minimumBookingNoticeHours
-      });
-    }
   }
 
   const lockKey = `booking_reschedule:${booking.professionalId}:${startsAt.toISOString()}:${endsAt.toISOString()}`;
@@ -823,6 +1138,11 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
           data: {
             startsAt,
             endsAt,
+            status:
+              canRescheduleAsProfessional && (booking.status === BOOKING_STATUS.COMPLETED || booking.status === BOOKING_STATUS.NO_SHOW)
+                ? BOOKING_STATUS.CONFIRMED
+                : booking.status,
+            completedAt: null,
             patientTimezoneAtBooking,
             professionalTimezoneAtBooking,
             cancelledAt: null,
@@ -850,6 +1170,61 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
       return res.status(409).json({ error: "Professional already booked at that time" });
     }
     throw error;
+  }
+
+  if (booking.status === BOOKING_STATUS.COMPLETED || booking.status === BOOKING_STATUS.NO_SHOW) {
+    await upsertFinanceRecordForBooking(booking.id);
+  }
+
+  if (booking.videoSession?.provider === "google_meet_user" && booking.videoSession.externalRoomId && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+    const targets = listGoogleMeetSyncTargets(booking.videoSession.externalRoomId);
+    for (const target of targets) {
+      const ownerConnection = await prisma.googleCalendarConnection.findUnique({
+        where: { userId: target.ownerUserId }
+      });
+      if (!ownerConnection) {
+        continue;
+      }
+      try {
+        await rescheduleGoogleMeetEventForUserCalendar({
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          refreshToken: ownerConnection.refreshToken,
+          calendarId: ownerConnection.calendarId,
+          eventId: target.eventId,
+          startsAt: updated.startsAt,
+          endsAt: updated.endsAt
+        });
+      } catch (googleMeetError) {
+        console.error("Could not reschedule Google Meet event", googleMeetError);
+      }
+    }
+  }
+
+  if (booking.videoSession?.provider === "google_meet_platform" && booking.videoSession.externalRoomId) {
+    try {
+      await rescheduleGoogleMeetEventForPlatformCalendar({
+        eventId: booking.videoSession.externalRoomId,
+        startsAt: updated.startsAt,
+        endsAt: updated.endsAt
+      });
+    } catch (googleMeetError) {
+      console.error("Could not reschedule Google Meet event", googleMeetError);
+    }
+  }
+
+  if (canRescheduleAsProfessional) {
+    try {
+      await notifyPatientOnProfessionalBookingChange({
+        bookingId: booking.id,
+        event: "professional_rescheduled",
+        previousStartsAt,
+        nextStartsAt: updated.startsAt,
+        reason: parsed.data.reason ?? null
+      });
+    } catch (notificationError) {
+      console.error("Could not send booking reschedule notifications", notificationError);
+    }
   }
 
   return res.json({
@@ -884,7 +1259,10 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
     return res.status(404).json({ error: "User not found" });
   }
 
-  const booking = await prisma.booking.findUnique({ where: { id: req.params.bookingId } });
+  const booking = await prisma.booking.findUnique({
+    where: { id: req.params.bookingId },
+    include: { videoSession: true }
+  });
   if (!booking) {
     return res.status(404).json({ error: "Booking not found" });
   }
@@ -899,6 +1277,15 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   if (booking.status === BOOKING_STATUS.CANCELLED) {
     return res.status(409).json({ error: "Booking already cancelled" });
   }
+
+  const isTrialBooking = booking.consumedPurchaseId === null || booking.consumedCredits === 0;
+  if (isTrialBooking) {
+    return res.status(409).json({
+      error: "Trial sessions cannot be cancelled. Please reschedule it."
+    });
+  }
+
+  const previousStartsAt = booking.startsAt;
 
   const cancelledAt = parsed.data.cancelledAt ? new Date(parsed.data.cancelledAt) : new Date();
   const hoursBeforeSession = (booking.startsAt.getTime() - cancelledAt.getTime()) / (1000 * 60 * 60);
@@ -951,6 +1338,68 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
 
     return updatedBooking;
   });
+
+  if (booking.videoSession?.provider === "google_meet_user" && booking.videoSession.externalRoomId && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+    const targets = listGoogleMeetSyncTargets(booking.videoSession.externalRoomId);
+    for (const target of targets) {
+      const ownerConnection = await prisma.googleCalendarConnection.findUnique({
+        where: { userId: target.ownerUserId }
+      });
+      if (!ownerConnection) {
+        continue;
+      }
+      try {
+        await cancelGoogleMeetEventForUserCalendar({
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          refreshToken: ownerConnection.refreshToken,
+          calendarId: ownerConnection.calendarId,
+          eventId: target.eventId
+        });
+      } catch (googleMeetError) {
+        console.error("Could not cancel Google Meet event", googleMeetError);
+      }
+    }
+  }
+
+  if (booking.videoSession?.provider === "google_meet_platform" && booking.videoSession.externalRoomId) {
+    try {
+      await cancelGoogleMeetEventForPlatformCalendar({
+        eventId: booking.videoSession.externalRoomId
+      });
+    } catch (googleMeetError) {
+      console.error("Could not cancel Google Meet event", googleMeetError);
+    }
+  }
+
+  if (canCancelAsProfessional) {
+    try {
+      await notifyPatientOnProfessionalBookingChange({
+        bookingId: booking.id,
+        event: "professional_cancelled",
+        previousStartsAt,
+        reason: parsed.data.reason ?? null
+      });
+    } catch (notificationError) {
+      console.error("Could not send booking cancellation notifications", notificationError);
+    }
+  }
+
+  if (canCancelAsPatient) {
+    try {
+      await sendProfessionalInAppBookingCancellation({
+        patientId: booking.patientId,
+        professionalId: booking.professionalId,
+        patientUserId: actor.userId,
+        bookingId: booking.id,
+        patientName: actor.fullName,
+        previousStartsAt,
+        reason: parsed.data.reason ?? null
+      });
+    } catch (notificationError) {
+      console.error("Could not send patient cancellation notification to professional", notificationError);
+    }
+  }
 
   return res.json({
     message: "Booking cancelled",

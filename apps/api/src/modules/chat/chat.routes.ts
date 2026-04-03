@@ -123,6 +123,7 @@ type ThreadRow = {
     };
   };
   professional: {
+    photoUrl: string | null;
     user: {
       id: string;
       fullName: string;
@@ -140,6 +141,45 @@ function buildPairKey(thread: ThreadRow): string {
   return `${thread.patientId}:${thread.professionalId}`;
 }
 
+async function ensureThreadsForProfessionalPatients(professionalProfileId: string): Promise<void> {
+  const bookingPairs = await prisma.booking.findMany({
+    where: {
+      professionalId: professionalProfileId,
+      status: { not: "CANCELLED" }
+    },
+    select: {
+      patientId: true
+    },
+    distinct: ["patientId"]
+  });
+
+  if (bookingPairs.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    bookingPairs.map(async (pair) => {
+      const existing = await prisma.chatThread.findFirst({
+        where: {
+          patientId: pair.patientId,
+          professionalId: professionalProfileId
+        },
+        select: { id: true },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+      });
+
+      if (!existing) {
+        await prisma.chatThread.create({
+          data: {
+            patientId: pair.patientId,
+            professionalId: professionalProfileId
+          }
+        });
+      }
+    })
+  );
+}
+
 chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -148,6 +188,10 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
   const actor = await getActorContext(req.auth);
   if (!actor) {
     return res.status(404).json({ error: "User not found" });
+  }
+
+  if (actor.role === "PROFESSIONAL" && actor.professionalProfileId) {
+    await ensureThreadsForProfessionalPatients(actor.professionalProfileId);
   }
 
   const threads = await prisma.chatThread.findMany({
@@ -169,7 +213,8 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
         }
       },
       professional: {
-        include: {
+        select: {
+          photoUrl: true,
           user: {
             select: {
               id: true,
@@ -190,10 +235,26 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
     actor.role === "PATIENT" && actor.patientProfileId
       ? await getAllowedProfessionalIdsForPatient(actor.patientProfileId)
       : null;
+  const professionalLinkedPatientIds =
+    actor.role === "PROFESSIONAL" && actor.professionalProfileId
+      ? new Set(
+          (
+            await prisma.booking.findMany({
+              where: {
+                professionalId: actor.professionalProfileId
+              },
+              select: { patientId: true },
+              distinct: ["patientId"]
+            })
+          ).map((item) => item.patientId)
+        )
+      : null;
   const visibleThreads =
     allowedProfessionalIds && actor.role === "PATIENT"
       ? threads.filter((thread) => allowedProfessionalIds.has(thread.professionalId))
-      : threads;
+      : professionalLinkedPatientIds && actor.role === "PROFESSIONAL"
+        ? threads.filter((thread) => professionalLinkedPatientIds.has(thread.patientId))
+        : threads;
 
   const groups = new Map<
     string,
@@ -204,6 +265,7 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
       professionalId: string;
       counterpartName: string;
       counterpartUserId: string;
+      counterpartPhotoUrl: string | null;
       lastMessage: {
         id: string;
         body: string;
@@ -234,6 +296,8 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
     const pairKey = buildPairKey(thread);
     const counterpartName = actor.role === "PATIENT" ? thread.professional.user.fullName : thread.patient.user.fullName;
     const counterpartUserId = actor.role === "PATIENT" ? thread.professional.user.id : thread.patient.user.id;
+    const counterpartPhotoUrl =
+      actor.role === "PATIENT" ? thread.professional.photoUrl ?? null : null;
     const threadLastMessage = thread.messages[0]
       ? {
           id: thread.messages[0].id,
@@ -254,6 +318,7 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
         professionalId: thread.professionalId,
         counterpartName,
         counterpartUserId,
+        counterpartPhotoUrl,
         lastMessage: threadLastMessage,
         latestActivityAt,
         unreadCount: currentUnread,
@@ -264,6 +329,9 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
 
     current.relatedThreadIds.push(thread.id);
     current.unreadCount += currentUnread;
+    if (!current.counterpartPhotoUrl && counterpartPhotoUrl) {
+      current.counterpartPhotoUrl = counterpartPhotoUrl;
+    }
 
     if (thread.createdAt < current.canonicalThreadCreatedAt) {
       current.canonicalThreadId = thread.id;
@@ -284,6 +352,7 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
       professionalId: group.professionalId,
       counterpartName: group.counterpartName,
       counterpartUserId: group.counterpartUserId,
+      counterpartPhotoUrl: group.counterpartPhotoUrl,
       lastMessage: group.lastMessage
         ? {
             id: group.lastMessage.id,
@@ -296,7 +365,12 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
       createdAt: group.latestActivityAt
     }));
 
-  return res.json({ threads: mapped });
+  const availableProfessionalIds =
+    actor.role === "PATIENT" && allowedProfessionalIds
+      ? Array.from(allowedProfessionalIds)
+      : [];
+
+  return res.json({ threads: mapped, availableProfessionalIds });
 });
 
 chatRouter.post("/threads/by-professional/:professionalId", requireAuth, async (req: AuthenticatedRequest, res) => {

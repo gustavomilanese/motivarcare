@@ -13,13 +13,18 @@ export interface ActorContext {
 export async function getActorContext(auth: AuthContext): Promise<ActorContext | null> {
   const user = await prisma.user.findUnique({
     where: { id: auth.userId },
-    include: {
+    select: {
+      id: true,
+      role: true,
+      email: true,
+      fullName: true,
+      isActive: true,
       patient: { select: { id: true } },
       professional: { select: { id: true } }
     }
   });
 
-  if (!user) {
+  if (!user || !user.isActive) {
     return null;
   }
 

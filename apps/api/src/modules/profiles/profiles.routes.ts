@@ -219,6 +219,53 @@ function resolvePackagePricing(params: {
   };
 }
 
+/** Franjas futuras por profesional en directorio y matching (payload acotado). */
+const DIRECTORY_AVAILABILITY_SLOT_TAKE = 60;
+/** Traemos más filas y luego excluimos días de vacaciones, para seguir entregando ~TAKE horarios elegibles. */
+const DIRECTORY_AVAILABILITY_SLOT_FETCH = 120;
+
+/**
+ * Días (clave YYYY-MM-DD UTC) bloqueados por vacaciones, por profesional — misma idea que en availability.routes.
+ */
+async function vacationDayKeysByProfessional(params: {
+  professionalIds: string[];
+  rangeStart: Date;
+  rangeEnd: Date;
+}): Promise<Map<string, Set<string>>> {
+  const map = new Map<string, Set<string>>();
+  if (params.professionalIds.length === 0) {
+    return map;
+  }
+
+  const vacationFromDate = new Date(params.rangeStart);
+  vacationFromDate.setHours(0, 0, 0, 0);
+  const vacationToDate = new Date(params.rangeEnd);
+  vacationToDate.setHours(23, 59, 59, 999);
+
+  const vacationSlots = await prisma.availabilitySlot.findMany({
+    where: {
+      professionalId: { in: params.professionalIds },
+      isBlocked: true,
+      source: "vacation",
+      startsAt: {
+        gte: vacationFromDate,
+        lte: vacationToDate
+      }
+    },
+    select: { professionalId: true, startsAt: true }
+  });
+
+  for (const row of vacationSlots) {
+    const dayKey = row.startsAt.toISOString().slice(0, 10);
+    if (!map.has(row.professionalId)) {
+      map.set(row.professionalId, new Set());
+    }
+    map.get(row.professionalId)!.add(dayKey);
+  }
+
+  return map;
+}
+
 interface DirectoryProfessional {
   id: string;
   userId: string;
@@ -267,13 +314,30 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
           isBlocked: false
         },
         orderBy: { startsAt: "asc" },
-        take: 6
+        take: DIRECTORY_AVAILABILITY_SLOT_FETCH
       }
     },
     orderBy: { createdAt: "asc" }
   });
 
   const professionalIds = professionals.map((professional) => professional.id);
+
+  const now = new Date();
+  let vacationRangeEnd = new Date(now);
+  for (const professional of professionals) {
+    for (const slot of professional.availabilitySlots) {
+      if (slot.endsAt.getTime() > vacationRangeEnd.getTime()) {
+        vacationRangeEnd = slot.endsAt;
+      }
+    }
+  }
+  const vacationRangeStart = new Date(now);
+  vacationRangeStart.setHours(0, 0, 0, 0);
+  const vacationDaysByPro = await vacationDayKeysByProfessional({
+    professionalIds,
+    rangeStart: vacationRangeStart,
+    rangeEnd: vacationRangeEnd
+  });
   const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig] = await Promise.all([
     professionalIds.length > 0
       ? prisma.booking.groupBy({
@@ -349,11 +413,21 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
     sessionsCount: displayOverrides[professional.id]?.sessionsCount ?? (sessionsCountByProfessional.get(professional.id) ?? 0),
     ratingAverage: displayOverrides[professional.id]?.ratingAverage ?? null,
     reviewsCount: displayOverrides[professional.id]?.reviewsCount ?? 0,
-    slots: professional.availabilitySlots.map((slot) => ({
-      id: slot.id,
-      startsAt: slot.startsAt,
-      endsAt: slot.endsAt
-    }))
+    slots: professional.availabilitySlots
+      .filter((slot) => {
+        const blockedDays = vacationDaysByPro.get(professional.id);
+        if (!blockedDays || blockedDays.size === 0) {
+          return true;
+        }
+        const dayKey = slot.startsAt.toISOString().slice(0, 10);
+        return !blockedDays.has(dayKey);
+      })
+      .slice(0, DIRECTORY_AVAILABILITY_SLOT_TAKE)
+      .map((slot) => ({
+        id: slot.id,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt
+      }))
   }));
 }
 
@@ -438,10 +512,11 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       prisma.patientProfile.findUnique({
         where: { id: actor.patientProfileId },
         include: {
+          user: { select: { avatarUrl: true } },
           intake: true,
           purchases: {
             orderBy: { purchasedAt: "desc" },
-            take: 1,
+            take: 10,
             include: { sessionPackage: true }
           }
         }
@@ -484,6 +559,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       role: actor.role,
       profile: {
         id: patient?.id,
+        avatarUrl: patient?.user?.avatarUrl ?? null,
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
         status: patient?.status,
@@ -500,12 +576,19 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
               purchasedAt: patient.purchases[0].purchasedAt
             }
           : null,
+        recentPackages: (patient?.purchases ?? []).map((purchase) => ({
+          id: purchase.id,
+          name: purchase.sessionPackage.name,
+          credits: purchase.packageCreditsSnapshot ?? purchase.sessionPackage.credits,
+          purchasedAt: purchase.purchasedAt
+        })),
         activeProfessional: activeProfessional
           ? {
               id: activeProfessional.id,
               userId: activeProfessional.user.id,
               fullName: activeProfessional.user.fullName,
-              email: activeProfessional.user.email
+              email: activeProfessional.user.email,
+              photoUrl: activeProfessional.photoUrl ?? null
             }
           : null
       }
@@ -954,6 +1037,17 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
   }
 
   const professionalId = actor.professionalProfileId;
+
+  if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
+    const financeRules = await getFinanceRules();
+    if (parsed.data.sessionPriceUsd < financeRules.sessionPriceMinUsd || parsed.data.sessionPriceUsd > financeRules.sessionPriceMaxUsd) {
+      return res.status(400).json({
+        error: "Session price must be between USD " + financeRules.sessionPriceMinUsd + " and USD " + financeRules.sessionPriceMaxUsd + ".",
+        sessionPriceMinUsd: financeRules.sessionPriceMinUsd,
+        sessionPriceMaxUsd: financeRules.sessionPriceMaxUsd
+      });
+    }
+  }
   const { diplomas, languages, timezone, ...profileData } = parsed.data;
   const languagesUpdate =
     languages === undefined

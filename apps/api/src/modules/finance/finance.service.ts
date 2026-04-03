@@ -8,6 +8,8 @@ type FinanceRules = {
   platformCommissionPercent: number;
   trialPlatformPercent: number;
   defaultSessionPriceCents: number;
+  sessionPriceMinUsd: number;
+  sessionPriceMaxUsd: number;
 };
 
 function roundCents(value: number): number {
@@ -19,7 +21,9 @@ function parseFinanceRules(value: unknown): FinanceRules {
   return {
     platformCommissionPercent: typeof parsed?.platformCommissionPercent === "number" ? parsed.platformCommissionPercent : 25,
     trialPlatformPercent: typeof parsed?.trialPlatformPercent === "number" ? parsed.trialPlatformPercent : 100,
-    defaultSessionPriceCents: typeof parsed?.defaultSessionPriceCents === "number" ? parsed.defaultSessionPriceCents : 9000
+    defaultSessionPriceCents: typeof parsed?.defaultSessionPriceCents === "number" ? parsed.defaultSessionPriceCents : 9000,
+    sessionPriceMinUsd: typeof parsed?.sessionPriceMinUsd === "number" ? parsed.sessionPriceMinUsd : 30,
+    sessionPriceMaxUsd: typeof parsed?.sessionPriceMaxUsd === "number" ? parsed.sessionPriceMaxUsd : 1000
   };
 }
 
@@ -33,8 +37,15 @@ export async function saveFinanceRules(input: Partial<FinanceRules>): Promise<Fi
   const nextRules: FinanceRules = {
     platformCommissionPercent: input.platformCommissionPercent ?? current.platformCommissionPercent,
     trialPlatformPercent: input.trialPlatformPercent ?? current.trialPlatformPercent,
-    defaultSessionPriceCents: input.defaultSessionPriceCents ?? current.defaultSessionPriceCents
+    defaultSessionPriceCents: input.defaultSessionPriceCents ?? current.defaultSessionPriceCents,
+    sessionPriceMinUsd: input.sessionPriceMinUsd ?? current.sessionPriceMinUsd,
+    sessionPriceMaxUsd: input.sessionPriceMaxUsd ?? current.sessionPriceMaxUsd
   };
+
+  if (nextRules.sessionPriceMinUsd > nextRules.sessionPriceMaxUsd) {
+    throw new Error("Session price min must be less than or equal to max");
+  }
+
   await financeRepository.upsertConfigByKey(FINANCE_RULES_KEY, nextRules as unknown as Prisma.InputJsonValue);
   return nextRules;
 }
@@ -116,6 +127,51 @@ export async function rebuildFinanceRecords(): Promise<{ processed: number }> {
   return { processed: completedBookings.length };
 }
 
+type FinanceOverviewQueryParams = {
+  dateFrom?: string;
+  dateTo?: string;
+  professionalId?: string;
+  patientId?: string;
+  packageId?: string;
+  isTrial?: "true" | "false";
+  bookingStatus?: "REQUESTED" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+  search?: string;
+};
+
+/** `forFilterPicklist`: ignora profesional, paciente y búsqueda para poblar los combos del admin sin vaciarlos al filtrar. */
+function buildFinanceSessionRecordWhere(
+  params: FinanceOverviewQueryParams,
+  options: { forFilterPicklist?: boolean } = {}
+): Prisma.FinanceSessionRecordWhereInput {
+  const forPicklist = options.forFilterPicklist ?? false;
+  return {
+    ...(params.dateFrom || params.dateTo
+      ? {
+          bookingCompletedAt: {
+            ...(params.dateFrom ? { gte: new Date(`${params.dateFrom}T00:00:00.000Z`) } : {}),
+            ...(params.dateTo ? { lte: new Date(`${params.dateTo}T23:59:59.999Z`) } : {})
+          }
+        }
+      : {}),
+    ...(!forPicklist && params.professionalId ? { professionalId: params.professionalId } : {}),
+    ...(!forPicklist && params.patientId ? { patientId: params.patientId } : {}),
+    ...(params.packageId ? { packageId: params.packageId } : {}),
+    ...(params.isTrial ? { isTrial: params.isTrial === "true" } : {}),
+    ...(params.bookingStatus ? { bookingStatus: params.bookingStatus } : {}),
+    ...(!forPicklist && params.search
+      ? {
+          OR: [
+            { patient: { user: { fullName: { contains: params.search } } } },
+            { patient: { user: { email: { contains: params.search } } } },
+            { professional: { user: { fullName: { contains: params.search } } } },
+            { professional: { user: { email: { contains: params.search } } } },
+            { package: { name: { contains: params.search } } }
+          ]
+        }
+      : {})
+  };
+}
+
 export async function getFinanceOverview(params: {
   dateFrom?: string;
   dateTo?: string;
@@ -130,32 +186,8 @@ export async function getFinanceOverview(params: {
   cursor?: string;
   limit?: number;
 }) {
-  const where: any = {
-    ...(params.dateFrom || params.dateTo
-      ? {
-          bookingCompletedAt: {
-            ...(params.dateFrom ? { gte: new Date(`${params.dateFrom}T00:00:00.000Z`) } : {}),
-            ...(params.dateTo ? { lte: new Date(`${params.dateTo}T23:59:59.999Z`) } : {})
-          }
-        }
-      : {}),
-    ...(params.professionalId ? { professionalId: params.professionalId } : {}),
-    ...(params.patientId ? { patientId: params.patientId } : {}),
-    ...(params.packageId ? { packageId: params.packageId } : {}),
-    ...(params.isTrial ? { isTrial: params.isTrial === "true" } : {}),
-    ...(params.bookingStatus ? { bookingStatus: params.bookingStatus } : {}),
-    ...(params.search
-      ? {
-          OR: [
-            { patient: { user: { fullName: { contains: params.search } } } },
-            { patient: { user: { email: { contains: params.search } } } },
-            { professional: { user: { fullName: { contains: params.search } } } },
-            { professional: { user: { email: { contains: params.search } } } },
-            { package: { name: { contains: params.search } } }
-          ]
-        }
-      : {})
-  };
+  const where = buildFinanceSessionRecordWhere(params);
+  const picklistWhere = buildFinanceSessionRecordWhere(params, { forFilterPicklist: true });
 
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? 20;
@@ -163,50 +195,73 @@ export async function getFinanceOverview(params: {
   const cursorMode = typeof params.cursor === "string" && params.cursor.length > 0;
   const take = params.limit ?? pageSize;
 
-  const [total, records, totals, byProfessionalRaw, byPatientRaw, byPackageRaw] = await Promise.all([
-    prisma.financeSessionRecord.count({ where }),
-    prisma.financeSessionRecord.findMany({
-      where,
-      include: {
-        patient: { include: { user: { select: { fullName: true, email: true } } } },
-        professional: { include: { user: { select: { fullName: true, email: true } } } },
-        package: { select: { id: true, name: true, credits: true, priceCents: true, currency: true } }
-      },
-      orderBy: cursorMode ? [{ id: "desc" }] : [{ bookingCompletedAt: "desc" }, { createdAt: "desc" }],
-      ...(cursorMode ? { cursor: { id: params.cursor }, skip: 1, take } : { skip, take: pageSize })
-    }),
-    prisma.financeSessionRecord.aggregate({
-      where,
-      _sum: {
-        sessionPriceCents: true,
-        platformFeeCents: true,
-        professionalNetCents: true
-      },
-      _count: { _all: true }
-    }),
-    prisma.financeSessionRecord.groupBy({
-      by: ["professionalId"],
-      where,
-      _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
-      _count: { _all: true }
-    }),
-    prisma.financeSessionRecord.groupBy({
-      by: ["patientId"],
-      where,
-      _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
-      _count: { _all: true }
-    }),
-    prisma.financeSessionRecord.groupBy({
-      by: ["packageId"],
-      where,
-      _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
-      _count: { _all: true }
-    })
-  ]);
+  const [total, records, totals, byProfessionalRaw, byPatientRaw, byPackageRaw, pickProRaw, pickPatRaw, pickPkgRaw] =
+    await Promise.all([
+      prisma.financeSessionRecord.count({ where }),
+      prisma.financeSessionRecord.findMany({
+        where,
+        include: {
+          patient: { include: { user: { select: { fullName: true, email: true } } } },
+          professional: { include: { user: { select: { fullName: true, email: true } } } },
+          package: { select: { id: true, name: true, credits: true, priceCents: true, currency: true } }
+        },
+        orderBy: cursorMode ? [{ id: "desc" }] : [{ bookingCompletedAt: "desc" }, { createdAt: "desc" }],
+        ...(cursorMode ? { cursor: { id: params.cursor }, skip: 1, take } : { skip, take: pageSize })
+      }),
+      prisma.financeSessionRecord.aggregate({
+        where,
+        _sum: {
+          sessionPriceCents: true,
+          platformFeeCents: true,
+          professionalNetCents: true
+        },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["professionalId"],
+        where,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["patientId"],
+        where,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["packageId"],
+        where,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["professionalId"],
+        where: picklistWhere,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["patientId"],
+        where: picklistWhere,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      }),
+      prisma.financeSessionRecord.groupBy({
+        by: ["packageId"],
+        where: picklistWhere,
+        _sum: { sessionPriceCents: true, platformFeeCents: true, professionalNetCents: true },
+        _count: { _all: true }
+      })
+    ]);
 
-  const professionalIds = byProfessionalRaw.map((item) => item.professionalId);
-  const patientIds = byPatientRaw.map((item) => item.patientId);
-  const packageIds = byPackageRaw.map((item) => item.packageId).filter((id): id is string => Boolean(id));
+  const professionalIds = [
+    ...new Set([...byProfessionalRaw.map((item) => item.professionalId), ...pickProRaw.map((item) => item.professionalId)])
+  ];
+  const patientIds = [...new Set([...byPatientRaw.map((item) => item.patientId), ...pickPatRaw.map((item) => item.patientId)])];
+  const packageIds = [
+    ...new Set([...byPackageRaw.map((item) => item.packageId), ...pickPkgRaw.map((item) => item.packageId)].filter((id): id is string => Boolean(id)))
+  ];
 
   const [professionals, patients, packages] = await Promise.all([
     professionalIds.length
@@ -233,6 +288,45 @@ export async function getFinanceOverview(params: {
   const patientMap = new Map(patients.map((item) => [item.id, item]));
   const packageMap = new Map(packages.map((item) => [item.id, item]));
   const nextCursor = cursorMode && records.length === take ? records[records.length - 1]?.id ?? null : null;
+
+  let plannedInRange: {
+    sessions: number;
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+  } | null = null;
+  if (params.dateFrom && params.dateTo) {
+    const rules = await getFinanceRules();
+    const plannedBookings = await prisma.booking.findMany({
+      where: {
+        status: { in: ["REQUESTED", "CONFIRMED"] },
+        startsAt: {
+          gte: new Date(`${params.dateFrom}T00:00:00.000Z`),
+          lte: new Date(`${params.dateTo}T23:59:59.999Z`)
+        }
+      },
+      select: { professional: { select: { sessionPriceUsd: true } } }
+    });
+    let plannedGross = 0;
+    let plannedFee = 0;
+    let plannedNet = 0;
+    for (const row of plannedBookings) {
+      const sessionPriceCents =
+        row.professional.sessionPriceUsd != null
+          ? row.professional.sessionPriceUsd * 100
+          : rules.defaultSessionPriceCents;
+      const fee = Math.round((sessionPriceCents * rules.platformCommissionPercent) / 100);
+      plannedGross += sessionPriceCents;
+      plannedFee += fee;
+      plannedNet += Math.max(0, sessionPriceCents - fee);
+    }
+    plannedInRange = {
+      sessions: plannedBookings.length,
+      grossCents: plannedGross,
+      platformFeeCents: plannedFee,
+      professionalNetCents: plannedNet
+    };
+  }
 
   return {
     page,
@@ -311,7 +405,39 @@ export async function getFinanceOverview(params: {
         platformFeeCents: item._sum.platformFeeCents ?? 0,
         professionalNetCents: item._sum.professionalNetCents ?? 0
       };
-    })
+    }),
+    filterPicklist: {
+      professionals: pickProRaw
+        .map((item) => {
+          const professional = professionalMap.get(item.professionalId);
+          return {
+            professionalId: item.professionalId,
+            professionalName: professional?.user.fullName ?? "Profesional",
+            professionalEmail: professional?.user.email ?? ""
+          };
+        })
+        .sort((a, b) => a.professionalName.localeCompare(b.professionalName)),
+      patients: pickPatRaw
+        .map((item) => {
+          const patient = patientMap.get(item.patientId);
+          return {
+            patientId: item.patientId,
+            patientName: patient?.user.fullName ?? "Paciente",
+            patientEmail: patient?.user.email ?? ""
+          };
+        })
+        .sort((a, b) => a.patientName.localeCompare(b.patientName)),
+      packages: pickPkgRaw
+        .map((item) => {
+          const sessionPackage = item.packageId ? packageMap.get(item.packageId) : null;
+          return {
+            packageId: item.packageId,
+            packageName: sessionPackage?.name ?? "Sin paquete"
+          };
+        })
+        .sort((a, b) => a.packageName.localeCompare(b.packageName))
+    },
+    plannedInRange
   };
 }
 

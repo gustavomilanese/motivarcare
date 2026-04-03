@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
 import { sendApiError } from "./http.js";
+import { prisma } from "./prisma.js";
 
 const PASSWORD_PREFIX = "pbkdf2";
 const PASSWORD_ITERATIONS = 120000;
@@ -136,7 +137,7 @@ function extractBearerToken(request: Request): string | null {
   return token;
 }
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   const token = extractBearerToken(req);
   if (!token) {
     sendApiError({
@@ -159,10 +160,41 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     return;
   }
 
+  let user: { id: string; role: "PATIENT" | "PROFESSIONAL" | "ADMIN"; email: string; isActive: boolean } | null = null;
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        role: true,
+        email: true,
+        isActive: true
+      }
+    });
+  } catch {
+    sendApiError({
+      res,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+      message: "Authentication service unavailable"
+    });
+    return;
+  }
+
+  if (!user || !user.isActive) {
+    sendApiError({
+      res,
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid or expired token"
+    });
+    return;
+  }
+
   req.auth = {
-    userId: payload.userId,
-    role: payload.role,
-    email: payload.email
+    userId: user.id,
+    role: user.role,
+    email: user.email
   };
 
   next();

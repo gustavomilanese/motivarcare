@@ -3,7 +3,9 @@ import { z } from "zod";
 export const financeSettingsSchema = z.object({
   platformCommissionPercent: z.number().int().min(0).max(100).optional(),
   trialPlatformPercent: z.number().int().min(0).max(100).optional(),
-  defaultSessionPriceCents: z.number().int().min(100).max(200000).optional()
+  defaultSessionPriceCents: z.number().int().min(100).max(200000).optional(),
+  sessionPriceMinUsd: z.number().int().min(1).max(100000).optional(),
+  sessionPriceMaxUsd: z.number().int().min(1).max(100000).optional()
 });
 
 export const financeOverviewQuerySchema = z.object({

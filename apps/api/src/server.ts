@@ -11,9 +11,16 @@ server.headersTimeout = 70000;
 server.requestTimeout = env.API_REQUEST_TIMEOUT_MS;
 server.maxRequestsPerSocket = env.API_MAX_REQUESTS_PER_SOCKET;
 
-server.listen(env.PORT, () => {
-  console.log(`API listening on http://localhost:${env.PORT}`);
-});
+const listenHost = env.apiListenHost;
+if (listenHost !== undefined) {
+  server.listen(env.PORT, listenHost, () => {
+    console.log(`API listening on http://${listenHost}:${env.PORT}`);
+  });
+} else {
+  server.listen(env.PORT, () => {
+    console.log(`API listening on http://localhost:${env.PORT}`);
+  });
+}
 
 let shutdownInProgress = false;
 

@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { getFinanceRules } from "../modules/finance/finance.service.js";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -85,6 +86,8 @@ async function processStripeCheckoutCompleted(payload: unknown) {
     return;
   }
 
+  const financeRules = await getFinanceRules();
+
   await prisma.$transaction(async (tx) => {
     const existingPurchase = await tx.patientPackagePurchase.findUnique({
       where: { stripeCheckoutSessionId: checkoutSessionId }
@@ -111,13 +114,50 @@ async function processStripeCheckoutCompleted(payload: unknown) {
       throw new Error("Could not resolve package for checkout session");
     }
 
+    const creditSummary = await tx.patientPackagePurchase.aggregate({
+      where: { patientId: patient.id },
+      _sum: {
+        remainingCredits: true
+      }
+    });
+    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
+
+    if (carryOverCredits > 0) {
+      await tx.patientPackagePurchase.updateMany({
+        where: {
+          patientId: patient.id,
+          remainingCredits: { gt: 0 }
+        },
+        data: {
+          remainingCredits: 0
+        }
+      });
+    }
+
+    const nextWalletCredits = carryOverCredits + sessionPackage.credits;
+
+    const discountPct = sessionPackage.discountPercent ?? 0;
+    const listPriceCents =
+      discountPct > 0 && discountPct < 100
+        ? Math.round(sessionPackage.priceCents / (1 - discountPct / 100))
+        : sessionPackage.priceCents;
+
     const purchase = await tx.patientPackagePurchase.create({
       data: {
         patientId: patient.id,
         packageId: sessionPackage.id,
         stripeCheckoutSessionId: checkoutSessionId,
-        totalCredits: sessionPackage.credits,
-        remainingCredits: sessionPackage.credits
+        totalCredits: nextWalletCredits,
+        remainingCredits: nextWalletCredits,
+        packageNameSnapshot: sessionPackage.name,
+        packageCreditsSnapshot: sessionPackage.credits,
+        packageListPriceCentsSnapshot: listPriceCents,
+        packagePriceCentsSnapshot: sessionPackage.priceCents,
+        packageDiscountPercentSnapshot: discountPct,
+        packageCurrencySnapshot: sessionPackage.currency?.toLowerCase() ?? currency,
+        platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
+        trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
+        professionalIdSnapshot: sessionPackage.professionalId ?? null
       }
     });
 

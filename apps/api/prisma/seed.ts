@@ -11,6 +11,22 @@ type SeedContext = {
 
 const defaultPassword = "SecurePass123";
 
+/**
+ * Rutas bajo el API (mismo host/puerto que login). Archivos en `apps/api/public/demo-avatars/`.
+ * El cliente (Expo) arma la URL absoluta con su `apiBaseUrl` — evita CDNs bloqueados en el dispositivo.
+ */
+const DEMO_PATIENT_AVATAR_PATHS = [
+  "/api/public/demo-avatars/patient-1.jpg",
+  "/api/public/demo-avatars/patient-2.jpg",
+  "/api/public/demo-avatars/patient-3.jpg"
+] as const;
+
+const DEMO_PRO_PHOTOS = [
+  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80"
+] as const;
+
 function dateFromNow(dayOffset: number, hour: number, minute: number): Date {
   const date = new Date();
   date.setDate(date.getDate() + dayOffset);
@@ -22,6 +38,8 @@ async function upsertUser(params: {
   email: string;
   fullName: string;
   role: AppRole;
+  /** Si se omite en update, no se modifica el avatar existente. */
+  avatarUrl?: string | null;
 }) {
   const passwordHash = hashPassword(defaultPassword);
 
@@ -30,13 +48,15 @@ async function upsertUser(params: {
     update: {
       fullName: params.fullName,
       role: params.role,
-      passwordHash
+      passwordHash,
+      ...(params.avatarUrl !== undefined ? { avatarUrl: params.avatarUrl } : {})
     },
     create: {
       email: params.email,
       fullName: params.fullName,
       role: params.role,
-      passwordHash
+      passwordHash,
+      avatarUrl: params.avatarUrl ?? null
     }
   });
 }
@@ -45,24 +65,28 @@ async function seedCoreUsers(): Promise<SeedContext> {
   const patientUser = await upsertUser({
     email: "alex@example.com",
     fullName: "Alex Morgan",
-      role: "PATIENT"
+    role: "PATIENT",
+    avatarUrl: DEMO_PATIENT_AVATAR_PATHS[0]
   });
 
   const professionalUsers = await Promise.all([
     upsertUser({
       email: "emma.collins@motivarte.com",
       fullName: "Dr. Emma Collins",
-      role: "PROFESSIONAL"
+      role: "PROFESSIONAL",
+      avatarUrl: DEMO_PRO_PHOTOS[0]
     }),
     upsertUser({
       email: "michael.rivera@motivarte.com",
       fullName: "Dr. Michael Rivera",
-      role: "PROFESSIONAL"
+      role: "PROFESSIONAL",
+      avatarUrl: DEMO_PRO_PHOTOS[1]
     }),
     upsertUser({
       email: "sophia.nguyen@motivarte.com",
       fullName: "Dr. Sophia Nguyen",
-      role: "PROFESSIONAL"
+      role: "PROFESSIONAL",
+      avatarUrl: DEMO_PRO_PHOTOS[2]
     })
   ]);
 
@@ -91,7 +115,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
       bio: "Especialista en ansiedad, estres y burnout laboral.",
       therapeuticApproach: "CBT + mindfulness",
       yearsExperience: 11,
-      photoUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80",
+      photoUrl: DEMO_PRO_PHOTOS[0],
       videoUrl: "https://example.com/video/emma"
     },
     {
@@ -99,7 +123,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
       bio: "Trabajo en vinculos, trauma y regulacion emocional.",
       therapeuticApproach: "Integrativo psicodinamico",
       yearsExperience: 14,
-      photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80",
+      photoUrl: DEMO_PRO_PHOTOS[1],
       videoUrl: "https://example.com/video/michael"
     },
     {
@@ -107,7 +131,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
       bio: "Enfoque breve para depresion y transiciones vitales.",
       therapeuticApproach: "Evidencia + plan de objetivos",
       yearsExperience: 9,
-      photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80",
+      photoUrl: DEMO_PRO_PHOTOS[2],
       videoUrl: "https://example.com/video/sophia"
     }
   ];
@@ -233,6 +257,96 @@ async function seedPackagesAndPurchase(context: SeedContext) {
   });
 }
 
+/** Pacientes extra con el mismo profesional demo (Emma) para listas admin / portal pro. */
+async function seedExtraDemoPatientsWithEmma(context: SeedContext) {
+  const emmaProfessionalId = context.professionalProfileIds[0];
+
+  const luciaUser = await upsertUser({
+    email: "lucia.torres@example.com",
+    fullName: "Lucía Torres",
+    role: "PATIENT",
+    avatarUrl: DEMO_PATIENT_AVATAR_PATHS[1]
+  });
+  const marcosUser = await upsertUser({
+    email: "marcos.diaz@example.com",
+    fullName: "Marcos Díaz",
+    role: "PATIENT",
+    avatarUrl: DEMO_PATIENT_AVATAR_PATHS[2]
+  });
+
+  const luciaProfile = await prisma.patientProfile.upsert({
+    where: { userId: luciaUser.id },
+    update: { timezone: "America/Argentina/Buenos_Aires", status: "active" },
+    create: {
+      userId: luciaUser.id,
+      timezone: "America/Argentina/Buenos_Aires",
+      status: "active"
+    }
+  });
+  const marcosProfile = await prisma.patientProfile.upsert({
+    where: { userId: marcosUser.id },
+    update: { timezone: "America/Mexico_City", status: "active" },
+    create: {
+      userId: marcosUser.id,
+      timezone: "America/Mexico_City",
+      status: "active"
+    }
+  });
+
+  const luciaStart = dateFromNow(2, 10, 0);
+  const luciaEnd = dateFromNow(2, 10, 50);
+  const marcosStart = dateFromNow(3, 15, 0);
+  const marcosEnd = dateFromNow(3, 15, 50);
+
+  await prisma.booking.upsert({
+    where: { id: "booking-demo-lucia-1" },
+    update: {
+      patientId: luciaProfile.id,
+      professionalId: emmaProfessionalId,
+      startsAt: luciaStart,
+      endsAt: luciaEnd,
+      status: "CONFIRMED",
+      consumedCredits: 1,
+      cancellationReason: null,
+      cancelledAt: null,
+      completedAt: null
+    },
+    create: {
+      id: "booking-demo-lucia-1",
+      patientId: luciaProfile.id,
+      professionalId: emmaProfessionalId,
+      startsAt: luciaStart,
+      endsAt: luciaEnd,
+      status: "CONFIRMED",
+      consumedCredits: 1
+    }
+  });
+
+  await prisma.booking.upsert({
+    where: { id: "booking-demo-marcos-1" },
+    update: {
+      patientId: marcosProfile.id,
+      professionalId: emmaProfessionalId,
+      startsAt: marcosStart,
+      endsAt: marcosEnd,
+      status: "CONFIRMED",
+      consumedCredits: 1,
+      cancellationReason: null,
+      cancelledAt: null,
+      completedAt: null
+    },
+    create: {
+      id: "booking-demo-marcos-1",
+      patientId: marcosProfile.id,
+      professionalId: emmaProfessionalId,
+      startsAt: marcosStart,
+      endsAt: marcosEnd,
+      status: "CONFIRMED",
+      consumedCredits: 1
+    }
+  });
+}
+
 async function seedBookingAndChat(context: SeedContext) {
   const startsAt = dateFromNow(1, 9, 0);
   const endsAt = dateFromNow(1, 9, 50);
@@ -314,9 +428,12 @@ async function main() {
   await seedAvailability(context);
   await seedPackagesAndPurchase(context);
   await seedBookingAndChat(context);
+  await seedExtraDemoPatientsWithEmma(context);
 
-  console.log("Seed completed. Demo credentials:");
+  console.log("Seed completed. Demo credentials (avatares de prueba Unsplash; reemplazar en producción):");
   console.log("- Patient: alex@example.com / SecurePass123");
+  console.log("- Patient: lucia.torres@example.com / SecurePass123");
+  console.log("- Patient: marcos.diaz@example.com / SecurePass123");
   console.log("- Professional Emma: emma.collins@motivarte.com / SecurePass123");
   console.log("- Professional Michael: michael.rivera@motivarte.com / SecurePass123");
   console.log("- Professional Sophia: sophia.nguyen@motivarte.com / SecurePass123");

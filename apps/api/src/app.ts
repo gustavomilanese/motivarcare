@@ -49,7 +49,8 @@ app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "same-origin");
-  res.setHeader("Cross-Origin-Resource-Policy", "same-site");
+  // same-site rompe fetch() desde apps nativas (p. ej. Expo en iOS) hacia la IP LAN del dev server.
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   res.setHeader("X-DNS-Prefetch-Control", "off");
   res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
@@ -71,6 +72,7 @@ app.use(
       callback(null, isAllowedOrigin(origin));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Idempotency-Key", "X-Client-Version"],
     maxAge: 86400
   })
