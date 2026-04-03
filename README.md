@@ -103,6 +103,33 @@ Current patient matching UI is split into reusable pieces:
 Professional schedule settings are also modular:
 - `SchedulePage` > `Ajustes` > `Valor de sesión` (source for patient card pricing)
 
+## Patient Portal Refactor (2026-03)
+Main objective: reduce coupling and oversized page files while preserving behavior.
+
+Before:
+- `MainPortal` and `BookingPage` concentrated routing, business rules, UI state, and large JSX blocks.
+- Patient runtime mixed real API flows with static catalog usage in core screens.
+
+After:
+- Runtime data path standardized around backend directory/matching APIs, with controlled fallback.
+- `MainPortal` now orchestrates and delegates to focused hooks/components.
+- `BookingPage` moved large modal/panel sections into dedicated UI components.
+
+New extracted modules:
+- `apps/patient/src/modules/app/pages/PortalRoutes.tsx` (route tree for portal pages)
+- `apps/patient/src/modules/app/hooks/usePortalActions.ts` (booking/package/chat/favorites operations)
+- `apps/patient/src/modules/app/hooks/usePortalNotifications.ts` (notifications polling + mapping)
+- `apps/patient/src/modules/app/hooks/usePortalUiState.ts` (menu/notifications/preferences state)
+- `apps/patient/src/modules/app/hooks/usePortalNavigation.ts` (cross-page navigation handlers)
+- `apps/patient/src/modules/app/lib/professionals.ts` (professional/slot lookup utilities)
+- `apps/patient/src/modules/app/lib/packageCatalog.ts` (package copy + catalog loading helpers)
+- `apps/patient/src/modules/app/components/booking/BookingActionModal.tsx`
+- `apps/patient/src/modules/app/components/booking/CheckoutPackagesPanel.tsx`
+
+Verification status:
+- `npm run build -w @therapy/patient` passing
+- `npm run test -w @therapy/patient` passing
+
 Run only patient app:
 1. `npm install`
 2. `npm run dev -w @therapy/patient`
@@ -167,6 +194,29 @@ Run only professional app:
 - Free cancellation until 24h before session.
 - <24h cancellation penalty: configurable.
 - No-show: consumes one available session from the package.
+- Patient reschedule: allowed only until 24h before the original session start.
+- Professional reschedule: allowed at any time (including after session start/end), except cancelled bookings.
+
+## Google Meet (automatic invites)
+- If Google Calendar credentials are configured, each booking creates a Google Meet link and sends invitations to patient + professional.
+- If credentials are missing or Google fails, API falls back to existing Daily links.
+- Required env vars (API):
+  - `API_PUBLIC_URL` (for OAuth callback URL construction, for example `http://localhost:4000`)
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `GOOGLE_REFRESH_TOKEN`
+  - `GOOGLE_CALENDAR_ID` (for example `primary`)
+
+## Google Calendar user sync (professional/patient)
+- Users can connect/disconnect their own Google account from the app settings/profile.
+- OAuth endpoints:
+  - `POST /api/auth/google/calendar/connect`
+  - `GET /api/auth/google/calendar/callback`
+  - `GET /api/auth/google/calendar/status`
+  - `POST /api/auth/google/calendar/disconnect`
+- Booking sync behavior:
+  - Order of attempts: professional connected calendar, then patient calendar, then platform calendar (`GOOGLE_REFRESH_TOKEN` + `GOOGLE_CALENDAR_ID`). If a step fails (expired token, API error), the next option is tried; only if all fail do Daily.co URLs stay on the booking.
+  - On reschedule/cancel, the same calendar event is updated/cancelled and Google sends attendee updates.
 
 ## Launch runbook
 - See `docs/scaling-ha-checklist.md` for a staged rollout plan focused on scale and high availability.
