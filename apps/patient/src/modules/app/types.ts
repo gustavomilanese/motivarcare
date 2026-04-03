@@ -17,6 +17,7 @@ export interface AuthApiUser {
   id: string;
   fullName: string;
   email: string;
+  avatarUrl?: string | null;
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   emailVerified: boolean;
   patientProfileId: string | null;
@@ -55,6 +56,12 @@ export interface ProfileMeApiResponse {
       totalCredits: number;
       purchasedAt: string;
     } | null;
+    recentPackages?: Array<{
+      id: string;
+      name: string;
+      credits: number;
+      purchasedAt: string;
+    }>;
     activeProfessional?: {
       id: string;
       userId: string;
@@ -62,6 +69,17 @@ export interface ProfileMeApiResponse {
       email: string;
     } | null;
   } | null;
+}
+
+export interface PurchasePackageApiResponse {
+  purchase: {
+    id: string;
+    packageId: string;
+    packageName: string;
+    totalCredits: number;
+    remainingCredits: number;
+    purchasedAt: string;
+  };
 }
 
 export interface SubmitIntakeApiResponse {
@@ -78,6 +96,7 @@ export interface BookingsMineApiResponse {
     startsAt: string;
     endsAt: string;
     status: string;
+    bookingMode?: "credit" | "trial";
     professionalId?: string;
     joinUrl?: string | null;
     patientTimezoneAtBooking?: string;
@@ -165,6 +184,12 @@ export interface SubscriptionState {
   creditsTotal: number;
   creditsRemaining: number;
   purchasedAt?: string;
+  purchaseHistory: Array<{
+    id: string;
+    name: string;
+    credits: number;
+    purchasedAt: string;
+  }>;
 }
 
 export interface PaymentCard {
@@ -213,6 +238,7 @@ export interface ApiChatThread {
   professionalId: string;
   counterpartName: string;
   counterpartUserId: string;
+  counterpartPhotoUrl?: string | null;
   lastMessage: {
     id: string;
     body: string;
@@ -220,6 +246,11 @@ export interface ApiChatThread {
     senderUserId: string;
   } | null;
   unreadCount: number;
+}
+
+export interface ApiChatThreadsResponse {
+  threads: ApiChatThread[];
+  availableProfessionalIds?: string[];
 }
 
 export interface ApiChatMessage {

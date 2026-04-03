@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
@@ -14,9 +15,10 @@ import { AuthScreen } from "./pages/AuthScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
-import { heroImage, professionalsCatalog } from "./data/professionalsCatalog";
+import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
-import { API_BASE, STORAGE_KEY, apiRequest } from "./services/api";
+import { API_BASE, STORAGE_KEY, apiRequest, setPatientApiUnauthorizedHandler } from "./services/api";
+import { fetchProfessionalDirectory } from "../matching/services/professionals";
 import type {
   Booking,
   AuthMeApiResponse,
@@ -25,12 +27,32 @@ import type {
   PatientAppState,
   PatientProfile,
   ProfileMeApiResponse,
+  Professional,
   RiskLevel,
   SessionUser,
   SubmitIntakeApiResponse
 } from "./types";
 
 const initialMessages: Message[] = [];
+const CALENDAR_PROMPT_DISMISSED_USERS_KEY = "patient_calendar_prompt_dismissed_users";
+/** Survives full-page Google OAuth redirect if localStorage is briefly empty (same origin). */
+const CALENDAR_OAUTH_LOCAL_STORAGE_BACKUP_KEY = "mc_calendar_oauth_ls_backup";
+
+function restorePatientPortalAfterCalendarOAuth(): void {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("calendar_sync")) {
+      return;
+    }
+    const backup = window.sessionStorage.getItem(CALENDAR_OAUTH_LOCAL_STORAGE_BACKUP_KEY);
+    if (backup && !window.localStorage.getItem(STORAGE_KEY)) {
+      window.localStorage.setItem(STORAGE_KEY, backup);
+    }
+    window.sessionStorage.removeItem(CALENDAR_OAUTH_LOCAL_STORAGE_BACKUP_KEY);
+  } catch {
+    // ignore private mode / quota
+  }
+}
 
 const defaultProfile: PatientProfile = {
   timezone: detectBrowserTimezone(),
@@ -64,12 +86,23 @@ const defaultState: PatientAppState = {
     packageId: null,
     packageName: "Sin paquete activo",
     creditsTotal: 0,
-    creditsRemaining: 0
+    creditsRemaining: 0,
+    purchaseHistory: []
   },
   profile: defaultProfile
 };
 
+function hasConfirmedTrialBooking(bookings: Booking[]): boolean {
+  return bookings.some((booking) => booking.status === "confirmed" && booking.bookingMode === "trial");
+}
+
+function mergeRemoteWithLocalTrialBookings(remoteBookings: Booking[], localBookings: Booking[]): Booking[] {
+  void localBookings;
+  return [...remoteBookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+}
+
 function loadState(): PatientAppState {
+  restorePatientPortalAfterCalendarOAuth();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -81,7 +114,7 @@ function loadState(): PatientAppState {
     const inferredOnboardingFinalCompleted =
       typeof (parsed as { onboardingFinalCompleted?: unknown }).onboardingFinalCompleted === "boolean"
         ? Boolean((parsed as { onboardingFinalCompleted?: unknown }).onboardingFinalCompleted)
-        : Boolean(parsed.assignedProfessionalId) && parsedBookings.some((booking) => booking.status === "confirmed");
+        : hasConfirmedTrialBooking(parsedBookings);
     const inferredTherapistSelectionCompleted =
       typeof (parsed as { therapistSelectionCompleted?: unknown }).therapistSelectionCompleted === "boolean"
         ? Boolean((parsed as { therapistSelectionCompleted?: unknown }).therapistSelectionCompleted)
@@ -117,6 +150,18 @@ function loadState(): PatientAppState {
       favoriteProfessionalIds: Array.isArray(parsed.favoriteProfessionalIds)
         ? parsed.favoriteProfessionalIds.filter((value): value is string => typeof value === "string")
         : [],
+      subscription: {
+        ...defaultState.subscription,
+        ...parsed.subscription,
+        purchaseHistory: Array.isArray(parsed.subscription?.purchaseHistory)
+          ? parsed.subscription.purchaseHistory.filter((item): item is PatientAppState["subscription"]["purchaseHistory"][number] => (
+            typeof item?.id === "string"
+            && typeof item?.name === "string"
+            && typeof item?.credits === "number"
+            && typeof item?.purchasedAt === "string"
+          ))
+          : []
+      },
       profile: {
         ...defaultProfile,
         ...parsed.profile,
@@ -136,6 +181,61 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+function readDismissedCalendarPromptUsers(): string[] {
+  try {
+    const raw = window.localStorage.getItem(CALENDAR_PROMPT_DISMISSED_USERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDismissedCalendarPromptUsers(userIds: string[]): void {
+  window.localStorage.setItem(CALENDAR_PROMPT_DISMISSED_USERS_KEY, JSON.stringify(Array.from(new Set(userIds))));
+}
+
+function mapDirectoryProfessionalToLegacyProfessional(item: {
+  id: string;
+  fullName: string;
+  title: string;
+  yearsExperience: number;
+  compatibilityBase: number;
+  specialization: string | null;
+  focusPrimary: string | null;
+  languages: string[];
+  therapeuticApproach: string | null;
+  bio: string | null;
+  ratingAverage: number | null;
+  reviewsCount: number;
+  stripeVerified: boolean;
+  sessionPriceUsd: number | null;
+  activePatientsCount: number;
+  slots: Array<{ id: string; startsAt: string; endsAt: string }>;
+}): Professional {
+  return {
+    id: item.id,
+    fullName: item.fullName,
+    title: item.title || "Profesional de salud mental",
+    yearsExperience: item.yearsExperience,
+    compatibility: item.compatibilityBase,
+    specialties: [item.specialization, item.focusPrimary].filter((value): value is string => Boolean(value && value.trim().length > 0)),
+    languages: item.languages ?? [],
+    approach: item.therapeuticApproach ?? "",
+    bio: item.bio ?? "",
+    rating: item.ratingAverage ?? 0,
+    reviewsCount: item.reviewsCount,
+    verified: item.stripeVerified,
+    sessionPriceUsd: item.sessionPriceUsd ?? undefined,
+    activePatients: item.activePatientsCount,
+    introVideoUrl: "",
+    slots: item.slots ?? []
+  };
+}
+
 function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   const img = event.currentTarget;
   img.onerror = null;
@@ -143,24 +243,96 @@ function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
 }
 
 export function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [state, setState] = useState<PatientAppState>(() => loadState());
+  const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
+  const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
+  const [calendarPromptDismissedUserIds, setCalendarPromptDismissedUserIds] = useState<string[]>(() => readDismissedCalendarPromptUsers());
+  const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => professionalsCatalog);
+  const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => professionalImageMap);
   const [profileSyncReady, setProfileSyncReady] = useState(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
-  const isVerifyEmailRoute = useMemo(() => window.location.pathname === "/verify-email", []);
+  const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
 
   useEffect(() => {
     saveState(state);
   }, [state]);
+
+  useEffect(() => {
+    setPatientApiUnauthorizedHandler(() => {
+      setProfileSyncReady(false);
+      setProfessionalDirectory(professionalsCatalog);
+      setProfessionalPhotoMap(professionalImageMap);
+      setShowCalendarOnboarding(false);
+      setCalendarOnboardingLoading(false);
+      setState((current) => ({
+        ...defaultState,
+        language: current.language,
+        currency: current.currency,
+        profile: {
+          ...defaultProfile,
+          timezone: current.profile.timezone
+        }
+      }));
+      navigate("/", { replace: true });
+    });
+    return () => {
+      setPatientApiUnauthorizedHandler(undefined);
+    };
+  }, [navigate]);
 
   const updateState = (updater: (current: PatientAppState) => PatientAppState) => {
     setState((current) => updater(current));
   };
 
   const sessionId = state.session?.id;
+  const shouldOfferCalendarOnboardingBeforeMatching = Boolean(
+    state.intake?.completed
+    && !state.intake?.riskBlocked
+    && !state.therapistSelectionCompleted
+    && state.bookings.length === 0
+    && state.subscription.purchaseHistory.length === 0
+  );
+
+  const handleConnectCalendarFromOnboarding = async () => {
+    if (!state.authToken) {
+      return;
+    }
+
+    setCalendarOnboardingLoading(true);
+    try {
+      try {
+        window.sessionStorage.setItem(
+          CALENDAR_OAUTH_LOCAL_STORAGE_BACKUP_KEY,
+          window.localStorage.getItem(STORAGE_KEY) ?? ""
+        );
+      } catch {
+        // ignore
+      }
+      const response = await apiRequest<{ authUrl: string }>(
+        "/api/auth/google/calendar/connect",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            returnPath: "/onboarding/final/matching",
+            clientOrigin: window.location.origin
+          })
+        },
+        state.authToken
+      );
+      window.location.href = response.authUrl;
+    } catch (error) {
+      console.error("Could not start patient calendar onboarding OAuth", error);
+      setCalendarOnboardingLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!sessionId || !state.authToken) {
       setProfileSyncReady(false);
+      setProfessionalDirectory(professionalsCatalog);
+      setProfessionalPhotoMap(professionalImageMap);
       return;
     }
 
@@ -170,10 +342,11 @@ export function App() {
 
     const syncFromApi = async () => {
       try {
-        const [profileResult, bookingsResult, authResult] = await Promise.allSettled([
+        const [profileResult, bookingsResult, authResult, professionalDirectoryResult] = await Promise.allSettled([
           apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, state.authToken ?? undefined),
           apiRequest<BookingsMineApiResponse>("/api/bookings/mine", {}, state.authToken ?? undefined),
-          apiRequest<AuthMeApiResponse>("/api/auth/me", {}, state.authToken ?? undefined)
+          apiRequest<AuthMeApiResponse>("/api/auth/me", {}, state.authToken ?? undefined),
+          fetchProfessionalDirectory(state.authToken ?? undefined, state.language)
         ]);
 
         if (cancelled) {
@@ -183,12 +356,23 @@ export function App() {
         const profileResponse = profileResult.status === "fulfilled" ? profileResult.value : null;
         const bookingsResponse = bookingsResult.status === "fulfilled" ? bookingsResult.value : null;
         const authResponse = authResult.status === "fulfilled" ? authResult.value : null;
+        const professionalDirectoryResponse = professionalDirectoryResult.status === "fulfilled" ? professionalDirectoryResult.value : null;
+
+        if (professionalDirectoryResponse && professionalDirectoryResponse.length > 0) {
+          const mapped = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
+          const photoMap = professionalDirectoryResponse.reduce<Record<string, string>>((acc, professional) => {
+            const photoUrl = professional.photoUrl?.trim();
+            if (photoUrl) {
+              acc[professional.id] = photoUrl;
+            }
+            return acc;
+          }, {});
+          setProfessionalDirectory(mapped);
+          setProfessionalPhotoMap(Object.keys(photoMap).length > 0 ? photoMap : professionalImageMap);
+        }
 
         const latestPackage = profileResponse?.profile?.latestPackage ?? null;
         const remoteAssignedProfessional = profileResponse?.profile?.activeProfessional ?? null;
-        const hasCatalogProfessional = remoteAssignedProfessional
-          ? professionalsCatalog.some((item) => item.id === remoteAssignedProfessional.id)
-          : false;
 
         const bookingsFromApi: Booking[] = (bookingsResponse?.bookings ?? [])
           .map((booking) => mapBookingFromMineApi(booking))
@@ -199,23 +383,33 @@ export function App() {
             return current;
           }
 
+          const syncedBookings = bookingsResponse
+            ? mergeRemoteWithLocalTrialBookings(bookingsFromApi, current.bookings)
+            : current.bookings;
+
+          const hasRemoteConfirmedTrialBooking = hasConfirmedTrialBooking(syncedBookings);
+          const hasRemoteOnboardingCompletionSignal =
+            hasRemoteConfirmedTrialBooking
+            || syncedBookings.length > 0
+            || Boolean(latestPackage);
+
           return {
             ...current,
             onboardingFinalCompleted:
               current.onboardingFinalCompleted
-              || Boolean(remoteAssignedProfessional && bookingsFromApi.some((booking) => booking.status === "confirmed")),
+              || hasRemoteOnboardingCompletionSignal,
             therapistSelectionCompleted:
               current.therapistSelectionCompleted
               || Boolean(remoteAssignedProfessional)
-              || bookingsFromApi.length > 0,
+              || syncedBookings.length > 0,
             assignedProfessionalId: remoteAssignedProfessional?.id ?? current.assignedProfessionalId,
             assignedProfessionalName: remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName,
             selectedProfessionalId:
-              hasCatalogProfessional && remoteAssignedProfessional
+              remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
                 : current.selectedProfessionalId,
             activeChatProfessionalId:
-              hasCatalogProfessional && remoteAssignedProfessional
+              remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
                 : current.activeChatProfessionalId,
             profile: {
@@ -253,10 +447,15 @@ export function App() {
                   packageName: latestPackage.name,
                   creditsTotal: latestPackage.totalCredits,
                   creditsRemaining: latestPackage.remainingCredits,
-                  purchasedAt: latestPackage.purchasedAt
+                  purchasedAt: latestPackage.purchasedAt,
+                  purchaseHistory: profileResponse?.profile?.recentPackages ?? current.subscription.purchaseHistory
                 }
-              : current.subscription,
-            bookings: bookingsResponse ? bookingsFromApi : current.bookings
+              : {
+                  ...current.subscription,
+                  purchaseHistory:
+                    profileResponse?.profile?.recentPackages ?? current.subscription.purchaseHistory
+                },
+            bookings: syncedBookings
           };
         });
 
@@ -268,6 +467,9 @@ export function App() {
         }
         if (authResult.status === "rejected") {
           console.error("Could not sync auth state from API", authResult.reason);
+        }
+        if (professionalDirectoryResult.status === "rejected") {
+          console.error("Could not sync professional directory from API", professionalDirectoryResult.reason);
         }
       } catch (error) {
         console.error("Could not sync patient portal from API", error);
@@ -301,20 +503,134 @@ export function App() {
   }, [sessionId, sessionTimezone, state.authToken]);
 
   useEffect(() => {
-    if (!state.session || window.location.pathname === "/verify-email") {
+    if (!state.session?.id) {
+      return;
+    }
+
+    const query = new URLSearchParams(location.search);
+    const calendarSync = query.get("calendar_sync");
+    const callbackUserId = query.get("calendar_user_id");
+    const onboardingPath = "/onboarding/final/matching";
+    const shouldResumeOnboarding =
+      shouldOfferCalendarOnboardingBeforeMatching
+      || location.pathname.startsWith("/onboarding/final");
+
+    if (calendarSync === "connected" && callbackUserId === state.session.id) {
+      const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
+      writeDismissedCalendarPromptUsers(nextDismissed);
+      setCalendarPromptDismissedUserIds(nextDismissed);
+      setShowCalendarOnboarding(false);
+      setCalendarOnboardingLoading(false);
+      navigate(shouldResumeOnboarding ? onboardingPath : location.pathname, { replace: true });
+      return;
+    }
+
+    if (!callbackUserId || callbackUserId === state.session.id) {
+      return;
+    }
+
+    // Keep current session stable and return safely to onboarding flow.
+    setShowCalendarOnboarding(false);
+    setCalendarOnboardingLoading(false);
+    navigate(
+      shouldResumeOnboarding
+        ? `${onboardingPath}?calendar_sync=error&calendar_reason=session_mismatch`
+        : `${location.pathname}?calendar_sync=error&calendar_reason=session_mismatch`,
+      { replace: true }
+    );
+  }, [
+    calendarPromptDismissedUserIds,
+    location.pathname,
+    location.search,
+    navigate,
+    shouldOfferCalendarOnboardingBeforeMatching,
+    state.session?.id
+  ]);
+
+  useEffect(() => {
+    if (!showCalendarOnboarding || !state.authToken || !state.session) {
+      return;
+    }
+
+    let cancelled = false;
+    void apiRequest<{ connected: boolean }>(
+      "/api/auth/google/calendar/status",
+      {},
+      state.authToken
+    )
+      .then((response) => {
+        if (!cancelled && response.connected) {
+          setShowCalendarOnboarding(false);
+        }
+      })
+      .catch(() => {
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showCalendarOnboarding, state.authToken, state.session]);
+
+  useEffect(() => {
+    if (!state.session?.id || !state.authToken || !shouldOfferCalendarOnboardingBeforeMatching) {
+      return;
+    }
+    if (showCalendarOnboarding) {
+      return;
+    }
+
+    if (calendarPromptDismissedUserIds.includes(state.session.id)) {
+      return;
+    }
+
+    // During onboarding we show this step before professional selection.
+    setShowCalendarOnboarding(true);
+
+    let cancelled = false;
+    void apiRequest<{ connected: boolean }>(
+      "/api/auth/google/calendar/status",
+      {},
+      state.authToken
+    )
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (response.connected) {
+          setShowCalendarOnboarding(false);
+          return;
+        }
+      })
+      .catch(() => {
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    calendarPromptDismissedUserIds,
+    shouldOfferCalendarOnboardingBeforeMatching,
+    showCalendarOnboarding,
+    state.authToken,
+    state.session?.id
+  ]);
+
+  useEffect(() => {
+    if (!state.session || location.pathname === "/verify-email") {
       return;
     }
 
     const shouldRedirectToVerification = state.emailVerificationRequired && !state.session.emailVerified;
-    if (shouldRedirectToVerification && window.location.pathname !== "/verify-email-required") {
-      window.history.replaceState({}, "", "/verify-email-required");
+    if (shouldRedirectToVerification && location.pathname !== "/verify-email-required") {
+      navigate("/verify-email-required", { replace: true });
       return;
     }
 
-    if (!shouldRedirectToVerification && window.location.pathname === "/verify-email-required") {
-      window.history.replaceState({}, "", "/");
+    if (!shouldRedirectToVerification && location.pathname === "/verify-email-required") {
+      navigate("/", { replace: true });
     }
-  }, [state.emailVerificationRequired, state.session?.emailVerified, state.session?.id]);
+  }, [location.pathname, navigate, state.emailVerificationRequired, state.session?.emailVerified, state.session?.id]);
 
   if (isVerifyEmailRoute) {
     return <VerifyEmailTokenScreen language={state.language} />;
@@ -328,6 +644,11 @@ export function App() {
         onHeroFallback={handleHeroFallback}
         onLogin={({ user, token, emailVerificationRequired }) => {
           setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
+          setShowCalendarOnboarding(false);
+          setCalendarOnboardingLoading(false);
+          setCalendarPromptDismissedUserIds(readDismissedCalendarPromptUsers());
           setState((current) => ({
             ...defaultState,
             language: current.language,
@@ -345,6 +666,68 @@ export function App() {
     );
   }
 
+  if (showCalendarOnboarding) {
+    return (
+      <div className="intake-shell calendar-consent-shell">
+        <section className="intake-card calendar-consent-card">
+          <div className="calendar-consent-header">
+            <strong>{t(state.language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</strong>
+          </div>
+          <div className="calendar-consent-body">
+            <div className="calendar-consent-visual" aria-hidden="true" />
+            <h2>
+              {t(state.language, {
+                es: "Integrá tus sesiones con Google Calendar",
+                en: "Connect your sessions to Google Calendar",
+                pt: "Integre suas sessoes ao Google Calendar"
+              })}
+            </h2>
+            <p>
+              {t(state.language, {
+                es: "Mantené tu proceso terapéutico organizado y sin fricciones.",
+                en: "Keep your therapeutic process organized and frictionless.",
+                pt: "Mantenha seu processo terapeutico organizado e sem atrito."
+              })}
+            </p>
+            <p className="calendar-consent-note">
+              {t(state.language, {
+                es: "Cada vez que confirmes una sesión, vas a poder añadirla a tu calendario con un solo clic. De esta forma, recibís recordatorios automáticos y tenés toda tu agenda sincronizada en un solo lugar.",
+                en: "Each time you confirm a session, you can add it to your calendar in one click. This way, you get automatic reminders and keep your full agenda in one place.",
+                pt: "Cada vez que confirmar uma sessao, voce podera adiciona-la ao calendario com um clique. Assim, recebe lembretes automaticos e mantem toda sua agenda em um so lugar."
+              })}
+            </p>
+          </div>
+          <div className="button-row calendar-consent-actions">
+            <button
+              className="primary"
+              type="button"
+              onClick={() => void handleConnectCalendarFromOnboarding()}
+              disabled={calendarOnboardingLoading}
+            >
+              {calendarOnboardingLoading
+                ? t(state.language, { es: "Conectando...", en: "Connecting...", pt: "Conectando..." })
+                : t(state.language, { es: "Conectar ahora", en: "Connect now", pt: "Conectar agora" })}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (state.session?.id) {
+                  const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
+                  writeDismissedCalendarPromptUsers(nextDismissed);
+                  setCalendarPromptDismissedUserIds(nextDismissed);
+                }
+                setShowCalendarOnboarding(false);
+              }}
+              disabled={calendarOnboardingLoading}
+            >
+              {t(state.language, { es: "Lo hago despues", en: "I'll do it later", pt: "Depois eu faco" })}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   if (state.emailVerificationRequired && !state.session.emailVerified) {
     return (
       <VerifyEmailRequiredScreen
@@ -359,10 +742,12 @@ export function App() {
           }))
         }
         onLogout={() => {
-          if (window.location.pathname === "/verify-email-required") {
-            window.history.replaceState({}, "", "/");
+          if (location.pathname === "/verify-email-required") {
+            navigate("/", { replace: true });
           }
           setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
       />
@@ -386,10 +771,14 @@ export function App() {
         language={state.language}
         onBack={() => {
           setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
         onCancel={() => {
           setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
         onComplete={async (answers) => {
@@ -450,10 +839,14 @@ export function App() {
   return (
     <MainPortal
       state={state}
+      professionalDirectory={professionalDirectory}
+      professionalPhotoMap={professionalPhotoMap}
       sessionTimezone={sessionTimezone}
       onStateChange={updateState}
       onLogout={() => {
         setProfileSyncReady(false);
+        setProfessionalDirectory(professionalsCatalog);
+        setProfessionalPhotoMap(professionalImageMap);
         setState(defaultState);
       }}
     />

@@ -6,15 +6,10 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { professionalsCatalog } from "../../app/data/professionalsCatalog";
-import type { Booking, Professional } from "../../app/types";
+import type { Booking } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function findProfessionalById(professionalId: string): Professional {
-  return professionalsCatalog.find((item) => item.id === professionalId) ?? professionalsCatalog[0];
 }
 
 function getNextBooking(bookings: Booking[]): Booking | null {
@@ -25,19 +20,6 @@ function getNextBooking(bookings: Booking[]): Booking | null {
       .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() > now)
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null
   );
-}
-
-function formatDateOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      weekday: "long",
-      month: "long",
-      day: "numeric"
-    }
-  });
 }
 
 function formatTimeOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
@@ -138,6 +120,7 @@ export function SessionsCalendar(props: {
   language: AppLanguage;
   onOpenBookingDetail: (bookingId: string) => void;
   variant?: "week" | "dashboard";
+  hideTitle?: boolean;
 }) {
   const variant = props.variant ?? "week";
   const [viewDate, setViewDate] = useState(() => {
@@ -183,8 +166,6 @@ export function SessionsCalendar(props: {
   );
   const today = new Date();
   const todayKey = getCalendarDayKey(today);
-  const selectedDayBookings = bookingsByDay.get(selectedDayKey) ?? [];
-  const timelineBookings = variant === "dashboard" ? selectedDayBookings : sortedBookings.slice(0, 5);
   const selectedDate = useMemo(() => {
     const [year, month, day] = selectedDayKey.split("-").map((value) => Number(value));
     return new Date(year, month - 1, day);
@@ -225,19 +206,16 @@ export function SessionsCalendar(props: {
 
   return (
     <section className={`content-card booking-session-card booking-card-minimal sessions-calendar-card ${variant === "dashboard" ? "dashboard" : ""}`}>
-      <div className="sessions-calendar-head">
-        <div>
-          <span className="sessions-section-kicker">
-            {variant === "dashboard"
-              ? t(props.language, { es: "Continuidad", en: "Continuity", pt: "Continuidade" })
-              : t(props.language, { es: "Agenda visual", en: "Visual schedule", pt: "Agenda visual" })}
-          </span>
-          <h2>
-            {variant === "dashboard"
-              ? t(props.language, { es: "Tu calendario", en: "Your calendar", pt: "Seu calendario" })
-              : t(props.language, { es: "Calendario de sesiones", en: "Sessions calendar", pt: "Calendario de sessoes" })}
-          </h2>
-        </div>
+      <div className={`sessions-calendar-head ${props.hideTitle ? "no-title" : ""}`}>
+        {!props.hideTitle ? (
+          <div>
+            <h2>
+              {variant === "dashboard"
+                ? t(props.language, { es: "Tu calendario", en: "Your calendar", pt: "Seu calendario" })
+                : t(props.language, { es: "Calendario de sesiones", en: "Sessions calendar", pt: "Calendario de sessoes" })}
+            </h2>
+          </div>
+        ) : null}
         <div className="sessions-calendar-month-nav">
           <button
             type="button"
@@ -252,8 +230,9 @@ export function SessionsCalendar(props: {
                 return next;
               })
             }
+            aria-label={t(props.language, { es: "Semana anterior", en: "Previous week", pt: "Semana anterior" })}
           >
-            {t(props.language, { es: "Anterior", en: "Prev", pt: "Anterior" })}
+            {"\u2190"}
           </button>
           <strong>{variant === "dashboard" ? getMonthLabel(viewDate, props.language) : getWeekLabel(viewDate, props.language)}</strong>
           <button
@@ -269,8 +248,9 @@ export function SessionsCalendar(props: {
                 return next;
               })
             }
+            aria-label={t(props.language, { es: "Semana siguiente", en: "Next week", pt: "Proxima semana" })}
           >
-            {t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+            {"\u2192"}
           </button>
         </div>
       </div>
@@ -329,57 +309,6 @@ export function SessionsCalendar(props: {
             })}
           </div>
         </div>
-
-        <aside className="sessions-calendar-agenda">
-          <h3>
-            {variant === "dashboard"
-              ? t(props.language, { es: "Agenda del dia", en: "Day agenda", pt: "Agenda do dia" })
-              : t(props.language, { es: "Proximas en agenda", en: "Upcoming on calendar", pt: "Proximas na agenda" })}
-          </h3>
-          {variant === "dashboard" ? (
-            <p className="sessions-calendar-selected-date">
-              {formatDateOnly({ isoDate: selectedDate.toISOString(), timezone: props.timezone, language: props.language })}
-            </p>
-          ) : null}
-          {timelineBookings.length === 0 ? (
-            <p>
-              {variant === "dashboard"
-                ? t(props.language, {
-                    es: "No tienes sesiones planificadas para este dia.",
-                    en: "You do not have any scheduled sessions for this day.",
-                    pt: "Voce nao tem sessoes planejadas para este dia."
-                  })
-                : t(props.language, {
-                    es: "Cuando confirmes sesiones, apareceran aqui con su dia y horario.",
-                    en: "Once you confirm sessions, they will appear here with day and time.",
-                    pt: "Quando voce confirmar sessoes, elas aparecerao aqui com dia e horario."
-                  })}
-            </p>
-          ) : (
-            <div className="sessions-agenda-list">
-              {timelineBookings.map((booking) => {
-                const professional = findProfessionalById(booking.professionalId);
-                return (
-                  <button
-                    className="sessions-agenda-item"
-                    key={booking.id}
-                    type="button"
-                    onClick={() => props.onOpenBookingDetail(booking.id)}
-                  >
-                    <span className="sessions-agenda-date">
-                      {formatDateOnly({ isoDate: booking.startsAt, timezone: props.timezone, language: props.language })}
-                    </span>
-                    <strong>{formatTimeOnly({ isoDate: booking.startsAt, timezone: props.timezone, language: props.language })}</strong>
-                    <span className="sessions-agenda-professional">{professional.fullName}</span>
-                    <span className="sessions-agenda-status">
-                      {t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" })}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </aside>
       </div>
     </section>
   );

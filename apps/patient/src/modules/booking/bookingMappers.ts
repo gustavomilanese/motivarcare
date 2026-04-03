@@ -16,6 +16,7 @@ export interface BookingMineApiItem {
   startsAt: string;
   endsAt: string;
   status: string;
+  bookingMode?: "credit" | "trial";
   professionalId?: string;
   joinUrl?: string | null;
   patientTimezoneAtBooking?: string;
@@ -27,6 +28,7 @@ export interface BookingMutationApiItem {
   id: string;
   startsAt: string;
   endsAt: string;
+  bookingMode?: "credit" | "trial";
   joinUrlPatient?: string;
   patientTimezoneAtBooking?: string;
   professionalTimezoneAtBooking?: string;
@@ -47,7 +49,7 @@ export function mapBookingFromMineApi(booking: BookingMineApiItem): BookingRecor
     createdAt: booking.createdAt,
     patientTimezoneAtBooking: booking.patientTimezoneAtBooking,
     professionalTimezoneAtBooking: booking.professionalTimezoneAtBooking,
-    bookingMode: "credit"
+    bookingMode: booking.bookingMode === "trial" ? "trial" : "credit"
   };
 }
 

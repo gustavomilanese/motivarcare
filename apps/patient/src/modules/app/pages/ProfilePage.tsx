@@ -7,6 +7,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { apiRequest } from "../services/api";
 import type {
   PackageId,
   PatientProfile,
@@ -47,6 +48,7 @@ function formatDateTime(params: { isoDate: string; timezone: string; language: A
 export function ProfilePage(props: {
   user: SessionUser;
   language: AppLanguage;
+  authToken: string | null;
   profile: PatientProfile;
   subscription: SubscriptionState;
   onUpdateProfile: (profile: PatientProfile) => void;
@@ -58,6 +60,9 @@ export function ProfilePage(props: {
   const [cardExpMonth, setCardExpMonth] = useState("");
   const [cardExpYear, setCardExpYear] = useState("");
   const [supportMessage, setSupportMessage] = useState("");
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarEmail, setCalendarEmail] = useState("");
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const validTabs: ProfileTab[] = ["data", "cards", "subscription", "settings", "support"];
   const tabParam = searchParams.get("tab");
   const tab: ProfileTab = validTabs.includes(tabParam as ProfileTab) ? (tabParam as ProfileTab) : "data";
@@ -65,6 +70,29 @@ export function ProfilePage(props: {
   useEffect(() => {
     setLocalProfile(props.profile);
   }, [props.profile]);
+
+  useEffect(() => {
+    if (!props.authToken) {
+      setCalendarConnected(false);
+      setCalendarEmail("");
+      return;
+    }
+
+    setCalendarLoading(true);
+    void apiRequest<{
+      connected: boolean;
+      connection: { providerEmail: string | null } | null;
+    }>("/api/auth/google/calendar/status", {}, props.authToken)
+      .then((response) => {
+        setCalendarConnected(response.connected);
+        setCalendarEmail(response.connection?.providerEmail ?? "");
+      })
+      .catch(() => {
+        setCalendarConnected(false);
+        setCalendarEmail("");
+      })
+      .finally(() => setCalendarLoading(false));
+  }, [props.authToken]);
 
   const saveProfile = () => {
     props.onUpdateProfile(localProfile);
@@ -93,6 +121,34 @@ export function ProfilePage(props: {
     setCardLast4("");
     setCardExpMonth("");
     setCardExpYear("");
+  };
+
+  const connectCalendar = async () => {
+    if (!props.authToken) {
+      return;
+    }
+    const response = await apiRequest<{ authUrl: string }>(
+      "/api/auth/google/calendar/connect",
+      {
+        method: "POST",
+        body: JSON.stringify({ returnPath: "/profile", clientOrigin: window.location.origin })
+      },
+      props.authToken
+    );
+    window.location.href = response.authUrl;
+  };
+
+  const disconnectCalendar = async () => {
+    if (!props.authToken) {
+      return;
+    }
+    await apiRequest<{ message: string }>(
+      "/api/auth/google/calendar/disconnect",
+      { method: "POST" },
+      props.authToken
+    );
+    setCalendarConnected(false);
+    setCalendarEmail("");
   };
 
   return (
@@ -277,6 +333,32 @@ export function ProfilePage(props: {
                 />
                 {t(props.language, { es: "Recordatorios de sesion", en: "Session reminders", pt: "Lembretes de sessao" })}
               </label>
+            </div>
+            <div className="profile-settings-stack">
+              <strong>{t(props.language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</strong>
+              <p>
+                {calendarLoading
+                  ? t(props.language, { es: "Revisando conexión...", en: "Checking connection...", pt: "Verificando conexao..." })
+                  : calendarConnected
+                    ? replaceTemplate(
+                        t(props.language, {
+                          es: "Conectado como {email}.",
+                          en: "Connected as {email}.",
+                          pt: "Conectado como {email}."
+                        }),
+                        { email: calendarEmail || "-" }
+                      )
+                    : t(props.language, { es: "No conectado.", en: "Not connected.", pt: "Nao conectado." })}
+              </p>
+              {!calendarConnected ? (
+                <button className="primary" type="button" onClick={() => void connectCalendar()}>
+                  {t(props.language, { es: "Conectar Google Calendar", en: "Connect Google Calendar", pt: "Conectar Google Calendar" })}
+                </button>
+              ) : (
+                <button type="button" onClick={() => void disconnectCalendar()}>
+                  {t(props.language, { es: "Desconectar Google Calendar", en: "Disconnect Google Calendar", pt: "Desconectar Google Calendar" })}
+                </button>
+              )}
             </div>
             <button className="primary" type="button" onClick={saveProfile}>
               {t(props.language, { es: "Guardar ajustes", en: "Save settings", pt: "Salvar configuracoes" })}

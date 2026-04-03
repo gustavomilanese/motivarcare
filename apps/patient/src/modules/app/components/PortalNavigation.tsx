@@ -12,16 +12,62 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+function IconHome(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 9.5 12 4l9 5.5V20a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1V9.5Z" />
+    </svg>
+  );
+}
+
+function IconSessions(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 11h18" />
+    </svg>
+  );
+}
+
+function IconChat(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a7 7 0 0 1-7 7H8l-5 3v-3a7 7 0 1 1 18-7Z" />
+    </svg>
+  );
+}
+
+function IconMenu(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
   sessionFullName?: string;
   unreadMessagesCount: number;
   favoriteCount: number;
+  notificationsUnreadCount: number;
+  notificationsOpen: boolean;
+  notifications: Array<{
+    id: string;
+    title: string;
+    body: string;
+    detail: string;
+    meta: string;
+    unread: boolean;
+    professionalId: string;
+  }>;
   menuOpen: boolean;
   languageSummary: string;
   currencySummary: string;
   onToggleMenu: () => void;
+  onToggleNotifications: () => void;
+  onOpenNotificationThread: (professionalId: string) => void;
   onOpenProfileTab: (tab: ProfileTab) => void;
   onOpenPreferences: () => void;
   onLogout: () => void;
@@ -35,7 +81,7 @@ export function PortalNavigation(props: {
           <div className="portal-brand">
             <span className="portal-brand-mark">M</span>
             <div>
-              <strong>Motivarte</strong>
+              <strong>MotivarCare</strong>
               <p>{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
             </div>
           </div>
@@ -50,7 +96,11 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="nav-link-with-badge">
                 {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-                {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
+                {props.unreadMessagesCount > 0 ? (
+                  <span className="chat-badge-pill" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                  </span>
+                ) : null}
               </span>
             </NavLink>
           </nav>
@@ -63,7 +113,7 @@ export function PortalNavigation(props: {
 
       <div className="portal-main">
         <header className="portal-header">
-          <div>
+          <div className="portal-header-greeting">
             <h1>
               {replaceTemplate(
                 t(props.language, {
@@ -76,87 +126,136 @@ export function PortalNavigation(props: {
             </h1>
           </div>
 
-          <div className="header-actions">
-            <NavLink
-              to="/favorites"
-              className={({ isActive }) => `header-icon-link ${isActive ? "active" : ""}`}
-              aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
-            >
-              <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
-              </svg>
-              {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
-            </NavLink>
-            <div className="menu-wrap">
-              <button
-                aria-label={t(props.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
-                className="menu-toggle"
-                type="button"
-                onClick={props.onToggleMenu}
+          {!props.hideSidebar ? (
+            <div className="header-actions">
+              <NavLink
+                to="/favorites"
+                className={({ isActive }) => `header-icon-link ${isActive ? "active" : ""}`}
+                aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
               >
-                &#9776;
-              </button>
-              {props.menuOpen ? (
-                <div className="menu-dropdown">
-                  <div className="menu-panel-head">
-                    <strong>{props.sessionEmail ?? ""}</strong>
-                    <span>{props.sessionFullName ?? ""}</span>
+                <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
+                </svg>
+                {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
+              </NavLink>
+              <div className="notifications-wrap">
+                <button
+                  type="button"
+                  className={`header-icon-link ${props.notificationsOpen ? "active" : ""}`}
+                  aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
+                  onClick={props.onToggleNotifications}
+                >
+                  <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
+                    <path d="M10 18a2 2 0 0 0 4 0" />
+                  </svg>
+                  {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
+                </button>
+                {props.notificationsOpen ? (
+                  <div className="notifications-dropdown">
+                    <div className="notifications-head">
+                      <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
+                    </div>
+                    <div className="menu-sep" />
+                    {props.notifications.length === 0 ? (
+                      <p className="notifications-empty">
+                        {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
+                      </p>
+                    ) : (
+                      <ul className="notifications-list">
+                        {props.notifications.slice(0, 8).map((item) => (
+                          <li key={item.id}>
+                            <button type="button" className={`notification-item ${item.unread ? "unread" : ""}`} onClick={() => props.onOpenNotificationThread(item.professionalId)}>
+                              <span>{item.title}</span>
+                              <strong>{item.body}</strong>
+                              {item.detail ? <em>{item.detail}</em> : null}
+                              <small>{item.meta}</small>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="menu-sep" />
+                ) : null}
+              </div>
+              <div className="menu-wrap">
+                <button
+                  aria-label={t(props.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
+                  className="menu-toggle"
+                  type="button"
+                  onClick={props.onToggleMenu}
+                >
+                  <IconMenu className="menu-toggle-icon" />
+                </button>
+                {props.menuOpen ? (
+                  <div className="menu-dropdown">
+                    <div className="menu-panel-head">
+                      <strong>{props.sessionEmail ?? ""}</strong>
+                      <span>{props.sessionFullName ?? ""}</span>
+                    </div>
+                    <div className="menu-sep" />
 
-                  <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("data")}>
-                    {t(props.language, { es: "Informacion de cuenta", en: "Account information", pt: "Informacoes da conta" })}
-                  </button>
-                  <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("cards")}>
-                    {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
-                  </button>
-                  <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
-                    {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
-                  </button>
-                  <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("settings")}>
-                    {t(props.language, { es: "Notificaciones", en: "Notification settings", pt: "Notificacoes" })}
-                  </button>
-                  <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("support")}>
-                    {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
-                  </button>
+                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("data")}>
+                      {t(props.language, { es: "Informacion de cuenta", en: "Account information", pt: "Informacoes da conta" })}
+                    </button>
+                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("cards")}>
+                      {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
+                    </button>
+                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
+                      {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
+                    </button>
+                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("settings")}>
+                      {t(props.language, { es: "Notificaciones", en: "Notification settings", pt: "Notificacoes" })}
+                    </button>
+                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("support")}>
+                      {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
+                    </button>
 
-                  <button className="menu-item menu-item-split" type="button" onClick={props.onOpenPreferences}>
-                    <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
-                    <small>
-                      {props.languageSummary} · {props.currencySummary}
-                    </small>
-                  </button>
+                    <button className="menu-item menu-item-split" type="button" onClick={props.onOpenPreferences}>
+                      <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
+                      <small>
+                        {props.languageSummary} · {props.currencySummary}
+                      </small>
+                    </button>
 
-                  <div className="menu-sep" />
-                  <button className="menu-item danger" type="button" onClick={props.onLogout}>
-                    {t(props.language, { es: "Cerrar sesion", en: "Sign out", pt: "Sair" })}
-                  </button>
-                </div>
-              ) : null}
+                    <div className="menu-sep" />
+                    <button className="menu-item danger" type="button" onClick={props.onLogout}>
+                      {t(props.language, { es: "Cerrar sesion", en: "Sign out", pt: "Sair" })}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : null}
         </header>
 
         {!props.hideSidebar ? (
           <nav
             className="portal-mobile-nav"
             aria-label={t(props.language, {
-              es: "Navegacion principal mobile",
-              en: "Main mobile navigation",
-              pt: "Navegacao principal mobile"
+              es: "Navegacion principal",
+              en: "Main navigation",
+              pt: "Navegacao principal"
             })}
           >
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
-              {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+              <IconHome className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
-              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+              <IconSessions className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
-              <span className="nav-link-with-badge">
-                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-                {props.unreadMessagesCount > 0 ? <span className="chat-badge-dot" aria-label="Nuevos mensajes" /> : null}
+              <span className="mobile-nav-link-inner">
+                <IconChat className="mobile-nav-icon" />
+                {props.unreadMessagesCount > 0 ? (
+                  <span className="chat-badge-pill mobile-nav-badge" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                  </span>
+                ) : null}
               </span>
+              <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
             </NavLink>
           </nav>
         ) : null}

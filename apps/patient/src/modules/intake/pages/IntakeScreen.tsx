@@ -7,6 +7,10 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+function wizardHeading(title: string): string {
+  return title.replace(/^\s*\d+\.\s*/, "").trim();
+}
+
 function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage): IntakeQuestion {
   if (question.id === "mainReason") {
     return {
@@ -242,12 +246,20 @@ export function IntakeScreen(props: {
     return seed;
   });
 
+  const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
     [props.language]
   );
+
+  const totalSteps = localizedQuestions.length;
+  const current = localizedQuestions[stepIndex];
+  const progressPct = ((stepIndex + 1) / totalSteps) * 100;
+  const isLast = stepIndex >= totalSteps - 1;
+
   const handleBack = () => {
     if (props.onBack) {
       props.onBack();
@@ -267,7 +279,44 @@ export function IntakeScreen(props: {
       props.onCancel();
       return;
     }
+    if (stepIndex > 0) {
+      setStepIndex(0);
+      return;
+    }
     handleBack();
+  };
+
+  const validateCurrent = (): boolean => {
+    if (!current) {
+      return false;
+    }
+    const value = answers[current.id]?.trim() ?? "";
+    if (!value) {
+      setError(
+        t(props.language, {
+          es: "Elegi o escribi una respuesta para continuar.",
+          en: "Choose or enter an answer to continue.",
+          pt: "Escolha ou escreva uma resposta para continuar."
+        })
+      );
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
+  const goNext = () => {
+    if (!validateCurrent()) {
+      return;
+    }
+    if (!isLast) {
+      setStepIndex((s) => Math.min(s + 1, totalSteps - 1));
+    }
+  };
+
+  const goPrev = () => {
+    setError("");
+    setStepIndex((s) => Math.max(0, s - 1));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -275,6 +324,10 @@ export function IntakeScreen(props: {
 
     const missing = intakeQuestions.filter((question) => !answers[question.id]?.trim());
     if (missing.length > 0) {
+      const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
+      if (idx >= 0) {
+        setStepIndex(idx);
+      }
       setError(
         t(props.language, {
           es: "Completa las 10 preguntas para continuar.",
@@ -306,88 +359,137 @@ export function IntakeScreen(props: {
   };
 
   return (
-    <div className="intake-shell">
-      <section className="intake-card">
-        <div className="intake-header-actions">
-          <button className="ghost intake-top-button" type="button" onClick={handleBack}>
-            {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-          </button>
+    <div className="intake-shell intake-shell--wizard">
+      <section className="intake-card intake-card--wizard">
+        <div className="intake-brand">
+          <span className="intake-brand-mark" aria-hidden="true">
+            &gt;
+          </span>
+          <div className="intake-brand-copy">
+            <strong>motivarcare</strong>
+            <span>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
+          </div>
         </div>
-        <span className="chip">
-          {t(props.language, { es: "Cuestionario inicial obligatorio", en: "Mandatory initial questionnaire", pt: "Questionario inicial obrigatorio" })}
-        </span>
-        <h1>
-          {replaceTemplate(
-            t(props.language, {
-              es: "{name}, completemos tu perfil clínico",
-              en: "{name}, let us complete your clinical profile",
-              pt: "{name}, vamos completar seu perfil clínico"
-            }),
-            { name: props.user.fullName }
-          )}
-        </h1>
-        <p>
-          {t(props.language, {
-            es: "Este paso es obligatorio antes del matching. Incluye una evaluación de riesgo para detectar situaciones urgentes.",
-            en: "This step is required before matching. It includes risk screening for urgent situations.",
-            pt: "Este passo e obrigatorio antes do matching. Inclui triagem de risco para situacoes urgentes."
-          })}
-        </p>
 
-        <form className="stack" onSubmit={handleSubmit}>
-          {localizedQuestions.map((question) => (
-            <article className="question-card" key={question.id}>
-              <h3>{question.title}</h3>
-              <p>{question.help}</p>
+        <div className="intake-wizard-top">
+          <div className="intake-header-inline">
+            <p className="intake-step-meta" aria-live="polite">
+              {replaceTemplate(
+                t(props.language, {
+                  es: "Paso {current} de {total}",
+                  en: "Step {current} of {total}",
+                  pt: "Passo {current} de {total}"
+                }),
+                { current: String(stepIndex + 1), total: String(totalSteps) }
+              )}
+            </p>
+            <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
+              <span aria-hidden="true">←</span>
+              {stepIndex === 0
+                ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
+                : t(props.language, { es: "Atras", en: "Back", pt: "Voltar" })}
+            </button>
+          </div>
 
-              {question.multiline ? (
+          <div className="intake-progress" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={totalSteps}>
+            <div className="intake-progress-track">
+              <div className="intake-progress-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
+
+          <h1 className="intake-wizard-title">
+            {replaceTemplate(
+              t(props.language, {
+                es: "{name}, armamos tu perfil",
+                en: "{name}, let us build your profile",
+                pt: "{name}, vamos montar seu perfil"
+              }),
+              { name: props.user.fullName }
+            )}
+          </h1>
+          <span className="chip intake-wizard-chip">
+            {t(props.language, {
+              es: "Cuestionario inicial",
+              en: "Initial questionnaire",
+              pt: "Questionario inicial"
+            })}
+          </span>
+        </div>
+
+        <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
+          {current ? (
+            <article
+              className={`question-card question-card--wizard ${current.id === "safetyRisk" ? "question-card--safety" : ""}`}
+              key={current.id}
+            >
+              <h2 className="intake-question-title">{wizardHeading(current.title)}</h2>
+              <p className="intake-question-help">{current.help}</p>
+
+              {current.multiline ? (
                 <textarea
-                  rows={3}
-                  value={answers[question.id]}
+                  className="intake-textarea-touch"
+                  rows={4}
+                  value={answers[current.id]}
                   onChange={(event) =>
-                    setAnswers((current) => ({
-                      ...current,
-                      [question.id]: event.target.value
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [current.id]: event.target.value
                     }))
                   }
+                  placeholder={t(props.language, {
+                    es: "Escribi con tus palabras...",
+                    en: "Write in your own words...",
+                    pt: "Escreva com suas palavras..."
+                  })}
                 />
               ) : (
-                <select
-                  value={answers[question.id]}
-                  onChange={(event) =>
-                    setAnswers((current) => ({
-                      ...current,
-                      [question.id]: event.target.value
-                    }))
-                  }
-                >
-                  <option value="">
-                    {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
-                  </option>
-                  {question.options?.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                <div className="intake-option-grid" role="group" aria-label={wizardHeading(current.title)}>
+                  {current.options?.map((option) => {
+                    const selected = answers[current.id] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}`}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setError("");
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [current.id]: option
+                          }));
+                        }}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </article>
-          ))}
+          ) : null}
 
-          {error ? <p className="error-text">{error}</p> : null}
-          <div className="intake-submit-row">
-            <button className="ghost" type="button" onClick={handleCancel} disabled={submitting}>
+          {error ? <p className="error-text intake-wizard-error">{error}</p> : null}
+
+          <div className="intake-wizard-actions">
+            <button className="ghost intake-wizard-secondary" type="button" onClick={handleCancel} disabled={submitting}>
               {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
             </button>
-            <button className="primary" type="submit" disabled={submitting}>
-              {submitting
-                ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-                : t(props.language, {
-                    es: "Finalizar perfil clínico y ver profesionales recomendados",
-                    en: "Finish clinical profile and view recommended professionals",
-                    pt: "Finalizar perfil clínico e ver profissionais recomendados"
-                  })}
-            </button>
+            {isLast ? (
+              <button className="primary intake-wizard-primary" type="submit" disabled={submitting}>
+                {submitting
+                  ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                  : t(props.language, {
+                      es: "Finalizar y ver profesionales",
+                      en: "Finish and see professionals",
+                      pt: "Finalizar e ver profissionais"
+                    })}
+              </button>
+            ) : (
+              <button className="primary intake-wizard-primary" type="button" onClick={goNext} disabled={submitting}>
+                {t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
+              </button>
+            )}
           </div>
         </form>
       </section>

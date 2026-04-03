@@ -24,9 +24,12 @@ export async function fetchProfessionalAvailability(
     token ?? undefined
   );
 
-  return (response.slots ?? []).map((slot) => ({
-    id: slot.id,
-    startsAt: slot.startsAt,
-    endsAt: slot.endsAt
-  }));
+  const now = Date.now();
+  return (response.slots ?? [])
+    .filter((slot) => new Date(slot.startsAt).getTime() > now)
+    .map((slot) => ({
+      id: slot.id,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt
+    }));
 }

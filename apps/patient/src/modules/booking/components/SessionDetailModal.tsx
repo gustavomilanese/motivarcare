@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { type AppLanguage, type LocalizedText, formatDateWithLocale, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { useEffect, useState } from "react";
+import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import type { Booking } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -34,6 +34,18 @@ function formatDateOnly(params: { isoDate: string; timezone: string; language: A
   });
 }
 
+function formatTimeOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
+  return formatDateWithLocale({
+    value: params.isoDate,
+    language: params.language,
+    timeZone: params.timezone,
+    options: {
+      hour: "numeric",
+      minute: "2-digit"
+    }
+  });
+}
+
 export function SessionDetailModal(props: {
   booking: Booking;
   timezone: string;
@@ -42,12 +54,13 @@ export function SessionDetailModal(props: {
     fullName: string;
     title: string;
     approach: string;
+    photoUrl?: string;
   };
   onClose: () => void;
 }) {
-  const startsAt = new Date(props.booking.startsAt);
-  const endsAt = new Date(props.booking.endsAt);
-  const durationMinutes = Math.max(1, Math.round((endsAt.getTime() - startsAt.getTime()) / (1000 * 60)));
+  const [copied, setCopied] = useState(false);
+  const joinUrl = props.booking.joinUrl?.trim() ?? "";
+  const isGoogleMeet = joinUrl.includes("meet.google.");
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -62,6 +75,21 @@ export function SessionDetailModal(props: {
     };
   }, [props.onClose]);
 
+  const copyMeetLink = async () => {
+    if (!joinUrl) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setCopied(true);
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
     <div className="session-modal-backdrop" role="presentation" onClick={props.onClose}>
       <section
@@ -71,85 +99,115 @@ export function SessionDetailModal(props: {
           pt: "Detalhes da sessao"
         })}
         aria-modal="true"
-        className="session-modal"
+        className="session-modal session-detail-modal"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="session-modal-header">
-          <div>
+        <header className="session-modal-header session-detail-head">
+          <div className="session-detail-head-copy">
             <span className="chip">
-              {t(props.language, { es: "Sesion confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
+              {props.booking.bookingMode === "trial"
+                ? t(props.language, { es: "Sesion de prueba confirmada", en: "Confirmed trial session", pt: "Sessao de teste confirmada" })
+                : t(props.language, { es: "Sesion confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
             </span>
-            <h2>{t(props.language, { es: "Detalle de tu sesion", en: "Your session details", pt: "Detalhes da sua sessao" })}</h2>
+            <p>{formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</p>
           </div>
-          <button type="button" onClick={props.onClose}>
-            {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          <button className="session-detail-close" type="button" onClick={props.onClose} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>
+            ×
           </button>
         </header>
 
-        <div className="session-modal-grid">
-          <article className="session-modal-card">
-            <h3>{props.professional.fullName}</h3>
-            <p>{props.professional.title}</p>
-            <p>
-              <strong>{t(props.language, { es: "Tipo:", en: "Type:", pt: "Tipo:" })}</strong>{" "}
-              {props.booking.bookingMode === "trial"
-                ? t(props.language, { es: "Sesion de prueba", en: "Trial session", pt: "Sessao de teste" })
-                : t(props.language, { es: "Sesion regular", en: "Regular session", pt: "Sessao regular" })}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Enfoque:", en: "Approach:", pt: "Abordagem:" })}</strong> {props.professional.approach}
-            </p>
-          </article>
+        <section className="session-detail-summary">
+          <div className="session-detail-pro">
+            <img
+              src={props.professional.photoUrl ?? "/images/prof-emma.svg"}
+              alt={props.professional.fullName}
+            />
+            <div>
+              <h3>{props.professional.fullName}</h3>
+              <p>{props.professional.title}</p>
+            </div>
+          </div>
+        </section>
 
-          <article className="session-modal-card">
-            <p>
-              <strong>{t(props.language, { es: "Fecha:", en: "Date:", pt: "Data:" })}</strong>{" "}
-              {formatDateOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Horario:", en: "Time:", pt: "Horario:" })}</strong>{" "}
-              {formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Duracion:", en: "Duration:", pt: "Duracao:" })}</strong>{" "}
-              {replaceTemplate(t(props.language, { es: "{m} minutos", en: "{m} minutes", pt: "{m} minutos" }), {
-                m: durationMinutes
-              })}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Estado:", en: "Status:", pt: "Status:" })}</strong>{" "}
-              {t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" })}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Reserva ID:", en: "Booking ID:", pt: "ID da reserva:" })}</strong> {props.booking.id}
-            </p>
-            <p>
-              <strong>{t(props.language, { es: "Zona horaria:", en: "Time zone:", pt: "Fuso horario:" })}</strong> {props.timezone}
-            </p>
-          </article>
-        </div>
-
-        <section className="session-modal-footer">
-          <a className="session-link" href={props.booking.joinUrl} rel="noreferrer" target="_blank">
-            {t(props.language, {
-              es: "Entrar a videollamada (simulada)",
-              en: "Join video call (simulated)",
-              pt: "Entrar na videochamada (simulada)"
-            })}
-          </a>
+        <div className="session-detail-meta-grid">
           <p>
-            {t(props.language, {
-              es: "Politica de cancelacion: puedes cancelar hasta 24 horas antes del inicio.",
-              en: "Cancellation policy: you can cancel up to 24 hours before start.",
-              pt: "Politica de cancelamento: voce pode cancelar ate 24 horas antes."
-            })}
+            <strong>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</strong>
+            <span>{formatDateOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</span>
           </p>
           <p>
+            <strong>{t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}</strong>
+            <span>{formatTimeOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</span>
+          </p>
+          <p>
+            <strong>{t(props.language, { es: "Zona horaria", en: "Time zone", pt: "Fuso" })}</strong>
+            <span>{props.timezone}</span>
+          </p>
+        </div>
+
+        <section className="session-detail-meet" aria-label={t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}>
+          {joinUrl ? (
+            <>
+              <div className="session-detail-meet-head">
+                <span className={`session-meet-badge ${isGoogleMeet ? "" : "session-meet-badge--brand"}`} aria-hidden="true">
+                  {isGoogleMeet ? "Meet" : "▶"}
+                </span>
+                <div>
+                  <h4 className="session-detail-meet-title">
+                    {isGoogleMeet
+                      ? t(props.language, { es: "Google Meet", en: "Google Meet", pt: "Google Meet" })
+                      : t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}
+                  </h4>
+                  <p className="session-detail-meet-lead">
+                    {isGoogleMeet
+                      ? t(props.language, {
+                          es: "El enlace se creo al reservar. Abri Meet en el navegador o en la app.",
+                          en: "Your link was created when you booked. Open Meet in your browser or the app.",
+                          pt: "O link foi criado ao reservar. Abra o Meet no navegador ou no app."
+                        })
+                      : t(props.language, {
+                          es: "Usa este enlace para conectarte a la sesion en la hora acordada.",
+                          en: "Use this link to join your session at the scheduled time.",
+                          pt: "Use este link para entrar na sessao no horario combinado."
+                        })}
+                  </p>
+                </div>
+              </div>
+              <div className="session-detail-meet-actions">
+                <a
+                  className={`session-meet-primary ${isGoogleMeet ? "" : "session-meet-primary--brand"}`}
+                  href={joinUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {isGoogleMeet
+                    ? t(props.language, { es: "Abrir Google Meet", en: "Open Google Meet", pt: "Abrir Google Meet" })
+                    : t(props.language, { es: "Abrir videollamada", en: "Open video call", pt: "Abrir videochamada" })}
+                </a>
+                <button className="session-meet-secondary" type="button" onClick={() => void copyMeetLink()}>
+                  {copied
+                    ? t(props.language, { es: "Enlace copiado", en: "Link copied", pt: "Link copiado" })
+                    : t(props.language, { es: "Copiar enlace", en: "Copy link", pt: "Copiar link" })}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="session-detail-meet-empty">
+              {t(props.language, {
+                es: "Todavia no hay enlace de videollamada para esta sesion. Si ya esta confirmada, actualiza la pagina en unos minutos o escribe por chat a tu profesional.",
+                en: "There is no video link for this session yet. If it is already confirmed, refresh in a few minutes or message your professional in chat.",
+                pt: "Ainda nao ha link de video para esta sessao. Se ja estiver confirmada, atualize em alguns minutos ou fale no chat com seu profissional."
+              })}
+            </p>
+          )}
+        </section>
+
+        <section className="session-modal-footer session-detail-footer session-detail-footer-hint">
+          <p>
             {t(props.language, {
-              es: "Tip: conecta 5 minutos antes para probar audio y camara.",
-              en: "Tip: connect 5 minutes early to test audio and camera.",
-              pt: "Dica: conecte 5 minutos antes para testar audio e camera."
+              es: "Para cambiar el horario, reprogramá desde Sesiones con al menos 24 h de anticipación. Conectate 5 min antes.",
+              en: "To change the time, reschedule from Sessions at least 24 h in advance. Join 5 min early.",
+              pt: "Para mudar o horario, reagende em Sessoes com pelo menos 24 h de antecedência. Entre 5 min antes."
             })}
           </p>
         </section>

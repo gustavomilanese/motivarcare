@@ -224,9 +224,9 @@ export function ProfessionalMatchCard(props: {
               <path d="M5 19c0-3.2 3.1-5.3 7-5.3s7 2.1 7 5.3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
             {t(props.language, {
-              es: `${professional.activePatientsCount} clientes • ${professional.sessionsCount} sesiones`,
-              en: `${professional.activePatientsCount} clients • ${professional.sessionsCount} sessions`,
-              pt: `${professional.activePatientsCount} clientes • ${professional.sessionsCount} sessoes`
+              es: `${professional.activePatientsCount} pacientes • ${professional.sessionsCount} sesiones`,
+              en: `${professional.activePatientsCount} patients • ${professional.sessionsCount} sessions`,
+              pt: `${professional.activePatientsCount} pacientes • ${professional.sessionsCount} sessoes`
             })}
           </span>
         </div>

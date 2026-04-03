@@ -2,6 +2,7 @@ import type { SortOption, TranslationFn } from "../types";
 
 export function MatchingHeader(props: {
   minimal: boolean;
+  onboardingAccent?: boolean;
   heading: string;
   description: string;
   countLabel: string;
@@ -13,7 +14,9 @@ export function MatchingHeader(props: {
   t: TranslationFn;
 }) {
   return (
-    <section className={`content-card patient-matching-hero ${props.minimal ? "minimal" : ""}`}>
+    <section
+      className={`content-card patient-matching-hero ${props.minimal ? "minimal" : ""} ${props.onboardingAccent ? "patient-matching-hero--onboarding" : ""}`}
+    >
       <h2>{props.heading}</h2>
       {props.description ? <p>{props.description}</p> : null}
       {props.countLabel ? <strong className="patient-matching-count">{props.countLabel}</strong> : null}

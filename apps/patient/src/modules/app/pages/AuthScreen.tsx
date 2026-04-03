@@ -20,12 +20,14 @@ export function AuthScreen(props: {
     user: SessionUser;
     token: string | null;
     emailVerificationRequired: boolean;
+    authEntryMode: "login" | "register";
   }) => void;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isTestUser, setIsTestUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,7 +68,8 @@ export function AuthScreen(props: {
               email: email.trim().toLowerCase(),
               password,
               role: "PATIENT",
-              timezone: detectBrowserTimezone()
+              timezone: detectBrowserTimezone(),
+              isTestUser
             }
           : {
               email: email.trim().toLowerCase(),
@@ -96,7 +99,8 @@ export function AuthScreen(props: {
           emailVerified: response.user.emailVerified
         },
         token: response.token,
-        emailVerificationRequired: response.emailVerificationRequired
+        emailVerificationRequired: response.emailVerificationRequired,
+        authEntryMode: mode
       });
     } catch (requestError) {
       setError(
@@ -131,29 +135,78 @@ export function AuthScreen(props: {
         </div>
         <div className="auth-form-panel">
           <div className="auth-header-copy">
+            <p className="auth-eyebrow">MotivarCare</p>
             <h1>{t(props.language, { es: "Tu sesion online empieza aca", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
+            <p className="auth-lead">
+              {t(props.language, {
+                es: "Accede con tu cuenta. Luego podras completar tu perfil, y si queres, conectar Google Calendar para recordatorios.",
+                en: "Sign in to your account. Then you can complete your profile and optionally connect Google Calendar for reminders.",
+                pt: "Acesse sua conta. Depois voce completa seu perfil e, se quiser, conecta o Google Calendar para lembretes."
+              })}
+            </p>
+          </div>
+
+          <div className="auth-divider" aria-hidden="true">
+            <span />
+            <span className="auth-divider-label">
+              {t(props.language, { es: "Continuar con email", en: "Continue with email", pt: "Continuar com email" })}
+            </span>
+            <span />
           </div>
 
           <form className="stack auth-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
               <label>
                 {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
-                <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+                <input
+                  name="name"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
               </label>
             ) : null}
 
             <label>
               Email
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
             </label>
 
             <label>
               {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+              <input
+                type="password"
+                name="password"
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
             </label>
 
-            {error ? <p className="error-text">{error}</p> : null}
-            <button className="primary" type="submit" disabled={loading}>
+            {mode === "register" ? (
+              <label className="inline-toggle">
+                <input
+                  type="checkbox"
+                  checked={isTestUser}
+                  onChange={(event) => setIsTestUser(event.target.checked)}
+                />
+                {t(props.language, {
+                  es: "Usuario de prueba (solo testing local)",
+                  en: "Test user (local testing only)",
+                  pt: "Usuario de teste (somente teste local)"
+                })}
+              </label>
+            ) : null}
+
+            {error ? <p className="error-text auth-error" role="alert">{error}</p> : null}
+            <button className="primary auth-submit" type="submit" disabled={loading}>
               {loading
                 ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
                 : mode === "register"

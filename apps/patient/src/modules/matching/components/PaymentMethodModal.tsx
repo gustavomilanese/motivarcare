@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -30,72 +30,101 @@ export function PaymentMethodModal(props: {
 
   const cardReady = paymentMode === "one-click" || (cardNumber.length >= 16 && expiry.length >= 4 && cvc.length >= 3);
 
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        props.onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [props.onClose]);
+
   return (
     <div className="matching-flow-backdrop" role="presentation" onClick={props.onClose}>
       <section className="matching-flow-modal payment-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-        <header className="matching-flow-header">
-          <button type="button" className="matching-flow-back-button" onClick={props.onBack}>
-            ←
-          </button>
-          <div>
-            <h3>{t(props.language, { es: "Método de pago", en: "Payment method", pt: "Metodo de pagamento" })}</h3>
+        <header className="matching-flow-header payment-modal-head">
+          <div className="payment-modal-head-copy">
+            <p className="payment-modal-mini-title">
+              {t(props.language, { es: "Pago seguro", en: "Secure payment", pt: "Pagamento seguro" })}
+            </p>
           </div>
-          <button type="button" className="matching-flow-close" onClick={props.onClose}>
+          <button type="button" className="matching-flow-close payment-modal-close" onClick={props.onClose} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>
             ×
           </button>
         </header>
+
+        <div className="payment-sim-notice" role="status">
+          {t(props.language, {
+            es: "Modo demostracion: el cobro esta simulado. En produccion se procesara con tu proveedor de pagos.",
+            en: "Demo mode: payment is simulated. In production it will be processed by your payment provider.",
+            pt: "Modo demonstracao: o pagamento e simulado. Em producao sera processado pelo provedor de pagamentos."
+          })}
+        </div>
 
         <section className="payment-amount-card">
           <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
           <strong>{formatAmount(props.amountUsd, props.language)}</strong>
         </section>
 
-        <section className={`payment-option-card ${paymentMode === "new-card" ? "selected" : ""}`}>
-          <button type="button" className="payment-option-toggle" onClick={() => setPaymentMode("new-card")}>
-            <span className={`payment-check ${paymentMode === "new-card" ? "checked" : ""}`} />
-            <span className="payment-option-label">
-              {t(props.language, { es: "Tarjeta nueva", en: "New card", pt: "Novo cartao" })}
-            </span>
+        <div className="payment-method-tabs" role="tablist" aria-label={t(props.language, { es: "Metodo de pago", en: "Payment method", pt: "Metodo de pagamento" })}>
+          <button
+            type="button"
+            className={`payment-method-tab ${paymentMode === "new-card" ? "active" : ""}`}
+            onClick={() => setPaymentMode("new-card")}
+          >
+            {t(props.language, { es: "Tarjeta", en: "Card", pt: "Cartao" })}
           </button>
+          <button
+            type="button"
+            className={`payment-method-tab ${paymentMode === "one-click" ? "active" : ""}`}
+            onClick={() => setPaymentMode("one-click")}
+          >
+            {t(props.language, { es: "Pago rápido", en: "Quick pay", pt: "Pagamento rapido" })} · GPay
+          </button>
+        </div>
 
+        <section className={`payment-option-card payment-option-card-modern ${paymentMode === "new-card" ? "selected" : ""}`}>
           {paymentMode === "new-card" ? (
-            <div className="payment-card-form">
-              <input
-                value={cardNumber}
-                onChange={(event) => setCardNumber(event.target.value.replace(/\D/g, "").slice(0, 16))}
-                placeholder="1234 1234 1234 1234"
-                inputMode="numeric"
-              />
-              <div className="payment-card-form-row">
+            <>
+              <p className="payment-option-caption">{t(props.language, { es: "Ingresa los datos de tu tarjeta", en: "Enter your card details", pt: "Insira os dados do cartao" })}</p>
+              <div className="payment-card-form">
                 <input
-                  value={expiry}
-                  onChange={(event) => setExpiry(event.target.value.replace(/[^0-9/]/g, "").slice(0, 5))}
-                  placeholder="MM/AA"
-                />
-                <input
-                  value={cvc}
-                  onChange={(event) => setCvc(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="CVC"
+                  value={cardNumber}
+                  onChange={(event) => setCardNumber(event.target.value.replace(/\D/g, "").slice(0, 16))}
+                  placeholder="1234 1234 1234 1234"
                   inputMode="numeric"
                 />
+                <div className="payment-card-form-row">
+                  <input
+                    value={expiry}
+                    onChange={(event) => setExpiry(event.target.value.replace(/[^0-9/]/g, "").slice(0, 5))}
+                    placeholder="MM/AA"
+                  />
+                  <input
+                    value={cvc}
+                    onChange={(event) => setCvc(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="CVC"
+                    inputMode="numeric"
+                  />
+                </div>
               </div>
-            </div>
+            </>
           ) : null}
         </section>
 
-        <section className={`payment-option-card ${paymentMode === "one-click" ? "selected" : ""}`}>
-          <button type="button" className="payment-option-toggle" onClick={() => setPaymentMode("one-click")}>
-            <span className={`payment-check ${paymentMode === "one-click" ? "checked" : ""}`} />
-            <span className="payment-option-label">
-              {t(props.language, { es: "Pago rápido", en: "Quick pay", pt: "Pagamento rapido" })}
-            </span>
-            <small className="payment-option-badge">GPay</small>
-          </button>
-        </section>
+        {paymentMode === "one-click" ? (
+          <section className="payment-option-card payment-option-card-modern selected">
+            <p className="payment-option-caption">{t(props.language, { es: "Te redirigiremos a Google Pay para confirmar", en: "You will be redirected to Google Pay to confirm", pt: "Vamos redirecionar para o Google Pay para confirmar" })}</p>
+          </section>
+        ) : null}
 
         {props.error ? <p className="availability-status-message error">{props.error}</p> : null}
 
-        <footer className="matching-flow-footer">
+        <footer className="matching-flow-footer payment-modal-footer">
           <button
             type="button"
             className="matching-flow-primary"

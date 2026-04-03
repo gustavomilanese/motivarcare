@@ -120,11 +120,17 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         en: "Your favorite professionals",
         pt: "Seus profissionais favoritos"
       })
-    : t(props.language, {
-        es: "Hemos encontrado especialistas para tu solicitud",
-        en: "We found specialists for your request",
-        pt: "Encontramos especialistas para sua necessidade"
-      });
+    : mode === "onboarding-final"
+      ? t(props.language, {
+          es: "Psicologos sugeridos para vos",
+          en: "Suggested psychologists for you",
+          pt: "Psicologos sugeridos para voce"
+        })
+      : t(props.language, {
+          es: "Hemos encontrado especialistas para tu solicitud",
+          en: "We found specialists for your request",
+          pt: "Encontramos especialistas para sua necessidade"
+        });
   const description = props.showOnlyFavorites
     ? t(props.language, {
         es: "Accede rápido a los terapeutas que guardaste para volver a reservar.",
@@ -132,7 +138,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         pt: "Acesse rapidamente os terapeutas que voce salvou para reservar novamente."
       })
     : mode === "onboarding-final"
-      ? ""
+      ? t(props.language, {
+          es: "Perfiles ordenados segun tu cuestionario. Elegi un profesional y reserva tu sesion de prueba.",
+          en: "Profiles are ordered from your questionnaire. Choose a professional and book your trial session.",
+          pt: "Perfis ordenados pelo seu questionario. Escolha um profissional e reserve sua sessao de teste."
+        })
       : t(props.language, {
           es: "Ordenamos los perfiles según tu perfil clínico y los datos reales que cada terapeuta cargó en su onboarding.",
           en: "Profiles are ranked by your clinical profile and real therapist data from onboarding.",
@@ -140,7 +150,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         });
 
   const countLabel = mode === "onboarding-final"
-    ? ""
+    ? t(props.language, {
+        es: `${visibleOrdered.length} sugerencias para vos`,
+        en: `${visibleOrdered.length} suggestions for you`,
+        pt: `${visibleOrdered.length} sugestoes para voce`
+      })
     : t(props.language, {
         es: `${visibleOrdered.length} especialistas están disponibles actualmente`,
         en: `${visibleOrdered.length} specialists are currently available`,
@@ -237,6 +251,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     <div className={`page-stack patient-matching-page ${mode === "onboarding-final" ? "onboarding-focus" : ""}`}>
       <MatchingHeader
         minimal={mode === "onboarding-final"}
+        onboardingAccent={mode === "onboarding-final"}
         heading={heading}
         description={description}
         countLabel={countLabel}
@@ -278,7 +293,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
               onShowAllSlots={openAvailabilityFlow}
               onChat={props.onChat}
               onImageFallback={props.onImageFallback}
-              showChatAction={!props.isFirstSelectionRequired}
+              showChatAction={!bookingFlowEnabled && !props.isFirstSelectionRequired}
             />
           ))}
         </div>

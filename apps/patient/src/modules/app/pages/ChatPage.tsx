@@ -6,11 +6,11 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
-import { professionalImageMap, professionalsCatalog } from "../data/professionalsCatalog";
 import { apiRequest } from "../services/api";
 import type {
   ApiChatMessage,
   ApiChatThread,
+  ApiChatThreadsResponse,
   Message,
   PatientAppState,
   Professional
@@ -20,8 +20,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function findProfessionalById(professionalId: string): Professional | null {
-  return professionalsCatalog.find((item) => item.id === professionalId) ?? null;
+function findProfessionalById(professionalId: string, professionals: Professional[]): Professional | null {
+  return professionals.find((item) => item.id === professionalId) ?? null;
 }
 
 function getUnreadCount(messages: Message[], professionalId?: string): number {
@@ -45,6 +45,8 @@ function formatDateTime(params: { isoDate: string; timezone: string; language: A
 
 export function ChatPage(props: {
   state: PatientAppState;
+  professionals: Professional[];
+  professionalPhotoMap: Record<string, string>;
   language: AppLanguage;
   authToken: string | null;
   sessionUserId: string;
@@ -56,6 +58,7 @@ export function ChatPage(props: {
   const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState("");
   const [apiThreads, setApiThreads] = useState<ApiChatThread[]>([]);
+  const [apiAvailableProfessionalIds, setApiAvailableProfessionalIds] = useState<string[]>([]);
   const [apiMessages, setApiMessages] = useState<ApiChatMessage[]>([]);
   const [activeThreadId, setActiveThreadId] = useState("");
   const [apiError, setApiError] = useState("");
@@ -64,7 +67,7 @@ export function ChatPage(props: {
   const remoteMode = Boolean(props.authToken);
   const availableProfessionals = useMemo(() => {
     const visibleIds = new Set<string>();
-    const validIds = new Set(professionalsCatalog.map((professional) => professional.id));
+    const validIds = new Set(props.professionals.map((professional) => professional.id));
 
     if (props.state.assignedProfessionalId && validIds.has(props.state.assignedProfessionalId)) {
       visibleIds.add(props.state.assignedProfessionalId);
@@ -74,6 +77,11 @@ export function ChatPage(props: {
       apiThreads.forEach((thread) => {
         if (validIds.has(thread.professionalId)) {
           visibleIds.add(thread.professionalId);
+        }
+      });
+      apiAvailableProfessionalIds.forEach((professionalId) => {
+        if (validIds.has(professionalId)) {
+          visibleIds.add(professionalId);
         }
       });
     } else {
@@ -89,9 +97,11 @@ export function ChatPage(props: {
       });
     }
 
-    return professionalsCatalog.filter((professional) => visibleIds.has(professional.id));
+    return props.professionals.filter((professional) => visibleIds.has(professional.id));
   }, [
+    apiAvailableProfessionalIds,
     apiThreads,
+    props.professionals,
     props.state.assignedProfessionalId,
     props.state.bookings,
     props.state.messages,
@@ -108,7 +118,7 @@ export function ChatPage(props: {
     return availableProfessionals[0].id;
   }, [availableProfessionals, props.state.activeChatProfessionalId]);
 
-  const threadProfessional = activeProfessionalId ? findProfessionalById(activeProfessionalId) : null;
+  const threadProfessional = activeProfessionalId ? findProfessionalById(activeProfessionalId, props.professionals) : null;
   const threadMessages = threadProfessional
     ? props.state.messages
         .filter((message) => message.professionalId === threadProfessional.id)
@@ -169,12 +179,13 @@ export function ChatPage(props: {
     }
 
     try {
-      const response = await apiRequest<{ threads: ApiChatThread[] }>(
+      const response = await apiRequest<ApiChatThreadsResponse>(
         "/api/chat/threads",
         {},
         props.authToken ?? undefined
       );
       setApiThreads(response.threads);
+      setApiAvailableProfessionalIds(response.availableProfessionalIds ?? []);
       setApiError("");
     } catch (requestError) {
       setApiError(
@@ -417,6 +428,8 @@ export function ChatPage(props: {
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.text
                 ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
 
+            const threadPhoto = remoteThread?.counterpartPhotoUrl?.trim();
+            const photoSrc = threadPhoto || props.professionalPhotoMap[professional.id];
             return (
               <button
                 className={professional.id === activeProfessionalId ? "wa-thread-item active" : "wa-thread-item"}
@@ -427,7 +440,7 @@ export function ChatPage(props: {
                 }}
               >
                 <img
-                  src={professionalImageMap[professional.id]}
+                  src={photoSrc}
                   alt={professional.fullName}
                   onError={props.onImageFallback}
                 />
@@ -469,7 +482,12 @@ export function ChatPage(props: {
             {threadProfessional ? (
               <>
                 <img
-                  src={professionalImageMap[threadProfessional.id]}
+                  src={
+                    (remoteMode
+                      ? apiThreadByProfessional.get(threadProfessional.id)?.counterpartPhotoUrl?.trim()
+                      : undefined) ||
+                    props.professionalPhotoMap[threadProfessional.id]
+                  }
                   alt={threadProfessional.fullName}
                   onError={props.onImageFallback}
                 />
