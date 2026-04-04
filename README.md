@@ -218,5 +218,6 @@ Run only professional app:
   - Order of attempts: professional connected calendar, then patient calendar, then platform calendar (`GOOGLE_REFRESH_TOKEN` + `GOOGLE_CALENDAR_ID`). If a step fails (expired token, API error), the next option is tried; only if all fail do Daily.co URLs stay on the booking.
   - On reschedule/cancel, the same calendar event is updated/cancelled and Google sends attendee updates.
 
-## Architecture and launch notes
-- See **`docs/presentacion-arquitectura-motivcare.md`** for the consolidated technical architecture (API, data model, outbox, scaling, operations, and evolution roadmap).
+## Architecture and deploy
+- **Architecture:** `docs/presentacion-arquitectura-motivcare.md` (API, datos, outbox, operación).
+- **Deploy (Railway + Hostinger):** `infra/deploy/DEPLOY.md` — paso a paso. En la raíz del repo: `railway.toml` y `nixpacks.toml` para la API.

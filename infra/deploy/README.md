@@ -1,8 +1,6 @@
 # Deploy
 
-Deployment manifests, platform templates, and environment overlays live here.
+- **[DEPLOY.md](./DEPLOY.md)** — paso a paso **Railway** (API + outbox) y **Hostinger** (estáticos / VPS).
+- **hostinger-nginx-api.example.conf** — plantilla Nginx para proxy a la API en un VPS.
 
-Suggested structure:
-- `k8s/` for Kubernetes manifests
-- `railway/` for Railway descriptors
-- `terraform/` for infrastructure as code
+La configuración de **Railway** vive en la **raíz del repo**: `railway.toml` y `nixpacks.toml`.

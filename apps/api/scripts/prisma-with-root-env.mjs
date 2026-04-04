@@ -1,11 +1,16 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config } from 'dotenv';
 
 const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-config({ path: resolve(apiRoot, '../../.env') });
+const require = createRequire(import.meta.url);
+try {
+  require('dotenv').config({ path: resolve(apiRoot, '../../.env') });
+} catch {
+  /* optional: Railway/CI usan solo variables de entorno */
+}
 
 const localBin = resolve(apiRoot, 'node_modules/.bin/prisma');
 const hoistedBin = resolve(apiRoot, '../../node_modules/.bin/prisma');

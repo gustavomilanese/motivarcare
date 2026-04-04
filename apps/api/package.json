@@ -14,7 +14,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "start:outbox": "node dist/workers/outbox.worker.js",
-    "prisma:generate": "node scripts/prisma-with-root-env.mjs generate",
+    "prisma:generate": "npm run prisma:generate:api --prefix ../..",
     "prisma:migrate": "node scripts/prisma-with-root-env.mjs db push",
     "prisma:push": "node scripts/prisma-with-root-env.mjs db push",
     "prisma:seed": "tsx prisma/seed.ts",

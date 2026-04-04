@@ -1,0 +1,13 @@
+# Configuración Railway (raíz del monorepo).
+# Creá dos servicios desde el mismo repo: "api" y "outbox" (mismas variables; distinto start).
+# build:api = prisma generate + tsc de @therapy/api
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npm run build:api"
+
+[deploy]
+startCommand = "npm run start -w @therapy/api"
+healthcheckPath = "/health/ready"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

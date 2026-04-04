@@ -2,6 +2,9 @@
   "name": "therapy-platform",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -28,10 +31,14 @@
     "db:wipe-non-admin": "npm run db:wipe-non-admin -w @therapy/api",
     "dev:landing": "npm run dev -w @therapy/landing",
     "test": "npm run test --workspaces --if-present",
-    "load:smoke": "node scripts/load/smoke.mjs"
+    "load:smoke": "node scripts/load/smoke.mjs",
+    "prisma:generate:api": "prisma generate --schema=./apps/api/prisma/schema.prisma",
+    "build:api": "npm run prisma:generate:api && npm run build -w @therapy/api",
+    "db:push:remote": "npm run prisma:push -w @therapy/api"
   },
   "devDependencies": {
     "autocannon": "^8.0.0",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "prisma": "^6.19.3"
   }
 }
