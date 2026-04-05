@@ -71,35 +71,75 @@ export function VerifyEmailRequiredScreen(props: {
 
   return (
     <div className="auth-shell">
-      <section className="auth-card">
-        <span className="chip">{t(props.language, { es: "Verificación requerida", en: "Verification required", pt: "Verificacao obrigatoria" })}</span>
-        <h1>{t(props.language, { es: "Revisa tu correo para continuar", en: "Check your email to continue", pt: "Verifique seu e-mail para continuar" })}</h1>
-        <p>
-          {t(props.language, {
-            es: `Te enviamos un enlace de verificación a ${props.email}.`,
-            en: `We sent a verification link to ${props.email}.`,
-            pt: `Enviamos um link de verificacao para ${props.email}.`
-          })}
-        </p>
-        <div className="stack">
-          <button className="primary" type="button" onClick={handleResend} disabled={loadingResend || loadingDevVerify}>
-            {loadingResend
-              ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
-              : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
-          </button>
-
-          {props.showDevBypass ? (
-            <button type="button" onClick={handleDevVerify} disabled={loadingResend || loadingDevVerify}>
-              {loadingDevVerify ? "Verify Email (DEV)..." : "Verify Email (DEV)"}
+      <section className="auth-card auth-card-verify-email" aria-labelledby="verify-email-title">
+        <div className="verify-email-panel">
+          <div className="verify-email-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="48" height="48" fill="none">
+              <circle cx="24" cy="24" r="22" fill="url(#verifyEmailGrad)" opacity="0.2" />
+              <path
+                d="M12 18.5h24v14a2 2 0 0 1-2 2H14a2 2 0 0 1-2-2v-14z"
+                stroke="#5f44eb"
+                strokeWidth="2"
+                fill="none"
+              />
+              <path d="M12 18.5 24 27l12-8.5" stroke="#5f44eb" strokeWidth="2" fill="none" strokeLinecap="round" />
+              <defs>
+                <linearGradient id="verifyEmailGrad" x1="12" y1="12" x2="36" y2="36">
+                  <stop stopColor="#5f44eb" />
+                  <stop offset="1" stopColor="#7b5bff" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span className="chip">
+            {t(props.language, {
+              es: "Verificación requerida",
+              en: "Verification required",
+              pt: "Verificacao obrigatoria"
+            })}
+          </span>
+          <h1 id="verify-email-title">
+            {t(props.language, {
+              es: "Revisa tu correo para continuar",
+              en: "Check your email to continue",
+              pt: "Verifique seu e-mail para continuar"
+            })}
+          </h1>
+          <p className="verify-email-lead">
+            {t(props.language, {
+              es: "Te enviamos un enlace a",
+              en: "We sent a link to",
+              pt: "Enviamos um link para"
+            })}{" "}
+            <span className="verify-email-address">{props.email}</span>
+          </p>
+          <p className="verify-email-hint">
+            {t(props.language, {
+              es: "Revisa también la carpeta de spam. El enlace puede caducar.",
+              en: "Check your spam folder too. The link may expire.",
+              pt: "Verifique também o spam. O link pode expirar."
+            })}
+          </p>
+          <div className="stack verify-email-actions">
+            <button className="primary" type="button" onClick={handleResend} disabled={loadingResend || loadingDevVerify}>
+              {loadingResend
+                ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
+                : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
             </button>
-          ) : null}
 
-          <button type="button" onClick={props.onLogout} disabled={loadingResend || loadingDevVerify}>
-            {t(props.language, { es: "Salir", en: "Logout", pt: "Sair" })}
-          </button>
+            {props.showDevBypass ? (
+              <button type="button" className="verify-email-dev" onClick={handleDevVerify} disabled={loadingResend || loadingDevVerify}>
+                {loadingDevVerify ? "Verify Email (DEV)..." : "Verify Email (DEV)"}
+              </button>
+            ) : null}
+
+            <button type="button" className="verify-email-secondary" onClick={props.onLogout} disabled={loadingResend || loadingDevVerify}>
+              {t(props.language, { es: "Salir", en: "Log out", pt: "Sair" })}
+            </button>
+          </div>
+          {message ? <p className="success-text verify-email-feedback">{message}</p> : null}
+          {error ? <p className="error-text verify-email-feedback">{error}</p> : null}
         </div>
-        {message ? <p className="success-text">{message}</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
       </section>
     </div>
   );
