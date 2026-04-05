@@ -4,7 +4,8 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm ci && npm run build:api"
+# rm -rf + cache fuera del árbol evita EBUSY en node_modules/.cache (Nixpacks/Docker).
+buildCommand = "rm -rf node_modules && npm ci --cache /tmp/npm-cache && npm run build:api"
 
 [deploy]
 startCommand = "npm run start -w @therapy/api"
