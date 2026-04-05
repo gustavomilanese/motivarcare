@@ -666,6 +666,33 @@ export function App() {
     );
   }
 
+  /** Antes de Calendar: verificación de email primero (la URL /verify-email-required ya no queda “tapada” por Calendar). */
+  if (state.emailVerificationRequired && !state.session.emailVerified) {
+    return (
+      <VerifyEmailRequiredScreen
+        language={state.language}
+        token={state.authToken ?? ""}
+        email={state.session.email}
+        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
+        onVerified={() =>
+          setState((current) => ({
+            ...current,
+            session: current.session ? { ...current.session, emailVerified: true } : null
+          }))
+        }
+        onLogout={() => {
+          if (location.pathname === "/verify-email-required") {
+            navigate("/", { replace: true });
+          }
+          setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
+          setState(defaultState);
+        }}
+      />
+    );
+  }
+
   if (showCalendarOnboarding) {
     return (
       <div className="intake-shell calendar-consent-shell">
@@ -725,32 +752,6 @@ export function App() {
           </div>
         </section>
       </div>
-    );
-  }
-
-  if (state.emailVerificationRequired && !state.session.emailVerified) {
-    return (
-      <VerifyEmailRequiredScreen
-        language={state.language}
-        token={state.authToken ?? ""}
-        email={state.session.email}
-        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
-        onVerified={() =>
-          setState((current) => ({
-            ...current,
-            session: current.session ? { ...current.session, emailVerified: true } : null
-          }))
-        }
-        onLogout={() => {
-          if (location.pathname === "/verify-email-required") {
-            navigate("/", { replace: true });
-          }
-          setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
-          setState(defaultState);
-        }}
-      />
     );
   }
 
