@@ -1,8 +1,10 @@
 import { createApiClient } from "@therapy/auth";
 
 export const STORAGE_KEY = "therapy_patient_portal_v3";
+/** Vacío en build → fetch relativo al dominio de Vercel → HTTP 405 en POST. */
+const apiUrlRaw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL?.trim();
 export const API_BASE =
-  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
+  apiUrlRaw && apiUrlRaw.length > 0 ? apiUrlRaw.replace(/\/+$/, "") : "http://localhost:4000";
 
 const UNAUTHORIZED_MESSAGES = ["Invalid or expired token", "Missing bearer token"] as const;
 

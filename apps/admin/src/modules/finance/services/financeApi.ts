@@ -8,8 +8,10 @@ import type {
 
 type ApiErrorPayload = { error?: string };
 
-const API_BASE =
-  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? "http://localhost:4000";
+const API_BASE = (() => {
+  const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL?.trim();
+  return raw && raw.length > 0 ? raw.replace(/\/+$/, "") : "http://localhost:4000";
+})();
 const TOKEN_KEY = "therapy_admin_token";
 const USER_KEY = "therapy_admin_user";
 const AUTH_EXPIRED_EVENT = "therapy-admin-auth-expired";
