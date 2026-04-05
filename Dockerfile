@@ -11,6 +11,8 @@ COPY packages ./packages
 
 RUN npm ci && npm run build:api
 
+# Railway/Docker: forzar bind en todas las interfaces (evita healthcheck "unavailable").
 ENV NODE_ENV=production
+ENV API_LISTEN_HOST=0.0.0.0
 EXPOSE 4000
 CMD ["npm", "run", "start", "-w", "@therapy/api"]
