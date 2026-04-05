@@ -3,9 +3,8 @@
 # build:api = prisma generate + tsc de @therapy/api
 
 [build]
-builder = "NIXPACKS"
-# rm -rf + cache fuera del árbol evita EBUSY en node_modules/.cache (Nixpacks/Docker).
-buildCommand = "rm -rf node_modules && npm ci --cache /tmp/npm-cache && npm run build:api"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm run start -w @therapy/api"
