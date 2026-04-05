@@ -16,7 +16,10 @@ export function CollapsiblePageSection(props: {
       id={props.sectionId}
       className={`finance-anchor-section ${props.sectionClassName ?? ""}`.trim()}
     >
-      <details className="finance-collapsible card" defaultOpen={props.defaultOpen ?? false}>
+      <details
+        className="finance-collapsible card"
+        {...(props.defaultOpen ? { open: true } : {})}
+      >
         <summary className="finance-collapsible-summary">
           <div className="finance-collapsible-summary-lead">
             <span className="finance-collapsible-title">{props.summary}</span>
