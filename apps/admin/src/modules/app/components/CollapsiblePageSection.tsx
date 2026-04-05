@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 export function CollapsiblePageSection(props: {
   sectionId: string;
@@ -11,6 +11,8 @@ export function CollapsiblePageSection(props: {
   /** Por defecto cerrado. */
   defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(props.defaultOpen ?? false);
+
   return (
     <section
       id={props.sectionId}
@@ -18,7 +20,8 @@ export function CollapsiblePageSection(props: {
     >
       <details
         className="finance-collapsible card"
-        {...(props.defaultOpen ? { open: true } : {})}
+        open={open}
+        onToggle={(e) => setOpen(e.currentTarget.open)}
       >
         <summary className="finance-collapsible-summary">
           <div className="finance-collapsible-summary-lead">
