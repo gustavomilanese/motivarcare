@@ -101,7 +101,7 @@ export function ProfessionalAuthFlow(props: {
   onLanguageChange: (language: AppLanguage) => void;
   onCurrencyChange: (currency: SupportedCurrency) => void;
   onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
-  onRegistrationAuthSuccess?: () => void;
+  onRegistrationAuthSuccess?: (userId: string) => void;
   onPrepareOnboardingSync: (draft: OnboardingPatchDraft) => void;
 }) {
   const [authEntryMode, setAuthEntryMode] = useState<AuthEntryMode>("welcome");
@@ -619,7 +619,7 @@ export function ProfessionalAuthFlow(props: {
       onAuthSuccess={(params) => {
         props.onAuthSuccess(params);
         if (authEntryMode === "register") {
-          props.onRegistrationAuthSuccess?.();
+          props.onRegistrationAuthSuccess?.(params.user.id);
         }
       }}
       initialMode={authEntryMode}

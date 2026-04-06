@@ -17,6 +17,7 @@ import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import {
   API_BASE,
+  CALENDAR_ONBOARDING_PENDING_USER_ID_KEY,
   CURRENCY_KEY,
   EMAIL_VERIFICATION_REQUIRED_KEY,
   LANGUAGE_KEY,
@@ -72,6 +73,33 @@ function persistEmailVerificationRequired(value: boolean): void {
   }
 }
 
+function readCalendarOnboardingPendingForSession(user: AuthUser | null, token: string): boolean {
+  if (!token || !user?.id) {
+    return false;
+  }
+  try {
+    return window.localStorage.getItem(CALENDAR_ONBOARDING_PENDING_USER_ID_KEY) === user.id;
+  } catch {
+    return false;
+  }
+}
+
+function persistCalendarOnboardingPending(userId: string): void {
+  try {
+    window.localStorage.setItem(CALENDAR_ONBOARDING_PENDING_USER_ID_KEY, userId);
+  } catch {
+    // ignore
+  }
+}
+
+function clearCalendarOnboardingPending(): void {
+  try {
+    window.localStorage.removeItem(CALENDAR_ONBOARDING_PENDING_USER_ID_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -83,7 +111,12 @@ export function App() {
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
     createDefaultOnboardingPatchDraft()
   );
-  const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
+  const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(() =>
+    readCalendarOnboardingPendingForSession(
+      readStoredUser(),
+      window.localStorage.getItem(TOKEN_KEY) ?? ""
+    )
+  );
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
@@ -127,6 +160,7 @@ export function App() {
       window.localStorage.removeItem(TOKEN_KEY);
       window.localStorage.removeItem(USER_KEY);
       window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+      clearCalendarOnboardingPending();
       setToken("");
       setUser(null);
       setEmailVerificationRequired(false);
@@ -156,6 +190,7 @@ export function App() {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
     window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    clearCalendarOnboardingPending();
     if (location.pathname === "/verify-email-required") {
       navigate("/", { replace: true });
     }
@@ -163,6 +198,7 @@ export function App() {
     setUser(null);
     setEmailVerificationRequired(false);
     setAuthSyncReady(true);
+    setShowCalendarOnboarding(false);
   };
 
   const handlePrepareOnboardingSync = (draft: OnboardingPatchDraft) => {
@@ -303,6 +339,21 @@ export function App() {
   }, [pendingOnboardingSync, token, user?.professionalProfileId, onboardingPatchDraft]);
 
   useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem(CALENDAR_ONBOARDING_PENDING_USER_ID_KEY);
+      if (raw && raw !== user.id) {
+        clearCalendarOnboardingPending();
+        setShowCalendarOnboarding(false);
+      }
+    } catch {
+      // ignore
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!showCalendarOnboarding || !token || !user) {
       return;
     }
@@ -311,6 +362,7 @@ export function App() {
     void apiRequest<{ connected: boolean }>("/api/auth/google/calendar/status", token)
       .then((response) => {
         if (!cancelled && response.connected) {
+          clearCalendarOnboardingPending();
           setShowCalendarOnboarding(false);
         }
       })
@@ -350,7 +402,10 @@ export function App() {
         onLanguageChange={setLanguage}
         onCurrencyChange={setCurrency}
         onAuthSuccess={handleAuthSuccess}
-        onRegistrationAuthSuccess={() => setShowCalendarOnboarding(true)}
+        onRegistrationAuthSuccess={(userId) => {
+          persistCalendarOnboardingPending(userId);
+          setShowCalendarOnboarding(true);
+        }}
         onPrepareOnboardingSync={handlePrepareOnboardingSync}
       />
     );
@@ -403,7 +458,10 @@ export function App() {
             </button>
             <button
               type="button"
-              onClick={() => setShowCalendarOnboarding(false)}
+              onClick={() => {
+                clearCalendarOnboardingPending();
+                setShowCalendarOnboarding(false);
+              }}
               disabled={calendarOnboardingLoading}
             >
               Lo hago después

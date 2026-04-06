@@ -32,6 +32,8 @@ export const PATIENT_PORTAL_URL =
 export const TOKEN_KEY = "therapy_pro_token";
 export const USER_KEY = "therapy_pro_user";
 export const EMAIL_VERIFICATION_REQUIRED_KEY = "therapy_pro_email_verification_required";
+/** Tras registrar: mostrar paso Google Calendar aunque haya refresh (userId del profesional). */
+export const CALENDAR_ONBOARDING_PENDING_USER_ID_KEY = "therapy_pro_calendar_onboarding_user_id";
 export const LANGUAGE_KEY = "therapy_pro_language";
 export const CURRENCY_KEY = "therapy_pro_currency";
 
