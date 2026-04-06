@@ -217,7 +217,7 @@ export function App() {
         token,
         {
           method: "POST",
-          body: JSON.stringify({ clientOrigin: window.location.origin })
+          body: JSON.stringify({ clientOrigin: window.location.origin, returnPath: "/" })
         }
       );
       window.location.href = response.authUrl;

@@ -209,7 +209,7 @@ function resolveAppRedirectForRole(role: "PATIENT" | "PROFESSIONAL" | "ADMIN"): 
 
 function resolveDefaultCalendarReturnPathForRole(role: "PATIENT" | "PROFESSIONAL" | "ADMIN"): string {
   if (role === "PROFESSIONAL") {
-    return "/ajustes";
+    return "/";
   }
   if (role === "PATIENT") {
     return "/profile";
@@ -226,7 +226,7 @@ function isAllowedCalendarReturnPath(role: "PATIENT" | "PROFESSIONAL" | "ADMIN",
     return path === "/profile" || path === "/onboarding/final/matching";
   }
   if (role === "PROFESSIONAL") {
-    return path === "/ajustes";
+    return path === "/" || path === "/ajustes";
   }
   return path === "/";
 }

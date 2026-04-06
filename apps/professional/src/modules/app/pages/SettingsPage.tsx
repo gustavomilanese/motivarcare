@@ -100,7 +100,7 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
     try {
       const response = await apiRequest<{ authUrl: string }>("/api/auth/google/calendar/connect", props.token, {
         method: "POST",
-        body: JSON.stringify({ clientOrigin: window.location.origin })
+        body: JSON.stringify({ clientOrigin: window.location.origin, returnPath: "/ajustes" })
       });
       window.location.href = response.authUrl;
     } catch (requestError) {
