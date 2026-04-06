@@ -899,6 +899,32 @@ label {
   min-width: 180px;
 }
 
+.users-admin-list-toolbar {
+  align-items: center;
+}
+
+.users-admin-list-filters {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.users-admin-list-filters .search-row {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.users-admin-list-filters .search-row input {
+  flex: 1 1 120px;
+  min-width: 120px;
+  max-width: none;
+}
+
+.users-admin-list-filters .search-row button {
+  flex-shrink: 0;
+}
+
 .search-row {
   display: flex;
   gap: 8px;
@@ -1753,6 +1779,28 @@ label {
 
   .search-row button {
     width: 100%;
+  }
+
+  .users-admin-list-filters {
+    flex-wrap: nowrap;
+  }
+
+  .users-admin-list-filters .search-row {
+    flex-wrap: nowrap;
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .users-admin-list-filters .search-row input {
+    width: auto;
+    flex: 1 1 80px;
+    min-width: 80px;
+  }
+
+  .users-admin-list-filters .search-row button {
+    width: auto;
+    flex-shrink: 0;
   }
 
   .user-row {
@@ -3576,6 +3624,24 @@ button.primary.finance-hero-search {
   display: grid;
   gap: 18px;
   padding-top: 4px;
+}
+
+.finance-collapsible--hidden-summary .finance-collapsible-summary {
+  display: none;
+}
+
+.finance-collapsible--hidden-summary:not([open]) {
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.finance-collapsible--hidden-summary[open] > .finance-collapsible-body {
+  border-radius: 14px;
+  border: 1px solid #e4e9f4;
+  margin-top: 0;
 }
 
 .finance-collapsible[open] > .finance-collapsible-summary {

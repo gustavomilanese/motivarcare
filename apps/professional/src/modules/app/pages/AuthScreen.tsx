@@ -5,6 +5,7 @@ import {
   type SupportedCurrency,
   textByLanguage
 } from "@therapy/i18n-config";
+import { detectBrowserTimezone } from "@therapy/auth";
 import { apiRequest } from "../services/api";
 import type { AuthResponse, AuthUser } from "../types";
 
@@ -24,8 +25,10 @@ export function AuthScreen(props: {
   initialFullName?: string;
   onBack?: () => void;
 }) {
-  const [email, setEmail] = useState(props.initialEmail ?? "emma.collins@motivarte.com");
-  const [password, setPassword] = useState(props.initialPassword ?? "SecurePass123");
+  const [mode] = useState<"login" | "register">(() => props.initialMode ?? "login");
+  const [fullName, setFullName] = useState(() => props.initialFullName?.trim() ?? "");
+  const [email, setEmail] = useState(() => props.initialEmail ?? "emma.collins@motivarte.com");
+  const [password, setPassword] = useState(() => props.initialPassword ?? "SecurePass123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,43 +44,91 @@ export function AuthScreen(props: {
     }
   }, [props.initialPassword]);
 
+  useEffect(() => {
+    if (props.initialFullName?.trim()) {
+      setFullName(props.initialFullName.trim());
+    }
+  }, [props.initialFullName]);
+
+  const completeAuth = (response: AuthResponse) => {
+    if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
+      throw new Error(
+        t(props.language, {
+          es: "El usuario no pertenece al portal profesional.",
+          en: "This user does not belong to the professional portal.",
+          pt: "Este usuario nao pertence ao portal profissional."
+        })
+      );
+    }
+
+    props.onAuthSuccess({
+      token: response.token,
+      user: {
+        id: response.user.id,
+        fullName: response.user.fullName,
+        email: response.user.email,
+        emailVerified: response.user.emailVerified,
+        role: "PROFESSIONAL",
+        professionalProfileId: response.user.professionalProfileId,
+        avatarUrl: response.user.avatarUrl ?? null
+      },
+      emailVerificationRequired: response.emailVerificationRequired
+    });
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.includes("@") || password.length < 8) {
+      setError(
+        t(props.language, {
+          es: "Usa un email valido y una contrasena de al menos 8 caracteres.",
+          en: "Use a valid email and a password with at least 8 characters.",
+          pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
+        })
+      );
+      return;
+    }
+
+    if (mode === "register" && fullName.trim().length < 2) {
+      setError(
+        t(props.language, {
+          es: "Completa tu nombre y apellido.",
+          en: "Please enter your full name.",
+          pt: "Preencha seu nome completo."
+        })
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
+      if (mode === "register") {
+        const response = await apiRequest<AuthResponse>("/api/auth/register", undefined, {
+          method: "POST",
+          body: JSON.stringify({
+            email: trimmedEmail,
+            password,
+            fullName: fullName.trim(),
+            role: "PROFESSIONAL",
+            timezone: detectBrowserTimezone()
+          })
+        });
+        completeAuth(response);
+        return;
+      }
+
       const response = await apiRequest<AuthResponse>("/api/auth/login", undefined, {
         method: "POST",
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
+          email: trimmedEmail,
           password
         })
       });
-
-      if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
-        throw new Error(
-          t(props.language, {
-            es: "El usuario no pertenece al portal profesional.",
-            en: "This user does not belong to the professional portal.",
-            pt: "Este usuario nao pertence ao portal profissional."
-          })
-        );
-      }
-
-      props.onAuthSuccess({
-        token: response.token,
-        user: {
-          id: response.user.id,
-          fullName: response.user.fullName,
-          email: response.user.email,
-          emailVerified: response.user.emailVerified,
-          role: "PROFESSIONAL",
-          professionalProfileId: response.user.professionalProfileId,
-          avatarUrl: response.user.avatarUrl ?? null
-        },
-        emailVerificationRequired: response.emailVerificationRequired
-      });
+      completeAuth(response);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -105,13 +156,31 @@ export function AuthScreen(props: {
             </button>
           ) : null}
         </div>
-        <h1>{t(props.language, { es: "Accede a tu cuenta profesional", en: "Access your professional account", pt: "Acesse sua conta profissional" })}</h1>
+        <h1>
+          {mode === "register"
+            ? t(props.language, {
+                es: "Crea tu cuenta profesional",
+                en: "Create your professional account",
+                pt: "Crie sua conta profissional"
+              })
+            : t(props.language, {
+                es: "Accede a tu cuenta profesional",
+                en: "Access your professional account",
+                pt: "Acesse sua conta profissional"
+              })}
+        </h1>
         <p className="pro-auth-lead">
-          {t(props.language, {
-            es: "Pacientes, agenda, disponibilidad e ingresos en un solo lugar.",
-            en: "Patients, schedule, availability, and earnings in one place.",
-            pt: "Pacientes, agenda, disponibilidade e receitas em um so lugar."
-          })}
+          {mode === "register"
+            ? t(props.language, {
+                es: "Confirmá tus datos para registrar la cuenta. Luego seguís con la verificación de email y tu agenda.",
+                en: "Confirm your details to register. Then continue with email verification and your schedule.",
+                pt: "Confirme seus dados para registrar. Depois siga com a verificacao de e-mail e sua agenda."
+              })
+            : t(props.language, {
+                es: "Pacientes, agenda, disponibilidad e ingresos en un solo lugar.",
+                en: "Patients, schedule, availability, and earnings in one place.",
+                pt: "Pacientes, agenda, disponibilidade e receitas em um so lugar."
+              })}
         </p>
 
         <div className="pro-auth-divider" aria-hidden="true">
@@ -121,6 +190,19 @@ export function AuthScreen(props: {
         </div>
 
         <form className="pro-stack pro-auth-simple-form" onSubmit={handleSubmit}>
+          {mode === "register" ? (
+            <label>
+              {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+              <input
+                type="text"
+                name="name"
+                value={fullName}
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+              />
+            </label>
+          ) : null}
+
           <label>
             {t(props.language, { es: "Usuario (email)", en: "User (email)", pt: "Usuario (e-mail)" })}
             <input type="email" name="email" value={email} autoComplete="email" inputMode="email" onChange={(event) => setEmail(event.target.value)} />
@@ -128,7 +210,13 @@ export function AuthScreen(props: {
 
           <label>
             {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
-            <input type="password" name="password" value={password} autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} />
+            <input
+              type="password"
+              name="password"
+              value={password}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              onChange={(event) => setPassword(event.target.value)}
+            />
           </label>
 
           {error ? (
@@ -139,8 +227,12 @@ export function AuthScreen(props: {
 
           <button className="pro-primary" type="submit" disabled={loading}>
             {loading
-              ? t(props.language, { es: "Accediendo...", en: "Accessing...", pt: "Acessando..." })
-              : t(props.language, { es: "Acceder", en: "Access", pt: "Acessar" })}
+              ? mode === "register"
+                ? t(props.language, { es: "Creando cuenta...", en: "Creating account...", pt: "Criando conta..." })
+                : t(props.language, { es: "Accediendo...", en: "Accessing...", pt: "Acessando..." })
+              : mode === "register"
+                ? t(props.language, { es: "Crear cuenta", en: "Create account", pt: "Criar conta" })
+                : t(props.language, { es: "Acceder", en: "Access", pt: "Acessar" })}
           </button>
         </form>
       </section>

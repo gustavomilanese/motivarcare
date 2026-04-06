@@ -4,6 +4,15 @@ const apiUrlRaw = (import.meta as { env?: Record<string, string | undefined> }).
 export const API_BASE =
   apiUrlRaw && apiUrlRaw.length > 0 ? apiUrlRaw.replace(/\/+$/, "") : "http://localhost:4000";
 
+const UNAUTHORIZED_MESSAGES = ["Invalid or expired token", "Missing bearer token"] as const;
+
+let unauthorizedHandler: (() => void) | undefined;
+
+/** Limpia sesión local si el token ya no sirve (paridad con portal paciente). */
+export function setProfessionalApiUnauthorizedHandler(handler: (() => void) | undefined) {
+  unauthorizedHandler = handler;
+}
+
 export function resolveApiAssetUrl(url: string | null | undefined): string | undefined {
   const s = url?.trim();
   if (!s) {
@@ -22,10 +31,17 @@ export const PATIENT_PORTAL_URL =
     : "http://localhost:5173";
 export const TOKEN_KEY = "therapy_pro_token";
 export const USER_KEY = "therapy_pro_user";
+export const EMAIL_VERIFICATION_REQUIRED_KEY = "therapy_pro_email_verification_required";
 export const LANGUAGE_KEY = "therapy_pro_language";
 export const CURRENCY_KEY = "therapy_pro_currency";
 
-const request = createApiClient({ baseUrl: API_BASE });
+const request = createApiClient({
+  baseUrl: API_BASE,
+  unauthorizedMessages: [...UNAUTHORIZED_MESSAGES],
+  onUnauthorized: () => {
+    unauthorizedHandler?.();
+  }
+});
 
 export async function apiRequest<T>(path: string, token?: string, init?: RequestInit): Promise<T> {
   return request<T>(path, init, token);

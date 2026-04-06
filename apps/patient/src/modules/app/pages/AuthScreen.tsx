@@ -27,7 +27,6 @@ export function AuthScreen(props: {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isTestUser, setIsTestUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,8 +67,7 @@ export function AuthScreen(props: {
               email: email.trim().toLowerCase(),
               password,
               role: "PATIENT",
-              timezone: detectBrowserTimezone(),
-              isTestUser
+              timezone: detectBrowserTimezone()
             }
           : {
               email: email.trim().toLowerCase(),
@@ -189,21 +187,6 @@ export function AuthScreen(props: {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-
-            {mode === "register" ? (
-              <label className="inline-toggle">
-                <input
-                  type="checkbox"
-                  checked={isTestUser}
-                  onChange={(event) => setIsTestUser(event.target.checked)}
-                />
-                {t(props.language, {
-                  es: "Usuario de prueba (solo testing local)",
-                  en: "Test user (local testing only)",
-                  pt: "Usuario de teste (somente teste local)"
-                })}
-              </label>
-            ) : null}
 
             {error ? <p className="error-text auth-error" role="alert">{error}</p> : null}
             <button className="primary auth-submit" type="submit" disabled={loading}>

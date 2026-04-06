@@ -20,9 +20,18 @@ export function UsersCreateSection(props: {
   patientStatusLabel: (status: PatientStatus | string) => string;
   t: (values: { es: string; en: string; pt: string }) => string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  /** En Configuración: ocultar barra de título del acordeón y cerrar con este control. */
+  embeddedDismiss?: { onClose: () => void };
 }) {
   return (
     <div className="stack">
+      {props.embeddedDismiss ? (
+        <div className="toolbar-actions users-create-embedded-dismiss">
+          <button type="button" className="ghost" onClick={props.embeddedDismiss.onClose}>
+            {props.t({ es: "Cerrar formulario", en: "Close form", pt: "Fechar formulario" })}
+          </button>
+        </div>
+      ) : null}
       <form className="stack" onSubmit={props.onSubmit}>
         <div className="grid-form">
           <label>
@@ -259,8 +268,8 @@ export function UsersListSection(props: {
 
   return (
     <div className="stack">
-      <header className="toolbar toolbar--wrap">
-        <div className="toolbar-actions">
+      <header className="toolbar users-admin-list-toolbar">
+        <div className="toolbar-actions users-admin-list-filters">
           <select
             value={props.roleFilter}
             onChange={(event) => {

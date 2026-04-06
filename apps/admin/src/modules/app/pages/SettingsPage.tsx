@@ -138,7 +138,9 @@ export function SettingsPage(props: {
             className="users-admin-add-button"
             title={t(props.language, { es: "Alta de usuario", en: "Create user", pt: "Cadastro de usuario" })}
             aria-label={t(props.language, { es: "Alta de usuario", en: "Create user", pt: "Cadastro de usuario" })}
-            onClick={() => {
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               window.history.replaceState(null, "", "#cfg-users-admin");
               requestAnimationFrame(() => {
                 openStickyCollapsibleSection("cfg-users-admin");

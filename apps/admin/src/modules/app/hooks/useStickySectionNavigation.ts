@@ -15,6 +15,15 @@ export function openStickyCollapsibleSection(sectionId: string) {
   }
 }
 
+/** Cierra el details interno de una sección colapsable. */
+export function closeStickyCollapsibleSection(sectionId: string) {
+  const section = document.getElementById(sectionId);
+  const details = section?.querySelector("details.finance-collapsible");
+  if (details instanceof HTMLDetailsElement) {
+    details.open = false;
+  }
+}
+
 /**
  * Scroll spy + hash + scroll a anclas para páginas con `CollapsiblePageSection` / `finance-collapsible`.
  */

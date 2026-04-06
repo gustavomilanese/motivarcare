@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
@@ -17,10 +18,12 @@ import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import {
   API_BASE,
   CURRENCY_KEY,
+  EMAIL_VERIFICATION_REQUIRED_KEY,
   LANGUAGE_KEY,
   TOKEN_KEY,
   USER_KEY,
-  apiRequest
+  apiRequest,
+  setProfessionalApiUnauthorizedHandler
 } from "./services/api";
 import type { AuthUser } from "./types";
 
@@ -49,10 +52,32 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
+function readStoredEmailVerificationRequired(): boolean {
+  try {
+    return window.localStorage.getItem(EMAIL_VERIFICATION_REQUIRED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistEmailVerificationRequired(value: boolean): void {
+  try {
+    if (value) {
+      window.localStorage.setItem(EMAIL_VERIFICATION_REQUIRED_KEY, "1");
+    } else {
+      window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    }
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 export function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [token, setToken] = useState<string>(() => window.localStorage.getItem(TOKEN_KEY) ?? "");
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
-  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(readStoredEmailVerificationRequired);
   const [authSyncReady, setAuthSyncReady] = useState(() => !window.localStorage.getItem(TOKEN_KEY) || !readStoredUser());
   const [pendingOnboardingSync, setPendingOnboardingSync] = useState(false);
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
@@ -61,7 +86,7 @@ export function App() {
   const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
-  const isVerifyEmailRoute = useMemo(() => window.location.pathname === "/verify-email", []);
+  const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const [language, setLanguage] = useState<AppLanguage>(() => {
     const saved = window.localStorage.getItem(LANGUAGE_KEY);
     return (SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "") ? (saved as AppLanguage) : "es";
@@ -97,9 +122,25 @@ export function App() {
     }
   }, []);
 
+  useEffect(() => {
+    setProfessionalApiUnauthorizedHandler(() => {
+      window.localStorage.removeItem(TOKEN_KEY);
+      window.localStorage.removeItem(USER_KEY);
+      window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+      setToken("");
+      setUser(null);
+      setEmailVerificationRequired(false);
+      setAuthSyncReady(true);
+      setShowCalendarOnboarding(false);
+      navigate("/", { replace: true });
+    });
+    return () => setProfessionalApiUnauthorizedHandler(undefined);
+  }, [navigate]);
+
   const handleAuthSuccess = (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => {
     window.localStorage.setItem(TOKEN_KEY, params.token);
     window.localStorage.setItem(USER_KEY, JSON.stringify(params.user));
+    persistEmailVerificationRequired(params.emailVerificationRequired);
     setToken(params.token);
     setUser(params.user);
     setEmailVerificationRequired(params.emailVerificationRequired);
@@ -114,8 +155,9 @@ export function App() {
   const handleLogout = () => {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
-    if (window.location.pathname === "/verify-email-required") {
-      window.history.replaceState({}, "", "/");
+    window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    if (location.pathname === "/verify-email-required") {
+      navigate("/", { replace: true });
     }
     setToken("");
     setUser(null);
@@ -210,6 +252,7 @@ export function App() {
         window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
         setUser(nextUser);
         setEmailVerificationRequired(response.emailVerificationRequired);
+        persistEmailVerificationRequired(response.emailVerificationRequired);
       } catch (error) {
         console.error("Could not sync professional auth state", error);
       } finally {
@@ -280,20 +323,20 @@ export function App() {
   }, [showCalendarOnboarding, token, user]);
 
   useEffect(() => {
-    if (!user || window.location.pathname === "/verify-email") {
+    if (!user || location.pathname === "/verify-email") {
       return;
     }
 
     const shouldRedirectToVerification = emailVerificationRequired && !user.emailVerified;
-    if (shouldRedirectToVerification && window.location.pathname !== "/verify-email-required") {
-      window.history.replaceState({}, "", "/verify-email-required");
+    if (shouldRedirectToVerification && location.pathname !== "/verify-email-required") {
+      navigate("/verify-email-required", { replace: true });
       return;
     }
 
-    if (!shouldRedirectToVerification && window.location.pathname === "/verify-email-required") {
-      window.history.replaceState({}, "", "/");
+    if (!shouldRedirectToVerification && location.pathname === "/verify-email-required") {
+      navigate("/", { replace: true });
     }
-  }, [emailVerificationRequired, user?.emailVerified, user?.id]);
+  }, [emailVerificationRequired, user?.emailVerified, user?.id, location.pathname, navigate]);
 
   if (isVerifyEmailRoute) {
     return <VerifyEmailTokenScreen language={language} />;

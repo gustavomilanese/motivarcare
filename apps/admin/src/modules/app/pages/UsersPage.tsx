@@ -3,7 +3,7 @@ import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLangu
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { defaultCreateForm } from "../constants";
 import { UsersCreateSection, UsersListSection } from "../components/users/UsersPageSections";
-import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
+import { closeStickyCollapsibleSection, useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { apiRequest } from "../services/api";
 import type {
   AdminUser,
@@ -100,10 +100,11 @@ function yesNoLabel(value: boolean, language: AppLanguage): string {
     : t(language, { es: "No", en: "No", pt: "Nao" });
 }
 
-const USERS_SECTION_IDS = ["users-list", "users-create"] as const;
+const USERS_STANDALONE_SECTION_IDS = ["users-list", "users-create"] as const;
 
 export function UsersPage(props: { token: string; language: AppLanguage; embedded?: boolean }) {
   const embedded = props.embedded ?? false;
+  const sectionIdsForNavigation = embedded ? (["users-create"] as const) : USERS_STANDALONE_SECTION_IDS;
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -127,7 +128,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
   const [pendingDeleteUser, setPendingDeleteUser] = useState<AdminUser | null>(null);
   const [purgeHistoricalOnDelete, setPurgeHistoricalOnDelete] = useState(false);
 
-  const { scrollToSection } = useStickySectionNavigation(USERS_SECTION_IDS, { loading: embedded });
+  const { scrollToSection } = useStickySectionNavigation(sectionIdsForNavigation, { loading: embedded });
 
   const loadUsers = async (requestedPage = usersPage) => {
     setListLoading(true);
@@ -503,61 +504,82 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     }
   };
 
+  const usersListBody = (
+    <UsersListSection
+      language={props.language}
+      roleFilter={roleFilter}
+      searchInput={searchInput}
+      users={users}
+      usersPagination={usersPagination}
+      listLoading={listLoading}
+      listError={listError}
+      editError={editError}
+      editSuccess={editSuccess}
+      editingUserId={editingUserId}
+      editDrafts={editDrafts}
+      saveLoading={saveLoading}
+      deleteLoadingUserId={deleteLoadingUserId}
+      setRoleFilter={setRoleFilter}
+      setSearchInput={setSearchInput}
+      setUsersPage={setUsersPage}
+      setSearch={setSearch}
+      setEditDrafts={setEditDrafts}
+      setEditingUserId={setEditingUserId}
+      setEditError={setEditError}
+      roleLabel={(role) => roleLabel(role, props.language)}
+      patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
+      yesNoLabel={(value) => yesNoLabel(value, props.language)}
+      formatDate={(value) => formatDate(value, props.language)}
+      t={(values) => t(props.language, values)}
+      onSaveEdit={(user) => void saveEdit(user)}
+      onDeleteUser={(user) => requestDeleteUser(user)}
+    />
+  );
+
+  const usersCreateSection = (
+    <CollapsiblePageSection
+      sectionId="users-create"
+      summary={t(props.language, { es: "Alta de usuarios", en: "Create users", pt: "Criar usuarios" })}
+      bodyExtraClass="finance-collapsible-body--stack"
+      visuallyHiddenSummary={embedded}
+      detailsAriaLabel={t(props.language, {
+        es: "Formulario de alta de usuarios",
+        en: "Create user form",
+        pt: "Formulario de cadastro de usuarios"
+      })}
+    >
+      <UsersCreateSection
+        language={props.language}
+        createForm={createForm}
+        createError={createError}
+        createSuccess={createSuccess}
+        createLoading={createLoading}
+        setCreateForm={setCreateForm}
+        patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
+        t={(values) => t(props.language, values)}
+        onSubmit={handleCreateUser}
+        embeddedDismiss={
+          embedded ? { onClose: () => closeStickyCollapsibleSection("users-create") } : undefined
+        }
+      />
+    </CollapsiblePageSection>
+  );
+
   const collapsiblesAndModal = (
     <>
-      <CollapsiblePageSection
-        sectionId="users-list"
-        summary={t(props.language, { es: "Listado de usuarios", en: "Users list", pt: "Lista de usuarios" })}
-        bodyExtraClass="finance-collapsible-body--stack"
-      >
-        <UsersListSection
-          language={props.language}
-          roleFilter={roleFilter}
-          searchInput={searchInput}
-          users={users}
-          usersPagination={usersPagination}
-          listLoading={listLoading}
-          listError={listError}
-          editError={editError}
-          editSuccess={editSuccess}
-          editingUserId={editingUserId}
-          editDrafts={editDrafts}
-          saveLoading={saveLoading}
-          deleteLoadingUserId={deleteLoadingUserId}
-          setRoleFilter={setRoleFilter}
-          setSearchInput={setSearchInput}
-          setUsersPage={setUsersPage}
-          setSearch={setSearch}
-          setEditDrafts={setEditDrafts}
-          setEditingUserId={setEditingUserId}
-          setEditError={setEditError}
-          roleLabel={(role) => roleLabel(role, props.language)}
-          patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
-          yesNoLabel={(value) => yesNoLabel(value, props.language)}
-          formatDate={(value) => formatDate(value, props.language)}
-          t={(values) => t(props.language, values)}
-          onSaveEdit={(user) => void saveEdit(user)}
-          onDeleteUser={(user) => requestDeleteUser(user)}
-        />
-      </CollapsiblePageSection>
+      {embedded ? (
+        <div className="users-admin-embedded-list">{usersListBody}</div>
+      ) : (
+        <CollapsiblePageSection
+          sectionId="users-list"
+          summary={t(props.language, { es: "Listado de usuarios", en: "Users list", pt: "Lista de usuarios" })}
+          bodyExtraClass="finance-collapsible-body--stack"
+        >
+          {usersListBody}
+        </CollapsiblePageSection>
+      )}
 
-      <CollapsiblePageSection
-        sectionId="users-create"
-        summary={t(props.language, { es: "Alta de usuarios", en: "Create users", pt: "Criar usuarios" })}
-        bodyExtraClass="finance-collapsible-body--stack"
-      >
-        <UsersCreateSection
-          language={props.language}
-          createForm={createForm}
-          createError={createError}
-          createSuccess={createSuccess}
-          createLoading={createLoading}
-          setCreateForm={setCreateForm}
-          patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
-          t={(values) => t(props.language, values)}
-          onSubmit={handleCreateUser}
-        />
-      </CollapsiblePageSection>
+      {usersCreateSection}
 
       {pendingDeleteUser ? (
         <div className="patient-modal-backdrop" onClick={closeDeleteModal}>
