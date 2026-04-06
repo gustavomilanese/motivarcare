@@ -2531,17 +2531,17 @@ ul {
 .pro-gate-logo-mark span {
   color: #fff;
   font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.07em;
+  font-weight: 700;
+  letter-spacing: -0.06em;
   line-height: 1;
 }
 
 .pro-gate-logo-name {
   font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   font-size: 1.125rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #0f172a;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #334155;
 }
 
 /* Legacy logo picker (si se reutiliza en otro flujo) */
@@ -2628,25 +2628,26 @@ ul {
 .pro-gate-eyebrow {
   margin: 0;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: #6366a8;
 }
 
 .pro-gate-copy h1 {
-  font-size: clamp(1.65rem, 4.5vw, 2.1rem);
-  line-height: 1.12;
-  letter-spacing: -0.035em;
-  max-width: 22ch;
-  color: #0f172a;
-  font-weight: 800;
+  font-size: clamp(1.55rem, 4vw, 1.95rem);
+  line-height: 1.22;
+  letter-spacing: -0.028em;
+  max-width: 24ch;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .pro-gate-copy p {
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: #64748b;
+  font-weight: 400;
   max-width: 38ch;
 }
 
@@ -2667,7 +2668,7 @@ ul {
   min-height: 52px;
   border-radius: 999px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pro-gate-primary {
@@ -2690,7 +2691,7 @@ ul {
   background: transparent;
   color: #64748b;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;

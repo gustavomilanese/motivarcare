@@ -41,6 +41,8 @@ h2,
 h3 {
   font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   letter-spacing: -0.02em;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 * {
@@ -123,7 +125,7 @@ ul {
   justify-content: center;
   color: #ffffff;
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   background: linear-gradient(135deg, #7257ff 0%, #4d38d9 100%);
   box-shadow:
@@ -139,11 +141,11 @@ ul {
 
 .intake-brand-copy strong {
   font-family: "Plus Jakarta Sans", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(42px, 5vw, 58px);
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  font-size: clamp(32px, 4.2vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
   text-transform: lowercase;
-  color: #111827;
+  color: #1e293b;
 }
 
 .intake-brand-copy span {
@@ -178,7 +180,7 @@ ul {
 }
 
 .calendar-consent-header strong {
-  font-weight: 700;
+  font-weight: 600;
   color: #1f2937;
 }
 
@@ -285,7 +287,7 @@ ul {
   margin: 0;
   font-size: clamp(1.35rem, 4.2vw, 1.75rem);
   line-height: 1.25;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: #0f1731;
   max-width: 28ch;
@@ -300,7 +302,7 @@ ul {
 }
 
 .verify-email-address {
-  font-weight: 700;
+  font-weight: 600;
   color: #1f2b40;
   word-break: break-word;
 }
@@ -325,7 +327,7 @@ ul {
   min-height: 48px;
   border-radius: 14px;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .verify-email-actions button.primary {
@@ -368,7 +370,7 @@ ul {
 .verify-email-success-kicker {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #16a34a;
@@ -423,8 +425,10 @@ ul {
 }
 
 .auth-header-copy h1 {
-  font-size: clamp(30px, 3vw, 44px);
-  line-height: 1.06;
+  font-size: clamp(26px, 2.8vw, 40px);
+  line-height: 1.15;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .auth-form {
@@ -433,7 +437,7 @@ ul {
 
 .auth-form label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #24314f;
   gap: 7px;
 }
@@ -479,7 +483,7 @@ ul {
   border: 0;
   background: transparent;
   color: #5f44eb;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .auth-link-button:hover {
@@ -496,7 +500,7 @@ ul {
   background: #eef4ff;
   color: #1e3a8a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -542,7 +546,7 @@ button {
   color: #0f172a;
   cursor: pointer;
   padding: 10px 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 button:hover {
@@ -613,7 +617,7 @@ button.danger {
   color: #4e3dcb;
   padding: 4px 0;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -691,7 +695,7 @@ button.danger {
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 15px;
   letter-spacing: -0.02em;
   background: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
@@ -701,8 +705,9 @@ button.danger {
 .portal-brand strong {
   display: block;
   font-size: 15px;
-  letter-spacing: -0.02em;
-  font-weight: 800;
+  letter-spacing: -0.018em;
+  font-weight: 500;
+  color: #1e293b;
 }
 
 .portal-brand p {
@@ -725,11 +730,11 @@ button.danger {
 .mobile-nav-link {
   text-decoration: none;
   border: 1px solid #d6dbec;
-  color: #3b4a63;
+  color: #475569;
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
   background: #fff;
 }
@@ -738,15 +743,16 @@ button.danger {
   color: #fff;
   border-color: transparent;
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  font-weight: 600;
 }
 
 .sidebar-link {
   text-decoration: none;
-  color: #334155;
+  color: #475569;
   border-radius: var(--portal-radius-sm);
   padding: 11px 14px;
   border: 1px solid transparent;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -776,7 +782,7 @@ button.danger {
   background: linear-gradient(135deg, #1ea85a 0%, #28c76f 100%);
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -796,6 +802,7 @@ button.danger {
   color: #4c31d8;
   border-color: rgba(189, 170, 255, 0.65);
   box-shadow: 0 2px 12px rgba(95, 68, 235, 0.12);
+  font-weight: 600;
 }
 
 .portal-sidebar-foot {
@@ -836,7 +843,7 @@ button.danger {
   line-height: 1.12;
   letter-spacing: -0.03em;
   margin: 0;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
 }
 
@@ -965,7 +972,7 @@ button.danger {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .notification-item strong {
@@ -1001,7 +1008,7 @@ button.danger {
   border: 2px solid #fff;
   font-size: 12px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .header-icon-link.active {
@@ -1020,7 +1027,7 @@ button.danger {
   height: 46px;
   padding: 0;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -1189,7 +1196,7 @@ button.danger {
 .content-card h2 {
   font-size: clamp(22px, 3vw, 30px);
   letter-spacing: -0.03em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .content-card p,
@@ -1352,7 +1359,7 @@ button.danger {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: #4f5f79;
   background: #eef1f7;
   border: 1px solid #d7ddea;
@@ -1493,7 +1500,7 @@ button.danger {
   background: #6f59f5;
   color: #fff;
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   transform: rotate(14deg);
 }
@@ -1536,7 +1543,7 @@ button.danger {
   place-items: center;
   color: #4d38d9;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   background: linear-gradient(180deg, #ece7ff 0%, #ded3ff 100%);
   border: 1px solid #b9afff;
 }
@@ -1597,7 +1604,7 @@ button.danger {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 700;
+  font-weight: 600;
   padding-left: 30px;
 }
 
@@ -1697,7 +1704,7 @@ button.danger {
   background: transparent;
   color: #3659a8;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-inline-link-primary {
@@ -1740,7 +1747,7 @@ button.danger {
 .hero-card-link {
   margin-top: 2px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #4f3cd2;
 }
 
@@ -1904,7 +1911,7 @@ button.danger {
   background: #673de6;
   color: #fff;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: none;
 }
@@ -1918,7 +1925,7 @@ button.danger {
   font-size: 28px;
   line-height: 1.05;
   color: #191b22;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.03em;
 }
 
@@ -1960,7 +1967,7 @@ button.danger {
   padding: 15px 16px;
   text-align: center;
   color: #6945ec;
-  font-weight: 800;
+  font-weight: 600;
   background: #fff;
   font-size: 16px;
 }
@@ -2054,7 +2061,7 @@ button.danger {
   background: linear-gradient(135deg, #7c5cff 0%, #673de6 100%);
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
@@ -2078,7 +2085,7 @@ button.danger {
   background: #fff;
   color: #673de6;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 11px 14px;
 }
 
@@ -2151,7 +2158,7 @@ button.danger {
 
 .compatibility {
   color: #15803d;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .filters {
@@ -2185,7 +2192,7 @@ button.danger {
   display: inline-flex;
   margin-top: 4px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: #7b8192;
 }
 
@@ -2206,7 +2213,7 @@ button.danger {
   border-radius: 10px;
   color: #1f2a40;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: left;
   display: inline-flex;
   align-items: center;
@@ -2235,7 +2242,7 @@ button.danger {
   color: #fff;
   font-style: normal;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2413,7 +2420,7 @@ button.danger {
 .patient-therapist-head h3 {
   margin: 1px 0 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.08;
 }
@@ -2425,7 +2432,7 @@ button.danger {
 .patient-therapist-verified {
   color: #3b4563;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -2466,7 +2473,7 @@ button.danger {
   background: linear-gradient(135deg, rgba(95, 68, 235, 0.12) 0%, rgba(115, 89, 245, 0.08) 100%);
   border: 1px solid rgba(189, 170, 255, 0.45);
   color: #4c31d8;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2673,7 +2680,7 @@ button.danger {
   border: 1px solid rgba(95, 68, 235, 0.45);
   background: linear-gradient(135deg, #5f44eb 0%, #3d2b9e 100%);
   color: #f8fafc;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
   padding: 10px 16px;
   min-height: var(--touch-min);
@@ -2690,7 +2697,7 @@ button.danger {
   border: 1px dashed rgba(95, 68, 235, 0.45);
   background: rgba(248, 246, 255, 0.95);
   color: #4c31d8;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: none;
 }
 
@@ -2705,7 +2712,7 @@ button.danger {
   border-radius: var(--portal-radius-sm);
   padding: 11px 16px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   min-height: var(--touch-min);
   border: 1px dashed rgba(148, 163, 184, 0.85);
   color: #334155;
@@ -2753,7 +2760,7 @@ button.danger {
   min-width: min(220px, 100%);
   min-height: var(--touch-min);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
   box-shadow: 0 8px 22px rgba(95, 68, 235, 0.3);
@@ -2833,7 +2840,7 @@ button.danger {
 .payment-modal-mini-title {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #5a6781;
@@ -2893,7 +2900,7 @@ button.danger {
   align-items: center;
   justify-content: center;
   color: #1d2640;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
@@ -2992,7 +2999,7 @@ button.danger {
   min-width: 128px;
   min-height: var(--touch-min);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
@@ -3068,7 +3075,7 @@ button.danger {
   color: #1c2740;
   font-size: 14px;
   text-align: right;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .summary-compact-row.total strong {
@@ -3177,7 +3184,7 @@ button.danger {
   min-height: var(--touch-min);
   padding: 0 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
@@ -3221,7 +3228,7 @@ button.danger {
 
 .payment-option-label {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.005em;
 }
 
@@ -3231,7 +3238,7 @@ button.danger {
   border: 1px solid #d6dbea;
   background: #f6f8ff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: #3d4f75;
   padding: 2px 8px;
 }
@@ -3285,7 +3292,7 @@ button.danger {
   padding: 14px 18px;
   min-height: var(--touch-min);
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
   box-shadow: 0 10px 26px rgba(95, 68, 235, 0.28);
@@ -3359,7 +3366,7 @@ button.danger {
 .simple-list a {
   text-decoration: none;
   color: var(--brand-2);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .booking-detail-trigger {
@@ -3386,7 +3393,7 @@ button.danger {
 
 .booking-detail-link {
   color: var(--brand-2);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
 }
 
@@ -3597,7 +3604,7 @@ button.danger {
   font-size: clamp(20px, 2.2vw, 24px);
   line-height: 1.1;
   letter-spacing: -0.015em;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-booking-title {
@@ -3612,7 +3619,7 @@ button.danger {
   background: rgba(255, 255, 255, 0.9);
   color: #201b44;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-booking-flow {
@@ -3645,7 +3652,7 @@ button.danger {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .session-booking-professional strong {
@@ -3680,7 +3687,7 @@ button.danger {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .session-booking-field.availability select {
@@ -3708,7 +3715,7 @@ button.danger {
   color: #231f48;
   font-size: 30px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-modal-grid {
@@ -3898,7 +3905,7 @@ button.danger {
   display: grid;
   place-items: center;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   color: #1a73e8;
   background: linear-gradient(145deg, rgba(26, 115, 232, 0.12) 0%, rgba(26, 115, 232, 0.06) 100%);
@@ -3915,7 +3922,7 @@ button.danger {
 .session-detail-meet-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: #0f172a;
 }
@@ -3943,7 +3950,7 @@ button.danger {
   padding: 10px 18px;
   border-radius: 12px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   color: #fff;
   text-decoration: none;
@@ -3977,7 +3984,7 @@ button.danger {
   padding: 10px 16px;
   border-radius: 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #475569;
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -4008,7 +4015,7 @@ button.danger {
   border-radius: 12px;
   padding: 0 18px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-booking-actions button.primary {
@@ -4032,7 +4039,7 @@ button.danger {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 10px;
   padding: 10px 14px;
   color: #fff;
@@ -4056,7 +4063,7 @@ button.danger {
   background: #fff;
   font-size: 12px;
   letter-spacing: 0.02em;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pill-button:hover {
@@ -4130,7 +4137,7 @@ button.danger {
   font-size: clamp(22px, 2.5vw, 28px);
   line-height: 1.12;
   letter-spacing: -0.03em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sessions-hero-icon {
@@ -4164,7 +4171,7 @@ button.danger {
   padding: 10px 18px;
   color: #fff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.01em;
   background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
   box-shadow: 0 8px 20px rgba(95, 68, 235, 0.22);
@@ -4194,7 +4201,7 @@ button.danger {
   background: rgba(255, 255, 255, 0.85);
   color: #475569;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -4256,7 +4263,7 @@ button.danger {
   display: grid;
   place-items: center;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.04em;
   color: #fff;
   background: linear-gradient(145deg, #34d399 0%, #10b981 55%, #059669 100%);
@@ -4276,7 +4283,7 @@ button.danger {
 
 .sessions-balance-title {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -4329,7 +4336,7 @@ button.sessions-balance {
 .sessions-balance-cta-hint {
   margin-top: 4px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: #5f44eb;
   letter-spacing: 0.02em;
 }
@@ -4431,7 +4438,7 @@ button.sessions-balance {
   width: 44px;
   height: 44px;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 50%;
   background: rgba(16, 185, 129, 0.1);
   color: #047857;
@@ -4452,7 +4459,7 @@ button.sessions-balance {
 
 .sessions-booking-page .sessions-balance-title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.015em;
   color: #0f172a;
 }
@@ -4694,7 +4701,7 @@ button.sessions-balance {
   color: #4d3ea8;
   background: rgba(255, 255, 255, 0.76);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -4708,7 +4715,7 @@ button.sessions-balance {
   color: #1d4f36;
   background: rgba(58, 187, 126, 0.18);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sessions-package-options-grid .deal-pricing-top {
@@ -4727,13 +4734,13 @@ button.sessions-balance {
   padding: 6px 12px;
   background: linear-gradient(135deg, #6f59f5 0%, #8b73ff 100%);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sessions-package-options-grid .deal-main-price {
   font-size: 26px;
   color: #1b1944;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -4773,7 +4780,7 @@ button.sessions-balance {
 .sessions-package-options-grid .deal-caption-strong {
   color: #463c8d;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sessions-package-options-grid .deal-select-button {
@@ -4784,7 +4791,7 @@ button.sessions-balance {
   background: linear-gradient(180deg, #ffffff 0%, #f6f2ff 100%);
   color: #5a45d6;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sessions-package-options-grid .deal-select-button.featured,
@@ -4848,7 +4855,7 @@ button.sessions-balance {
   background: #f8d2db;
   color: #b32f53;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -4875,7 +4882,7 @@ button.sessions-balance {
   background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
   color: #fff;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
   box-shadow: 0 6px 16px rgba(95, 68, 235, 0.22);
 }
@@ -4892,7 +4899,7 @@ button.sessions-balance {
   background: linear-gradient(180deg, #faf8ff 0%, #f3eeff 100%);
   color: #4c31d8;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.005em;
   box-shadow: 0 4px 14px rgba(95, 68, 235, 0.1);
 }
@@ -4975,7 +4982,7 @@ button.sessions-balance {
   padding: 0 16px;
   color: #67758f;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5031,7 +5038,7 @@ button.sessions-balance {
   display: none;
   color: #77839b;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5045,7 +5052,7 @@ button.sessions-balance {
 .session-management-cell-time span {
   color: #5c6a82;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-management-meta {
@@ -5173,7 +5180,7 @@ button.sessions-balance {
 .session-booking-panel-head h3 {
   font-size: 21px;
   line-height: 1.12;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-booking-panel-head p {
@@ -5188,7 +5195,7 @@ button.sessions-balance {
   padding: 7px 12px;
   color: #5f6c84;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -5303,7 +5310,7 @@ button.sessions-balance {
   font-size: 20px;
   line-height: normal;
   letter-spacing: -0.02em;
-  font-weight: 700;
+  font-weight: 600;
   display: block;
 }
 
@@ -5318,7 +5325,7 @@ button.sessions-balance {
 
 .sessions-confirmed-panel .sessions-panel-head h2 {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sessions-calendar-toggle {
@@ -5343,7 +5350,7 @@ button.sessions-balance {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sessions-booking-page .sessions-secondary-title {
@@ -5455,7 +5462,7 @@ button.sessions-balance {
   padding: 0 4px 6px;
   color: #697790;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -5508,14 +5515,14 @@ button.sessions-balance {
 
 .sessions-calendar-date {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   color: #172136;
 }
 
 .sessions-calendar-count {
   color: #5f45ee;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sessions-calendar-time {
@@ -5546,7 +5553,7 @@ button.sessions-balance {
   margin: -6px 0 2px;
   color: #5d6b83;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -5571,20 +5578,20 @@ button.sessions-balance {
 .sessions-agenda-date {
   color: #5d6b83;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .sessions-agenda-professional {
   color: #1b2740;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sessions-agenda-status {
   color: #476f50;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .sessions-summary-grid {
@@ -5608,7 +5615,7 @@ button.sessions-balance {
   color: #57607a;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .session-summary-item strong {
@@ -5666,7 +5673,7 @@ button.sessions-balance {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   border: 1px solid #d8deeb;
   background: #f5f7fb;
@@ -5826,7 +5833,7 @@ button.sessions-balance {
   background: #ece8ff;
   color: #5f45ee;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -5915,7 +5922,7 @@ button.sessions-balance {
   min-width: 248px;
   padding: 12px 16px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .trial-session-action.active {
@@ -6064,7 +6071,7 @@ button.sessions-balance {
   background: #21c063;
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .wa-main {
@@ -6206,7 +6213,7 @@ button.sessions-balance {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 600;
   align-self: center;
 }
 
@@ -7434,7 +7441,7 @@ button.sessions-balance {
 
 .auth-eyebrow {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--brand);
@@ -7456,7 +7463,7 @@ button.sessions-balance {
   margin: 6px 0 4px;
   color: #94a3b8;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -7502,7 +7509,7 @@ button.sessions-balance {
 
 .intake-step-meta {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-soft);
   letter-spacing: 0.02em;
 }
@@ -7510,7 +7517,7 @@ button.sessions-balance {
 .intake-wizard-title {
   font-size: clamp(22px, 5.5vw, 28px);
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.03em;
 }
 
@@ -7557,7 +7564,7 @@ button.sessions-balance {
 .intake-question-title {
   font-size: clamp(18px, 4.5vw, 22px);
   line-height: 1.25;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: #0f172a;
 }
@@ -7642,7 +7649,7 @@ button.sessions-balance {
   min-height: var(--touch-min);
   border-radius: 14px;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .intake-wizard-error {
@@ -7675,9 +7682,13 @@ button.sessions-balance {
 
 .mobile-nav-label {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  letter-spacing: 0.018em;
   line-height: 1.1;
+}
+
+.mobile-nav-link.active .mobile-nav-label {
+  font-weight: 600;
 }
 
 .mobile-nav-link {
@@ -7807,7 +7818,7 @@ button.sessions-balance {
   background: rgba(95, 68, 235, 0.1);
   color: #4c1d95;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .payment-sim-notice {
@@ -7828,7 +7839,7 @@ button.sessions-balance {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   background: #fef3c7;

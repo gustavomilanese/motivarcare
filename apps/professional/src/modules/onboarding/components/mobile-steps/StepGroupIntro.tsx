@@ -99,14 +99,14 @@ export function ProfessionalWelcomeGate(props: {
           </p>
           <h1>
             {t(props.language, {
-              es: "Bienvenidos a MotivarCare para Psicologos",
+              es: "Bienvenidos a MotivarCare para psicólogos",
               en: "Welcome to MotivarCare for Psychologists",
-              pt: "Boas-vindas ao MotivarCare para Psicologos"
+              pt: "Boas-vindas ao MotivarCare para psicólogos"
             })}
           </h1>
           <p>
             {t(props.language, {
-              es: "Organiza tu agenda con claridad y crece dentro de una plataforma pensada para potenciar tu practica.",
+              es: "Organiza tu agenda con claridad y crece dentro de una plataforma pensada para potenciar tu práctica.",
               en: "Organize your schedule clearly and grow within a platform designed to boost your practice.",
               pt: "Organize sua agenda com clareza e cresca em uma plataforma pensada para potencializar sua pratica."
             })}
