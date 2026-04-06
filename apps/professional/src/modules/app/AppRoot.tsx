@@ -4,7 +4,9 @@ import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
   type AppLanguage,
-  type SupportedCurrency
+  type LocalizedText,
+  type SupportedCurrency,
+  textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
@@ -21,12 +23,17 @@ import {
   CURRENCY_KEY,
   EMAIL_VERIFICATION_REQUIRED_KEY,
   LANGUAGE_KEY,
+  PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY,
   TOKEN_KEY,
   USER_KEY,
   apiRequest,
   setProfessionalApiUnauthorizedHandler
 } from "./services/api";
 import type { AuthUser } from "./types";
+
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
+}
 
 function readStoredUser(): AuthUser | null {
   const token = window.localStorage.getItem(TOKEN_KEY);
@@ -118,6 +125,7 @@ export function App() {
     )
   );
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
+  const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const [language, setLanguage] = useState<AppLanguage>(() => {
@@ -211,6 +219,7 @@ export function App() {
       return;
     }
     setCalendarOnboardingLoading(true);
+    setCalendarOnboardingError("");
     try {
       const response = await apiRequest<{ authUrl: string }>(
         "/api/auth/google/calendar/connect",
@@ -220,9 +229,32 @@ export function App() {
           body: JSON.stringify({ clientOrigin: window.location.origin, returnPath: "/" })
         }
       );
+      try {
+        window.sessionStorage.setItem(PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY, "/");
+      } catch {
+        // ignore
+      }
       window.location.href = response.authUrl;
     } catch (error) {
       console.error("Could not start calendar onboarding OAuth", error);
+      const raw = error instanceof Error ? error.message : "";
+      const notConfigured =
+        /not configured/i.test(raw) || /GOOGLE_CALENDAR_OAUTH_NOT_CONFIGURED/i.test(raw);
+      setCalendarOnboardingError(
+        notConfigured
+          ? t(language, {
+              es: "Google Calendar no está disponible todavía en el servidor (faltan credenciales OAuth). Podés continuar y conectarlo más tarde desde Ajustes.",
+              en: "Google Calendar is not set up on the server yet (OAuth credentials missing). You can continue and connect later from Settings.",
+              pt: "O Google Calendar ainda nao esta configurado no servidor (credenciais OAuth). Voce pode continuar e conectar depois em Ajustes."
+            })
+          : raw ||
+            t(language, {
+              es: "No se pudo iniciar la conexión con Google.",
+              en: "Could not start the Google connection.",
+              pt: "Nao foi possivel iniciar a conexao com o Google."
+            })
+      );
+    } finally {
       setCalendarOnboardingLoading(false);
     }
   };
@@ -441,30 +473,61 @@ export function App() {
 
   if (showCalendarOnboarding) {
     return (
-      <div className="pro-auth-shell">
-        <section className="pro-auth-card">
-          <h2>Conecta Google Calendar</h2>
-          <p>
-            Sincroniza reservas, reprogramaciones y cancelaciones automáticamente con tu calendario.
-          </p>
-          <div className="button-row">
+      <div className="intake-shell calendar-consent-shell">
+        <section className="intake-card calendar-consent-card">
+          <div className="calendar-consent-header">
+            <strong>{t(language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</strong>
+          </div>
+          <div className="calendar-consent-body">
+            <div className="calendar-consent-visual" aria-hidden="true" />
+            <h2>
+              {t(language, {
+                es: "Integrá tu agenda con Google Calendar",
+                en: "Connect your practice calendar to Google Calendar",
+                pt: "Integre sua agenda ao Google Calendar"
+              })}
+            </h2>
+            <p>
+              {t(language, {
+                es: "Mantené tu consulta organizada: reservas, cambios y cancelaciones reflejados donde ya trabajás.",
+                en: "Keep your practice organized—bookings, changes, and cancellations reflected where you already work.",
+                pt: "Mantenha sua consulta organizada: reservas, alteracoes e cancelamentos refletidos onde voce ja trabalha."
+              })}
+            </p>
+            <p className="calendar-consent-note">
+              {t(language, {
+                es: "Cuando confirmes o reprogrames una sesión, podés mantener tu disponibilidad y recordatorios en un solo lugar, con menos pasos manuales.",
+                en: "When you confirm or reschedule a session, you can keep reminders and availability in one place with fewer manual steps.",
+                pt: "Quando confirmar ou reagendar uma sessao, voce pode manter lembretes e disponibilidade num so lugar, com menos passos manuais."
+              })}
+            </p>
+            {calendarOnboardingError ? (
+              <p className="calendar-consent-error" role="alert">
+                {calendarOnboardingError}
+              </p>
+            ) : null}
+          </div>
+          <div className="button-row calendar-consent-actions">
             <button
-              type="button"
               className="primary"
+              type="button"
               onClick={() => void handleConnectCalendarFromOnboarding()}
               disabled={calendarOnboardingLoading}
             >
-              {calendarOnboardingLoading ? "Conectando..." : "Conectar ahora"}
+              {calendarOnboardingLoading
+                ? t(language, { es: "Conectando...", en: "Connecting...", pt: "Conectando..." })
+                : t(language, { es: "Conectar ahora", en: "Connect now", pt: "Conectar agora" })}
             </button>
             <button
               type="button"
               onClick={() => {
+                setCalendarOnboardingError("");
                 clearCalendarOnboardingPending();
                 setShowCalendarOnboarding(false);
               }}
               disabled={calendarOnboardingLoading}
             >
-              Lo hago después
+              {t(language, { es: "Lo hago después", en: "I'll do it later", pt: "Depois eu faço" })}
             </button>
           </div>
         </section>

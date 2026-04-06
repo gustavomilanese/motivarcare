@@ -1,4 +1,4 @@
-import { apiRequest } from "../../app/services/api";
+import { apiRequest, resolvePublicAssetUrl } from "../../app/services/api";
 import type { MatchCardProfessional, ProfessionalDirectoryApiResponse } from "../types";
 
 function safeString(value: string | null | undefined): string | null {
@@ -30,7 +30,7 @@ export async function fetchProfessionalDirectory(token?: string | null, language
     languages: Array.isArray(item.languages) ? item.languages : [],
     yearsExperience: item.yearsExperience ?? 0,
     sessionPriceUsd: item.sessionPriceUsd ?? null,
-    photoUrl: safeString(item.photoUrl),
+    photoUrl: resolvePublicAssetUrl(safeString(item.photoUrl)),
     birthCountry: safeString(item.birthCountry),
     stripeVerified: item.stripeVerified === true,
     ratingAverage: item.ratingAverage ?? null,

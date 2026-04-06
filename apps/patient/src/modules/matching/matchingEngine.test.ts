@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { professionalsCatalog } from "../app/data/professionalsCatalog";
-import { rankProfessionalsForPatient } from "./matchingEngine";
+import { extractPatientTopics, rankProfessionalsForPatient } from "./matchingEngine";
 import type { MatchCardProfessional } from "./types";
 
 const candidates: MatchCardProfessional[] = professionalsCatalog.map((professional) => ({
@@ -61,5 +61,14 @@ describe("rankProfessionalsForPatient", () => {
 
     expect(ranked.length).toBeGreaterThan(0);
     expect(ranked[0].professional.id).toBe("pro-2");
+  });
+
+  it("interpreta varios motivos de consulta (multiselección)", () => {
+    const topics = extractPatientTopics({
+      mainReason: "Ansiedad\nDepresión",
+      therapyGoal: "",
+      emotionalState: ""
+    });
+    expect(topics).toEqual(expect.arrayContaining(["anxiety", "depression"]));
   });
 });

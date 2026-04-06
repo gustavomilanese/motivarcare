@@ -205,7 +205,11 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
           <h2>{t(props.language, { es: "Conversaciones", en: "Conversations", pt: "Conversas" })}</h2>
         </header>
         <div className="pro-chat-thread-list">
-          {threads.length === 0 ? <p className="pro-muted">{t(props.language, { es: "No hay conversaciones activas.", en: "No active conversations.", pt: "Nao ha conversas ativas." })}</p> : null}
+          {threads.length === 0 ? (
+            <p className="pro-muted pro-chat-thread-list-empty">
+              {t(props.language, { es: "No hay conversaciones activas.", en: "No active conversations.", pt: "Nao ha conversas ativas." })}
+            </p>
+          ) : null}
           {threads.map((thread) => (
             <button
               key={thread.id}

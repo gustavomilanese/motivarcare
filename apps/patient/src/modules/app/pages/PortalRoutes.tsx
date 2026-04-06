@@ -18,7 +18,8 @@ function t(language: PatientAppState["language"], values: LocalizedText): string
 export function PortalRoutes(props: {
   state: PatientAppState;
   stateForDisplay: PatientAppState;
-  needsOnboardingFinalFlow: boolean;
+  /** True solo antes de elegir terapeuta: el resto de rutas redirigen a matching. */
+  lockToTherapistSelection: boolean;
   needsInitialTherapistSelection: boolean;
   sessionTimezone: string;
   professionalDirectory: Professional[];
@@ -50,7 +51,7 @@ export function PortalRoutes(props: {
       <Route
         path="/"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <DashboardPage
@@ -75,7 +76,7 @@ export function PortalRoutes(props: {
       <Route
         path="/matching"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <MatchingPage
@@ -107,7 +108,7 @@ export function PortalRoutes(props: {
       <Route
         path="/onboarding/final/matching"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? (
                 <MatchingPage
                   language={props.state.language}
@@ -190,7 +191,7 @@ export function PortalRoutes(props: {
       <Route
         path="/favorites"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <MatchingPage
@@ -221,7 +222,7 @@ export function PortalRoutes(props: {
       <Route
         path="/sessions"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <BookingPage
@@ -246,7 +247,7 @@ export function PortalRoutes(props: {
       <Route
         path="/booking"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <Navigate replace to="/sessions" />
         }
@@ -254,7 +255,7 @@ export function PortalRoutes(props: {
       <Route
         path="/chat"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <ChatPage
@@ -277,7 +278,7 @@ export function PortalRoutes(props: {
       <Route
         path="/profile"
         element={
-          props.needsOnboardingFinalFlow
+          props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 props.state.session ? (
@@ -314,7 +315,7 @@ export function PortalRoutes(props: {
         element={
           <Navigate
             replace
-            to={props.needsOnboardingFinalFlow ? "/onboarding/final/matching" : "/"}
+            to={props.lockToTherapistSelection ? "/onboarding/final/matching" : "/"}
           />
         }
       />

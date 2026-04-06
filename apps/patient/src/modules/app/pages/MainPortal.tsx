@@ -100,9 +100,14 @@ export function MainPortal(props: {
     !props.state.intake?.riskBlocked
     && !hasCompletedOnboardingPreviously
     && !props.state.onboardingFinalCompleted;
+  /** Solo forzar pantalla de matching hasta elegir terapeuta; después el resto del portal debe ser usable (comprar, chat, etc.). */
+  const canLeaveMatchingOnboarding =
+    props.state.therapistSelectionCompleted
+    || Boolean(props.state.assignedProfessionalId)
+    || props.state.bookings.length > 0;
+  const lockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
   const isOnboardingMatchingView =
-    needsOnboardingFinalFlow
-    && location.pathname.startsWith("/onboarding/final/matching");
+    lockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
   const hideSidebar = isOnboardingMatchingView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
@@ -157,7 +162,7 @@ export function MainPortal(props: {
     if (!location.pathname.startsWith("/onboarding/final")) {
       return;
     }
-    if (needsOnboardingFinalFlow) {
+    if (lockToTherapistSelection) {
       return;
     }
     navigate("/", { replace: true });
@@ -167,7 +172,7 @@ export function MainPortal(props: {
       }
     }, 200);
     return () => window.clearTimeout(fallbackTimeout);
-  }, [location.pathname, navigate, needsOnboardingFinalFlow]);
+  }, [location.pathname, navigate, lockToTherapistSelection]);
 
   return (
     <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : ""}`}>
@@ -212,7 +217,7 @@ export function MainPortal(props: {
           <PortalRoutes
             state={props.state}
             stateForDisplay={stateForDisplay}
-            needsOnboardingFinalFlow={needsOnboardingFinalFlow}
+            lockToTherapistSelection={lockToTherapistSelection}
             needsInitialTherapistSelection={needsInitialTherapistSelection}
             sessionTimezone={props.sessionTimezone}
             professionalDirectory={props.professionalDirectory}

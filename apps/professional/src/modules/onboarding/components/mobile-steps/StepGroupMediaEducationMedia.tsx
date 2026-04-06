@@ -223,6 +223,8 @@ export function ProfessionalPhotoUploadStep(props: {
   language: AppLanguage;
   hasPhoto: boolean;
   onPhotoSaved: () => void;
+  /** Data URL (u otra fuente válida para la API) al completar recorte / avatar. */
+  onPhotoDataUrl: (dataUrl: string) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
@@ -238,6 +240,9 @@ export function ProfessionalPhotoUploadStep(props: {
 
   const saveAvatar = () => {
     setAvatarOpen(false);
+    if (selectedPhotoPreview) {
+      props.onPhotoDataUrl(selectedPhotoPreview);
+    }
     props.onPhotoSaved();
   };
 

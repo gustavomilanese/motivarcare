@@ -34,6 +34,8 @@ export const USER_KEY = "therapy_pro_user";
 export const EMAIL_VERIFICATION_REQUIRED_KEY = "therapy_pro_email_verification_required";
 /** Tras registrar: mostrar paso Google Calendar aunque haya refresh (userId del profesional). */
 export const CALENDAR_ONBOARDING_PENDING_USER_ID_KEY = "therapy_pro_calendar_onboarding_user_id";
+/** Antes de OAuth: destino al volver (sessionStorage) si el callback cae en la ruta equivocada. */
+export const PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY = "therapy_pro_gcal_oauth_return_path";
 export const LANGUAGE_KEY = "therapy_pro_language";
 export const CURRENCY_KEY = "therapy_pro_currency";
 

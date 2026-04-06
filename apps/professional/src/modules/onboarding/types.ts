@@ -87,4 +87,6 @@ export interface ProfessionalMobileOnboardingInputs {
     startYear: string;
     graduationYear: string;
   };
+  /** Foto de perfil (p. ej. data URL) capturada en el paso de carga móvil. */
+  photoUrl?: string | null;
 }

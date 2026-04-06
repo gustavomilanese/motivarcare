@@ -414,7 +414,7 @@ export function DashboardPage(props: {
               <div className="active-professional-row">
                   <img
                   className="active-professional-avatar"
-                  src={props.professionalPhotoMap[activeProfessional.id]}
+                  src={props.professionalPhotoMap[activeProfessional.id] ?? "/images/prof-emma.svg"}
                   alt={activeProfessional.fullName}
                   onError={props.onImageFallback}
                 />

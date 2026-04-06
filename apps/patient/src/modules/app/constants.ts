@@ -3,12 +3,16 @@ import type { IntakeQuestion, PackagePlan } from "./types";
 export const DEFAULT_PATIENT_HERO_IMAGE =
   "https://images.pexels.com/photos/8148648/pexels-photo-8148648.jpeg?auto=compress&cs=tinysrgb&w=1600";
 
+/** Separador de opciones en `mainReason` cuando hay multiselección (alineado con patient-mobile). */
+export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";
+
 export const intakeQuestions: IntakeQuestion[] = [
   {
     id: "mainReason",
     title: "1. ¿Cuál es tu motivo principal de consulta?",
     help: "Selecciona lo que mejor describa tu necesidad actual.",
-    options: ["Ansiedad", "Depresión", "Vínculos y pareja", "Estrés / burnout", "Otro"]
+    options: ["Ansiedad", "Depresión", "Vínculos y pareja", "Estrés / burnout", "Otro"],
+    allowMultiple: true
   },
   {
     id: "therapyGoal",

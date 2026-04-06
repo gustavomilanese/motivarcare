@@ -532,6 +532,7 @@ adminRouter.get("/kpis", async (req, res) => {
     activeProfessionals,
     scheduledSessions,
     packagePurchasesMonthRows,
+    trialBookingsMonthRows,
     financeFeesMonth,
     financeFeesAllTime,
     unpaidSessionFinanceAgg,
@@ -587,6 +588,26 @@ adminRouter.get("/kpis", async (req, res) => {
       select: {
         packagePriceCentsSnapshot: true,
         platformCommissionPercentSnapshot: true
+      }
+    }),
+    prisma.booking.findMany({
+      where: {
+        startsAt: { gte: monthStart, lte: monthEnd },
+        OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }],
+        AND: [
+          { status: { in: ["CONFIRMED", "COMPLETED"] } },
+          {
+            OR: [
+              { status: "CONFIRMED" },
+              { AND: [{ status: "COMPLETED" }, { financeRecord: { is: null } }] }
+            ]
+          }
+        ],
+        ...(scopePro ? { professionalId: scopePro } : {}),
+        ...(scopePat ? { patientId: scopePat } : {})
+      },
+      select: {
+        professional: { select: { sessionPriceUsd: true } }
       }
     }),
     prisma.financeSessionRecord.aggregate({
@@ -655,6 +676,23 @@ adminRouter.get("/kpis", async (req, res) => {
     packageProfessionalNetFromPurchasesMonthCents += Math.max(0, price - fee);
   }
   const packagePurchasesMonthCount = packagePurchasesMonthRows.length;
+
+  let trialGrossMonthCents = 0;
+  let trialPlatformFeeMonthCents = 0;
+  let trialProfessionalNetMonthCents = 0;
+  const trialPct = rules.trialPlatformPercent;
+  for (const row of trialBookingsMonthRows) {
+    const sessionPriceCents =
+      row.professional.sessionPriceUsd != null
+        ? row.professional.sessionPriceUsd * 100
+        : rules.defaultSessionPriceCents;
+    const fee = Math.round((sessionPriceCents * trialPct) / 100);
+    trialGrossMonthCents += sessionPriceCents;
+    trialPlatformFeeMonthCents += fee;
+    trialProfessionalNetMonthCents += Math.max(0, sessionPriceCents - fee);
+  }
+  const trialSessionsMonthCount = trialBookingsMonthRows.length;
+
   const platformFeeMonthCents = financeFeesMonth._sum.platformFeeCents ?? 0;
   const professionalNetMonthCents = financeFeesMonth._sum.professionalNetCents ?? 0;
   const grossSessionsMonthCents = financeFeesMonth._sum.sessionPriceCents ?? 0;
@@ -675,6 +713,11 @@ adminRouter.get("/kpis", async (req, res) => {
       packagePurchasesMonthCount,
       packagePlatformFeeFromPurchasesMonthCents,
       packageProfessionalNetFromPurchasesMonthCents,
+      trialSessionsMonthCount,
+      trialGrossMonthCents,
+      trialPlatformFeeMonthCents,
+      trialProfessionalNetMonthCents,
+      trialPlatformPercentApplied: trialPct,
       platformFeeMonthCents,
       professionalNetMonthCents,
       grossSessionsMonthCents,

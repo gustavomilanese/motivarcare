@@ -26,3 +26,18 @@ const request = createApiClient({
 export async function apiRequest<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   return request<T>(path, options, token);
 }
+
+/** Absolute URL for the browser: data/http(s) unchanged; root-relative paths prefixed with API base. */
+export function resolvePublicAssetUrl(url: string | null | undefined): string | null {
+  const s = typeof url === "string" ? url.trim() : "";
+  if (!s) {
+    return null;
+  }
+  if (s.startsWith("data:") || s.startsWith("http://") || s.startsWith("https://")) {
+    return s;
+  }
+  if (s.startsWith("/")) {
+    return `${API_BASE.replace(/\/+$/, "")}${s}`;
+  }
+  return s;
+}

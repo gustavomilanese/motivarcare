@@ -63,10 +63,21 @@ const TOPIC_LABELS: Record<TopicKey, { es: string; en: string; pt: string }> = {
 
 const MAIN_REASON_TO_TOPIC: Record<string, TopicKey | null> = {
   ansiedad: "anxiety",
+  ansiedade: "anxiety",
+  anxiety: "anxiety",
   depresion: "depression",
+  depressao: "depression",
+  depression: "depression",
   "vinculos y pareja": "relationships",
+  relationships: "relationships",
+  "relacionamentos e casal": "relationships",
+  relacionamentos: "relationships",
   "estres / burnout": "burnout",
-  otro: null
+  "estresse / burnout": "burnout",
+  "stress / burnout": "burnout",
+  otro: null,
+  outro: null,
+  other: null
 };
 
 const APPROACH_KEYWORDS: Record<string, string[]> = {
@@ -116,15 +127,21 @@ function parseIntakeAnswers(answers: unknown): Record<string, string> {
 }
 
 function extractPatientTopics(answers: Record<string, string>): TopicKey[] {
-  const mainReason = normalize(answers.mainReason);
+  const mainReasonRaw = answers.mainReason ?? "";
   const goalText = normalize(answers.therapyGoal);
   const emotionalState = normalize(answers.emotionalState);
   const combined = `${goalText} ${emotionalState}`;
   const topics: TopicKey[] = [];
 
-  const mappedMainReason = MAIN_REASON_TO_TOPIC[mainReason];
-  if (mappedMainReason) {
-    topics.push(mappedMainReason);
+  const mainParts = mainReasonRaw
+    .split(/\n+/)
+    .map((piece) => normalize(piece))
+    .filter(Boolean);
+  for (const part of mainParts) {
+    const mapped = MAIN_REASON_TO_TOPIC[part];
+    if (mapped) {
+      topics.push(mapped);
+    }
   }
 
   (Object.keys(TOPIC_KEYWORDS) as TopicKey[]).forEach((topic) => {

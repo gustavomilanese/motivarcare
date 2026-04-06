@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { apiRequest } from "../services/api";
+import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY, apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -102,6 +102,11 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
         method: "POST",
         body: JSON.stringify({ clientOrigin: window.location.origin, returnPath: "/ajustes" })
       });
+      try {
+        window.sessionStorage.setItem(PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY, "/ajustes");
+      } catch {
+        // ignore
+      }
       window.location.href = response.authUrl;
     } catch (requestError) {
       setError(

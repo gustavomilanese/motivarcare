@@ -91,6 +91,12 @@ export interface KpisResponse {
     packagePlatformFeeFromPurchasesMonthCents?: number;
     /** Neto profesional asignado por compras del mes (bruto paquete − comisión) */
     packageProfessionalNetFromPurchasesMonthCents?: number;
+    /** Sesiones de prueba con inicio en el mes (confirmadas o completadas sin fila de finanzas aún): bruto = precio sesión del pro; % comisión = trialPlatformPercent (reglas). */
+    trialSessionsMonthCount?: number;
+    trialGrossMonthCents?: number;
+    trialPlatformFeeMonthCents?: number;
+    trialProfessionalNetMonthCents?: number;
+    trialPlatformPercentApplied?: number;
     platformFeeMonthCents: number;
     professionalNetMonthCents: number;
     grossSessionsMonthCents: number;

@@ -4,14 +4,19 @@ export type IntakeQuestionDef = {
   help: string;
   options?: string[];
   multiline?: boolean;
+  allowMultiple?: boolean;
 };
+
+/** Mismo separador que apps/patient `INTAKE_MAIN_REASON_VALUE_JOINER`. */
+export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";
 
 export const intakeQuestions: IntakeQuestionDef[] = [
   {
     id: "mainReason",
-    title: "¿Cuál es tu motivo principal de consulta?",
-    help: "Elegí lo que mejor describa tu necesidad.",
-    options: ["Ansiedad", "Depresión", "Vínculos y pareja", "Estrés / burnout", "Otro"]
+    title: "¿Cuáles son tus motivos de consulta?",
+    help: "Podés elegir una o más opciones.",
+    options: ["Ansiedad", "Depresión", "Vínculos y pareja", "Estrés / burnout", "Otro"],
+    allowMultiple: true
   },
   {
     id: "therapyGoal",

@@ -94,7 +94,7 @@ export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboar
     discount4: parseNumericOrNull(inputs.priceData.discount4),
     discount12: parseNumericOrNull(inputs.priceData.discount12),
     discount24: parseNumericOrNull(inputs.priceData.discount24),
-    photoUrl: null,
+    photoUrl: inputs.photoUrl?.trim() ? inputs.photoUrl.trim() : null,
     videoUrl: null,
     videoCoverUrl: null,
     stripeDocUrl: null,

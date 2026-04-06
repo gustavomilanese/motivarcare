@@ -83,12 +83,30 @@ describe("onboarding defaults", () => {
         specialty: "Lic. Psicologia",
         startYear: "2014",
         graduationYear: "2018"
-      }
+      },
+      photoUrl: "data:image/png;base64,AAA"
     });
 
     expect(draft.therapeuticApproach).toBe("Descripcion terapia");
     expect(draft.yearsExperience).toBe(10);
     expect(draft.discount24).toBe(30);
+    expect(draft.photoUrl).toBe("data:image/png;base64,AAA");
     expect(draft.diplomas).toHaveLength(1);
+  });
+
+  it("mobile sin foto deja photoUrl en null", () => {
+    const draft = buildPatchDraftFromMobileInputs({
+      aboutText: "",
+      therapyDescriptionText: "",
+      selectedSpecialization: "Psicologo",
+      selectedExperience: "6-10 anos",
+      selectedPracticeHours: "1000-3000 horas",
+      workLanguages: ["Espanol"],
+      summaryText: "",
+      priceData: { sessionPrice: "", discount4: "", discount12: "", discount24: "" },
+      personalData: { yearsExperience: "0", gender: "Hombre", birthCountry: "UY" },
+      educationData: { institution: "", specialty: "", startYear: "", graduationYear: "" }
+    });
+    expect(draft.photoUrl).toBeNull();
   });
 });

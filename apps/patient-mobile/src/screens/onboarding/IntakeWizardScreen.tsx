@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { intakeQuestions } from "../../constants/intakeQuestions";
+import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../constants/intakeQuestions";
 import { submitPatientIntake } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
@@ -142,6 +142,20 @@ export function IntakeWizardScreen() {
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
   }, [question.id]);
 
+  const toggleMultiOption = useCallback(
+    (option: string) => {
+      setAnswers((prev) => {
+        const pieces = (prev[question.id] ?? "")
+          .split(/\n/)
+          .map((piece) => piece.trim())
+          .filter(Boolean);
+        const next = pieces.includes(option) ? pieces.filter((p) => p !== option) : [...pieces, option];
+        return { ...prev, [question.id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+      });
+    },
+    [question.id]
+  );
+
   const goNext = useCallback(async () => {
     Keyboard.dismiss();
     const currentAnswer = answers[question.id]?.trim() ?? "";
@@ -211,7 +225,13 @@ export function IntakeWizardScreen() {
           {question.options ? (
             <View style={styles.options}>
               {question.options.map((opt) => {
-                const selected = draft === opt;
+                const selected = question.allowMultiple
+                  ? draft
+                      .split(/\n/)
+                      .map((piece) => piece.trim())
+                      .filter(Boolean)
+                      .includes(opt)
+                  : draft === opt;
                 return (
                   <PrimaryButton
                     key={opt}
@@ -220,7 +240,11 @@ export function IntakeWizardScreen() {
                     onPress={() => {
                       Keyboard.dismiss();
                       setError("");
-                      persistAnswer(opt);
+                      if (question.allowMultiple) {
+                        toggleMultiOption(opt);
+                      } else {
+                        persistAnswer(opt);
+                      }
                     }}
                     style={styles.optionBtn}
                   />

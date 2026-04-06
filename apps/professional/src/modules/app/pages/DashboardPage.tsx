@@ -365,16 +365,17 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
         className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating"
         aria-labelledby="pro-revenue-heading"
       >
-        <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
-          <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
-            {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-          </h2>
-        </div>
-        <div
-          className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
-          role="group"
-          aria-label={periodGroupLabel}
-        >
+        <div className="pro-dashboard-revenue-top-row">
+          <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
+            <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
+              {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+            </h2>
+          </div>
+          <div
+            className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
+            role="group"
+            aria-label={periodGroupLabel}
+          >
           <select
             className="pro-dashboard-revenue-control"
             value={revenuePreset}
@@ -416,6 +417,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
               onChange={(event) => setRevenueYear(event.target.value)}
             />
           ) : null}
+          </div>
         </div>
         <div className="pro-kpi-grid pro-kpi-grid--revenue">
           <article className="pro-kpi-card">

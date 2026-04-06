@@ -12,10 +12,16 @@ export function financeSimulatedAccruedCollected(kpis: KpisResponse["kpis"] | un
     return { accruedCents: 0, collectedCents: 0 };
   }
   const feePackages = kpis.packagePlatformFeeFromPurchasesMonthCents ?? 0;
+  const feeTrials = kpis.trialPlatformFeeMonthCents ?? 0;
   const feeSessions = kpis.platformFeeMonthCents ?? 0;
   const grossPkg = kpis.packagePurchasesMonthCents ?? 0;
+  const grossTrial = kpis.trialGrossMonthCents ?? 0;
   const grossSess = kpis.grossSessionsMonthCents ?? 0;
-  const base = feePackages + feeSessions + Math.round((grossPkg + grossSess) * 0.06);
+  const base =
+    feePackages
+    + feeTrials
+    + feeSessions
+    + Math.round((grossPkg + grossTrial + grossSess) * 0.06);
   const accruedCents = base > 0 ? Math.round(base * 1.12) : 42_800_00;
   const collectedCents = Math.round(accruedCents * 0.76);
   return { accruedCents, collectedCents };

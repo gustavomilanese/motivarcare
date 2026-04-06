@@ -125,6 +125,7 @@ export function ProfessionalAuthFlow(props: {
     discount24: "20"
   });
   const [profilePhotoLoaded, setProfilePhotoLoaded] = useState(false);
+  const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
   const [videoCoverSelected, setVideoCoverSelected] = useState(false);
   const [educationData, setEducationData] = useState({
     institution: "Colegio Manuel Belgrano",
@@ -163,7 +164,8 @@ export function ProfessionalAuthFlow(props: {
       specialty: educationData.specialty,
       startYear: educationData.startYear,
       graduationYear: educationData.graduationYear
-    }
+    },
+    photoUrl: registerProfilePhotoDataUrl
   });
 
   const handleRegisterStart = () => {
@@ -502,6 +504,7 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalPhotoUploadStep
         language={props.language}
         hasPhoto={profilePhotoLoaded}
+        onPhotoDataUrl={(url) => setRegisterProfilePhotoDataUrl(url)}
         onPhotoSaved={() => setProfilePhotoLoaded(true)}
         onBack={() => setAuthEntryMode("register-photo-info")}
         onContinue={() => setAuthEntryMode("register-avatar-adjust")}

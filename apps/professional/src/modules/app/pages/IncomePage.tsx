@@ -87,19 +87,20 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
   return (
     <div className="pro-grid-stack">
       <section className="pro-card pro-dashboard-revenue" aria-labelledby="pro-income-heading">
-        <div className="pro-dashboard-revenue-head">
-          <h2 id="pro-income-heading" className="pro-dashboard-revenue-title">
-            {t(props.language, { es: "Ingresos", en: "Earnings", pt: "Receitas" })}
-          </h2>
-          <p className="pro-dashboard-revenue-lead">
-            {t(props.language, {
-              es: "Mismos criterios que el dashboard: sesiones completadas y precio efectivo por paquete o lista.",
-              en: "Same rules as the dashboard: completed sessions and effective price per package or list rate.",
-              pt: "Mesmos criterios do dashboard: sessoes concluidas e preco efetivo por pacote ou tabela."
-            })}
-          </p>
-        </div>
-        <div className="pro-dashboard-revenue-toolbar" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Periodo" })}>
+        <div className="pro-dashboard-revenue-top-row pro-dashboard-revenue-top-row--with-lead">
+          <div className="pro-dashboard-revenue-head">
+            <h2 id="pro-income-heading" className="pro-dashboard-revenue-title">
+              {t(props.language, { es: "Ingresos", en: "Earnings", pt: "Receitas" })}
+            </h2>
+            <p className="pro-dashboard-revenue-lead">
+              {t(props.language, {
+                es: "Mismos criterios que el dashboard: sesiones completadas y precio efectivo por paquete o lista.",
+                en: "Same rules as the dashboard: completed sessions and effective price per package or list rate.",
+                pt: "Mesmos criterios do dashboard: sessoes concluidas e preco efetivo por pacote ou tabela."
+              })}
+            </p>
+          </div>
+          <div className="pro-dashboard-revenue-toolbar" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Periodo" })}>
           <label className="pro-dashboard-revenue-field">
             <span>{t(props.language, { es: "Vista", en: "View", pt: "Vista" })}</span>
             <select value={revenuePreset} onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}>
@@ -138,6 +139,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
               />
             </label>
           ) : null}
+          </div>
         </div>
 
         {error ? <p className="pro-error">{error}</p> : null}

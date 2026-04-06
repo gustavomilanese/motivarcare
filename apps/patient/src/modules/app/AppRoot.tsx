@@ -17,7 +17,7 @@ import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
 import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
-import { API_BASE, STORAGE_KEY, apiRequest, setPatientApiUnauthorizedHandler } from "./services/api";
+import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
 import type {
   Booking,
@@ -374,18 +374,28 @@ export function App() {
         const authResponse = authResult.status === "fulfilled" ? authResult.value : null;
         const professionalDirectoryResponse = professionalDirectoryResult.status === "fulfilled" ? professionalDirectoryResult.value : null;
 
+        let mergedPhotos: Record<string, string> = { ...professionalImageMap };
+
         if (professionalDirectoryResponse && professionalDirectoryResponse.length > 0) {
           const mapped = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
-          const photoMap = professionalDirectoryResponse.reduce<Record<string, string>>((acc, professional) => {
-            const photoUrl = professional.photoUrl?.trim();
-            if (photoUrl) {
-              acc[professional.id] = photoUrl;
-            }
-            return acc;
-          }, {});
           setProfessionalDirectory(mapped);
-          setProfessionalPhotoMap(Object.keys(photoMap).length > 0 ? photoMap : professionalImageMap);
+          for (const professional of professionalDirectoryResponse) {
+            const resolved = resolvePublicAssetUrl(professional.photoUrl);
+            if (resolved) {
+              mergedPhotos[professional.id] = resolved;
+            }
+          }
         }
+
+        const activePro = profileResponse?.profile?.activeProfessional;
+        if (activePro?.id) {
+          const resolvedActive = resolvePublicAssetUrl(activePro.photoUrl);
+          if (resolvedActive) {
+            mergedPhotos[activePro.id] = resolvedActive;
+          }
+        }
+
+        setProfessionalPhotoMap(mergedPhotos);
 
         const latestPackage = profileResponse?.profile?.latestPackage ?? null;
         const remoteAssignedProfessional = profileResponse?.profile?.activeProfessional ?? null;

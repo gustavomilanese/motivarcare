@@ -67,6 +67,7 @@ export interface ProfileMeApiResponse {
       userId: string;
       fullName: string;
       email: string;
+      photoUrl?: string | null;
     } | null;
   } | null;
 }
@@ -120,6 +121,8 @@ export interface IntakeQuestion {
   help: string;
   options?: string[];
   multiline?: boolean;
+  /** Permite elegir varias opciones a la vez (valor guardado unido con saltos de línea). */
+  allowMultiple?: boolean;
 }
 
 export interface IntakeState {

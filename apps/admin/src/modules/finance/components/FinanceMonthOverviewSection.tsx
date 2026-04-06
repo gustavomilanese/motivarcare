@@ -3,6 +3,7 @@ import {
   type LocalizedText,
   type SupportedCurrency,
   formatCurrencyCents,
+  replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
 import type { KpisResponse } from "../../app/types";
@@ -80,6 +81,13 @@ export function FinanceMonthOverviewSection(props: {
   const k = props.kpis;
 
   const grossPkg = k?.packagePurchasesMonthCents ?? 0;
+  const trialCount = k?.trialSessionsMonthCount ?? 0;
+  const trialGross = k?.trialGrossMonthCents ?? 0;
+  const trialFee = k?.trialPlatformFeeMonthCents ?? 0;
+  const trialNet = k?.trialProfessionalNetMonthCents ?? 0;
+  const grossPkgAndTrial = grossPkg + trialGross;
+  const feePkgAndTrial = (k?.packagePlatformFeeFromPurchasesMonthCents ?? 0) + trialFee;
+  const proNetPkgAndTrial = (k?.packageProfessionalNetFromPurchasesMonthCents ?? 0) + trialNet;
   const grossSess = k?.grossSessionsMonthCents ?? 0;
   const pkgFee = k?.packagePlatformFeeFromPurchasesMonthCents ?? 0;
   const pkgProNet = k?.packageProfessionalNetFromPurchasesMonthCents ?? 0;
@@ -168,28 +176,65 @@ export function FinanceMonthOverviewSection(props: {
 
           <section className="dashboard-section dashboard-section--highlight dashboard-section--tone-pkg finance-dash-section" aria-labelledby="fin-dash-pkg">
             <h2 id="fin-dash-pkg" className="dashboard-section-title">
-              {t(props.language, { es: "Por compra de paquetes (mes)", en: "From package purchases (month)", pt: "Por compra de pacotes (mes)" })}
+              {t(props.language, {
+                es: "Ingresos del mes: paquetes + sesiones de prueba",
+                en: "Month revenue: packages + trial sessions",
+                pt: "Receita do mes: pacotes + sessoes de teste"
+              })}
             </h2>
+            <p className="dashboard-section-asof finance-month-asof" style={{ marginTop: 0 }}>
+              {t(props.language, {
+                es: "Pruebas: precio de sesión del profesional y % trial de reglas (Finanzas).",
+                en: "Trials: pro session price and trial % from finance rules.",
+                pt: "Testes: preco do profissional e % trial nas regras."
+              })}
+            </p>
             <div className="dashboard-stat-grid dashboard-stat-grid--4">
               <StatCard
-                label={t(props.language, { es: "Compras registradas", en: "Purchases recorded", pt: "Compras" })}
-                value={String(k.packagePurchasesMonthCount ?? 0)}
-                hint={t(props.language, { es: "Cantidad de paquetes en el mes", en: "Package count in month", pt: "Quantidade no mes" })}
+                label={t(props.language, { es: "Movimientos (#)", en: "Line items (#)", pt: "Linhas (#)" })}
+                value={String((k.packagePurchasesMonthCount ?? 0) + trialCount)}
+                hint={replaceTemplate(
+                  t(props.language, {
+                    es: "{pkg} paquetes · {pr} pruebas",
+                    en: "{pkg} packages · {pr} trials",
+                    pt: "{pkg} pacotes · {pr} provas"
+                  }),
+                  { pkg: String(k.packagePurchasesMonthCount ?? 0), pr: String(trialCount) }
+                )}
               />
               <StatCard
                 label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
-                value={formatMoneyCents(grossPkg, props.language, props.currency)}
+                value={formatMoneyCents(grossPkgAndTrial, props.language, props.currency)}
+                hint={replaceTemplate(
+                  t(props.language, {
+                    es: "Paquetes {p} + pruebas {t}",
+                    en: "Packages {p} + trials {t}",
+                    pt: "Pacotes {p} + provas {t}"
+                  }),
+                  {
+                    p: formatMoneyCents(grossPkg, props.language, props.currency),
+                    t: formatMoneyCents(trialGross, props.language, props.currency)
+                  }
+                )}
               />
               <StatCard
                 variant="accent"
                 label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
-                value={formatMoneyCents(pkgFee, props.language, props.currency)}
-                hint={t(props.language, { es: "Sobre el paquete vendido", en: "On package sold", pt: "Sobre o pacote" })}
+                value={formatMoneyCents(feePkgAndTrial, props.language, props.currency)}
+                hint={t(props.language, {
+                  es: "Paquetes + pruebas del mes",
+                  en: "Packages + trials in month",
+                  pt: "Pacotes + provas"
+                })}
               />
               <StatCard
                 label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
-                value={formatMoneyCents(pkgProNet, props.language, props.currency)}
-                hint={t(props.language, { es: "Según reparto al cobrar el paquete", en: "Per split when the package sold", pt: "Parte do pro na venda" })}
+                value={formatMoneyCents(proNetPkgAndTrial, props.language, props.currency)}
+                hint={t(props.language, {
+                  es: "Reparto paquetes + neto pruebas",
+                  en: "Package split + trial net",
+                  pt: "Pacotes + liquido provas"
+                })}
               />
             </div>
           </section>
@@ -200,7 +245,11 @@ export function FinanceMonthOverviewSection(props: {
             </h2>
             <div className="dashboard-chart-grid">
               <BarCompare
-                title={t(props.language, { es: "Bruto: paquetes vs sesiones hechas", en: "Gross: packages vs sessions", pt: "Bruto: pacotes vs sessoes" })}
+                title={t(props.language, {
+                  es: "Bruto: paquetes, pruebas y sesiones hechas",
+                  en: "Gross: packages, trials, completed sessions",
+                  pt: "Bruto: pacotes, provas e sessoes"
+                })}
                 subtitle={t(props.language, {
                   es: "Misma escala relativa dentro del mes",
                   en: "Same relative scale for the month",
@@ -215,6 +264,13 @@ export function FinanceMonthOverviewSection(props: {
                     color: "var(--brand)"
                   },
                   {
+                    key: "trial",
+                    label: t(props.language, { es: "Sesiones de prueba", en: "Trial sessions", pt: "Sessoes de teste" }),
+                    value: trialGross,
+                    display: formatMoneyCents(trialGross, props.language, props.currency),
+                    color: "#7c6ae8"
+                  },
+                  {
                     key: "sess",
                     label: t(props.language, { es: "Sesiones completadas", en: "Completed sessions", pt: "Sessoes concluidas" }),
                     value: grossSess,
@@ -224,11 +280,15 @@ export function FinanceMonthOverviewSection(props: {
                 ]}
               />
               <BarCompare
-                title={t(props.language, { es: "Comisión: paquete vs sesión", en: "Fee: package vs session", pt: "Comissao: pacote vs sessao" })}
+                title={t(props.language, {
+                  es: "Comisión: paquete, prueba y sesión",
+                  en: "Fee: package, trial, session",
+                  pt: "Comissao: pacote, prova e sessao"
+                })}
                 subtitle={t(props.language, {
-                  es: "Plataforma: cobro del paquete vs devengado por sesión",
-                  en: "Platform: package sale vs session accrual",
-                  pt: "Plataforma: venda vs devengado"
+                  es: "Plataforma: paquetes, % trial y sesiones contabilizadas",
+                  en: "Platform: packages, trial % and counted sessions",
+                  pt: "Plataforma: pacotes, trial e sessoes"
                 })}
                 rows={[
                   {
@@ -237,6 +297,13 @@ export function FinanceMonthOverviewSection(props: {
                     value: pkgFee,
                     display: formatMoneyCents(pkgFee, props.language, props.currency),
                     color: "var(--brand)"
+                  },
+                  {
+                    key: "tf",
+                    label: t(props.language, { es: "Por sesión de prueba", en: "From trial session", pt: "Por sessao de teste" }),
+                    value: trialFee,
+                    display: formatMoneyCents(trialFee, props.language, props.currency),
+                    color: "#7c6ae8"
                   },
                   {
                     key: "sf",

@@ -1,5 +1,5 @@
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -20,6 +20,7 @@ import { PatientsPage } from "./PatientsPage";
 import { ProfilePage } from "./ProfilePage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
+import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY } from "../services/api";
 import type { AuthUser, PortalSection } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -35,6 +36,7 @@ export function ProfessionalPortal(props: {
   onUserChange: (user: AuthUser) => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const links = useMemo(() => getPortalNavLinks(props.language), [props.language]);
   const { threads, unreadMessagesCount } = usePortalChatThreads(props.token);
@@ -58,6 +60,45 @@ export function ProfessionalPortal(props: {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [notificationsOpen]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const calendarSync = params.get("calendar_sync");
+    if (!calendarSync) {
+      return;
+    }
+
+    let stored: string | null = null;
+    try {
+      stored = window.sessionStorage.getItem(PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY);
+      window.sessionStorage.removeItem(PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY);
+    } catch {
+      // ignore
+    }
+
+    const stripQuery = () => navigate({ pathname: location.pathname, search: "" }, { replace: true });
+
+    if (calendarSync !== "connected") {
+      stripQuery();
+      return;
+    }
+
+    let target: string | null = null;
+    if (stored === "/ajustes" || stored === "/") {
+      target = stored;
+    } else if (location.pathname === "/ajustes") {
+      target = "/";
+    } else {
+      stripQuery();
+      return;
+    }
+
+    if (location.pathname !== target) {
+      navigate({ pathname: target, search: "" }, { replace: true });
+    } else {
+      stripQuery();
+    }
+  }, [location.pathname, location.search, navigate]);
 
   const notificationsUnreadCount = notificationItems.filter((item) => item.unread).length;
 

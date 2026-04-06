@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
-import { intakeQuestions } from "../../app/constants";
+import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import type { IntakeQuestion, SessionUser } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -16,14 +16,14 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "1. ¿Cuál es tu motivo principal de consulta?",
-        en: "1. What is your main reason for consulting?",
-        pt: "1. Qual e seu principal motivo de consulta?"
+        es: "1. ¿Cuáles son tus motivos de consulta?",
+        en: "1. What are you looking for support with?",
+        pt: "1. Com o que voce busca apoio?"
       }),
       help: t(language, {
-        es: "Selecciona lo que mejor describa tu necesidad actual.",
-        en: "Select what best describes your current need.",
-        pt: "Selecione o que melhor descreve sua necessidade atual."
+        es: "Podés elegir una o más opciones.",
+        en: "You can select one or more options.",
+        pt: "Voce pode escolher uma ou mais opcoes."
       }),
       options: [
         t(language, { es: "Ansiedad", en: "Anxiety", pt: "Ansiedade" }),
@@ -443,9 +443,22 @@ export function IntakeScreen(props: {
                   })}
                 />
               ) : (
-                <div className="intake-option-grid" role="group" aria-label={wizardHeading(current.title)}>
+                <div
+                  className="intake-option-grid"
+                  role="group"
+                  aria-label={wizardHeading(current.title)}
+                  aria-multiselectable={current.allowMultiple ? true : undefined}
+                >
                   {current.options?.map((option) => {
-                    const selected = answers[current.id] === option;
+                    const multi = Boolean(current.allowMultiple);
+                    const raw = answers[current.id] ?? "";
+                    const selected = multi
+                      ? raw
+                          .split(/\n/)
+                          .map((piece) => piece.trim())
+                          .filter(Boolean)
+                          .includes(option)
+                      : raw === option;
                     return (
                       <button
                         key={option}
@@ -454,10 +467,22 @@ export function IntakeScreen(props: {
                         aria-pressed={selected}
                         onClick={() => {
                           setError("");
-                          setAnswers((prev) => ({
-                            ...prev,
-                            [current.id]: option
-                          }));
+                          setAnswers((prev) => {
+                            if (!multi) {
+                              return { ...prev, [current.id]: option };
+                            }
+                            const pieces = (prev[current.id] ?? "")
+                              .split(/\n/)
+                              .map((piece) => piece.trim())
+                              .filter(Boolean);
+                            const nextPieces = pieces.includes(option)
+                              ? pieces.filter((p) => p !== option)
+                              : [...pieces, option];
+                            return {
+                              ...prev,
+                              [current.id]: nextPieces.join(INTAKE_MAIN_REASON_VALUE_JOINER)
+                            };
+                          });
                         }}
                       >
                         {option}
