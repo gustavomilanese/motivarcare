@@ -132,10 +132,10 @@ model ProfessionalProfile {
   discount4             Int?
   discount12            Int?
   discount24            Int?
-  photoUrl              String?                  @db.Text
-  videoUrl              String?                  @db.Text
-  videoCoverUrl         String?                  @db.Text
-  stripeDocUrl          String?                  @db.Text
+  photoUrl              String?                  @db.LongText
+  videoUrl              String?                  @db.LongText
+  videoCoverUrl         String?                  @db.LongText
+  stripeDocUrl          String?                  @db.LongText
   stripeVerified        Boolean                  @default(false)
   stripeVerificationStarted Boolean             @default(false)
   cancellationHours     Int                      @default(24)
@@ -159,7 +159,7 @@ model ProfessionalDiploma {
   degree           String
   startYear        Int
   graduationYear   Int
-  documentUrl      String?              @db.Text
+  documentUrl      String?              @db.LongText
   orderIndex       Int                  @default(0)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt

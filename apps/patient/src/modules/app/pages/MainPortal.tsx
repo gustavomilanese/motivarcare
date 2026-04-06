@@ -252,6 +252,7 @@ export function MainPortal(props: {
             photoUrl: props.professionalPhotoMap[selectedBooking.professionalId]
           }}
           onClose={() => setSelectedBookingId("")}
+          onImageFallback={handleImageFallback}
         />
       ) : null}
       <PortalPreferencesModal

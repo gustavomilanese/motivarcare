@@ -592,6 +592,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
         <ProfessionalEditModal
           open={Boolean(selectedProfessional && isProfessionalEditModalOpen)}
+          language={props.language}
           selectedProfessional={selectedProfessional}
           selectedProfessionalDraft={selectedProfessionalDraft}
           showConfirmedSessions={showConfirmedSessions}

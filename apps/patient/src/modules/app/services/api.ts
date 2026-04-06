@@ -27,7 +27,10 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, tok
   return request<T>(path, options, token);
 }
 
-/** Absolute URL for the browser: data/http(s) unchanged; root-relative paths prefixed with API base. */
+/** Placeholder avatar when no photo or failed load (keep in sync with `onError` handlers). */
+export const DEFAULT_PROFESSIONAL_AVATAR_SRC = "/images/prof-emma.svg";
+
+/** Absolute URL for the browser: data/http(s) unchanged; paths are rooted at API base (patient app lives on another origin). */
 export function resolvePublicAssetUrl(url: string | null | undefined): string | null {
   const s = typeof url === "string" ? url.trim() : "";
   if (!s) {
@@ -36,8 +39,19 @@ export function resolvePublicAssetUrl(url: string | null | undefined): string | 
   if (s.startsWith("data:") || s.startsWith("http://") || s.startsWith("https://")) {
     return s;
   }
+  if (s.startsWith("//")) {
+    return `https:${s}`;
+  }
   if (s.startsWith("/")) {
     return `${API_BASE.replace(/\/+$/, "")}${s}`;
   }
-  return s;
+  if (/^[a-zA-Z][a-zA-Z+\d.-]*:/.test(s)) {
+    return s;
+  }
+  return `${API_BASE.replace(/\/+$/, "")}/${s.replace(/^\/+/, "")}`;
+}
+
+/** Resolved URL suitable for `<img src>`; never null. */
+export function professionalPhotoSrc(url: string | null | undefined): string {
+  return resolvePublicAssetUrl(url) ?? DEFAULT_PROFESSIONAL_AVATAR_SRC;
 }

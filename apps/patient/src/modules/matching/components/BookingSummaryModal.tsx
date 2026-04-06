@@ -1,4 +1,6 @@
+import { type SyntheticEvent } from "react";
 import { formatDateWithLocale, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { professionalPhotoSrc } from "../../app/services/api";
 import type { MatchCardProfessional, MatchTimeSlot } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -20,6 +22,7 @@ export function BookingSummaryModal(props: {
   onBack: () => void;
   onClose: () => void;
   onContinue: () => void;
+  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const dateLabel = formatDateWithLocale({
     value: props.slot.startsAt,
@@ -66,7 +69,11 @@ export function BookingSummaryModal(props: {
 
         <section className="summary-compact-card">
           <div className="summary-compact-prof">
-            <img src={props.professional.photoUrl ?? "/images/prof-emma.svg"} alt={props.professional.fullName} />
+            <img
+              src={professionalPhotoSrc(props.professional.photoUrl)}
+              alt={props.professional.fullName}
+              onError={props.onImageFallback}
+            />
             <div>
               <h4>{props.professional.fullName}</h4>
               <small>

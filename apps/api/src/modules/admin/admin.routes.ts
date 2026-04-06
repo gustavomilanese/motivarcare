@@ -21,6 +21,14 @@ const kpisQuerySchema = z.object({
 const appRoleSchema = z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]);
 const patientStatusSchema = z.enum(["active", "pause", "cancelled", "trial"]);
 
+const imageSourceSchema = z
+  .string()
+  .trim()
+  .max(20_000_000)
+  .refine((value) => value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:image/"), {
+    message: "Invalid image source"
+  });
+
 const listUsersQuerySchema = z.object({
   role: appRoleSchema.optional(),
   search: z
@@ -46,7 +54,7 @@ const createUserSchema = z.object({
   professionalBio: z.string().max(2000).optional(),
   professionalTherapeuticApproach: z.string().max(500).optional(),
   professionalYearsExperience: z.number().int().min(0).max(80).optional(),
-  professionalPhotoUrl: z.string().url().nullable().optional(),
+  professionalPhotoUrl: imageSourceSchema.nullable().optional(),
   professionalVideoUrl: z.string().url().nullable().optional()
 });
 
@@ -63,7 +71,7 @@ const updateUserSchema = z
     professionalBio: z.string().max(2000).optional(),
     professionalTherapeuticApproach: z.string().max(500).optional(),
     professionalYearsExperience: z.number().int().min(0).max(80).optional(),
-    professionalPhotoUrl: z.string().url().nullable().optional(),
+    professionalPhotoUrl: imageSourceSchema.nullable().optional(),
     professionalVideoUrl: z.string().url().nullable().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
@@ -78,14 +86,6 @@ const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
-
-const imageSourceSchema = z
-  .string()
-  .trim()
-  .max(20_000_000)
-  .refine((value) => value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:image/"), {
-    message: "Invalid image source"
-  });
 
 const landingSettingsSchema = z.object({
   patientHeroImageUrl: imageSourceSchema.nullable(),
@@ -223,7 +223,7 @@ const updateProfessionalSchema = z
     activePatientsCount: z.number().int().min(0).max(100000).nullable().optional(),
     sessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
     completedSessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
-    photoUrl: z.string().url().nullable().optional(),
+    photoUrl: imageSourceSchema.nullable().optional(),
     videoUrl: z.string().url().nullable().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {

@@ -10,7 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
-import { API_BASE } from "../services/api";
+import { API_BASE, professionalPhotoSrc } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { findProfessionalById } from "../lib/professionals";
 import type {
@@ -414,7 +414,7 @@ export function DashboardPage(props: {
               <div className="active-professional-row">
                   <img
                   className="active-professional-avatar"
-                  src={props.professionalPhotoMap[activeProfessional.id] ?? "/images/prof-emma.svg"}
+                  src={professionalPhotoSrc(props.professionalPhotoMap[activeProfessional.id])}
                   alt={activeProfessional.fullName}
                   onError={props.onImageFallback}
                 />

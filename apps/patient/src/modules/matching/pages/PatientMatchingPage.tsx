@@ -361,6 +361,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           onBack={() => setBookingStep("availability")}
           onClose={closeBookingFlow}
           onContinue={() => setBookingStep("payment")}
+          onImageFallback={props.onImageFallback}
         />
       ) : null}
 

@@ -94,7 +94,13 @@ async function createGoogleMeetEvent(params: {
   });
 
   const eventId = response.data.id;
-  const joinUrl = resolveMeetJoinUrl(response.data);
+  let joinUrl = resolveMeetJoinUrl(response.data);
+
+  // A veces Meet no viene en la respuesta del insert; un GET con conferenceData la completa (común en producción).
+  if (eventId && !joinUrl) {
+    const fetched = await calendar.events.get({ calendarId, eventId });
+    joinUrl = resolveMeetJoinUrl(fetched.data);
+  }
 
   if (!eventId || !joinUrl) {
     throw new Error("GOOGLE_MEET_CREATE_FAILED");

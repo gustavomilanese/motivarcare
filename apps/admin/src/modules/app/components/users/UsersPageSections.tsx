@@ -1,5 +1,6 @@
 import type { FormEvent, Dispatch, SetStateAction } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
+import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { TIMEZONE_OPTIONS } from "../../constants";
 import type {
   AdminUser,
@@ -169,15 +170,12 @@ export function UsersCreateSection(props: {
                 />
               </label>
 
-              <label>
-                {props.t({ es: "URL foto profesional", en: "Professional photo URL", pt: "URL da foto profissional" })}
-                <input
-                  value={props.createForm.professionalPhotoUrl}
-                  onChange={(event) =>
-                    props.setCreateForm((current) => ({ ...current, professionalPhotoUrl: event.target.value }))
-                  }
-                />
-              </label>
+              <ProfessionalPhotoUrlField
+                language={props.language}
+                disabled={props.createLoading}
+                value={props.createForm.professionalPhotoUrl}
+                onChange={(next) => props.setCreateForm((current) => ({ ...current, professionalPhotoUrl: next }))}
+              />
 
               <label>
                 {props.t({ es: "URL video de presentacion", en: "Intro video URL", pt: "URL do video de apresentacao" })}
@@ -579,21 +577,20 @@ export function UsersListSection(props: {
                             />
                           </label>
 
-                          <label>
-                            {props.t({ es: "URL de foto", en: "Photo URL", pt: "URL da foto" })}
-                            <input
-                              value={draft.professionalPhotoUrl}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalPhotoUrl: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
+                          <ProfessionalPhotoUrlField
+                            language={props.language}
+                            disabled={props.saveLoading}
+                            value={draft.professionalPhotoUrl}
+                            onChange={(next) =>
+                              props.setEditDrafts((current) => ({
+                                ...current,
+                                [user.id]: {
+                                  ...draft,
+                                  professionalPhotoUrl: next
+                                }
+                              }))
+                            }
+                          />
 
                           <label>
                             {props.t({ es: "URL video presentacion", en: "Intro video URL", pt: "URL do video de apresentacao" })}

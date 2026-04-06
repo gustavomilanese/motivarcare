@@ -1,4 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
+import type { AppLanguage } from "@therapy/i18n-config";
+import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import type { AdminBookingOps, AdminProfessionalOps } from "../../types";
 
 export interface ProfessionalSlotDraft {
@@ -42,6 +44,7 @@ const SLOT_TIME_OPTIONS = Array.from({ length: 34 }, (_, index) => {
 
 export function ProfessionalEditModal(props: {
   open: boolean;
+  language: AppLanguage;
   selectedProfessional: AdminProfessionalOps | null;
   selectedProfessionalDraft?: ProfessionalEditDraft;
   showConfirmedSessions: boolean;
@@ -306,18 +309,17 @@ export function ProfessionalEditModal(props: {
             />
           </label>
 
-          <label>
-            URL foto
-            <input
-              value={selectedProfessionalDraft.photoUrl}
-              onChange={(event) =>
-                props.setProfessionalEditDrafts((current) => ({
-                  ...current,
-                  [selectedProfessional.id]: { ...selectedProfessionalDraft, photoUrl: event.target.value }
-                }))
-              }
-            />
-          </label>
+          <ProfessionalPhotoUrlField
+            language={props.language}
+            disabled={props.professionalSaveLoading}
+            value={selectedProfessionalDraft.photoUrl}
+            onChange={(next) =>
+              props.setProfessionalEditDrafts((current) => ({
+                ...current,
+                [selectedProfessional.id]: { ...selectedProfessionalDraft, photoUrl: next }
+              }))
+            }
+          />
 
           <label>
             URL video

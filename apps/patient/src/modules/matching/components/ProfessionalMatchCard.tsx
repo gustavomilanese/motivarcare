@@ -3,6 +3,7 @@ import { formatDateWithLocale, type AppLanguage, type LocalizedText, textByLangu
 import type { RankedProfessional } from "../matchingEngine";
 import type { MatchTimeSlot } from "../types";
 import { countryToFlag } from "../utils/countryFlag";
+import { professionalPhotoSrc } from "../../app/services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -68,7 +69,7 @@ export function ProfessionalMatchCard(props: {
   const [hasSlotsOverflow, setHasSlotsOverflow] = useState(false);
   const professional = props.item.professional;
   const displayedSpecialties = [professional.specialization, professional.focusPrimary].filter(Boolean) as string[];
-  const photoUrl = professional.photoUrl ?? "/images/prof-emma.svg";
+  const photoUrl = professionalPhotoSrc(professional.photoUrl);
   const flag = countryToFlag(professional.birthCountry);
   const matchLabel = t(props.language, {
     es: `${props.item.score}% match`,

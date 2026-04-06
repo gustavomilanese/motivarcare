@@ -6,7 +6,7 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
-import { apiRequest } from "../services/api";
+import { apiRequest, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import type {
   ApiChatMessage,
   ApiChatThread,
@@ -184,7 +184,12 @@ export function ChatPage(props: {
         {},
         props.authToken ?? undefined
       );
-      setApiThreads(response.threads);
+      setApiThreads(
+        response.threads.map((thread) => ({
+          ...thread,
+          counterpartPhotoUrl: resolvePublicAssetUrl(thread.counterpartPhotoUrl) ?? thread.counterpartPhotoUrl ?? null
+        }))
+      );
       setApiAvailableProfessionalIds(response.availableProfessionalIds ?? []);
       setApiError("");
     } catch (requestError) {
@@ -429,7 +434,7 @@ export function ChatPage(props: {
                 ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
 
             const threadPhoto = remoteThread?.counterpartPhotoUrl?.trim();
-            const photoSrc = threadPhoto || props.professionalPhotoMap[professional.id];
+            const photoSrc = professionalPhotoSrc(threadPhoto || props.professionalPhotoMap[professional.id] || null);
             return (
               <button
                 className={professional.id === activeProfessionalId ? "wa-thread-item active" : "wa-thread-item"}
@@ -482,12 +487,13 @@ export function ChatPage(props: {
             {threadProfessional ? (
               <>
                 <img
-                  src={
+                  src={professionalPhotoSrc(
                     (remoteMode
                       ? apiThreadByProfessional.get(threadProfessional.id)?.counterpartPhotoUrl?.trim()
                       : undefined) ||
-                    props.professionalPhotoMap[threadProfessional.id]
-                  }
+                      props.professionalPhotoMap[threadProfessional.id] ||
+                      null
+                  )}
                   alt={threadProfessional.fullName}
                   onError={props.onImageFallback}
                 />

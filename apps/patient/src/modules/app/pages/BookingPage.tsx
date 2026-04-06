@@ -9,7 +9,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { defaultPackagePlans } from "../constants";
-import { apiRequest } from "../services/api";
+import { apiRequest, professionalPhotoSrc } from "../services/api";
 import { loadPublicPackagePlans } from "../lib/packageCatalog";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
@@ -163,7 +163,7 @@ export function BookingPage(props: {
     : props.state.assignedProfessionalId
       ? findProfessionalById(props.state.assignedProfessionalId, props.professionals)
       : editableProfessional;
-  const modalProfessionalPhoto = props.professionalPhotoMap[modalProfessional.id] ?? "/images/prof-emma.svg";
+  const modalProfessionalPhoto = professionalPhotoSrc(props.professionalPhotoMap[modalProfessional.id]);
   const editingSlotId = editingBooking
     ? findSlotIdForBooking(editingBooking.professionalId, editingBooking.startsAt, editingBooking.endsAt, props.professionals)
     : null;

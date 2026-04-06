@@ -2,7 +2,7 @@ import { type ChangeEvent, useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { API_BASE, apiRequest } from "../services/api";
-import { fileToDataUrl } from "../utils/mediaPreview";
+import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -149,7 +149,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     setMessage("");
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const raw = await fileToDataUrl(file);
+      const dataUrl = await compressImageDataUrl(raw, 1600, 0.82);
       setProfile((current) => (current ? { ...current, photoUrl: dataUrl } : current));
     } catch (requestError) {
       setError(

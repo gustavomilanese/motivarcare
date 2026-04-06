@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -57,6 +58,7 @@ export function SessionDetailModal(props: {
     photoUrl?: string;
   };
   onClose: () => void;
+  onImageFallback?: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const joinUrl = props.booking.joinUrl?.trim() ?? "";
@@ -120,8 +122,9 @@ export function SessionDetailModal(props: {
         <section className="session-detail-summary">
           <div className="session-detail-pro">
             <img
-              src={props.professional.photoUrl ?? "/images/prof-emma.svg"}
+              src={professionalPhotoSrc(props.professional.photoUrl)}
               alt={props.professional.fullName}
+              onError={props.onImageFallback}
             />
             <div>
               <h3>{props.professional.fullName}</h3>
