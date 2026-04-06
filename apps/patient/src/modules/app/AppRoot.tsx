@@ -248,6 +248,7 @@ export function App() {
   const [state, setState] = useState<PatientAppState>(() => loadState());
   const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
+  const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
   const [calendarPromptDismissedUserIds, setCalendarPromptDismissedUserIds] = useState<string[]>(() => readDismissedCalendarPromptUsers());
   const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => professionalsCatalog);
   const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => professionalImageMap);
@@ -266,6 +267,7 @@ export function App() {
       setProfessionalPhotoMap(professionalImageMap);
       setShowCalendarOnboarding(false);
       setCalendarOnboardingLoading(false);
+      setCalendarOnboardingError("");
       setState((current) => ({
         ...defaultState,
         language: current.language,
@@ -301,6 +303,7 @@ export function App() {
     }
 
     setCalendarOnboardingLoading(true);
+    setCalendarOnboardingError("");
     try {
       try {
         window.sessionStorage.setItem(
@@ -324,6 +327,19 @@ export function App() {
       window.location.href = response.authUrl;
     } catch (error) {
       console.error("Could not start patient calendar onboarding OAuth", error);
+      const raw = error instanceof Error ? error.message : "";
+      const notConfigured =
+        /not configured/i.test(raw) || /GOOGLE_CALENDAR_OAUTH_NOT_CONFIGURED/i.test(raw);
+      setCalendarOnboardingError(
+        notConfigured
+          ? t(state.language, {
+              es: "Google Calendar no está disponible todavía: el servidor necesita GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET. Podés continuar y conectar el calendario más tarde desde Ajustes.",
+              en: "Google Calendar is not available yet: the server needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET. You can continue and connect later from Settings.",
+              pt: "O Google Calendar ainda nao esta disponivel: o servidor precisa de GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET. Voce pode continuar e conectar depois em Configuracoes."
+            })
+          : raw || t(state.language, { es: "No se pudo iniciar la conexión con Google.", en: "Could not start Google connection.", pt: "Nao foi possivel iniciar a conexao com o Google." })
+      );
+    } finally {
       setCalendarOnboardingLoading(false);
     }
   };
@@ -720,9 +736,14 @@ export function App() {
               {t(state.language, {
                 es: "Cada vez que confirmes una sesión, vas a poder añadirla a tu calendario con un solo clic. De esta forma, recibís recordatorios automáticos y tenés toda tu agenda sincronizada en un solo lugar.",
                 en: "Each time you confirm a session, you can add it to your calendar in one click. This way, you get automatic reminders and keep your full agenda in one place.",
-                pt: "Cada vez que confirmar uma sessao, voce podera adiciona-la ao calendario com um clique. Assim, recebe lembretes automaticos e mantem toda sua agenda em um so lugar."
+                pt: "Cada vez que confirmar uma sessão, você poderá adicioná-la ao calendário com um clique. Assim, recebe lembretes automáticos e mantém toda a sua agenda num só lugar."
               })}
             </p>
+            {calendarOnboardingError ? (
+              <p className="calendar-consent-error" role="alert">
+                {calendarOnboardingError}
+              </p>
+            ) : null}
           </div>
           <div className="button-row calendar-consent-actions">
             <button
@@ -738,6 +759,7 @@ export function App() {
             <button
               type="button"
               onClick={() => {
+                setCalendarOnboardingError("");
                 if (state.session?.id) {
                   const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
                   writeDismissedCalendarPromptUsers(nextDismissed);
@@ -747,7 +769,7 @@ export function App() {
               }}
               disabled={calendarOnboardingLoading}
             >
-              {t(state.language, { es: "Lo hago despues", en: "I'll do it later", pt: "Depois eu faco" })}
+              {t(state.language, { es: "Lo hago después", en: "I'll do it later", pt: "Depois eu faço" })}
             </button>
           </div>
         </section>

@@ -59,7 +59,7 @@ export function PaymentMethodModal(props: {
 
         <div className="payment-sim-notice" role="status">
           {t(props.language, {
-            es: "Modo demostracion: el cobro esta simulado. En produccion se procesara con tu proveedor de pagos.",
+            es: "Modo demostración: el cobro está simulado. En producción se procesará con tu proveedor de pagos.",
             en: "Demo mode: payment is simulated. In production it will be processed by your payment provider.",
             pt: "Modo demonstracao: o pagamento e simulado. Em producao sera processado pelo provedor de pagamentos."
           })}
@@ -70,7 +70,7 @@ export function PaymentMethodModal(props: {
           <strong>{formatAmount(props.amountUsd, props.language)}</strong>
         </section>
 
-        <div className="payment-method-tabs" role="tablist" aria-label={t(props.language, { es: "Metodo de pago", en: "Payment method", pt: "Metodo de pagamento" })}>
+        <div className="payment-method-tabs" role="tablist" aria-label={t(props.language, { es: "Método de pago", en: "Payment method", pt: "Método de pagamento" })}>
           <button
             type="button"
             className={`payment-method-tab ${paymentMode === "new-card" ? "active" : ""}`}
@@ -83,14 +83,14 @@ export function PaymentMethodModal(props: {
             className={`payment-method-tab ${paymentMode === "one-click" ? "active" : ""}`}
             onClick={() => setPaymentMode("one-click")}
           >
-            {t(props.language, { es: "Pago rápido", en: "Quick pay", pt: "Pagamento rapido" })} · GPay
+            {t(props.language, { es: "Pago rápido", en: "Quick pay", pt: "Pagamento rápido" })} · GPay
           </button>
         </div>
 
         <section className={`payment-option-card payment-option-card-modern ${paymentMode === "new-card" ? "selected" : ""}`}>
           {paymentMode === "new-card" ? (
             <>
-              <p className="payment-option-caption">{t(props.language, { es: "Ingresa los datos de tu tarjeta", en: "Enter your card details", pt: "Insira os dados do cartao" })}</p>
+              <p className="payment-option-caption">{t(props.language, { es: "Ingresá los datos de tu tarjeta", en: "Enter your card details", pt: "Insira os dados do seu cartão" })}</p>
               <div className="payment-card-form">
                 <input
                   value={cardNumber}

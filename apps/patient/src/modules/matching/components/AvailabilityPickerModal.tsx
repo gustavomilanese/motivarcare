@@ -180,7 +180,7 @@ export function AvailabilityPickerModal(props: {
           <div className="availability-periods">
             <AvailabilityPeriodBlock
               language={props.language}
-              label={t(props.language, { es: "Mañana", en: "Morning", pt: "Manha" })}
+              label={t(props.language, { es: "Por la mañana", en: "Morning", pt: "Manhã" })}
               slots={grouped.morning}
               timezone={props.timezone}
               selectedSlotId={props.selectedSlotId}
@@ -188,7 +188,7 @@ export function AvailabilityPickerModal(props: {
             />
             <AvailabilityPeriodBlock
               language={props.language}
-              label={t(props.language, { es: "Día", en: "Afternoon", pt: "Tarde" })}
+              label={t(props.language, { es: "Tarde", en: "Afternoon", pt: "Tarde" })}
               slots={grouped.day}
               timezone={props.timezone}
               selectedSlotId={props.selectedSlotId}

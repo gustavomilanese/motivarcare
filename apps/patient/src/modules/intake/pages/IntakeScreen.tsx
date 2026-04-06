@@ -16,7 +16,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "1. Cual es tu motivo principal de consulta?",
+        es: "1. ¿Cuál es tu motivo principal de consulta?",
         en: "1. What is your main reason for consulting?",
         pt: "1. Qual e seu principal motivo de consulta?"
       }),
@@ -27,9 +27,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
       }),
       options: [
         t(language, { es: "Ansiedad", en: "Anxiety", pt: "Ansiedade" }),
-        t(language, { es: "Depresion", en: "Depression", pt: "Depressao" }),
-        t(language, { es: "Vinculos y pareja", en: "Relationships", pt: "Relacionamentos e casal" }),
-        t(language, { es: "Estres / burnout", en: "Stress / burnout", pt: "Estresse / burnout" }),
+        t(language, { es: "Depresión", en: "Depression", pt: "Depressao" }),
+        t(language, { es: "Vínculos y pareja", en: "Relationships", pt: "Relacionamentos e casal" }),
+        t(language, { es: "Estrés / burnout", en: "Stress / burnout", pt: "Estresse / burnout" }),
         t(language, { es: "Otro", en: "Other", pt: "Outro" })
       ]
     };
@@ -39,7 +39,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "2. Que objetivo te gustaria lograr en terapia?",
+        es: "2. ¿Qué objetivo te gustaría lograr en terapia?",
         en: "2. What goal would you like to achieve in therapy?",
         pt: "2. Qual objetivo voce gostaria de alcancar na terapia?"
       }),
@@ -55,7 +55,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "3. Enfoque terapeutico preferido",
+        es: "3. Enfoque terapéutico preferido",
         en: "3. Preferred therapeutic approach",
         pt: "3. Abordagem terapeutica preferida"
       }),
@@ -66,7 +66,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
       }),
       options: [
         "CBT",
-        t(language, { es: "Psicodinamico", en: "Psychodynamic", pt: "Psicodinamico" }),
+        t(language, { es: "Psicodinámico", en: "Psychodynamic", pt: "Psicodinamico" }),
         t(language, { es: "Integrativo", en: "Integrative", pt: "Integrativo" }),
         "Mindfulness",
         t(language, { es: "No estoy seguro", en: "I am not sure", pt: "Nao tenho certeza" })
@@ -89,9 +89,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
       }),
       options: [
         t(language, { es: "No", en: "No", pt: "Nao" }),
-        t(language, { es: "Si, menos de 3 meses", en: "Yes, less than 3 months", pt: "Sim, menos de 3 meses" }),
-        t(language, { es: "Si, entre 3 y 12 meses", en: "Yes, between 3 and 12 months", pt: "Sim, entre 3 e 12 meses" }),
-        t(language, { es: "Si, mas de 1 ano", en: "Yes, more than 1 year", pt: "Sim, mais de 1 ano" })
+        t(language, { es: "Sí, menos de 3 meses", en: "Yes, less than 3 months", pt: "Sim, menos de 3 meses" }),
+        t(language, { es: "Sí, entre 3 y 12 meses", en: "Yes, between 3 and 12 months", pt: "Sim, entre 3 e 12 meses" }),
+        t(language, { es: "Sí, más de 1 año", en: "Yes, more than 1 year", pt: "Sim, mais de 1 ano" })
       ]
     };
   }
@@ -100,7 +100,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "5. Como te sentis hoy?",
+        es: "5. ¿Cómo te sentís hoy?",
         en: "5. How do you feel today?",
         pt: "5. Como voce se sente hoje?"
       }),
@@ -133,7 +133,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "Para mostrar os melhores horarios disponiveis."
       }),
       options: [
-        t(language, { es: "Manana", en: "Morning", pt: "Manha" }),
+        t(language, { es: "Por la mañana", en: "Morning", pt: "Manhã" }),
         t(language, { es: "Tarde", en: "Afternoon", pt: "Tarde" }),
         t(language, { es: "Noche", en: "Evening", pt: "Noite" }),
         t(language, { es: "Flexible", en: "Flexible", pt: "Flexivel" })
@@ -145,7 +145,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "7. Idioma para la sesion",
+        es: "7. Idioma para la sesión",
         en: "7. Session language",
         pt: "7. Idioma para a sessao"
       }),
@@ -155,9 +155,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "Usado para o matching."
       }),
       options: [
-        t(language, { es: "Ingles", en: "English", pt: "Ingles" }),
-        t(language, { es: "Espanol", en: "Spanish", pt: "Espanhol" }),
-        t(language, { es: "Bilingue", en: "Bilingual", pt: "Bilingue" })
+        t(language, { es: "Inglés", en: "English", pt: "Ingles" }),
+        t(language, { es: "Español", en: "Spanish", pt: "Espanhol" }),
+        t(language, { es: "Bilingüe", en: "Bilingual", pt: "Bilingue" })
       ]
     };
   }
@@ -171,7 +171,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "8. Orcamento estimado"
       }),
       help: t(language, {
-        es: "Luego podras elegir paquetes de sesiones.",
+        es: "Luego podrás elegir paquetes de sesiones.",
         en: "You can choose session packages afterwards.",
         pt: "Depois voce podera escolher pacotes de sessoes."
       }),
@@ -188,12 +188,12 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "9. Contas con red de apoyo (familia/amigos)?",
+        es: "9. ¿Contás con red de apoyo (familia/amigos)?",
         en: "9. Do you have a support network (family/friends)?",
         pt: "9. Voce conta com rede de apoio (familia/amigos)?"
       }),
       help: t(language, {
-        es: "Contexto para continuidad terapeutica.",
+        es: "Contexto para continuidad terapéutica.",
         en: "Context for therapy continuity.",
         pt: "Contexto para continuidade terapeutica."
       }),
@@ -210,7 +210,7 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "10. En las ultimas 2 semanas tuviste ideas de autolesion?",
+        es: "10. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
         en: "10. In the last 2 weeks, have you had self-harm thoughts?",
         pt: "10. Nas ultimas 2 semanas voce teve ideias de autoagressao?"
       }),

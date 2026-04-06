@@ -63,6 +63,7 @@ export function ProfilePage(props: {
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarEmail, setCalendarEmail] = useState("");
   const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarConnectError, setCalendarConnectError] = useState("");
   const validTabs: ProfileTab[] = ["data", "cards", "subscription", "settings", "support"];
   const tabParam = searchParams.get("tab");
   const tab: ProfileTab = validTabs.includes(tabParam as ProfileTab) ? (tabParam as ProfileTab) : "data";
@@ -127,15 +128,35 @@ export function ProfilePage(props: {
     if (!props.authToken) {
       return;
     }
-    const response = await apiRequest<{ authUrl: string }>(
-      "/api/auth/google/calendar/connect",
-      {
-        method: "POST",
-        body: JSON.stringify({ returnPath: "/profile", clientOrigin: window.location.origin })
-      },
-      props.authToken
-    );
-    window.location.href = response.authUrl;
+    setCalendarConnectError("");
+    try {
+      const response = await apiRequest<{ authUrl: string }>(
+        "/api/auth/google/calendar/connect",
+        {
+          method: "POST",
+          body: JSON.stringify({ returnPath: "/profile", clientOrigin: window.location.origin })
+        },
+        props.authToken
+      );
+      window.location.href = response.authUrl;
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      const notConfigured = /not configured/i.test(raw);
+      setCalendarConnectError(
+        notConfigured
+          ? t(props.language, {
+              es: "Google Calendar no está configurado en el servidor (faltan credenciales OAuth).",
+              en: "Google Calendar is not configured on the server (OAuth credentials missing).",
+              pt: "O Google Calendar nao esta configurado no servidor (credenciais OAuth ausentes)."
+            })
+          : raw ||
+              t(props.language, {
+                es: "No se pudo conectar con Google Calendar.",
+                en: "Could not connect Google Calendar.",
+                pt: "Nao foi possivel conectar o Google Calendar."
+              })
+      );
+    }
   };
 
   const disconnectCalendar = async () => {
@@ -331,14 +352,14 @@ export function ProfilePage(props: {
                     }))
                   }
                 />
-                {t(props.language, { es: "Recordatorios de sesion", en: "Session reminders", pt: "Lembretes de sessao" })}
+                {t(props.language, { es: "Recordatorios de sesión", en: "Session reminders", pt: "Lembretes de sessão" })}
               </label>
             </div>
             <div className="profile-settings-stack">
               <strong>{t(props.language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</strong>
               <p>
                 {calendarLoading
-                  ? t(props.language, { es: "Revisando conexión...", en: "Checking connection...", pt: "Verificando conexao..." })
+                  ? t(props.language, { es: "Revisando conexión...", en: "Checking connection...", pt: "Verificando conexão..." })
                   : calendarConnected
                     ? replaceTemplate(
                         t(props.language, {
@@ -348,8 +369,9 @@ export function ProfilePage(props: {
                         }),
                         { email: calendarEmail || "-" }
                       )
-                    : t(props.language, { es: "No conectado.", en: "Not connected.", pt: "Nao conectado." })}
+                    : t(props.language, { es: "No conectado.", en: "Not connected.", pt: "Não conectado." })}
               </p>
+              {calendarConnectError ? <p className="error-text">{calendarConnectError}</p> : null}
               {!calendarConnected ? (
                 <button className="primary" type="button" onClick={() => void connectCalendar()}>
                   {t(props.language, { es: "Conectar Google Calendar", en: "Connect Google Calendar", pt: "Conectar Google Calendar" })}

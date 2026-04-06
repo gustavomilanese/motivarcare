@@ -426,7 +426,10 @@ authRouter.post("/google/calendar/connect", requireAuth, async (req: Authenticat
   }
 
   if (!hasGoogleCalendarOauthConfig()) {
-    return res.status(503).json({ error: "Google Calendar OAuth is not configured" });
+    return res.status(503).json({
+      error: "Google Calendar OAuth is not configured",
+      code: "GOOGLE_CALENDAR_OAUTH_NOT_CONFIGURED"
+    });
   }
 
   const user = await prisma.user.findUnique({
@@ -907,12 +910,33 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
     replaceExisting: true
   });
 
-  await sendEmailVerificationEmail({
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    token: verificationToken.token
-  });
+  let deliveryResult: Awaited<ReturnType<typeof sendEmailVerificationEmail>>;
+  try {
+    deliveryResult = await sendEmailVerificationEmail({
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      token: verificationToken.token
+    });
+  } catch (sendError) {
+    console.error("Could not send email verification link", sendError);
+    return sendApiError({
+      res,
+      status: 502,
+      code: "INTERNAL_ERROR",
+      message: "Could not send verification email"
+    });
+  }
+
+  if (!deliveryResult.delivered) {
+    return sendApiError({
+      res,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+      message:
+        "Email delivery is not configured on the server (missing RESEND_API_KEY). Ask the administrator to configure Resend."
+    });
+  }
 
   return res.json({
     message: "Verification email sent",
