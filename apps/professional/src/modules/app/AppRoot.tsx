@@ -323,6 +323,24 @@ export function App() {
     );
   }
 
+  /** Antes de Calendar: verificación de email primero (evita que /verify-email-required quede tapada). */
+  if (emailVerificationRequired && !user.emailVerified) {
+    return (
+      <VerifyEmailRequiredScreen
+        language={language}
+        token={token}
+        email={user.email}
+        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
+        onVerified={() => {
+          const verifiedUser = { ...user, emailVerified: true };
+          window.localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
+          setUser(verifiedUser);
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (showCalendarOnboarding) {
     return (
       <div className="pro-auth-shell">
@@ -350,23 +368,6 @@ export function App() {
           </div>
         </section>
       </div>
-    );
-  }
-
-  if (emailVerificationRequired && !user.emailVerified) {
-    return (
-      <VerifyEmailRequiredScreen
-        language={language}
-        token={token}
-        email={user.email}
-        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
-        onVerified={() => {
-          const verifiedUser = { ...user, emailVerified: true };
-          window.localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
-          setUser(verifiedUser);
-        }}
-        onLogout={handleLogout}
-      />
     );
   }
 

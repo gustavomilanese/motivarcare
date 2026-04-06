@@ -2795,6 +2795,134 @@ ul {
   color: #1e3a8a;
 }
 
+.pro-auth-card.pro-auth-card-verify-email {
+  width: min(420px, 100%);
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pro-auth-card.pro-auth-card-verify-email h1 {
+  font-size: clamp(1.35rem, 4.2vw, 1.75rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  max-width: 28ch;
+}
+
+.pro-verify-email-panel {
+  padding: clamp(22px, 5vw, 36px) clamp(18px, 4vw, 28px) clamp(26px, 5vw, 32px);
+  display: grid;
+  gap: clamp(12px, 2.5vw, 18px);
+  justify-items: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(106, 86, 244, 0.09) 0%, transparent 55%),
+    #fff;
+}
+
+.pro-verify-email-icon {
+  margin-bottom: 2px;
+}
+
+.pro-verify-email-panel .pro-chip {
+  margin: 0;
+}
+
+.pro-auth-card.pro-auth-card-verify-email .pro-verify-email-lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3d4a63;
+  max-width: 34ch;
+}
+
+.pro-verify-email-address {
+  font-weight: 700;
+  color: #1f2b40;
+  word-break: break-word;
+}
+
+.pro-auth-card.pro-auth-card-verify-email .pro-verify-email-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #62708a;
+  max-width: 36ch;
+}
+
+.pro-verify-email-actions {
+  width: 100%;
+  margin-top: 6px;
+  gap: 10px;
+}
+
+.pro-verify-email-actions button {
+  width: 100%;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.pro-verify-email-actions .pro-primary {
+  box-shadow: 0 10px 28px rgba(95, 68, 235, 0.28);
+}
+
+.pro-verify-email-secondary {
+  border: 1px solid #cfd6e8;
+  background: #fff;
+  color: #24324a;
+}
+
+.pro-verify-email-secondary:hover:not(:disabled) {
+  background: #f6f8fc;
+  border-color: #b8c2d8;
+}
+
+.pro-verify-email-dev {
+  font-size: 13px;
+}
+
+.pro-verify-email-feedback {
+  margin: 4px 0 0;
+  max-width: 100%;
+  text-align: center;
+}
+
+.pro-chip.pro-chip--success {
+  border-color: #86efac;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.pro-chip.pro-chip--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.pro-verify-email-success-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #16a34a;
+}
+
+.pro-verify-email-icon--loading .pro-verify-email-spinner-svg {
+  display: block;
+  transform-origin: center center;
+  animation: pro-verify-email-spin 0.85s linear infinite;
+}
+
+@keyframes pro-verify-email-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .pro-auth-back {
   border: 1px solid var(--line);
   background: #fff;
@@ -8873,6 +9001,20 @@ button:disabled {
   .pro-auth-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pro-auth-card.pro-auth-card-verify-email {
+    width: min(100%, 420px);
+  }
+
+  .pro-verify-email-panel {
+    padding: 20px 16px 22px;
+    gap: 14px;
+  }
+
+  .pro-verify-email-icon svg {
+    width: 44px;
+    height: 44px;
   }
 
   .pro-shell {
