@@ -899,14 +899,30 @@ label {
   min-width: 180px;
 }
 
+/* Listado admin: una sola fila de filtros sin desbordar el card (grid/flex min-width: auto). */
+.users-admin-list-root {
+  min-width: 0;
+}
+
 .users-admin-list-toolbar {
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .users-admin-list-filters {
   flex-wrap: nowrap;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+}
+
+.users-admin-list-filters select {
+  min-width: 0;
+  flex: 0 1 168px;
+  max-width: min(220px, 34vw);
+  width: auto;
 }
 
 .users-admin-list-filters .search-row {
@@ -916,9 +932,11 @@ label {
 }
 
 .users-admin-list-filters .search-row input {
-  flex: 1 1 120px;
-  min-width: 120px;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
   max-width: none;
+  box-sizing: border-box;
 }
 
 .users-admin-list-filters .search-row button {
@@ -1793,9 +1811,14 @@ label {
   }
 
   .users-admin-list-filters .search-row input {
-    width: auto;
-    flex: 1 1 80px;
-    min-width: 80px;
+    width: 0;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .users-admin-list-filters select {
+    flex: 0 1 132px;
+    max-width: min(200px, 42vw);
   }
 
   .users-admin-list-filters .search-row button {
@@ -3624,6 +3647,7 @@ button.primary.finance-hero-search {
   display: grid;
   gap: 18px;
   padding-top: 4px;
+  min-width: 0;
 }
 
 .finance-collapsible--hidden-summary .finance-collapsible-summary {

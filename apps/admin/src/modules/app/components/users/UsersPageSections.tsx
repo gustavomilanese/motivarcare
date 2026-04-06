@@ -267,7 +267,7 @@ export function UsersListSection(props: {
   };
 
   return (
-    <div className="stack">
+    <div className="stack users-admin-list-root">
       <header className="toolbar users-admin-list-toolbar">
         <div className="toolbar-actions users-admin-list-filters">
           <select
