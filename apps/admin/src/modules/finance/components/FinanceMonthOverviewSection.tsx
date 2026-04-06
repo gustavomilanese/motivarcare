@@ -109,7 +109,7 @@ export function FinanceMonthOverviewSection(props: {
         },
         {
           key: "sessions",
-          label: t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" }),
+          label: t(props.language, { es: "Sesiones confirmadas (mes)", en: "Confirmed sessions (month)", pt: "Sessoes confirmadas (mes)" }),
           value: k.scheduledSessions,
           tone: "#9d8cf6" as const
         },
@@ -137,9 +137,9 @@ export function FinanceMonthOverviewSection(props: {
           {props.viewingPastMonth ? (
             <p className="dashboard-section-asof finance-month-asof">
               {t(props.language, {
-                es: "Operación: foto actual del sistema. Paquetes y sesiones: valores del mes elegido.",
-                en: "Operations: live snapshot. Packages and sessions: values for the selected month.",
-                pt: "Operacao: snapshot atual. Pacotes e sessoes: mes escolhido."
+                es: "Pacientes y profesionales: estado actual. Sesiones confirmadas, pruebas y paquetes: mes elegido (UTC).",
+                en: "Patients and pros: current state. Confirmed sessions, trials and packages: selected month (UTC).",
+                pt: "Pacientes e pros: estado atual. Sessoes, provas e pacotes: mes UTC escolhido."
               })}
             </p>
           ) : null}
@@ -168,8 +168,17 @@ export function FinanceMonthOverviewSection(props: {
                 value={String(k.activeProfessionals)}
               />
               <StatCard
-                label={t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}
+                label={t(props.language, {
+                  es: "Sesiones confirmadas (mes)",
+                  en: "Confirmed sessions (month)",
+                  pt: "Sessoes confirmadas (mes)"
+                })}
                 value={String(k.scheduledSessions)}
+                hint={t(props.language, {
+                  es: "Inicio de la reserva en el mes UTC elegido",
+                  en: "Booking start in the selected UTC month",
+                  pt: "Inicio no mes UTC escolhido"
+                })}
               />
             </div>
           </section>

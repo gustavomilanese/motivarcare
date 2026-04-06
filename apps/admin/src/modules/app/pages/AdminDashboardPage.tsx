@@ -209,9 +209,9 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
         {viewingPastMonth ? (
           <p className="dashboard-section-asof">
             {t(props.language, {
-              es: "Estas tres cifras son la foto actual del sistema (no histórico de ese mes). El resto del panel corresponde al mes elegido.",
-              en: "These three figures are the current snapshot (not historical for that month). The rest of the panel matches the selected month.",
-              pt: "Esses tres numeros sao o estado atual (nao historico do mes). O restante e do mes escolhido."
+              es: "Pacientes y profesionales: estado actual. Sesiones confirmadas e ingresos: mes elegido (UTC), misma ventana que las pruebas y paquetes.",
+              en: "Patients and pros: current state. Confirmed sessions and revenue: selected month (UTC), same window as trials and packages.",
+              pt: "Pacientes e pros: estado atual. Sessoes confirmadas e receita: mes escolhido (UTC)."
             })}
           </p>
         ) : null}
@@ -222,8 +222,17 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
             value={String(k.activeProfessionals)}
           />
           <StatCard
-            label={t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}
+            label={t(props.language, {
+              es: "Sesiones confirmadas (mes)",
+              en: "Confirmed sessions (month)",
+              pt: "Sessoes confirmadas (mes)"
+            })}
             value={String(k.scheduledSessions)}
+            hint={t(props.language, {
+              es: "Inicio de la reserva en el mes UTC elegido",
+              en: "Booking start falls in the selected UTC month",
+              pt: "Inicio da reserva no mes UTC escolhido"
+            })}
           />
         </div>
       </section>

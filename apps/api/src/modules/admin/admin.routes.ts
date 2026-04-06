@@ -569,16 +569,14 @@ adminRouter.get("/kpis", async (req, res) => {
             })
             .then((rows) => rows.length)
         : prisma.professionalProfile.count({ where: { visible: true } }),
-    hasEntityScope
-      ? prisma.booking.count({
-          where: {
-            status: "CONFIRMED",
-            startsAt: { gte: monthStart, lte: monthEnd },
-            ...(scopePro ? { professionalId: scopePro } : {}),
-            ...(scopePat ? { patientId: scopePat } : {})
-          }
-        })
-      : prisma.booking.count({ where: { status: "CONFIRMED" } }),
+    prisma.booking.count({
+      where: {
+        status: "CONFIRMED",
+        startsAt: { gte: monthStart, lte: monthEnd },
+        ...(scopePro ? { professionalId: scopePro } : {}),
+        ...(scopePat ? { patientId: scopePat } : {})
+      }
+    }),
     prisma.patientPackagePurchase.findMany({
       where: {
         purchasedAt: { gte: monthStart, lte: monthEnd },
