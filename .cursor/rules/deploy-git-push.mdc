@@ -1,10 +1,12 @@
 ---
-description: Después de cambios listos, commitear y pushear para que Vercel/Railway desplieguen
+description: Push solo si el usuario lo pide; al pushear se dispara deploy (Vercel + Railway)
 alwaysApply: true
 ---
 
-# Deploy: commit y push
+# Deploy: Vercel y Railway
 
-- Cuando el usuario quiera **ver los cambios en producción** (Vercel para admin/patient/landing, Railway u otro CI para la API), **hacer `git commit` y `git push` a `origin`** al cerrar la tarea, salvo que el usuario pida explícitamente **no** pushear.
-- Si el árbol de trabajo ya está commiteado y igual hace falta **re-disparar** el deploy (p. ej. Vercel no rebuildó), está permitido un commit vacío: `git commit --allow-empty -m "chore: trigger deploy"` y push.
-- No asumir que un cambio “en disco” llegó al deploy sin commit + push.
+- **No hacer `git push` por iniciativa propia.** El usuario indica cuándo quiere pushear.
+- **Sí tener presente:** cuando haya **push a `origin`** (p. ej. `main`), en este proyecto suele **dispararse el deploy de**:
+  - **Vercel** — apps front (paciente, admin, landing, etc., según lo conectado al repo).
+  - **Railway** — API / backend, si está enganchado al mismo repo o rama.
+- Un cambio solo en disco **no** llega a prod hasta **commit + push** (o el flujo de CI que usen). Si el usuario pide “solo commitear sin push”, respetarlo.

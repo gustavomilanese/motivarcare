@@ -45,6 +45,15 @@ function IconMenu(props: { className?: string }) {
   );
 }
 
+function IconAccount(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20a8 8 0 0 1 16 0" />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
@@ -102,6 +111,9 @@ export function PortalNavigation(props: {
                   </span>
                 ) : null}
               </span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profile">
+              {t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
             </NavLink>
           </nav>
 
@@ -256,6 +268,10 @@ export function PortalNavigation(props: {
                 ) : null}
               </span>
               <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profile">
+              <IconAccount className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</span>
             </NavLink>
           </nav>
         ) : null}
