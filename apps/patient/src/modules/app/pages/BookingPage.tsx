@@ -516,7 +516,7 @@ export function BookingPage(props: {
   }
 
   return (
-    <div className="page-stack sessions-booking-page">
+    <div className="page-stack sessions-booking-page session-rn-root">
       <section className="sessions-page-hero sessions-page-hero-plain">
         <div className="sessions-page-hero-copy sessions-booking-hero-layout">
           <div className="sessions-hero-title-main">

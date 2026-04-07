@@ -6637,6 +6637,11 @@ button.sessions-balance {
     grid-template-columns: 1fr;
   }
 
+  /* Evita solapamiento: con 1 columna el profesional no puede ir a la columna 2 implícita */
+  .hero-grid .active-professional-card {
+    grid-column: 1;
+  }
+
   .profile-panel h2 {
     font-size: 36px;
   }
@@ -7051,8 +7056,37 @@ button.sessions-balance {
     justify-self: stretch;
   }
 
-  .portal-main:has(.sessions-booking-page) {
+  .portal-main:has(.sessions-booking-page),
+  .portal-main:has(.patient-dashboard-home) {
     background: #f1eef9;
+  }
+
+  .patient-dashboard-home .dashboard-upcoming-mobile-only {
+    display: grid;
+    gap: 0;
+  }
+
+  .patient-dashboard-home .dashboard-upcoming-mobile-only .sessions-confirmed-list--dashboard-mobile {
+    display: grid;
+    gap: 12px;
+  }
+
+  .patient-dashboard-home .dashboard-upcoming-desktop-only {
+    display: none;
+  }
+
+  .patient-dashboard-home .sessions-confirmed-panel.content-card {
+    padding: 0 2px;
+    gap: 12px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
   }
 
   .sessions-booking-page .sessions-booking-mobile-only {
@@ -7111,7 +7145,7 @@ button.sessions-balance {
   }
 
   /* Tarjetas tipo patient-mobile `UpcomingSessionCard` (solo ≤680px) */
-  .sessions-booking-page .session-rn-card.session-management-card {
+  .session-rn-root .session-rn-card.session-management-card {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -7124,11 +7158,11 @@ button.sessions-balance {
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
   }
 
-  .sessions-booking-page .session-rn-card--trial.session-management-card {
+  .session-rn-root .session-rn-card--trial.session-management-card {
     border: 1.5px solid rgba(245, 158, 11, 0.5);
   }
 
-  .sessions-booking-page .session-rn-top {
+  .session-rn-root .session-rn-top {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -7136,7 +7170,7 @@ button.sessions-balance {
     min-width: 0;
   }
 
-  .sessions-booking-page .session-rn-time {
+  .session-rn-root .session-rn-time {
     width: 38px;
     flex-shrink: 0;
     margin-top: 2px;
@@ -7147,7 +7181,7 @@ button.sessions-balance {
     line-height: 1.2;
   }
 
-  .sessions-booking-page .session-rn-avatar {
+  .session-rn-root .session-rn-avatar {
     width: 44px;
     height: 44px;
     border-radius: 999px;
@@ -7157,26 +7191,26 @@ button.sessions-balance {
     border: 1px solid rgba(15, 23, 42, 0.06);
   }
 
-  .sessions-booking-page .session-rn-body {
+  .session-rn-root .session-rn-body {
     flex: 1;
     min-width: 0;
   }
 
-  .sessions-booking-page .session-rn-body-header {
+  .session-rn-root .session-rn-body-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
   }
 
-  .sessions-booking-page .session-rn-body-main {
+  .session-rn-root .session-rn-body-main {
     flex: 1;
     min-width: 0;
     display: grid;
     gap: 3px;
   }
 
-  .sessions-booking-page .session-rn-date-line {
+  .session-rn-root .session-rn-date-line {
     font-size: 12px;
     font-weight: 400;
     color: #6d6d72;
@@ -7184,7 +7218,7 @@ button.sessions-balance {
     line-height: 1.25;
   }
 
-  .sessions-booking-page .session-rn-name {
+  .session-rn-root .session-rn-name {
     font-size: 15px;
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -7192,14 +7226,14 @@ button.sessions-balance {
     color: #1c1c1e;
   }
 
-  .sessions-booking-page .session-rn-status {
+  .session-rn-root .session-rn-status {
     font-size: 11px;
     font-weight: 600;
     color: #248a3d;
     margin-top: 2px;
   }
 
-  .sessions-booking-page .session-rn-reschedule {
+  .session-rn-root .session-rn-reschedule {
     width: 30px;
     height: 30px;
     flex-shrink: 0;
@@ -7215,23 +7249,23 @@ button.sessions-balance {
     transition: opacity 0.15s ease, background 0.15s ease;
   }
 
-  .sessions-booking-page .session-rn-reschedule:hover:not(:disabled) {
+  .session-rn-root .session-rn-reschedule:hover:not(:disabled) {
     background: #e8ebff;
   }
 
-  .sessions-booking-page .session-rn-reschedule:disabled {
+  .session-rn-root .session-rn-reschedule:disabled {
     opacity: 0.35;
     cursor: not-allowed;
   }
 
-  .sessions-booking-page .session-rn-footer {
+  .session-rn-root .session-rn-footer {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 100%;
   }
 
-  .sessions-booking-page .session-rn-join-btn {
+  .session-rn-root .session-rn-join-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -7249,15 +7283,15 @@ button.sessions-balance {
     transition: background 0.15s ease, color 0.15s ease;
   }
 
-  .sessions-booking-page .session-rn-join-btn:hover {
+  .session-rn-root .session-rn-join-btn:hover {
     background: rgba(95, 68, 235, 0.08);
   }
 
-  .sessions-booking-page .session-rn-join-icon {
+  .session-rn-root .session-rn-join-icon {
     flex-shrink: 0;
   }
 
-  .sessions-booking-page .session-rn-join-pending {
+  .session-rn-root .session-rn-join-pending {
     margin: 0;
     font-size: 13px;
     color: #64748b;
@@ -7265,7 +7299,7 @@ button.sessions-balance {
     line-height: 1.35;
   }
 
-  .sessions-booking-page .session-rn-detail-ghost {
+  .session-rn-root .session-rn-detail-ghost {
     align-self: center;
     border: none;
     background: none;
@@ -8296,6 +8330,23 @@ button.sessions-balance {
 .patient-dashboard-home .hero-grid {
   margin-top: 10px;
   gap: 10px;
+}
+
+.patient-dashboard-home .dashboard-upcoming-mobile-only {
+  display: none;
+}
+
+.patient-dashboard-home .dashboard-upcoming-desktop-only {
+  display: block;
+}
+
+.patient-dashboard-home .dashboard-upcoming-desktop-only .sessions-confirmed-list--dashboard-desktop {
+  display: grid;
+  gap: 10px;
+}
+
+.patient-dashboard-home .dashboard-upcoming-lists-root {
+  min-width: 0;
 }
 
 .patient-dashboard-home .hero-card {
