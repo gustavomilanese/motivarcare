@@ -101,8 +101,9 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
         role: "PROFESSIONAL",
         professionalProfileId: authResponse.user.professionalProfileId
       });
-      setMessage(t(props.language, { es: "Perfil actualizado.", en: "Profile updated.", pt: "Perfil atualizado." }));
+      setMessage("");
       setError("");
+      navigate("/", { state: { profileUpdated: true } });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -113,6 +114,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
               pt: "Nao foi possivel salvar o perfil."
             })
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
