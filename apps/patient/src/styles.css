@@ -8488,3 +8488,449 @@ button.sessions-balance {
   border-color: rgba(255, 255, 255, 0.2) !important;
   background: rgba(255, 255, 255, 0.07) !important;
 }
+
+/* Inicio móvil alineado con patient-mobile `HomeScreen` (≤680px) */
+.patient-dashboard-home .dashboard-rn-home {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .patient-dashboard-home .dashboard-legacy-home {
+    display: none !important;
+  }
+
+  .patient-dashboard-home .dashboard-rn-home {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-scroll {
+    padding: 6px 20px 12px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .patient-dashboard-home .dashboard-rn-scroll--cta {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .patient-dashboard-home .dashboard-rn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-header-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-btn {
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    border-radius: 999px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-wrap {
+    position: relative;
+    width: 48px;
+    height: 48px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #f3f4ff;
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #e8e4ff 0%, #f3f0ff 100%);
+    color: #4329c7;
+    font-size: 18px;
+    font-weight: 800;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .patient-dashboard-home .dashboard-rn-avatar-dot {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #34c759;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-rn-pill-block {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-pill {
+    align-self: flex-start;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #5f44eb;
+    border: 1px solid transparent;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted {
+    background: rgba(15, 23, 42, 0.045);
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-pill-inner {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-num {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-suffix {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: -0.01em;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-num,
+  .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-suffix {
+    color: #475569;
+  }
+
+  .patient-dashboard-home .dashboard-rn-sessions-empty {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: -0.01em;
+  }
+
+  .patient-dashboard-home .dashboard-rn-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(95, 68, 235, 0.12);
+    color: #5f44eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .patient-dashboard-home .dashboard-rn-icon-btn:active {
+    opacity: 0.88;
+    transform: scale(0.98);
+  }
+
+  .patient-dashboard-home .dashboard-rn-icon-btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-section {
+    margin-top: 5px;
+    margin-bottom: 20px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-right: 2px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1c1c1e;
+    letter-spacing: -0.02em;
+    flex: 1;
+    padding: 0 2px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-link-all {
+    border: none;
+    background: none;
+    padding: 4px 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5f44eb;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-rn-chevron {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-empty-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-empty-card--plain {
+    border-style: dashed;
+  }
+
+  .patient-dashboard-home .dashboard-rn-empty-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1c1c1e;
+  }
+
+  .patient-dashboard-home .dashboard-rn-empty-meta {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 400;
+    color: #6d6d72;
+    line-height: 1.38;
+  }
+
+  .patient-dashboard-home .dashboard-rn-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .session-rn-root .session-rn-status.dashboard-rn-status-pending {
+    color: #b45309;
+  }
+
+  .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .session-rn-root .dashboard-rn-session-pressable.session-rn-card:active {
+    opacity: 0.96;
+    background: #f8fafc;
+    border-color: rgba(95, 68, 235, 0.35);
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-outer {
+    position: relative;
+    margin-top: 16px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #cdbdf5;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #c4b5fd 0%, #d4c4fa 45%, #cdbdf5 100%);
+    pointer-events: none;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-inner {
+    position: relative;
+    padding: 14px;
+    z-index: 1;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-head {
+    margin-bottom: 8px;
+    padding-right: 2px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-title {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: #5f44eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-card {
+    position: relative;
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px 12px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-card--selected {
+    border-color: #5f44eb;
+    background: rgba(95, 68, 235, 0.06);
+    box-shadow: 0 3px 12px rgba(95, 68, 235, 0.12);
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-marketing {
+    font-size: 13px;
+    font-weight: 800;
+    color: #4329c7;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-marketing-spacer {
+    flex: 1;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-save {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #e4e4e7;
+    color: #18181b;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-divider {
+    height: 1px;
+    background: rgba(60, 60, 67, 0.12);
+    margin-bottom: 8px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-price-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-credits-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1c1c1e;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-unit {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c1c1e;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-sticky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    padding: 10px 20px;
+    padding-bottom: calc(10px + max(10px, var(--safe-bottom) + 4px) + 58px);
+    background: rgba(250, 249, 252, 0.97);
+    border-top: 1px solid rgba(60, 60, 67, 0.12);
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-cta {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 28px;
+    border: none;
+    background: linear-gradient(135deg, #5f44eb 0%, #7c6afc 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(95, 68, 235, 0.35);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-cta:active {
+    transform: scale(0.99);
+    opacity: 0.95;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-cta:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+}

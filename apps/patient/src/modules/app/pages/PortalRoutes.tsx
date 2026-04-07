@@ -69,6 +69,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onGoToProfile={() => props.navigate("/profile")}
                 />
               )
         }
@@ -184,6 +185,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onGoToProfile={() => props.navigate("/profile")}
                 />
               )
         }

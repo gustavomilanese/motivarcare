@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -106,6 +106,80 @@ function formatMoney(amountInUsd: number, language: AppLanguage, currency: Suppo
   });
 }
 
+function patientDashboardAvatarSrc(state: PatientAppState): string | null {
+  const fromSession = resolvePublicAssetUrl(state.session?.avatarUrl);
+  if (fromSession) {
+    return fromSession;
+  }
+  const dash = state.profile.dashboardPhotoDataUrl?.trim();
+  return dash ? dash : null;
+}
+
+function packageUnitPriceUsd(plan: PackagePlan): number {
+  return plan.priceCents / 100 / Math.max(1, plan.credits);
+}
+
+function DashboardRnUpcomingCard(props: {
+  booking: Booking;
+  professionals: Professional[];
+  professionalPhotoMap: Record<string, string>;
+  timezone: string;
+  language: AppLanguage;
+  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
+  onOpenBookingDetail: (bookingId: string) => void;
+}) {
+  const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
+  const isTrialBooking = props.booking.bookingMode === "trial";
+  const joinUrl = typeof props.booking.joinUrl === "string" ? props.booking.joinUrl.trim() : "";
+  const statusConfirmed = t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
+  const statusLine = isTrialBooking
+    ? `${statusConfirmed} · ${t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessão de teste" })}`
+    : statusConfirmed;
+  const proPhoto = professionalPhotoSrc(props.professionalPhotoMap[props.booking.professionalId]);
+
+  const handleActivate = () => {
+    if (joinUrl) {
+      window.open(joinUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    props.onOpenBookingDetail(props.booking.id);
+  };
+
+  return (
+    <button
+      type="button"
+      className={`session-rn-card session-management-card dashboard-rn-session-pressable ${isTrialBooking ? "session-rn-card--trial" : ""}`}
+      onClick={handleActivate}
+    >
+      <div className="session-rn-top">
+        <span className="session-rn-time" aria-hidden="true">
+          {formatTimeOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
+        </span>
+        <img className="session-rn-avatar" src={proPhoto} alt="" onError={props.onImageFallback} />
+        <div className="session-rn-body">
+          <div className="session-rn-body-header">
+            <div className="session-rn-body-main">
+              <span className="session-rn-date-line">
+                {formatSessionCardDateLine({
+                  isoDate: props.booking.startsAt,
+                  timezone: props.timezone,
+                  language: props.language
+                })}
+              </span>
+              <strong className="session-rn-name">{bookingProfessional.fullName}</strong>
+              <span
+                className={`session-rn-status ${isTrialBooking ? "dashboard-rn-status-pending" : "dashboard-rn-status-ok"}`}
+              >
+                {statusLine}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function getNextBooking(bookings: Booking[]): Booking | null {
   const now = Date.now();
 
@@ -137,6 +211,7 @@ export function DashboardPage(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
+  onGoToProfile: () => void;
 }) {
   const now = Date.now();
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
@@ -152,6 +227,7 @@ export function DashboardPage(props: {
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
+  const [rnMcarePlanId, setRnMcarePlanId] = useState<string | null>(null);
   const packageSectionRef = useRef<HTMLElement | null>(null);
   const defaultPackagePlan = packagePlans.find((plan) => plan.id === featuredPackageId) ?? packagePlans[0] ?? null;
   const nextBooking = getNextBooking(props.state.bookings);
@@ -283,8 +359,21 @@ export function DashboardPage(props: {
     };
   }, [pricingProfessionalId, props.language]);
 
+  const rnPackagePlansSorted = useMemo(
+    () => [...packagePlans].sort((a, b) => a.credits - b.credits),
+    [packagePlans]
+  );
+  const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
+  const patientAvatarSrc = patientDashboardAvatarSrc(props.state);
+  const patientDisplayName = (props.state.session?.fullName ?? "").trim() || " ";
+  const patientInitial = patientDisplayName.trim().charAt(0).toUpperCase() || "?";
+  const availableSessions = props.state.subscription.creditsRemaining;
+  const showProfilePulse = Boolean(props.state.intake?.completed && !props.state.intake?.riskBlocked);
+  const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
+
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
+      <div className="dashboard-legacy-home">
       <section className="hero-composite">
         <div className="hero-media">
           <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
@@ -973,6 +1062,219 @@ export function DashboardPage(props: {
           </section>
         </div>
       ) : null}
+      </div>
+
+      <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
+        <div className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}>
+          <header className="dashboard-rn-header">
+            <div className="dashboard-rn-header-main">
+              <button
+                type="button"
+                className="dashboard-rn-avatar-btn"
+                onClick={props.onGoToProfile}
+                aria-label={t(props.language, { es: "Ir al perfil", en: "Go to profile", pt: "Ir ao perfil" })}
+              >
+                <span className="dashboard-rn-avatar-wrap">
+                  {patientAvatarSrc ? (
+                    <img className="dashboard-rn-avatar-img" src={patientAvatarSrc} alt="" onError={props.onImageFallback} />
+                  ) : (
+                    <span className="dashboard-rn-avatar-fallback" aria-hidden="true">
+                      {patientInitial}
+                    </span>
+                  )}
+                  {showProfilePulse ? <span className="dashboard-rn-avatar-dot" aria-hidden="true" /> : null}
+                </span>
+              </button>
+              <div className="dashboard-rn-pill-block" aria-live="polite">
+                <div
+                  className={`dashboard-rn-sessions-pill${availableSessions < 1 ? " dashboard-rn-sessions-pill--muted" : ""}`}
+                >
+                  {availableSessions > 0 ? (
+                    <span className="dashboard-rn-sessions-pill-inner">
+                      <span className="dashboard-rn-sessions-num">{availableSessions}</span>
+                      <span className="dashboard-rn-sessions-suffix">
+                        {availableSessions === 1
+                          ? t(props.language, {
+                              es: " sesión disponible",
+                              en: " session available",
+                              pt: " sessao disponivel"
+                            })
+                          : t(props.language, {
+                              es: " sesiones disponibles",
+                              en: " sessions available",
+                              pt: " sessoes disponiveis"
+                            })}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="dashboard-rn-sessions-empty">
+                      {t(props.language, {
+                        es: "Sin sesiones disponibles",
+                        en: "No sessions available",
+                        pt: "Sem sessoes disponiveis"
+                      })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="dashboard-rn-header-actions">
+              <button
+                type="button"
+                className="dashboard-rn-icon-btn"
+                onClick={() => props.onGoToBooking(pricingProfessionalId)}
+                aria-label={t(props.language, {
+                  es: "Agendar una sesión",
+                  en: "Book a session",
+                  pt: "Agendar uma sessao"
+                })}
+              >
+                <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <section className="dashboard-rn-section">
+            <div className="dashboard-rn-section-head">
+              <h2 className="dashboard-rn-section-title">
+                {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}
+              </h2>
+              <div className="dashboard-rn-section-actions">
+                {rnUpcomingSlice.length > 0 ? (
+                  <button type="button" className="dashboard-rn-link-all" onClick={props.onGoToReservations}>
+                    {t(props.language, { es: "Todas", en: "All", pt: "Todas" })}
+                    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" className="dashboard-rn-chevron">
+                      <path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {rnUpcomingSlice.length === 0 ? (
+              <div className="dashboard-rn-empty-card">
+                <p className="dashboard-rn-empty-title">
+                  {t(props.language, { es: "Sin turnos agendados", en: "No appointments scheduled", pt: "Sem horarios agendados" })}
+                </p>
+                <p className="dashboard-rn-empty-meta">
+                  {t(props.language, {
+                    es: "Usá el botón + de arriba para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
+                    en: "Use the + button above to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
+                    pt: "Use o botao + acima para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
+                  })}
+                </p>
+              </div>
+            ) : (
+              <div className="dashboard-rn-session-list">
+                {rnUpcomingSlice.map((booking) => (
+                  <DashboardRnUpcomingCard
+                    key={`rn-${booking.id}`}
+                    booking={booking}
+                    professionals={props.professionals}
+                    professionalPhotoMap={props.professionalPhotoMap}
+                    timezone={props.state.profile.timezone}
+                    language={props.language}
+                    onImageFallback={props.onImageFallback}
+                    onOpenBookingDetail={props.onOpenBookingDetail}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="dashboard-rn-mcare-outer">
+            <div className="dashboard-rn-mcare-gradient" aria-hidden="true" />
+            <div className="dashboard-rn-mcare-inner">
+              <div className="dashboard-rn-mcare-head">
+                <span className="dashboard-rn-mcare-title">
+                  {t(props.language, { es: "Sumá sesiones", en: "Add sessions", pt: "Adicione sessoes" })}
+                </span>
+              </div>
+              <div className="dashboard-rn-mcare-stack">
+                {rnPackagePlansSorted.map((plan) => {
+                  const selected = rnMcarePlanId === plan.id;
+                  const unitLabel = formatMoney(packageUnitPriceUsd(plan), props.language, props.currency);
+                  const marketingLabel = packageRhythmLabel(plan.credits, (values) => t(props.language, values));
+                  return (
+                    <button
+                      type="button"
+                      key={plan.id}
+                      className={`dashboard-rn-mcare-card${selected ? " dashboard-rn-mcare-card--selected" : ""}`}
+                      onClick={() => setRnMcarePlanId((current) => (current === plan.id ? null : plan.id))}
+                      aria-pressed={selected}
+                    >
+                      <div className="dashboard-rn-mcare-card-top">
+                        <span className="dashboard-rn-mcare-marketing">{marketingLabel}</span>
+                        {plan.discountPercent > 0 ? (
+                          <span className="dashboard-rn-mcare-save">
+                            {replaceTemplate(
+                              t(props.language, { es: "Ahorrá {n}%", en: "Save {n}%", pt: "Economize {n}%" }),
+                              { n: String(plan.discountPercent) }
+                            )}
+                          </span>
+                        ) : (
+                          <span className="dashboard-rn-mcare-marketing-spacer" aria-hidden="true" />
+                        )}
+                      </div>
+                      <div className="dashboard-rn-mcare-divider" />
+                      <div className="dashboard-rn-mcare-price-row">
+                        <span className="dashboard-rn-mcare-credits-title">
+                          {replaceTemplate(t(props.language, { es: "{n} sesiones", en: "{n} sessions", pt: "{n} sessoes" }), {
+                            n: String(plan.credits)
+                          })}
+                        </span>
+                        <span className="dashboard-rn-mcare-unit">
+                          {replaceTemplate(
+                            t(props.language, { es: "{amount} c/u", en: "{amount} each", pt: "{amount} c/u" }),
+                            { amount: unitLabel }
+                          )}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+                {rnPackagePlansSorted.length === 0 ? (
+                  <div className="dashboard-rn-empty-card dashboard-rn-empty-card--plain">
+                    <p className="dashboard-rn-empty-meta">
+                      {t(props.language, {
+                        es: "Todavía no hay paquetes disponibles para compra.",
+                        en: "No packages are available for purchase yet.",
+                        pt: "Ainda nao ha pacotes disponiveis para compra."
+                      })}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {rnSelectedPlan ? (
+          <div className="dashboard-rn-mcare-sticky">
+            <button
+              type="button"
+              className="dashboard-rn-mcare-cta"
+              onClick={() => props.onStartPackagePurchase(rnSelectedPlan)}
+            >
+              {replaceTemplate(
+                t(props.language, {
+                  es: "Continuar — {total} total",
+                  en: "Continue — {total} total",
+                  pt: "Continuar — {total} total"
+                }),
+                {
+                  total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, props.currency)
+                }
+              )}
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
