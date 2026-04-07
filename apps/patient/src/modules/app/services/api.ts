@@ -1,10 +1,48 @@
 import { createApiClient } from "@therapy/auth";
 
 export const STORAGE_KEY = "therapy_patient_portal_v3";
-/** Vacío en build → fetch relativo al dominio de Vercel → HTTP 405 en POST. */
-const apiUrlRaw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL?.trim();
-export const API_BASE =
-  apiUrlRaw && apiUrlRaw.length > 0 ? apiUrlRaw.replace(/\/+$/, "") : "http://localhost:4000";
+
+function normalizeApiBase(raw: string | undefined | null): string {
+  return (raw ?? "").trim().replace(/\/+$/, "");
+}
+
+declare global {
+  interface Window {
+    /** Inyectado en build (vite) desde VITE_API_URL o API_PUBLIC_URL. */
+    __THERAPY_API_BASE__?: string;
+  }
+}
+
+const fromViteEnv = normalizeApiBase((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL);
+
+function readInjectedApiBase(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return normalizeApiBase(window.__THERAPY_API_BASE__);
+}
+
+function resolveApiBase(): string {
+  if (fromViteEnv) {
+    return fromViteEnv;
+  }
+  const injected = readInjectedApiBase();
+  if (injected) {
+    return injected;
+  }
+  return "http://localhost:4000";
+}
+
+export const API_BASE = resolveApiBase();
+
+if (typeof window !== "undefined" && import.meta.env.PROD) {
+  const h = window.location.hostname;
+  if (API_BASE === "http://localhost:4000" && h !== "localhost" && h !== "127.0.0.1") {
+    console.error(
+      "[MotivarCare Patient] La URL del API no está configurada en el build. En Vercel definí VITE_API_URL o API_PUBLIC_URL con la URL pública del API (Railway)."
+    );
+  }
+}
 
 const UNAUTHORIZED_MESSAGES = ["Invalid or expired token", "Missing bearer token"] as const;
 

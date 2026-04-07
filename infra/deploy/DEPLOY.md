@@ -144,6 +144,15 @@ según cómo configures **Vite `base`** y rutas. Si usás React Router en modo *
 
 **Variables de entorno en front:** las apps suelen leer la URL del API en build-time (`import.meta.env.VITE_...`) o en runtime. Revisá cada `apps/*/vite` y `.env` de ejemplo para definir la URL pública de la API **antes** del `npm run build`.
 
+**Vercel (portal paciente / otros Vite):** en el proyecto de Vercel, en **Settings → Environment Variables** (Production), definí al menos una de:
+
+- `VITE_API_URL` = `https://tu-api.up.railway.app` (recomendado), o
+- `API_PUBLIC_URL` = la misma URL pública del API (el build del paciente también la inyecta; útil si ya la tenés en Railway y querés reutilizar el nombre).
+
+Sin esto, el bundle intenta hablar con `http://localhost:4000` y el navegador muestra errores tipo “Failed to fetch” al subir foto o guardar perfil.
+
+En el **backend**, asegurate de que `PATIENT_APP_URL` sea `https://motivarcare-patient.vercel.app` (o tu dominio). Ese origen se admite automáticamente para CORS aunque falte en `CORS_ORIGINS`, pero conviene listarlo igual en `CORS_ORIGINS` por claridad.
+
 ### B3. API en VPS Hostinger (si no usás Railway)
 
 1. Instalá **Node 22** (nvm recomendado), **git**, **PM2** (`npm i -g pm2`).

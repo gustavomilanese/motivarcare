@@ -8,18 +8,24 @@ function escapeAttr(value: string): string {
 
 export default defineConfig(({ mode }) => {
   const fromFiles = loadEnv(mode, process.cwd(), "");
-  // CI (Vercel) inyecta VITE_* en process.env; loadEnv solo lee archivos .env
-  const apiBase = (fromFiles.VITE_API_URL ?? process.env.VITE_API_URL ?? "").trim();
+  /** Vercel/Railway: VITE_API_URL o API_PUBLIC_URL (misma URL pública del API que en el backend). */
+  const apiBase = (
+    fromFiles.VITE_API_URL ??
+    process.env.VITE_API_URL ??
+    process.env.API_PUBLIC_URL ??
+    ""
+  )
+    .trim()
+    .replace(/\/+$/, "");
 
   return {
     plugins: [
       {
         name: "inject-vite-api-base-meta",
         transformIndexHtml(html) {
-          return html.replace(
-            "<head>",
-            `<head>\n    <meta name="x-therapy-api-base" content="${escapeAttr(apiBase)}" />`
-          );
+          const meta = `<meta name="x-therapy-api-base" content="${escapeAttr(apiBase)}" />`;
+          const boot = `<script>window.__THERAPY_API_BASE__=${JSON.stringify(apiBase)};</script>`;
+          return html.replace("<head>", `<head>\n    ${meta}\n    ${boot}`);
         }
       },
       react()

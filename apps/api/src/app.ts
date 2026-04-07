@@ -25,8 +25,28 @@ const allowedOrigins = env.CORS_ORIGINS.split(",")
   .filter(Boolean);
 const allowedLocalHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
+function browserOriginFromAppUrl(raw: string): string | null {
+  try {
+    const u = new URL(raw.trim());
+    if (!u.protocol.startsWith("http")) {
+      return null;
+    }
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
+const allowedOriginSet = new Set<string>(allowedOrigins);
+for (const candidate of [env.PATIENT_APP_URL, env.PROFESSIONAL_APP_URL, env.ADMIN_APP_URL]) {
+  const origin = browserOriginFromAppUrl(candidate);
+  if (origin) {
+    allowedOriginSet.add(origin);
+  }
+}
+
 function isAllowedOrigin(origin: string): boolean {
-  if (allowedOrigins.includes(origin)) {
+  if (allowedOriginSet.has(origin)) {
     return true;
   }
 
