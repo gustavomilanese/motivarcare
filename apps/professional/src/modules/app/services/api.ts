@@ -13,13 +13,37 @@ export function setProfessionalApiUnauthorizedHandler(handler: (() => void) | un
   unauthorizedHandler = handler;
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+}
+
+/**
+ * Si en la DB quedó una URL absoluta apuntando al API de desarrollo, el portal en Vercel
+ * no puede cargarla. Reescribe path/query al origen configurado en build (Railway, etc.).
+ */
+function rewriteAbsoluteUrlIfLoopbackDevHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!isLoopbackHostname(parsed.hostname)) {
+      return url;
+    }
+    const baseParsed = new URL(API_BASE);
+    if (isLoopbackHostname(baseParsed.hostname)) {
+      return url;
+    }
+    return `${baseParsed.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return url;
+  }
+}
+
 export function resolveApiAssetUrl(url: string | null | undefined): string | undefined {
   const s = url?.trim();
   if (!s) {
     return undefined;
   }
   if (/^https?:\/\//i.test(s)) {
-    return s;
+    return rewriteAbsoluteUrlIfLoopbackDevHost(s);
   }
   const base = API_BASE.replace(/\/$/, "");
   return `${base}${s.startsWith("/") ? s : `/${s}`}`;

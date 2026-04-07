@@ -1,4 +1,5 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { PatientAvatarImage } from "../PatientAvatarImage";
 import { resolveApiAssetUrl } from "../../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -110,11 +111,11 @@ export function UpcomingReservationsList(props: {
             <div className="agenda-upcoming-cell agenda-upcoming-patient">
               <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
               <div className="agenda-upcoming-patient-inner">
-                {patientPhotoSrc ? (
-                  <img src={patientPhotoSrc} alt="" className="agenda-patient-avatar" />
-                ) : (
-                  <div className="agenda-patient-avatar agenda-patient-avatar--empty" aria-hidden />
-                )}
+                <PatientAvatarImage
+                  src={patientPhotoSrc}
+                  imgClassName="agenda-patient-avatar"
+                  emptyClassName="agenda-patient-avatar agenda-patient-avatar--empty"
+                />
                 <div className="agenda-upcoming-patient-text">
                   <strong>{booking.patientName || "-"}</strong>
                   <small>{booking.patientEmail || ""}</small>

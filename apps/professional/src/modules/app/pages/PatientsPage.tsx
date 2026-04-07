@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { useNavigate } from "react-router-dom";
+import { PatientAvatarImage } from "../components/PatientAvatarImage";
 import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import type { PatientsResponse } from "../types";
 
@@ -58,11 +59,11 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
             return (
             <li key={patient.patientId}>
               <div className="pro-patient-row-main">
-                {avatarSrc ? (
-                  <img src={avatarSrc} alt="" className="pro-patient-avatar" />
-                ) : (
-                  <div className="pro-patient-avatar pro-patient-avatar--empty" aria-hidden />
-                )}
+                <PatientAvatarImage
+                  src={avatarSrc}
+                  imgClassName="pro-patient-avatar"
+                  emptyClassName="pro-patient-avatar pro-patient-avatar--empty"
+                />
                 <div>
                 <strong>{patient.patientName}</strong>
                 <span>{patient.patientEmail}</span>
