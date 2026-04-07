@@ -8,7 +8,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { apiRequest, DEFAULT_PROFESSIONAL_AVATAR_SRC, resolvePublicAssetUrl } from "../services/api";
-import { compressImageDataUrl, fileToDataUrl } from "../utils/imageAvatar";
+import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
   PackageId,
   PatientProfile,
@@ -19,6 +19,24 @@ import type {
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function avatarUploadErrorMessage(language: AppLanguage, requestError: unknown): string {
+  if (requestError instanceof Error && requestError.message === "Failed to fetch") {
+    return t(language, {
+      es: "No pudimos contactar al servidor. Revisá tu conexión, VPN o la configuración del API (CORS / URL).",
+      en: "Could not reach the server. Check your connection, VPN, or API configuration (CORS / URL).",
+      pt: "Nao foi possivel contatar o servidor. Verifique sua conexao, VPN ou a configuracao da API (CORS / URL)."
+    });
+  }
+  if (requestError instanceof Error) {
+    return requestError.message;
+  }
+  return t(language, {
+    es: "No se pudo guardar la foto.",
+    en: "Could not save the photo.",
+    pt: "Nao foi possivel salvar a foto."
+  });
 }
 
 function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
@@ -195,15 +213,7 @@ export function ProfilePage(props: {
       );
     } catch (requestError) {
       setAvatarOk("");
-      setAvatarError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar la foto.",
-              en: "Could not save the photo.",
-              pt: "Nao foi possivel salvar a foto."
-            })
-      );
+      setAvatarError(avatarUploadErrorMessage(props.language, requestError));
     } finally {
       setAvatarBusy(false);
     }
@@ -240,7 +250,7 @@ export function ProfilePage(props: {
     setAvatarBusy(true);
     try {
       const raw = await fileToDataUrl(file);
-      const compressed = await compressImageDataUrl(raw, 1600, 0.82);
+      const compressed = await compressPatientAvatarDataUrl(raw);
       await persistAvatar(compressed);
     } catch {
       setAvatarError(

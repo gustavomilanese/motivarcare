@@ -125,6 +125,10 @@ export interface IntakeQuestion {
   multiline?: boolean;
   /** Permite elegir varias opciones a la vez (valor guardado unido con saltos de línea). */
   allowMultiple?: boolean;
+  /** Paso opcional (no bloquea continuar / enviar). */
+  optional?: boolean;
+  /** Subida de foto de perfil; no se incluye en el body de intake (se envía aparte con PATCH /me). */
+  profilePhoto?: boolean;
 }
 
 export interface IntakeState {
@@ -135,6 +139,11 @@ export interface IntakeState {
   triageDecision?: "pending" | "approved" | "cancelled" | null;
   answers: Record<string, string>;
 }
+
+export type IntakeCompletionPayload = {
+  answers: Record<string, string>;
+  profilePhotoDataUrl?: string | null;
+};
 
 export interface Professional {
   id: string;

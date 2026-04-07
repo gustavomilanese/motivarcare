@@ -815,7 +815,7 @@ export function App() {
           setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
-        onComplete={async (answers) => {
+        onComplete={async ({ answers, profilePhotoDataUrl }) => {
           if (!state.authToken) {
             throw new Error("No se encontro sesion autenticada");
           }
@@ -832,12 +832,30 @@ export function App() {
 
             const riskLevel = response.intake.riskLevel as RiskLevel;
 
+            let sessionAvatarUrl = state.session?.avatarUrl ?? null;
+            if (profilePhotoDataUrl?.startsWith("data:image")) {
+              try {
+                const mePatch = await apiRequest<{ user: { avatarUrl?: string | null } }>(
+                  "/api/auth/me",
+                  {
+                    method: "PATCH",
+                    body: JSON.stringify({ avatarUrl: profilePhotoDataUrl })
+                  },
+                  state.authToken
+                );
+                sessionAvatarUrl = mePatch.user?.avatarUrl ?? profilePhotoDataUrl;
+              } catch {
+                // Intake ya guardado; la foto se puede subir desde Mi cuenta.
+              }
+            }
+
             setState((current) => ({
               ...current,
               onboardingFinalCompleted: false,
               therapistSelectionCompleted: false,
               assignedProfessionalId: null,
               assignedProfessionalName: null,
+              session: current.session ? { ...current.session, avatarUrl: sessionAvatarUrl } : null,
               intake: {
                 completed: true,
                 completedAt: response.intake.completedAt,

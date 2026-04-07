@@ -4422,6 +4422,38 @@ button.sessions-balance {
   gap: 0;
 }
 
+.sessions-booking-page .sessions-hero-title-main {
+  align-items: center;
+}
+
+.sessions-booking-page .sessions-hero-title-block {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sessions-booking-page .sessions-booking-hero-sub {
+  display: none;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #64748b;
+  font-weight: 400;
+  max-width: 360px;
+}
+
+.sessions-booking-page .sessions-booking-mobile-only {
+  display: none;
+}
+
+.sessions-booking-page .sessions-booking-desktop-only {
+  display: block;
+}
+
+.sessions-booking-page .sessions-confirmed-list-root {
+  min-width: 0;
+}
+
 .sessions-booking-page .sessions-hero-icon {
   width: 44px;
   height: 44px;
@@ -4543,43 +4575,39 @@ button.sessions-balance {
   font-size: 13px;
 }
 
-.sessions-booking-page .sessions-confirmed-list {
-  gap: 8px;
-}
-
-.sessions-booking-page .sessions-reservations-table-head {
-  padding: 0 12px;
+.sessions-booking-page .sessions-booking-desktop-only .sessions-confirmed-list--desktop {
+  display: grid;
   gap: 10px;
 }
 
-.sessions-booking-page .session-management-card {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-card {
   padding: 11px 14px;
   gap: 10px;
 }
 
-.sessions-booking-page .session-management-main {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-main {
   gap: 10px;
 }
 
-.sessions-booking-page .session-management-cell {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-cell {
   gap: 2px;
 }
 
-.sessions-booking-page .session-management-cell-date strong,
-.sessions-booking-page .session-management-meta strong {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-cell-date strong,
+.sessions-booking-page .sessions-booking-desktop-only .session-management-meta strong {
   font-size: 14px;
 }
 
-.sessions-booking-page .session-management-cell-time span {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-cell-time span {
   font-size: 15px;
 }
 
-.sessions-booking-page .session-management-actions button,
-.sessions-booking-page .session-management-actions .session-link {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions button,
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-link {
   min-height: 36px;
 }
 
-.sessions-booking-page .session-management-actions .icon-only {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .icon-only {
   width: 38px;
   min-width: 38px;
   min-height: 38px;
@@ -6720,23 +6748,24 @@ button.sessions-balance {
     text-align: left;
   }
 
-  .sessions-reservations-table-head {
+  /* Solo inicio paciente: la página Sesiones (/sessions) mantiene tabla desktop */
+  .patient-dashboard-home .sessions-reservations-table-head {
     display: none;
   }
 
-  .session-management-card {
+  .patient-dashboard-home .session-management-card {
     grid-template-columns: 1fr;
   }
 
-  .session-management-main {
+  .patient-dashboard-home .session-management-main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .session-management-cell-label {
+  .patient-dashboard-home .session-management-cell-label {
     display: inline-flex;
   }
 
-  .session-management-actions-wrap {
+  .patient-dashboard-home .session-management-actions-wrap {
     justify-items: start;
   }
 
@@ -7020,6 +7049,251 @@ button.sessions-balance {
     width: 100%;
     max-width: none;
     justify-self: stretch;
+  }
+
+  .portal-main:has(.sessions-booking-page) {
+    background: #f1eef9;
+  }
+
+  .sessions-booking-page .sessions-booking-mobile-only {
+    display: grid;
+    gap: 0;
+  }
+
+  .sessions-booking-page .sessions-booking-desktop-only {
+    display: none;
+  }
+
+  .sessions-booking-page .sessions-confirmed-panel {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .sessions-booking-page .sessions-confirmed-panel.content-card {
+    padding: 0 2px;
+    gap: 12px;
+  }
+
+  .sessions-booking-page .sessions-panel-head {
+    padding-left: 4px;
+    padding-right: 2px;
+  }
+
+  .sessions-booking-page .sessions-page-hero.sessions-page-hero-plain {
+    background: #ffffff;
+    border-radius: 16px;
+  }
+
+  .sessions-booking-page .sessions-hero-icon {
+    display: none;
+  }
+
+  .sessions-booking-page .sessions-hero-title-main {
+    align-items: flex-start;
+  }
+
+  .sessions-booking-page .sessions-hero-title-main h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+
+  .sessions-booking-page .sessions-booking-hero-sub {
+    display: block;
+    font-size: 13px;
+    max-width: none;
+  }
+
+  .sessions-booking-page .sessions-booking-mobile-only .sessions-confirmed-list--mobile {
+    display: grid;
+    gap: 12px;
+  }
+
+  /* Tarjetas tipo patient-mobile `UpcomingSessionCard` (solo ≤680px) */
+  .sessions-booking-page .session-rn-card.session-management-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    grid-template-columns: unset;
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+  }
+
+  .sessions-booking-page .session-rn-card--trial.session-management-card {
+    border: 1.5px solid rgba(245, 158, 11, 0.5);
+  }
+
+  .sessions-booking-page .session-rn-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sessions-booking-page .session-rn-time {
+    width: 38px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #6d6d72;
+    line-height: 1.2;
+  }
+
+  .sessions-booking-page .session-rn-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f3f4ff;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  .sessions-booking-page .session-rn-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sessions-booking-page .session-rn-body-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sessions-booking-page .session-rn-body-main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .sessions-booking-page .session-rn-date-line {
+    font-size: 12px;
+    font-weight: 400;
+    color: #6d6d72;
+    text-transform: capitalize;
+    line-height: 1.25;
+  }
+
+  .sessions-booking-page .session-rn-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: #1c1c1e;
+  }
+
+  .sessions-booking-page .session-rn-status {
+    font-size: 11px;
+    font-weight: 600;
+    color: #248a3d;
+    margin-top: 2px;
+  }
+
+  .sessions-booking-page .session-rn-reschedule {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 999px;
+    background: #f3f4ff;
+    color: #5f44eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+
+  .sessions-booking-page .session-rn-reschedule:hover:not(:disabled) {
+    background: #e8ebff;
+  }
+
+  .sessions-booking-page .session-rn-reschedule:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .sessions-booking-page .session-rn-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .sessions-booking-page .session-rn-join-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    width: 100%;
+    border-radius: 14px;
+    border: 1.5px solid #5f44eb;
+    background: transparent;
+    color: #5f44eb;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .sessions-booking-page .session-rn-join-btn:hover {
+    background: rgba(95, 68, 235, 0.08);
+  }
+
+  .sessions-booking-page .session-rn-join-icon {
+    flex-shrink: 0;
+  }
+
+  .sessions-booking-page .session-rn-join-pending {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .sessions-booking-page .session-rn-detail-ghost {
+    align-self: center;
+    border: none;
+    background: none;
+    color: #5f44eb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sessions-booking-page .sessions-hero-buy-button {
+    background: transparent;
+    color: #5f44eb;
+    border: 1.5px solid #5f44eb;
+    box-shadow: none;
+  }
+
+  .sessions-booking-page .sessions-hero-buy-button:hover {
+    background: rgba(95, 68, 235, 0.08);
+    box-shadow: none;
+  }
+
+  .sessions-booking-page .sessions-confirmed-panel .sessions-panel-head h2 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
   }
 
   .header-actions {

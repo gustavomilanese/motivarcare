@@ -24,7 +24,8 @@ const request = createApiClient({
 });
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
-  return request<T>(path, options, token);
+  // Bearer cross-origin: omit evita preflight/CORS extra con cookies y coincide con el uso del portal paciente.
+  return request<T>(path, { credentials: "omit", ...options }, token);
 }
 
 /** Placeholder avatar when no photo or failed load (keep in sync with `onError` handlers). */

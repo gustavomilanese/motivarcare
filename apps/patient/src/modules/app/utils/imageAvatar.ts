@@ -22,6 +22,14 @@ function loadImageElement(dataUrl: string): Promise<HTMLImageElement> {
   });
 }
 
+/** Avatar clínico vía JSON: limitar ancho y peso para proxies strict y PATCH razonable. */
+const PATIENT_AVATAR_MAX_WIDTH = 768;
+const PATIENT_AVATAR_JPEG_QUALITY = 0.72;
+
+export async function compressPatientAvatarDataUrl(dataUrl: string): Promise<string> {
+  return compressImageDataUrl(dataUrl, PATIENT_AVATAR_MAX_WIDTH, PATIENT_AVATAR_JPEG_QUALITY);
+}
+
 export async function compressImageDataUrl(dataUrl: string, maxWidth = 1600, quality = 0.82): Promise<string> {
   const image = await loadImageElement(dataUrl);
   const scale = image.width > maxWidth ? maxWidth / image.width : 1;
