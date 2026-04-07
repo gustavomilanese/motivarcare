@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -331,27 +331,7 @@ async function apiRequestWithRetry<T>(
   }
 }
 
-function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "vacation" | "notice" | "workload" | "rate" }) {
-  if (props.kind === "work") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M7.5 3.5V7.5M16.5 3.5V7.5M3.5 9.5H20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M8 13H10M12 13H14M16 13H16.01M8 16.5H10M12 16.5H14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (props.kind === "published") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M7.5 2.5V6.5M16.5 2.5V6.5M3.5 8.5H20.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M8 13.5H16M8 16.5H13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
+function ScheduleMenuIcon(props: { kind: "settings" | "vacation" | "notice" | "workload" | "rate" }) {
   if (props.kind === "notice") {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -404,8 +384,12 @@ function ScheduleMenuIcon(props: { kind: "work" | "published" | "settings" | "va
   );
 }
 
-export function SchedulePage(props: { token: string; language: AppLanguage }) {
-  const [view, setView] = useState<"home" | "workHours" | "settings" | "vacations" | "bookingNotice" | "sessionRate">("home");
+export function SchedulePage(props: { token: string; language: AppLanguage; mode?: "work" | "settings" }) {
+  const navigate = useNavigate();
+  const mode = props.mode ?? "work";
+  const [view, setView] = useState<"workHours" | "settings" | "vacations" | "bookingNotice" | "sessionRate">(() =>
+    mode === "settings" ? "settings" : "workHours"
+  );
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -494,15 +478,29 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
   }, [props.token]);
 
   useEffect(() => {
-    const resetToHome = () => {
-      setView("home");
+    const resetToWorkRoot = () => {
+      setView("workHours");
       setError("");
       setMessage("");
     };
 
-    window.addEventListener("professional:schedule-reset", resetToHome);
-    return () => window.removeEventListener("professional:schedule-reset", resetToHome);
+    window.addEventListener("professional:schedule-reset", resetToWorkRoot);
+    return () => window.removeEventListener("professional:schedule-reset", resetToWorkRoot);
   }, []);
+
+  useEffect(() => {
+    if (mode !== "settings") {
+      return;
+    }
+    const resetToSettingsRoot = () => {
+      setView("settings");
+      setError("");
+      setMessage("");
+    };
+
+    window.addEventListener("professional:schedule-settings-reset", resetToSettingsRoot);
+    return () => window.removeEventListener("professional:schedule-settings-reset", resetToSettingsRoot);
+  }, [mode]);
 
   const toggleHour = (timeLabel: string) => {
     setWeekTemplate((current) => {
@@ -1042,83 +1040,6 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
     }
   };
 
-  if (view === "home") {
-    return (
-      <div className="pro-grid-stack">
-        <section className="pro-card schedule-home-card">
-          <h2>{t(props.language, { es: "Configuracion de horario", en: "Schedule settings", pt: "Configuracao de horario" })}</h2>
-
-          {error ? <p className="pro-error">{error}</p> : null}
-          {message ? <p className="pro-success">{message}</p> : null}
-
-          <div className="schedule-home-list">
-            <button type="button" className="schedule-home-item" onClick={() => setView("workHours")}>
-              <span className="schedule-home-icon work">
-                <ScheduleMenuIcon kind="work" />
-              </span>
-              <div className="schedule-home-copy">
-                <strong>{t(props.language, { es: "Configurar horarios de trabajo", en: "Configure work schedule", pt: "Configurar horario de trabalho" })}</strong>
-                <span>
-                  {replaceTemplate(
-                    t(props.language, {
-                      es: "{hours} horarios por semana",
-                      en: "{hours} weekly slots",
-                      pt: "{hours} horarios por semana"
-                    }),
-                    { hours: String(openSlotsPerWeek) }
-                  )}
-                </span>
-              </div>
-              <em aria-hidden="true">›</em>
-            </button>
-
-            <NavLink className="schedule-home-item" to="/disponibilidad">
-              <span className="schedule-home-icon published">
-                <ScheduleMenuIcon kind="published" />
-              </span>
-              <div className="schedule-home-copy">
-                <strong>{t(props.language, { es: "Disponibilidad publicada", en: "Published availability", pt: "Disponibilidade publicada" })}</strong>
-                <span>
-                  {replaceTemplate(
-                    t(props.language, {
-                      es: "{count} horarios activos",
-                      en: "{count} active slots",
-                      pt: "{count} horarios ativos"
-                    }),
-                    { count: String(slots.length) }
-                  )}
-                </span>
-              </div>
-              <em aria-hidden="true">›</em>
-            </NavLink>
-
-            <button type="button" className="schedule-home-item" onClick={() => setView("settings")}>
-              <span className="schedule-home-icon settings">
-                <ScheduleMenuIcon kind="settings" />
-              </span>
-              <div className="schedule-home-copy">
-                <strong>{t(props.language, { es: "Ajustes", en: "Settings", pt: "Ajustes" })}</strong>
-                <span>
-                  {replaceTemplate(
-                    t(props.language, {
-                      es: "Tiempo mínimo: {hours}h, valor: USD {rate}, vacaciones y carga de trabajo",
-                      en: "Minimum notice: {hours}h, rate: USD {rate}, vacation and workload",
-                      pt: "Tempo minimo: {hours}h, valor: USD {rate}, ferias e carga de trabalho"
-                    }),
-                    { hours: String(bookingNoticeHours), rate: String(sessionPriceUsd) }
-                  )}
-                </span>
-              </div>
-              <em aria-hidden="true">›</em>
-            </button>
-          </div>
-
-          {loading ? <p className="pro-muted">{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
-        </section>
-      </div>
-    );
-  }
-
   if (view === "bookingNotice") {
     return (
       <div className="pro-grid-stack">
@@ -1317,7 +1238,12 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
       <div className="pro-grid-stack">
         <section className="pro-card schedule-home-card">
           <header className="schedule-work-head">
-            <button type="button" className="schedule-back" onClick={() => setView("home")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+            <button
+              type="button"
+              className="schedule-back"
+              onClick={() => navigate("/")}
+              aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+            >
               ‹
             </button>
             <div>
@@ -1399,7 +1325,12 @@ export function SchedulePage(props: { token: string; language: AppLanguage }) {
     <div className="pro-grid-stack">
       <section className="pro-card schedule-work-card">
         <header className="schedule-work-head">
-          <button type="button" className="schedule-back" onClick={() => setView("home")} aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}>
+          <button
+            type="button"
+            className="schedule-back"
+            onClick={() => navigate("/")}
+            aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+          >
             ‹
           </button>
           <div>

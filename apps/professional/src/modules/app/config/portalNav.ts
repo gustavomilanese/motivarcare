@@ -1,7 +1,7 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PortalSection } from "../types";
 
-export type PortalNavGroup = "agenda";
+export type PortalNavGroup = "agenda" | "patients" | "business";
 
 export type PortalNavItemDef = {
   to: PortalSection;
@@ -9,10 +9,23 @@ export type PortalNavItemDef = {
   group?: PortalNavGroup;
 };
 
-export const PORTAL_NAV_GROUP_AGENDA_LABEL: LocalizedText = {
-  es: "Tu agenda",
-  en: "Your schedule",
-  pt: "Sua agenda"
+/** Título visible encima del primer ítem de cada grupo en el sidebar. */
+export const PORTAL_NAV_GROUP_LABELS: Record<PortalNavGroup, LocalizedText> = {
+  agenda: {
+    es: "Tu agenda",
+    en: "Your schedule",
+    pt: "Sua agenda"
+  },
+  patients: {
+    es: "Tus Pacientes",
+    en: "Your patients",
+    pt: "Seus pacientes"
+  },
+  business: {
+    es: "Ingresos y preferencias",
+    en: "Earnings & preferences",
+    pt: "Receitas e preferencias"
+  }
 };
 
 export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
@@ -27,9 +40,18 @@ export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
     label: { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" },
     group: "agenda"
   },
-  { to: "/pacientes", label: { es: "Pacientes", en: "Patients", pt: "Pacientes" } },
-  { to: "/chat", label: { es: "Chat", en: "Chat", pt: "Chat" } },
-  { to: "/ingresos", label: { es: "Ingresos", en: "Earnings", pt: "Receitas" } }
+  {
+    to: "/pacientes",
+    label: { es: "Pacientes", en: "Patients", pt: "Pacientes" },
+    group: "patients"
+  },
+  { to: "/chat", label: { es: "Chat", en: "Chat", pt: "Chat" }, group: "patients" },
+  { to: "/ingresos", label: { es: "Ingresos", en: "Earnings", pt: "Receitas" }, group: "business" },
+  {
+    to: "/agenda/ajustes",
+    label: { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" },
+    group: "business"
+  }
 ];
 
 export type ResolvedPortalNavLink = {

@@ -5,6 +5,7 @@ export type PortalSection =
   | "/agenda"
   | "/horarios"
   | "/disponibilidad"
+  | "/agenda/ajustes"
   | "/pacientes"
   | "/chat"
   | "/ingresos"

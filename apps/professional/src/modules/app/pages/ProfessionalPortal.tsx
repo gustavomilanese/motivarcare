@@ -8,7 +8,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { ProMobileNavIcon } from "../components/ProMobileNavIcon";
-import { PORTAL_NAV_GROUP_AGENDA_LABEL, getPortalNavLinks } from "../config/portalNav";
+import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav";
 import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
 import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
 import { AdminPage } from "./AdminPage";
@@ -103,13 +103,14 @@ export function ProfessionalPortal(props: {
   const notificationsUnreadCount = notificationItems.filter((item) => item.unread).length;
 
   const handlePortalNavClick = (target: PortalSection) => (event: MouseEvent<HTMLAnchorElement>) => {
-    if (target !== "/horarios") {
-      return;
-    }
-
-    if (window.location.pathname === "/horarios") {
+    if (target === "/horarios" && window.location.pathname === "/horarios") {
       event.preventDefault();
       window.dispatchEvent(new CustomEvent("professional:schedule-reset"));
+      return;
+    }
+    if (target === "/agenda/ajustes" && window.location.pathname === "/agenda/ajustes") {
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent("professional:schedule-settings-reset"));
     }
   };
 
@@ -134,8 +135,8 @@ export function ProfessionalPortal(props: {
 
         <nav className="pro-sidebar-nav">
           {links.flatMap((link, index) => {
-            const showAgendaLabel =
-              link.group === "agenda" && (index === 0 || links[index - 1]?.group !== "agenda");
+            const prevGroup = index > 0 ? links[index - 1]?.group : undefined;
+            const showGroupLabel = Boolean(link.group && link.group !== prevGroup);
             const navLink = (
               <NavLink
                 key={link.to}
@@ -159,13 +160,13 @@ export function ProfessionalPortal(props: {
               </NavLink>
             );
 
-            if (!showAgendaLabel) {
+            if (!showGroupLabel || !link.group) {
               return [navLink];
             }
 
             return [
-              <span key="sidebar-agenda-label" className="pro-sidebar-nav-group-label">
-                {t(props.language, PORTAL_NAV_GROUP_AGENDA_LABEL)}
+              <span key={`sidebar-group-${link.group}-${index}`} className="pro-sidebar-nav-group-label">
+                {t(props.language, PORTAL_NAV_GROUP_LABELS[link.group])}
               </span>,
               navLink
             ];
@@ -298,7 +299,8 @@ export function ProfessionalPortal(props: {
         <main className="pro-main-content">
           <Routes>
             <Route path="/" element={<DashboardPage token={props.token} language={props.language} currency={props.currency} user={props.user} />} />
-            <Route path="/horarios" element={<SchedulePage token={props.token} language={props.language} />} />
+            <Route path="/horarios" element={<SchedulePage token={props.token} language={props.language} mode="work" />} />
+            <Route path="/agenda/ajustes" element={<SchedulePage token={props.token} language={props.language} mode="settings" />} />
             <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route path="/pacientes" element={<PatientsPage token={props.token} language={props.language} />} />
             <Route path="/chat" element={<ChatPage token={props.token} user={props.user} language={props.language} />} />
