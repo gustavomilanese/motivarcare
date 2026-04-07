@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type SyntheticEvent } from "react";
+import { flushSync } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
@@ -289,6 +290,50 @@ export function App() {
   };
 
   const sessionId = state.session?.id;
+
+  /** Calendar opcional tras intake y antes del matching; deja de aplicar al elegir terapeuta / reservar. */
+  const shouldOfferCalendarOnboardingBeforeMatching = useMemo(
+    () =>
+      Boolean(
+        state.intake?.completed
+        && !state.intake?.riskBlocked
+        && !state.therapistSelectionCompleted
+        && state.bookings.length === 0
+        && state.subscription.purchaseHistory.length === 0
+      ),
+    [
+      state.intake?.completed,
+      state.intake?.riskBlocked,
+      state.therapistSelectionCompleted,
+      state.bookings.length,
+      state.subscription.purchaseHistory.length
+    ]
+  );
+
+  /**
+   * Recuperación (F5): evita un frame de MainPortal entre intake completado y pantalla de Calendar.
+   */
+  useLayoutEffect(() => {
+    if (!sessionId || !state.authToken) {
+      return;
+    }
+    if (!shouldOfferCalendarOnboardingBeforeMatching) {
+      return;
+    }
+    if (calendarPromptDismissedUserIds.includes(sessionId)) {
+      return;
+    }
+    if (showCalendarOnboarding) {
+      return;
+    }
+    setShowCalendarOnboarding(true);
+  }, [
+    sessionId,
+    state.authToken,
+    shouldOfferCalendarOnboardingBeforeMatching,
+    calendarPromptDismissedUserIds,
+    showCalendarOnboarding
+  ]);
 
   const handleConnectCalendarFromOnboarding = async () => {
     if (!state.authToken) {
@@ -605,6 +650,7 @@ export function App() {
       .then((response) => {
         if (!cancelled && response.connected) {
           setShowCalendarOnboarding(false);
+          navigate("/onboarding/final/matching", { replace: true });
         }
       })
       .catch(() => {
@@ -613,7 +659,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [showCalendarOnboarding, state.authToken, state.session]);
+  }, [showCalendarOnboarding, state.authToken, state.session, navigate]);
 
   useEffect(() => {
     if (!state.session || location.pathname === "/verify-email") {
@@ -749,6 +795,7 @@ export function App() {
                   setCalendarPromptDismissedUserIds(nextDismissed);
                 }
                 setShowCalendarOnboarding(false);
+                navigate("/onboarding/final/matching", { replace: true });
               }}
               disabled={calendarOnboardingLoading}
             >
@@ -821,23 +868,43 @@ export function App() {
               }
             }
 
-            setState((current) => ({
-              ...current,
-              onboardingFinalCompleted: false,
-              therapistSelectionCompleted: false,
-              assignedProfessionalId: null,
-              assignedProfessionalName: null,
-              session: current.session ? { ...current.session, avatarUrl: sessionAvatarUrl } : null,
-              intake: {
-                completed: true,
-                completedAt: response.intake.completedAt,
-                riskLevel,
-                riskBlocked: riskLevel !== "low",
-                triageDecision: riskLevel === "low" ? null : "pending",
-                answers
+            const sessionUserId = state.session?.id ?? "";
+            const offerGoogleCalendarStep =
+              riskLevel === "low"
+              && sessionUserId.length > 0
+              && !calendarPromptDismissedUserIds.includes(sessionUserId)
+              && state.bookings.length === 0
+              && state.subscription.purchaseHistory.length === 0;
+
+            flushSync(() => {
+              setState((current) => ({
+                ...current,
+                onboardingFinalCompleted: false,
+                therapistSelectionCompleted: false,
+                assignedProfessionalId: null,
+                assignedProfessionalName: null,
+                session: current.session ? { ...current.session, avatarUrl: sessionAvatarUrl } : null,
+                intake: {
+                  completed: true,
+                  completedAt: response.intake.completedAt,
+                  riskLevel,
+                  riskBlocked: riskLevel !== "low",
+                  triageDecision: riskLevel === "low" ? null : "pending",
+                  answers
+                }
+              }));
+              if (riskLevel === "low" && offerGoogleCalendarStep) {
+                setShowCalendarOnboarding(true);
               }
-            }));
-            navigate("/onboarding/final/matching", { replace: true });
+            });
+
+            if (riskLevel !== "low") {
+              navigate("/", { replace: true });
+              return;
+            }
+            if (!offerGoogleCalendarStep) {
+              navigate("/onboarding/final/matching", { replace: true });
+            }
           } catch (requestError) {
             if (requestError instanceof Error && requestError.message.includes("Intake already completed")) {
               setState((current) => ({
