@@ -1,6 +1,6 @@
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useEffect, useState } from "react";
-import { SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../constants";
+import { ADMIN_TRIAL_BOOKING_CANCEL_PHRASE, SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../constants";
 import {
   type BookingDraft,
   CreatePatientModal,
@@ -317,7 +317,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           timezone: response.patient.timezone,
           status: (response.patient.status as PatientStatus) ?? "active",
           remainingCredits: String(response.patient.latestPurchase?.remainingCredits ?? 0),
-          activeProfessionalId: response.patient.activeProfessionalId ?? ""
+          activeProfessionalId: response.patient.activeProfessionalId ?? "",
+          avatarUrl: response.patient.avatarUrl ?? ""
         }
       }));
 
@@ -487,7 +488,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
             email: draft.email.trim().toLowerCase(),
             ...(draft.password.trim().length > 0 ? { password: draft.password } : {}),
             patientStatus: draft.status,
-            patientTimezone: draft.timezone.trim()
+            patientTimezone: draft.timezone.trim(),
+            avatarUrl: draft.avatarUrl.trim().length > 0 ? draft.avatarUrl.trim() : null
           })
         },
         props.token
@@ -603,6 +605,47 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     }
   };
 
+  const forceCancelTrialBooking = async (patientId: string, bookingId: string, confirmationPhrase: string) => {
+    const draft = bookingDrafts[bookingId];
+    if (!draft) {
+      setError("No se encontro la sesion");
+      return;
+    }
+    if (confirmationPhrase.trim() !== ADMIN_TRIAL_BOOKING_CANCEL_PHRASE) {
+      setError("Frase de confirmacion incorrecta");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setSessionOpsLoading(true);
+    try {
+      await apiRequest<{ booking: AdminBookingOps }>(
+        "/api/admin/bookings/" + bookingId,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: "CANCELLED",
+            startsAt: new Date(draft.startsAt).toISOString(),
+            endsAt: new Date(draft.endsAt).toISOString(),
+            professionalId: draft.professionalId,
+            cancellationReason: "Admin: cancelacion sesion de prueba",
+            adminTrialCancelConfirmation: confirmationPhrase.trim()
+          })
+        },
+        props.token
+      );
+
+      setSuccess("Sesion de prueba cancelada");
+      await loadPatientManagement(patientId);
+      await load(patientSearch, patientPage);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesion de prueba");
+    } finally {
+      setSessionOpsLoading(false);
+    }
+  };
+
   const reactivateCancelledBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
@@ -659,6 +702,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         props.token
       );
       setSuccess(decision === "approved" ? "Paciente aprobado en triage" : "Paciente rechazado por triage");
+      setIsPatientEditModalOpen(false);
       await load(patientSearch, patientPage);
       if (editingPatientId === patientId) {
         await loadPatientManagement(patientId);
@@ -729,6 +773,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
 
         <PatientEditModal
           open={Boolean(editingPatient) && isPatientEditModalOpen}
+          language={props.language}
           editingPatient={editingPatient}
           editingPatientDraft={editingPatientDraft}
           editingBookings={editingBookings}
@@ -765,6 +810,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
               return;
             }
             void cancelConfirmedBooking(editingPatient.id, bookingId);
+          }}
+          onForceCancelTrialBooking={(bookingId, confirmationPhrase) => {
+            if (!editingPatient) {
+              return;
+            }
+            void forceCancelTrialBooking(editingPatient.id, bookingId, confirmationPhrase);
           }}
           onReactivateBooking={(bookingId) => {
             if (!editingPatient) {

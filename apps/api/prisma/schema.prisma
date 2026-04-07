@@ -43,8 +43,8 @@ model User {
   deactivatedAt DateTime?
   passwordHash  String
   fullName      String
-  /// Foto de perfil (URL https o data URI). Demo/seed; luego reemplazar por carga real desde la app.
-  avatarUrl     String?              @map("avatar_url") @db.Text
+  /// Foto de perfil (URL https o data URI).
+  avatarUrl     String?              @map("avatar_url") @db.LongText
   role          Role
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt

@@ -288,6 +288,12 @@ export function PortalRoutes(props: {
                     authToken={props.state.authToken}
                     profile={props.state.profile}
                     subscription={props.state.subscription}
+                    onSessionAvatarUpdate={(avatarUrl) => {
+                      props.onStateChange((current) => ({
+                        ...current,
+                        session: current.session ? { ...current.session, avatarUrl } : null
+                      }));
+                    }}
                     onUpdateProfile={(profile) => {
                       props.onStateChange((current) => ({
                         ...current,

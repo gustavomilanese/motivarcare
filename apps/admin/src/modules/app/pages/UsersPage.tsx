@@ -53,6 +53,7 @@ function buildEditDraft(user: AdminUser): EditUserDraft {
     isTestUser: user.isTestUser,
     fullName: user.fullName,
     password: "",
+    patientAvatarUrl: user.avatarUrl ?? "",
     patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
     patientTimezone: user.patientProfile?.timezone ?? "America/New_York",
     professionalVisible: user.professionalProfile?.visible ?? true,
@@ -332,6 +333,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       isTestUser?: boolean;
       patientStatus?: PatientStatus;
       patientTimezone?: string;
+      avatarUrl?: string | null;
       professionalVisible?: boolean;
       professionalCancellationHours?: number;
       professionalBio?: string;
@@ -351,6 +353,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (draft.role === "PATIENT") {
       payload.patientStatus = draft.patientStatus;
       payload.patientTimezone = draft.patientTimezone.trim() || "America/New_York";
+      payload.avatarUrl = draft.patientAvatarUrl.trim().length > 0 ? draft.patientAvatarUrl.trim() : null;
     }
 
     if (draft.role === "PROFESSIONAL") {

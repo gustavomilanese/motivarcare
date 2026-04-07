@@ -6288,6 +6288,102 @@ button.sessions-balance {
   max-width: 760px;
 }
 
+.patient-account-avatar-block {
+  margin: 16px 0 20px;
+  padding: 14px 16px;
+  border: 1px solid #dbe1ef;
+  border-radius: 14px;
+  background: #f9faff;
+}
+
+.patient-account-avatar-label {
+  display: block;
+  font-weight: 700;
+  color: #1f2a44;
+  margin-bottom: 6px;
+}
+
+.patient-account-avatar-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #5a6b88;
+  line-height: 1.45;
+}
+
+.patient-account-avatar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.patient-account-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #d3daec;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.patient-account-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.patient-account-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
+  font-weight: 700;
+  color: #3d4f73;
+  background: linear-gradient(145deg, #eef2fb, #dfe8f8);
+}
+
+.patient-account-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.patient-account-avatar-upload {
+  cursor: pointer;
+  margin: 0;
+}
+
+.patient-account-avatar-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.patient-account-avatar-upload span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: #2f6fed;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.patient-account-avatar-upload input:disabled + span {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .profile-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

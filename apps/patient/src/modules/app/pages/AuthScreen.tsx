@@ -94,7 +94,8 @@ export function AuthScreen(props: {
           id: response.user.id,
           fullName: response.user.fullName,
           email: response.user.email,
-          emailVerified: response.user.emailVerified
+          emailVerified: response.user.emailVerified,
+          avatarUrl: response.user.avatarUrl ?? null
         },
         token: response.token,
         emailVerificationRequired: response.emailVerificationRequired,

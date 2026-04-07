@@ -11,7 +11,10 @@ export function ProfessionalPhotoUrlField(props: {
   onChange: (next: string) => void;
   language: AppLanguage;
   disabled?: boolean;
+  /** Textos para foto de usuario paciente (mismo control que profesional). */
+  variant?: "professional" | "patient";
 }) {
+  const variant = props.variant ?? "professional";
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState("");
 
@@ -66,11 +69,17 @@ export function ProfessionalPhotoUrlField(props: {
   return (
     <div className="admin-pro-photo-field">
       <span className="admin-pro-photo-label">
-        {t(props.language, {
-          es: "Foto de perfil",
-          en: "Profile photo",
-          pt: "Foto de perfil"
-        })}
+        {variant === "patient"
+          ? t(props.language, {
+              es: "Foto de perfil del paciente",
+              en: "Patient profile photo",
+              pt: "Foto de perfil do paciente"
+            })
+          : t(props.language, {
+              es: "Foto de perfil",
+              en: "Profile photo",
+              pt: "Foto de perfil"
+            })}
       </span>
       <div className="admin-pro-photo-row">
         <div className="admin-pro-photo-preview" aria-hidden={!trimmed}>

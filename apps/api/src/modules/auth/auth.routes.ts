@@ -30,8 +30,17 @@ const loginSchema = z.object({
   password: z.string().min(8)
 });
 
+const avatarImageSourceSchema = z
+  .string()
+  .trim()
+  .max(20_000_000)
+  .refine((value) => value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:image/"), {
+    message: "Invalid avatar image source"
+  });
+
 const updateMeSchema = z.object({
-  fullName: z.string().trim().min(2).max(120).optional()
+  fullName: z.string().trim().min(2).max(120).optional(),
+  avatarUrl: z.union([avatarImageSourceSchema, z.null()]).optional()
 });
 
 const googleCalendarConnectSchema = z.object({
@@ -780,7 +789,8 @@ authRouter.patch("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
   const updated = await prisma.user.update({
     where: { id: req.auth.userId },
     data: {
-      ...(parsed.data.fullName !== undefined ? { fullName: parsed.data.fullName } : {})
+      ...(parsed.data.fullName !== undefined ? { fullName: parsed.data.fullName } : {}),
+      ...(parsed.data.avatarUrl !== undefined ? { avatarUrl: parsed.data.avatarUrl } : {})
     },
     include: {
       patient: { select: { id: true } },

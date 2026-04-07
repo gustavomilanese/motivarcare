@@ -39,6 +39,8 @@ export interface AdminUser {
   id: string;
   email: string;
   fullName: string;
+  /** Foto de perfil a nivel cuenta (paciente / cualquier rol con User.avatarUrl). */
+  avatarUrl?: string | null;
   role: Role;
   isActive: boolean;
   isTestUser: boolean;
@@ -355,6 +357,8 @@ export interface EditUserDraft {
   isTestUser: boolean;
   fullName: string;
   password: string;
+  /** Foto de perfil del usuario (paciente): URL o data URL. */
+  patientAvatarUrl: string;
   patientStatus: PatientStatus;
   patientTimezone: string;
   professionalVisible: boolean;

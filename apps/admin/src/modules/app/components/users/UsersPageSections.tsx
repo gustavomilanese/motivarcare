@@ -248,6 +248,7 @@ export function UsersListSection(props: {
         isTestUser: user.isTestUser,
         fullName: user.fullName,
         password: "",
+        patientAvatarUrl: user.avatarUrl ?? "",
         patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
         patientTimezone: user.patientProfile?.timezone ?? "America/New_York",
         professionalVisible: user.professionalProfile?.visible ?? true,
@@ -490,6 +491,22 @@ export function UsersListSection(props: {
                               }
                             />
                           </label>
+
+                          <ProfessionalPhotoUrlField
+                            variant="patient"
+                            language={props.language}
+                            disabled={props.saveLoading}
+                            value={draft.patientAvatarUrl}
+                            onChange={(next) =>
+                              props.setEditDrafts((current) => ({
+                                ...current,
+                                [user.id]: {
+                                  ...draft,
+                                  patientAvatarUrl: next
+                                }
+                              }))
+                            }
+                          />
                         </>
                       ) : null}
 

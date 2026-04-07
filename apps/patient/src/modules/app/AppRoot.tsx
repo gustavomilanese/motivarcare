@@ -447,7 +447,8 @@ export function App() {
                   id: authResponse.user.id,
                   fullName: authResponse.user.fullName,
                   email: authResponse.user.email,
-                  emailVerified: authResponse.user.emailVerified
+                  emailVerified: authResponse.user.emailVerified,
+                  avatarUrl: authResponse.user.avatarUrl ?? null
                 }
               : current.session,
             emailVerificationRequired:

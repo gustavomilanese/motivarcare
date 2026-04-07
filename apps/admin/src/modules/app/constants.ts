@@ -1,5 +1,8 @@
 import type { CreateUserFormState, PortalPath } from "./types";
 
+/** Debe coincidir con la constante en `apps/api/src/modules/admin/admin.routes.ts` (PATCH /admin/bookings). */
+export const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesion de prueba";
+
 export const links: Array<{ to: PortalPath; label: string }> = [
   { to: "/", label: "Dashboard" },
   { to: "/patients", label: "Pacientes" },

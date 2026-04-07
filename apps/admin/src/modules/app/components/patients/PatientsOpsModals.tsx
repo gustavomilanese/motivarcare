@@ -1,6 +1,8 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { AppLanguage } from "@therapy/i18n-config";
+import { type Dispatch, type SetStateAction, useState } from "react";
+import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { PatientOpsAvatar } from "./PatientsOpsSections";
-import { SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../../constants";
+import { ADMIN_TRIAL_BOOKING_CANCEL_PHRASE, SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../../constants";
 import type {
   AdminBookingOps,
   AdminPatientOps,
@@ -35,6 +37,7 @@ export interface PatientDetailDraft {
   status: PatientStatus;
   remainingCredits: string;
   activeProfessionalId: string;
+  avatarUrl: string;
 }
 
 export interface BookingDraft {
@@ -137,6 +140,7 @@ export function CreatePatientModal(props: {
 
 export function PatientEditModal(props: {
   open: boolean;
+  language: AppLanguage;
   editingPatient: AdminPatientOps | null;
   editingPatientDraft?: PatientDetailDraft;
   editingBookings: AdminBookingOps[];
@@ -159,10 +163,13 @@ export function PatientEditModal(props: {
   onSavePatient: () => void;
   onSaveBooking: (bookingId: string) => void;
   onCancelBooking: (bookingId: string) => void;
+  onForceCancelTrialBooking: (bookingId: string, confirmationPhrase: string) => void;
   onReactivateBooking: (bookingId: string) => void;
   onApproveTriage: () => void;
   onRejectTriage: () => void;
 }) {
+  const [trialCancelPhraseByBookingId, setTrialCancelPhraseByBookingId] = useState<Record<string, string>>({});
+
   if (!props.open || !props.editingPatient || !props.editingPatientDraft) {
     return null;
   }
@@ -176,7 +183,11 @@ export function PatientEditModal(props: {
       <div className="patient-modal" onClick={(event) => event.stopPropagation()}>
         <div className="patient-modal-head">
           <div className="patient-modal-head-main">
-            <PatientOpsAvatar url={editingPatient.avatarUrl} label={editingPatient.fullName} size="lg" />
+            <PatientOpsAvatar
+              url={(editingPatientDraft.avatarUrl ?? "").trim() || editingPatient.avatarUrl}
+              label={editingPatient.fullName}
+              size="lg"
+            />
             <h3>{editingPatient.fullName}</h3>
           </div>
           <button type="button" onClick={props.onClose}>Cerrar</button>
@@ -280,6 +291,19 @@ export function PatientEditModal(props: {
               ))}
             </select>
           </label>
+
+          <ProfessionalPhotoUrlField
+            variant="patient"
+            language={props.language}
+            disabled={props.patientSaveLoading}
+            value={editingPatientDraft.avatarUrl}
+            onChange={(next) =>
+              props.setPatientDetailDrafts((current) => ({
+                ...current,
+                [editingPatient.id]: { ...editingPatientDraft, avatarUrl: next }
+              }))
+            }
+          />
 
         </div>
 
@@ -500,7 +524,42 @@ export function PatientEditModal(props: {
                     </label>
                   </div>
                   {blockedCancellationForFutureTrial ? (
-                    <p>Sesion de prueba futura: no se permite cancelar, solo modificar o reactivar.</p>
+                    <div className="stack admin-trial-cancel-block">
+                      <p className="admin-trial-cancel-hint">
+                        Sesion de prueba futura: el paciente no puede cancelarla desde la app. Como admin, podes anularla
+                        escribiendo la frase exacta y usando el boton de abajo.
+                      </p>
+                      <label>
+                        Escribi exactamente: <strong>{ADMIN_TRIAL_BOOKING_CANCEL_PHRASE}</strong>
+                        <input
+                          type="text"
+                          autoComplete="off"
+                          spellCheck={false}
+                          value={trialCancelPhraseByBookingId[booking.id] ?? ""}
+                          onChange={(event) =>
+                            setTrialCancelPhraseByBookingId((current) => ({
+                              ...current,
+                              [booking.id]: event.target.value
+                            }))
+                          }
+                          placeholder={ADMIN_TRIAL_BOOKING_CANCEL_PHRASE}
+                        />
+                      </label>
+                      <button
+                        className="danger"
+                        type="button"
+                        disabled={
+                          props.sessionOpsLoading
+                          || (trialCancelPhraseByBookingId[booking.id] ?? "").trim() !== ADMIN_TRIAL_BOOKING_CANCEL_PHRASE
+                        }
+                        onClick={() => {
+                          const phrase = (trialCancelPhraseByBookingId[booking.id] ?? "").trim();
+                          props.onForceCancelTrialBooking(booking.id, phrase);
+                        }}
+                      >
+                        Eliminar / cancelar sesion de prueba
+                      </button>
+                    </div>
                   ) : null}
                   <div className="button-row ops-actions">
                     <button className="primary" type="button" onClick={() => props.onSaveBooking(booking.id)}>

@@ -1289,7 +1289,9 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
 
   const cancelledAt = parsed.data.cancelledAt ? new Date(parsed.data.cancelledAt) : new Date();
   const hoursBeforeSession = (booking.startsAt.getTime() - cancelledAt.getTime()) / (1000 * 60 * 60);
-  const shouldRefundCredits = booking.consumedCredits > 0 && hoursBeforeSession >= FREE_CANCELLATION_HOURS;
+  /** Reintegrar créditos del paquete si la sesión aún no empezó (cancelación de una reserva futura). */
+  const shouldRefundCredits =
+    booking.consumedCredits > 0 && cancelledAt.getTime() < booking.startsAt.getTime();
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedBooking = await tx.booking.update({
@@ -1404,9 +1406,10 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   return res.json({
     message: "Booking cancelled",
     bookingId: updated.id,
-    appliedPolicy: hoursBeforeSession >= FREE_CANCELLATION_HOURS ? "24h_free_cancellation" : "late_cancellation",
+    appliedPolicy: shouldRefundCredits ? "refund_before_session_start" : "cancel_no_credit_refund",
     refundedCredits: shouldRefundCredits ? booking.consumedCredits : 0,
     freeCancellationHours: FREE_CANCELLATION_HOURS,
+    hoursBeforeSession: Math.round(hoursBeforeSession * 10) / 10,
     status: normalizeStatus(updated.status)
   });
 });

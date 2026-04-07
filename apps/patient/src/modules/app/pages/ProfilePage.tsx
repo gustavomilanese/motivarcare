@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -7,7 +7,8 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { apiRequest } from "../services/api";
+import { apiRequest, DEFAULT_PROFESSIONAL_AVATAR_SRC, resolvePublicAssetUrl } from "../services/api";
+import { compressImageDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
   PackageId,
   PatientProfile,
@@ -51,6 +52,7 @@ export function ProfilePage(props: {
   authToken: string | null;
   profile: PatientProfile;
   subscription: SubscriptionState;
+  onSessionAvatarUpdate: (avatarUrl: string | null) => void;
   onUpdateProfile: (profile: PatientProfile) => void;
 }) {
   const [searchParams] = useSearchParams();
@@ -64,6 +66,9 @@ export function ProfilePage(props: {
   const [calendarEmail, setCalendarEmail] = useState("");
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarConnectError, setCalendarConnectError] = useState("");
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const [avatarOk, setAvatarOk] = useState("");
   const validTabs: ProfileTab[] = ["data", "cards", "subscription", "settings", "support"];
   const tabParam = searchParams.get("tab");
   const tab: ProfileTab = validTabs.includes(tabParam as ProfileTab) ? (tabParam as ProfileTab) : "data";
@@ -159,6 +164,96 @@ export function ProfilePage(props: {
     }
   };
 
+  const avatarDisplaySrc =
+    resolvePublicAssetUrl(props.user.avatarUrl ?? null) ?? DEFAULT_PROFESSIONAL_AVATAR_SRC;
+  const avatarInitial = props.user.fullName.trim().charAt(0).toUpperCase() || "?";
+
+  const persistAvatar = async (avatarUrl: string | null) => {
+    if (!props.authToken) {
+      setAvatarBusy(false);
+      return;
+    }
+    setAvatarError("");
+    setAvatarOk("");
+    setAvatarBusy(true);
+    try {
+      await apiRequest<{ user: { avatarUrl?: string | null } }>(
+        "/api/auth/me",
+        {
+          method: "PATCH",
+          body: JSON.stringify({ avatarUrl })
+        },
+        props.authToken
+      );
+      props.onSessionAvatarUpdate(avatarUrl);
+      setAvatarOk(
+        t(props.language, {
+          es: "Foto de perfil actualizada.",
+          en: "Profile photo updated.",
+          pt: "Foto de perfil atualizada."
+        })
+      );
+    } catch (requestError) {
+      setAvatarOk("");
+      setAvatarError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo guardar la foto.",
+              en: "Could not save the photo.",
+              pt: "Nao foi possivel salvar a foto."
+            })
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleAvatarFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setAvatarError(
+        t(props.language, {
+          es: "Selecciona un archivo de imagen.",
+          en: "Select an image file.",
+          pt: "Selecione um arquivo de imagem."
+        })
+      );
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setAvatarError(
+        t(props.language, {
+          es: "La imagen supera 4 MB.",
+          en: "Image exceeds 4 MB.",
+          pt: "A imagem supera 4 MB."
+        })
+      );
+      return;
+    }
+    setAvatarError("");
+    setAvatarOk("");
+    setAvatarBusy(true);
+    try {
+      const raw = await fileToDataUrl(file);
+      const compressed = await compressImageDataUrl(raw, 1600, 0.82);
+      await persistAvatar(compressed);
+    } catch {
+      setAvatarError(
+        t(props.language, {
+          es: "No se pudo leer la imagen.",
+          en: "Could not read the image.",
+          pt: "Nao foi possivel ler a imagem."
+        })
+      );
+      setAvatarBusy(false);
+    }
+  };
+
   const disconnectCalendar = async () => {
     if (!props.authToken) {
       return;
@@ -185,6 +280,60 @@ export function ProfilePage(props: {
                 pt: "Atualize seus dados de contato e mantenha seu perfil clínico pronto."
               })}
             </p>
+            <div className="patient-account-avatar-block">
+              <span className="patient-account-avatar-label">
+                {t(props.language, {
+                  es: "Foto de perfil",
+                  en: "Profile photo",
+                  pt: "Foto de perfil"
+                })}
+              </span>
+              <p className="patient-account-avatar-hint">
+                {t(props.language, {
+                  es: "Tu terapeuta puede verla en el chat y en la agenda. También se usa en la app móvil.",
+                  en: "Your therapist can see it in chat and scheduling. It is also used in the mobile app.",
+                  pt: "Seu terapeuta pode ver no chat e na agenda. Também é usada no app móvel."
+                })}
+              </p>
+              <div className="patient-account-avatar-row">
+                <div className="patient-account-avatar-preview">
+                  {props.user.avatarUrl ? (
+                    <img src={avatarDisplaySrc} alt="" onError={(e) => { e.currentTarget.src = DEFAULT_PROFESSIONAL_AVATAR_SRC; }} />
+                  ) : (
+                    <span className="patient-account-avatar-initial" aria-hidden>
+                      {avatarInitial}
+                    </span>
+                  )}
+                </div>
+                <div className="patient-account-avatar-actions">
+                  <label className="patient-account-avatar-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={!props.authToken || avatarBusy}
+                      onChange={(e) => void handleAvatarFile(e)}
+                    />
+                    <span>
+                      {avatarBusy
+                        ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                        : t(props.language, { es: "Subir imagen", en: "Upload image", pt: "Enviar imagem" })}
+                    </span>
+                  </label>
+                  {props.user.avatarUrl ? (
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={!props.authToken || avatarBusy}
+                      onClick={() => void persistAvatar(null)}
+                    >
+                      {t(props.language, { es: "Quitar foto", en: "Remove photo", pt: "Remover foto" })}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {avatarError ? <p className="error-text">{avatarError}</p> : null}
+              {avatarOk ? <p className="success-text">{avatarOk}</p> : null}
+            </div>
             <div className="profile-form-grid">
               <label>
                 {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}

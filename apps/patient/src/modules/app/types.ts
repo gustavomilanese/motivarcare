@@ -11,6 +11,8 @@ export interface SessionUser {
   fullName: string;
   email: string;
   emailVerified: boolean;
+  /** Foto de perfil (URL o data URL); la ven profesionales y apps móviles. */
+  avatarUrl?: string | null;
 }
 
 export interface AuthApiUser {

@@ -64,6 +64,7 @@ const updateUserSchema = z
     email: z.string().email().optional(),
     password: z.string().min(8).max(120).optional(),
     isTestUser: z.boolean().optional(),
+    avatarUrl: imageSourceSchema.nullable().optional(),
     patientStatus: patientStatusSchema.optional(),
     patientTimezone: z.string().min(2).max(80).optional(),
     professionalVisible: z.boolean().optional(),
@@ -189,6 +190,9 @@ const listBookingsQuerySchema = z.object({
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 });
 
+/** Frase que el admin debe enviar en `adminTrialCancelConfirmation` para cancelar una sesión de prueba. Sincronizar con `ADMIN_TRIAL_BOOKING_CANCEL_PHRASE` en apps/admin. */
+const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesion de prueba";
+
 const updateBookingSchema = z
   .object({
     startsAt: z.string().datetime().optional(),
@@ -197,7 +201,8 @@ const updateBookingSchema = z
     professionalId: z.string().min(1).optional(),
     patientId: z.string().min(1).optional(),
     cancellationReason: z.string().trim().max(400).nullable().optional(),
-    consumedCredits: z.number().int().min(0).max(100).optional()
+    consumedCredits: z.number().int().min(0).max(100).optional(),
+    adminTrialCancelConfirmation: z.string().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one field is required"
@@ -928,6 +933,10 @@ adminRouter.patch("/users/:userId", async (req, res) => {
     data.isTestUser = parsed.data.isTestUser;
   }
 
+  if (parsed.data.avatarUrl !== undefined) {
+    data.avatarUrl = parsed.data.avatarUrl;
+  }
+
   if (existing.role === "PATIENT" && (parsed.data.patientStatus || parsed.data.patientTimezone)) {
     data.patient = {
       upsert: {
@@ -1545,22 +1554,76 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
       : null;
 
   if (nextStatus === "CANCELLED" && isTrialBooking) {
-    return res.status(409).json({ error: "Trial sessions cannot be cancelled. Please reschedule or reactivate it." });
+    const phrase = (parsed.data.adminTrialCancelConfirmation ?? "").trim();
+    if (phrase !== ADMIN_TRIAL_BOOKING_CANCEL_PHRASE) {
+      return res.status(409).json({
+        error:
+          "Las sesiones de prueba requieren confirmacion: envie adminTrialCancelConfirmation con la frase exacta acordada en el panel de admin."
+      });
+    }
   }
 
-  const updated = await prisma.booking.update({
-    where: { id: existing.id },
-    data: {
-      ...(startsAt ? { startsAt } : {}),
-      ...(endsAt ? { endsAt } : {}),
-      ...(parsed.data.patientId ? { patientId: parsed.data.patientId } : {}),
-      ...(parsed.data.professionalId ? { professionalId: parsed.data.professionalId } : {}),
-      ...(parsed.data.consumedCredits !== undefined ? { consumedCredits: parsed.data.consumedCredits } : {}),
-      ...(parsed.data.cancellationReason !== undefined ? { cancellationReason: parsed.data.cancellationReason } : {}),
-      status: nextStatus,
-      cancelledAt: nextCancelledAt,
-      completedAt: nextCompletedAt
+  /** Reintegro solo para reservas con crédito de paquete; la fecha de referencia es la de la fila en DB (no el startsAt del body), para no bloquear el reintegro si el formulario admin envía horarios desfasados. */
+  const isPackageCreditBooking =
+    existing.consumedPurchaseId !== null && existing.consumedCredits > 0;
+  const refundCreditsOnAdminCancel =
+    nextStatus === "CANCELLED"
+    && existing.status !== "CANCELLED"
+    && isPackageCreditBooking
+    && now.getTime() < existing.startsAt.getTime();
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedBooking = await tx.booking.update({
+      where: { id: existing.id },
+      data: {
+        ...(startsAt ? { startsAt } : {}),
+        ...(endsAt ? { endsAt } : {}),
+        ...(parsed.data.patientId ? { patientId: parsed.data.patientId } : {}),
+        ...(parsed.data.professionalId ? { professionalId: parsed.data.professionalId } : {}),
+        ...(parsed.data.consumedCredits !== undefined ? { consumedCredits: parsed.data.consumedCredits } : {}),
+        ...(parsed.data.cancellationReason !== undefined ? { cancellationReason: parsed.data.cancellationReason } : {}),
+        status: nextStatus,
+        cancelledAt: nextCancelledAt,
+        completedAt: nextCompletedAt
+      }
+    });
+
+    if (refundCreditsOnAdminCancel) {
+      const purchaseToRefund = existing.consumedPurchaseId
+        ? await tx.patientPackagePurchase.findFirst({
+            where: {
+              id: existing.consumedPurchaseId,
+              patientId: existing.patientId
+            },
+            select: { id: true }
+          })
+        : await tx.patientPackagePurchase.findFirst({
+            where: { patientId: existing.patientId },
+            orderBy: { purchasedAt: "desc" },
+            select: { id: true }
+          });
+
+      if (purchaseToRefund) {
+        await tx.patientPackagePurchase.update({
+          where: { id: purchaseToRefund.id },
+          data: {
+            remainingCredits: { increment: existing.consumedCredits }
+          }
+        });
+      }
+
+      await tx.creditLedger.create({
+        data: {
+          patientId: existing.patientId,
+          bookingId: existing.id,
+          type: "SESSION_REFUND",
+          amount: existing.consumedCredits,
+          note: `Booking ${existing.id} cancelled by admin with refund`
+        }
+      });
     }
+
+    return updatedBooking;
   });
 
   await upsertFinanceRecordForBooking(updated.id);
