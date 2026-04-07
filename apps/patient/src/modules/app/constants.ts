@@ -1,7 +1,7 @@
 import type { IntakeQuestion, PackagePlan } from "./types";
 
-export const DEFAULT_PATIENT_HERO_IMAGE =
-  "https://images.pexels.com/photos/8148648/pexels-photo-8148648.jpeg?auto=compress&cs=tinysrgb&w=1600";
+/** Misma que `onHeroFallback`: evita Pexels distinto al admin y al fallback por error de carga. */
+export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.svg";
 
 /** Separador de opciones en `mainReason` cuando hay multiselección (alineado con patient-mobile). */
 export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";

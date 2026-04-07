@@ -10,7 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
-import { API_BASE, professionalPhotoSrc } from "../services/api";
+import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { findProfessionalById } from "../lib/professionals";
 import type {
@@ -135,7 +135,8 @@ export function DashboardPage(props: {
   const [trialSlotId, setTrialSlotId] = useState("");
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
-  const [landingPatientHeroImage, setLandingPatientHeroImage] = useState(DEFAULT_PATIENT_HERO_IMAGE);
+  /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
+  const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const packageSectionRef = useRef<HTMLElement | null>(null);
@@ -213,9 +214,13 @@ export function DashboardPage(props: {
     let active = true;
 
     async function loadLandingImage() {
+      const fallback = DEFAULT_PATIENT_HERO_IMAGE;
       try {
-        const response = await fetch(`${API_BASE}/api/public/web-content`);
+        const response = await fetch(`${API_BASE}/api/public/web-content`, { credentials: "omit" });
         if (!response.ok) {
+          if (active) {
+            setLandingPatientHeroImage(fallback);
+          }
           return;
         }
 
@@ -230,16 +235,25 @@ export function DashboardPage(props: {
           return;
         }
 
-        const imageFromLanding = data.settings?.patientDesktopImageUrl ?? data.settings?.patientHeroImageUrl;
-        if (imageFromLanding) {
-          setLandingPatientHeroImage(imageFromLanding);
-        }
+        const raw = data.settings?.patientDesktopImageUrl ?? data.settings?.patientHeroImageUrl ?? null;
+        const resolved = resolvePublicAssetUrl(raw);
+        setLandingPatientHeroImage(resolved ?? fallback);
       } catch {
-        // keep default image if API is unavailable
+        if (active) {
+          setLandingPatientHeroImage(fallback);
+        }
       }
     }
 
     void loadLandingImage();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
     void loadPublicPackagePlans({
       language: props.language,
       professionalId: pricingProfessionalId,
@@ -260,17 +274,22 @@ export function DashboardPage(props: {
     <div className="page-stack sessions-page-layout patient-dashboard-home">
       <section className="hero-composite">
         <div className="hero-media">
-          <figure className="hero-photo-tile">
-            <img
-              src={landingPatientHeroImage}
-              alt={t(props.language, {
-                es: "Paciente en sesion virtual",
-                en: "Patient in a virtual session",
-                pt: "Paciente em sessao virtual"
-              })}
-              loading="lazy"
-              onError={props.onHeroFallback}
-            />
+          <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
+            {landingPatientHeroImage === null ? (
+              <span className="hero-photo-tile-skeleton" aria-hidden="true" />
+            ) : (
+              <img
+                src={landingPatientHeroImage}
+                alt={t(props.language, {
+                  es: "Paciente en sesion virtual",
+                  en: "Patient in a virtual session",
+                  pt: "Paciente em sessao virtual"
+                })}
+                loading="eager"
+                decoding="async"
+                onError={props.onHeroFallback}
+              />
+            )}
             <figcaption className="hero-note-card">
               <p>
                 {t(props.language, {
