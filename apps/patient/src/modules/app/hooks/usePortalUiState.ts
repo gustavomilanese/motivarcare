@@ -24,8 +24,8 @@ export function usePortalUiState(params: {
       setNotificationsOpen(false);
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [menuOpen, notificationsOpen, preferencesOpen]);
 
   return {

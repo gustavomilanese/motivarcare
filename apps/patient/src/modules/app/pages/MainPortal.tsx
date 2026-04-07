@@ -15,6 +15,7 @@ import { usePortalUiState } from "../hooks/usePortalUiState";
 import { usePortalNavigation } from "../hooks/usePortalNavigation";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
+import { resolvePublicAssetUrl } from "../services/api";
 import type {
   Booking,
   Message,
@@ -90,6 +91,14 @@ export function MainPortal(props: {
     ? (remoteUnreadMessagesCount ?? localUnreadMessagesCount)
     : localUnreadMessagesCount;
   const favoriteCount = props.state.favoriteProfessionalIds.length;
+  const patientHeaderAvatarSrc = useMemo(() => {
+    const fromSession = resolvePublicAssetUrl(props.state.session?.avatarUrl);
+    if (fromSession) {
+      return fromSession;
+    }
+    const dash = props.state.profile.dashboardPhotoDataUrl?.trim();
+    return dash ? dash : null;
+  }, [props.state.session?.avatarUrl, props.state.profile.dashboardPhotoDataUrl]);
   const hasAnyBookingHistory = props.state.bookings.length > 0;
   const hasAnyPurchasedCredits =
     Boolean(props.state.subscription.packageId)
@@ -195,6 +204,8 @@ export function MainPortal(props: {
         onOpenPreferences={ui.openPreferences}
         onLogout={ui.logoutFromMenu}
         hideSidebar={hideSidebar}
+        patientHeaderAvatarSrc={patientHeaderAvatarSrc}
+        onPatientAvatarError={handleImageFallback}
       >
         {props.state.intake?.riskBlocked ? (
           <section className="content-card danger">

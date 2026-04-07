@@ -4,12 +4,20 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import type { ReactNode } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { NavLink } from "react-router-dom";
 import type { ProfileTab } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function firstNameOnly(fullName: string | undefined): string {
+  const trimmed = (fullName ?? "").trim();
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed.split(/\s+/)[0] ?? trimmed;
 }
 
 function IconHome(props: { className?: string }) {
@@ -81,8 +89,12 @@ export function PortalNavigation(props: {
   onOpenPreferences: () => void;
   onLogout: () => void;
   hideSidebar?: boolean;
+  patientHeaderAvatarSrc: string | null;
+  onPatientAvatarError: (event: SyntheticEvent<HTMLImageElement>) => void;
   children: ReactNode;
 }) {
+  const mobileFirstName = firstNameOnly(props.sessionFullName);
+
   return (
     <>
       {!props.hideSidebar ? (
@@ -113,7 +125,7 @@ export function PortalNavigation(props: {
               </span>
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profile">
-              {t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
+              {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
             </NavLink>
           </nav>
 
@@ -126,7 +138,7 @@ export function PortalNavigation(props: {
       <div className="portal-main">
         <header className="portal-header">
           <div className="portal-header-greeting">
-            <h1>
+            <h1 className="portal-header-greeting-desktop">
               {replaceTemplate(
                 t(props.language, {
                   es: "Hola, {name}",
@@ -136,13 +148,29 @@ export function PortalNavigation(props: {
                 { name: props.sessionFullName ?? "" }
               )}
             </h1>
+            <div className="portal-header-greeting-mobile" aria-label={mobileFirstName}>
+              {props.patientHeaderAvatarSrc ? (
+                <img
+                  className="portal-header-patient-avatar"
+                  src={props.patientHeaderAvatarSrc}
+                  alt=""
+                  onError={props.onPatientAvatarError}
+                />
+              ) : (
+                <span className="portal-header-patient-avatar portal-header-patient-avatar--fallback" aria-hidden>
+                  {mobileFirstName ? mobileFirstName.charAt(0).toUpperCase() : "?"}
+                </span>
+              )}
+              <span className="portal-header-patient-name">{mobileFirstName}</span>
+            </div>
           </div>
 
           {!props.hideSidebar ? (
             <div className="header-actions">
+              <div className="header-actions-cluster">
               <NavLink
                 to="/favorites"
-                className={({ isActive }) => `header-icon-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) => `header-favorites-link header-icon-link ${isActive ? "active" : ""}`}
                 aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
               >
                 <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -190,6 +218,7 @@ export function PortalNavigation(props: {
                   </div>
                 ) : null}
               </div>
+              </div>
               <div className="menu-wrap">
                 <button
                   aria-label={t(props.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
@@ -207,21 +236,31 @@ export function PortalNavigation(props: {
                     </div>
                     <div className="menu-sep" />
 
-                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("data")}>
-                      {t(props.language, { es: "Informacion de cuenta", en: "Account information", pt: "Informacoes da conta" })}
-                    </button>
-                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("cards")}>
-                      {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
-                    </button>
-                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
-                      {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
-                    </button>
-                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("settings")}>
-                      {t(props.language, { es: "Notificaciones", en: "Notification settings", pt: "Notificacoes" })}
-                    </button>
-                    <button className="menu-item" type="button" onClick={() => props.onOpenProfileTab("support")}>
-                      {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
-                    </button>
+                    <div
+                      className="menu-dropdown-account"
+                      role="group"
+                      aria-label={t(props.language, {
+                        es: "Mi Cuenta",
+                        en: "My account",
+                        pt: "Minha conta"
+                      })}
+                    >
+                      <button className="menu-item menu-item--account-main" type="button" onClick={() => props.onOpenProfileTab("data")}>
+                        {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
+                      </button>
+                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
+                        {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
+                      </button>
+                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
+                        {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
+                      </button>
+                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("settings")}>
+                        {t(props.language, { es: "Notificaciones", en: "Notification settings", pt: "Notificacoes" })}
+                      </button>
+                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("support")}>
+                        {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
+                      </button>
+                    </div>
 
                     <button className="menu-item menu-item-split" type="button" onClick={props.onOpenPreferences}>
                       <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
@@ -271,7 +310,7 @@ export function PortalNavigation(props: {
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profile">
               <IconAccount className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</span>
+              <span className="mobile-nav-label">{t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}</span>
             </NavLink>
           </nav>
         ) : null}

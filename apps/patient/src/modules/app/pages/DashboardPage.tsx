@@ -106,15 +106,6 @@ function formatMoney(amountInUsd: number, language: AppLanguage, currency: Suppo
   });
 }
 
-function patientDashboardAvatarSrc(state: PatientAppState): string | null {
-  const fromSession = resolvePublicAssetUrl(state.session?.avatarUrl);
-  if (fromSession) {
-    return fromSession;
-  }
-  const dash = state.profile.dashboardPhotoDataUrl?.trim();
-  return dash ? dash : null;
-}
-
 function packageUnitPriceUsd(plan: PackagePlan): number {
   return plan.priceCents / 100 / Math.max(1, plan.credits);
 }
@@ -211,7 +202,6 @@ export function DashboardPage(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
-  onGoToProfile: () => void;
 }) {
   const now = Date.now();
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
@@ -364,11 +354,7 @@ export function DashboardPage(props: {
     [packagePlans]
   );
   const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
-  const patientAvatarSrc = patientDashboardAvatarSrc(props.state);
-  const patientDisplayName = (props.state.session?.fullName ?? "").trim() || " ";
-  const patientInitial = patientDisplayName.trim().charAt(0).toUpperCase() || "?";
   const availableSessions = props.state.subscription.creditsRemaining;
-  const showProfilePulse = Boolean(props.state.intake?.completed && !props.state.intake?.riskBlocked);
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
 
   return (
@@ -1066,25 +1052,8 @@ export function DashboardPage(props: {
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}>
-          <header className="dashboard-rn-header">
-            <div className="dashboard-rn-header-main">
-              <button
-                type="button"
-                className="dashboard-rn-avatar-btn"
-                onClick={props.onGoToProfile}
-                aria-label={t(props.language, { es: "Ir al perfil", en: "Go to profile", pt: "Ir ao perfil" })}
-              >
-                <span className="dashboard-rn-avatar-wrap">
-                  {patientAvatarSrc ? (
-                    <img className="dashboard-rn-avatar-img" src={patientAvatarSrc} alt="" onError={props.onImageFallback} />
-                  ) : (
-                    <span className="dashboard-rn-avatar-fallback" aria-hidden="true">
-                      {patientInitial}
-                    </span>
-                  )}
-                  {showProfilePulse ? <span className="dashboard-rn-avatar-dot" aria-hidden="true" /> : null}
-                </span>
-              </button>
+          <div className="dashboard-rn-toolbar" aria-label={t(props.language, { es: "Saldo y agendar", en: "Balance and book", pt: "Saldo e agendar" })}>
+            <div className="dashboard-rn-toolbar-inner">
               <div className="dashboard-rn-pill-block" aria-live="polite">
                 <div
                   className={`dashboard-rn-sessions-pill${availableSessions < 1 ? " dashboard-rn-sessions-pill--muted" : ""}`}
@@ -1095,14 +1064,14 @@ export function DashboardPage(props: {
                       <span className="dashboard-rn-sessions-suffix">
                         {availableSessions === 1
                           ? t(props.language, {
-                              es: " sesión disponible",
-                              en: " session available",
-                              pt: " sessao disponivel"
+                              es: "Sesión disponible",
+                              en: "Session available",
+                              pt: "Sessao disponivel"
                             })
                           : t(props.language, {
-                              es: " sesiones disponibles",
-                              en: " sessions available",
-                              pt: " sessoes disponiveis"
+                              es: "Sesiones disponibles",
+                              en: "Sessions available",
+                              pt: "Sessoes disponiveis"
                             })}
                       </span>
                     </span>
@@ -1117,11 +1086,9 @@ export function DashboardPage(props: {
                   )}
                 </div>
               </div>
-            </div>
-            <div className="dashboard-rn-header-actions">
               <button
                 type="button"
-                className="dashboard-rn-icon-btn"
+                className="dashboard-rn-fab"
                 onClick={() => props.onGoToBooking(pricingProfessionalId)}
                 aria-label={t(props.language, {
                   es: "Agendar una sesión",
@@ -1137,7 +1104,7 @@ export function DashboardPage(props: {
                 </svg>
               </button>
             </div>
-          </header>
+          </div>
 
           <section className="dashboard-rn-section">
             <div className="dashboard-rn-section-head">
@@ -1163,9 +1130,9 @@ export function DashboardPage(props: {
                 </p>
                 <p className="dashboard-rn-empty-meta">
                   {t(props.language, {
-                    es: "Usá el botón + de arriba para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
-                    en: "Use the + button above to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
-                    pt: "Use o botao + acima para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
+                    es: "Tocá el + al lado de tu saldo para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
+                    en: "Tap + next to your balance to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
+                    pt: "Toque no + ao lado do saldo para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
                   })}
                 </p>
               </div>

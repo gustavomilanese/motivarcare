@@ -69,7 +69,6 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
-                  onGoToProfile={() => props.navigate("/profile")}
                 />
               )
         }
@@ -185,7 +184,6 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
-                  onGoToProfile={() => props.navigate("/profile")}
                 />
               )
         }
@@ -313,6 +311,7 @@ export function PortalRoutes(props: {
                         console.error("Could not persist patient timezone preference", error);
                       });
                     }}
+                    onNavigateHome={() => props.navigate("/")}
                   />
                 ) : null
               )

@@ -72,6 +72,7 @@ export function ProfilePage(props: {
   subscription: SubscriptionState;
   onSessionAvatarUpdate: (avatarUrl: string | null) => void;
   onUpdateProfile: (profile: PatientProfile) => void;
+  onNavigateHome: () => void;
 }) {
   const [searchParams] = useSearchParams();
   const [localProfile, setLocalProfile] = useState<PatientProfile>(props.profile);
@@ -120,6 +121,7 @@ export function ProfilePage(props: {
 
   const saveProfile = () => {
     props.onUpdateProfile(localProfile);
+    props.onNavigateHome();
   };
 
   const addCard = () => {
