@@ -142,7 +142,6 @@ export interface IntakeState {
 
 export type IntakeCompletionPayload = {
   answers: Record<string, string>;
-  profilePhotoDataUrl?: string | null;
 };
 
 export interface Professional {

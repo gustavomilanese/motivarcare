@@ -1,9 +1,7 @@
-import { type ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
-import { DEFAULT_PROFESSIONAL_AVATAR_SRC } from "../../app/services/api";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
-import { compressPatientAvatarDataUrl, fileToDataUrl } from "../../app/utils/imageAvatar";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -230,22 +228,6 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     };
   }
 
-  if (question.id === "profilePhoto") {
-    return {
-      ...question,
-      title: t(language, {
-        es: "11. Foto de perfil (opcional)",
-        en: "11. Profile photo (optional)",
-        pt: "11. Foto de perfil (opcional)"
-      }),
-      help: t(language, {
-        es: "Tu terapeuta puede verla en el chat y en la agenda. Podés omitir este paso y subirla después desde Mi cuenta.",
-        en: "Your therapist can see it in chat and scheduling. You can skip and add it later from My account.",
-        pt: "Seu terapeuta pode ver no chat e na agenda. Voce pode pular e enviar depois em Minha conta."
-      })
-    };
-  }
-
   return question;
 }
 
@@ -267,8 +249,6 @@ export function IntakeScreen(props: {
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [profilePhotoDataUrl, setProfilePhotoDataUrl] = useState<string | null>(null);
-  const [profilePhotoBusy, setProfilePhotoBusy] = useState(false);
 
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
@@ -310,7 +290,7 @@ export function IntakeScreen(props: {
     if (!current) {
       return false;
     }
-    if (current.profilePhoto || current.optional) {
+    if (current.optional) {
       setError("");
       return true;
     }
@@ -343,58 +323,10 @@ export function IntakeScreen(props: {
     setStepIndex((s) => Math.max(0, s - 1));
   };
 
-  const intakeAvatarInitial = props.user.fullName.trim().charAt(0).toUpperCase() || "?";
-
-  const handleIntakeProfilePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) {
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      setError(
-        t(props.language, {
-          es: "Selecciona un archivo de imagen.",
-          en: "Select an image file.",
-          pt: "Selecione um arquivo de imagem."
-        })
-      );
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setError(
-        t(props.language, {
-          es: "La imagen supera 4 MB.",
-          en: "Image exceeds 4 MB.",
-          pt: "A imagem supera 4 MB."
-        })
-      );
-      return;
-    }
-    setError("");
-    setProfilePhotoBusy(true);
-    try {
-      const raw = await fileToDataUrl(file);
-      setProfilePhotoDataUrl(await compressPatientAvatarDataUrl(raw));
-    } catch {
-      setError(
-        t(props.language, {
-          es: "No se pudo leer la imagen.",
-          en: "Could not read the image.",
-          pt: "Nao foi possivel ler a imagem."
-        })
-      );
-    } finally {
-      setProfilePhotoBusy(false);
-    }
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const missing = intakeQuestions.filter(
-      (question) => !question.optional && !question.profilePhoto && !answers[question.id]?.trim()
-    );
+    const missing = intakeQuestions.filter((question) => !question.optional && !answers[question.id]?.trim());
     if (missing.length > 0) {
       const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
       if (idx >= 0) {
@@ -414,13 +346,7 @@ export function IntakeScreen(props: {
     setError("");
 
     try {
-      const answersForIntake = Object.fromEntries(
-        Object.entries(answers).filter(([key]) => key !== "profilePhoto")
-      );
-      const payload: IntakeCompletionPayload = {
-        answers: answersForIntake,
-        profilePhotoDataUrl: profilePhotoDataUrl
-      };
+      const payload: IntakeCompletionPayload = { answers };
       await props.onComplete(payload);
     } catch (requestError) {
       setError(
@@ -504,52 +430,7 @@ export function IntakeScreen(props: {
               <h2 className="intake-question-title">{wizardHeading(current.title)}</h2>
               <p className="intake-question-help">{current.help}</p>
 
-              {current.profilePhoto ? (
-                <div className="intake-profile-photo">
-                  <div className="patient-account-avatar-row">
-                    <div className="patient-account-avatar-preview">
-                      {profilePhotoDataUrl ? (
-                        <img
-                          src={profilePhotoDataUrl}
-                          alt=""
-                          onError={(e) => {
-                            e.currentTarget.src = DEFAULT_PROFESSIONAL_AVATAR_SRC;
-                          }}
-                        />
-                      ) : (
-                        <span className="patient-account-avatar-initial" aria-hidden>
-                          {intakeAvatarInitial}
-                        </span>
-                      )}
-                    </div>
-                    <div className="patient-account-avatar-actions">
-                      <label className="patient-account-avatar-upload">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={profilePhotoBusy || submitting}
-                          onChange={(e) => void handleIntakeProfilePhoto(e)}
-                        />
-                        <span>
-                          {profilePhotoBusy
-                            ? t(props.language, { es: "Procesando…", en: "Processing…", pt: "Processando…" })
-                            : t(props.language, { es: "Subir imagen", en: "Upload image", pt: "Enviar imagem" })}
-                        </span>
-                      </label>
-                      {profilePhotoDataUrl ? (
-                        <button
-                          type="button"
-                          className="ghost"
-                          disabled={profilePhotoBusy || submitting}
-                          onClick={() => setProfilePhotoDataUrl(null)}
-                        >
-                          {t(props.language, { es: "Quitar", en: "Remove", pt: "Remover" })}
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              ) : current.multiline ? (
+              {current.multiline ? (
                 <textarea
                   className="intake-textarea-touch"
                   rows={4}
@@ -625,13 +506,13 @@ export function IntakeScreen(props: {
               {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
             </button>
             {isLast ? (
-              <button className="primary intake-wizard-primary" type="submit" disabled={submitting || profilePhotoBusy}>
+              <button className="primary intake-wizard-primary" type="submit" disabled={submitting}>
                 {submitting
                   ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
                   : t(props.language, {
-                      es: "Finalizar y ver profesionales",
-                      en: "Finish and see professionals",
-                      pt: "Finalizar e ver profissionais"
+                      es: "Finalizar cuestionario",
+                      en: "Finish questionnaire",
+                      pt: "Finalizar questionario"
                     })}
               </button>
             ) : (
@@ -639,7 +520,7 @@ export function IntakeScreen(props: {
                 className="primary intake-wizard-primary"
                 type="button"
                 onClick={goNext}
-                disabled={submitting || profilePhotoBusy}
+                disabled={submitting}
               >
                 {t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
               </button>

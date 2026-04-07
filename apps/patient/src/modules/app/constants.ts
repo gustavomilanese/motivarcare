@@ -67,13 +67,6 @@ export const intakeQuestions: IntakeQuestion[] = [
     title: "10. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
     help: "Pregunta de seguridad obligatoria antes de habilitar reservas.",
     options: ["No", "A veces", "Frecuentemente", "Prefiero no responder"]
-  },
-  {
-    id: "profilePhoto",
-    title: "11. Foto de perfil (opcional)",
-    help: "Tu terapeuta puede verla en el chat y en la agenda. Podés omitir este paso y subirla después desde Mi cuenta.",
-    optional: true,
-    profilePhoto: true
   }
 ];
 
