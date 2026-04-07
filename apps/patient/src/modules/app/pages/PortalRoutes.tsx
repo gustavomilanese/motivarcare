@@ -124,15 +124,12 @@ export function PortalRoutes(props: {
                     props.navigate(showOnlyFavorites ? "/favorites" : "/onboarding/final/matching");
                   }}
                   onSelectProfessional={(professionalId) => {
+                    // Solo highlight / flujo de reserva: el "cierre" del onboarding es al confirmar la sesión de prueba.
                     props.onStateChange((current) => ({
                       ...current,
-                      therapistSelectionCompleted: true,
                       selectedProfessionalId: professionalId,
-                      assignedProfessionalId: professionalId,
-                      assignedProfessionalName: findProfessionalById(professionalId, props.professionalDirectory).fullName,
                       activeChatProfessionalId: professionalId
                     }));
-                    void props.syncActiveProfessionalAssignment(professionalId);
                   }}
                   onCompleteFirstSelection={({ professionalId, professionalName }) => {
                     props.onStateChange((current) => ({

@@ -174,6 +174,9 @@ export function MainPortal(props: {
     if (lockToTherapistSelection) {
       return;
     }
+    if (needsOnboardingFinalFlow) {
+      return;
+    }
     navigate("/", { replace: true });
     const fallbackTimeout = window.setTimeout(() => {
       if (window.location.pathname.startsWith("/onboarding/final")) {
@@ -181,7 +184,7 @@ export function MainPortal(props: {
       }
     }, 200);
     return () => window.clearTimeout(fallbackTimeout);
-  }, [location.pathname, navigate, lockToTherapistSelection]);
+  }, [location.pathname, navigate, lockToTherapistSelection, needsOnboardingFinalFlow]);
 
   return (
     <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : ""}`}>

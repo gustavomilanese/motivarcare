@@ -289,13 +289,6 @@ export function App() {
   };
 
   const sessionId = state.session?.id;
-  const shouldOfferCalendarOnboardingBeforeMatching = Boolean(
-    state.intake?.completed
-    && !state.intake?.riskBlocked
-    && !state.therapistSelectionCompleted
-    && state.bookings.length === 0
-    && state.subscription.purchaseHistory.length === 0
-  );
 
   const handleConnectCalendarFromOnboarding = async () => {
     if (!state.authToken) {
@@ -419,17 +412,39 @@ export function App() {
             || syncedBookings.length > 0
             || Boolean(latestPackage);
 
+          /**
+           * Hasta que el paciente cierre el onboarding (trial reservado, paquete o señal remota),
+           * no usar "active professional" del admin ni bookings remotos para saltar el matching:
+           * evita redirect a Inicio tras OAuth o con asignación de prueba en SystemConfig.
+           */
+          const gateMatchingFromApiAssignment =
+            !current.onboardingFinalCompleted
+            && !hasRemoteOnboardingCompletionSignal
+            && syncedBookings.length === 0
+            && !latestPackage;
+
+          const therapistSelectionCompletedMerged = gateMatchingFromApiAssignment
+            ? current.therapistSelectionCompleted
+            : current.therapistSelectionCompleted
+              || Boolean(remoteAssignedProfessional)
+              || syncedBookings.length > 0;
+
+          const assignedProfessionalIdMerged = gateMatchingFromApiAssignment
+            ? current.assignedProfessionalId
+            : remoteAssignedProfessional?.id ?? current.assignedProfessionalId;
+
+          const assignedProfessionalNameMerged = gateMatchingFromApiAssignment
+            ? current.assignedProfessionalName
+            : remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName;
+
           return {
             ...current,
             onboardingFinalCompleted:
               current.onboardingFinalCompleted
               || hasRemoteOnboardingCompletionSignal,
-            therapistSelectionCompleted:
-              current.therapistSelectionCompleted
-              || Boolean(remoteAssignedProfessional)
-              || syncedBookings.length > 0,
-            assignedProfessionalId: remoteAssignedProfessional?.id ?? current.assignedProfessionalId,
-            assignedProfessionalName: remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName,
+            therapistSelectionCompleted: therapistSelectionCompletedMerged,
+            assignedProfessionalId: assignedProfessionalIdMerged,
+            assignedProfessionalName: assignedProfessionalNameMerged,
             selectedProfessionalId:
               remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
@@ -538,9 +553,20 @@ export function App() {
     const calendarSync = query.get("calendar_sync");
     const callbackUserId = query.get("calendar_user_id");
     const onboardingPath = "/onboarding/final/matching";
-    const shouldResumeOnboarding =
-      shouldOfferCalendarOnboardingBeforeMatching
-      || location.pathname.startsWith("/onboarding/final");
+    const resumeMatching = location.pathname.startsWith("/onboarding/final");
+
+    const calendarNav = (pathname: string, extraSearch: Record<string, string> | null) => {
+      const nextSearch = new URLSearchParams(location.search);
+      nextSearch.delete("calendar_sync");
+      nextSearch.delete("calendar_user_id");
+      if (extraSearch) {
+        for (const [k, v] of Object.entries(extraSearch)) {
+          nextSearch.set(k, v);
+        }
+      }
+      const qs = nextSearch.toString();
+      navigate({ pathname, search: qs ? `?${qs}` : "" }, { replace: true });
+    };
 
     if (calendarSync === "connected" && callbackUserId === state.session.id) {
       const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
@@ -548,7 +574,7 @@ export function App() {
       setCalendarPromptDismissedUserIds(nextDismissed);
       setShowCalendarOnboarding(false);
       setCalendarOnboardingLoading(false);
-      navigate(shouldResumeOnboarding ? onboardingPath : location.pathname, { replace: true });
+      calendarNav(resumeMatching ? onboardingPath : location.pathname, null);
       return;
     }
 
@@ -559,20 +585,11 @@ export function App() {
     // Keep current session stable and return safely to onboarding flow.
     setShowCalendarOnboarding(false);
     setCalendarOnboardingLoading(false);
-    navigate(
-      shouldResumeOnboarding
-        ? `${onboardingPath}?calendar_sync=error&calendar_reason=session_mismatch`
-        : `${location.pathname}?calendar_sync=error&calendar_reason=session_mismatch`,
-      { replace: true }
+    calendarNav(
+      resumeMatching ? onboardingPath : location.pathname,
+      { calendar_sync: "error", calendar_reason: "session_mismatch" }
     );
-  }, [
-    calendarPromptDismissedUserIds,
-    location.pathname,
-    location.search,
-    navigate,
-    shouldOfferCalendarOnboardingBeforeMatching,
-    state.session?.id
-  ]);
+  }, [calendarPromptDismissedUserIds, location.pathname, location.search, navigate, state.session?.id]);
 
   useEffect(() => {
     if (!showCalendarOnboarding || !state.authToken || !state.session) {
@@ -597,51 +614,6 @@ export function App() {
       cancelled = true;
     };
   }, [showCalendarOnboarding, state.authToken, state.session]);
-
-  useEffect(() => {
-    if (!state.session?.id || !state.authToken || !shouldOfferCalendarOnboardingBeforeMatching) {
-      return;
-    }
-    if (showCalendarOnboarding) {
-      return;
-    }
-
-    if (calendarPromptDismissedUserIds.includes(state.session.id)) {
-      return;
-    }
-
-    // During onboarding we show this step before professional selection.
-    setShowCalendarOnboarding(true);
-
-    let cancelled = false;
-    void apiRequest<{ connected: boolean }>(
-      "/api/auth/google/calendar/status",
-      {},
-      state.authToken
-    )
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
-
-        if (response.connected) {
-          setShowCalendarOnboarding(false);
-          return;
-        }
-      })
-      .catch(() => {
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    calendarPromptDismissedUserIds,
-    shouldOfferCalendarOnboardingBeforeMatching,
-    showCalendarOnboarding,
-    state.authToken,
-    state.session?.id
-  ]);
 
   useEffect(() => {
     if (!state.session || location.pathname === "/verify-email") {
@@ -865,6 +837,7 @@ export function App() {
                 answers
               }
             }));
+            navigate("/onboarding/final/matching", { replace: true });
           } catch (requestError) {
             if (requestError instanceof Error && requestError.message.includes("Intake already completed")) {
               setState((current) => ({
