@@ -1,0 +1,10 @@
+---
+description: Después de cambios listos, commitear y pushear para que Vercel/Railway desplieguen
+alwaysApply: true
+---
+
+# Deploy: commit y push
+
+- Cuando el usuario quiera **ver los cambios en producción** (Vercel para admin/patient/landing, Railway u otro CI para la API), **hacer `git commit` y `git push` a `origin`** al cerrar la tarea, salvo que el usuario pida explícitamente **no** pushear.
+- Si el árbol de trabajo ya está commiteado y igual hace falta **re-disparar** el deploy (p. ej. Vercel no rebuildó), está permitido un commit vacío: `git commit --allow-empty -m "chore: trigger deploy"` y push.
+- No asumir que un cambio “en disco” llegó al deploy sin commit + push.
