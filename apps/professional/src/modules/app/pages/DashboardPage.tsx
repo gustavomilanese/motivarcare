@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -55,6 +55,8 @@ function rangesOverlap(startA: string, endA: string, startB: string, endB: strin
   return new Date(startA).getTime() < new Date(endB).getTime() && new Date(endA).getTime() > new Date(startB).getTime();
 }
 
+type DashboardLocationState = { profileUpdated?: boolean };
+
 function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
   return formatCurrencyCents({
     centsInUsd: cents,
@@ -82,7 +84,9 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
+  const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
   const upcomingSectionRef = useRef<HTMLElement | null>(null);
 
   const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
@@ -132,6 +136,28 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       window.clearInterval(timer);
     };
   }, [props.language, props.token, revenueQuery]);
+
+  useEffect(() => {
+    const state = location.state as DashboardLocationState | null;
+    if (!state?.profileUpdated) {
+      return;
+    }
+    setProfileSavedNotice(
+      t(props.language, { es: "Perfil actualizado.", en: "Profile updated.", pt: "Perfil atualizado." })
+    );
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      { replace: true, state: {} }
+    );
+  }, [location.state, location.pathname, location.search, location.hash, navigate, props.language]);
+
+  useEffect(() => {
+    if (!profileSavedNotice) {
+      return;
+    }
+    const timer = window.setTimeout(() => setProfileSavedNotice(""), 8000);
+    return () => window.clearTimeout(timer);
+  }, [profileSavedNotice]);
 
   useEffect(() => {
     if (location.hash !== "#sesiones-agendadas") {
@@ -361,6 +387,11 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
 
   return (
     <div className="pro-grid-stack pro-dashboard-stack">
+      {profileSavedNotice ? (
+        <p className="pro-success pro-dashboard-flash" role="status">
+          {profileSavedNotice}
+        </p>
+      ) : null}
       <section
         className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating"
         aria-labelledby="pro-revenue-heading"

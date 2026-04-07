@@ -1,4 +1,5 @@
 import { type ChangeEvent, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { API_BASE, apiRequest } from "../services/api";
@@ -10,10 +11,12 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 export function ProfilePage(props: { token: string; user: AuthUser; language: AppLanguage; onUserChange: (user: AuthUser) => void }) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isReadingPhoto, setIsReadingPhoto] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadProfile = async () => {
     try {
@@ -38,10 +41,11 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   }, [props.token]);
 
   const handleSave = async () => {
-    if (!profile) {
+    if (!profile || isSaving) {
       return;
     }
 
+    setIsSaving(true);
     try {
       const authResponse = await apiRequest<{ message: string; user: AuthUser }>("/api/auth/me", props.token, {
         method: "PATCH",
@@ -590,8 +594,10 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             />
           </label>
 
-          <button className="pro-primary" type="button" onClick={handleSave}>
-            {t(props.language, { es: "Guardar perfil", en: "Save profile", pt: "Salvar perfil" })}
+          <button className="pro-primary" type="button" onClick={handleSave} disabled={isSaving}>
+            {isSaving
+              ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+              : t(props.language, { es: "Guardar perfil", en: "Save profile", pt: "Salvar perfil" })}
           </button>
           {message ? <p className="pro-success">{message}</p> : null}
         </div>

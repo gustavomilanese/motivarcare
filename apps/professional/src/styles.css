@@ -3594,6 +3594,14 @@ ul {
   gap: 20px;
 }
 
+.pro-dashboard-flash {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--portal-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--ok) 35%, var(--portal-border));
+  background: color-mix(in srgb, var(--ok) 8%, var(--portal-surface-solid));
+}
+
 .pro-card {
   background: linear-gradient(180deg, var(--portal-surface-solid) 0%, rgba(252, 253, 255, 0.98) 100%);
   border: 1px solid var(--portal-border);
