@@ -11,7 +11,7 @@ export function usePortalNavigation(params: {
         therapistSelectionCompleted: true,
         selectedProfessionalId: professionalId
       }));
-      params.navigate("/sessions");
+      params.navigate("/sessions?focus=new-booking");
     },
     handleGoToReservations: () => {
       params.navigate("/sessions?focus=reservations");

@@ -242,6 +242,37 @@ export function BookingPage(props: {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
+    if (searchParams.get("focus") !== "new-booking") {
+      return;
+    }
+
+    if (isCheckoutFlow) {
+      setCheckoutPaymentLoading(false);
+      setCheckoutPaymentPlanId(null);
+      setCheckoutPaymentError("");
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("focus");
+    nextParams.delete("flow");
+    nextParams.delete("plan");
+    nextParams.delete("source");
+    setSearchParams(nextParams, { replace: true });
+
+    setEditingBookingId(null);
+    setSelectedSlotId("");
+    setBookingActionError("");
+
+    if (pendingSessions <= 0) {
+      setShowNoCreditsAlert(true);
+      setPanelMode(null);
+    } else {
+      setShowNoCreditsAlert(false);
+      setPanelMode("new");
+    }
+  }, [isCheckoutFlow, pendingSessions, searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (!isCheckoutFlow) {
       return;
     }
@@ -532,7 +563,7 @@ export function BookingPage(props: {
               </p>
             </div>
           </div>
-          <div className="sessions-hero-actions sessions-booking-hero-actions">
+          <div className="sessions-hero-actions sessions-booking-hero-actions sessions-booking-packages-desktop-only">
             <button
               className="sessions-hero-buy-button"
               type="button"
@@ -543,7 +574,7 @@ export function BookingPage(props: {
           </div>
           <button
             type="button"
-            className={`sessions-balance sessions-balance--interactive sessions-booking-hero-balance ${pendingSessions <= 0 ? "sessions-balance--zero" : ""}`}
+            className={`sessions-balance sessions-balance--interactive sessions-booking-hero-balance sessions-booking-balance-with-fab ${pendingSessions <= 0 ? "sessions-balance--zero" : ""}`}
             onClick={toggleNewBookingPanel}
             aria-label={
               pendingSessions > 0
@@ -605,21 +636,26 @@ export function BookingPage(props: {
                 </span>
               ) : null}
             </div>
+            <span className="sessions-booking-fab-in-pill" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+            </span>
           </button>
         </div>
       </section>
 
       <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel">
         <div className="sessions-panel-head">
-          <div>
-            <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
-          </div>
-          <div className="sessions-panel-actions">
-            <button className="sessions-reserve-button" type="button" onClick={toggleNewBookingPanel}>
-              {panelMode === "new"
-                ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
-                : t(props.language, { es: "Reservar nueva sesion", en: "Reserve new session", pt: "Reservar nova sessao" })}
-            </button>
+          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
+          <div className="sessions-booking-reserve-panel-desktop">
+            <div className="sessions-panel-actions">
+              <button className="sessions-reserve-button" type="button" onClick={toggleNewBookingPanel}>
+                {panelMode === "new"
+                  ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
+                  : t(props.language, { es: "Reservar nueva sesion", en: "Reserve new session", pt: "Reservar nova sessao" })}
+              </button>
+            </div>
           </div>
         </div>
 
