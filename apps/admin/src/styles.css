@@ -1293,6 +1293,11 @@ label {
   padding: 20px;
 }
 
+/* Por encima de modales de búsqueda (z-index 200) y de acordeones con overflow:hidden (Configuración). */
+.patient-modal-backdrop--portal {
+  z-index: 520;
+}
+
 .patient-modal {
   width: min(980px, 100%);
   max-height: 90vh;

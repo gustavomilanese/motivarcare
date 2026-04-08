@@ -1874,13 +1874,6 @@ button.danger {
   border-color: #cfd9ee;
 }
 
-.hero-grid-professional-stack {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  min-width: 0;
-}
-
 .active-professional-card-hit {
   display: grid;
   gap: 8px;
@@ -1899,25 +1892,6 @@ button.danger {
 .active-professional-card-hit:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(95, 68, 235, 0.22);
-}
-
-.active-professional-defer-standalone {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 6px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6d5acd;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  border-radius: 10px;
-}
-
-.active-professional-defer-standalone:hover {
-  color: #4f3cd2;
-  background: rgba(95, 68, 235, 0.06);
 }
 
 .active-professional-card::before {
@@ -8586,49 +8560,123 @@ button.sessions-balance {
   gap: 8px;
 }
 
-.checkout-packages-head .checkout-demo-pill {
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fcd34d;
-}
-
-.checkout-single-session-row {
+.checkout-package-column {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
-.checkout-single-session-cta {
-  border: 0;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
+.checkout-package-column .deal-card-shell {
+  flex: 1;
+}
+
+.checkout-package-column--solo {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.checkout-individual-only-wrap {
+  display: grid;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.checkout-individual-sessions-button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  color: #fff;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
-  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.22);
+  border: 1px solid rgba(95, 68, 235, 0.5);
+  background: linear-gradient(180deg, #ffffff 0%, #f8f6ff 100%);
+  color: #5b21b6;
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.1);
 }
 
-.checkout-single-session-cta:hover {
-  background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%);
+.checkout-individual-sessions-button:hover:not(:disabled) {
+  border-color: rgba(95, 68, 235, 0.65);
+  background: linear-gradient(180deg, #faf8ff 0%, #f0ecff 100%);
 }
 
-.checkout-single-session-hint {
+.checkout-individual-sessions-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.checkout-individual-qty-modal {
+  width: min(440px, 100%);
+  padding: 20px;
+}
+
+.checkout-individual-qty-heading {
+  margin: 6px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.checkout-individual-qty-intro {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.45;
   color: var(--text-soft);
-  line-height: 1.4;
-  max-width: 36ch;
+}
+
+.checkout-individual-qty-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkout-individual-qty-pill {
+  border: 1px solid var(--portal-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4338ca;
+  cursor: pointer;
+}
+
+.checkout-individual-qty-pill.selected {
+  border-color: rgba(95, 68, 235, 0.55);
+  background: linear-gradient(180deg, #f5f2ff 0%, #ede8ff 100%);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.15);
+}
+
+.checkout-individual-qty-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.checkout-individual-qty-field input {
+  max-width: 120px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  font-size: 16px;
+}
+
+.checkout-individual-qty-total {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #312e81;
+}
+
+.checkout-individual-qty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .checkout-packages-bundles-note {
@@ -8772,6 +8820,36 @@ button.sessions-balance {
 
 .patient-dashboard-home .active-professional-card {
   gap: 6px;
+}
+
+.patient-dashboard-home button.active-professional-card {
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.patient-dashboard-home button.active-professional-card:hover {
+  border-color: rgba(95, 68, 235, 0.48);
+  box-shadow: 0 10px 26px rgba(95, 68, 235, 0.16);
+  transform: translateY(-1px);
+  background: linear-gradient(165deg, #faf8ff 0%, #f3efff 100%);
+}
+
+.patient-dashboard-home .active-professional-card--has-pro {
+  cursor: default;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.patient-dashboard-home .active-professional-card--has-pro:hover {
+  border-color: rgba(95, 68, 235, 0.45);
+  box-shadow: 0 10px 26px rgba(95, 68, 235, 0.12);
+  transform: translateY(-1px);
 }
 
 .patient-dashboard-home .active-professional-row {

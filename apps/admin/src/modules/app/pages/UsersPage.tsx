@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { defaultCreateForm } from "../constants";
@@ -128,6 +129,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
   const [deleteLoadingUserId, setDeleteLoadingUserId] = useState<string | null>(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<AdminUser | null>(null);
   const [purgeHistoricalOnDelete, setPurgeHistoricalOnDelete] = useState(false);
+  const deleteInFlightRef = useRef<AbortController | null>(null);
 
   const { scrollToSection } = useStickySectionNavigation(sectionIdsForNavigation, { loading: embedded });
 
@@ -433,13 +435,13 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     setPendingDeleteUser(user);
   };
 
-  const closeDeleteModal = () => {
-    if (deleteLoadingUserId) {
-      return;
-    }
+  const closeDeleteModal = useCallback(() => {
+    deleteInFlightRef.current?.abort();
+    deleteInFlightRef.current = null;
+    setDeleteLoadingUserId(null);
     setPendingDeleteUser(null);
     setPurgeHistoricalOnDelete(false);
-  };
+  }, []);
 
   const confirmDeleteUser = async () => {
     if (!pendingDeleteUser) {
@@ -450,6 +452,9 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
 
     setEditError("");
     setEditSuccess("");
+    deleteInFlightRef.current?.abort();
+    const controller = new AbortController();
+    deleteInFlightRef.current = controller;
     setDeleteLoadingUserId(user.id);
 
     try {
@@ -461,7 +466,8 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         `/api/admin/users/${user.id}`,
         {
           method: "DELETE",
-          body: JSON.stringify({ purgeHistoricalData: purgeHistoricalOnDelete })
+          body: JSON.stringify({ purgeHistoricalData: purgeHistoricalOnDelete }),
+          signal: controller.signal
         },
         props.token
       );
@@ -493,6 +499,12 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
 
       await loadUsers(usersPage);
     } catch (requestError) {
+      if (
+        requestError instanceof Error
+        && (requestError.name === "AbortError" || requestError.message.toLowerCase().includes("abort"))
+      ) {
+        return;
+      }
       setEditError(
         requestError instanceof Error
           ? requestError.message
@@ -503,9 +515,27 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
             })
       );
     } finally {
+      deleteInFlightRef.current = null;
       setDeleteLoadingUserId(null);
     }
   };
+
+  useEffect(() => {
+    if (!pendingDeleteUser) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      event.preventDefault();
+      closeDeleteModal();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [pendingDeleteUser, closeDeleteModal]);
 
   const usersListBody = (
     <UsersListSection
@@ -584,62 +614,65 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
 
       {usersCreateSection}
 
-      {pendingDeleteUser ? (
-        <div className="patient-modal-backdrop" onClick={closeDeleteModal}>
-          <section className="patient-modal patient-create-modal" onClick={(event) => event.stopPropagation()}>
-            <header className="patient-modal-head">
-              <h2>{t(props.language, { es: "Eliminar usuario", en: "Delete user", pt: "Excluir usuario" })}</h2>
-              <button type="button" onClick={closeDeleteModal} disabled={Boolean(deleteLoadingUserId)}>
-                {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
-              </button>
-            </header>
-            <p>
-              {pendingDeleteUser.isTestUser
-                ? t(props.language, {
-                    es: "Este usuario esta marcado como prueba. Se eliminara de forma definitiva aunque tenga actividad.",
-                    en: "This user is marked as test. It will be permanently deleted even with activity.",
-                    pt: "Este usuario esta marcado como teste. Sera excluido permanentemente mesmo com atividade."
-                  })
-                : t(props.language, {
-                    es: "Si el usuario tiene pagos o reservas, por defecto solo se desactiva y se conserva el historial. Podés forzar borrado total con la opción de abajo (sesiones, compras, ledger).",
-                    en: "If the user has bookings or payments, by default we only disable the account and keep history. You can force a full wipe with the option below (sessions, purchases, ledger).",
-                    pt: "Se o usuario tiver historico, por padrao apenas desativamos. Voce pode forcar exclusao total com a opcao abaixo."
+      {pendingDeleteUser
+        ? createPortal(
+            <div className="patient-modal-backdrop patient-modal-backdrop--portal" onClick={closeDeleteModal}>
+              <section className="patient-modal patient-create-modal" onClick={(event) => event.stopPropagation()}>
+                <header className="patient-modal-head">
+                  <h2>{t(props.language, { es: "Eliminar usuario", en: "Delete user", pt: "Excluir usuario" })}</h2>
+                  <button type="button" onClick={closeDeleteModal}>
+                    {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                  </button>
+                </header>
+                <p>
+                  {pendingDeleteUser.isTestUser
+                    ? t(props.language, {
+                        es: "Este usuario está marcado como prueba. Se eliminará de forma definitiva aunque tenga actividad.",
+                        en: "This user is marked as test. It will be permanently deleted even with activity.",
+                        pt: "Este usuario esta marcado como teste. Sera excluido permanentemente mesmo com atividade."
+                      })
+                    : t(props.language, {
+                        es: "Si el usuario tiene pagos o reservas, por defecto solo se desactiva y se conserva el historial. Podés forzar borrado total con la opción de abajo (sesiones, compras, ledger).",
+                        en: "If the user has bookings or payments, by default we only disable the account and keep history. You can force a full wipe with the option below (sessions, purchases, ledger).",
+                        pt: "Se o usuario tiver historico, por padrao apenas desativamos. Voce pode forcar exclusao total com a opcao abaixo."
+                      })}
+                </p>
+                <p>
+                  <strong>{pendingDeleteUser.fullName}</strong> · {pendingDeleteUser.email}
+                </p>
+                <label className="inline-toggle user-purge-toggle">
+                  <input
+                    type="checkbox"
+                    checked={purgeHistoricalOnDelete}
+                    disabled={Boolean(deleteLoadingUserId)}
+                    onChange={(event) => setPurgeHistoricalOnDelete(event.target.checked)}
+                  />
+                  {t(props.language, {
+                    es: "Borrar también reservas, finanzas y compras vinculadas (irreversible).",
+                    en: "Also delete bookings, finance rows, and linked purchases (irreversible).",
+                    pt: "Excluir também reservas, financas e compras (irreversível)."
                   })}
-            </p>
-            <p>
-              <strong>{pendingDeleteUser.fullName}</strong> · {pendingDeleteUser.email}
-            </p>
-            <label className="inline-toggle user-purge-toggle">
-              <input
-                type="checkbox"
-                checked={purgeHistoricalOnDelete}
-                disabled={Boolean(deleteLoadingUserId)}
-                onChange={(event) => setPurgeHistoricalOnDelete(event.target.checked)}
-              />
-              {t(props.language, {
-                es: "Borrar tambien reservas, finanzas y compras vinculadas (irreversible).",
-                en: "Also delete bookings, finance rows, and linked purchases (irreversible).",
-                pt: "Excluir tambem reservas, financas e compras (irreversivel)."
-              })}
-            </label>
-            <div className="button-row">
-              <button type="button" onClick={closeDeleteModal} disabled={Boolean(deleteLoadingUserId)}>
-                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => void confirmDeleteUser()}
-                disabled={Boolean(deleteLoadingUserId)}
-              >
-                {deleteLoadingUserId === pendingDeleteUser.id
-                  ? t(props.language, { es: "Eliminando...", en: "Deleting...", pt: "Excluindo..." })
-                  : t(props.language, { es: "Si, eliminar", en: "Yes, delete", pt: "Sim, excluir" })}
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+                </label>
+                <div className="button-row">
+                  <button type="button" onClick={closeDeleteModal}>
+                    {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => void confirmDeleteUser()}
+                    disabled={Boolean(deleteLoadingUserId)}
+                  >
+                    {deleteLoadingUserId === pendingDeleteUser.id
+                      ? t(props.language, { es: "Eliminando...", en: "Deleting...", pt: "Excluindo..." })
+                      : t(props.language, { es: "Sí, eliminar", en: "Yes, delete", pt: "Sim, excluir" })}
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 

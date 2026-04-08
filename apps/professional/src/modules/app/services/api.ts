@@ -1,8 +1,15 @@
-import { createApiClient } from "@therapy/auth";
+import { createApiClient, resolveWebAppApiBase } from "@therapy/auth";
 
-const apiUrlRaw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL?.trim();
-export const API_BASE =
-  apiUrlRaw && apiUrlRaw.length > 0 ? apiUrlRaw.replace(/\/+$/, "") : "http://localhost:4000";
+const env = import.meta.env;
+
+export const API_BASE = resolveWebAppApiBase({
+  viteApiUrl: env.VITE_API_URL,
+  isDev: env.DEV,
+  forceRemoteApi: env.VITE_FORCE_REMOTE_API === "true",
+  browserHostname: typeof window !== "undefined" ? window.location.hostname : "",
+  injectedApiBase: undefined,
+  loopbackDefault: "http://localhost:4000"
+});
 
 const UNAUTHORIZED_MESSAGES = ["Invalid or expired token", "Missing bearer token"] as const;
 

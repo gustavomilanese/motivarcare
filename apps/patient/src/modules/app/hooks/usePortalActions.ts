@@ -97,6 +97,64 @@ export function usePortalActions(params: {
     return true;
   };
 
+  const purchaseIndividualSessions = async (sessionCount: number): Promise<boolean> => {
+    if (!Number.isInteger(sessionCount) || sessionCount < 1 || sessionCount > 99) {
+      return false;
+    }
+
+    const selectedProfessionalId = params.state.selectedProfessionalId;
+    const authToken = params.state.authToken;
+    let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
+
+    if (authToken) {
+      try {
+        const response = await apiRequest<PurchasePackageApiResponse>(
+          "/api/profiles/me/purchase-individual-sessions",
+          {
+            method: "POST",
+            body: JSON.stringify({ sessionCount })
+          },
+          authToken
+        );
+        purchasedPackage = response.purchase;
+      } catch (error) {
+        console.error("Could not purchase individual sessions", error);
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    params.onStateChange((current) => ({
+      ...current,
+      therapistSelectionCompleted: true,
+      onboardingFinalCompleted: true,
+      assignedProfessionalId: current.selectedProfessionalId,
+      subscription: {
+        packageId: purchasedPackage?.packageId ?? current.subscription.packageId,
+        packageName: purchasedPackage?.packageName ?? current.subscription.packageName,
+        creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + sessionCount,
+        creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + sessionCount,
+        purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+        purchaseHistory: [
+          {
+            id: purchasedPackage?.id ?? `local-ind-${Date.now().toString(36)}`,
+            name: purchasedPackage?.packageName ?? `${sessionCount} sesiones`,
+            credits: sessionCount,
+            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString()
+          },
+          ...current.subscription.purchaseHistory
+        ].slice(0, 20)
+      }
+    }));
+
+    if (selectedProfessionalId) {
+      void syncActiveProfessionalAssignment(selectedProfessionalId);
+    }
+
+    return true;
+  };
+
   const confirmBooking = async (
     professionalId: string,
     slot: TimeSlot,
@@ -456,6 +514,7 @@ export function usePortalActions(params: {
   return {
     syncActiveProfessionalAssignment,
     addPackage,
+    purchaseIndividualSessions,
     confirmBooking,
     rescheduleBooking,
     planTrialFromDashboard,

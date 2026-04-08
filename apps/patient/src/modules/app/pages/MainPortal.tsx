@@ -154,6 +154,7 @@ export function MainPortal(props: {
   const {
     syncActiveProfessionalAssignment,
     addPackage,
+    purchaseIndividualSessions,
     confirmBooking,
     rescheduleBooking,
     planTrialFromDashboard,
@@ -251,6 +252,7 @@ export function MainPortal(props: {
             rescheduleBooking={rescheduleBooking}
             planTrialFromDashboard={planTrialFromDashboard}
             addPackage={addPackage}
+            purchaseIndividualSessions={purchaseIndividualSessions}
             sendMessage={sendMessage}
             markThreadAsRead={markThreadAsRead}
           />

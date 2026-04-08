@@ -97,6 +97,9 @@ const updateActiveProfessionalSchema = z.object({
 const purchasePackageSchema = z.object({
   packageId: z.string().trim().min(1)
 });
+const purchaseIndividualSessionsSchema = z.object({
+  sessionCount: z.number().int().min(1).max(99)
+});
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()
 });
@@ -947,6 +950,152 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       packageId: sessionPackage.id,
       packageName: sessionPackage.name,
       packagePriceCents: pricing.priceCents,
+      packageDiscountPercent: pricing.discountPercent,
+      totalCredits: purchase.totalCredits,
+      remainingCredits: purchase.remainingCredits,
+      purchasedAt: purchase.purchasedAt
+    }
+  });
+});
+
+profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = purchaseIndividualSessionsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can purchase sessions" });
+  }
+
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: actor.patientProfileId },
+    select: { id: true }
+  });
+  if (!patient) {
+    return res.status(404).json({ error: "Patient profile not found" });
+  }
+
+  const sessionCount = parsed.data.sessionCount;
+
+  const unitPackage = await prisma.sessionPackage.findFirst({
+    where: { active: true, credits: 1, professionalId: null },
+    select: {
+      id: true,
+      name: true,
+      credits: true,
+      active: true,
+      priceCents: true,
+      discountPercent: true,
+      currency: true,
+      professionalId: true
+    },
+    orderBy: [{ createdAt: "asc" }]
+  });
+  if (!unitPackage) {
+    return res.status(404).json({ error: "Individual session product is not configured" });
+  }
+
+  const [assignmentConfig, financeRules] = await Promise.all([
+    prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
+    getFinanceRules()
+  ]);
+
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const activeProfessionalId = assignments[patient.id] ?? null;
+  const activeProfessional = activeProfessionalId
+    ? await prisma.professionalProfile.findUnique({
+        where: { id: activeProfessionalId },
+        select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
+      })
+    : null;
+
+  const pricing = resolvePackagePricing({
+    credits: 1,
+    fallbackPriceCents: unitPackage.priceCents,
+    fallbackDiscountPercent: unitPackage.discountPercent,
+    sessionPriceUsd: activeProfessional?.sessionPriceUsd,
+    profileDiscount4: activeProfessional?.discount4,
+    profileDiscount8: activeProfessional?.discount8,
+    profileDiscount12: activeProfessional?.discount12
+  });
+
+  const totalListPriceCents = pricing.listPriceCents * sessionCount;
+  const totalPriceCents = pricing.priceCents * sessionCount;
+  const displayName = `Sesiones individuales (×${sessionCount})`;
+
+  const purchase = await prisma.$transaction(async (tx) => {
+    const creditSummary = await tx.patientPackagePurchase.aggregate({
+      where: { patientId: patient.id },
+      _sum: {
+        remainingCredits: true
+      }
+    });
+    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
+
+    if (carryOverCredits > 0) {
+      await tx.patientPackagePurchase.updateMany({
+        where: {
+          patientId: patient.id,
+          remainingCredits: { gt: 0 }
+        },
+        data: {
+          remainingCredits: 0
+        }
+      });
+    }
+
+    const nextWalletCredits = carryOverCredits + sessionCount;
+    const checkoutSessionId = [
+      "manual-individual",
+      patient.id,
+      Date.now().toString(36),
+      Math.random().toString(36).slice(2, 8)
+    ].join("-");
+
+    const createdPurchase = await tx.patientPackagePurchase.create({
+      data: {
+        patientId: patient.id,
+        packageId: unitPackage.id,
+        stripeCheckoutSessionId: checkoutSessionId,
+        totalCredits: nextWalletCredits,
+        remainingCredits: nextWalletCredits,
+        packageNameSnapshot: displayName,
+        packageCreditsSnapshot: sessionCount,
+        packageListPriceCentsSnapshot: totalListPriceCents,
+        packagePriceCentsSnapshot: totalPriceCents,
+        packageDiscountPercentSnapshot: pricing.discountPercent,
+        packageCurrencySnapshot: unitPackage.currency?.toLowerCase() ?? "usd",
+        platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
+        trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
+        professionalIdSnapshot: activeProfessional?.id ?? null
+      }
+    });
+
+    await tx.creditLedger.create({
+      data: {
+        patientId: patient.id,
+        bookingId: null,
+        type: "PACKAGE_PURCHASE",
+        amount: sessionCount,
+        note: `Individual sessions x${sessionCount} ${createdPurchase.id}`
+      }
+    });
+
+    return createdPurchase;
+  });
+
+  return res.status(201).json({
+    purchase: {
+      id: purchase.id,
+      packageId: unitPackage.id,
+      packageName: displayName,
+      packagePriceCents: totalPriceCents,
       packageDiscountPercent: pricing.discountPercent,
       totalCredits: purchase.totalCredits,
       remainingCredits: purchase.remainingCredits,

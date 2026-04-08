@@ -1,10 +1,6 @@
-import { createApiClient } from "@therapy/auth";
+import { createApiClient, resolveWebAppApiBase } from "@therapy/auth";
 
 export const STORAGE_KEY = "therapy_patient_portal_v3";
-
-function normalizeApiBase(raw: string | undefined | null): string {
-  return (raw ?? "").trim().replace(/\/+$/, "");
-}
 
 declare global {
   interface Window {
@@ -13,27 +9,16 @@ declare global {
   }
 }
 
-const fromViteEnv = normalizeApiBase((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL);
+const env = import.meta.env;
 
-function readInjectedApiBase(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  return normalizeApiBase(window.__THERAPY_API_BASE__);
-}
-
-function resolveApiBase(): string {
-  if (fromViteEnv) {
-    return fromViteEnv;
-  }
-  const injected = readInjectedApiBase();
-  if (injected) {
-    return injected;
-  }
-  return "http://localhost:4000";
-}
-
-export const API_BASE = resolveApiBase();
+export const API_BASE = resolveWebAppApiBase({
+  viteApiUrl: env.VITE_API_URL,
+  isDev: env.DEV,
+  forceRemoteApi: env.VITE_FORCE_REMOTE_API === "true",
+  browserHostname: typeof window !== "undefined" ? window.location.hostname : "",
+  injectedApiBase: typeof window !== "undefined" ? window.__THERAPY_API_BASE__ : undefined,
+  loopbackDefault: "http://localhost:4000"
+});
 
 if (typeof window !== "undefined" && import.meta.env.PROD) {
   const h = window.location.hostname;

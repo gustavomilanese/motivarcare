@@ -1,5 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+
+const patientDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(patientDir, "../..");
 
 /** Meta en HTML para verificar en prod (View Source) que Vercel inyectó VITE_API_URL en el build. */
 function escapeAttr(value: string): string {
@@ -7,7 +12,7 @@ function escapeAttr(value: string): string {
 }
 
 export default defineConfig(({ mode }) => {
-  const fromFiles = loadEnv(mode, process.cwd(), "");
+  const fromFiles = loadEnv(mode, repoRoot, "");
   /** Vercel/Railway: VITE_API_URL o API_PUBLIC_URL (misma URL pública del API que en el backend). */
   const apiBase = (
     fromFiles.VITE_API_URL ??
@@ -19,6 +24,7 @@ export default defineConfig(({ mode }) => {
     .replace(/\/+$/, "");
 
   return {
+    envDir: repoRoot,
     plugins: [
       {
         name: "inject-vite-api-base-meta",

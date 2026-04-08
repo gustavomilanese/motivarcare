@@ -1,9 +1,10 @@
-import { type SyntheticEvent, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
+  formatCurrencyAmount,
   formatDateWithLocale,
   replaceTemplate,
   textByLanguage
@@ -111,6 +112,7 @@ export function BookingPage(props: {
   onRescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<boolean>;
+  onPurchaseIndividualSessions: (sessionCount: number) => Promise<boolean>;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSlotId, setSelectedSlotId] = useState("");
@@ -127,6 +129,11 @@ export function BookingPage(props: {
   const [checkoutPaymentPlanId, setCheckoutPaymentPlanId] = useState<string | null>(null);
   const [checkoutPaymentLoading, setCheckoutPaymentLoading] = useState(false);
   const [checkoutPaymentError, setCheckoutPaymentError] = useState("");
+  const [individualQtyOpen, setIndividualQtyOpen] = useState(false);
+  const [individualQtyDraft, setIndividualQtyDraft] = useState("1");
+  const [individualPaymentCount, setIndividualPaymentCount] = useState<number | null>(null);
+  const [individualPaymentLoading, setIndividualPaymentLoading] = useState(false);
+  const [individualPaymentError, setIndividualPaymentError] = useState("");
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
@@ -206,6 +213,26 @@ export function BookingPage(props: {
     ? packagePlans.find((plan) => plan.id === checkoutPaymentPlanId) ?? null
     : null;
 
+  const individualUnitPriceUsd = useMemo(() => {
+    const oneCredit = packagePlans.find((plan) => plan.credits === 1);
+    if (oneCredit) {
+      return oneCredit.priceCents / 100;
+    }
+    const bundle = packagePlans.find((plan) => plan.credits > 1);
+    if (!bundle) {
+      return null;
+    }
+    return bundle.priceCents / 100 / bundle.credits;
+  }, [packagePlans]);
+
+  const resetIndividualPurchaseUi = () => {
+    setIndividualQtyOpen(false);
+    setIndividualQtyDraft("1");
+    setIndividualPaymentCount(null);
+    setIndividualPaymentLoading(false);
+    setIndividualPaymentError("");
+  };
+
   const setCheckoutFlow = (active: boolean, nextPlanId?: string | null) => {
     const nextParams = new URLSearchParams(searchParams);
     if (active) {
@@ -218,6 +245,7 @@ export function BookingPage(props: {
     } else {
       nextParams.delete("flow");
       nextParams.delete("plan");
+      resetIndividualPurchaseUi();
     }
     setSearchParams(nextParams);
   };
@@ -250,6 +278,7 @@ export function BookingPage(props: {
       setCheckoutPaymentLoading(false);
       setCheckoutPaymentPlanId(null);
       setCheckoutPaymentError("");
+      resetIndividualPurchaseUi();
     }
 
     const nextParams = new URLSearchParams(searchParams);
@@ -450,6 +479,7 @@ export function BookingPage(props: {
     setCheckoutPaymentLoading(false);
     setCheckoutPaymentPlanId(null);
     setCheckoutPaymentError("");
+    resetIndividualPurchaseUi();
     setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? packagePlans[0]?.id ?? null);
   };
 
@@ -458,6 +488,7 @@ export function BookingPage(props: {
       setCheckoutPaymentLoading(false);
       setCheckoutPaymentPlanId(null);
       setCheckoutPaymentError("");
+      resetIndividualPurchaseUi();
       setCheckoutFlow(false);
     }
     setEditingBookingId(null);
@@ -485,7 +516,63 @@ export function BookingPage(props: {
 
   const handlePurchasePlan = (plan: PackagePlan) => {
     setCheckoutPaymentError("");
+    resetIndividualPurchaseUi();
     setCheckoutPaymentPlanId(plan.id);
+  };
+
+  const openIndividualPurchase = () => {
+    setCheckoutPaymentError("");
+    setCheckoutPaymentPlanId(null);
+    setIndividualPaymentError("");
+    setIndividualQtyDraft("1");
+    setIndividualPaymentCount(null);
+    setIndividualQtyOpen(true);
+  };
+
+  const proceedIndividualToPayment = () => {
+    const n = Number.parseInt(individualQtyDraft.trim(), 10);
+    if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceUsd === null) {
+      return;
+    }
+    setIndividualQtyOpen(false);
+    setIndividualPaymentCount(n);
+    setIndividualPaymentError("");
+  };
+
+  const handleConfirmIndividualPayment = async () => {
+    if (!individualPaymentCount) {
+      return;
+    }
+
+    setIndividualPaymentLoading(true);
+    setIndividualPaymentError("");
+    try {
+      const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
+      if (!purchased) {
+        setIndividualPaymentError(
+          t(props.language, {
+            es: "No se pudo confirmar la compra. Intenta nuevamente.",
+            en: "Could not confirm the purchase. Please try again.",
+            pt: "Nao foi possivel confirmar a compra. Tente novamente."
+          })
+        );
+        return;
+      }
+      resetIndividualPurchaseUi();
+      setCheckoutFlow(false);
+    } catch (error) {
+      setIndividualPaymentError(
+        error instanceof Error
+          ? error.message
+          : t(props.language, {
+              es: "No se pudo confirmar la compra. Intenta nuevamente.",
+              en: "Could not confirm the purchase. Please try again.",
+              pt: "Nao foi possivel confirmar a compra. Tente novamente."
+            })
+      );
+    } finally {
+      setIndividualPaymentLoading(false);
+    }
   };
 
   const handleConfirmPackagePayment = async () => {
@@ -934,14 +1021,17 @@ export function BookingPage(props: {
             packagePlans={packagePlans}
             featuredPackageId={featuredPackageId}
             selectedCheckoutPlanId={selectedCheckoutPlanId}
+            unitPriceUsd={individualUnitPriceUsd}
             onClose={() => {
               setCheckoutPaymentLoading(false);
               setCheckoutPaymentPlanId(null);
               setCheckoutPaymentError("");
+              resetIndividualPurchaseUi();
               setCheckoutFlow(false);
             }}
             onSelectCard={(planId) => setCheckoutFlow(true, planId)}
             onSelectPlan={handlePurchasePlan}
+            onIndividualPurchase={openIndividualPurchase}
           />
         </section>
       ) : null}
@@ -1086,6 +1176,157 @@ export function BookingPage(props: {
             setCheckoutFlow(false);
           }}
           onPay={handleConfirmPackagePayment}
+        />
+      ) : null}
+
+      {isCheckoutFlow && individualQtyOpen && individualUnitPriceUsd !== null ? (
+        <div
+          className="matching-flow-backdrop"
+          role="presentation"
+          onClick={() => {
+            setIndividualQtyOpen(false);
+            setIndividualQtyDraft("1");
+          }}
+        >
+          <section
+            className="matching-flow-modal checkout-individual-qty-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkout-individual-qty-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="matching-flow-header payment-modal-head">
+              <div className="payment-modal-head-copy">
+                <p className="payment-modal-mini-title">
+                  {t(props.language, { es: "Compra flexible", en: "Flexible purchase", pt: "Compra flexivel" })}
+                </p>
+                <h3 id="checkout-individual-qty-title" className="checkout-individual-qty-heading">
+                  {t(props.language, {
+                    es: "Sesiones fuera de paquete",
+                    en: "Sessions outside a bundle",
+                    pt: "Sessoes fora do pacote"
+                  })}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="matching-flow-close payment-modal-close"
+                aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                onClick={() => {
+                  setIndividualQtyOpen(false);
+                  setIndividualQtyDraft("1");
+                }}
+              >
+                ×
+              </button>
+            </header>
+            <p className="checkout-individual-qty-intro">
+              {t(props.language, {
+                es: "Elegí cuántas sesiones querés sumar. El precio por sesión es el mismo que para una compra suelta.",
+                en: "Choose how many sessions to add. The per-session price matches a single-session purchase.",
+                pt: "Escolha quantas sessoes adicionar. O preco por sessao e o de uma compra avulsa."
+              })}
+            </p>
+            <div className="checkout-individual-qty-presets">
+              {([1, 2, 3] as const).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`checkout-individual-qty-pill ${individualQtyDraft === String(n) ? "selected" : ""}`}
+                  onClick={() => setIndividualQtyDraft(String(n))}
+                >
+                  {replaceTemplate(t(props.language, { es: "{n} sesiones", en: "{n} sessions", pt: "{n} sessoes" }), {
+                    n: String(n)
+                  })}
+                </button>
+              ))}
+            </div>
+            <label className="checkout-individual-qty-field">
+              <span>{t(props.language, { es: "Otra cantidad (1–99)", en: "Other quantity (1–99)", pt: "Outra quantidade (1–99)" })}</span>
+              <input
+                inputMode="numeric"
+                min={1}
+                max={99}
+                value={individualQtyDraft}
+                onChange={(event) => setIndividualQtyDraft(event.target.value.replace(/\D/g, "").slice(0, 2))}
+              />
+            </label>
+            {(() => {
+              const n = Number.parseInt(individualQtyDraft.trim(), 10);
+              const ok = Number.isFinite(n) && n >= 1 && n <= 99;
+              const totalUsd = ok ? individualUnitPriceUsd * n : null;
+              return (
+                <p className="checkout-individual-qty-total">
+                  {ok && totalUsd !== null
+                    ? replaceTemplate(
+                        t(props.language, {
+                          es: "Total estimado: {amount}",
+                          en: "Estimated total: {amount}",
+                          pt: "Total estimado: {amount}"
+                        }),
+                        {
+                          amount: formatCurrencyAmount({
+                            amountInUsd: totalUsd,
+                            currency: props.currency,
+                            language: props.language,
+                            maximumFractionDigits: 0
+                          })
+                        }
+                      )
+                    : t(props.language, {
+                        es: "Ingresá una cantidad válida.",
+                        en: "Enter a valid quantity.",
+                        pt: "Insira uma quantidade valida."
+                      })}
+                </p>
+              );
+            })()}
+            <div className="checkout-individual-qty-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  setIndividualQtyOpen(false);
+                  setIndividualQtyDraft("1");
+                }}
+              >
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => proceedIndividualToPayment()}
+                disabled={(() => {
+                  const n = Number.parseInt(individualQtyDraft.trim(), 10);
+                  return !Number.isFinite(n) || n < 1 || n > 99;
+                })()}
+              >
+                {t(props.language, {
+                  es: "Continuar al pago simulado",
+                  en: "Continue to simulated payment",
+                  pt: "Continuar para pagamento simulado"
+                })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isCheckoutFlow && individualPaymentCount !== null && individualUnitPriceUsd !== null ? (
+        <PaymentMethodModal
+          language={props.language}
+          amountUsd={individualUnitPriceUsd * individualPaymentCount}
+          loading={individualPaymentLoading}
+          error={individualPaymentError}
+          onBack={() => {
+            setIndividualPaymentCount(null);
+            setIndividualPaymentError("");
+            setIndividualQtyOpen(true);
+          }}
+          onClose={() => {
+            resetIndividualPurchaseUi();
+          }}
+          onPay={() => void handleConfirmIndividualPayment()}
         />
       ) : null}
     </div>

@@ -39,23 +39,12 @@ export function PortalRoutes(props: {
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<boolean>;
+  purchaseIndividualSessions: (sessionCount: number) => Promise<boolean>;
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
 }) {
   const startPackagePurchase = (plan: PackagePlan) => {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
-  };
-
-  const deferProfessionalChoiceFromDashboard = async () => {
-    await props.syncActiveProfessionalAssignment(null);
-    props.onStateChange((current) => ({
-      ...current,
-      therapistSelectionCompleted: true,
-      assignedProfessionalId: null,
-      assignedProfessionalName: null,
-      selectedProfessionalId: "",
-      activeChatProfessionalId: ""
-    }));
   };
 
   return (
@@ -208,7 +197,6 @@ export function PortalRoutes(props: {
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
                   onGoToMatching={() => props.navigate("/matching")}
-                  onDeferProfessionalChoice={deferProfessionalChoiceFromDashboard}
                 />
               )
         }
@@ -265,6 +253,7 @@ export function PortalRoutes(props: {
                   onRescheduleBooking={props.rescheduleBooking}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
+                  onPurchaseIndividualSessions={props.purchaseIndividualSessions}
                 />
               )
         }

@@ -1,3 +1,6 @@
+export { resolveWebAppApiBase } from "./resolveWebAppApiBase";
+export type { ResolveWebAppApiBaseParams } from "./resolveWebAppApiBase";
+
 export interface ApiErrorShape {
   error?: string;
 }
