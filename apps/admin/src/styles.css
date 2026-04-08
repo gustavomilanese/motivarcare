@@ -346,17 +346,17 @@ button.danger {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   padding-bottom: 14px;
   border-bottom: 1px solid #e3e5ef;
 }
 
-.admin-brand-wordmark {
+.admin-brand-lockup {
   display: block;
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 26px;
+  max-height: 52px;
   object-fit: contain;
   object-position: left center;
 }
@@ -368,15 +368,15 @@ button.danger {
 }
 
 .admin-auth-brand {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.admin-auth-wordmark {
+.admin-auth-lockup {
   display: block;
   width: auto;
-  max-width: 220px;
+  max-width: min(320px, 100%);
   height: auto;
-  max-height: 34px;
+  max-height: 64px;
   object-fit: contain;
   object-position: left center;
 }

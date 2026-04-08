@@ -92,11 +92,11 @@ export function AuthScreen(props: {
       <section className="auth-card">
         <div className="admin-auth-brand">
           <img
-            className="admin-auth-wordmark"
-            src="/brand/motivarcare-wordmark.png"
+            className="admin-auth-lockup"
+            src="/brand/motivarcare-logo-full.png"
             alt="MotivarCare"
-            width={200}
-            height={40}
+            width={300}
+            height={96}
           />
         </div>
         <span className="chip">{t(props.language, { es: "Consola admin", en: "Admin console", pt: "Console admin" })}</span>

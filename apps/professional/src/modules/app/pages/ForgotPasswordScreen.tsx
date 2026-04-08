@@ -52,11 +52,11 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
       <section className="pro-auth-card">
         <div className="pro-auth-brand">
           <img
-            className="pro-auth-wordmark"
-            src="/brand/motivarcare-wordmark.png"
+            className="pro-auth-lockup"
+            src="/brand/motivarcare-logo-full.png"
             alt="MotivarCare"
-            width={200}
-            height={40}
+            width={300}
+            height={96}
           />
         </div>
         <div className="pro-auth-head">

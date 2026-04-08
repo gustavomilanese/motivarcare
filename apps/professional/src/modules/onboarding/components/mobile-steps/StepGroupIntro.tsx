@@ -82,11 +82,11 @@ export function ProfessionalWelcomeGate(props: {
 
         <div className="pro-gate-brand">
           <img
-            className="pro-gate-wordmark"
-            src="/brand/motivarcare-wordmark.png"
+            className="pro-gate-lockup"
+            src="/brand/motivarcare-logo-full.png"
             alt="MotivarCare"
-            width={200}
-            height={40}
+            width={300}
+            height={96}
           />
         </div>
 

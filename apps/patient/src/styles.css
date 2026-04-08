@@ -121,9 +121,9 @@ ul {
 .intake-brand-logo {
   display: block;
   width: auto;
-  max-width: min(300px, 100%);
+  max-width: min(320px, 100%);
   height: auto;
-  max-height: 56px;
+  max-height: 62px;
   object-fit: contain;
   object-position: left center;
 }
@@ -677,17 +677,17 @@ button.danger {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
-.portal-brand-wordmark {
+.portal-brand-lockup {
   display: block;
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 26px;
+  max-height: 52px;
   object-fit: contain;
   object-position: left center;
 }
@@ -700,15 +700,15 @@ button.danger {
 }
 
 .auth-brand-mark {
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
-.auth-brand-wordmark {
+.auth-brand-lockup {
   display: block;
   width: auto;
-  max-width: 220px;
+  max-width: min(320px, 100%);
   height: auto;
-  max-height: 32px;
+  max-height: 64px;
   object-fit: contain;
   object-position: left center;
 }

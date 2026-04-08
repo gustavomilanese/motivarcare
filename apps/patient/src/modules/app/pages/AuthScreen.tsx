@@ -135,11 +135,11 @@ export function AuthScreen(props: {
           <div className="auth-header-copy">
             <div className="auth-brand-mark">
               <img
-                className="auth-brand-wordmark"
-                src="/brand/motivarcare-wordmark.png"
+                className="auth-brand-lockup"
+                src="/brand/motivarcare-logo-full.png"
                 alt="MotivarCare"
-                width={200}
-                height={40}
+                width={300}
+                height={96}
               />
             </div>
             <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
