@@ -101,13 +101,15 @@ export function PortalNavigation(props: {
         <aside className="portal-sidebar">
           <div className="portal-brand">
             <img
-              className="portal-brand-lockup"
-              src="/brand/motivarcare-logo-full.png"
+              className="portal-brand-mark-img"
+              src="/brand/motivarcare-mark.png"
               alt="MotivarCare"
-              width={280}
-              height={88}
+              width={396}
+              height={352}
             />
-            <p className="portal-brand-sub">{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
+            <span className="portal-brand-sub">
+              {t(props.language, { es: "Portal Paciente", en: "Patient portal", pt: "Portal do paciente" })}
+            </span>
           </div>
 
           <nav className="portal-sidebar-nav">

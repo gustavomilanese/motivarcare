@@ -138,8 +138,8 @@ export function AuthScreen(props: {
                 className="auth-brand-lockup"
                 src="/brand/motivarcare-logo-full.png"
                 alt="MotivarCare"
-                width={300}
-                height={96}
+                width={708}
+                height={148}
               />
             </div>
             <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>

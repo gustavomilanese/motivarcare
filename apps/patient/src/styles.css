@@ -394,7 +394,9 @@ ul {
   padding: 34px 34px 30px;
   display: grid;
   align-content: center;
+  justify-items: stretch;
   gap: 18px;
+  text-align: left;
   background:
     radial-gradient(circle at 100% 0%, rgba(117, 91, 245, 0.08) 0%, transparent 34%),
     #ffffff;
@@ -402,18 +404,24 @@ ul {
 
 .auth-header-copy {
   display: grid;
-  gap: 2px;
+  gap: 26px;
+  justify-items: start;
+  text-align: left;
+  width: 100%;
 }
 
 .auth-header-copy h1 {
-  font-size: clamp(26px, 2.8vw, 40px);
+  font-size: clamp(23px, 2.52vw, 36px);
   line-height: 1.15;
   font-weight: 600;
   color: #1e293b;
+  width: 100%;
+  text-align: left;
 }
 
 .auth-form {
   gap: 12px;
+  width: 100%;
 }
 
 .auth-form label {
@@ -675,42 +683,52 @@ button.danger {
 
 .portal-brand {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
-.portal-brand-lockup {
+.portal-brand-mark-img {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 52px;
+  width: 33px;
+  height: 33px;
+  flex-shrink: 0;
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
 }
 
 .portal-brand-sub {
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 500;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  min-width: 0;
 }
 
 .auth-brand-mark {
-  margin-bottom: 12px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  align-self: start;
 }
 
 .auth-brand-lockup {
   display: block;
   width: auto;
-  max-width: min(320px, 100%);
+  max-width: min(100%, 320px);
   height: auto;
-  max-height: 64px;
+  max-height: clamp(44px, 10vw, 56px);
+  margin: 0 0 0 -9px;
   object-fit: contain;
   object-position: left center;
+  flex-shrink: 0;
 }
 
 .portal-sidebar-nav {
@@ -6997,7 +7015,7 @@ button.sessions-balance {
   }
 
   .auth-header-copy h1 {
-    font-size: clamp(28px, 6vw, 38px);
+    font-size: clamp(25px, 5.4vw, 34px);
   }
 
   .portal-shell {
@@ -7464,8 +7482,13 @@ button.sessions-balance {
     gap: 14px;
   }
 
+  .auth-brand-lockup {
+    max-height: clamp(40px, 11vw, 52px);
+    max-width: 100%;
+  }
+
   .auth-header-copy h1 {
-    font-size: 34px;
+    font-size: 31px;
   }
 
   .auth-form input {
@@ -8465,17 +8488,20 @@ button.sessions-balance {
 }
 
 .auth-lead {
-  margin-top: 10px;
+  margin-top: 2px;
   font-size: 15px;
   line-height: 1.5;
   color: #4b5f80;
   max-width: 42ch;
+  width: 100%;
+  text-align: left;
 }
 
 .auth-divider {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   margin: 6px 0 4px;
   color: #94a3b8;
   font-size: 12px;

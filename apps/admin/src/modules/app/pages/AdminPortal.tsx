@@ -104,13 +104,15 @@ export function AdminPortal(props: {
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <img
-            className="admin-brand-lockup"
-            src="/brand/motivarcare-logo-full.png"
+            className="admin-brand-mark-img"
+            src="/brand/motivarcare-mark.png"
             alt="MotivarCare"
-            width={280}
-            height={88}
+            width={396}
+            height={352}
           />
-          <p className="admin-brand-sub">{t(props.language, { es: "Admin", en: "Admin", pt: "Admin" })}</p>
+          <span className="admin-brand-sub">
+            {t(props.language, { es: "Portal Admin", en: "Admin portal", pt: "Portal admin" })}
+          </span>
         </div>
 
         <nav className="admin-sidebar-nav">

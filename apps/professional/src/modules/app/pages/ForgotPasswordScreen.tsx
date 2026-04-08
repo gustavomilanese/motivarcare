@@ -55,8 +55,8 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
             className="pro-auth-lockup"
             src="/brand/motivarcare-logo-full.png"
             alt="MotivarCare"
-            width={300}
-            height={96}
+            width={708}
+            height={148}
           />
         </div>
         <div className="pro-auth-head">

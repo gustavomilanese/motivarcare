@@ -2659,26 +2659,32 @@ ul {
 }
 
 .pro-gate-brand {
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   width: 100%;
   padding-top: 4px;
 }
 
-.pro-gate-lockup {
+.pro-gate-brand-mark-img {
   display: block;
-  width: auto;
-  max-width: min(300px, 90vw);
-  height: auto;
-  max-height: 60px;
+  width: 33px;
+  height: 33px;
+  flex-shrink: 0;
   object-fit: contain;
+  object-position: center;
 }
 
-.pro-gate-lockup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+.pro-gate-brand-sub {
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  min-width: 0;
 }
 
 .pro-gate-logo-mark {
@@ -2789,15 +2795,6 @@ ul {
   max-width: 400px;
   text-align: center;
   justify-items: center;
-}
-
-.pro-gate-eyebrow {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #6366a8;
 }
 
 .pro-gate-copy h1 {
@@ -3218,39 +3215,47 @@ ul {
 
 .pro-brand {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
 
-.pro-brand-lockup {
+.pro-brand-mark-img {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 52px;
+  width: 33px;
+  height: 33px;
+  flex-shrink: 0;
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
 }
 
 .pro-brand-sub {
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 500;
   margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  min-width: 0;
 }
 
 .pro-auth-brand {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
 }
 
 .pro-auth-lockup {
   display: block;
   width: auto;
-  max-width: min(320px, 100%);
+  max-width: min(100%, 320px);
   height: auto;
-  max-height: 64px;
+  max-height: clamp(44px, 10vw, 56px);
+  margin: 0 0 0 -9px;
   object-fit: contain;
   object-position: left center;
 }

@@ -82,22 +82,22 @@ export function ProfessionalWelcomeGate(props: {
 
         <div className="pro-gate-brand">
           <img
-            className="pro-gate-lockup"
-            src="/brand/motivarcare-logo-full.png"
+            className="pro-gate-brand-mark-img"
+            src="/brand/motivarcare-mark.png"
             alt="MotivarCare"
-            width={300}
-            height={96}
+            width={396}
+            height={352}
           />
-        </div>
-
-        <div className="pro-gate-copy">
-          <p className="pro-gate-eyebrow">
+          <span className="pro-gate-brand-sub">
             {t(props.language, {
-              es: "Portal profesional",
+              es: "Portal Profesional",
               en: "Professional portal",
               pt: "Portal profissional"
             })}
-          </p>
+          </span>
+        </div>
+
+        <div className="pro-gate-copy">
           <h1>
             {t(props.language, {
               es: "Bienvenidos a MotivarCare para psicólogos",

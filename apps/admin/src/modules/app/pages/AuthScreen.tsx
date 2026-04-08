@@ -95,8 +95,8 @@ export function AuthScreen(props: {
             className="admin-auth-lockup"
             src="/brand/motivarcare-logo-full.png"
             alt="MotivarCare"
-            width={300}
-            height={96}
+            width={708}
+            height={148}
           />
         </div>
         <span className="chip">{t(props.language, { es: "Consola admin", en: "Admin console", pt: "Console admin" })}</span>
