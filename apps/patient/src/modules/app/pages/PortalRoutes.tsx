@@ -71,7 +71,6 @@ export function PortalRoutes(props: {
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
                   onGoToMatching={() => props.navigate("/matching")}
-                  onDeferProfessionalChoice={deferProfessionalChoiceFromDashboard}
                 />
               )
         }
