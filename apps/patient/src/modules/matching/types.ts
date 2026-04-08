@@ -99,6 +99,8 @@ export interface MatchingPageProps {
   onToggleFavorite: (professionalId: string) => void;
   onToggleFavoritesView?: (showOnlyFavorites: boolean) => void;
   onCompleteFirstSelection: (payload: { professionalId: string; professionalName: string }) => void;
+  /** Onboarding: omitir asignación y entrar al portal sin profesional activo. */
+  onDeferTherapistSelection?: () => void | Promise<void>;
   onCreateBooking: (professionalId: string, slot: MatchTimeSlot) => Promise<void> | void;
   onReserve: (professionalId: string) => void;
   onChat: (professionalId: string) => void;

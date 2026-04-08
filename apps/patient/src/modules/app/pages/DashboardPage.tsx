@@ -198,6 +198,8 @@ export function DashboardPage(props: {
   onGoToReservations: () => void;
   onGoToBooking: (professionalId: string) => void;
   onGoToProfessional: (professionalId: string) => void;
+  /** Cuando aún no hay profesional activo, abre el listado para elegir. */
+  onGoToMatching: () => void;
   onGoToChat: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
@@ -507,12 +509,13 @@ export function DashboardPage(props: {
 
         <button
           className="hero-card hero-card-button active-professional-card"
-          disabled={!activeProfessional}
           type="button"
           onClick={() => {
             if (activeProfessional) {
               props.onGoToProfessional(activeProfessional.id);
+              return;
             }
+            props.onGoToMatching();
           }}
         >
           <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
@@ -563,9 +566,9 @@ export function DashboardPage(props: {
                     { name: props.state.assignedProfessionalName }
                   )
                 : t(props.language, {
-                    es: "Reserva tu primera sesion para ver aqui los datos de tu profesional.",
-                    en: "Book your first session to see your professional details here.",
-                    pt: "Reserve sua primeira sessao para ver aqui os dados do profissional."
+                    es: "Tocá para ver profesionales disponibles y elegir el tuyo.",
+                    en: "Tap to see available professionals and choose yours.",
+                    pt: "Toque para ver profissionais disponiveis e escolher o seu."
                   })}
             </p>
           )}

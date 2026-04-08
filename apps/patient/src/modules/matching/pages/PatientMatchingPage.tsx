@@ -266,6 +266,25 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         t={(values) => t(props.language, values)}
       />
 
+      {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
+        <section className="content-card patient-matching-defer">
+          <p className="patient-matching-defer-copy">
+            {t(props.language, {
+              es: "Podés entrar al portal y elegir un profesional cuando quieras desde Inicio.",
+              en: "You can enter the portal and choose a professional anytime from Home.",
+              pt: "Voce pode entrar no portal e escolher um profissional quando quiser na Inicio."
+            })}
+          </p>
+          <button type="button" className="ghost-button patient-matching-defer-button" onClick={() => void props.onDeferTherapistSelection?.()}>
+            {t(props.language, {
+              es: "Elegir profesional más tarde",
+              en: "Choose a professional later",
+              pt: "Escolher profissional mais tarde"
+            })}
+          </button>
+        </section>
+      ) : null}
+
       {loading ? (
         <section className="content-card">
           <p>{t(props.language, { es: "Cargando especialistas...", en: "Loading specialists...", pt: "Carregando especialistas..." })}</p>
@@ -294,6 +313,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
               onChat={props.onChat}
               onImageFallback={props.onImageFallback}
               showChatAction={!bookingFlowEnabled && !props.isFirstSelectionRequired}
+              cardOpensAvailability={bookingFlowEnabled}
             />
           ))}
         </div>

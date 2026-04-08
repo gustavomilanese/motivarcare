@@ -64,6 +64,8 @@ export function ProfessionalMatchCard(props: {
   onChat: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   showChatAction: boolean;
+  /** Tocar la tarjeta (fuera de botones) abre el flujo de horarios completos. */
+  cardOpensAvailability?: boolean;
 }) {
   const slotsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [hasSlotsOverflow, setHasSlotsOverflow] = useState(false);
@@ -133,7 +135,21 @@ export function ProfessionalMatchCard(props: {
   };
 
   return (
-    <article className={`patient-therapist-card ${props.selected ? "selected" : ""}`}>
+    <article
+      className={`patient-therapist-card ${props.selected ? "selected" : ""}`}
+      onClick={(event) => {
+        if (!props.cardOpensAvailability) {
+          return;
+        }
+        const target = event.target as HTMLElement;
+        if (target.closest("button")) {
+          return;
+        }
+        props.onSelect(professional.id);
+        props.onShowAllSlots(professional.id);
+      }}
+      style={props.cardOpensAvailability ? { cursor: "pointer" } : undefined}
+    >
       <div className="patient-therapist-corner">
         <button
           type="button"

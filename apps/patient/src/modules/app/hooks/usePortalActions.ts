@@ -22,7 +22,7 @@ export function usePortalActions(params: {
   professionalDirectory: Professional[];
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
 }) {
-  const syncActiveProfessionalAssignment = async (professionalId: string) => {
+  const syncActiveProfessionalAssignment = async (professionalId: string | null) => {
     if (!params.state.authToken) {
       return;
     }

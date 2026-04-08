@@ -34,7 +34,7 @@ export function PortalRoutes(props: {
   handleGoToProfessional: (professionalId: string) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
-  syncActiveProfessionalAssignment: (professionalId: string) => Promise<void>;
+  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
   confirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => Promise<{ ok: boolean; error?: string }>;
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
@@ -69,6 +69,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onGoToMatching={() => props.navigate("/matching")}
                 />
               )
         }
@@ -142,6 +143,18 @@ export function PortalRoutes(props: {
                     }));
                     void props.syncActiveProfessionalAssignment(professionalId);
                   }}
+                  onDeferTherapistSelection={async () => {
+                    await props.syncActiveProfessionalAssignment(null);
+                    props.onStateChange((current) => ({
+                      ...current,
+                      therapistSelectionCompleted: true,
+                      assignedProfessionalId: null,
+                      assignedProfessionalName: null,
+                      selectedProfessionalId: "",
+                      activeChatProfessionalId: ""
+                    }));
+                    props.navigate("/");
+                  }}
                   onCreateBooking={async (professionalId, slot) => {
                     const result = await props.confirmBooking(professionalId, slot, true);
                     if (!result.ok) {
@@ -181,6 +194,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onGoToMatching={() => props.navigate("/matching")}
                 />
               )
         }

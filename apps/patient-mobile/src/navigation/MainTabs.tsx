@@ -66,10 +66,10 @@ export function MainTabs() {
       }}
       tabBar={(props) => <BottomTabBar {...props} badge={badge} />}
     >
+      <Tabs.Screen name="profile" component={ProfileScreen} />
       <Tabs.Screen name="home" component={HomeScreen} />
       <Tabs.Screen name="sessions" component={SessionsScreen} />
       <Tabs.Screen name="chat" component={ChatScreen} />
-      <Tabs.Screen name="profile" component={ProfileScreen} />
     </Tabs.Navigator>
   );
 }
@@ -106,7 +106,7 @@ function BottomTabBar({ state, navigation, badge }: BottomBarProps) {
           label = "Chat";
         } else if (route.name === "profile") {
           icon = "person-circle";
-          label = "Perfil";
+          label = "Mi cuenta";
         }
 
         const showBadge = route.name === "chat" && badge != null;

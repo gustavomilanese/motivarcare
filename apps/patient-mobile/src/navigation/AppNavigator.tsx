@@ -1,7 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { NavigationContainer, type Theme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
+import { STORAGE_DEFER_PROFESSIONAL_SELECTION } from "../constants/storageKeys";
 import { BookingsRefreshProvider } from "../context/BookingsRefreshContext";
 import { PatientProfileProvider, usePatientProfile } from "../context/PatientProfileContext";
 import type { AppThemeColors } from "../theme/colors";
@@ -13,10 +16,11 @@ import { RiskBlockedScreen } from "../screens/onboarding/RiskBlockedScreen";
 import { CalendarConnectScreen } from "../screens/onboarding/CalendarConnectScreen";
 import { MatchingScreen } from "../screens/onboarding/MatchingScreen";
 import { MainTabs } from "./MainTabs";
-import type { AuthStackParamList, PostIntakeParamList } from "./types";
+import type { AuthStackParamList, PatientRootStackParamList, PostIntakeParamList } from "./types";
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const PostIntakeStack = createNativeStackNavigator<PostIntakeParamList>();
+const PatientRootStack = createNativeStackNavigator<PatientRootStackParamList>();
 
 function buildNavigationTheme(dark: boolean, colors: AppThemeColors): Theme {
   return {
@@ -56,8 +60,38 @@ function PostIntakeNavigator() {
   );
 }
 
+function PatientRootNavigator() {
+  return (
+    <PatientRootStack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Tabs">
+      <PatientRootStack.Screen name="Tabs" component={MainTabs} />
+      <PatientRootStack.Screen name="ProfessionalMatching" component={MatchingScreen} />
+    </PatientRootStack.Navigator>
+  );
+}
+
 function AuthenticatedGate() {
   const { profile, loading } = usePatientProfile();
+  const [deferChoice, setDeferChoice] = useState<boolean | null>(null);
+
+  const shouldResolveDefer =
+    Boolean(profile?.intakeCompletedAt) && !profile?.intakeRiskBlocked && !profile?.activeProfessional;
+
+  useEffect(() => {
+    if (!shouldResolveDefer) {
+      setDeferChoice(null);
+      return;
+    }
+    setDeferChoice(null);
+    let alive = true;
+    void AsyncStorage.getItem(STORAGE_DEFER_PROFESSIONAL_SELECTION).then((raw) => {
+      if (alive) {
+        setDeferChoice(raw === "true");
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [shouldResolveDefer]);
 
   if (loading) {
     return <LoadingApp />;
@@ -72,10 +106,16 @@ function AuthenticatedGate() {
   }
 
   if (!profile.activeProfessional) {
+    if (deferChoice === null) {
+      return <LoadingApp />;
+    }
+    if (deferChoice) {
+      return <PatientRootNavigator />;
+    }
     return <PostIntakeNavigator />;
   }
 
-  return <MainTabs />;
+  return <PatientRootNavigator />;
 }
 
 function AuthNavigator() {

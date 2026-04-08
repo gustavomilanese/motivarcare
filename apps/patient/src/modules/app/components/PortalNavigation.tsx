@@ -108,6 +108,9 @@ export function PortalNavigation(props: {
           </div>
 
           <nav className="portal-sidebar-nav">
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profile">
+              {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
+            </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
               {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
             </NavLink>
@@ -123,9 +126,6 @@ export function PortalNavigation(props: {
                   </span>
                 ) : null}
               </span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profile">
-              {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
             </NavLink>
           </nav>
 
@@ -289,6 +289,10 @@ export function PortalNavigation(props: {
               pt: "Navegacao principal"
             })}
           >
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profile">
+              <IconAccount className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}</span>
+            </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
               <IconHome className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
@@ -307,10 +311,6 @@ export function PortalNavigation(props: {
                 ) : null}
               </span>
               <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profile">
-              <IconAccount className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}</span>
             </NavLink>
           </nav>
         ) : null}

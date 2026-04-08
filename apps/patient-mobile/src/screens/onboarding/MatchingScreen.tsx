@@ -1,3 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { createBooking, getMatchingProfessionals, setActiveProfessional } from "../../api/client";
+import { STORAGE_DEFER_PROFESSIONAL_SELECTION } from "../../constants/storageKeys";
 import type { MatchingProfessional, MatchingSlot } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { useBookingsRefresh } from "../../context/BookingsRefreshContext";
@@ -121,9 +124,6 @@ function buildMatchingStyles(colors: AppThemeColors) {
       fontSize: 13,
       color: colors.textMuted
     },
-    slotBtn: {
-      minHeight: 46
-    },
     loader: {
       flex: 1,
       alignItems: "center",
@@ -177,12 +177,24 @@ function buildMatchingStyles(colors: AppThemeColors) {
     emptySlots: {
       fontSize: 14,
       color: colors.textMuted
+    },
+    deferWrap: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 24
+    },
+    deferHint: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: "center",
+      marginBottom: 10
     }
   });
 }
 
 export function MatchingScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { colors, gradients } = useThemeMode();
   const styles = useMemo(() => buildMatchingStyles(colors), [colors]);
   const { token } = useAuth();
@@ -234,6 +246,7 @@ export function MatchingScreen() {
           endsAt,
           patientTimezone: deviceTimeZone()
         });
+        await AsyncStorage.removeItem(STORAGE_DEFER_PROFESSIONAL_SELECTION);
         setSlotModal(null);
         await refresh();
         touchBookings();
@@ -246,6 +259,35 @@ export function MatchingScreen() {
     [refresh, token, touchBookings]
   );
 
+  const onDeferChoiceLater = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+    setError("");
+    try {
+      await setActiveProfessional({ token, professionalId: null });
+      await AsyncStorage.setItem(STORAGE_DEFER_PROFESSIONAL_SELECTION, "true");
+      await refresh();
+      const parent = navigation.getParent();
+      const routeNames = parent?.getState?.()?.routeNames;
+      if (Array.isArray(routeNames) && !routeNames.includes("CalendarConnect")) {
+        (parent as { navigate: (name: string) => void } | undefined)?.navigate("Tabs");
+      }
+    } catch (deferError) {
+      setError(deferError instanceof Error ? deferError.message : "No pudimos guardar tu elección. Intentá de nuevo.");
+    }
+  }, [navigation, refresh, token]);
+
+  const deferFooter = useMemo(
+    () => (
+      <View style={styles.deferWrap}>
+        <Text style={styles.deferHint}>¿Querés explorar el portal antes de elegir?</Text>
+        <PrimaryButton label="Elegir profesional más tarde" variant="ghost" onPress={() => void onDeferChoiceLater()} />
+      </View>
+    ),
+    [onDeferChoiceLater, styles.deferHint, styles.deferWrap]
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: MatchingProfessional }) => {
       const active = selected?.id === item.id;
@@ -253,6 +295,7 @@ export function MatchingScreen() {
         <Pressable
           onPress={() => {
             setSelected(item);
+            setSlotModal(item);
           }}
           style={[styles.card, active && styles.cardActive]}
         >
@@ -278,25 +321,26 @@ export function MatchingScreen() {
               ))}
             </View>
           </View>
-          <PrimaryButton
-            label="Ver horarios"
-            variant="ghost"
-            onPress={() => {
-              setSlotModal(item);
-            }}
-            style={styles.slotBtn}
-          />
         </Pressable>
       );
     },
     [selected?.id, styles, colors.primary]
   );
 
+  const listFooter = useMemo(() => {
+    if (loading) {
+      return null;
+    }
+    return deferFooter;
+  }, [deferFooter, loading]);
+
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <LinearGradient colors={[...gradients.hero]} style={styles.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <Text style={styles.heroTitle}>Elegí tu profesional</Text>
-        <Text style={styles.heroLead}>Orden según tu encuesta. Solo ves horarios que cada profesional publicó.</Text>
+        <Text style={styles.heroLead}>
+          Orden según tu encuesta. Tocá una tarjeta para ver horarios publicados por ese profesional.
+        </Text>
       </LinearGradient>
 
       {loading ? (
@@ -310,6 +354,7 @@ export function MatchingScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.empty}>Todavía no hay profesionales para mostrar.</Text>}
+          ListFooterComponent={listFooter}
         />
       )}
 

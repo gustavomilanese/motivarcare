@@ -241,6 +241,26 @@ function buildHomeStyles(c: AppThemeColors, mode: ThemeMode) {
       color: c.groupedSecondary,
       lineHeight: 18
     },
+    chooseProCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.primary,
+      gap: 6
+    },
+    chooseProTitle: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: c.groupedLabel
+    },
+    chooseProSub: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: c.groupedSecondary,
+      lineHeight: 20
+    },
     mcareSectionHeaderRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -475,6 +495,12 @@ export function HomeScreen() {
     navigation.navigate("sessions");
   };
 
+  const openProfessionalMatching = useCallback(() => {
+    const parent = navigation.getParent();
+    const p = parent as { navigate?: (name: string) => void } | undefined;
+    p?.navigate?.("ProfessionalMatching");
+  }, [navigation]);
+
   const focusMcareSection = useCallback(() => {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({
@@ -645,6 +671,20 @@ export function HomeScreen() {
             </Pressable>
           </View>
         </View>
+
+        {!profile?.activeProfessional ? (
+          <Pressable
+            onPress={openProfessionalMatching}
+            style={({ pressed }) => [styles.chooseProCard, pressed && { opacity: 0.92 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Elegir profesional. Ver profesionales disponibles."
+          >
+            <Text style={styles.chooseProTitle}>Profesional pendiente</Text>
+            <Text style={styles.chooseProSub}>
+              Tocá aquí para ver profesionales sugeridos y elegir horario de tu sesión de prueba.
+            </Text>
+          </Pressable>
+        ) : null}
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>

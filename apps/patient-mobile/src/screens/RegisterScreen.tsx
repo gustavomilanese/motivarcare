@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import type { AppThemeColors } from "../theme/colors";
@@ -79,6 +80,25 @@ function buildRegisterStyles(colors: AppThemeColors) {
       color: colors.primary,
       fontWeight: "800",
       paddingVertical: 8
+    },
+    passwordRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 8
+    },
+    passwordInputWrap: {
+      flex: 1,
+      minWidth: 0
+    },
+    eyeBtn: {
+      width: 48,
+      height: 50,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surfaceMuted
     }
   });
 }
@@ -92,6 +112,7 @@ export function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -158,17 +179,34 @@ export function RegisterScreen() {
           />
 
           <Text style={styles.label}>Contraseña (mín. 8)</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-            editable={!loading}
-            onSubmitEditing={() => {
-              void onSubmit();
-            }}
-            returnKeyType="go"
-          />
+          <View style={styles.passwordRow}>
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={styles.input}
+                editable={!loading}
+                onSubmitEditing={() => {
+                  void onSubmit();
+                }}
+                returnKeyType="go"
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+              onPress={() => setShowPassword((v) => !v)}
+              style={({ pressed }) => [styles.eyeBtn, pressed && { opacity: 0.85 }]}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color={colors.primary}
+              />
+            </Pressable>
+          </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

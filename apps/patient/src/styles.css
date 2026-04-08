@@ -442,6 +442,19 @@ ul {
   gap: 7px;
 }
 
+.auth-password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.auth-show-password {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .auth-form input {
   border-radius: 14px;
   border: 1px solid #dfe4f2;

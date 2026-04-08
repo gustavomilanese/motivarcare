@@ -27,6 +27,7 @@ export function AuthScreen(props: {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -178,10 +179,21 @@ export function AuthScreen(props: {
               />
             </label>
 
-            <label>
-              {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
+            <label className="auth-password-field">
+              <span className="auth-password-label-row">
+                <span>{t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}</span>
+                <button
+                  type="button"
+                  className="auth-link-button auth-show-password"
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword
+                    ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
+                    : t(props.language, { es: "Ver contrasena", en: "Show password", pt: "Ver senha" })}
+                </button>
+              </span>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete={mode === "register" ? "new-password" : "current-password"}
                 value={password}

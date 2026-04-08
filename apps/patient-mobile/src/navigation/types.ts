@@ -14,3 +14,8 @@ export type PostIntakeParamList = {
   CalendarConnect: undefined;
   Matching: undefined;
 };
+
+export type PatientRootStackParamList = {
+  Tabs: undefined;
+  ProfessionalMatching: undefined;
+};
