@@ -228,6 +228,79 @@ function resolvePackagePricing(params: {
   };
 }
 
+/**
+ * En producción a veces no se ejecuta el seed del paquete de 1 crédito global.
+ * Idempotente: reutiliza cualquier paquete activo credits=1 sin profesional, o hace upsert por stripePriceId fijo.
+ */
+const AUTO_INDIVIDUAL_SESSION_STRIPE_ID = "motivar-auto-catalog-individual-1";
+
+async function getOrCreateGlobalIndividualSessionPackage(): Promise<{
+  id: string;
+  name: string;
+  credits: number;
+  active: boolean;
+  priceCents: number;
+  discountPercent: number;
+  currency: string | null;
+  professionalId: string | null;
+}> {
+  const existing = await prisma.sessionPackage.findFirst({
+    where: { active: true, credits: 1, professionalId: null },
+    select: {
+      id: true,
+      name: true,
+      credits: true,
+      active: true,
+      priceCents: true,
+      discountPercent: true,
+      currency: true,
+      professionalId: true
+    },
+    orderBy: [{ createdAt: "asc" }]
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const referenceBundle = await prisma.sessionPackage.findFirst({
+    where: { active: true, credits: { gt: 1 }, professionalId: null },
+    orderBy: [{ credits: "asc" }],
+    select: { priceCents: true, credits: true, currency: true }
+  });
+
+  const priceCents = referenceBundle
+    ? Math.max(100, Math.round(referenceBundle.priceCents / referenceBundle.credits))
+    : 12_000;
+  const currency = referenceBundle?.currency ?? "usd";
+
+  return prisma.sessionPackage.upsert({
+    where: { stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID },
+    create: {
+      stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID,
+      name: "Sesión individual",
+      credits: 1,
+      priceCents,
+      discountPercent: 0,
+      currency,
+      active: true,
+      professionalId: null
+    },
+    update: {
+      active: true
+    },
+    select: {
+      id: true,
+      name: true,
+      credits: true,
+      active: true,
+      priceCents: true,
+      discountPercent: true,
+      currency: true,
+      professionalId: true
+    }
+  });
+}
+
 /** Franjas futuras por profesional en directorio y matching (payload acotado). */
 const DIRECTORY_AVAILABILITY_SLOT_TAKE = 60;
 /** Traemos más filas y luego excluimos días de vacaciones, para seguir entregando ~TAKE horarios elegibles. */
@@ -996,23 +1069,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
 
   const sessionCount = parsed.data.sessionCount;
 
-  const unitPackage = await prisma.sessionPackage.findFirst({
-    where: { active: true, credits: 1, professionalId: null },
-    select: {
-      id: true,
-      name: true,
-      credits: true,
-      active: true,
-      priceCents: true,
-      discountPercent: true,
-      currency: true,
-      professionalId: true
-    },
-    orderBy: [{ createdAt: "asc" }]
-  });
-  if (!unitPackage) {
-    return res.status(404).json({ error: "Individual session product is not configured" });
-  }
+  const unitPackage = await getOrCreateGlobalIndividualSessionPackage();
 
   const [assignmentConfig, financeRules] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
