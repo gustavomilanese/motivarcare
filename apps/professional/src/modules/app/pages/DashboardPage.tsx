@@ -457,7 +457,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
             <small className="pro-kpi-card-hint">
               {replaceTemplate(
                 t(props.language, {
-                  es: "{n} sesiones en el periodo",
+                  es: "{n} sesiones en el período",
                   en: "{n} sessions in period",
                   pt: "{n} sessoes no periodo"
                 }),
@@ -477,7 +477,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
             </small>
           </article>
           <article className="pro-kpi-card">
-            <span>{t(props.language, { es: "Tu parte (periodo)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+            <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
             <strong>{formatMoneyCents(data.revenueStats.professionalNetCents, props.language, props.currency)}</strong>
             <small className="pro-kpi-card-hint">
               {t(props.language, {

@@ -139,7 +139,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Horas de cancelacion
+            Horas de cancelación
             <input
               type="number"
               min={0}
@@ -155,7 +155,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Anos de experiencia
+            Años de experiencia
             <input
               type="number"
               min={0}
@@ -184,7 +184,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Valor sesion (USD)
+            Valor sesión (USD)
             <input
               type="number"
               min={0}
@@ -233,7 +233,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Duracion sesion (min)
+            Duración sesión (min)
             <input
               type="number"
               min={15}
@@ -297,7 +297,7 @@ export function ProfessionalEditModal(props: {
           </label>
 
           <label>
-            Enfoque terapeutico
+            Enfoque terapéutico
             <input
               value={selectedProfessionalDraft.therapeuticApproach}
               onChange={(event) =>
@@ -441,7 +441,7 @@ export function ProfessionalEditModal(props: {
         {props.showConfirmedSessions ? (
           <>
             {props.loadingSelectedBookings ? <p>Cargando sesiones confirmadas...</p> : null}
-            {!props.loadingSelectedBookings && props.selectedBookings.length === 0 ? <p>No hay sesiones confirmadas para este psicologo.</p> : null}
+            {!props.loadingSelectedBookings && props.selectedBookings.length === 0 ? <p>No hay sesiones confirmadas para este psicólogo.</p> : null}
 
             {props.selectedBookings.map((booking) => {
               const draft = props.professionalBookingDrafts[booking.id];
@@ -552,7 +552,7 @@ export function ProfessionalEditModal(props: {
                       </div>
                       <div className="button-row ops-actions">
                         <button className="primary" type="button" onClick={() => props.onSaveBooking(booking.id)}>
-                          Guardar sesion
+                          Guardar sesión
                         </button>
                       </div>
                     </>

@@ -145,7 +145,7 @@ export function AuthScreen(props: {
           </label>
 
           <label>
-            {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
+            {t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
             <input
               type="password"
               name="password"

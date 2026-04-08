@@ -1,16 +1,16 @@
 import type { CreateUserFormState, PortalPath } from "./types";
 
 /** Debe coincidir con la constante en `apps/api/src/modules/admin/admin.routes.ts` (PATCH /admin/bookings). */
-export const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesion de prueba";
+export const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesión de prueba";
 
 export const links: Array<{ to: PortalPath; label: string }> = [
   { to: "/", label: "Dashboard" },
   { to: "/patients", label: "Pacientes" },
-  { to: "/professionals", label: "Psicologos" },
+  { to: "/professionals", label: "Psicólogos" },
   { to: "/sessions", label: "Sesiones" },
   { to: "/finances", label: "Finanzas" },
-  { to: "/settings", label: "Configuracion" },
-  { to: "/ai", label: "Auditoria IA (prox.)" }
+  { to: "/settings", label: "Configuración" },
+  { to: "/ai", label: "Auditoría IA (próx.)" }
 ];
 
 export const defaultCreateForm: CreateUserFormState = {
@@ -76,7 +76,7 @@ export const PROFESSIONAL_EMPTY_ART_URL = "/images/sistine-creation-of-adam.jpg"
 export const SESSION_REASON_OPTIONS = [
   { value: "ajuste_manual", label: "Ajuste manual" },
   { value: "regalo", label: "Regalo" },
-  { value: "correccion_compra", label: "Correccion de compra" },
-  { value: "devolucion_sesion", label: "Devolucion de sesion" },
+  { value: "correccion_compra", label: "Corrección de compra" },
+  { value: "devolucion_sesion", label: "Devolución de sesión" },
   { value: "error_operativo", label: "Error operativo" }
 ] as const;

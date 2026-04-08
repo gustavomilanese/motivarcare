@@ -14,7 +14,7 @@ export function ProfessionalSpecializationStep(props: {
   onContinue: () => void;
 }) {
   const specializationOptions = [
-    { es: "Psicologo", en: "Psychologist", pt: "Psicologo" },
+    { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" },
     { es: "Psicoterapeuta", en: "Psychotherapist", pt: "Psicoterapeuta" },
     { es: "Psicoanalista", en: "Psychoanalyst", pt: "Psicanalista" },
     { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" },
@@ -24,9 +24,9 @@ export function ProfessionalSpecializationStep(props: {
     { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" },
     { es: "Doc. de Ciencias Medicas", en: "Medical sciences PhD", pt: "Doutor em ciencias medicas" },
     { es: "Doc. de Ciencias Psicologicas", en: "Psychological sciences PhD", pt: "Doutor em ciencias psicologicas" },
-    { es: "Psicologo en practicas", en: "Psychologist in training", pt: "Psicologo em formacao" },
-    { es: "Psicologo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
-    { es: "Psicologo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" }
+    { es: "Psicólogo en prácticas", en: "Psychologist in training", pt: "Psicologo em formacao" },
+    { es: "Psicólogo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
+    { es: "Psicólogo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" }
   ].map((option) => t(props.language, option));
 
   return (
@@ -113,7 +113,7 @@ export function ProfessionalFirstClientsStep(props: { language: AppLanguage; onB
                     <span className="pro-clients-notification-mark" />
                     <div>
                       <strong>Ana Santiago Martin</strong>
-                      <p>{t(props.language, { es: "Reservo sesion: 3 jul, 15:00", en: "Session booked: Jul 3, 3:00 PM", pt: "Sessao reservada: 3 jul, 15:00" })}</p>
+                      <p>{t(props.language, { es: "Reservó sesión: 3 jul, 15:00", en: "Session booked: Jul 3, 3:00 PM", pt: "Sessao reservada: 3 jul, 15:00" })}</p>
                     </div>
                     <em>{t(props.language, { es: "hace 2 min", en: "2 min ago", pt: "ha 2 min" })}</em>
                   </article>
@@ -122,7 +122,7 @@ export function ProfessionalFirstClientsStep(props: { language: AppLanguage; onB
                     <span className="pro-clients-notification-mark" />
                     <div>
                       <strong>Nahuel Herrera Santos</strong>
-                      <p>{t(props.language, { es: "Reservo sesion: 2 jul, 11:00", en: "Session booked: Jul 2, 11:00 AM", pt: "Sessao reservada: 2 jul, 11:00" })}</p>
+                      <p>{t(props.language, { es: "Reservó sesión: 2 jul, 11:00", en: "Session booked: Jul 2, 11:00 AM", pt: "Sessao reservada: 2 jul, 11:00" })}</p>
                     </div>
                     <em>{t(props.language, { es: "hace 3 min", en: "3 min ago", pt: "ha 3 min" })}</em>
                   </article>
@@ -148,11 +148,11 @@ export function ProfessionalExperienceStep(props: {
   onContinue: () => void;
 }) {
   const experienceOptions = [
-    { es: "Menos de 1 ano", en: "Less than 1 year", pt: "Menos de 1 ano" },
-    { es: "1-3 anos", en: "1-3 years", pt: "1-3 anos" },
-    { es: "3-6 anos", en: "3-6 years", pt: "3-6 anos" },
-    { es: "6-10 anos", en: "6-10 years", pt: "6-10 anos" },
-    { es: "Mas de 10 anos", en: "More than 10 years", pt: "Mais de 10 anos" }
+    { es: "Menos de 1 año", en: "Less than 1 year", pt: "Menos de 1 ano" },
+    { es: "1-3 años", en: "1-3 years", pt: "1-3 anos" },
+    { es: "3-6 años", en: "3-6 years", pt: "3-6 anos" },
+    { es: "6-10 años", en: "6-10 years", pt: "6-10 anos" },
+    { es: "más de 10 años", en: "More than 10 years", pt: "Mais de 10 anos" }
   ].map((option) => t(props.language, option));
 
   return (
@@ -293,7 +293,7 @@ export function ProfessionalPracticeHoursStep(props: {
     { es: "500-1000 horas", en: "500-1000 hours", pt: "500-1000 horas" },
     { es: "1.000-3.000 horas", en: "1,000-3,000 hours", pt: "1.000-3.000 horas" },
     { es: "3.000-5.000 horas", en: "3,000-5,000 hours", pt: "3.000-5.000 horas" },
-    { es: "Mas de 5.000 horas", en: "More than 5,000 hours", pt: "Mais de 5.000 horas" }
+    { es: "más de 5.000 horas", en: "More than 5,000 hours", pt: "Mais de 5.000 horas" }
   ].map((option) => t(props.language, option));
 
   return (
@@ -309,14 +309,14 @@ export function ProfessionalPracticeHoursStep(props: {
         <div className="pro-specialization-copy">
           <h1>
             {t(props.language, {
-              es: "Cuantas horas de practica tiene?",
+              es: "Cuántas horas de práctica tiene?",
               en: "How many practice hours do you have?",
               pt: "Quantas horas de pratica voce tem?"
             })}
           </h1>
           <p>
             {t(props.language, {
-              es: "Teniendo en cuenta que 1 sesion es aproximadamente 1 hora",
+              es: "Teniendo en cuenta que 1 sesión es aproximadamente 1 hora",
               en: "Considering that 1 session is approximately 1 hour",
               pt: "Considerando que 1 sessao corresponde a aproximadamente 1 hora"
             })}
@@ -365,7 +365,7 @@ export function ProfessionalEarningsPlanStep(props: { language: AppLanguage; onC
         <div className="pro-plan-copy">
           <h1>
             {t(props.language, {
-              es: "Los psicologos MotivarCare suelen desarrollar su practica desde cero en 3 semanas",
+              es: "Los psicologos MotivarCare suelen desarrollar su práctica desde cero en 3 semanas",
               en: "MotivarCare psychologists usually build their practice from scratch in 3 weeks",
               pt: "Psicologos do MotivarCare costumam desenvolver sua pratica do zero em 3 semanas"
             })}
@@ -457,7 +457,7 @@ export function ProfessionalEarningsCalculatorStep(props: { language: AppLanguag
               <span className="pro-calculator-slider-fill" />
               <span className="pro-calculator-slider-thumb" />
             </div>
-            <p>{t(props.language, { es: "Con 40 horas de practica por semana", en: "With 40 practice hours per week", pt: "Com 40 horas de pratica por semana" })}</p>
+            <p>{t(props.language, { es: "Con 40 horas de práctica por semana", en: "With 40 practice hours per week", pt: "Com 40 horas de pratica por semana" })}</p>
           </div>
         </div>
 
@@ -495,7 +495,7 @@ export function ProfessionalTermsStep(props: { language: AppLanguage; onBack: ()
             <span className="pro-terms-icon" aria-hidden="true">🚀</span>
             <p>
               {t(props.language, {
-                es: "Al unirse a MotivarCare, obtiene una herramienta conveniente para administrar su practica: desde administrar sesiones y clientes hasta establecer precios y monitorear sus ingresos.",
+                es: "Al unirse a MotivarCare, obtiene una herramienta conveniente para administrar su práctica: desde administrar sesiones y clientes hasta establecer precios y monitorear sus ingresos.",
                 en: "By joining MotivarCare, you get a convenient tool to manage your practice, sessions, clients, pricing, and income.",
                 pt: "Ao entrar no MotivarCare, voce passa a ter uma ferramenta para administrar sua pratica, sessoes, clientes, precos e ganhos."
               })}
@@ -507,7 +507,7 @@ export function ProfessionalTermsStep(props: { language: AppLanguage; onBack: ()
             <div>
               <p>
                 {t(props.language, {
-                  es: "Nos quedamos con el 100% de la comision de la primera sesion con un nuevo cliente. La comision de las sesiones por suscripcion depende del numero de sesiones realizadas al mes:",
+                  es: "Nos quedamos con el 100% de la comisión de la primera sesión con un nuevo cliente. La comisión de las sesiones por suscripción depende del número de sesiones realizadas al mes:",
                   en: "We keep 100% of the first session commission with a new client. Subscription session commissions depend on how many sessions you complete each month:",
                   pt: "Ficamos com 100% da comissao da primeira sessao com um novo cliente. A comissao das sessoes por assinatura depende do numero de sessoes realizadas por mes:"
                 })}
@@ -515,7 +515,7 @@ export function ProfessionalTermsStep(props: { language: AppLanguage; onBack: ()
               <ul className="pro-terms-bullets">
                 <li>45% {t(props.language, { es: "si se realizan de 1 a 20 sesiones", en: "for 1 to 20 sessions", pt: "para 1 a 20 sessoes" })}</li>
                 <li>35% {t(props.language, { es: "si se realizan de 21 a 40 sesiones", en: "for 21 to 40 sessions", pt: "para 21 a 40 sessoes" })}</li>
-                <li>25% {t(props.language, { es: "si se realizan mas de 40 sesiones", en: "for more than 40 sessions", pt: "para mais de 40 sessoes" })}</li>
+                <li>25% {t(props.language, { es: "si se realizan más de 40 sesiones", en: "for more than 40 sessions", pt: "para mais de 40 sessoes" })}</li>
               </ul>
             </div>
           </article>
@@ -601,14 +601,14 @@ export function ProfessionalEmailStep(props: {
 
         <div className="pro-form-step-copy">
           <h1>{t(props.language, { es: "Comencemos a crear su cuenta en MotivarCare!", en: "Let's start creating your MotivarCare account!", pt: "Vamos comecar a criar sua conta no MotivarCare!" })}</h1>
-          <p>{t(props.language, { es: "Necesitamos un e-mail valido para continuar.", en: "We need a valid email to continue.", pt: "Precisamos de um e-mail valido para continuar." })}</p>
+          <p>{t(props.language, { es: "Necesitamos un e-mail válido para continuar.", en: "We need a valid email to continue.", pt: "Precisamos de um e-mail valido para continuar." })}</p>
         </div>
 
         <label className={`pro-form-step-field ${showError ? "error" : ""}`}>
           <input
             type="email"
             value={props.value}
-            placeholder={t(props.language, { es: "Introduzca su correo electronico", en: "Enter your email address", pt: "Digite seu e-mail" })}
+            placeholder={t(props.language, { es: "Introduzca su correo electrónico", en: "Enter your email address", pt: "Digite seu e-mail" })}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -625,7 +625,7 @@ export function ProfessionalEmailStep(props: {
         </label>
         {showError ? (
           <span className="pro-form-step-inline-error">
-            {t(props.language, { es: "Ingrese un correo valido (ej: nombre@dominio.com)", en: "Enter a valid email (e.g. name@domain.com)", pt: "Digite um e-mail valido (ex: nome@dominio.com)" })}
+            {t(props.language, { es: "Ingrese un correo válido (ej: nombre@dominio.com)", en: "Enter a valid email (e.g. name@domain.com)", pt: "Digite um e-mail valido (ex: nome@dominio.com)" })}
           </span>
         ) : null}
 
@@ -672,8 +672,8 @@ export function ProfessionalPasswordStep(props: {
         </header>
 
         <div className="pro-form-step-copy">
-          <h1>{t(props.language, { es: "Establecer una contrasena", en: "Set a password", pt: "Defina uma senha" })}</h1>
-          <p>{t(props.language, { es: "La contrasena debe tener al menos 6 caracteres", en: "Password must be at least 6 characters long", pt: "A senha deve ter pelo menos 6 caracteres" })}</p>
+          <h1>{t(props.language, { es: "Establecer una contraseña", en: "Set a password", pt: "Defina uma senha" })}</h1>
+          <p>{t(props.language, { es: "La contraseña debe tener al menos 6 caracteres", en: "Password must be at least 6 characters long", pt: "A senha deve ter pelo menos 6 caracteres" })}</p>
         </div>
 
         <label className={`pro-form-step-field password ${showError ? "error" : ""}`}>
@@ -681,7 +681,7 @@ export function ProfessionalPasswordStep(props: {
             <input
               type={visible ? "text" : "password"}
               value={props.value}
-              placeholder={t(props.language, { es: "Ingrese su contrasena", en: "Enter your password", pt: "Digite sua senha" })}
+              placeholder={t(props.language, { es: "Ingrese su contraseña", en: "Enter your password", pt: "Digite sua senha" })}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -712,7 +712,7 @@ export function ProfessionalPasswordStep(props: {
 
         {showError ? (
           <div className="pro-password-error-sheet" role="alert">
-            <p>{t(props.language, { es: "La contrasena debe contener 6 o mas caracteres.", en: "Password must contain 6 or more characters.", pt: "A senha deve conter 6 ou mais caracteres." })}</p>
+            <p>{t(props.language, { es: "La contraseña debe contener 6 o más caracteres.", en: "Password must contain 6 or more characters.", pt: "A senha deve conter 6 ou mais caracteres." })}</p>
             <button type="button" onClick={() => setShowError(false)}>
               {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
             </button>

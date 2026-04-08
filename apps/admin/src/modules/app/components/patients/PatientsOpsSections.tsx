@@ -182,7 +182,7 @@ export function SelectedPatientSummaryCard(props: {
             <input value={props.editingPatientDraft.email} readOnly />
           </label>
           <label>
-            Contrasena
+            Contraseña
             <input value={props.editingPatientDraft.password || "(sin cambio)"} readOnly />
           </label>
           <label>

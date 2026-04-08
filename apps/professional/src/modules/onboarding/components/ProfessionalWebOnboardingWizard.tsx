@@ -266,7 +266,7 @@ export function ProfessionalWebOnboardingWizard(props: {
           {step === 2 ? (
             <div className="pro-web-fields">
               <label>
-                <span>{t(props.language, { es: "Precio por sesion (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
+                <span>{t(props.language, { es: "Precio por sesión (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
                 <input value={form.sessionPrice} onChange={(event) => update({ sessionPrice: event.target.value.replace(/\D/g, "") })} />
               </label>
               <div className="pro-web-discount-packages">
@@ -527,7 +527,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 >
                   {form.stripeVerified
                     ? t(props.language, { es: "Documentos verificados", en: "Documents verified", pt: "Documentos verificados" })
-                    : t(props.language, { es: "Ya valide en Stripe", en: "I already validated on Stripe", pt: "Ja validei no Stripe" })}
+                    : t(props.language, { es: "Ya validé en Stripe", en: "I already validated on Stripe", pt: "Ja validei no Stripe" })}
                 </button>
               </div>
             </div>

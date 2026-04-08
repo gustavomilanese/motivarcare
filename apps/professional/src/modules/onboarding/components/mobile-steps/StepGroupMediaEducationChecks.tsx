@@ -21,7 +21,7 @@ export function ProfessionalProfileCardCheckStep(props: { language: AppLanguage;
         <div className="pro-check-note">
           <p>
             {t(props.language, {
-              es: "Verifique que todo este correcto y se vea bien en su tarjeta de perfil y en su tarjeta de sesion.",
+              es: "Verifique que todo este correcto y se vea bien en su tarjeta de perfil y en su tarjeta de sesión.",
               en: "Check that everything is correct and looks good on your profile card and your session card.",
               pt: "Verifique se esta tudo correto e com boa aparencia no cartao de perfil e no cartao de sessao."
             })}
@@ -33,9 +33,9 @@ export function ProfessionalProfileCardCheckStep(props: { language: AppLanguage;
             <div className="pro-photo-preview-image is-real-photo" aria-hidden="true" />
             <div className="pro-photo-preview-meta">
               <strong>Gustavo G.</strong>
-              <span>{t(props.language, { es: "Psicologo", en: "Psychologist", pt: "Psicologo" })}</span>
-              <small>{t(props.language, { es: "10+ anos de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
-              <small>{t(props.language, { es: "1 000+ horas de practica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
+              <span>{t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })}</span>
+              <small>{t(props.language, { es: "10+ años de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
+              <small>{t(props.language, { es: "1 000+ horas de práctica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
             </div>
             <span className="pro-photo-preview-favorite" aria-hidden="true">♥</span>
           </div>
@@ -49,7 +49,7 @@ export function ProfessionalProfileCardCheckStep(props: { language: AppLanguage;
               pt: "Sou um profissional focado em ansiedade, autoestima e mudancas de vida."
             })}
           </p>
-          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesion", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
+          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesión", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
         </article>
 
         <article className="pro-avatar-session-card">

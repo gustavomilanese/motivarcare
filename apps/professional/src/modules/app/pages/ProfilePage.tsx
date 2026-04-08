@@ -175,7 +175,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     if (!file.type.startsWith("image/")) {
       setError(
         t(props.language, {
-          es: "Selecciona un archivo de imagen valido.",
+          es: "Selecciona un archivo de imagen válido.",
           en: "Select a valid image file.",
           pt: "Selecione um arquivo de imagem valido."
         })
@@ -187,7 +187,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     if (file.size > 4 * 1024 * 1024) {
       setError(
         t(props.language, {
-          es: "La imagen supera 4 MB. Usa una mas liviana.",
+          es: "La imagen supera 4 MB. Usa una más liviana.",
           en: "Image exceeds 4 MB. Use a lighter one.",
           pt: "A imagem supera 4 MB. Use uma menor."
         })
@@ -221,7 +221,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
 
   return (
     <section className="pro-card">
-      <h2>{t(props.language, { es: "Perfil publico", en: "Public profile", pt: "Perfil publico" })}</h2>
+      <h2>{t(props.language, { es: "Perfil público", en: "Public profile", pt: "Perfil publico" })}</h2>
       {error ? <p className="pro-error">{error}</p> : null}
       {!profile ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
       {profile ? (
@@ -672,7 +672,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
           </section>
 
           <label>
-            {t(props.language, { es: "Politica de cancelacion (horas)", en: "Cancellation policy (hours)", pt: "Politica de cancelamento (horas)" })}
+            {t(props.language, { es: "Política de cancelación (horas)", en: "Cancellation policy (hours)", pt: "Politica de cancelamento (horas)" })}
             <input
               type="number"
               min={0}

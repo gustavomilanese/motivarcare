@@ -51,7 +51,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
       <h2>{t(props.language, { es: "Clientes / Pacientes", en: "Clients / Patients", pt: "Clientes / Pacientes" })}</h2>
       {error ? <p className="pro-error">{error}</p> : null}
       {!data ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
-      {data && data.patients.length === 0 ? <p>{t(props.language, { es: "Todavia no hay pacientes asignados.", en: "There are no assigned patients yet.", pt: "Ainda nao ha pacientes atribuidos." })}</p> : null}
+      {data && data.patients.length === 0 ? <p>{t(props.language, { es: "Todavía no hay pacientes asignados.", en: "There are no assigned patients yet.", pt: "Ainda nao ha pacientes atribuidos." })}</p> : null}
       {data && data.patients.length > 0 ? (
         <ul className="pro-list">
           {data.patients.map((patient) => {

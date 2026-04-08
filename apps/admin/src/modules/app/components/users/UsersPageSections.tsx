@@ -66,7 +66,7 @@ export function UsersCreateSection(props: {
           </label>
 
           <label>
-            {props.t({ es: "Contrasena", en: "Password", pt: "Senha" })}
+            {props.t({ es: "Contraseña", en: "Password", pt: "Senha" })}
             <input
               type="password"
               autoComplete="new-password"
@@ -132,7 +132,7 @@ export function UsersCreateSection(props: {
               </label>
 
               <label>
-                {props.t({ es: "Horas de cancelacion", en: "Cancellation hours", pt: "Horas de cancelamento" })}
+                {props.t({ es: "Horas de cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}
                 <input
                   value={props.createForm.professionalCancellationHours}
                   onChange={(event) =>
@@ -142,7 +142,7 @@ export function UsersCreateSection(props: {
               </label>
 
               <label>
-                {props.t({ es: "Anos de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
+                {props.t({ es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
                 <input
                   value={props.createForm.professionalYearsExperience}
                   onChange={(event) =>
@@ -161,7 +161,7 @@ export function UsersCreateSection(props: {
               </label>
 
               <label>
-                {props.t({ es: "Enfoque terapeutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
+                {props.t({ es: "Enfoque terapéutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
                 <input
                   value={props.createForm.professionalTherapeuticApproach}
                   onChange={(event) =>
@@ -178,7 +178,7 @@ export function UsersCreateSection(props: {
               />
 
               <label>
-                {props.t({ es: "URL video de presentacion", en: "Intro video URL", pt: "URL do video de apresentacao" })}
+                {props.t({ es: "URL video de presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
                 <input
                   value={props.createForm.professionalVideoUrl}
                   onChange={(event) =>
@@ -387,7 +387,7 @@ export function UsersListSection(props: {
                             <p>{props.yesNoLabel(user.professionalProfile.visible)}</p>
                           </div>
                           <div>
-                            <strong>{props.t({ es: "Horas cancelacion", en: "Cancellation hours", pt: "Horas de cancelamento" })}</strong>
+                            <strong>{props.t({ es: "Horas cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}</strong>
                             <p>{user.professionalProfile.cancellationHours}h</p>
                           </div>
                           <div>
@@ -395,7 +395,7 @@ export function UsersListSection(props: {
                             <p>{user.professionalProfile.bio || "-"}</p>
                           </div>
                           <div>
-                            <strong>{props.t({ es: "Video presentacion", en: "Intro video", pt: "Video de apresentacao" })}</strong>
+                            <strong>{props.t({ es: "Video presentación", en: "Intro video", pt: "Video de apresentacao" })}</strong>
                             <p>{user.professionalProfile.videoUrl || "-"}</p>
                           </div>
                         </>
@@ -420,7 +420,7 @@ export function UsersListSection(props: {
                       </label>
 
                       <label>
-                        {props.t({ es: "Nueva contrasena (opcional)", en: "New password (optional)", pt: "Nova senha (opcional)" })}
+                        {props.t({ es: "Nueva contraseña (opcional)", en: "New password (optional)", pt: "Nova senha (opcional)" })}
                         <input
                           type="password"
                           value={draft.password}
@@ -530,7 +530,7 @@ export function UsersListSection(props: {
                           </label>
 
                           <label>
-                            {props.t({ es: "Horas de cancelacion", en: "Cancellation hours", pt: "Horas de cancelamento" })}
+                            {props.t({ es: "Horas de cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}
                             <input
                               value={draft.professionalCancellationHours}
                               onChange={(event) =>
@@ -546,7 +546,7 @@ export function UsersListSection(props: {
                           </label>
 
                           <label>
-                            {props.t({ es: "Anos de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
+                            {props.t({ es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
                             <input
                               value={draft.professionalYearsExperience}
                               onChange={(event) =>
@@ -579,7 +579,7 @@ export function UsersListSection(props: {
                           </label>
 
                           <label>
-                            {props.t({ es: "Enfoque terapeutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
+                            {props.t({ es: "Enfoque terapéutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
                             <input
                               value={draft.professionalTherapeuticApproach}
                               onChange={(event) =>
@@ -610,7 +610,7 @@ export function UsersListSection(props: {
                           />
 
                           <label>
-                            {props.t({ es: "URL video presentacion", en: "Intro video URL", pt: "URL do video de apresentacao" })}
+                            {props.t({ es: "URL video presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
                             <input
                               value={draft.professionalVideoUrl}
                               onChange={(event) =>
@@ -670,7 +670,7 @@ export function UsersListSection(props: {
             type="button"
             disabled={!props.usersPagination.hasPrev || props.listLoading}
             onClick={() => props.setUsersPage((current) => Math.max(1, current - 1))}
-            aria-label={props.t({ es: "Pagina anterior", en: "Previous page", pt: "Pagina anterior" })}
+            aria-label={props.t({ es: "Página anterior", en: "Previous page", pt: "Pagina anterior" })}
           >
             ‹
           </button>
@@ -685,7 +685,7 @@ export function UsersListSection(props: {
             type="button"
             disabled={!props.usersPagination.hasNext || props.listLoading}
             onClick={() => props.setUsersPage((current) => current + 1)}
-            aria-label={props.t({ es: "Pagina siguiente", en: "Next page", pt: "Pagina seguinte" })}
+            aria-label={props.t({ es: "Página siguiente", en: "Next page", pt: "Pagina seguinte" })}
           >
             ›
           </button>

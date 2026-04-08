@@ -113,7 +113,7 @@ export function useProfessionalWebOnboardingWizard(input: {
   ] as const;
 
   const webSpecializationOptions = [
-    { es: "Psicologo", en: "Psychologist", pt: "Psicologo" },
+    { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" },
     { es: "Psicoterapeuta", en: "Psychotherapist", pt: "Psicoterapeuta" },
     { es: "Psicoanalista", en: "Psychoanalyst", pt: "Psicanalista" },
     { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" },
@@ -123,9 +123,9 @@ export function useProfessionalWebOnboardingWizard(input: {
     { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" },
     { es: "Doc. de Ciencias Medicas", en: "Medical sciences PhD", pt: "Doutor em ciencias medicas" },
     { es: "Doc. de Ciencias Psicologicas", en: "Psychological sciences PhD", pt: "Doutor em ciencias psicologicas" },
-    { es: "Psicologo en practicas", en: "Psychologist in training", pt: "Psicologo em formacao" },
-    { es: "Psicologo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
-    { es: "Psicologo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" }
+    { es: "Psicólogo en prácticas", en: "Psychologist in training", pt: "Psicologo em formacao" },
+    { es: "Psicólogo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
+    { es: "Psicólogo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" }
   ].map((option) => t(input.language, option));
 
   const interstitialByStep: Partial<Record<number, WebInterstitialContent>> = {
@@ -253,7 +253,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       return null;
     }
     const value = Math.max(0, Math.round(sessionPrice * (1 - percent / 100)));
-    return `${value} USD ${t(input.language, { es: "por sesion", en: "per session", pt: "por sessao" })}`;
+    return `${value} USD ${t(input.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
   };
 
   const stepValidations = [

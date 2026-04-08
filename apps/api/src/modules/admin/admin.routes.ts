@@ -191,7 +191,7 @@ const listBookingsQuerySchema = z.object({
 });
 
 /** Frase que el admin debe enviar en `adminTrialCancelConfirmation` para cancelar una sesión de prueba. Sincronizar con `ADMIN_TRIAL_BOOKING_CANCEL_PHRASE` en apps/admin. */
-const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesion de prueba";
+const ADMIN_TRIAL_BOOKING_CANCEL_PHRASE = "eliminar sesión de prueba";
 
 const updateBookingSchema = z
   .object({

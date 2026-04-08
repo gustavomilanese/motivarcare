@@ -39,8 +39,8 @@ export function BookingActionModal(props: {
           <div>
             <h2 className="session-booking-title">
               {props.panelMode === "reschedule"
-                ? t(props.language, { es: "Reprogramar sesion", en: "Reschedule session", pt: "Reagendar sessao" })
-                : t(props.language, { es: "Reserva de sesion", en: "Session booking", pt: "Reserva de sessao" })}
+                ? t(props.language, { es: "Reprogramar sesión", en: "Reschedule session", pt: "Reagendar sessao" })
+                : t(props.language, { es: "Reserva de sesión", en: "Session booking", pt: "Reserva de sessao" })}
             </h2>
           </div>
           <button type="button" onClick={props.onClose}>

@@ -225,32 +225,32 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     }
 
     if (draft.fullName.trim().length < 2) {
-      setError("Nombre invalido");
+      setError("Nombre inválido");
       return;
     }
 
     if (draft.email.trim().length === 0) {
-      setError("Email invalido");
+      setError("Email inválido");
       return;
     }
 
     const cancellationHours = Number(draft.cancellationHours);
     if (!Number.isInteger(cancellationHours) || cancellationHours < 0 || cancellationHours > 168) {
-      setError("Horas de cancelacion debe estar entre 0 y 168");
+      setError("Horas de cancelación debe estar entre 0 y 168");
       return;
     }
 
     const yearsExperienceRaw = draft.yearsExperience.trim();
     const yearsExperience = yearsExperienceRaw.length > 0 ? Number(yearsExperienceRaw) : null;
     if (yearsExperienceRaw.length > 0 && (!Number.isInteger(yearsExperience ?? 0) || (yearsExperience ?? 0) < 0 || (yearsExperience ?? 0) > 80)) {
-      setError("Anos de experiencia debe estar entre 0 y 80");
+      setError("Años de experiencia debe estar entre 0 y 80");
       return;
     }
 
     const sessionPriceRaw = draft.sessionPriceUsd.trim();
     const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
     if (sessionPriceRaw.length > 0 && (!Number.isInteger(sessionPriceUsd ?? 0) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)) {
-      setError("Valor sesion debe estar entre 0 y 100000");
+      setError("Valor sesión debe estar entre 0 y 100000");
       return;
     }
 
@@ -271,7 +271,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     const sessionDurationRaw = draft.sessionDurationMinutes.trim();
     const sessionDurationMinutes = sessionDurationRaw.length > 0 ? Number(sessionDurationRaw) : null;
     if (sessionDurationRaw.length > 0 && (!Number.isInteger(sessionDurationMinutes ?? 0) || (sessionDurationMinutes ?? 0) < 15 || (sessionDurationMinutes ?? 0) > 120)) {
-      setError("Duracion sesion debe estar entre 15 y 120");
+      setError("Duración sesión debe estar entre 15 y 120");
       return;
     }
 
@@ -375,7 +375,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     const endsAt = new Date(startsAt.getTime() + (durationMinutes * 60_000));
 
     if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
-      setError("Slot invalido: revisa fecha y hora.");
+      setError("Slot inválido: revisa fecha y hora.");
       return;
     }
     if (endsAt <= startsAt) {
@@ -448,7 +448,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       setSuccess("Sesion actualizada");
       await loadProfessionalBookings(professionalId);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar la sesion");
+      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar la sesión");
     }
   };
 
@@ -471,7 +471,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           <div className="patient-search-inline">
             <input
               className="patient-search-input"
-              placeholder="Buscar psicologo por nombre o email"
+              placeholder="Buscar psicólogo por nombre o email"
               value={professionalSearchInput}
               onChange={(event) => setProfessionalSearchInput(event.target.value)}
               onKeyDown={(event) => {
@@ -551,7 +551,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <input value={selectedProfessionalDraft.visible ? "si" : "no"} readOnly />
               </label>
               <label>
-                Horas cancelacion
+                Horas cancelación
                 <input value={selectedProfessionalDraft.cancellationHours} readOnly />
               </label>
               <label>
@@ -563,7 +563,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <input value={String(confirmedSessionsCount)} readOnly />
               </label>
               <label>
-                Valor sesion USD
+                Valor sesión USD
                 <input value={selectedProfessionalDraft.sessionPriceUsd || "-"} readOnly />
               </label>
               <label>
@@ -571,7 +571,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <input value={`${selectedProfessionalDraft.ratingAverage || "-"} · ${selectedProfessionalDraft.reviewsCount}`} readOnly />
               </label>
               <label>
-                Duracion sesion
+                Duración sesión
                 <input value={selectedProfessionalDraft.sessionDurationMinutes || "-"} readOnly />
               </label>
               <label>

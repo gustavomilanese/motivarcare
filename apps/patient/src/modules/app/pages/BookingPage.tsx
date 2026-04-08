@@ -422,7 +422,7 @@ export function BookingPage(props: {
         result.error?.trim()
           ? result.error
           : t(props.language, {
-              es: "No se pudo confirmar la reserva. Es posible que el horario ya no este disponible o que no tengas sesiones.",
+              es: "No se pudo confirmar la reserva. Es posible que el horario ya no esté disponible o que no tengas sesiones.",
               en: "Could not confirm the booking. The slot may no longer be available or you may not have available sessions.",
               pt: "Nao foi possivel confirmar a reserva. O horario pode nao estar mais disponivel ou voce pode nao ter sessoes."
             })
@@ -580,7 +580,7 @@ export function BookingPage(props: {
               pendingSessions > 0
                 ? replaceTemplate(
                     t(props.language, {
-                      es: "Reservar sesion. Te quedan {count} en tu paquete.",
+                      es: "Reservar sesión. Te quedan {count} en tu paquete.",
                       en: "Book a session. You have {count} left in your package.",
                       pt: "Reservar sessao. Restam {count} no seu pacote."
                     }),
@@ -605,7 +605,7 @@ export function BookingPage(props: {
                       pt: "Sessoes prontas para agendar"
                     })
                   : t(props.language, {
-                      es: "Sin creditos de sesion",
+                      es: "Sin créditos de sesión",
                       en: "No session credits left",
                       pt: "Sem creditos de sessao"
                     })}
@@ -653,7 +653,7 @@ export function BookingPage(props: {
               <button className="sessions-reserve-button" type="button" onClick={toggleNewBookingPanel}>
                 {panelMode === "new"
                   ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
-                  : t(props.language, { es: "Reservar nueva sesion", en: "Reserve new session", pt: "Reservar nova sessao" })}
+                  : t(props.language, { es: "Reservar nueva sesión", en: "Reserve new session", pt: "Reservar nova sessao" })}
               </button>
             </div>
           </div>
@@ -665,7 +665,7 @@ export function BookingPage(props: {
               <span className="sessions-credit-alert-icon" aria-hidden="true">!</span>
               <div>
                 <strong>{t(props.language, { es: "No tienes sesiones disponibles", en: "You have no available sessions", pt: "Voce nao tem sessoes disponiveis" })}</strong>
-                <p>{t(props.language, { es: "Compra un paquete para reservar una nueva sesion.", en: "Buy a package to reserve a new session.", pt: "Compre um pacote para reservar uma nova sessao." })}</p>
+                <p>{t(props.language, { es: "Compra un paquete para reservar una nueva sesión.", en: "Buy a package to reserve a new session.", pt: "Compre um pacote para reservar uma nova sessao." })}</p>
               </div>
             </div>
             <button type="button" className="sessions-credit-alert-action" onClick={handleOpenPackages}>
@@ -676,7 +676,7 @@ export function BookingPage(props: {
 
         {upcomingConfirmedBookings.length === 0 ? (
           <div className="sessions-empty-state">
-            <strong>{t(props.language, { es: "Todavia no tienes sesiones confirmadas", en: "You have no confirmed sessions yet", pt: "Voce ainda nao tem sessoes confirmadas" })}</strong>
+            <strong>{t(props.language, { es: "Todavía no tienes sesiones confirmadas", en: "You have no confirmed sessions yet", pt: "Voce ainda nao tem sessoes confirmadas" })}</strong>
           </div>
         ) : (
           <div className="sessions-confirmed-list-root" ref={reservationsFocusRef} tabIndex={-1}>
@@ -985,7 +985,7 @@ export function BookingPage(props: {
         </button>
         {isPackagesExpanded ? (
           props.state.subscription.purchaseHistory.length === 0 ? (
-            <p>{t(props.language, { es: "Todavia no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
+            <p>{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
           ) : (
             <ul className="simple-list session-history-list">
               {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => (
@@ -1042,7 +1042,7 @@ export function BookingPage(props: {
           historyRegularBookings.length === 0 ? (
             <p>
               {t(props.language, {
-                es: "Todavia no tienes historial de sesiones.",
+                es: "Todavía no tienes historial de sesiones.",
                 en: "You do not have session history yet.",
                 pt: "Voce ainda nao tem historico de sessoes."
               })}

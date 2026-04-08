@@ -218,7 +218,7 @@ export function PortalNavigation(props: {
               </div>
               <div className="menu-wrap">
                 <button
-                  aria-label={t(props.language, { es: "Abrir menu", en: "Open menu", pt: "Abrir menu" })}
+                  aria-label={t(props.language, { es: "Abrir menú", en: "Open menu", pt: "Abrir menu" })}
                   className="menu-toggle"
                   type="button"
                   onClick={props.onToggleMenu}
@@ -268,7 +268,7 @@ export function PortalNavigation(props: {
 
                     <div className="menu-sep" />
                     <button className="menu-item danger" type="button" onClick={props.onLogout}>
-                      {t(props.language, { es: "Cerrar sesion", en: "Sign out", pt: "Sair" })}
+                      {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
                     </button>
                   </div>
                 ) : null}
@@ -281,7 +281,7 @@ export function PortalNavigation(props: {
           <nav
             className="portal-mobile-nav"
             aria-label={t(props.language, {
-              es: "Navegacion principal",
+              es: "Navegación principal",
               en: "Main navigation",
               pt: "Navegacao principal"
             })}

@@ -218,7 +218,7 @@ export function WebAdminPage({
       const message =
         rawMessage.includes("HTTP 413")
           ? t(language, {
-              es: "La imagen es demasiado pesada. Prueba con una imagen mas liviana.",
+              es: "La imagen es demasiado pesada. Prueba con una imagen más liviana.",
               en: "Image is too large. Please try a lighter image.",
               pt: "A imagem e muito pesada. Tente uma imagem menor."
             })
@@ -278,7 +278,7 @@ export function WebAdminPage({
     setSuccess("");
 
     if (reviewForm.name.trim().length < 2) {
-      setError("Nombre invalido");
+      setError("Nombre inválido");
       return;
     }
     if ((reviewForm.reviewDate ?? "").trim().length === 0) {
@@ -413,9 +413,9 @@ export function WebAdminPage({
 
   const imageSlots: Array<{ key: keyof WebLandingSettings; label: string }> = [
     { key: "patientDesktopImageUrl", label: "Pacientes · laptop" },
-    { key: "patientMobileImageUrl", label: "Pacientes · telefono" },
+    { key: "patientMobileImageUrl", label: "Pacientes · teléfono" },
     { key: "professionalDesktopImageUrl", label: "Psicologos · laptop" },
-    { key: "professionalMobileImageUrl", label: "Psicologos · telefono" }
+    { key: "professionalMobileImageUrl", label: "Psicólogos · teléfono" }
   ];
 
   function openCreateReviewModal() {

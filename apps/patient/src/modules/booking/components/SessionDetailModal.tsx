@@ -96,7 +96,7 @@ export function SessionDetailModal(props: {
     <div className="session-modal-backdrop" role="presentation" onClick={props.onClose}>
       <section
         aria-label={t(props.language, {
-          es: "Detalle de sesion",
+          es: "Detalle de sesión",
           en: "Session details",
           pt: "Detalhes da sessao"
         })}
@@ -109,8 +109,8 @@ export function SessionDetailModal(props: {
           <div className="session-detail-head-copy">
             <span className="chip">
               {props.booking.bookingMode === "trial"
-                ? t(props.language, { es: "Sesion de prueba confirmada", en: "Confirmed trial session", pt: "Sessao de teste confirmada" })
-                : t(props.language, { es: "Sesion confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
+                ? t(props.language, { es: "Sesión de prueba confirmada", en: "Confirmed trial session", pt: "Sessao de teste confirmada" })
+                : t(props.language, { es: "Sesión confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
             </span>
             <p>{formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</p>
           </div>
@@ -169,7 +169,7 @@ export function SessionDetailModal(props: {
                           pt: "O link foi criado ao reservar. Abra o Meet no navegador ou no app."
                         })
                       : t(props.language, {
-                          es: "Usa este enlace para conectarte a la sesion en la hora acordada.",
+                          es: "Usa este enlace para conectarte a la sesión en la hora acordada.",
                           en: "Use this link to join your session at the scheduled time.",
                           pt: "Use este link para entrar na sessao no horario combinado."
                         })}
@@ -197,7 +197,7 @@ export function SessionDetailModal(props: {
           ) : (
             <p className="session-detail-meet-empty">
               {t(props.language, {
-                es: "Todavia no hay enlace de videollamada para esta sesion. Si ya esta confirmada, actualiza la pagina en unos minutos o escribe por chat a tu profesional.",
+                es: "Todavía no hay enlace de videollamada para esta sesión. Si ya esta confirmada, actualiza la página en unos minutos o escribe por chat a tu profesional.",
                 en: "There is no video link for this session yet. If it is already confirmed, refresh in a few minutes or message your professional in chat.",
                 pt: "Ainda nao ha link de video para esta sessao. Se ja estiver confirmada, atualize em alguns minutos ou fale no chat com seu profissional."
               })}

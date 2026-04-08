@@ -52,7 +52,7 @@ export function ProfessionalAboutInfoIntroStep(props: { language: AppLanguage; o
             <span aria-hidden="true">“</span>
             <p>
               {t(props.language, {
-                es: "Hola, soy Maria, psicoterapeuta con enfoque Gestalt. Trabajo hace anos acompanando a personas que atraviesan ansiedad y cambios vitales. Mi objetivo es crear un espacio seguro donde puedas entender lo que te pasa y construir herramientas para sentirte mejor. Si te resuena este enfoque, te invito a reservar una primera sesion.",
+                es: "Hola, soy Maria, psicoterapeuta con enfoque Gestalt. Trabajo hace años acompañando a personas que atraviesan ansiedad y cambios vitales. Mi objetivo es crear un espacio seguro donde puedas entender lo que te pasa y construir herramientas para sentirte mejor. Si te resuena este enfoque, te invito a reservar una primera sesión.",
                 en: "Hi, I'm Maria, a psychotherapist with a Gestalt approach. I have spent years supporting people through anxiety and life transitions. My goal is to create a safe space where you can understand what you're experiencing and build practical tools to feel better. If this resonates with you, I invite you to book a first session.",
                 pt: "Oi, eu sou Maria, psicoterapeuta com abordagem Gestalt. Ha anos acompanho pessoas em processos de ansiedade e mudancas de vida. Meu objetivo e criar um espaco seguro para compreender o que voce esta vivendo e construir ferramentas praticas para se sentir melhor. Se essa abordagem fizer sentido para voce, eu te convido para agendar uma primeira sessao."
               })}
@@ -170,7 +170,7 @@ export function ProfessionalTherapyDescriptionInfoStep(props: { language: AppLan
 
           <p>
             {t(props.language, {
-              es: "Aproximadamente el 50% de nuestros clientes no han tenido experiencia trabajando con un psicologo antes, por lo que en este punto es importante tranquilizar al cliente y explicarle de que se trata la terapia con usted.",
+              es: "Aproximadamente el 50% de nuestros clientes no han tenido experiencia trabajando con un psicólogo antes, por lo que en este punto es importante tranquilizar al cliente y explicarle de qué se trata la terapia con usted.",
               en: "Around 50% of clients have never worked with a psychologist before, so this step should reassure them and explain what therapy with you will be like.",
               pt: "Cerca de 50% dos clientes nunca fizeram terapia antes. Nesta etapa, e importante tranquiliza-los e explicar como e o processo com voce."
             })}
@@ -178,7 +178,7 @@ export function ProfessionalTherapyDescriptionInfoStep(props: { language: AppLan
 
           <p>
             {t(props.language, {
-              es: "La informacion debe ser voluminosa: aproximadamente entre 1000 y 1500 caracteres, pero al menos 500 caracteres.",
+              es: "La información debe ser voluminosa: aproximadamente entre 1000 y 1500 caracteres, pero al menos 500 caracteres.",
               en: "The text should be substantial: around 1,000 to 1,500 characters, but at least 500 characters.",
               pt: "A informacao deve ser completa: aproximadamente entre 1.000 e 1.500 caracteres, mas no minimo 500."
             })}
@@ -186,10 +186,10 @@ export function ProfessionalTherapyDescriptionInfoStep(props: { language: AppLan
 
           <p>{t(props.language, { es: "Revele las respuestas a las siguientes preguntas en el texto:", en: "Include answers to the following points:", pt: "Inclua respostas para os seguintes pontos:" })}</p>
           <ul>
-            <li>{t(props.language, { es: "Que esperar de la primera sesion.", en: "What to expect in the first session.", pt: "O que esperar da primeira sessao." })}</li>
+            <li>{t(props.language, { es: "Qué esperar de la primera sesión.", en: "What to expect in the first session.", pt: "O que esperar da primeira sessao." })}</li>
             <li>{t(props.language, { es: "Formato de trabajo, frecuencia y cantidad promedio de sesiones.", en: "Work format, frequency, and estimated number of sessions.", pt: "Formato de trabalho, frequencia e numero medio de sessoes." })}</li>
             <li>{t(props.language, { es: "Si recomienda tareas o lectura entre sesiones.", en: "Whether you recommend exercises or reading between sessions.", pt: "Se recomenda tarefas ou leituras entre as sessoes." })}</li>
-            <li>{t(props.language, { es: "Termine con una invitacion para que potenciales clientes agenden una cita.", en: "Finish with an invitation for potential clients to book a session.", pt: "Finalize com um convite para agendar uma sessao." })}</li>
+            <li>{t(props.language, { es: "Termine con una invitación para que potenciales clientes agenden una cita.", en: "Finish with an invitation for potential clients to book a session.", pt: "Finalize com um convite para agendar uma sessao." })}</li>
           </ul>
         </div>
 
@@ -199,7 +199,7 @@ export function ProfessionalTherapyDescriptionInfoStep(props: { language: AppLan
             <span aria-hidden="true">“</span>
             <p>
               {t(props.language, {
-                es: "La primera sesion es una introduccion: conversamos sobre su situacion actual, objetivos y expectativas. Definimos una frecuencia de trabajo y un plan de acompanamiento. En ocasiones propongo ejercicios simples o lecturas para continuar el proceso entre sesiones. Si siente que este enfoque puede ayudarle, le invito a reservar su primera cita.",
+                es: "La primera sesión es una introducción: conversamos sobre su situación actual, objetivos y expectativas. Definimos una frecuencia de trabajo y un plan de acompañamiento. En ocasiones propongo ejercicios simples o lecturas para continuar el proceso entre sesiones. Si siente que este enfoque puede ayudarle, le invito a reservar su primera cita.",
                 en: "The first session is an introduction: we discuss your current situation, goals, and expectations. Then we define session frequency and a support plan. In some cases I suggest practical exercises or short readings between sessions. If this approach feels right for you, I invite you to book your first appointment.",
                 pt: "A primeira sessao e uma introducao: conversamos sobre sua situacao atual, objetivos e expectativas. Depois definimos a frequencia e um plano de acompanhamento. Em alguns casos, proponho exercicios ou leituras curtas entre sessoes. Se essa abordagem fizer sentido para voce, te convido a agendar sua primeira consulta."
               })}
@@ -253,7 +253,7 @@ export function ProfessionalTherapyDescriptionStep(props: {
         </header>
 
         <div className="pro-about-step-head">
-          <h1>{t(props.language, { es: "Que puedes esperar en terapia conmigo?", en: "What can you expect from therapy with me?", pt: "O que voce pode esperar da terapia comigo?" })}</h1>
+          <h1>{t(props.language, { es: "Qué puedes esperar en terapia conmigo?", en: "What can you expect from therapy with me?", pt: "O que voce pode esperar da terapia comigo?" })}</h1>
           <small>{charCount}/{maxLength}</small>
         </div>
 
@@ -268,7 +268,7 @@ export function ProfessionalTherapyDescriptionStep(props: {
               }
             }}
             placeholder={t(props.language, {
-              es: "Como es la terapia conmigo?",
+              es: "Cómo es la terapia conmigo?",
               en: "How is therapy with me?",
               pt: "Como e a terapia comigo?"
             })}
@@ -295,17 +295,17 @@ export function ProfessionalTherapyDescriptionStep(props: {
 export function ProfessionalSummaryInfoStep(props: { language: AppLanguage; onBack: () => void; onContinue: () => void }) {
   const examples = [
     {
-      es: "Mi conocimiento y experiencia en el trabajo con el cuerpo y la mente te ayudaran a convertirte en una persona mas completa y feliz. La empatia y la curiosidad me permiten estar ahi y apoyarte en este proceso. Te invito a conocerme.",
+      es: "Mi conocimiento y experiencia en el trabajo con el cuerpo y la mente te ayudarán a convertirte en una persona más completa y feliz. La empatía y la curiosidad me permiten estar ahí y apoyarte en este proceso. Te invito a conocerme.",
       en: "My knowledge and experience working with mind and body will help you become a more complete and happier person. Empathy and curiosity allow me to support you through this process. I invite you to get to know me.",
       pt: "Meu conhecimento e experiencia com mente e corpo vao te ajudar a se tornar uma pessoa mais completa e feliz. Empatia e curiosidade me permitem apoiar voce nesse processo. Te convido a me conhecer."
     },
     {
-      es: "Estoy atenta a cada persona, porque cada historia es unica. Mi vocacion es acompanar procesos reales para que puedas vivir con mas calma, claridad y sentido.",
+      es: "Estoy atenta a cada persona, porque cada historia es única. Mi vocación es acompañar procesos reales para que puedas vivir con más calma, claridad y sentido.",
       en: "I am attentive to each person because every story is unique. My vocation is to support real processes so you can live with more calm, clarity, and purpose.",
       pt: "Estou atenta a cada pessoa, porque cada historia e unica. Minha vocacao e acompanhar processos reais para que voce viva com mais calma, clareza e sentido."
     },
     {
-      es: "Por mi experiencia, se que la psicoterapia puede ayudar a resolver dudas, ordenar emociones y tomar decisiones importantes. Soy una profesional cercana, responsable y comprometida con tu proceso.",
+      es: "Por mi experiencia, sé que la psicoterapia puede ayudar a resolver dudas, ordenar emociones y tomar decisiones importantes. Soy una profesional cercana, responsable y comprometida con tu proceso.",
       en: "From my experience, psychotherapy can help resolve doubts, organize emotions, and make important decisions. I am a close, responsible professional committed to your process.",
       pt: "Pela minha experiencia, sei que a psicoterapia pode ajudar a resolver duvidas, organizar emocoes e tomar decisoes importantes. Sou uma profissional proxima, responsavel e comprometida com seu processo."
     }
@@ -325,10 +325,10 @@ export function ProfessionalSummaryInfoStep(props: { language: AppLanguage; onBa
         </header>
 
         <div className="pro-about-copy">
-          <h1>{t(props.language, { es: "Breve descripcion", en: "Short description", pt: "Breve descricao" })}</h1>
+          <h1>{t(props.language, { es: "Breve descripción", en: "Short description", pt: "Breve descricao" })}</h1>
           <p>
             {t(props.language, {
-              es: "Una descripcion breve consta de 2 o 3 frases con un maximo de 250 caracteres. Los clientes la ven en su perfil antes de abrirlo. Puede ser una cita o una frase que anime a los clientes a abrir su perfil y ver informacion sobre usted.",
+              es: "Una descripción breve consta de 2 o 3 frases con un máximo de 250 caracteres. Los clientes la ven en su perfil antes de abrirlo. Puede ser una cita o una frase que anime a los clientes a abrir su perfil y ver información sobre usted.",
               en: "A short description has 2 or 3 sentences with up to 250 characters. Clients see it on your profile before opening it. It can be a quote or a sentence that encourages them to open your profile and learn more about you.",
               pt: "Uma breve descricao tem 2 ou 3 frases com ate 250 caracteres. Os clientes veem isso no seu perfil antes de abri-lo. Pode ser uma frase que os incentive a abrir seu perfil e saber mais sobre voce."
             })}
@@ -378,7 +378,7 @@ export function ProfessionalSummaryStep(props: {
         </header>
 
         <div className="pro-about-step-head">
-          <h1>{t(props.language, { es: "Breve descripcion", en: "Short description", pt: "Breve descricao" })}</h1>
+          <h1>{t(props.language, { es: "Breve descripción", en: "Short description", pt: "Breve descricao" })}</h1>
           <small>{charCount}/{maxLength}</small>
         </div>
 

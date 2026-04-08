@@ -37,7 +37,7 @@ export function AuthScreen(props: {
     if (!email.includes("@") || password.length < 8) {
       setError(
         t(props.language, {
-          es: "Usa un email valido y una contrasena de al menos 8 caracteres.",
+          es: "Usa un email válido y una contraseña de al menos 8 caracteres.",
           en: "Use a valid email and a password with at least 8 characters.",
           pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
         })
@@ -125,7 +125,7 @@ export function AuthScreen(props: {
             <img
               src={props.heroImage}
               alt={t(props.language, {
-                es: "Paciente en una sesion online",
+                es: "Paciente en una sesión online",
                 en: "Patient in an online session",
                 pt: "Paciente em uma sessao online"
               })}
@@ -136,7 +136,7 @@ export function AuthScreen(props: {
         <div className="auth-form-panel">
           <div className="auth-header-copy">
             <p className="auth-eyebrow">MotivarCare</p>
-            <h1>{t(props.language, { es: "Tu sesion online empieza aca", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
+            <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
             <p className="auth-lead">
               {t(props.language, {
                 es: "Accede con tu cuenta. Luego podras completar tu perfil, y si queres, conectar Google Calendar para recordatorios.",
@@ -181,7 +181,7 @@ export function AuthScreen(props: {
 
             <label className="auth-password-field">
               <span className="auth-password-label-row">
-                <span>{t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}</span>
+                <span>{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
                 <button
                   type="button"
                   className="auth-link-button auth-show-password"
@@ -189,7 +189,7 @@ export function AuthScreen(props: {
                 >
                   {showPassword
                     ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-                    : t(props.language, { es: "Ver contrasena", en: "Show password", pt: "Ver senha" })}
+                    : t(props.language, { es: "Ver contraseña", en: "Show password", pt: "Ver senha" })}
                 </button>
               </span>
               <input

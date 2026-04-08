@@ -213,15 +213,15 @@ export function SessionPackagesAdminPage(props: {
     const discountPercent = Number(form.discountPercent);
     const priceCents = computeReferencePriceCents(credits, discountPercent);
     if (form.name.trim().length < 2) {
-      setError("Nombre invalido");
+      setError("Nombre inválido");
       return;
     }
     if (!Number.isInteger(credits) || credits <= 0) {
-      setError("Sesiones incluidas invalido");
+      setError("Sesiones incluidas inválido");
       return;
     }
     if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) {
-      setError("Descuento invalido");
+      setError("Descuento inválido");
       return;
     }
 
@@ -513,7 +513,7 @@ export function SessionPackagesAdminPage(props: {
             <header className="patient-modal-head">
               <div>
                 <h3>{editingPackageId ? "Editar paquete" : "Nuevo paquete"}</h3>
-                <p>Define nombre, sesiones y descuento. El precio se calcula dinamicamente segun el valor hora del profesional seleccionado.</p>
+                <p>Define nombre, sesiones y descuento. El precio se calcula dinámicamente según el valor hora del profesional seleccionado.</p>
               </div>
               <button type="button" onClick={closeModal}>Cerrar</button>
             </header>

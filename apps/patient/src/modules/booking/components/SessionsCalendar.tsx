@@ -290,7 +290,7 @@ export function SessionsCalendar(props: {
                       <span className="sessions-calendar-count">
                         {replaceTemplate(
                           t(props.language, {
-                            es: "{count} sesion",
+                            es: "{count} sesión",
                             en: "{count} session",
                             pt: "{count} sessao"
                           }),

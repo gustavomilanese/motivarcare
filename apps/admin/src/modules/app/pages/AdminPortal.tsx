@@ -197,7 +197,7 @@ export function AdminPortal(props: {
                   variant="calendar"
                   title={{ es: "Calendario", en: "Calendar", pt: "Calendario" }}
                   description={{
-                    es: "Vista de agenda operativa para sesiones, ocupacion y disponibilidad.",
+                    es: "Vista de agenda operativa para sesiones, ocupación y disponibilidad.",
                     en: "Operational agenda view for sessions, occupancy, and availability.",
                     pt: "Visao de agenda operacional para sessoes, ocupacao e disponibilidade."
                   }}

@@ -92,7 +92,7 @@ export function AuthScreen(props: {
     if (!trimmedEmail.includes("@") || password.length < 8) {
       setError(
         t(props.language, {
-          es: "Usa un email valido y una contrasena de al menos 8 caracteres.",
+          es: "Usa un email válido y una contraseña de al menos 8 caracteres.",
           en: "Use a valid email and a password with at least 8 characters.",
           pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
         })
@@ -217,7 +217,7 @@ export function AuthScreen(props: {
           </label>
 
           <label>
-            {t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}
+            {t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}
             <input
               type="password"
               name="password"

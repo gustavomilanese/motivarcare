@@ -701,7 +701,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
     if (!start || !end) {
       setError(
         t(props.language, {
-          es: "Selecciona un rango de fechas valido.",
+          es: "Selecciona un rango de fechas válido.",
           en: "Select a valid date range.",
           pt: "Selecione um intervalo de datas valido."
         })

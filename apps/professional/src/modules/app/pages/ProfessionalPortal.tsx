@@ -261,7 +261,7 @@ export function ProfessionalPortal(props: {
         <nav
           className="pro-mobile-nav"
           aria-label={t(props.language, {
-            es: "Navegacion principal",
+            es: "Navegación principal",
             en: "Main navigation",
             pt: "Navegacao principal"
           })}

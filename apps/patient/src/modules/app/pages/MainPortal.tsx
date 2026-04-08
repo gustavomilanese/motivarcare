@@ -220,7 +220,7 @@ export function MainPortal(props: {
               })}
             </strong>{" "}
             {t(props.state.language, {
-              es: "la reserva queda deshabilitada hasta revision manual.",
+              es: "la reserva queda deshabilitada hasta revisión manual.",
               en: "booking is disabled until manual review.",
               pt: "a reserva fica desabilitada ate revisao manual."
             })}

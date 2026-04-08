@@ -89,7 +89,7 @@ export function CreatePatientModal(props: {
           </label>
 
           <label>
-            Contrasena
+            Contraseña
             <input
               type="password"
               autoComplete="new-password"
@@ -223,7 +223,7 @@ export function PatientEditModal(props: {
           </label>
 
           <label>
-            Contrasena (visible)
+            Contraseña (visible)
             <input
               type="text"
               autoComplete="off"
@@ -330,7 +330,7 @@ export function PatientEditModal(props: {
 
         <section className="sessions-subsection">
           <div className="sessions-subsection-head">
-            <h4>Subseccion de sesiones</h4>
+            <h4>Subsección de sesiones</h4>
             <span className="record-badge">Gestion operativa</span>
           </div>
           <div className="sessions-subsection-grid">
@@ -557,22 +557,22 @@ export function PatientEditModal(props: {
                           props.onForceCancelTrialBooking(booking.id, phrase);
                         }}
                       >
-                        Eliminar / cancelar sesion de prueba
+                        Eliminar / cancelar sesión de prueba
                       </button>
                     </div>
                   ) : null}
                   <div className="button-row ops-actions">
                     <button className="primary" type="button" onClick={() => props.onSaveBooking(booking.id)}>
-                      Guardar sesion
+                      Guardar sesión
                     </button>
                     {canCancelBooking ? (
                       <button className="danger" type="button" onClick={() => props.onCancelBooking(booking.id)} disabled={props.sessionOpsLoading}>
-                        Cancelar sesion
+                        Cancelar sesión
                       </button>
                     ) : null}
                     {canReactivateBooking ? (
                       <button className="primary" type="button" onClick={() => props.onReactivateBooking(booking.id)} disabled={props.sessionOpsLoading}>
-                        Reactivar sesion
+                        Reactivar sesión
                       </button>
                     ) : null}
                   </div>

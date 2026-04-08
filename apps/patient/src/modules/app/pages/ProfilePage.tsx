@@ -398,7 +398,7 @@ export function ProfilePage(props: {
                 pt: "Gerencie seus meios de pagamento para comprar sessoes quando precisar."
               })}
             </p>
-            {localProfile.cards.length === 0 ? <p className="profile-empty-note">{t(props.language, { es: "Todavia no hay tarjetas guardadas.", en: "There are no saved cards yet.", pt: "Ainda nao ha cartoes salvos." })}</p> : null}
+            {localProfile.cards.length === 0 ? <p className="profile-empty-note">{t(props.language, { es: "Todavía no hay tarjetas guardadas.", en: "There are no saved cards yet.", pt: "Ainda nao ha cartoes salvos." })}</p> : null}
             <ul className="simple-list profile-list">
               {localProfile.cards.map((card) => (
                 <li key={card.id}>
@@ -432,7 +432,7 @@ export function ProfilePage(props: {
                 <input value={cardExpMonth} onChange={(event) => setCardExpMonth(event.target.value.replace(/\D/g, "").slice(0, 2))} />
               </label>
               <label>
-                {t(props.language, { es: "Ano de vencimiento", en: "Expiration year", pt: "Ano de vencimento" })}
+                {t(props.language, { es: "Año de vencimiento", en: "Expiration year", pt: "Ano de vencimento" })}
                 <input value={cardExpYear} onChange={(event) => setCardExpYear(event.target.value.replace(/\D/g, "").slice(0, 4))} />
               </label>
             </div>
@@ -444,7 +444,7 @@ export function ProfilePage(props: {
 
         {tab === "subscription" ? (
           <>
-            <h2>{t(props.language, { es: "Mi suscripcion", en: "My subscription", pt: "Minha assinatura" })}</h2>
+            <h2>{t(props.language, { es: "Mi suscripción", en: "My subscription", pt: "Minha assinatura" })}</h2>
             <p className="profile-panel-lead">
               {t(props.language, {
                 es: "Resumen de tu plan activo y disponibilidad de sesiones.",

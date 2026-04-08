@@ -183,7 +183,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (createForm.role === "PROFESSIONAL" && professionalCancellationHours === null) {
       setCreateError(
         t(props.language, {
-          es: "Horas de cancelacion invalidas.",
+          es: "Horas de cancelación inválidas.",
           en: "Invalid cancellation hours.",
           pt: "Horas de cancelamento invalidas."
         })
@@ -195,7 +195,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (createForm.role === "PROFESSIONAL" && createForm.professionalYearsExperience.trim().length > 0 && professionalYearsExperience === null) {
       setCreateError(
         t(props.language, {
-          es: "Anos de experiencia invalidos.",
+          es: "Años de experiencia inválidos.",
           en: "Invalid years of experience.",
           pt: "Anos de experiencia invalidos."
         })
@@ -362,7 +362,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         setSaveLoading(false);
         setEditError(
           t(props.language, {
-            es: "Horas de cancelacion invalidas.",
+            es: "Horas de cancelación inválidas.",
             en: "Invalid cancellation hours.",
             pt: "Horas de cancelamento invalidas."
           })
@@ -375,7 +375,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         setSaveLoading(false);
         setEditError(
           t(props.language, {
-            es: "Anos de experiencia invalidos.",
+            es: "Años de experiencia inválidos.",
             en: "Invalid years of experience.",
             pt: "Anos de experiencia invalidos."
           })
@@ -601,7 +601,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
                     pt: "Este usuario esta marcado como teste. Sera excluido permanentemente mesmo com atividade."
                   })
                 : t(props.language, {
-                    es: "Si el usuario tiene pagos o reservas, por defecto solo se desactiva y se conserva el historial. Podés forzar borrado total con la opcion de abajo (sesiones, compras, ledger).",
+                    es: "Si el usuario tiene pagos o reservas, por defecto solo se desactiva y se conserva el historial. Podés forzar borrado total con la opción de abajo (sesiones, compras, ledger).",
                     en: "If the user has bookings or payments, by default we only disable the account and keep history. You can force a full wipe with the option below (sessions, purchases, ledger).",
                     pt: "Se o usuario tiver historico, por padrao apenas desativamos. Voce pode forcar exclusao total com a opcao abaixo."
                   })}

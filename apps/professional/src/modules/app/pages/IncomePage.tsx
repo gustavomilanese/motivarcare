@@ -153,7 +153,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
                 <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
                 <strong>{formatMoneyCents(data.summary.grossCents, props.language, props.currency)}</strong>
                 <small className="pro-kpi-card-hint">
-                  {t(props.language, { es: "En el periodo seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
+                  {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
                 </small>
               </article>
               <article className="pro-kpi-card">
@@ -164,7 +164,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
                 </small>
               </article>
               <article className="pro-kpi-card">
-                <span>{t(props.language, { es: "Tu parte (periodo)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+                <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
                 <strong>{formatMoneyCents(data.summary.professionalNetCents, props.language, props.currency)}</strong>
                 <small className="pro-kpi-card-hint">
                   {t(props.language, {
@@ -187,9 +187,9 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
       </section>
 
       <section className="pro-card income-details-card">
-        <h2>{t(props.language, { es: "Movimientos en el periodo", en: "Movements in period", pt: "Movimentos no periodo" })}</h2>
+        <h2>{t(props.language, { es: "Movimientos en el período", en: "Movements in period", pt: "Movimentos no periodo" })}</h2>
         {!data ? null : data.movements.length === 0 ? (
-          <p>{t(props.language, { es: "Sin sesiones completadas en este periodo.", en: "No completed sessions in this period.", pt: "Sem sessoes concluidas neste periodo." })}</p>
+          <p>{t(props.language, { es: "Sin sesiones completadas en este período.", en: "No completed sessions in this period.", pt: "Sem sessoes concluidas neste periodo." })}</p>
         ) : (
           <ul className="pro-list pro-list--income">
             {data.movements.map((movement) => (

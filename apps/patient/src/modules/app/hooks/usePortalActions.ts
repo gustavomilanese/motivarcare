@@ -415,7 +415,7 @@ export function usePortalActions(params: {
               sender: "professional",
               text: replaceTemplate(
                 t(current.language, {
-                  es: "{name}: Gracias por tu mensaje. Lo revise y lo vemos en la sesion.",
+                  es: "{name}: Gracias por tu mensaje. Lo revise y lo vemos en la sesión.",
                   en: "{name}: Thanks for your message. I reviewed it and we will go over it in session.",
                   pt: "{name}: Obrigado pela mensagem. Revisei e veremos isso na sessao."
                 }),

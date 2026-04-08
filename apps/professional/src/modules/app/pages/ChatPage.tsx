@@ -233,7 +233,7 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
         </header>
 
         <div className="pro-chat-messages">
-          {messages.length === 0 ? <p className="pro-muted">{t(props.language, { es: "Todavia no hay mensajes.", en: "There are no messages yet.", pt: "Ainda nao ha mensagens." })}</p> : null}
+          {messages.length === 0 ? <p className="pro-muted">{t(props.language, { es: "Todavía no hay mensajes.", en: "There are no messages yet.", pt: "Ainda nao ha mensagens." })}</p> : null}
           {messages.map((message) => (
             <article
               className={message.senderUserId === props.user.id ? "pro-message outgoing" : "pro-message incoming"}

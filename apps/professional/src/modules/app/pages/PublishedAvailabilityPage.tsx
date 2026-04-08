@@ -587,7 +587,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
         <h2>{t(props.language, { es: "Agenda de Sesiones", en: "Session Agenda", pt: "Agenda de Sessoes" })}</h2>
         <p>
           {t(props.language, {
-            es: "Aqui ves todas tus sesiones con paciente, horario, estado y acceso rapido a la llamada cuando corresponde.",
+            es: "Aquí ves todas tus sesiones con paciente, horario, estado y acceso rápido a la llamada cuando corresponde.",
             en: "Here you can see all your sessions with patient, time, status, and quick access to the call when available.",
             pt: "Aqui voce ve todas as suas sessoes com paciente, horario, status e acesso rapido para a chamada quando disponivel."
           })}
@@ -782,7 +782,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
             {loading ? <p>{t(props.language, { es: "Cargando agenda...", en: "Loading agenda...", pt: "Carregando agenda..." })}</p> : null}
             {error ? <p className="pro-error">{error}</p> : null}
             {!loading && !error && bookings.length === 0 ? (
-              <p>{t(props.language, { es: "Todavia no hay sesiones registradas.", en: "There are no sessions yet.", pt: "Ainda nao ha sessoes registradas." })}</p>
+              <p>{t(props.language, { es: "Todavía no hay sesiones registradas.", en: "There are no sessions yet.", pt: "Ainda nao ha sessoes registradas." })}</p>
             ) : null}
             {!loading && !error && bookings.length > 0 ? (
               <div className="agenda-calendar-layout">
@@ -816,7 +816,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
                               <span className="agenda-calendar-count">
                                 {replaceTemplate(
                                   t(props.language, {
-                                    es: "{count} sesion",
+                                    es: "{count} sesión",
                                     en: "{count} session",
                                     pt: "{count} sessao"
                                   }),

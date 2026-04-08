@@ -78,7 +78,7 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
       setMessage(
         response.message ||
           t(props.language, {
-            es: "Contrasena actualizada.",
+            es: "contraseña actualizada.",
             en: "Password updated.",
             pt: "Senha atualizada."
           })
@@ -88,7 +88,7 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
         requestError instanceof Error
           ? requestError.message
           : t(props.language, {
-              es: "No se pudo actualizar la contrasena.",
+              es: "No se pudo actualizar la contraseña.",
               en: "Could not update password.",
               pt: "Nao foi possivel atualizar a senha."
             })
@@ -181,28 +181,28 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
           )}
         </div>
 
-        <h3>{t(props.language, { es: "Contrasena", en: "Password", pt: "Senha" })}</h3>
+        <h3>{t(props.language, { es: "contraseña", en: "Password", pt: "Senha" })}</h3>
         <label>
-          {t(props.language, { es: "Contrasena actual", en: "Current password", pt: "Senha atual" })}
+          {t(props.language, { es: "contraseña actual", en: "Current password", pt: "Senha atual" })}
           <input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
         </label>
         <label>
-          {t(props.language, { es: "Nueva contrasena", en: "New password", pt: "Nova senha" })}
+          {t(props.language, { es: "Nueva contraseña", en: "New password", pt: "Nova senha" })}
           <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
         </label>
         <label>
-          {t(props.language, { es: "Repite la nueva contrasena", en: "Repeat new password", pt: "Repita a nova senha" })}
+          {t(props.language, { es: "Repite la nueva contraseña", en: "Repeat new password", pt: "Repita a nova senha" })}
           <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
         </label>
         <button type="button" onClick={handleChangePassword}>
-          {t(props.language, { es: "Actualizar contrasena", en: "Update password", pt: "Atualizar senha" })}
+          {t(props.language, { es: "Actualizar contraseña", en: "Update password", pt: "Atualizar senha" })}
         </button>
         {error ? <p className="pro-error">{error}</p> : null}
         {message ? <p className="pro-success">{message}</p> : null}
       </div>
 
       <button className="pro-danger" type="button" onClick={props.onLogout}>
-        {t(props.language, { es: "Cerrar sesion", en: "Sign out", pt: "Sair" })}
+        {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
       </button>
     </section>
   );

@@ -45,7 +45,7 @@ export function ProfessionalPriceStep(props: {
       return null;
     }
     const value = Math.max(0, Math.round(sessionPrice * (1 - percent / 100)));
-    return `${value} ${props.currency} ${t(props.language, { es: "por sesion", en: "per session", pt: "por sessao" })}`;
+    return `${value} ${props.currency} ${t(props.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
   };
 
   const discounted4 = discountedPrice(props.value.discount4);
@@ -66,10 +66,10 @@ export function ProfessionalPriceStep(props: {
         </header>
 
         <div className="pro-price-copy">
-          <h1>{t(props.language, { es: "Precio por una sesion", en: "Price per session", pt: "Preco por sessao" })}</h1>
+          <h1>{t(props.language, { es: "Precio por una sesión", en: "Price per session", pt: "Preco por sessao" })}</h1>
           <p>
             {t(props.language, {
-              es: "Puede cambiar el precio en cualquier momento en el futuro. Este es el precio que sus clientes pagaran por una sesion con usted.",
+              es: "Puede cambiar el precio en cualquier momento en el futuro. Este es el precio que sus clientes pagarán por una sesión con usted.",
               en: "You can change this price anytime in the future. This is what clients will pay for a session with you.",
               pt: "Voce pode alterar esse preco no futuro. Este sera o valor que seus clientes pagarao por sessao."
             })}
@@ -193,8 +193,8 @@ export function ProfessionalPhotoInfoStep(props: { language: AppLanguage; curren
               <div className="pro-photo-preview-meta">
                 <strong>Zlata M.</strong>
                 <span>{t(props.language, { es: "Psicoterapeuta, sexologa", en: "Psychotherapist, sexologist", pt: "Psicoterapeuta, sexologa" })}</span>
-                <small>{t(props.language, { es: "5+ anos de experiencia", en: "5+ years of experience", pt: "5+ anos de experiencia" })}</small>
-                <small>{t(props.language, { es: "5 000+ horas de practica", en: "5,000+ practice hours", pt: "5.000+ horas de pratica" })}</small>
+                <small>{t(props.language, { es: "5+ años de experiencia", en: "5+ years of experience", pt: "5+ anos de experiencia" })}</small>
+                <small>{t(props.language, { es: "5 000+ horas de práctica", en: "5,000+ practice hours", pt: "5.000+ horas de pratica" })}</small>
               </div>
               <span className="pro-photo-preview-favorite" aria-hidden="true">♥</span>
             </div>
@@ -202,12 +202,12 @@ export function ProfessionalPhotoInfoStep(props: { language: AppLanguage; curren
             <span className="pro-photo-preview-line" aria-hidden="true" />
             <p>
               {t(props.language, {
-                es: "Hola! Soy psicologa y terapeuta Gestalt. Trabajo con autoestima, ansiedad y ataques de panico.",
+                es: "Hola! Soy psicóloga y terapeuta Gestalt. Trabajo con autoestima, ansiedad y ataques de panico.",
                 en: "Hi! I am a psychologist and Gestalt therapist. I work with self-esteem, anxiety, and panic attacks.",
                 pt: "Ola! Sou psicologa e terapeuta Gestalt. Trabalho com autoestima, ansiedade e ataques de panico."
               })}
             </p>
-            <p className="pro-photo-preview-price">$1 000,00 {props.currency} {t(props.language, { es: "por 50 min. sesion", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
+            <p className="pro-photo-preview-price">$1 000,00 {props.currency} {t(props.language, { es: "por 50 min. sesión", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
           </article>
         </div>
 
@@ -281,9 +281,9 @@ export function ProfessionalPhotoUploadStep(props: {
             </div>
             <div className="pro-photo-preview-meta">
               <strong>Gustavo G.</strong>
-              <span>{t(props.language, { es: "Psicologo", en: "Psychologist", pt: "Psicologo" })}</span>
-              <small>{t(props.language, { es: "10+ anos de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
-              <small>{t(props.language, { es: "1 000+ horas de practica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
+              <span>{t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })}</span>
+              <small>{t(props.language, { es: "10+ años de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
+              <small>{t(props.language, { es: "1 000+ horas de práctica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
             </div>
             <span className="pro-photo-preview-favorite" aria-hidden="true">♥</span>
           </div>
@@ -297,7 +297,7 @@ export function ProfessionalPhotoUploadStep(props: {
               pt: "Apresentacao profissional para gerar confianca desde o primeiro contato."
             })}
           </p>
-          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesion", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
+          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesión", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
         </article>
 
         <div className="pro-photo-actions">
@@ -521,7 +521,7 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
 
           <p>
             {t(props.language, {
-              es: "Una tarjeta de video presentacion dura entre 1 y 2 minutos. Debe presentarse, contar que es especialista de MotivarCare y compartir brevemente su enfoque para motivar al cliente.",
+              es: "Una tarjeta de video presentación dura entre 1 y 2 minutos. Debe presentarse, contar que es especialista de MotivarCare y compartir brevemente su enfoque para motivar al cliente.",
               en: "A presentation video should last 1 to 2 minutes. Introduce yourself, mention you are a MotivarCare specialist, and briefly explain your approach to motivate the client.",
               pt: "Um video de apresentacao deve durar de 1 a 2 minutos. Apresente-se, diga que voce e especialista da MotivarCare e compartilhe seu enfoque de forma breve."
             })}
@@ -530,7 +530,7 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
           <p>{t(props.language, { es: "Principales requisitos del video:", en: "Main video requirements:", pt: "Principais requisitos do video:" })}</p>
           <ul>
             <li>{t(props.language, { es: "No mencione su apellido, solo su nombre.", en: "Mention only your first name, not your surname.", pt: "Nao mencione o sobrenome, apenas o nome." })}</li>
-            <li>{t(props.language, { es: "Indique desde que ano ejerce practica privada.", en: "Say since which year you have been in private practice.", pt: "Diga desde que ano atua em pratica privada." })}</li>
+            <li>{t(props.language, { es: "Indique desde qué año ejerce práctica privada.", en: "Say since which year you have been in private practice.", pt: "Diga desde que ano atua em pratica privada." })}</li>
             <li>{t(props.language, { es: "Grabe con buena iluminacion y sin ruido de fondo.", en: "Record with good lighting and no background noise.", pt: "Grave com boa iluminacao e sem ruido de fundo." })}</li>
             <li>{t(props.language, { es: "Duracion entre 1 y 2 minutos.", en: "Duration between 1 and 2 minutes.", pt: "Duracao entre 1 e 2 minutos." })}</li>
             <li>{t(props.language, { es: "Tamano maximo de archivo: 30 MB.", en: "Maximum file size: 30 MB.", pt: "Tamanho maximo do arquivo: 30 MB." })}</li>

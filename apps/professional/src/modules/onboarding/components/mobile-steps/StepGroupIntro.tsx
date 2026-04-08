@@ -115,7 +115,7 @@ export function ProfessionalWelcomeGate(props: {
 
         <div className="pro-gate-actions">
           <button className="pro-primary pro-gate-primary" type="button" onClick={props.onLogin}>
-            {t(props.language, { es: "Iniciar Sesion", en: "Sign In", pt: "Entrar" })}
+            {t(props.language, { es: "Iniciar Sesión", en: "Sign In", pt: "Entrar" })}
           </button>
           <button className="pro-secondary pro-gate-secondary" type="button" onClick={props.onRegister}>
             {t(props.language, { es: "Registrarse", en: "Register", pt: "Cadastrar-se" })}
@@ -129,7 +129,7 @@ export function ProfessionalWelcomeGate(props: {
             window.location.href = PATIENT_PORTAL_URL;
           }}
         >
-          {t(props.language, { es: "Busco Psicologo", en: "I Need a Therapist", pt: "Busco Psicologo" })}
+          {t(props.language, { es: "Busco Psicólogo", en: "I Need a Therapist", pt: "Busco Psicologo" })}
         </button>
       </section>
     </div>

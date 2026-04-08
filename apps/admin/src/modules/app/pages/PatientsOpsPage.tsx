@@ -237,12 +237,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     setCreatePatientError("");
 
     if (createPatientForm.fullName.trim().length < 2) {
-      setCreatePatientError("Nombre invalido");
+      setCreatePatientError("Nombre inválido");
       return;
     }
 
     if (createPatientForm.password.trim().length < 8) {
-      setCreatePatientError("La contrasena debe tener al menos 8 caracteres");
+      setCreatePatientError("La contraseña debe tener al menos 8 caracteres");
       return;
     }
 
@@ -454,12 +454,12 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     }
 
     if (draft.fullName.trim().length < 2) {
-      setError("Nombre invalido");
+      setError("Nombre inválido");
       return;
     }
 
     if (draft.email.trim().length === 0) {
-      setError("Email invalido");
+      setError("Email inválido");
       return;
     }
 
@@ -572,7 +572,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const cancelConfirmedBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontro la sesion");
+      setError("No se encontró la sesión");
       return;
     }
 
@@ -589,7 +589,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
             startsAt: new Date(draft.startsAt).toISOString(),
             endsAt: new Date(draft.endsAt).toISOString(),
             professionalId: draft.professionalId,
-            cancellationReason: "Admin: sesion cancelada"
+            cancellationReason: "Admin: sesión cancelada"
           })
         },
         props.token
@@ -599,7 +599,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesion");
+      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesión");
     } finally {
       setSessionOpsLoading(false);
     }
@@ -608,7 +608,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const forceCancelTrialBooking = async (patientId: string, bookingId: string, confirmationPhrase: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontro la sesion");
+      setError("No se encontró la sesión");
       return;
     }
     if (confirmationPhrase.trim() !== ADMIN_TRIAL_BOOKING_CANCEL_PHRASE) {
@@ -629,7 +629,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
             startsAt: new Date(draft.startsAt).toISOString(),
             endsAt: new Date(draft.endsAt).toISOString(),
             professionalId: draft.professionalId,
-            cancellationReason: "Admin: cancelacion sesion de prueba",
+            cancellationReason: "Admin: cancelación sesión de prueba",
             adminTrialCancelConfirmation: confirmationPhrase.trim()
           })
         },
@@ -640,7 +640,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesion de prueba");
+      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesión de prueba");
     } finally {
       setSessionOpsLoading(false);
     }
@@ -649,7 +649,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const reactivateCancelledBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontro la sesion");
+      setError("No se encontró la sesión");
       return;
     }
 
@@ -676,7 +676,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo reactivar la sesion");
+      setError(requestError instanceof Error ? requestError.message : "No se pudo reactivar la sesión");
     } finally {
       setSessionOpsLoading(false);
     }

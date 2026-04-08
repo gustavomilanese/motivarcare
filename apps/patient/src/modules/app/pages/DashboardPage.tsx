@@ -371,7 +371,7 @@ export function DashboardPage(props: {
               <img
                 src={landingPatientHeroImage}
                 alt={t(props.language, {
-                  es: "Paciente en sesion virtual",
+                  es: "Paciente en sesión virtual",
                   en: "Patient in a virtual session",
                   pt: "Paciente em sessao virtual"
                 })}
@@ -395,7 +395,7 @@ export function DashboardPage(props: {
           <div className="hero-title-actions">
             <h3>
               {t(props.language, {
-                es: "Gestiona tus sesiones de psicologia en un solo lugar",
+                es: "Gestiona tus sesiones de psicología en un solo lugar",
                 en: "Manage your psychology sessions in one place",
                 pt: "Gerencie suas sessoes de psicologia em um so lugar"
               })}
@@ -403,7 +403,7 @@ export function DashboardPage(props: {
           </div>
           <p>
             {t(props.language, {
-              es: "Desde aqui puedes ver tu agenda, reservar nuevas sesiones y mantener continuidad terapeutica.",
+              es: "Desde aquí puedes ver tu agenda, reservar nuevas sesiones y mantener continuidad terapéutica.",
               en: "From here you can view your schedule, book new sessions, and keep therapeutic continuity.",
               pt: "Daqui voce pode ver sua agenda, reservar novas sessoes e manter continuidade terapeutica."
             })}
@@ -426,10 +426,10 @@ export function DashboardPage(props: {
         <h2>
           <span className="trial-inline-icon" aria-hidden="true" />
           {trialStatus === "pending"
-            ? t(props.language, { es: "Sesion de prueba pendiente", en: "Pending trial session", pt: "Sessao de teste pendente" })
+            ? t(props.language, { es: "Sesión de prueba pendiente", en: "Pending trial session", pt: "Sessao de teste pendente" })
             : trialStatus === "reserved"
-              ? t(props.language, { es: "Sesion de prueba planificada", en: "Trial session scheduled", pt: "Sessao de teste agendada" })
-              : t(props.language, { es: "Sesion de prueba completada", en: "Trial session completed", pt: "Sessao de teste concluida" })}
+              ? t(props.language, { es: "Sesión de prueba planificada", en: "Trial session scheduled", pt: "Sessao de teste agendada" })
+              : t(props.language, { es: "Sesión de prueba completada", en: "Trial session completed", pt: "Sessao de teste concluida" })}
         </h2>
         <p>
           {trialStatus === "reserved" && activeTrialBooking
@@ -445,7 +445,7 @@ export function DashboardPage(props: {
                   language: props.language
                 })
               : t(props.language, {
-                  es: "Elige un horario para dejar tu primera sesion ya agendada.",
+                  es: "Elige un horario para dejar tu primera sesión ya agendada.",
                   en: "Choose a time to leave your first session already scheduled.",
                   pt: "Escolha um horario para deixar sua primeira sessao ja agendada."
                 })}
@@ -466,13 +466,13 @@ export function DashboardPage(props: {
             <strong>{props.state.bookings.filter((booking) => booking.status === "confirmed").length}</strong>
             <p>
               {nextBooking
-                ? `${t(props.language, { es: "Proxima", en: "Next", pt: "Proxima" })}: ${formatDateTime({
+                ? `${t(props.language, { es: "Próxima", en: "Next", pt: "Proxima" })}: ${formatDateTime({
                     isoDate: nextBooking.startsAt,
                     timezone: props.state.profile.timezone,
                     language: props.language
                   })}`
                 : t(props.language, {
-                    es: "Todavia no tenes sesiones reservadas",
+                    es: "Todavía no tenés sesiones reservadas",
                     en: "You do not have any booked sessions yet",
                     pt: "Voce ainda nao tem sessoes reservadas"
                   })}
@@ -536,7 +536,7 @@ export function DashboardPage(props: {
               <p>
                 {replaceTemplate(
                   t(props.language, {
-                    es: "{compat}% compatibilidad · {years} anos de experiencia",
+                    es: "{compat}% compatibilidad · {years} años de experiencia",
                     en: "{compat}% match · {years} years of experience",
                     pt: "{compat}% compatibilidade · {years} anos de experiencia"
                   }),
@@ -591,7 +591,7 @@ export function DashboardPage(props: {
           <div className="sessions-empty-state">
             <strong>
               {t(props.language, {
-                es: "Todavia no tienes sesiones confirmadas",
+                es: "Todavía no tienes sesiones confirmadas",
                 en: "You have no confirmed sessions yet",
                 pt: "Voce ainda nao tem sessoes confirmadas"
               })}
@@ -864,7 +864,7 @@ export function DashboardPage(props: {
         </button>
         {isPackagesExpanded ? (
           props.state.subscription.purchaseHistory.length === 0 ? (
-            <p>{t(props.language, { es: "Todavia no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
+            <p>{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
           ) : (
             <ul className="simple-list session-history-list">
               {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => (
@@ -886,7 +886,7 @@ export function DashboardPage(props: {
           <div className="session-booking-panel-head">
             <div>
               <h3>{t(props.language, { es: "Comprar paquete de sesiones", en: "Buy session package", pt: "Comprar pacote de sessoes" })}</h3>
-              <p>{t(props.language, { es: "Elige el plan que mejor acompane tu proceso y confirma la compra.", en: "Choose the plan that best supports your process and confirm the purchase.", pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra." })}</p>
+              <p>{t(props.language, { es: "Elige el plan que mejor acompañe tu proceso y confirma la compra.", en: "Choose the plan that best supports your process and confirm the purchase.", pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra." })}</p>
             </div>
           </div>
           <div className="deal-grid sessions-package-options-grid">
@@ -931,7 +931,7 @@ export function DashboardPage(props: {
                     <p className="sessions-package-card-unit">
                       {replaceTemplate(
                         t(props.language, {
-                          es: "Equivale a {amount} por sesion",
+                          es: "Equivale a {amount} por sesión",
                           en: "Equivalent to {amount} per session",
                           pt: "Equivale a {amount} por sessao"
                         }),
@@ -979,7 +979,7 @@ export function DashboardPage(props: {
             onClick={(event) => event.stopPropagation()}
           >
             <header className="session-modal-header">
-              <h2>{t(props.language, { es: "Modificar sesion de prueba", en: "Edit trial session", pt: "Editar sessao de teste" })}</h2>
+              <h2>{t(props.language, { es: "Modificar sesión de prueba", en: "Edit trial session", pt: "Editar sessao de teste" })}</h2>
             </header>
 
             <div className="booking-inline-fields">
@@ -1026,7 +1026,7 @@ export function DashboardPage(props: {
             <div className="booking-confirm-row">
               <p>
                 {t(props.language, {
-                  es: "Actualizaras la sesion de prueba ya reservada y mantendras el seguimiento en tu agenda.",
+                  es: "Actualizarás la sesión de prueba ya reservada y mantendras el seguimiento en tu agenda.",
                   en: "You will update your already reserved trial session and keep tracking in your schedule.",
                   pt: "Voce atualizara a sessao de teste ja reservada e mantera o acompanhamento na agenda."
                 })}

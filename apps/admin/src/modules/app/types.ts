@@ -84,7 +84,7 @@ export interface KpisResponse {
     activePatients: number;
     activeProfessionals: number;
     scheduledSessions: number;
-    /** Comision plataforma (mes UTC), sesiones completadas */
+    /** Comisión plataforma (mes UTC), sesiones completadas */
     monthlyRevenueCents: number;
     /** Ingreso bruto pacientes: paquetes comprados en el mes (snapshot) */
     packagePurchasesMonthCents: number;

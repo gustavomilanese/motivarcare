@@ -36,7 +36,7 @@ export function ProfessionalProfileIntroStep(props: { language: AppLanguage; onB
           </p>
           <p>
             {t(props.language, {
-              es: "Su perfil es su representacion en la plataforma, los clientes van a elegirlo segun este perfil.",
+              es: "Su perfil es su representación en la plataforma, los clientes van a elegirlo segun este perfil.",
               en: "Your profile is how you are represented on the platform, and clients will choose you based on it.",
               pt: "Seu perfil e sua representacao na plataforma, e os clientes vao escolher voce com base nele."
             })}
@@ -95,9 +95,9 @@ export function ProfessionalPhotoStep(props: { language: AppLanguage; onBack: ()
             <div className="pro-photo-preview-image" aria-hidden="true" />
             <div className="pro-photo-preview-meta">
               <strong>Gustavo G.</strong>
-              <span>{t(props.language, { es: "Psicologo", en: "Psychologist", pt: "Psicologo" })}</span>
-              <small>{t(props.language, { es: "10+ anos de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
-              <small>{t(props.language, { es: "1 000+ horas de practica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
+              <span>{t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })}</span>
+              <small>{t(props.language, { es: "10+ años de experiencia", en: "10+ years of experience", pt: "10+ anos de experiencia" })}</small>
+              <small>{t(props.language, { es: "1 000+ horas de práctica", en: "1,000+ practice hours", pt: "1.000+ horas de pratica" })}</small>
             </div>
             <span className="pro-photo-preview-favorite" aria-hidden="true">♥</span>
           </div>
@@ -111,7 +111,7 @@ export function ProfessionalPhotoStep(props: { language: AppLanguage; onBack: ()
               pt: "Uma apresentacao clara e profissional ajuda a transmitir confianca desde o primeiro contato com o paciente."
             })}
           </p>
-          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesion", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
+          <p className="pro-photo-preview-price">$50,00 USD {t(props.language, { es: "por 50 min. sesión", en: "per 50 min. session", pt: "por sessao de 50 min." })}</p>
         </article>
 
         <div className="pro-photo-actions">
@@ -135,7 +135,7 @@ export function ProfessionalProfileSpecializationStep(props: {
   onContinue: () => void;
 }) {
   const options = [
-    { es: "Psicologo", en: "Psychologist", pt: "Psicologo" },
+    { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" },
     { es: "Psicoterapeuta", en: "Psychotherapist", pt: "Psicoterapeuta" },
     { es: "Psicoanalista", en: "Psychoanalyst", pt: "Psicanalista" },
     { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" },
@@ -145,10 +145,10 @@ export function ProfessionalProfileSpecializationStep(props: {
     { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" },
     { es: "Doc. de Ciencias Medicas", en: "Medical sciences PhD", pt: "Doutor em ciencias medicas" },
     { es: "Doc. de Ciencias Psicologicas", en: "Psychological sciences PhD", pt: "Doutor em ciencias psicologicas" },
-    { es: "Psicologo en practicas", en: "Psychologist in training", pt: "Psicologo em formacao" },
-    { es: "Psicologo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
-    { es: "Psicologo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" },
-    { es: "Psicologo infantil", en: "Child psychologist", pt: "Psicologo infantil" }
+    { es: "Psicólogo en prácticas", en: "Psychologist in training", pt: "Psicologo em formacao" },
+    { es: "Psicólogo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
+    { es: "Psicólogo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" },
+    { es: "Psicólogo infantil", en: "Child psychologist", pt: "Psicologo infantil" }
   ].map((option) => t(props.language, option));
 
   const toggleOption = (option: string) => {
@@ -318,11 +318,11 @@ export function ProfessionalPersonalDataStep(props: {
 
           <div className="pro-personal-two-cols">
             <label>
-              <input placeholder={t(props.language, { es: "Horas de practica", en: "Practice hours", pt: "Horas de pratica" })} value={props.value.practiceHours} onChange={(event) => next({ practiceHours: event.target.value.replace(/\D/g, "") })} />
+              <input placeholder={t(props.language, { es: "Horas de práctica", en: "Practice hours", pt: "Horas de pratica" })} value={props.value.practiceHours} onChange={(event) => next({ practiceHours: event.target.value.replace(/\D/g, "") })} />
               <small>{t(props.language, { es: "Ejemplo: 3000", en: "Example: 3000", pt: "Exemplo: 3000" })}</small>
             </label>
             <label>
-              <input placeholder={t(props.language, { es: "Anos de experiencia", en: "Years of experience", pt: "Anos de experiencia" })} value={props.value.yearsExperience} onChange={(event) => next({ yearsExperience: event.target.value.replace(/\D/g, "") })} />
+              <input placeholder={t(props.language, { es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })} value={props.value.yearsExperience} onChange={(event) => next({ yearsExperience: event.target.value.replace(/\D/g, "") })} />
               <small>{t(props.language, { es: "Ejemplo: 5", en: "Example: 5", pt: "Exemplo: 5" })}</small>
             </label>
           </div>
@@ -335,7 +335,7 @@ export function ProfessionalPersonalDataStep(props: {
 
             <label className="pro-personal-year-wrap">
               <select value={props.value.birthYear} onChange={(event) => next({ birthYear: event.target.value })}>
-                <option value="">{t(props.language, { es: "Ano de nacimiento", en: "Birth year", pt: "Ano de nascimento" })}</option>
+                <option value="">{t(props.language, { es: "Año de nacimiento", en: "Birth year", pt: "Ano de nascimento" })}</option>
                 {birthYears.map((year) => (
                   <option key={year} value={year}>{year}</option>
                 ))}

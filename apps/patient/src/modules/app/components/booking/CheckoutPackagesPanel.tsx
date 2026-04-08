@@ -43,7 +43,7 @@ export function CheckoutPackagesPanel(props: {
           <h3>{t(props.language, { es: "Comprar paquete de sesiones", en: "Buy session package", pt: "Comprar pacote de sessoes" })}</h3>
           <p>
             {t(props.language, {
-              es: "Elige el plan que mejor acompane tu proceso y confirma la compra.",
+              es: "Elige el plan que mejor acompañe tu proceso y confirma la compra.",
               en: "Choose the plan that best supports your process and confirm the purchase.",
               pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra."
             })}
@@ -119,7 +119,7 @@ export function CheckoutPackagesPanel(props: {
                   <p className="sessions-package-card-unit">
                     {replaceTemplate(
                       t(props.language, {
-                        es: "Equivale a {amount} por sesion",
+                        es: "Equivale a {amount} por sesión",
                         en: "Equivalent to {amount} per session",
                         pt: "Equivale a {amount} por sessao"
                       }),

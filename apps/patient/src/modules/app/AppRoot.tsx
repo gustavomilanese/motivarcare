@@ -936,7 +936,7 @@ export function App() {
         }}
         onComplete={async ({ answers }) => {
           if (!state.authToken) {
-            throw new Error("No se encontro sesion autenticada");
+            throw new Error("No se encontró sesión autenticada");
           }
 
           try {

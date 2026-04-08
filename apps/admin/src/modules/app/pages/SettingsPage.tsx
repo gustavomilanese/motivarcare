@@ -270,7 +270,7 @@ export function SettingsPage(props: {
       >
         <p className="settings-section-lead">
           {t(props.language, {
-            es: "Define cuanto retiene la plataforma y cuanto recibe el profesional por sesion completada.",
+            es: "Define cuanto retiene la plataforma y cuanto recibe el profesional por sesión completada.",
             en: "Define how much the platform retains and how much the professional receives per completed session.",
             pt: "Defina quanto a plataforma retem e quanto o profissional recebe por sessao concluida."
           })}
@@ -297,7 +297,7 @@ export function SettingsPage(props: {
               </label>
               <label>
                 {t(props.language, {
-                  es: "Comision sesion de prueba (%)",
+                  es: "Comision sesión de prueba (%)",
                   en: "Trial session commission (%)",
                   pt: "Comissao sessao de teste (%)"
                 })}
@@ -319,7 +319,7 @@ export function SettingsPage(props: {
               </label>
               <label>
                 {t(props.language, {
-                  es: "Precio fallback por sesion (centavos USD)",
+                  es: "Precio fallback por sesión (centavos USD)",
                   en: "Fallback session price (USD cents)",
                   pt: "Preco fallback por sessao (centavos USD)"
                 })}

@@ -427,11 +427,11 @@ export function ChatPage(props: {
             const unread = remoteMode ? remoteThread?.unreadCount ?? 0 : getUnreadCount(props.state.messages, professional.id);
             const lastMessageText = remoteMode
               ? remoteThread?.lastMessage?.body
-                ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" })
+                ?? t(props.language, { es: "Todavía no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" })
               : props.state.messages
                   .filter((message) => message.professionalId === professional.id)
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.text
-                ?? t(props.language, { es: "Todavia no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
+                ?? t(props.language, { es: "Todavía no hay mensajes", en: "No messages yet", pt: "Ainda nao ha mensagens" });
 
             const threadPhoto = remoteThread?.counterpartPhotoUrl?.trim();
             const photoSrc = professionalPhotoSrc(threadPhoto || props.professionalPhotoMap[professional.id] || null);
@@ -521,7 +521,7 @@ export function ChatPage(props: {
           {threadProfessional && remoteMode && apiMessages.length === 0 ? (
             <p className="wa-empty">
               {t(props.language, {
-                es: "Todavia no hay mensajes en esta conversacion.",
+                es: "Todavía no hay mensajes en esta conversación.",
                 en: "There are no messages in this conversation yet.",
                 pt: "Ainda nao ha mensagens nesta conversa."
               })}
@@ -558,7 +558,7 @@ export function ChatPage(props: {
           ) : !remoteMode && threadMessages.length === 0 ? (
             <p className="wa-empty">
               {t(props.language, {
-                es: "Todavia no hay mensajes en esta conversacion.",
+                es: "Todavía no hay mensajes en esta conversación.",
                 en: "There are no messages in this conversation yet.",
                 pt: "Ainda nao ha mensagens nesta conversa."
               })}

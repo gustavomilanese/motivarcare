@@ -18,7 +18,7 @@ export function describePackagePlan(credits: number, t: (values: { es: string; e
     });
   }
   return t({
-    es: "Ideal para una primera etapa de trabajo terapeutico.",
+    es: "Ideal para una primera etapa de trabajo terapéutico.",
     en: "Ideal for an initial therapy stage.",
     pt: "Ideal para uma primeira etapa de trabalho terapeutico."
   });
@@ -50,7 +50,7 @@ export function packageBenefitLines(credits: number, t: (values: { es: string; e
   if (credits >= 12) {
     return [
       t({
-        es: "Mayor continuidad semanal para avanzar mas rapido.",
+        es: "Mayor continuidad semanal para avanzar más rápido.",
         en: "More weekly continuity to progress faster.",
         pt: "Maior continuidade semanal para avancar mais rapido."
       }),
@@ -60,7 +60,7 @@ export function packageBenefitLines(credits: number, t: (values: { es: string; e
         pt: "Prioridade para ajustar horarios com seu profissional."
       }),
       t({
-        es: "Mejor valor por sesion para procesos intensivos.",
+        es: "Mejor valor por sesión para procesos intensivos.",
         en: "Best per-session value for intensive processes.",
         pt: "Melhor valor por sessao para processos intensivos."
       })
@@ -97,7 +97,7 @@ export function packageBenefitLines(credits: number, t: (values: { es: string; e
       pt: "Flexibilidade para validar seu ritmo de trabalho."
     }),
     t({
-      es: "Base solida para dar el siguiente paso terapeutico.",
+      es: "Base solida para dar el siguiente paso terapéutico.",
       en: "Solid base for your next therapy step.",
       pt: "Base solida para dar o proximo passo terapeutico."
     })

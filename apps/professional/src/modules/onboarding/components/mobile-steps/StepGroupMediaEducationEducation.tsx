@@ -24,7 +24,7 @@ export function ProfessionalEducationInfoStep(props: { language: AppLanguage; on
           <h1>{t(props.language, { es: "Su formacion", en: "Your education", pt: "Sua formacao" })}</h1>
           <p>
             {t(props.language, {
-              es: "El 97% de nuestros clientes revisan la formacion del especialista antes de reservar una sesion. Su educacion y sus cursos determinan el valor que le dan a su perfil, asi que incluya tanta formacion relevante como sea posible.",
+              es: "El 97% de nuestros clientes revisan la formación del especialista antes de reservar una sesión. Su educación y sus cursos determinan el valor que le dan a su perfil, asi que incluya tanta formacion relevante como sea posible.",
               en: "97% of our clients review a specialist's education before booking a session. Your degree and courses shape how your profile is valued, so include as much relevant education as possible.",
               pt: "97% dos nossos clientes revisam a formacao do especialista antes de reservar uma sessao. Sua educacao e cursos influenciam o valor do perfil, por isso inclua o maximo de formacao relevante."
             })}
@@ -92,7 +92,7 @@ export function ProfessionalEducationStep(props: {
           <h1>{t(props.language, { es: "Anadir diploma #1", en: "Add diploma #1", pt: "Adicionar diploma #1" })}</h1>
           <p>
             {t(props.language, {
-              es: "El 97% de nuestros clientes revisan la formacion del especialista antes de reservar una sesion. Su educacion y cursos determinan el valor de su perfil.",
+              es: "El 97% de nuestros clientes revisan la formación del especialista antes de reservar una sesión. Su educación y cursos determinan el valor de su perfil.",
               en: "97% of our clients review specialist education before booking. Your education and courses shape your profile value.",
               pt: "97% dos clientes revisam a formacao antes de reservar. Sua educacao e cursos definem o valor do seu perfil."
             })}
@@ -114,7 +114,7 @@ export function ProfessionalEducationStep(props: {
           <div className="pro-personal-two-cols">
             <label className="pro-personal-year-wrap">
               <select value={props.value.startYear} onChange={(event) => update({ startYear: event.target.value })}>
-                <option value="">{t(props.language, { es: "Ano de inicio", en: "Start year", pt: "Ano de inicio" })}</option>
+                <option value="">{t(props.language, { es: "Año de inicio", en: "Start year", pt: "Ano de inicio" })}</option>
                 {years.map((year) => <option key={`start-${year}`} value={year}>{year}</option>)}
               </select>
               <em aria-hidden="true">⌄</em>
@@ -122,7 +122,7 @@ export function ProfessionalEducationStep(props: {
 
             <label className="pro-personal-year-wrap">
               <select value={props.value.graduationYear} onChange={(event) => update({ graduationYear: event.target.value })}>
-                <option value="">{t(props.language, { es: "Ano de graduacion", en: "Graduation year", pt: "Ano de graduacao" })}</option>
+                <option value="">{t(props.language, { es: "Año de graduacion", en: "Graduation year", pt: "Ano de graduacao" })}</option>
                 {years.map((year) => <option key={`grad-${year}`} value={year}>{year}</option>)}
               </select>
               <em aria-hidden="true">⌄</em>
@@ -135,7 +135,7 @@ export function ProfessionalEducationStep(props: {
         </button>
 
         <div className="pro-education-rules">
-          <strong>{t(props.language, { es: "Requisitos basicos para los diplomas:", en: "Basic diploma requirements:", pt: "Requisitos basicos para diplomas:" })}</strong>
+          <strong>{t(props.language, { es: "Requisitos básicos para los diplomas:", en: "Basic diploma requirements:", pt: "Requisitos basicos para diplomas:" })}</strong>
           <ul>
             <li>{t(props.language, { es: "Puede agregar solo 1 diploma por cada curso o educacion.", en: "You can add one diploma per course or education item.", pt: "Voce pode adicionar 1 diploma por curso/formacao." })}</li>
             <li>{t(props.language, { es: "Formato de imagen: jpg, jpeg, png.", en: "Image format: jpg, jpeg, png.", pt: "Formato de imagem: jpg, jpeg, png." })}</li>
@@ -241,7 +241,7 @@ export function ProfessionalStripeVerificationStep(props: { language: AppLanguag
           >
             {stripeStatus === "verified"
               ? t(props.language, { es: "Documentos verificados", en: "Documents verified", pt: "Documentos verificados" })
-              : t(props.language, { es: "Ya valide mis documentos", en: "I already validated my documents", pt: "Ja validei meus documentos" })}
+              : t(props.language, { es: "Ya validé mis documentos", en: "I already validated my documents", pt: "Ja validei meus documentos" })}
           </button>
         </div>
 

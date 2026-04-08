@@ -125,8 +125,8 @@ export function PortalHeroSettingsSection(props: {
 
   const sectionSubtitle =
     props.target === "patient"
-      ? "Hero del portal paciente (laptop y telefono)."
-      : "Imagenes de cabecera para el portal psicologo (laptop y telefono).";
+      ? "Hero del portal paciente (laptop y teléfono)."
+      : "Imágenes de cabecera para el portal psicólogo (laptop y teléfono).";
 
   const body = (
     <>
@@ -163,7 +163,7 @@ export function PortalHeroSettingsSection(props: {
 
             <article className="upload-card">
               <header>
-                <h3>{props.target === "patient" ? "Pacientes · telefono" : "Psicologos · telefono"}</h3>
+                <h3>{props.target === "patient" ? "Pacientes · teléfono" : "Psicólogos · teléfono"}</h3>
                 <span className={`upload-status ${settings[mobileKey] ? "ok" : ""}`}>{settings[mobileKey] ? "Imagen cargada" : "Sin imagen"}</span>
               </header>
               <label className="upload-trigger" htmlFor={`hero-${props.target}-mobile`}>

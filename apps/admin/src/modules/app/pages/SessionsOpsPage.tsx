@@ -266,7 +266,7 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
                 </div>
                 <div className="button-row ops-actions">
                   <button type="button" className="primary" onClick={() => void saveBooking(booking)}>
-                    Guardar sesion
+                    Guardar sesión
                   </button>
                 </div>
               </>
