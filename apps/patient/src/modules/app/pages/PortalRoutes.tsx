@@ -215,26 +215,7 @@ export function PortalRoutes(props: {
                   onImageFallback={props.onImageFallback}
                 />
               )
-            : (
-                <DashboardPage
-                  state={props.stateForDisplay}
-                  professionals={props.professionalDirectory}
-                  professionalPhotoMap={props.professionalPhotoMap}
-                  language={props.state.language}
-                  currency={props.state.currency}
-                  onImageFallback={props.onImageFallback}
-                  onHeroFallback={props.onHeroFallback}
-                  onGoToReservations={props.handleGoToReservations}
-                  onGoToBooking={props.handleReserveFromAnywhere}
-                  onGoToProfessional={props.handleGoToProfessional}
-                  onGoToChat={props.handleChatFromAnywhere}
-                  onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
-                  onPlanTrialFromDashboard={props.planTrialFromDashboard}
-                  onStartPackagePurchase={startPackagePurchase}
-                  onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
-                  onNavigateToBookTrial={() => props.navigate("/book/trial")}
-                />
-              )
+            : <Navigate replace to="/" />
         }
       />
       <Route

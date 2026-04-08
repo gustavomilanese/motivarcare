@@ -123,9 +123,19 @@ export async function loadPublicPackagePlans(params: {
     if (!Array.isArray(data.sessionPackages) || data.sessionPackages.length === 0) {
       throw new Error("empty_catalog");
     }
+    /** El portal solo muestra paquetes multi-sesión; el de 1 crédito es catálogo interno para cobrar sueltas. */
+    const bundlesOnly = data.sessionPackages.filter((item) => item.credits > 1);
+    const topBundles = bundlesOnly.slice(0, 3);
+    if (topBundles.length === 0) {
+      throw new Error("empty_catalog");
+    }
+    const featured =
+      data.featuredPackageId && topBundles.some((p) => p.id === data.featuredPackageId)
+        ? data.featuredPackageId
+        : topBundles[0]?.id ?? null;
     return {
-      featuredPackageId: data.featuredPackageId,
-      plans: data.sessionPackages.slice(0, 3).map((item) => ({
+      featuredPackageId: featured,
+      plans: topBundles.map((item) => ({
         id: item.id,
         name: item.name,
         credits: item.credits,
@@ -139,9 +149,12 @@ export async function loadPublicPackagePlans(params: {
       }))
     };
   } catch {
+    const raw = params.fallbackPlans ?? [];
+    const bundles = raw.filter((plan) => plan.credits > 1);
+    const top = bundles.slice(0, 3);
     return {
-      featuredPackageId: null,
-      plans: params.fallbackPlans ?? []
+      featuredPackageId: top[0]?.id ?? null,
+      plans: top
     };
   }
 }

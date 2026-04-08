@@ -534,7 +534,8 @@ export function BookingPage(props: {
     setCheckoutPaymentPlanId(null);
     setCheckoutPaymentError("");
     resetIndividualPurchaseUi();
-    setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? packagePlans[0]?.id ?? null);
+    const firstBundle = packagePlans.find((plan) => plan.credits > 1) ?? null;
+    setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
   };
 
   const openIndividualSessionsCheckoutFromModal = () => {
