@@ -15,6 +15,8 @@ import { loadPublicPackagePlans } from "../lib/packageCatalog";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { PaymentMethodModal } from "../../matching/components/PaymentMethodModal";
+import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
+import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import type {
@@ -445,15 +447,27 @@ export function BookingPage(props: {
       return;
     }
 
+    const stillListed = await isSlotStillListedAfterFreshFetch(professional.id, selectedSlot, props.state.authToken);
+    if (!stillListed) {
+      setBookingActionError(
+        t(props.language, {
+          es: "Ese horario se llenó recién. Elegí otro desde el calendario cuando puedas.",
+          en: "That time just filled up. Please pick another from the calendar when you’re ready.",
+          pt: "Esse horario acabou de ficar cheio. Escolha outro no calendario quando puder."
+        })
+      );
+      return;
+    }
+
     const result = await props.onConfirmBooking(professional.id, selectedSlot, false);
     if (!result.ok) {
       setBookingActionError(
         result.error?.trim()
           ? result.error
           : t(props.language, {
-              es: "No se pudo confirmar la reserva. Es posible que el horario ya no esté disponible o que no tengas sesiones.",
-              en: "Could not confirm the booking. The slot may no longer be available or you may not have available sessions.",
-              pt: "Nao foi possivel confirmar a reserva. O horario pode nao estar mais disponivel ou voce pode nao ter sessoes."
+              es: "No pudimos terminar la reserva. Quizá ese horario ya no estaba libre, o no tenías sesiones para usar. Revisá y probá con otro turno.",
+              en: "We couldn’t finish the booking. That time may no longer be free, or you may not have sessions left. Check and try another time.",
+              pt: "Nao foi possivel concluir a reserva. Esse horario pode nao estar mais livre, ou voce pode nao ter sessoes. Confira e tente outro horario."
             })
       );
       return;
@@ -549,26 +563,14 @@ export function BookingPage(props: {
     try {
       const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
       if (!purchased) {
-        setIndividualPaymentError(
-          t(props.language, {
-            es: "No se pudo confirmar la compra. Intenta nuevamente.",
-            en: "Could not confirm the purchase. Please try again.",
-            pt: "Nao foi possivel confirmar a compra. Tente novamente."
-          })
-        );
+        setIndividualPaymentError(friendlyCheckoutPackageMessage("", props.language));
         return;
       }
       resetIndividualPurchaseUi();
       setCheckoutFlow(false);
     } catch (error) {
       setIndividualPaymentError(
-        error instanceof Error
-          ? error.message
-          : t(props.language, {
-              es: "No se pudo confirmar la compra. Intenta nuevamente.",
-              en: "Could not confirm the purchase. Please try again.",
-              pt: "Nao foi possivel confirmar a compra. Tente novamente."
-            })
+        friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
       );
     } finally {
       setIndividualPaymentLoading(false);
@@ -585,13 +587,7 @@ export function BookingPage(props: {
     try {
       const purchased = await props.onPurchasePackage(checkoutPaymentPlan);
       if (!purchased) {
-        setCheckoutPaymentError(
-          t(props.language, {
-            es: "No se pudo confirmar el pago del paquete. Intenta nuevamente.",
-            en: "Could not confirm package payment. Please try again.",
-            pt: "Nao foi possivel confirmar o pagamento do pacote. Tente novamente."
-          })
-        );
+        setCheckoutPaymentError(friendlyCheckoutPackageMessage("", props.language));
         return;
       }
       setCheckoutPaymentPlanId(null);
@@ -599,13 +595,7 @@ export function BookingPage(props: {
       setCheckoutFlow(false);
     } catch (error) {
       setCheckoutPaymentError(
-        error instanceof Error
-          ? error.message
-          : t(props.language, {
-              es: "No se pudo confirmar el pago del paquete. Intenta nuevamente.",
-              en: "Could not confirm package payment. Please try again.",
-              pt: "Nao foi possivel confirmar o pagamento do pacote. Tente novamente."
-            })
+        friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
       );
     } finally {
       setCheckoutPaymentLoading(false);

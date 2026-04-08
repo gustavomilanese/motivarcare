@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -21,13 +22,7 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
 
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.includes("@")) {
-      setError(
-        t(props.language, {
-          es: "Ingresá un email válido.",
-          en: "Enter a valid email.",
-          pt: "Insira um email valido."
-        })
-      );
+      setError(professionalSurfaceMessage("forgot-password-email", props.language));
       return;
     }
 
@@ -45,15 +40,8 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
         })
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo enviar la solicitud. Probá de nuevo más tarde.",
-              en: "Could not send the request. Please try again later.",
-              pt: "Nao foi possivel enviar o pedido. Tente novamente mais tarde."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("forgot-password-send", props.language, raw));
     } finally {
       setLoading(false);
     }

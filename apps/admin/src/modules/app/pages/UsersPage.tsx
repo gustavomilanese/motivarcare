@@ -5,6 +5,7 @@ import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { defaultCreateForm } from "../constants";
 import { UsersCreateSection, UsersListSection } from "../components/users/UsersPageSections";
 import { closeStickyCollapsibleSection, useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type {
   AdminUser,
@@ -158,15 +159,8 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         setEditingUserId(null);
       }
     } catch (requestError) {
-      setListError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar usuarios.",
-              en: "Could not load users.",
-              pt: "Nao foi possivel carregar usuarios."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setListError(adminSurfaceMessage("users-list-load", props.language, raw));
     } finally {
       setListLoading(false);
     }
@@ -286,15 +280,8 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       setUsersPage(1);
       await loadUsers(1);
     } catch (requestError) {
-      setCreateError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo crear el usuario.",
-              en: "Could not create the user.",
-              pt: "Nao foi possivel criar o usuario."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setCreateError(adminSurfaceMessage("users-create", props.language, raw));
     } finally {
       setCreateLoading(false);
     }
@@ -505,15 +492,8 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       ) {
         return;
       }
-      setEditError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo eliminar el usuario.",
-              en: "Could not delete the user.",
-              pt: "Nao foi possivel excluir o usuario."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setEditError(adminSurfaceMessage("users-delete", props.language, raw));
     } finally {
       deleteInFlightRef.current = null;
       setDeleteLoadingUserId(null);

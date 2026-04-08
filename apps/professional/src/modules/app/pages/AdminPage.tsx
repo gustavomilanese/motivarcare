@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminData } from "../types";
 
@@ -29,17 +30,10 @@ export function AdminPage(props: { token: string; language: AppLanguage }) {
         }));
       })
       .catch((requestError) => {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo cargar la solapa administrativa.",
-                en: "Could not load the admin tab.",
-                pt: "Nao foi possivel carregar a aba administrativa."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(professionalSurfaceMessage("admin-tab-load", props.language, raw));
       });
-  }, [props.token]);
+  }, [props.language, props.token]);
 
   const handleSave = async () => {
     try {
@@ -56,15 +50,8 @@ export function AdminPage(props: { token: string; language: AppLanguage }) {
       );
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar.",
-              en: "Could not save.",
-              pt: "Nao foi possivel salvar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("admin-tab-save", props.language, raw));
     }
   };
 

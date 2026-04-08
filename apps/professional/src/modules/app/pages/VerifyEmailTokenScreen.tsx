@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
 type VerificationState = "loading" | "success" | "error";
@@ -20,13 +21,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
   useEffect(() => {
     if (!token) {
       setState("error");
-      setMessage(
-        t(props.language, {
-          es: "Falta el token de verificación.",
-          en: "Verification token is missing.",
-          pt: "Token de verificacao ausente."
-        })
-      );
+      setMessage(professionalSurfaceMessage("verify-token-missing", props.language));
       return;
     }
 
@@ -44,15 +39,8 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
           return;
         }
         setState("error");
-        setMessage(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo verificar tu email.",
-                en: "Your email could not be verified.",
-                pt: "Nao foi possivel verificar seu e-mail."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setMessage(professionalSurfaceMessage("verify-token-fail", props.language, raw));
       }
     };
 

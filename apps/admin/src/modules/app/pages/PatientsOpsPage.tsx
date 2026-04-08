@@ -13,6 +13,7 @@ import {
   PatientsSearchResults,
   RiskTriageQueueSection
 } from "../components/patients/PatientsOpsSections";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type {
   AdminBookingOps,
@@ -180,7 +181,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setRiskTriageItems(riskTriageResponse.items);
       setRiskTriagePendingCount(Number(riskTriageResponse.pending) || 0);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load patient operations");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-ops-load", props.language, raw));
     } finally {
       setLoading(false);
       setRiskTriageLoading(false);
@@ -237,17 +239,35 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     setCreatePatientError("");
 
     if (createPatientForm.fullName.trim().length < 2) {
-      setCreatePatientError("Nombre inválido");
+      setCreatePatientError(
+        t(props.language, {
+          es: "El nombre del paciente necesita al menos 2 caracteres.",
+          en: "Patient name needs at least 2 characters.",
+          pt: "O nome do paciente precisa de pelo menos 2 caracteres."
+        })
+      );
       return;
     }
 
     if (createPatientForm.password.trim().length < 8) {
-      setCreatePatientError("La contraseña debe tener al menos 8 caracteres");
+      setCreatePatientError(
+        t(props.language, {
+          es: "La contraseña inicial debe tener al menos 8 caracteres para que pueda entrar al portal.",
+          en: "Initial password must be at least 8 characters so they can sign in.",
+          pt: "A senha inicial precisa ter pelo menos 8 caracteres."
+        })
+      );
       return;
     }
 
     if (createPatientForm.timezone.trim().length === 0) {
-      setCreatePatientError("Selecciona una zona horaria de USA");
+      setCreatePatientError(
+        t(props.language, {
+          es: "Elegí una zona horaria de la lista (usamos horarios de EE.UU. en el flujo actual).",
+          en: "Pick a timezone from the list (current flow uses US timezones).",
+          pt: "Escolha um fuso horario da lista."
+        })
+      );
       return;
     }
 
@@ -277,7 +297,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setPatientPage(1);
       await load("*", 1);
     } catch (requestError) {
-      setCreatePatientError(requestError instanceof Error ? requestError.message : "No se pudo crear el paciente");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setCreatePatientError(adminSurfaceMessage("patients-create", props.language, raw));
     } finally {
       setCreatePatientLoading(false);
     }
@@ -335,7 +356,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         return next;
       });
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load patient sessions");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-sessions-load", props.language, raw));
     } finally {
       setPatientBookingsLoading((current) => ({ ...current, [patientId]: false }));
     }
@@ -347,7 +369,13 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     const credits = Number(createPackage.credits);
     const priceCents = Number(createPackage.priceCents);
     if (!Number.isInteger(credits) || !Number.isInteger(priceCents) || credits <= 0 || priceCents <= 0) {
-      setError("Credits and price must be valid integers");
+      setError(
+        t(props.language, {
+          es: "Créditos y precio tienen que ser enteros mayores que cero.",
+          en: "Credits and price must be whole numbers greater than zero.",
+          pt: "Creditos e preco devem ser inteiros maiores que zero."
+        })
+      );
       return;
     }
 
@@ -370,7 +398,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setSuccess("Package created");
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not create package");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-package-create", props.language, raw));
     }
   };
 
@@ -389,7 +418,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setSuccess("Package updated");
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update package");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-package-update", props.language, raw));
     }
   };
 
@@ -397,7 +427,13 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     const rawAmount = creditAdjustments[patientId] ?? "";
     const amount = Number(rawAmount);
     if (!Number.isInteger(amount) || amount === 0) {
-      setError("Adjustment must be an integer different from 0");
+      setError(
+        t(props.language, {
+          es: "El ajuste de créditos tiene que ser un entero distinto de cero (positivo suma, negativo resta).",
+          en: "Credit adjustment must be a non-zero integer (positive adds, negative subtracts).",
+          pt: "O ajuste deve ser um inteiro diferente de zero."
+        })
+      );
       return;
     }
     setError("");
@@ -418,7 +454,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setSuccess("Credits adjusted");
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not adjust credits");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-credits", props.language, raw));
     }
   };
 
@@ -443,7 +480,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await load();
       await loadPatientManagement(patientId);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update active professional");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-active-pro", props.language, raw));
     }
   };
 
@@ -454,23 +492,47 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     }
 
     if (draft.fullName.trim().length < 2) {
-      setError("Nombre inválido");
+      setError(
+        t(props.language, {
+          es: "El nombre del paciente necesita al menos 2 caracteres.",
+          en: "Patient name needs at least 2 characters.",
+          pt: "O nome precisa de pelo menos 2 caracteres."
+        })
+      );
       return;
     }
 
     if (draft.email.trim().length === 0) {
-      setError("Email inválido");
+      setError(
+        t(props.language, {
+          es: "Necesitamos un email para contactar al paciente.",
+          en: "We need an email on file for this patient.",
+          pt: "Precisamos de um e-mail para o paciente."
+        })
+      );
       return;
     }
 
     if (draft.timezone.trim().length === 0) {
-      setError("Selecciona una zona horaria");
+      setError(
+        t(props.language, {
+          es: "Elegí zona horaria en la lista antes de guardar.",
+          en: "Pick a timezone from the list before saving.",
+          pt: "Escolha um fuso horario na lista."
+        })
+      );
       return;
     }
 
     const remainingCredits = Number(draft.remainingCredits);
     if (!Number.isInteger(remainingCredits) || remainingCredits < 0) {
-      setError("Sesiones disponibles debe ser un entero mayor o igual a 0");
+      setError(
+        t(props.language, {
+          es: "Las sesiones disponibles deben ser un entero mayor o igual a 0.",
+          en: "Available sessions must be a whole number ≥ 0.",
+          pt: "Sessoes disponiveis: inteiro maior ou igual a 0."
+        })
+      );
       return;
     }
 
@@ -533,7 +595,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await load(patientSearch, patientPage);
       setIsPatientEditModalOpen(false);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar el paciente");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-update", props.language, raw));
     } finally {
       setPatientSaveLoading(false);
     }
@@ -542,7 +605,13 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const savePatientBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("Booking draft not found");
+      setError(
+        t(props.language, {
+          es: "No encontramos el borrador de esa reserva. Cerrá el modal y volvé a expandir la sesión.",
+          en: "We couldn’t find that booking draft. Close the modal and expand the session again.",
+          pt: "Nao encontramos o rascunho dessa reserva. Feche e abra de novo."
+        })
+      );
       return;
     }
 
@@ -565,14 +634,21 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       setSuccess("Sesion actualizada");
       await loadPatientManagement(patientId);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update booking");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-booking-update", props.language, raw));
     }
   };
 
   const cancelConfirmedBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontró la sesión");
+      setError(
+        t(props.language, {
+          es: "No encontramos esa sesión en pantalla. Refrescá el detalle del paciente.",
+          en: "We couldn’t find that session on screen. Refresh the patient detail.",
+          pt: "Nao encontramos essa sessao na tela. Atualize o detalhe."
+        })
+      );
       return;
     }
 
@@ -599,7 +675,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesión");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-cancel", props.language, raw));
     } finally {
       setSessionOpsLoading(false);
     }
@@ -608,11 +685,23 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const forceCancelTrialBooking = async (patientId: string, bookingId: string, confirmationPhrase: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontró la sesión");
+      setError(
+        t(props.language, {
+          es: "No encontramos esa sesión en pantalla. Refrescá el detalle del paciente.",
+          en: "We couldn’t find that session on screen. Refresh the patient detail.",
+          pt: "Nao encontramos essa sessao na tela. Atualize o detalhe."
+        })
+      );
       return;
     }
     if (confirmationPhrase.trim() !== ADMIN_TRIAL_BOOKING_CANCEL_PHRASE) {
-      setError("Frase de confirmacion incorrecta");
+      setError(
+        t(props.language, {
+          es: "La frase de confirmación no coincide. Copiala exactamente como figura en la guía interna.",
+          en: "The confirmation phrase doesn’t match. Copy it exactly from your internal runbook.",
+          pt: "A frase de confirmacao nao confere. Copie exatamente como no manual interno."
+        })
+      );
       return;
     }
 
@@ -640,7 +729,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cancelar la sesión de prueba");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-trial-cancel", props.language, raw));
     } finally {
       setSessionOpsLoading(false);
     }
@@ -649,7 +739,13 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const reactivateCancelledBooking = async (patientId: string, bookingId: string) => {
     const draft = bookingDrafts[bookingId];
     if (!draft) {
-      setError("No se encontró la sesión");
+      setError(
+        t(props.language, {
+          es: "No encontramos esa sesión en pantalla. Refrescá el detalle del paciente.",
+          en: "We couldn’t find that session on screen. Refresh the patient detail.",
+          pt: "Nao encontramos essa sessao na tela. Atualize o detalhe."
+        })
+      );
       return;
     }
 
@@ -676,7 +772,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       await loadPatientManagement(patientId);
       await load(patientSearch, patientPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo reactivar la sesión");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-reactivate", props.language, raw));
     } finally {
       setSessionOpsLoading(false);
     }
@@ -708,7 +805,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         await loadPatientManagement(patientId);
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar el triage");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-triage", props.language, raw));
     } finally {
       setRiskTriageActionPatientId(null);
     }

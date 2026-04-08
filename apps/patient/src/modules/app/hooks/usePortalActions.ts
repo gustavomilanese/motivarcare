@@ -2,6 +2,7 @@ import { replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { mergeRescheduledBooking, type BookingMutationApiItem } from "../../booking/bookingMappers";
 import { apiRequest } from "../services/api";
 import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
+import { friendlyBookingFailureMessage } from "../lib/friendlyPatientMessages";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
@@ -206,9 +207,9 @@ export function usePortalActions(params: {
           return {
             ok: false,
             error: t(params.state.language, {
-              es: "Ya usaste tu sesión de prueba. Compra un paquete para continuar.",
-              en: "You already used your trial session. Buy a package to continue.",
-              pt: "Voce ja usou sua sessao de teste. Compre um pacote para continuar."
+              es: "Ya tuviste tu sesión de prueba con nosotros. Cuando quieras podés sumar un paquete y seguir con tu proceso.",
+              en: "You’ve already had your trial session with us. Whenever you’re ready, you can add a package and keep going.",
+              pt: "Voce ja teve sua sessao de teste conosco. Quando quiser, pode adicionar um pacote e continuar."
             })
           };
         }
@@ -216,31 +217,24 @@ export function usePortalActions(params: {
           return {
             ok: false,
             error: t(params.state.language, {
-              es: "No tienes sesiones disponibles para reservar.",
-              en: "You have no available sessions to book.",
-              pt: "Voce nao tem sessoes disponiveis para reservar."
+              es: "Por ahora no tenés sesiones disponibles para agendar. Sumá un paquete cuando te parezca y seguimos desde ahí.",
+              en: "You don’t have sessions available to book right now. Add a package whenever it suits you and we’ll pick up from there.",
+              pt: "Por enquanto voce nao tem sessoes para agendar. Adicione um pacote quando fizer sentido e seguimos a partir dai."
             })
           };
         }
         return {
           ok: false,
-          error:
-            errorMessage
-              ? errorMessage
-              : t(params.state.language, {
-                  es: "No se pudo confirmar la reserva.",
-                  en: "Could not confirm booking.",
-                  pt: "Nao foi possivel confirmar a reserva."
-                })
+          error: friendlyBookingFailureMessage(errorMessage, params.state.language)
         };
       }
     } else if (!bookingAsTrial && params.state.subscription.creditsRemaining <= 0) {
       return {
         ok: false,
         error: t(params.state.language, {
-          es: "No tienes sesiones disponibles para reservar.",
-          en: "You have no available sessions to book.",
-          pt: "Voce nao tem sessoes disponiveis para reservar."
+          es: "Por ahora no tenés sesiones disponibles para agendar. Sumá un paquete cuando te parezca y seguimos desde ahí.",
+          en: "You don’t have sessions available to book right now. Add a package whenever it suits you and we’ll pick up from there.",
+          pt: "Por enquanto voce nao tem sessoes para agendar. Adicione um pacote quando fizer sentido e seguimos a partir dai."
         })
       };
     }

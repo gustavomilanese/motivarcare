@@ -6,6 +6,7 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
+import { friendlyChatSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import type {
   ApiChatMessage,
@@ -193,15 +194,8 @@ export function ChatPage(props: {
       setApiAvailableProfessionalIds(response.availableProfessionalIds ?? []);
       setApiError("");
     } catch (requestError) {
-      setApiError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar el chat.",
-              en: "Could not load chat.",
-              pt: "Nao foi possivel carregar o chat."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setApiError(friendlyChatSurfaceMessage("threads", raw, props.language));
     }
   };
 
@@ -219,15 +213,8 @@ export function ChatPage(props: {
       setApiMessages(response.messages);
       setApiError("");
     } catch (requestError) {
-      setApiError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudieron cargar mensajes.",
-              en: "Could not load messages.",
-              pt: "Nao foi possivel carregar mensagens."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setApiError(friendlyChatSurfaceMessage("messages", raw, props.language));
     }
   };
 
@@ -245,15 +232,8 @@ export function ChatPage(props: {
       setActiveThreadId(response.threadId);
       return response.threadId;
     } catch (requestError) {
-      setApiError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo abrir la conversacion.",
-              en: "Could not open conversation.",
-              pt: "Nao foi possivel abrir a conversa."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setApiError(friendlyChatSurfaceMessage("open", raw, props.language));
       return null;
     }
   };
@@ -357,15 +337,8 @@ export function ChatPage(props: {
         await loadMessages(threadId);
         await loadThreads();
       } catch (requestError) {
-        setApiError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo enviar el mensaje.",
-                en: "Could not send message.",
-                pt: "Nao foi possivel enviar a mensagem."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setApiError(friendlyChatSurfaceMessage("send", raw, props.language));
       }
       return;
     }

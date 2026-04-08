@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY, apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -55,9 +56,9 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError(
         t(props.language, {
-          es: "Completa los tres campos de contraseña.",
-          en: "Complete the three password fields.",
-          pt: "Preencha os tres campos de senha."
+          es: "Necesitamos contraseña actual, nueva y repetida para cambiarla. Completá los tres campos.",
+          en: "We need current password, new password, and confirmation. Fill all three fields.",
+          pt: "Precisamos da senha atual, nova e confirmacao. Preencha os tres campos."
         })
       );
       return;
@@ -84,15 +85,8 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
           })
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo actualizar la contraseña.",
-              en: "Could not update password.",
-              pt: "Nao foi possivel atualizar a senha."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("settings-password", props.language, raw));
     }
   };
 
@@ -109,15 +103,8 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
       }
       window.location.href = response.authUrl;
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo iniciar conexión con Google Calendar.",
-              en: "Could not start Google Calendar connection.",
-              pt: "Nao foi possivel iniciar conexao com Google Calendar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("settings-calendar-connect", props.language, raw));
     }
   };
 
@@ -136,15 +123,8 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
         })
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo desconectar Google Calendar.",
-              en: "Could not disconnect Google Calendar.",
-              pt: "Nao foi possivel desconectar Google Calendar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("settings-calendar-disconnect", props.language, raw));
     }
   };
 

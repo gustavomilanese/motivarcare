@@ -23,6 +23,7 @@ import { FinancePayoutRunsPanel } from "../components/FinancePayoutRunsPanel";
 import { FinanceSimulatedCashflowCard } from "../components/FinanceSimulatedCashflowCard";
 import { FinanceStripeOperationsPanel } from "../components/FinanceStripeOperationsPanel";
 import { FinancesKpiGrid } from "../components/FinancesKpiGrid";
+import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { useFinanceDashboard } from "../hooks/useFinanceDashboard";
 import { financeSimulatedAccruedCollected } from "../utils/financeSimulated.utils";
 
@@ -71,7 +72,8 @@ function utcMonthKeyFromDate(d: Date): string {
 export function FinancesPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
   const model = useFinanceDashboard({
     token: props.token,
-    formatDate: (value) => formatDate(value, props.language)
+    formatDate: (value) => formatDate(value, props.language),
+    language: props.language
   });
   const selectedRun = model.selectedRun;
 
@@ -102,11 +104,8 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
       setKpisResponse(data);
     } catch (requestError) {
       setKpisResponse(null);
-      setKpisError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, { es: "No se pudo cargar el resumen mensual.", en: "Could not load monthly summary.", pt: "Nao foi possivel carregar o resumo." })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setKpisError(adminSurfaceMessage("admin-kpis-load", props.language, raw));
     } finally {
       setKpisLoading(false);
     }

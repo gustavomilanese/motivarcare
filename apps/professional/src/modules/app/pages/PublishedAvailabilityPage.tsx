@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { InlineBadge } from "@therapy/ui";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 
@@ -126,15 +127,8 @@ function usePublishedAvailabilityData(token: string, language: AppLanguage) {
       setBookings(bookingsResponse.bookings ?? []);
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(language, {
-              es: "No se pudieron cargar los horarios.",
-              en: "Could not load schedule slots.",
-              pt: "Nao foi possivel carregar os horarios."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("published-slots-load", language, raw));
     } finally {
       if (showLoading) {
         setLoading(false);
@@ -194,15 +188,8 @@ function usePublishedAvailabilityData(token: string, language: AppLanguage) {
       });
       await loadSlots();
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(language, {
-              es: "No se pudo eliminar el horario.",
-              en: "Could not remove the slot.",
-              pt: "Nao foi possivel remover o horario."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("published-slot-delete", language, raw));
     } finally {
       setDeletingSlotId("");
     }
@@ -250,15 +237,8 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
         if (!active) {
           return;
         }
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo cargar la agenda.",
-                en: "Could not load the agenda.",
-                pt: "Nao foi possivel carregar a agenda."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(professionalSurfaceMessage("published-agenda-load", props.language, raw));
       } finally {
         if (active) {
           setLoading(false);
@@ -452,15 +432,8 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
       setRescheduleReason("");
       setIsRescheduleModalOpen(true);
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar la disponibilidad para reagendar.",
-              en: "Could not load availability to reschedule.",
-              pt: "Nao foi possivel carregar disponibilidade para reagendar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("published-reschedule-availability", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -520,15 +493,8 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
       setSelectedRescheduleSlotKey("");
       setRescheduleReason("");
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo reagendar la reserva.",
-              en: "Could not reschedule booking.",
-              pt: "Nao foi possivel reagendar a reserva."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("published-reschedule-save", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -567,15 +533,8 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
       setCancelTargetBooking(null);
       setCancelReason("");
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cancelar la reserva.",
-              en: "Could not cancel booking.",
-              pt: "Nao foi possivel cancelar a reserva."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("published-cancel-booking", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }

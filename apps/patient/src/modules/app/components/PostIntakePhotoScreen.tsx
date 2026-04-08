@@ -29,9 +29,9 @@ export function PostIntakePhotoScreen(props: {
     if (!file.type.startsWith("image/")) {
       setError(
         t(props.language, {
-          es: "Selecciona un archivo de imagen.",
-          en: "Select an image file.",
-          pt: "Selecione um arquivo de imagem."
+          es: "Elegí una imagen (JPG, PNG o WEBP) desde tu dispositivo; si no querés foto, podés continuar sin subir nada.",
+          en: "Choose an image (JPG, PNG, or WEBP) from your device—or skip if you’d rather not add a photo.",
+          pt: "Escolha uma imagem (JPG, PNG ou WEBP) no dispositivo, ou pule se preferir sem foto."
         })
       );
       return;
@@ -54,9 +54,9 @@ export function PostIntakePhotoScreen(props: {
     } catch {
       setError(
         t(props.language, {
-          es: "No se pudo leer la imagen.",
-          en: "Could not read the image.",
-          pt: "Nao foi possivel ler a imagem."
+          es: "No pudimos leer ese archivo. Probá con otra foto o tocá continuar sin imagen.",
+          en: "We couldn’t read that file. Try another photo, or continue without one.",
+          pt: "Nao foi possivel ler esse arquivo. Tente outra foto ou continue sem imagem."
         })
       );
     } finally {

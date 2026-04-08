@@ -85,14 +85,15 @@ availabilityRouter.get("/:professionalId/slots", async (req, res) => {
     orderBy: { startsAt: "asc" }
   });
 
+  // Debe coincidir con la lógica de solapamiento al crear la reserva (`bookings.routes`).
+  // Antes solo traíamos reservas con startsAt en [fromDate, toDate], y omitíamos reservas que
+  // empezaban antes del rango pero seguían ocupando tiempo dentro de él → el slot aparecía libre y POST /bookings devolvía 409.
   const bookings = await prisma.booking.findMany({
     where: {
       professionalId: req.params.professionalId,
       status: { in: [...ACTIVE_BOOKING_STATUSES] },
-      startsAt: {
-        gte: fromDate,
-        ...(toDate ? { lte: toDate } : {})
-      }
+      endsAt: { gt: fromDate },
+      ...(toDate ? { startsAt: { lt: toDate } } : {})
     },
     select: {
       startsAt: true,

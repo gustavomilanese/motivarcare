@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useEffect, useState } from "react";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminBookingOps, AdminBookingsResponse } from "../types";
 
@@ -92,7 +93,8 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
         return next;
       });
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load bookings");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("sessions-ops-load", props.language, raw));
     } finally {
       setLoading(false);
     }
@@ -136,7 +138,8 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
       );
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update booking");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("sessions-ops-update", props.language, raw));
     }
   };
 

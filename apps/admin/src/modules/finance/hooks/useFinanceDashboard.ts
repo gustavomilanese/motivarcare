@@ -1,4 +1,6 @@
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { useMemo, useState } from "react";
+import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import {
   closePayoutRun,
   createPayoutRun,
@@ -35,9 +37,11 @@ import {
 interface UseFinanceDashboardParams {
   token: string;
   formatDate: (value: string) => string;
+  language: AppLanguage;
 }
 
-export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardParams) {
+export function useFinanceDashboard({ token, formatDate, language }: UseFinanceDashboardParams) {
+  const t = (values: LocalizedText) => textByLanguage(language, values);
   const [filters, setFilters] = useState<FinanceFilters>(EMPTY_FINANCE_FILTERS);
   const [rules, setRules] = useState<FinanceRules | null>(null);
   const [overview, setOverview] = useState<FinanceOverviewResponse | null>(null);
@@ -94,7 +98,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
     try {
       await Promise.all([loadOverview(overviewPage), loadPayoutRuns(payoutPage), loadStripeOperations(stripePage)]);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudieron cargar los datos de finanzas");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", language, raw));
     } finally {
       setLoading(false);
     }
@@ -106,7 +111,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       const run = await fetchPayoutRunDetail(token, runId);
       setSelectedRun(run);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cargar el detalle de la liquidación");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-run-detail", language, raw));
     }
   };
 
@@ -124,7 +130,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       setSuccess("Reglas financieras actualizadas");
       await loadOverview();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudieron guardar las reglas");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-rules-save", language, raw));
     } finally {
       setSavingRules(false);
     }
@@ -132,7 +139,13 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
 
   const submitCreatePayoutRun = async () => {
     if (!createPayoutDraft.periodStart || !createPayoutDraft.periodEnd) {
-      setError("Completá fecha de inicio y fecha de fin para generar la liquidación.");
+      setError(
+        t({
+          es: "Necesitamos fecha de inicio y fecha de fin para armar la corrida de liquidación.",
+          en: "We need a start date and end date to create the payout run.",
+          pt: "Precisamos de data de inicio e fim para criar a corrida de liquidacao."
+        })
+      );
       return;
     }
 
@@ -153,7 +166,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       await loadOverview();
       await loadRunDetail(run.id);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo crear la corrida de liquidación");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-payout-create", language, raw));
     } finally {
       setCreatingRun(false);
     }
@@ -170,7 +184,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       }
       await loadPayoutRuns(payoutPage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo marcar el pago");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-mark-paid", language, raw));
     }
   };
 
@@ -183,7 +198,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       await loadPayoutRuns(payoutPage);
       await loadRunDetail(runId);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cerrar la corrida de liquidación");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-close-run", language, raw));
     }
   };
 
@@ -206,7 +222,8 @@ export function useFinanceDashboard({ token, formatDate }: UseFinanceDashboardPa
       setSuccess("Evento Stripe reencolado para reintento");
       await loadStripeOperations(stripePage);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo reintentar el evento Stripe");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-stripe-retry", language, raw));
     } finally {
       setRetryingStripeEventId("");
     }

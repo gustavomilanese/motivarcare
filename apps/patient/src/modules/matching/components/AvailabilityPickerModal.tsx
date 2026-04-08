@@ -173,7 +173,9 @@ export function AvailabilityPickerModal(props: {
         ) : null}
 
         {!props.loading && props.error ? (
-          <p className="availability-status-message error">{props.error}</p>
+          <p className="availability-status-message booking-soft-notice" role="status">
+            {props.error}
+          </p>
         ) : null}
 
         {!props.loading && !props.error ? (

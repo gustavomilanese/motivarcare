@@ -7,6 +7,10 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import {
+  friendlyProfileAvatarErrorMessage,
+  friendlyProfileCalendarConnectMessage
+} from "../lib/friendlyPatientMessages";
 import { apiRequest, DEFAULT_PROFESSIONAL_AVATAR_SRC, resolvePublicAssetUrl } from "../services/api";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
@@ -19,24 +23,6 @@ import type {
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function avatarUploadErrorMessage(language: AppLanguage, requestError: unknown): string {
-  if (requestError instanceof Error && requestError.message === "Failed to fetch") {
-    return t(language, {
-      es: "No pudimos contactar al servidor. Revisá tu conexión, VPN o la configuración del API (CORS / URL).",
-      en: "Could not reach the server. Check your connection, VPN, or API configuration (CORS / URL).",
-      pt: "Nao foi possivel contatar o servidor. Verifique sua conexao, VPN ou a configuracao da API (CORS / URL)."
-    });
-  }
-  if (requestError instanceof Error) {
-    return requestError.message;
-  }
-  return t(language, {
-    es: "No se pudo guardar la foto.",
-    en: "Could not save the photo.",
-    pt: "Nao foi possivel salvar a foto."
-  });
 }
 
 function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
@@ -168,18 +154,7 @@ export function ProfilePage(props: {
       const raw = requestError instanceof Error ? requestError.message : "";
       const notConfigured = /not configured/i.test(raw);
       setCalendarConnectError(
-        notConfigured
-          ? t(props.language, {
-              es: "Google Calendar no está configurado en el servidor (faltan credenciales OAuth).",
-              en: "Google Calendar is not configured on the server (OAuth credentials missing).",
-              pt: "O Google Calendar nao esta configurado no servidor (credenciais OAuth ausentes)."
-            })
-          : raw ||
-              t(props.language, {
-                es: "No se pudo conectar con Google Calendar.",
-                en: "Could not connect Google Calendar.",
-                pt: "Nao foi possivel conectar o Google Calendar."
-              })
+        friendlyProfileCalendarConnectMessage(props.language, { raw, notConfigured })
       );
     }
   };
@@ -215,7 +190,7 @@ export function ProfilePage(props: {
       );
     } catch (requestError) {
       setAvatarOk("");
-      setAvatarError(avatarUploadErrorMessage(props.language, requestError));
+      setAvatarError(friendlyProfileAvatarErrorMessage(requestError, props.language));
     } finally {
       setAvatarBusy(false);
     }
@@ -230,9 +205,9 @@ export function ProfilePage(props: {
     if (!file.type.startsWith("image/")) {
       setAvatarError(
         t(props.language, {
-          es: "Selecciona un archivo de imagen.",
-          en: "Select an image file.",
-          pt: "Selecione um arquivo de imagem."
+          es: "Ese archivo no es una imagen. Elegí un JPG, PNG o WEBP desde tu galería.",
+          en: "That file isn’t an image. Pick a JPG, PNG, or WEBP from your gallery.",
+          pt: "Esse arquivo nao e uma imagem. Escolha JPG, PNG ou WEBP na galeria."
         })
       );
       return;
@@ -240,9 +215,9 @@ export function ProfilePage(props: {
     if (file.size > 4 * 1024 * 1024) {
       setAvatarError(
         t(props.language, {
-          es: "La imagen supera 4 MB.",
-          en: "Image exceeds 4 MB.",
-          pt: "A imagem supera 4 MB."
+          es: "La foto pesa más de 4 MB. Elegí una más liviana o reducila en tu teléfono y volvé a subirla.",
+          en: "That photo is over 4 MB. Choose a smaller one or shrink it on your phone and upload again.",
+          pt: "A foto passa de 4 MB. Escolha outra menor ou reduza no celular e envie de novo."
         })
       );
       return;
@@ -257,9 +232,9 @@ export function ProfilePage(props: {
     } catch {
       setAvatarError(
         t(props.language, {
-          es: "No se pudo leer la imagen.",
-          en: "Could not read the image.",
-          pt: "Nao foi possivel ler a imagem."
+          es: "No pudimos leer ese archivo. Probá con otra foto o cerrá y volvé a abrir el selector.",
+          en: "We couldn’t read that file. Try another photo or close and open the picker again.",
+          pt: "Nao foi possivel ler esse arquivo. Tente outra foto ou feche e abra o seletor de novo."
         })
       );
       setAvatarBusy(false);

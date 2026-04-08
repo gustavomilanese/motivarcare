@@ -24,6 +24,7 @@ import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
 import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
+import { friendlyCalendarOnboardingMessage } from "./lib/friendlyPatientMessages";
 import { PostIntakePhotoScreen } from "./components/PostIntakePhotoScreen";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
@@ -483,13 +484,7 @@ export function App() {
       const notConfigured =
         /not configured/i.test(raw) || /GOOGLE_CALENDAR_OAUTH_NOT_CONFIGURED/i.test(raw);
       setCalendarOnboardingError(
-        notConfigured
-          ? t(state.language, {
-              es: "Google Calendar no está disponible todavía: el servidor necesita GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET. Podés continuar y conectar el calendario más tarde desde Ajustes.",
-              en: "Google Calendar is not available yet: the server needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET. You can continue and connect later from Settings.",
-              pt: "O Google Calendar ainda nao esta disponivel: o servidor precisa de GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET. Voce pode continuar e conectar depois em Configuracoes."
-            })
-          : raw || t(state.language, { es: "No se pudo iniciar la conexión con Google.", en: "Could not start Google connection.", pt: "Nao foi possivel iniciar a conexao com o Google." })
+        friendlyCalendarOnboardingMessage(state.language, { raw, notConfigured })
       );
     } finally {
       setCalendarOnboardingLoading(false);
@@ -946,7 +941,7 @@ export function App() {
               })}
             </p>
             {calendarOnboardingError ? (
-              <p className="calendar-consent-error" role="alert">
+              <p className="calendar-consent-error" role="status">
                 {calendarOnboardingError}
               </p>
             ) : null}

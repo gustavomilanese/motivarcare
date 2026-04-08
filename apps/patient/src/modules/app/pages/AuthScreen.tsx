@@ -5,6 +5,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
+import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, SessionUser } from "../types";
 
@@ -37,9 +38,9 @@ export function AuthScreen(props: {
     if (!email.includes("@") || password.length < 8) {
       setError(
         t(props.language, {
-          es: "Usa un email válido y una contraseña de al menos 8 caracteres.",
-          en: "Use a valid email and a password with at least 8 characters.",
-          pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
+          es: "Necesitamos un email válido y una contraseña de al menos 8 caracteres. Revisá el campo y volvé a intentar.",
+          en: "We need a valid email and a password with at least 8 characters. Double-check the fields and try again.",
+          pt: "Precisamos de um email valido e senha com pelo menos 8 caracteres. Confira os campos e tente de novo."
         })
       );
       return;
@@ -48,9 +49,9 @@ export function AuthScreen(props: {
     if (mode === "register" && fullName.trim().length < 2) {
       setError(
         t(props.language, {
-          es: "Completa tu nombre y apellido.",
-          en: "Please complete your full name.",
-          pt: "Preencha seu nome completo."
+          es: "Falta cómo querés que te llamemos (nombre y apellido). Completalo arriba y seguimos.",
+          en: "We still need how you’d like to be called (full name). Add it above and we’ll continue.",
+          pt: "Ainda precisamos de como voce gostaria de ser chamado (nome completo). Preencha acima e seguimos."
         })
       );
       return;
@@ -103,14 +104,11 @@ export function AuthScreen(props: {
         authEntryMode: mode
       });
     } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo autenticar contra la API. Revisa que el backend este encendido.",
-              en: "Could not authenticate against the API. Check that the backend is running.",
-              pt: "Nao foi possivel autenticar na API. Verifique se o backend esta ativo."
-            })
+        raw
+          ? friendlyAuthSurfaceMessage(raw, props.language)
+          : friendlyAuthSurfaceMessage("", props.language)
       );
     } finally {
       setLoading(false);
@@ -201,7 +199,7 @@ export function AuthScreen(props: {
               />
             </label>
 
-            {error ? <p className="error-text auth-error" role="alert">{error}</p> : null}
+            {error ? <p className="error-text auth-error" role="status">{error}</p> : null}
             <button className="primary auth-submit" type="submit" disabled={loading}>
               {loading
                 ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })

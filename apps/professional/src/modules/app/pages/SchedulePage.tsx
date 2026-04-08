@@ -7,6 +7,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalProfile } from "../types";
 
@@ -458,15 +459,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       setError("");
     } catch (requestError) {
       if (showError) {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudieron cargar los horarios.",
-                en: "Could not load schedule slots.",
-                pt: "Nao foi possivel carregar os horarios."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(professionalSurfaceMessage("schedule-slots-load", props.language, raw));
       }
     } finally {
       setLoading(false);
@@ -522,9 +516,9 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
     if (!professionalId) {
       setError(
         t(props.language, {
-          es: "No se encontró el perfil profesional.",
-          en: "Professional profile was not found.",
-          pt: "Perfil profissional nao encontrado."
+          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Agenda y reintentá.",
+          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Agenda again and retry.",
+          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra a Agenda de novo."
         })
       );
       return;
@@ -556,15 +550,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
         )
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar el tiempo mínimo.",
-              en: "Could not save minimum notice.",
-              pt: "Nao foi possivel salvar o tempo minimo."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("schedule-minimum-notice", props.language, raw));
     } finally {
       setSavingNotice(false);
     }
@@ -574,9 +561,9 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
     if (!professionalId) {
       setError(
         t(props.language, {
-          es: "No se encontró el perfil profesional.",
-          en: "Professional profile was not found.",
-          pt: "Perfil profissional nao encontrado."
+          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Agenda y reintentá.",
+          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Agenda again and retry.",
+          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra a Agenda de novo."
         })
       );
       return;
@@ -608,15 +595,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
         )
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar el valor por sesión.",
-              en: "Could not save session rate.",
-              pt: "Nao foi possivel salvar o valor por sessao."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("schedule-session-rate", props.language, raw));
     } finally {
       setSavingNotice(false);
     }
@@ -626,9 +606,9 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
     if (openSlotsPerWeek === 0) {
       setError(
         t(props.language, {
-          es: "Selecciona al menos un horario semanal.",
-          en: "Select at least one weekly time.",
-          pt: "Selecione ao menos um horario semanal."
+          es: "Elegí al menos un bloque en la semana para que los pacientes puedan reservar.",
+          en: "Pick at least one weekly time block so patients can book.",
+          pt: "Escolha ao menos um bloco na semana para os pacientes agendarem."
         })
       );
       return;
@@ -680,15 +660,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       );
       await load();
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar el horario semanal.",
-              en: "Could not save weekly schedule.",
-              pt: "Nao foi possivel salvar o horario semanal."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("schedule-weekly", props.language, raw));
     } finally {
       setSaving(false);
     }
@@ -867,15 +840,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       await load(false);
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudieron guardar las vacaciones.",
-              en: "Could not save vacation settings.",
-              pt: "Nao foi possivel salvar as ferias."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("schedule-vacation-save", props.language, raw));
     } finally {
       setSavingVacations(false);
     }
@@ -1025,15 +991,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       await load(false);
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudieron anular las vacaciones.",
-              en: "Could not cancel vacation.",
-              pt: "Nao foi possivel anular as ferias."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("schedule-vacation-cancel", props.language, raw));
     } finally {
       setRemovingVacationRangeId(null);
       setSavingVacations(false);

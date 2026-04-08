@@ -6,6 +6,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 import { AvailabilityMonthHeader } from "../components/availability/AvailabilityMonthHeader";
@@ -142,15 +143,8 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
       setBookings(bookingsResponse.bookings ?? []);
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudieron cargar los horarios.",
-              en: "Could not load schedule slots.",
-              pt: "Nao foi possivel carregar os horarios."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("availability-month-load", props.language, raw));
     } finally {
       setLoading(false);
     }
@@ -557,15 +551,8 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
       });
       await load();
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo quitar el horario.",
-              en: "Could not remove slot.",
-              pt: "Nao foi possivel remover o horario."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("availability-month-remove-slot", props.language, raw));
     } finally {
       setRemovingSlotId(null);
       setRemovingBatch(false);

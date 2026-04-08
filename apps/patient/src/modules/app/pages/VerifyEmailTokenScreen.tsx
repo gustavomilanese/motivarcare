@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
 type VerificationState = "loading" | "success" | "error";
@@ -20,13 +21,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
   useEffect(() => {
     if (!token) {
       setState("error");
-      setMessage(
-        t(props.language, {
-          es: "Falta el token de verificación.",
-          en: "Verification token is missing.",
-          pt: "Token de verificacao ausente."
-        })
-      );
+      setMessage(friendlyVerifyEmailTokenMissingMessage(props.language));
       return;
     }
 
@@ -45,13 +40,10 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
         }
         setState("error");
         setMessage(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo verificar tu email.",
-                en: "Your email could not be verified.",
-                pt: "Nao foi possivel verificar seu e-mail."
-              })
+          friendlyVerifyEmailTokenFailedMessage(
+            requestError instanceof Error ? requestError.message : "",
+            props.language
+          )
         );
       }
     };
@@ -148,21 +140,21 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
                 </svg>
               </div>
               <span className="chip chip--error">
-                {t(props.language, { es: "Error", en: "Error", pt: "Erro" })}
+                {t(props.language, { es: "Enlace", en: "Link", pt: "Link" })}
               </span>
               <h1 id="verify-token-title">
                 {t(props.language, {
-                  es: "No pudimos verificar tu email",
-                  en: "We could not verify your email",
-                  pt: "Nao conseguimos verificar seu e-mail"
+                  es: "Este enlace no sirvió para confirmar el correo",
+                  en: "This link didn’t confirm your email",
+                  pt: "Este link nao confirmou seu e-mail"
                 })}
               </h1>
               <p className="verify-email-lead error-text verify-email-feedback">{message}</p>
               <p className="verify-email-hint">
                 {t(props.language, {
-                  es: "Pedí un nuevo enlace desde la pantalla de verificación o registrate de nuevo.",
-                  en: "Request a new link from the verification screen or sign up again.",
-                  pt: "Solicite um novo link na tela de verificacao ou cadastre-se novamente."
+                  es: "Podés volver al inicio, iniciar sesión si ya verificaste antes, o pedir otro correo desde «Reenviar email» en la pantalla de verificación.",
+                  en: "You can go home, sign in if you already verified, or request another email with «Resend email» on the verification screen.",
+                  pt: "Voce pode ir ao inicio, entrar se ja verificou antes, ou pedir outro e-mail em reenviar na tela de verificacao."
                 })}
               </p>
               <div className="stack verify-email-actions">

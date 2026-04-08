@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../onboarding/constants/latinAmericaCountries";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
 import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
 import type { AuthUser, ProfessionalProfile } from "../types";
@@ -48,15 +49,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
       );
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar el perfil.",
-              en: "Could not load profile.",
-              pt: "Nao foi possivel carregar o perfil."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("profile-load", props.language, raw));
     }
   };
 
@@ -150,15 +144,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
       setError("");
       navigate("/", { state: { profileUpdated: true } });
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar el perfil.",
-              en: "Could not save profile.",
-              pt: "Nao foi possivel salvar o perfil."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("profile-save", props.language, raw));
     } finally {
       setIsSaving(false);
     }
@@ -173,25 +160,13 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     }
 
     if (!file.type.startsWith("image/")) {
-      setError(
-        t(props.language, {
-          es: "Selecciona un archivo de imagen válido.",
-          en: "Select a valid image file.",
-          pt: "Selecione um arquivo de imagem valido."
-        })
-      );
+      setError(professionalSurfaceMessage("profile-image-type", props.language));
       setMessage("");
       return;
     }
 
     if (file.size > 4 * 1024 * 1024) {
-      setError(
-        t(props.language, {
-          es: "La imagen supera 4 MB. Usa una más liviana.",
-          en: "Image exceeds 4 MB. Use a lighter one.",
-          pt: "A imagem supera 4 MB. Use uma menor."
-        })
-      );
+      setError(professionalSurfaceMessage("profile-image-size", props.language));
       setMessage("");
       return;
     }
@@ -205,15 +180,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
       const dataUrl = await compressImageDataUrl(raw, 1600, 0.82);
       setProfile((current) => (current ? { ...current, photoUrl: dataUrl } : current));
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo leer la imagen.",
-              en: "Could not read the image.",
-              pt: "Nao foi possivel ler a imagem."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("profile-image-read", props.language, raw));
     } finally {
       setIsReadingPhoto(false);
     }

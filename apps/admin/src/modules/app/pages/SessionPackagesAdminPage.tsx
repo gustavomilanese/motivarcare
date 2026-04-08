@@ -8,6 +8,7 @@ import {
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { StickyPageSubnav } from "../components/StickyPageSubnav";
 import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type {
   AdminSessionPackage,
@@ -74,7 +75,8 @@ export function SessionPackagesAdminPage(props: {
       setVisibilityDraft(packagesResponse.visibility);
       setSavedVisibility(packagesResponse.visibility);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load session packages");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("session-packages-load", props.language, raw));
     } finally {
       setLoading(false);
     }
@@ -124,7 +126,8 @@ export function SessionPackagesAdminPage(props: {
       setSuccess("Publicacion actualizada");
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save package visibility");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("session-packages-visibility", props.language, raw));
     } finally {
       setSavingVisibility(false);
     }
@@ -132,7 +135,13 @@ export function SessionPackagesAdminPage(props: {
 
   const togglePublished = (channel: "landing" | "patient", packageId: string, checked: boolean) => {
     if (checked && !visibilityDraft[channel].includes(packageId) && visibilityDraft[channel].length >= 3) {
-      setError(`Solo puedes publicar 3 paquetes en ${channel === "landing" ? "landing" : "patient"}.`);
+      setError(
+        t(props.language, {
+          es: `En ${channel === "landing" ? "landing" : "paciente"} solo podés tener hasta 3 paquetes visibles. Sacá uno de la lista o desmarcá otro antes de agregar este.`,
+          en: `You can only show up to 3 packages on ${channel === "landing" ? "landing" : "patient"}. Remove one from the list before adding this.`,
+          pt: `So e possivel exibir ate 3 pacotes em ${channel === "landing" ? "landing" : "paciente"}. Remova outro antes de adicionar este.`
+        })
+      );
       return;
     }
 
@@ -213,15 +222,33 @@ export function SessionPackagesAdminPage(props: {
     const discountPercent = Number(form.discountPercent);
     const priceCents = computeReferencePriceCents(credits, discountPercent);
     if (form.name.trim().length < 2) {
-      setError("Nombre inválido");
+      setError(
+        t(props.language, {
+          es: "Poné un nombre un poco más largo (al menos 2 caracteres) para identificar el paquete.",
+          en: "Use a slightly longer name (at least 2 characters) so the package is easy to find.",
+          pt: "Use um nome um pouco maior (pelo menos 2 caracteres) para identificar o pacote."
+        })
+      );
       return;
     }
     if (!Number.isInteger(credits) || credits <= 0) {
-      setError("Sesiones incluidas inválido");
+      setError(
+        t(props.language, {
+          es: "Las sesiones incluidas tienen que ser un número entero mayor que cero.",
+          en: "Included sessions must be a whole number greater than zero.",
+          pt: "As sessoes incluidas precisam ser um inteiro maior que zero."
+        })
+      );
       return;
     }
     if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) {
-      setError("Descuento inválido");
+      setError(
+        t(props.language, {
+          es: "El descuento va en porcentaje entero entre 0 y 100.",
+          en: "Discount must be a whole percent between 0 and 100.",
+          pt: "O desconto deve ser um percentual inteiro entre 0 e 100."
+        })
+      );
       return;
     }
 
@@ -252,7 +279,8 @@ export function SessionPackagesAdminPage(props: {
       setIsPackageModalOpen(false);
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save session package");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("session-packages-save", props.language, raw));
     } finally {
       setSaving(false);
     }
@@ -266,7 +294,8 @@ export function SessionPackagesAdminPage(props: {
       setSuccess(item.active ? "Paquete desactivado" : "Paquete activado");
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update package status");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("session-packages-status", props.language, raw));
     }
   };
 
@@ -281,7 +310,8 @@ export function SessionPackagesAdminPage(props: {
       }
       await load();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete package");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("session-packages-delete", props.language, raw));
     }
   };
 

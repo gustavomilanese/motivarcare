@@ -1,9 +1,9 @@
 import { type ChangeEvent, useState } from "react";
-import type { AppLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { compressImageDataUrl, fileToDataUrl } from "../../utils/media";
 
-function t(language: AppLanguage, values: { es: string; en: string; pt: string }): string {
-  return values[language] ?? values.es;
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
 }
 
 export function ProfessionalPhotoUrlField(props: {
@@ -30,9 +30,9 @@ export function ProfessionalPhotoUrlField(props: {
     if (!file.type.startsWith("image/")) {
       setLocalError(
         t(props.language, {
-          es: "Selecciona un archivo de imagen.",
-          en: "Select an image file.",
-          pt: "Selecione um arquivo de imagem."
+          es: "Elegí un JPG, PNG o WEBP. Si no querés cambiar la foto, cancelá.",
+          en: "Choose a JPG, PNG, or WEBP—or cancel to keep the current photo.",
+          pt: "Escolha JPG, PNG ou WEBP, ou cancele para manter a foto."
         })
       );
       return;
@@ -40,9 +40,9 @@ export function ProfessionalPhotoUrlField(props: {
     if (file.size > 4 * 1024 * 1024) {
       setLocalError(
         t(props.language, {
-          es: "La imagen supera 4 MB.",
-          en: "Image exceeds 4 MB.",
-          pt: "A imagem supera 4 MB."
+          es: "Esa imagen pesa más de 4 MB. Comprimila o elegí otra más chica.",
+          en: "That file is over 4 MB. Compress it or pick a smaller image.",
+          pt: "O arquivo passa de 4 MB. Comprima ou escolha outro menor."
         })
       );
       return;
@@ -56,9 +56,9 @@ export function ProfessionalPhotoUrlField(props: {
     } catch {
       setLocalError(
         t(props.language, {
-          es: "No se pudo leer la imagen.",
-          en: "Could not read the image.",
-          pt: "Nao foi possivel ler a imagem."
+          es: "No pudimos leer ese archivo. Probá con otra foto o desde otra carpeta.",
+          en: "We couldn’t read that file. Try another photo or a different folder.",
+          pt: "Nao foi possivel ler o arquivo. Tente outra foto."
         })
       );
     } finally {

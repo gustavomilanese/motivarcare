@@ -13,6 +13,7 @@ import {
   ymLocal,
   ymdLocal
 } from "../lib/professionalStatsRangeQuery";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { EarningsResponse } from "../types";
 
@@ -64,15 +65,8 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
         }
       } catch (requestError) {
         if (active) {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : t(props.language, {
-                  es: "No se pudieron cargar ingresos.",
-                  en: "Could not load earnings.",
-                  pt: "Nao foi possivel carregar receitas."
-                })
-          );
+          const raw = requestError instanceof Error ? requestError.message : "";
+          setError(professionalSurfaceMessage("income-load", props.language, raw));
         }
       }
     };

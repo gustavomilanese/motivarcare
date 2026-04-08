@@ -7,6 +7,10 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
+import {
+  professionalAuthSurfaceMessage,
+  professionalAuthValidationMessage
+} from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthResponse, AuthUser } from "../types";
 
@@ -60,13 +64,7 @@ export function AuthScreen(props: {
 
   const completeAuth = (response: AuthResponse) => {
     if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
-      throw new Error(
-        t(props.language, {
-          es: "El usuario no pertenece al portal profesional.",
-          en: "This user does not belong to the professional portal.",
-          pt: "Este usuario nao pertence ao portal profissional."
-        })
-      );
+      throw new Error(professionalAuthValidationMessage("portal-mismatch", props.language));
     }
 
     props.onAuthSuccess({
@@ -90,24 +88,12 @@ export function AuthScreen(props: {
 
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail.includes("@") || password.length < 8) {
-      setError(
-        t(props.language, {
-          es: "Usa un email válido y una contraseña de al menos 8 caracteres.",
-          en: "Use a valid email and a password with at least 8 characters.",
-          pt: "Use um email valido e uma senha com pelo menos 8 caracteres."
-        })
-      );
+      setError(professionalAuthValidationMessage("email", props.language));
       return;
     }
 
     if (mode === "register" && fullName.trim().length < 2) {
-      setError(
-        t(props.language, {
-          es: "Completa tu nombre y apellido.",
-          en: "Please enter your full name.",
-          pt: "Preencha seu nome completo."
-        })
-      );
+      setError(professionalAuthValidationMessage("name", props.language));
       return;
     }
 
@@ -138,15 +124,8 @@ export function AuthScreen(props: {
       });
       completeAuth(response);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo autenticar.",
-              en: "Could not authenticate.",
-              pt: "Nao foi possivel autenticar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalAuthSurfaceMessage(raw || " ", props.language));
     } finally {
       setLoading(false);
     }

@@ -79,9 +79,9 @@ function OnboardingFinalMatching(p: {
           throw new Error(
             result.error ??
               t(p.state.language, {
-                es: "No hay sesiones disponibles para confirmar esta reserva.",
-                en: "No available sessions to confirm this booking.",
-                pt: "Nao ha sessoes disponiveis para confirmar esta reserva."
+                es: "En este momento no pudimos cerrar la reserva. Probá de nuevo con otro horario o en unos minutos.",
+                en: "We couldn’t complete the booking right now. Try another time or again in a few minutes.",
+                pt: "Nao foi possivel concluir a reserva agora. Tente outro horario ou daqui a pouco."
               })
           );
         }

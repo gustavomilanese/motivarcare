@@ -122,7 +122,11 @@ export function PaymentMethodModal(props: {
           </section>
         ) : null}
 
-        {props.error ? <p className="availability-status-message error">{props.error}</p> : null}
+        {props.error ? (
+          <p className="availability-status-message booking-soft-notice" role="status">
+            {props.error}
+          </p>
+        ) : null}
 
         <footer className="matching-flow-footer payment-modal-footer">
           <button

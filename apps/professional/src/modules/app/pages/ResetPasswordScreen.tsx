@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -24,31 +25,19 @@ export function ResetPasswordScreen(props: { language: AppLanguage }) {
     if (password.length < 8) {
       setError(
         t(props.language, {
-          es: "La contraseña debe tener al menos 8 caracteres.",
-          en: "Password must be at least 8 characters.",
-          pt: "A senha deve ter pelo menos 8 caracteres."
+          es: "La nueva contraseña necesita al menos 8 caracteres. Sumá letras o números y reintentá.",
+          en: "Your new password needs at least 8 characters. Add a few more and try again.",
+          pt: "A nova senha precisa de pelo menos 8 caracteres. Acrescente e tente de novo."
         })
       );
       return;
     }
     if (password !== confirm) {
-      setError(
-        t(props.language, {
-          es: "Las contraseñas no coinciden.",
-          en: "Passwords do not match.",
-          pt: "As senhas nao coincidem."
-        })
-      );
+      setError(professionalSurfaceMessage("reset-password-validation", props.language));
       return;
     }
     if (token.length < 32) {
-      setError(
-        t(props.language, {
-          es: "El enlace no es válido. Solicitá uno nuevo desde el login.",
-          en: "This link is invalid. Request a new one from the login page.",
-          pt: "O link nao e valido. Solicite um novo na tela de login."
-        })
-      );
+      setError(professionalSurfaceMessage("verify-token-missing", props.language));
       return;
     }
 
@@ -60,15 +49,8 @@ export function ResetPasswordScreen(props: { language: AppLanguage }) {
       });
       setDone(true);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo actualizar la contraseña.",
-              en: "Could not update the password.",
-              pt: "Nao foi possivel atualizar a senha."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("reset-password-save", props.language, raw));
     } finally {
       setLoading(false);
     }

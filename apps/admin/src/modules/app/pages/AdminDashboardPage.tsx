@@ -7,6 +7,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { KpisResponse } from "../types";
 
@@ -99,15 +100,8 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
       } catch (requestError) {
         if (active) {
           setResponse(null);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : t(props.language, {
-                  es: "No se pudo cargar el overview.",
-                  en: "Could not load the overview.",
-                  pt: "Nao foi possivel carregar a visao geral."
-                })
-          );
+          const raw = requestError instanceof Error ? requestError.message : "";
+          setError(adminSurfaceMessage("admin-kpis-load", props.language, raw));
         }
       }
     };

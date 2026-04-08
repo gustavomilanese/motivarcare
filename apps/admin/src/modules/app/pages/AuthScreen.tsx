@@ -8,6 +8,7 @@ import {
   currencyOptionLabel,
   textByLanguage
 } from "@therapy/i18n-config";
+import { adminAuthSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, AuthUser } from "../types";
 
@@ -72,7 +73,15 @@ export function AuthScreen(props: {
         role: "ADMIN"
       });
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo autenticar.");
+      setError(
+        requestError instanceof Error
+          ? adminAuthSurfaceMessage(requestError.message, props.language)
+          : t(props.language, {
+              es: "No pudimos autenticar. Reintentá o verificá que el servidor esté disponible.",
+              en: "We couldn’t sign you in. Retry or check that the server is reachable.",
+              pt: "Nao foi possivel autenticar. Tente de novo ou verifique o servidor."
+            })
+      );
     } finally {
       setLoading(false);
     }

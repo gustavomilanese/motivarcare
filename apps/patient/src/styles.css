@@ -3134,7 +3134,8 @@ button.danger {
   color: #2f3f63;
 }
 
-.availability-status-message.error {
+.availability-status-message.error,
+.availability-status-message.booking-soft-notice {
   color: #a02b3a;
 }
 

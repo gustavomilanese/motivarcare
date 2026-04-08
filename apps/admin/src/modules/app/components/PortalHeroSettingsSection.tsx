@@ -1,5 +1,6 @@
 import { type ChangeEvent, useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { LandingSettingsResponse, WebLandingSettings } from "../types";
 import { compressImageDataUrl, fileToDataUrl, normalizeWebLandingSettings } from "../utils/media";
@@ -58,7 +59,8 @@ export function PortalHeroSettingsSection(props: {
       setSettings(normalized);
       setSavedSettings(normalized);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cargar configuracion de hero");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("portal-hero-load", props.language, raw));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,8 @@ export function PortalHeroSettingsSection(props: {
       setSuccess("Imagen cargada. Guarda para aplicar cambios.");
       setError("");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cargar la imagen");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("portal-hero-asset-load", props.language, raw));
     } finally {
       event.target.value = "";
     }
@@ -112,7 +115,8 @@ export function PortalHeroSettingsSection(props: {
       setSavedSettings(normalized);
       setSuccess("Imagen de hero guardada.");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo guardar la imagen");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("portal-hero-asset-save", props.language, raw));
     } finally {
       setSaving(false);
     }

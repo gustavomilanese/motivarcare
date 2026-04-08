@@ -8,6 +8,7 @@ import {
   ProfessionalEditModal
 } from "../components/professionals/ProfessionalEditModal";
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type {
   AdminBookingOps,
@@ -173,7 +174,8 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         setIsProfessionalEditModalOpen(false);
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load professionals");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-list", props.language, raw));
     } finally {
       setLoading(false);
     }
@@ -225,74 +227,140 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     }
 
     if (draft.fullName.trim().length < 2) {
-      setError("Nombre inválido");
+      setError(
+        t(props.language, {
+          es: "El nombre público necesita al menos 2 caracteres para guardar el perfil.",
+          en: "Public name needs at least 2 characters before saving.",
+          pt: "O nome publico precisa de pelo menos 2 caracteres."
+        })
+      );
       return;
     }
 
     if (draft.email.trim().length === 0) {
-      setError("Email inválido");
+      setError(
+        t(props.language, {
+          es: "Necesitamos un email de contacto para este profesional.",
+          en: "We need a contact email for this professional.",
+          pt: "Precisamos de um e-mail de contato para este profissional."
+        })
+      );
       return;
     }
 
     const cancellationHours = Number(draft.cancellationHours);
     if (!Number.isInteger(cancellationHours) || cancellationHours < 0 || cancellationHours > 168) {
-      setError("Horas de cancelación debe estar entre 0 y 168");
+      setError(
+        t(props.language, {
+          es: "Las horas de cancelación van en un entero entre 0 y 168 (una semana).",
+          en: "Cancellation hours must be a whole number from 0 to 168 (one week).",
+          pt: "As horas de cancelamento devem ser um inteiro de 0 a 168."
+        })
+      );
       return;
     }
 
     const yearsExperienceRaw = draft.yearsExperience.trim();
     const yearsExperience = yearsExperienceRaw.length > 0 ? Number(yearsExperienceRaw) : null;
     if (yearsExperienceRaw.length > 0 && (!Number.isInteger(yearsExperience ?? 0) || (yearsExperience ?? 0) < 0 || (yearsExperience ?? 0) > 80)) {
-      setError("Años de experiencia debe estar entre 0 y 80");
+      setError(
+        t(props.language, {
+          es: "Los años de experiencia deben ser un entero entre 0 y 80 (o dejá el campo vacío).",
+          en: "Years of experience must be a whole number from 0 to 80, or leave blank.",
+          pt: "Anos de experiencia: inteiro de 0 a 80 ou vazio."
+        })
+      );
       return;
     }
 
     const sessionPriceRaw = draft.sessionPriceUsd.trim();
     const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
     if (sessionPriceRaw.length > 0 && (!Number.isInteger(sessionPriceUsd ?? 0) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)) {
-      setError("Valor sesión debe estar entre 0 y 100000");
+      setError(
+        t(props.language, {
+          es: "El valor por sesión (USD) debe ser un entero entre 0 y 100000.",
+          en: "Session price (USD) must be a whole number from 0 to 100000.",
+          pt: "Preco da sessao (USD): inteiro de 0 a 100000."
+        })
+      );
       return;
     }
 
     const ratingRaw = draft.ratingAverage.trim();
     const ratingAverage = ratingRaw.length > 0 ? Number(ratingRaw) : null;
     if (ratingRaw.length > 0 && (!Number.isFinite(ratingAverage ?? 0) || (ratingAverage ?? 0) < 0 || (ratingAverage ?? 0) > 5)) {
-      setError("Ranking debe estar entre 0 y 5");
+      setError(
+        t(props.language, {
+          es: "El ranking promedio va entre 0 y 5 (podés usar decimales).",
+          en: "Average rating must be between 0 and 5 (decimals allowed).",
+          pt: "A nota media fica entre 0 e 5."
+        })
+      );
       return;
     }
 
     const reviewsRaw = draft.reviewsCount.trim();
     const reviewsCount = reviewsRaw.length > 0 ? Number(reviewsRaw) : 0;
     if (!Number.isInteger(reviewsCount) || reviewsCount < 0 || reviewsCount > 100000) {
-      setError("Opiniones debe estar entre 0 y 100000");
+      setError(
+        t(props.language, {
+          es: "La cantidad de opiniones debe ser un entero entre 0 y 100000.",
+          en: "Review count must be a whole number from 0 to 100000.",
+          pt: "Numero de avaliacoes: inteiro de 0 a 100000."
+        })
+      );
       return;
     }
 
     const sessionDurationRaw = draft.sessionDurationMinutes.trim();
     const sessionDurationMinutes = sessionDurationRaw.length > 0 ? Number(sessionDurationRaw) : null;
     if (sessionDurationRaw.length > 0 && (!Number.isInteger(sessionDurationMinutes ?? 0) || (sessionDurationMinutes ?? 0) < 15 || (sessionDurationMinutes ?? 0) > 120)) {
-      setError("Duración sesión debe estar entre 15 y 120");
+      setError(
+        t(props.language, {
+          es: "La duración de sesión va entre 15 y 120 minutos (entero).",
+          en: "Session length must be a whole number of minutes from 15 to 120.",
+          pt: "Duracao da sessao: 15 a 120 minutos (inteiro)."
+        })
+      );
       return;
     }
 
     const activePatientsRaw = draft.activePatientsCount.trim();
     const activePatientsCount = activePatientsRaw.length > 0 ? Number(activePatientsRaw) : null;
     if (activePatientsRaw.length > 0 && (!Number.isInteger(activePatientsCount ?? 0) || (activePatientsCount ?? 0) < 0 || (activePatientsCount ?? 0) > 100000)) {
-      setError("Pacientes activos debe estar entre 0 y 100000");
+      setError(
+        t(props.language, {
+          es: "Pacientes activos: entero entre 0 y 100000.",
+          en: "Active patients must be a whole number from 0 to 100000.",
+          pt: "Pacientes ativos: inteiro de 0 a 100000."
+        })
+      );
       return;
     }
 
     const sessionsRaw = draft.sessionsCount.trim();
     const sessionsCount = sessionsRaw.length > 0 ? Number(sessionsRaw) : null;
     if (sessionsRaw.length > 0 && (!Number.isInteger(sessionsCount ?? 0) || (sessionsCount ?? 0) < 0 || (sessionsCount ?? 0) > 1000000)) {
-      setError("Sesiones debe estar entre 0 y 1000000");
+      setError(
+        t(props.language, {
+          es: "Total de sesiones: entero entre 0 y 1000000.",
+          en: "Total sessions must be a whole number from 0 to 1000000.",
+          pt: "Total de sessoes: inteiro de 0 a 1000000."
+        })
+      );
       return;
     }
 
     const completedRaw = draft.completedSessionsCount.trim();
     const completedSessionsCount = completedRaw.length > 0 ? Number(completedRaw) : null;
     if (completedRaw.length > 0 && (!Number.isInteger(completedSessionsCount ?? 0) || (completedSessionsCount ?? 0) < 0 || (completedSessionsCount ?? 0) > 1000000)) {
-      setError("Sesiones completadas debe estar entre 0 y 1000000");
+      setError(
+        t(props.language, {
+          es: "Sesiones completadas: entero entre 0 y 1000000.",
+          en: "Completed sessions must be a whole number from 0 to 1000000.",
+          pt: "Sessoes concluidas: inteiro de 0 a 1000000."
+        })
+      );
       return;
     }
 
@@ -345,7 +413,8 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         await loadProfessionalBookings(professional.id);
       }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar el profesional");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-update", props.language, raw));
     } finally {
       setProfessionalSaveLoading(false);
     }
@@ -354,7 +423,13 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   const createSlot = async (professionalId: string) => {
     const draft = professionalSlotDrafts[professionalId] ?? createEmptySlotDraft();
     if (draft.slotDate.trim().length === 0 || draft.slotTime.trim().length === 0) {
-      setError("Completa dia y hora para crear el slot.");
+      setError(
+        t(props.language, {
+          es: "Elegí fecha y hora de inicio para crear el turno.",
+          en: "Pick a start date and time to create the slot.",
+          pt: "Escolha data e hora de inicio para criar o horario."
+        })
+      );
       return;
     }
 
@@ -363,23 +438,47 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     const fallbackDuration = currentProfessional?.sessionDurationMinutes ?? 60;
     const durationMinutes = Number(profileDraft?.sessionDurationMinutes?.trim() || fallbackDuration);
     if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 240) {
-      setError("Duracion de sesion invalida. Ajustala entre 15 y 240 minutos.");
+      setError(
+        t(props.language, {
+          es: "La duración del turno debe ser un entero entre 15 y 240 minutos (revisá el perfil del profesional).",
+          en: "Slot duration must be a whole number from 15 to 240 minutes (check the professional profile).",
+          pt: "Duracao do horario: inteiro de 15 a 240 minutos."
+        })
+      );
       return;
     }
 
     const startsAt = parseLocalDateAndTime(draft.slotDate, draft.slotTime);
     if (!startsAt) {
-      setError("Fecha u hora invalida para crear el slot.");
+      setError(
+        t(props.language, {
+          es: "La fecha u hora no tienen un formato válido. Usá el selector o el formato AAAA-MM-DD y HH:MM.",
+          en: "Date or time format looks invalid. Use the picker or YYYY-MM-DD and HH:MM.",
+          pt: "Data ou hora invalidas. Use o seletor ou AAAA-MM-DD e HH:MM."
+        })
+      );
       return;
     }
     const endsAt = new Date(startsAt.getTime() + (durationMinutes * 60_000));
 
     if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
-      setError("Slot inválido: revisa fecha y hora.");
+      setError(
+        t(props.language, {
+          es: "Ese inicio de turno no es válido. Revisá día y hora.",
+          en: "That slot start isn’t valid. Double-check day and time.",
+          pt: "Esse inicio de horario nao e valido. Confira dia e hora."
+        })
+      );
       return;
     }
     if (endsAt <= startsAt) {
-      setError("El horario de fin debe ser posterior al de inicio.");
+      setError(
+        t(props.language, {
+          es: "El fin del turno tiene que ser después del inicio (revisá la duración).",
+          en: "The slot end must be after the start (check duration).",
+          pt: "O fim do horario deve ser depois do inicio."
+        })
+      );
       return;
     }
 
@@ -400,7 +499,8 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       setSuccess("Slot creado");
       await load(professionalSearch);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo crear el slot");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-slot-create", props.language, raw));
     }
   };
 
@@ -417,14 +517,21 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       setSuccess("Slot eliminado");
       await load(professionalSearch);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo eliminar el slot");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-slot-delete", props.language, raw));
     }
   };
 
   const saveProfessionalBooking = async (professionalId: string, bookingId: string) => {
     const draft = professionalBookingDrafts[bookingId];
     if (!draft) {
-      setError("Booking draft not found");
+      setError(
+        t(props.language, {
+          es: "No encontramos el borrador de esa reserva en pantalla. Cerrá el detalle y volvé a abrirlo.",
+          en: "We couldn’t find that booking draft on screen. Close the detail and open it again.",
+          pt: "Nao encontramos o rascunho dessa reserva. Feche e abra de novo."
+        })
+      );
       return;
     }
 
@@ -448,7 +555,8 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       setSuccess("Sesion actualizada");
       await loadProfessionalBookings(professionalId);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar la sesión");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-session-update", props.language, raw));
     }
   };
 

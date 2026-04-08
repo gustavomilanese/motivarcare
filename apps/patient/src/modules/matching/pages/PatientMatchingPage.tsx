@@ -6,8 +6,9 @@ import { MatchingStickyAction } from "../components/MatchingStickyAction";
 import { AvailabilityPickerModal } from "../components/AvailabilityPickerModal";
 import { BookingSummaryModal } from "../components/BookingSummaryModal";
 import { PaymentMethodModal } from "../components/PaymentMethodModal";
+import { friendlyBookingFailureMessage } from "../../app/lib/friendlyPatientMessages";
 import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
-import { fetchProfessionalAvailability } from "../services/availability";
+import { fetchProfessionalAvailability, isSlotStillListedAfterFreshFetch } from "../services/availability";
 import { fetchProfessionalDirectory } from "../services/professionals";
 import type {
   MatchCardProfessional,
@@ -71,13 +72,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }
         setProfessionals([]);
         setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudo cargar el listado de profesionales.",
-                en: "Could not load professionals list.",
-                pt: "Nao foi possivel carregar a lista de profissionais."
-              })
+          t(props.language, {
+            es: "Tardamos un poco más de lo esperado en mostrar los profesionales. Refrescá la página o probá de nuevo en un momento.",
+            en: "It’s taking a little longer than usual to show professionals. Refresh the page or try again shortly.",
+            pt: "Esta demorando um pouco mais para mostrar os profissionais. Atualize a pagina ou tente novamente em instantes."
+          })
         );
       })
       .finally(() => {
@@ -208,13 +207,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       .catch((requestError) => {
         setAllSlots([]);
         setSlotsError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudieron cargar los horarios.",
-                en: "Could not load slots.",
-                pt: "Nao foi possivel carregar os horarios."
-              })
+          t(props.language, {
+            es: "Ahora no pudimos cargar los horarios. Volvé a intentar o elegí otro profesional.",
+            en: "We couldn’t load times just now. Try again or choose another professional.",
+            pt: "Nao foi possivel carregar os horarios agora. Tente de novo ou escolha outro profissional."
+          })
         );
       })
       .finally(() => {
@@ -244,17 +241,24 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     setPaymentLoading(true);
     setPaymentError("");
     try {
+      const stillListed = await isSlotStillListedAfterFreshFetch(bookingProfessionalId, bookingSlot, props.authToken);
+      if (!stillListed) {
+        throw new Error(
+          t(props.language, {
+            es: "Ese horario se llenó recién. Te pedimos que elijas otro que te venga bien.",
+            en: "That time just filled up. Please choose another that works for you.",
+            pt: "Esse horario acabou de ficar cheio. Escolha outro que lhe sirva."
+          })
+        );
+      }
       await props.onCreateBooking(bookingProfessionalId, bookingSlot);
       closeBookingFlow();
     } catch (requestError) {
       setPaymentError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo confirmar el pago y la reserva.",
-              en: "Could not confirm payment and booking.",
-              pt: "Nao foi possivel confirmar pagamento e reserva."
-            })
+        friendlyBookingFailureMessage(
+          requestError instanceof Error ? requestError.message : "",
+          props.language
+        )
       );
     } finally {
       setPaymentLoading(false);

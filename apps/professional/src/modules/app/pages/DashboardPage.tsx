@@ -16,6 +16,7 @@ import {
   ymLocal,
   ymdLocal
 } from "../lib/professionalStatsRangeQuery";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthUser, AvailabilitySlot, DashboardResponse } from "../types";
 
@@ -115,15 +116,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
         }
       } catch (requestError) {
         if (active) {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : t(props.language, {
-                  es: "No se pudo cargar el dashboard.",
-                  en: "Could not load the dashboard.",
-                  pt: "Nao foi possivel carregar o dashboard."
-                })
-          );
+          const raw = requestError instanceof Error ? requestError.message : "";
+          setError(professionalSurfaceMessage("dashboard-load", props.language, raw));
         }
       }
     };
@@ -248,15 +242,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       setRescheduleReason("");
       setIsRescheduleModalOpen(true);
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar la disponibilidad para reagendar.",
-              en: "Could not load availability to reschedule.",
-              pt: "Nao foi possivel carregar disponibilidade para reagendar."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-reschedule-availability", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -315,15 +302,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       setSelectedRescheduleSlotKey("");
       setRescheduleReason("");
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo reagendar la reserva.",
-              en: "Could not reschedule booking.",
-              pt: "Nao foi possivel reagendar a reserva."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-reschedule-save", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -362,15 +342,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       setCancelTargetBooking(null);
       setCancelReason("");
     } catch (requestError) {
-      setBookingActionError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cancelar la reserva.",
-              en: "Could not cancel booking.",
-              pt: "Nao foi possivel cancelar a reserva."
-          })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-cancel-booking", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }

@@ -19,6 +19,7 @@ import { ProfessionalPortal } from "./pages/ProfessionalPortal";
 import { ResetPasswordScreen } from "./pages/ResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
+import { professionalSurfaceMessage } from "./lib/friendlyProfessionalSurfaceMessages";
 import {
   API_BASE,
   CALENDAR_ONBOARDING_PENDING_USER_ID_KEY,
@@ -244,17 +245,8 @@ export function App() {
         /not configured/i.test(raw) || /GOOGLE_CALENDAR_OAUTH_NOT_CONFIGURED/i.test(raw);
       setCalendarOnboardingError(
         notConfigured
-          ? t(language, {
-              es: "Google Calendar no está disponible todavía en el servidor (faltan credenciales OAuth). Podés continuar y conectarlo más tarde desde Ajustes.",
-              en: "Google Calendar is not set up on the server yet (OAuth credentials missing). You can continue and connect later from Settings.",
-              pt: "O Google Calendar ainda nao esta configurado no servidor (credenciais OAuth). Voce pode continuar e conectar depois em Ajustes."
-            })
-          : raw ||
-            t(language, {
-              es: "No se pudo iniciar la conexión con Google.",
-              en: "Could not start the Google connection.",
-              pt: "Nao foi possivel iniciar a conexao com o Google."
-            })
+          ? professionalSurfaceMessage("calendar-onboarding-not-configured", language)
+          : professionalSurfaceMessage("calendar-onboarding", language, raw)
       );
     } finally {
       setCalendarOnboardingLoading(false);

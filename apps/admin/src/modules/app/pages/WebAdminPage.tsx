@@ -7,6 +7,7 @@ import {
   type WebAdminScrollSectionId
 } from "../components/WebAdminPageSubnav";
 import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminBlogPost, AdminReview, WebContentResponse, WebLandingSettings } from "../types";
 import { compressImageDataUrl, fileToDataUrl, normalizeWebLandingSettings } from "../utils/media";
@@ -164,7 +165,8 @@ export function WebAdminPage({
           : []
       );
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load web content");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-load", language, raw));
     } finally {
       setLoading(false);
     }
@@ -214,15 +216,14 @@ export function WebAdminPage({
         })
       });
     } catch (requestError) {
-      const rawMessage = requestError instanceof Error ? requestError.message : "Could not save settings";
-      const message =
-        rawMessage.includes("HTTP 413")
-          ? t(language, {
-              es: "La imagen es demasiado pesada. Prueba con una imagen más liviana.",
-              en: "Image is too large. Please try a lighter image.",
-              pt: "A imagem e muito pesada. Tente uma imagem menor."
-            })
-          : rawMessage;
+      const rawMessage = requestError instanceof Error ? requestError.message : "";
+      const message = rawMessage.includes("HTTP 413")
+        ? t(language, {
+            es: "La imagen es demasiado pesada. Probá con una más liviana o comprimila antes de subirla.",
+            en: "That image is too heavy. Try a smaller file or compress it before uploading.",
+            pt: "A imagem esta pesada demais. Tente um arquivo menor ou comprima antes."
+          })
+        : adminSurfaceMessage("web-admin-save", language, rawMessage);
       setError(message);
       setSettingsFeedback({ type: "error", message });
     } finally {
@@ -248,7 +249,8 @@ export function WebAdminPage({
       }));
       setSuccess(t(language, { es: "Imagen cargada. Guarda para aplicar cambios.", en: "Image loaded. Save to apply changes.", pt: "Imagem carregada. Salve para aplicar as mudancas." }));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load image");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-image-load", language, raw));
     } finally {
       event.target.value = "";
     }
@@ -266,7 +268,8 @@ export function WebAdminPage({
       setSuccess("Foto de review cargada.");
       setError("");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cargar la foto");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-image-load", language, raw));
     } finally {
       event.target.value = "";
     }
@@ -278,19 +281,43 @@ export function WebAdminPage({
     setSuccess("");
 
     if (reviewForm.name.trim().length < 2) {
-      setError("Nombre inválido");
+      setError(
+        t(language, {
+          es: "Agregá un nombre un poco más largo para la review (al menos 2 caracteres).",
+          en: "Add a slightly longer name for the review (at least 2 characters).",
+          pt: "Adicione um nome um pouco maior para a review (pelo menos 2 caracteres)."
+        })
+      );
       return;
     }
     if ((reviewForm.reviewDate ?? "").trim().length === 0) {
-      setError("Selecciona fecha de review");
+      setError(
+        t(language, {
+          es: "Elegí la fecha en que corresponde mostrar la review.",
+          en: "Pick the date this review should reflect.",
+          pt: "Escolha a data em que a review deve aparecer."
+        })
+      );
       return;
     }
     if (!reviewForm.avatar || reviewForm.avatar.trim().length === 0) {
-      setError("Carga una foto para la review");
+      setError(
+        t(language, {
+          es: "Subí una foto de perfil para la review; ayuda a que se vea humana y confiable.",
+          en: "Upload a profile photo for the review so it feels trustworthy.",
+          pt: "Envie uma foto de perfil para a review."
+        })
+      );
       return;
     }
     if (reviewForm.text.trim().length < 5) {
-      setError("Texto demasiado corto");
+      setError(
+        t(language, {
+          es: "El texto de la review es muy corto; sumá una frase más para que tenga contexto.",
+          en: "The review text is too short—add a bit more context.",
+          pt: "O texto da review e curto demais; acrescente mais uma frase."
+        })
+      );
       return;
     }
 
@@ -316,7 +343,8 @@ export function WebAdminPage({
       setSuccess(t(language, { es: "Review guardada.", en: "Review saved.", pt: "Review salva." }));
       await loadWebContent();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save review");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-review-save", language, raw));
     }
   }
 
@@ -328,7 +356,8 @@ export function WebAdminPage({
       setSuccess(t(language, { es: "Review eliminada.", en: "Review deleted.", pt: "Review removida." }));
       await loadWebContent();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete review");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-review-delete", language, raw));
     }
   }
 
@@ -347,7 +376,8 @@ export function WebAdminPage({
       setSuccess(key === "coverImage" ? "Portada cargada." : "Avatar de autor cargado.");
       setError("");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "No se pudo cargar la imagen");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-blog-image-load", language, raw));
     } finally {
       event.target.value = "";
     }
@@ -370,7 +400,8 @@ export function WebAdminPage({
       setSuccess(t(language, { es: "Articulo guardado.", en: "Article saved.", pt: "Artigo salvo." }));
       await loadWebContent();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save blog post");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-blog-save", language, raw));
     }
   }
 
@@ -382,7 +413,8 @@ export function WebAdminPage({
       setSuccess(t(language, { es: "Articulo eliminado.", en: "Article deleted.", pt: "Artigo removido." }));
       await loadWebContent();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete blog post");
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-blog-delete", language, raw));
     }
   }
 

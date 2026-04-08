@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -30,15 +31,8 @@ export function VerifyEmailRequiredScreen(props: {
       });
       setMessage(response.message);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo reenviar el email de verificación.",
-              en: "Could not resend verification email.",
-              pt: "Nao foi possivel reenviar o email de verificacao."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("verify-resend", props.language, raw));
     } finally {
       setLoadingResend(false);
     }
@@ -53,15 +47,8 @@ export function VerifyEmailRequiredScreen(props: {
       await apiRequest<{ message: string }>("/api/auth/email-verification/dev-verify", props.token, { method: "POST" });
       props.onVerified();
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo verificar en modo desarrollo.",
-              en: "Could not verify in development mode.",
-              pt: "Nao foi possivel validar no modo de desenvolvimento."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("verify-dev", props.language, raw));
     } finally {
       setLoadingDevVerify(false);
     }

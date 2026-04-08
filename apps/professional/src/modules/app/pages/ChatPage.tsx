@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useSearchParams } from "react-router-dom";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthUser, ThreadMessage, ThreadSummary } from "../types";
 
@@ -98,15 +99,8 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
       });
       setError("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo cargar el chat.",
-              en: "Could not load chat.",
-              pt: "Nao foi possivel carregar o chat."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("chat-threads", props.language, raw));
     }
   }, [props.token, props.language]);
 
@@ -117,15 +111,8 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
         setMessages(response.messages);
       }
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudieron cargar mensajes.",
-              en: "Could not load messages.",
-              pt: "Nao foi possivel carregar mensagens."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("chat-messages", props.language, raw));
     }
   }, [props.token, props.language]);
 
@@ -179,15 +166,8 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
       await loadMessages(selectedThread.id);
       await loadThreads();
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo enviar el mensaje.",
-              en: "Could not send message.",
-              pt: "Nao foi possivel enviar a mensagem."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(professionalSurfaceMessage("chat-send", props.language, raw));
     }
   };
 

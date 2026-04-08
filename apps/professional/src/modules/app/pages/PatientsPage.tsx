@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { useNavigate } from "react-router-dom";
 import { PatientAvatarImage } from "../components/PatientAvatarImage";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import type { PatientsResponse } from "../types";
 
@@ -34,15 +35,8 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
         setError("");
       })
       .catch((requestError) => {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t(props.language, {
-                es: "No se pudieron cargar pacientes.",
-                en: "Could not load patients.",
-                pt: "Nao foi possivel carregar pacientes."
-              })
-        );
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(professionalSurfaceMessage("patients-load", props.language, raw));
       });
   }, [props.token]);
 

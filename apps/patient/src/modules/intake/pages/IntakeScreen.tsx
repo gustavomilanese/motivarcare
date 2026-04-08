@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
+import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -298,9 +299,9 @@ export function IntakeScreen(props: {
     if (!value) {
       setError(
         t(props.language, {
-          es: "Elegi o escribi una respuesta para continuar.",
-          en: "Choose or enter an answer to continue.",
-          pt: "Escolha ou escreva uma resposta para continuar."
+          es: "Para avanzar necesitamos una respuesta en este paso. Elegí una opción o escribí algo corto arriba.",
+          en: "We need an answer on this step to move on. Pick an option or write something brief above.",
+          pt: "Precisamos de uma resposta neste passo. Escolha uma opcao ou escreva algo acima."
         })
       );
       return false;
@@ -334,9 +335,9 @@ export function IntakeScreen(props: {
       }
       setError(
         t(props.language, {
-          es: "Completa todas las preguntas obligatorias para continuar.",
-          en: "Complete all required questions to continue.",
-          pt: "Complete todas as perguntas obrigatorias para continuar."
+          es: "Falta alguna pregunta obligatoria. Te llevamos a la primera pendiente: completala y tocá continuar.",
+          en: "A required question is still missing. We’ve jumped you to the first one—complete it and continue.",
+          pt: "Falta alguma pergunta obrigatoria. Levamos voce a primeira pendente: complete e continue."
         })
       );
       return;
@@ -349,15 +350,8 @@ export function IntakeScreen(props: {
       const payload: IntakeCompletionPayload = { answers };
       await props.onComplete(payload);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo guardar el perfil clínico. Intenta nuevamente.",
-              en: "Could not save the clinical profile. Please try again.",
-              pt: "Nao foi possivel salvar o perfil clínico. Tente novamente."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(friendlyIntakeSaveMessage(raw, props.language));
     } finally {
       setSubmitting(false);
     }
