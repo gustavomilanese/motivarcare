@@ -33,10 +33,13 @@ export function CheckoutPackagesPanel(props: {
   onSelectCard: (planId: string) => void;
   onSelectPlan: (plan: PackagePlan) => void;
 }) {
+  const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
+  const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
+
   return (
     <>
       <div className="session-booking-panel-head checkout-packages-head">
-        <div>
+        <div className="checkout-packages-head-inner">
           <span className="checkout-demo-pill">
             {t(props.language, { es: "Checkout demo", en: "Demo checkout", pt: "Checkout demo" })}
           </span>
@@ -48,6 +51,31 @@ export function CheckoutPackagesPanel(props: {
               pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra."
             })}
           </p>
+          {singleSessionPlan ? (
+            <div className="checkout-single-session-row">
+              <button
+                type="button"
+                className="checkout-single-session-cta"
+                onClick={() => props.onSelectPlan(singleSessionPlan)}
+              >
+                {replaceTemplate(
+                  t(props.language, {
+                    es: "Solo una sesión · {price}",
+                    en: "Single session · {price}",
+                    pt: "Uma sessão · {price}"
+                  }),
+                  { price: formatMoney(singleSessionPlan.priceCents / 100, props.language, props.currency) }
+                )}
+              </button>
+              <p className="checkout-single-session-hint">
+                {t(props.language, {
+                  es: "Podés sumar crédito por sesión sin paquete. Ideal para probar antes de comprometerte.",
+                  en: "Add one session credit without a bundle—ideal to try before committing.",
+                  pt: "Voce pode adicionar credito por sessao sem pacote—ideal para testar antes."
+                })}
+              </p>
+            </div>
+          ) : null}
         </div>
         <button type="button" onClick={props.onClose}>
           {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
@@ -73,12 +101,33 @@ export function CheckoutPackagesPanel(props: {
             })}
           </p>
         </div>
+      ) : bundlePlans.length === 0 ? (
+        singleSessionPlan ? (
+          <p className="checkout-packages-bundles-note">
+            {t(props.language, {
+              es: "No hay paquetes multi-sesión publicados; podés usar la opción de una sesión arriba.",
+              en: "No multi-session bundles are listed; you can use the single-session option above.",
+              pt: "Nao ha pacotes multi-sessao publicados; use a opcao de uma sessao acima."
+            })}
+          </p>
+        ) : (
+          <div className="sessions-empty-state">
+            <strong>{t(props.language, { es: "No hay paquetes publicados por ahora.", en: "No packages are published right now.", pt: "Nao ha pacotes publicados no momento." })}</strong>
+            <p>
+              {t(props.language, {
+                es: "Prueba nuevamente en unos minutos o contacta al equipo de soporte.",
+                en: "Try again in a few minutes or contact support.",
+                pt: "Tente novamente em alguns minutos ou entre em contato com o suporte."
+              })}
+            </p>
+          </div>
+        )
       ) : (
         <div className="deal-grid sessions-package-options-grid">
-          {props.packagePlans.map((plan) => {
+          {bundlePlans.map((plan) => {
             const selectedPlan = props.selectedCheckoutPlanId
               ? props.selectedCheckoutPlanId === plan.id
-              : (props.featuredPackageId ? props.featuredPackageId === plan.id : props.packagePlans[0]?.id === plan.id);
+              : (props.featuredPackageId ? props.featuredPackageId === plan.id : bundlePlans[0]?.id === plan.id);
             const listPriceAmount = Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100));
             const finalPriceAmount = plan.priceCents / 100;
             const savingAmount = Math.max(0, listPriceAmount - finalPriceAmount);
@@ -89,7 +138,7 @@ export function CheckoutPackagesPanel(props: {
               <div className={`deal-card-shell ${props.featuredPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
                 <div className="deal-card-roof" aria-hidden={props.featuredPackageId !== plan.id}>
                   {props.featuredPackageId === plan.id ? (
-                    <span className="deal-card-featured-kicker">{t(props.language, { es: "Mas elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
+                    <span className="deal-card-featured-kicker">{t(props.language, { es: "Más elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
                   ) : null}
                 </div>
                 <article

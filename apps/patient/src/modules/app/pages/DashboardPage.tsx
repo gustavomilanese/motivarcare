@@ -200,6 +200,8 @@ export function DashboardPage(props: {
   onGoToProfessional: (professionalId: string) => void;
   /** Cuando aún no hay profesional activo, abre el listado para elegir. */
   onGoToMatching: () => void;
+  /** Sin navegar: mismo criterio que “elegir más tarde” en matching (volver a dejar la elección abierta). */
+  onDeferProfessionalChoice?: () => void | Promise<void>;
   onGoToChat: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
@@ -507,22 +509,29 @@ export function DashboardPage(props: {
           </button>
         </article>
 
-        <button
-          className="hero-card hero-card-button active-professional-card"
-          type="button"
-          onClick={() => {
-            if (activeProfessional) {
-              props.onGoToProfessional(activeProfessional.id);
-              return;
-            }
-            props.onGoToMatching();
-          }}
-        >
-          <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
-          {activeProfessional ? (
-            <>
+        {activeProfessional ? (
+          <div className="hero-card hero-card-button active-professional-card active-professional-card--has-pro">
+            <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
+            <div
+              className="active-professional-card-hit"
+              role="button"
+              tabIndex={0}
+              aria-label={t(props.language, {
+                es: `Profesional activo: ${activeProfessional.fullName}. Abrir ficha.`,
+                en: `Active professional: ${activeProfessional.fullName}. Open profile.`,
+                pt: `Profissional ativo: ${activeProfessional.fullName}. Abrir ficha.`
+              })}
+              onClick={() => props.onGoToProfessional(activeProfessional.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") {
+                  return;
+                }
+                event.preventDefault();
+                props.onGoToProfessional(activeProfessional.id);
+              }}
+            >
               <div className="active-professional-row">
-                  <img
+                <img
                   className="active-professional-avatar"
                   src={professionalPhotoSrc(props.professionalPhotoMap[activeProfessional.id])}
                   alt={activeProfessional.fullName}
@@ -543,36 +552,56 @@ export function DashboardPage(props: {
                   { compat: activeProfessional.compatibility, years: activeProfessional.yearsExperience }
                 )}
               </p>
-              <button
-                className="chat-gradient-button"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  props.onGoToChat(activeProfessional.id);
-                }}
-              >
-                {t(props.language, { es: "Abrir chat con profesional", en: "Open chat with professional", pt: "Abrir chat com profissional" })}
+            </div>
+            <button
+              className="chat-gradient-button"
+              type="button"
+              onClick={() => props.onGoToChat(activeProfessional.id)}
+            >
+              {t(props.language, { es: "Abrir chat con profesional", en: "Open chat with professional", pt: "Abrir chat com profissional" })}
+            </button>
+          </div>
+        ) : (
+          <div className="hero-grid-professional-stack">
+            <button
+              type="button"
+              className="hero-card hero-card-button active-professional-card"
+              aria-label={t(props.language, {
+                es: "Ver profesionales sugeridos para elegir el tuyo",
+                en: "See suggested professionals to choose yours",
+                pt: "Ver profissionais sugeridos para escolher o seu"
+              })}
+              onClick={() => props.onGoToMatching()}
+            >
+              <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
+              <p>
+                {props.state.assignedProfessionalName
+                  ? replaceTemplate(
+                      t(props.language, {
+                        es: "Profesional asignado desde admin: {name}.",
+                        en: "Professional assigned from admin: {name}.",
+                        pt: "Profissional atribuido pelo admin: {name}."
+                      }),
+                      { name: props.state.assignedProfessionalName }
+                    )
+                  : t(props.language, {
+                      es: "Tocá para ver profesionales disponibles y elegir el tuyo.",
+                      en: "Tap to see available professionals and choose yours.",
+                      pt: "Toque para ver profissionais disponiveis e escolher o seu."
+                    })}
+              </p>
+            </button>
+            {props.onDeferProfessionalChoice ? (
+              <button type="button" className="active-professional-defer-standalone" onClick={() => void props.onDeferProfessionalChoice?.()}>
+                {t(props.language, {
+                  es: "Elegir más tarde",
+                  en: "Choose later",
+                  pt: "Escolher mais tarde"
+                })}
               </button>
-            </>
-          ) : (
-            <p>
-              {props.state.assignedProfessionalName
-                ? replaceTemplate(
-                    t(props.language, {
-                      es: "Profesional asignado desde admin: {name}.",
-                      en: "Professional assigned from admin: {name}.",
-                      pt: "Profissional atribuido pelo admin: {name}."
-                    }),
-                    { name: props.state.assignedProfessionalName }
-                  )
-                : t(props.language, {
-                    es: "Tocá para ver profesionales disponibles y elegir el tuyo.",
-                    en: "Tap to see available professionals and choose yours.",
-                    pt: "Toque para ver profissionais disponiveis e escolher o seu."
-                  })}
-            </p>
-          )}
-        </button>
+            ) : null}
+          </div>
+        )}
       </section>
 
       <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel">

@@ -392,7 +392,7 @@ export function IntakeScreen(props: {
               <span aria-hidden="true">←</span>
               {stepIndex === 0
                 ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
-                : t(props.language, { es: "Atras", en: "Back", pt: "Voltar" })}
+                : t(props.language, { es: "Atrás", en: "Back", pt: "Voltar" })}
             </button>
           </div>
 
@@ -442,7 +442,7 @@ export function IntakeScreen(props: {
                     }))
                   }
                   placeholder={t(props.language, {
-                    es: "Escribi con tus palabras...",
+                    es: "Escribí con tus palabras...",
                     en: "Write in your own words...",
                     pt: "Escreva com suas palavras..."
                   })}

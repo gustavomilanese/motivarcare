@@ -46,6 +46,18 @@ export function PortalRoutes(props: {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
   };
 
+  const deferProfessionalChoiceFromDashboard = async () => {
+    await props.syncActiveProfessionalAssignment(null);
+    props.onStateChange((current) => ({
+      ...current,
+      therapistSelectionCompleted: true,
+      assignedProfessionalId: null,
+      assignedProfessionalName: null,
+      selectedProfessionalId: "",
+      activeChatProfessionalId: ""
+    }));
+  };
+
   return (
     <Routes>
       <Route
@@ -70,6 +82,7 @@ export function PortalRoutes(props: {
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
                   onGoToMatching={() => props.navigate("/matching")}
+                  onDeferProfessionalChoice={deferProfessionalChoiceFromDashboard}
                 />
               )
         }
@@ -195,6 +208,7 @@ export function PortalRoutes(props: {
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
                   onGoToMatching={() => props.navigate("/matching")}
+                  onDeferProfessionalChoice={deferProfessionalChoiceFromDashboard}
                 />
               )
         }

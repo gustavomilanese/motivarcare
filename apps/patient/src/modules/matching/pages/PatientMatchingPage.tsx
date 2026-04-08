@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
@@ -19,6 +19,20 @@ import type {
 
 function t(language: MatchingPageProps["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function DeferTherapistSelectionButton(props: { language: MatchingPageProps["language"]; onDefer: () => void }): ReactElement {
+  return (
+    <div className="patient-matching-defer-wrap">
+      <button type="button" className="patient-matching-defer-wide" onClick={() => void props.onDefer()}>
+        {t(props.language, {
+          es: "Elegir profesional más tarde",
+          en: "Choose a professional later",
+          pt: "Escolher profissional mais tarde"
+        })}
+      </button>
+    </div>
+  );
 }
 
 export function PatientMatchingPage(props: MatchingPageProps) {
@@ -266,25 +280,6 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         t={(values) => t(props.language, values)}
       />
 
-      {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
-        <section className="content-card patient-matching-defer">
-          <p className="patient-matching-defer-copy">
-            {t(props.language, {
-              es: "Podés entrar al portal y elegir un profesional cuando quieras desde Inicio.",
-              en: "You can enter the portal and choose a professional anytime from Home.",
-              pt: "Voce pode entrar no portal e escolher um profissional quando quiser na Inicio."
-            })}
-          </p>
-          <button type="button" className="ghost-button patient-matching-defer-button" onClick={() => void props.onDeferTherapistSelection?.()}>
-            {t(props.language, {
-              es: "Elegir profesional más tarde",
-              en: "Choose a professional later",
-              pt: "Escolher profissional mais tarde"
-            })}
-          </button>
-        </section>
-      ) : null}
-
       {loading ? (
         <section className="content-card">
           <p>{t(props.language, { es: "Cargando especialistas...", en: "Loading specialists...", pt: "Carregando especialistas..." })}</p>
@@ -297,44 +292,66 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         </section>
       ) : null}
 
-      {!loading && !error ? (
-        <div className="patient-therapist-list">
-          {visibleOrdered.map((item) => (
-            <ProfessionalMatchCard
-              key={item.professional.id}
-              item={item}
+      {!loading && !error && visibleOrdered.length > 0 ? (
+        <>
+          {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
+            <DeferTherapistSelectionButton
               language={props.language}
-              isFavorite={favoriteIds.has(item.professional.id)}
-              selected={item.professional.id === props.selectedProfessionalId}
-              onSelect={props.onSelectProfessional}
-              onToggleFavorite={props.onToggleFavorite}
-              onSelectSuggestedSlot={openSummaryFromSuggestedSlot}
-              onShowAllSlots={openAvailabilityFlow}
-              onChat={props.onChat}
-              onImageFallback={props.onImageFallback}
-              showChatAction={!bookingFlowEnabled && !props.isFirstSelectionRequired}
-              cardOpensAvailability={bookingFlowEnabled}
+              onDefer={() => void props.onDeferTherapistSelection?.()}
             />
-          ))}
-        </div>
+          ) : null}
+          <div className="patient-therapist-list">
+            {visibleOrdered.map((item) => (
+              <ProfessionalMatchCard
+                key={item.professional.id}
+                item={item}
+                language={props.language}
+                isFavorite={favoriteIds.has(item.professional.id)}
+                selected={item.professional.id === props.selectedProfessionalId}
+                onSelect={props.onSelectProfessional}
+                onToggleFavorite={props.onToggleFavorite}
+                onSelectSuggestedSlot={openSummaryFromSuggestedSlot}
+                onShowAllSlots={openAvailabilityFlow}
+                onChat={props.onChat}
+                onImageFallback={props.onImageFallback}
+                showChatAction={!bookingFlowEnabled && !props.isFirstSelectionRequired}
+                cardOpensAvailability={bookingFlowEnabled}
+              />
+            ))}
+          </div>
+          {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
+            <DeferTherapistSelectionButton
+              language={props.language}
+              onDefer={() => void props.onDeferTherapistSelection?.()}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {!loading && !error && visibleOrdered.length === 0 ? (
-        <section className="content-card">
-          <p>
-            {props.showOnlyFavorites
-              ? t(props.language, {
-                  es: "Todavía no guardaste profesionales en favoritos.",
-                  en: "You have not saved favorite professionals yet.",
-                  pt: "Voce ainda nao salvou profissionais favoritos."
-                })
-              : t(props.language, {
-                  es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
-                  en: "No results with those filters. Remove one to see more options.",
-                  pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
-                })}
-          </p>
-        </section>
+        <>
+          {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
+            <DeferTherapistSelectionButton
+              language={props.language}
+              onDefer={() => void props.onDeferTherapistSelection?.()}
+            />
+          ) : null}
+          <section className="content-card">
+            <p>
+              {props.showOnlyFavorites
+                ? t(props.language, {
+                    es: "Todavía no guardaste profesionales en favoritos.",
+                    en: "You have not saved favorite professionals yet.",
+                    pt: "Voce ainda nao salvou profissionais favoritos."
+                  })
+                : t(props.language, {
+                    es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
+                    en: "No results with those filters. Remove one to see more options.",
+                    pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
+                  })}
+            </p>
+          </section>
+        </>
       ) : null}
 
       {props.isFirstSelectionRequired && selected && !bookingFlowEnabled ? (
