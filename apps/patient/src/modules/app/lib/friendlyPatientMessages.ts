@@ -387,6 +387,27 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       pt: `${net} O que voce escolheu continua aqui: quando quiser, tente pagar de novo.`
     });
   }
+  if (n === "Individual session product is not configured") {
+    return t(language, {
+      es: "En este entorno no hay cargado el producto de sesión suelta en el catálogo. Pedile a soporte que ejecute el seed o cree un paquete de 1 crédito global (professionalId vacío).",
+      en: "This environment doesn’t have a single-session product configured. Ask support to run the seed or create a global 1-credit package (no professional).",
+      pt: "Neste ambiente nao ha produto de sessao avulsa configurado. Pec ao suporte para rodar o seed ou criar pacote de 1 credito global."
+    });
+  }
+  if (n === "Unauthorized" || n === "Missing bearer token" || n === "Invalid or expired token") {
+    return t(language, {
+      es: "Tu sesión no es válida para cobrar. Volvé a iniciar sesión e intentá de nuevo.",
+      en: "Your session isn’t valid for checkout. Sign in again and retry.",
+      pt: "Sua sessao nao e valida para pagar. Entre novamente e tente de novo."
+    });
+  }
+  if (n.startsWith("Invalid payload")) {
+    return t(language, {
+      es: "Los datos del pedido llegaron incompletos. Cerrá el modal, elegí de nuevo la cantidad y probá otra vez.",
+      en: "The order data didn’t come through complete. Close the modal, pick the quantity again, and retry.",
+      pt: "Os dados do pedido vieram incompletos. Feche o modal, escolha de novo e tente outra vez."
+    });
+  }
   if (looksLikeUserFacingCopy(n)) {
     return n;
   }

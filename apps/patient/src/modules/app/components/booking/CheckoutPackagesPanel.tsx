@@ -40,31 +40,22 @@ export function CheckoutPackagesPanel(props: {
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
   const canIndividualCta = !props.packagesLoading && props.unitPriceUsd !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
 
-  const individualButton = (
-    <button
-      type="button"
-      className="checkout-individual-sessions-button"
-      disabled={!canIndividualCta}
-      onClick={() => props.onIndividualPurchase()}
-    >
-      {t(props.language, {
-        es: "Comprar sesiones individuales",
-        en: "Buy individual sessions",
-        pt: "Comprar sessoes individuais"
-      })}
-    </button>
-  );
+  const individualLinkLabel = t(props.language, {
+    es: "Comprar sesiones individuales",
+    en: "Buy individual sessions",
+    pt: "Comprar sessoes individuais"
+  });
 
   return (
     <>
       <div className="session-booking-panel-head checkout-packages-head">
         <div className="checkout-packages-head-inner">
-          <h3>{t(props.language, { es: "Comprar paquete de sesiones", en: "Buy session package", pt: "Comprar pacote de sessoes" })}</h3>
+          <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
           <p>
             {t(props.language, {
-              es: "Elige el plan que mejor acompañe tu proceso y confirma la compra.",
-              en: "Choose the plan that best supports your process and confirm the purchase.",
-              pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra."
+              es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
+              en: "Choose a package or buy individual sessions with the link under each plan.",
+              pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
             })}
           </p>
         </div>
@@ -102,7 +93,16 @@ export function CheckoutPackagesPanel(props: {
                 pt: "Sem pacotes multi-sessao. Compre sessoes avulsas no botao abaixo."
               })}
             </p>
-            <div className="checkout-package-column checkout-package-column--solo">{individualButton}</div>
+            <div className="checkout-package-column checkout-package-column--solo">
+              <button
+                type="button"
+                className="sessions-package-individual-link sessions-package-individual-link--solo"
+                disabled={!canIndividualCta}
+                onClick={() => props.onIndividualPurchase()}
+              >
+                {individualLinkLabel}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="sessions-empty-state">
@@ -117,8 +117,9 @@ export function CheckoutPackagesPanel(props: {
           </div>
         )
       ) : (
+        <>
         <div className="deal-grid sessions-package-options-grid">
-          {bundlePlans.map((plan, index) => {
+          {bundlePlans.map((plan) => {
             const selectedPlan = props.selectedCheckoutPlanId
               ? props.selectedCheckoutPlanId === plan.id
               : (props.featuredPackageId ? props.featuredPackageId === plan.id : bundlePlans[0]?.id === plan.id);
@@ -193,17 +194,26 @@ export function CheckoutPackagesPanel(props: {
                         props.onSelectPlan(plan);
                       }}
                     >
-                      {selectedPlan
-                        ? t(props.language, { es: "Comprar este paquete", en: "Buy this package", pt: "Comprar este pacote" })
-                        : t(props.language, { es: "Elegir paquete", en: "Choose package", pt: "Escolher pacote" })}
+                      {t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })}
+                    </button>
+                    <button
+                      type="button"
+                      className="sessions-package-individual-link"
+                      disabled={!canIndividualCta}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        props.onIndividualPurchase();
+                      }}
+                    >
+                      {individualLinkLabel}
                     </button>
                   </article>
                 </div>
-                {index === 0 ? individualButton : null}
               </div>
             );
           })}
         </div>
+        </>
       )}
     </>
   );

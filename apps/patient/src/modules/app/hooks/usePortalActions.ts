@@ -101,30 +101,31 @@ export function usePortalActions(params: {
 
   const purchaseIndividualSessions = async (sessionCount: number): Promise<boolean> => {
     if (!Number.isInteger(sessionCount) || sessionCount < 1 || sessionCount > 99) {
-      return false;
+      throw new Error("Invalid session count");
     }
 
     const selectedProfessionalId = params.state.selectedProfessionalId;
     const authToken = params.state.authToken;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
 
-    if (authToken) {
-      try {
-        const response = await apiRequest<PurchasePackageApiResponse>(
-          "/api/profiles/me/purchase-individual-sessions",
-          {
-            method: "POST",
-            body: JSON.stringify({ sessionCount })
-          },
-          authToken
-        );
-        purchasedPackage = response.purchase;
-      } catch (error) {
-        console.error("Could not purchase individual sessions", error);
-        return false;
-      }
-    } else {
-      return false;
+    if (!authToken) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      const response = await apiRequest<PurchasePackageApiResponse>(
+        "/api/profiles/me/purchase-individual-sessions",
+        {
+          method: "POST",
+          body: JSON.stringify({ sessionCount })
+        },
+        authToken
+      );
+      purchasedPackage = response.purchase;
+    } catch (error) {
+      console.error("Could not purchase individual sessions", error);
+      const msg = error instanceof Error ? error.message.trim() : "";
+      throw new Error(msg.length > 0 ? msg : "Could not purchase individual sessions");
     }
 
     params.onStateChange((current) => ({

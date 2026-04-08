@@ -1,6 +1,6 @@
 import { syncUserTimezone } from "@therapy/auth";
 import { textByLanguage, type LocalizedText } from "@therapy/i18n-config";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, type NavigateFunction } from "react-router-dom";
 import type { SyntheticEvent } from "react";
 import { DashboardPage } from "./DashboardPage";
 import { BookingPage } from "./BookingPage";
@@ -20,7 +20,7 @@ function OnboardingFinalMatching(p: {
   favoritesReturnPath: string;
   state: PatientAppState;
   needsInitialTherapistSelection: boolean;
-  navigate: (path: string) => void;
+  navigate: NavigateFunction;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
   syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
@@ -66,12 +66,13 @@ function OnboardingFinalMatching(p: {
         p.onStateChange((current) => ({
           ...current,
           therapistSelectionCompleted: true,
+          onboardingFinalCompleted: true,
           assignedProfessionalId: null,
           assignedProfessionalName: null,
           selectedProfessionalId: "",
           activeChatProfessionalId: ""
         }));
-        p.navigate("/");
+        p.navigate("/", { replace: true });
       }}
       onCreateBooking={async (professionalId, slot) => {
         const result = await p.confirmBooking(professionalId, slot, true);
@@ -89,7 +90,7 @@ function OnboardingFinalMatching(p: {
           ...current,
           onboardingFinalCompleted: true
         }));
-        p.navigate("/");
+        p.navigate("/", { replace: true });
       }}
       onReserve={p.handleReserveFromAnywhere}
       onChat={p.handleChatFromAnywhere}
@@ -109,7 +110,7 @@ export function PortalRoutes(props: {
   professionalPhotoMap: Record<string, string>;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   setSelectedBookingId: (bookingId: string) => void;
-  navigate: (path: string) => void;
+  navigate: NavigateFunction;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   handleGoToReservations: () => void;
@@ -128,6 +129,10 @@ export function PortalRoutes(props: {
 }) {
   const startPackagePurchase = (plan: PackagePlan) => {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
+  };
+
+  const startIndividualSessionsFromDashboard = () => {
+    props.navigate("/sessions?flow=checkout&purchase=individual&source=dashboard");
   };
 
   return (
@@ -153,6 +158,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
                 />
               )
@@ -225,6 +231,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
                 />
               )

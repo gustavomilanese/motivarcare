@@ -99,7 +99,7 @@ const purchasePackageSchema = z.object({
   packageId: z.string().trim().min(1)
 });
 const purchaseIndividualSessionsSchema = z.object({
-  sessionCount: z.number().int().min(1).max(99)
+  sessionCount: z.coerce.number().int().min(1).max(99)
 });
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()

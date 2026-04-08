@@ -247,9 +247,9 @@ export function ProfileScreen() {
                   <Text style={[styles.rowValue, { color: c.text }]} numberOfLines={1}>
                     {formatDate(profileDetails.latestPackagePurchasedAt)}
                   </Text>
-                </View>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
+          </View>
           </>
         )}
       </View>

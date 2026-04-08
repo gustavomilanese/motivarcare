@@ -9,6 +9,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
+import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
@@ -202,6 +203,8 @@ export function DashboardPage(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
+  /** Abre Sesiones en checkout enfocado en compra suelta (misma UX que el panel de paquetes). */
+  onNavigateToIndividualSessions: () => void;
   /** Flujo de matching + reserva de prueba (p. ej. tras posponer onboarding). */
   onNavigateToBookTrial: () => void;
 }) {
@@ -215,6 +218,7 @@ export function DashboardPage(props: {
   const [trialSlotId, setTrialSlotId] = useState("");
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
+  const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
@@ -355,6 +359,18 @@ export function DashboardPage(props: {
     () => [...packagePlans].sort((a, b) => a.credits - b.credits),
     [packagePlans]
   );
+  const individualUnitHome = useMemo(() => {
+    const oneCredit = packagePlans.find((plan) => plan.credits === 1);
+    if (oneCredit) {
+      return oneCredit.priceCents / 100;
+    }
+    const bundle = packagePlans.find((plan) => plan.credits > 1);
+    if (!bundle) {
+      return null;
+    }
+    return bundle.priceCents / 100 / bundle.credits;
+  }, [packagePlans]);
+  const canIndividualCtaHome = individualUnitHome !== null && packagePlans.length > 0;
   const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
   const availableSessions = props.state.subscription.creditsRemaining;
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
@@ -412,11 +428,9 @@ export function DashboardPage(props: {
             <button
               className="sessions-hero-buy-button dashboard-hero-buy-button"
               type="button"
-              onClick={() => {
-                packageSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
+              onClick={() => setAcquireSessionsModalOpen(true)}
             >
-              {t(props.language, { es: "Comprar paquete", en: "Buy package", pt: "Comprar pacote" })}
+              {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
             </button>
           ) : null}
         </div>
@@ -922,8 +936,14 @@ export function DashboardPage(props: {
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
           <div className="session-booking-panel-head">
             <div>
-              <h3>{t(props.language, { es: "Comprar paquete de sesiones", en: "Buy session package", pt: "Comprar pacote de sessoes" })}</h3>
-              <p>{t(props.language, { es: "Elige el plan que mejor acompañe tu proceso y confirma la compra.", en: "Choose the plan that best supports your process and confirm the purchase.", pt: "Escolha o plano que melhor acompanha seu processo e confirme a compra." })}</p>
+              <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
+              <p>
+                {t(props.language, {
+                  es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
+                  en: "Choose a package or buy individual sessions with the link under each plan.",
+                  pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
+                })}
+              </p>
             </div>
           </div>
           <div className="deal-grid sessions-package-options-grid">
@@ -939,7 +959,7 @@ export function DashboardPage(props: {
                 <div className={`deal-card-shell ${featuredPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
                   <div className="deal-card-roof" aria-hidden={featuredPackageId !== plan.id}>
                     {featuredPackageId === plan.id ? (
-                      <span className="deal-card-featured-kicker">{t(props.language, { es: "Mas elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
+                      <span className="deal-card-featured-kicker">{t(props.language, { es: "Más elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
                     ) : null}
                   </div>
                   <article
@@ -995,9 +1015,19 @@ export function DashboardPage(props: {
                       type="button"
                       onClick={() => props.onStartPackagePurchase(plan)}
                     >
-                      {selectedPlan
-                        ? t(props.language, { es: "Comprar este paquete", en: "Buy this package", pt: "Comprar este pacote" })
-                        : t(props.language, { es: "Elegir paquete", en: "Choose package", pt: "Escolher pacote" })}
+                      {t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })}
+                    </button>
+                    <button
+                      type="button"
+                      className="sessions-package-individual-link"
+                      disabled={!canIndividualCtaHome}
+                      onClick={props.onNavigateToIndividualSessions}
+                    >
+                      {t(props.language, {
+                        es: "Comprar sesiones individuales",
+                        en: "Buy individual sessions",
+                        pt: "Comprar sessoes individuais"
+                      })}
                     </button>
                   </article>
                 </div>
@@ -1291,6 +1321,19 @@ export function DashboardPage(props: {
           </div>
         ) : null}
       </div>
+
+      {acquireSessionsModalOpen ? (
+        <AcquireSessionsChoiceModal
+          language={props.language}
+          onClose={() => setAcquireSessionsModalOpen(false)}
+          onChoosePackages={() => {
+            window.requestAnimationFrame(() => {
+              packageSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
+          onChooseIndividual={props.onNavigateToIndividualSessions}
+        />
+      ) : null}
     </div>
   );
 }

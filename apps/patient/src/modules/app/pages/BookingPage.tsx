@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -17,6 +17,7 @@ import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { PaymentMethodModal } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
+import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import type {
@@ -138,6 +139,7 @@ export function BookingPage(props: {
   const [individualPaymentError, setIndividualPaymentError] = useState("");
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
+  const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
   const checkoutSectionRef = useRef<HTMLElement | null>(null);
   const isCheckoutFlow = searchParams.get("flow") === "checkout";
@@ -235,10 +237,20 @@ export function BookingPage(props: {
     setIndividualPaymentError("");
   };
 
+  const openIndividualPurchase = useCallback(() => {
+    setCheckoutPaymentError("");
+    setCheckoutPaymentPlanId(null);
+    setIndividualPaymentError("");
+    setIndividualQtyDraft("1");
+    setIndividualPaymentCount(null);
+    setIndividualQtyOpen(true);
+  }, []);
+
   const setCheckoutFlow = (active: boolean, nextPlanId?: string | null) => {
     const nextParams = new URLSearchParams(searchParams);
     if (active) {
       nextParams.set("flow", "checkout");
+      nextParams.delete("purchase");
       if (nextPlanId) {
         nextParams.set("plan", nextPlanId);
       } else {
@@ -247,6 +259,7 @@ export function BookingPage(props: {
     } else {
       nextParams.delete("flow");
       nextParams.delete("plan");
+      nextParams.delete("purchase");
       resetIndividualPurchaseUi();
     }
     setSearchParams(nextParams);
@@ -287,6 +300,7 @@ export function BookingPage(props: {
     nextParams.delete("focus");
     nextParams.delete("flow");
     nextParams.delete("plan");
+    nextParams.delete("purchase");
     nextParams.delete("source");
     setSearchParams(nextParams, { replace: true });
 
@@ -316,7 +330,13 @@ export function BookingPage(props: {
   }, [isCheckoutFlow]);
 
   useEffect(() => {
-    if (!isCheckoutFlow || checkoutSource !== "dashboard" || !selectedCheckoutPlanId || checkoutPaymentPlanId) {
+    if (
+      !isCheckoutFlow
+      || checkoutSource !== "dashboard"
+      || !selectedCheckoutPlanId
+      || checkoutPaymentPlanId
+      || searchParams.get("purchase") === "individual"
+    ) {
       return;
     }
     setCheckoutPaymentPlanId(selectedCheckoutPlanId);
@@ -325,6 +345,26 @@ export function BookingPage(props: {
     nextParams.delete("source");
     setSearchParams(nextParams, { replace: true });
   }, [checkoutPaymentPlanId, checkoutSource, isCheckoutFlow, searchParams, selectedCheckoutPlanId, setSearchParams]);
+
+  const individualPurchaseDeepLinkConsumed = useRef(false);
+
+  useEffect(() => {
+    if (!isCheckoutFlow || searchParams.get("purchase") !== "individual") {
+      individualPurchaseDeepLinkConsumed.current = false;
+      return;
+    }
+    if (packagesLoading || individualUnitPriceUsd === null) {
+      return;
+    }
+    if (individualPurchaseDeepLinkConsumed.current) {
+      return;
+    }
+    individualPurchaseDeepLinkConsumed.current = true;
+    openIndividualPurchase();
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("purchase");
+    setSearchParams(nextParams, { replace: true });
+  }, [isCheckoutFlow, individualUnitPriceUsd, openIndividualPurchase, packagesLoading, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (panelMode === "new") {
@@ -497,6 +537,25 @@ export function BookingPage(props: {
     setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? packagePlans[0]?.id ?? null);
   };
 
+  const openIndividualSessionsCheckoutFromModal = () => {
+    setShowNoCreditsAlert(false);
+    setPanelMode(null);
+    setEditingBookingId(null);
+    setSelectedSlotId("");
+    setBookingActionError("");
+    setCheckoutPaymentLoading(false);
+    setCheckoutPaymentPlanId(null);
+    setCheckoutPaymentError("");
+    resetIndividualPurchaseUi();
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("flow", "checkout");
+      next.delete("plan");
+      next.set("purchase", "individual");
+      return next;
+    });
+  };
+
   const toggleNewBookingPanel = () => {
     if (isCheckoutFlow) {
       setCheckoutPaymentLoading(false);
@@ -534,15 +593,6 @@ export function BookingPage(props: {
     setCheckoutPaymentPlanId(plan.id);
   };
 
-  const openIndividualPurchase = () => {
-    setCheckoutPaymentError("");
-    setCheckoutPaymentPlanId(null);
-    setIndividualPaymentError("");
-    setIndividualQtyDraft("1");
-    setIndividualPaymentCount(null);
-    setIndividualQtyOpen(true);
-  };
-
   const proceedIndividualToPayment = () => {
     const n = Number.parseInt(individualQtyDraft.trim(), 10);
     if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceUsd === null) {
@@ -561,11 +611,7 @@ export function BookingPage(props: {
     setIndividualPaymentLoading(true);
     setIndividualPaymentError("");
     try {
-      const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
-      if (!purchased) {
-        setIndividualPaymentError(friendlyCheckoutPackageMessage("", props.language));
-        return;
-      }
+      await props.onPurchaseIndividualSessions(individualPaymentCount);
       resetIndividualPurchaseUi();
       setCheckoutFlow(false);
     } catch (error) {
@@ -640,13 +686,13 @@ export function BookingPage(props: {
               </p>
             </div>
           </div>
-          <div className="sessions-hero-actions sessions-booking-hero-actions sessions-booking-packages-desktop-only">
+          <div className="sessions-hero-actions sessions-booking-hero-actions">
             <button
               className="sessions-hero-buy-button"
               type="button"
-              onClick={handleOpenPackages}
+              onClick={() => setAcquireSessionsModalOpen(true)}
             >
-              {t(props.language, { es: "Comprar paquete", en: "Buy package", pt: "Comprar pacote" })}
+              {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
             </button>
           </div>
           <button
@@ -745,7 +791,7 @@ export function BookingPage(props: {
                 <p>{t(props.language, { es: "Compra un paquete para reservar una nueva sesión.", en: "Buy a package to reserve a new session.", pt: "Compre um pacote para reservar uma nova sessao." })}</p>
               </div>
             </div>
-            <button type="button" className="sessions-credit-alert-action" onClick={handleOpenPackages}>
+            <button type="button" className="sessions-credit-alert-action" onClick={() => setAcquireSessionsModalOpen(true)}>
               {t(props.language, { es: "Ir a comprar", en: "Go to buy", pt: "Ir para compra" })}
             </button>
           </div>
@@ -1315,8 +1361,20 @@ export function BookingPage(props: {
           }}
           onClose={() => {
             resetIndividualPurchaseUi();
+            setCheckoutFlow(false);
           }}
           onPay={() => void handleConfirmIndividualPayment()}
+        />
+      ) : null}
+
+      {acquireSessionsModalOpen ? (
+        <AcquireSessionsChoiceModal
+          language={props.language}
+          onClose={() => setAcquireSessionsModalOpen(false)}
+          onChoosePackages={() => {
+            handleOpenPackages();
+          }}
+          onChooseIndividual={openIndividualSessionsCheckoutFromModal}
         />
       ) : null}
     </div>

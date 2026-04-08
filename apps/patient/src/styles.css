@@ -2956,6 +2956,98 @@ button.danger {
   gap: 18px;
 }
 
+.acquire-sessions-choice-modal {
+  width: min(400px, 100%);
+  max-width: 100%;
+  max-height: none;
+  padding: 20px 20px 22px;
+  gap: 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(140% 100% at 100% 0%, rgba(95, 68, 235, 0.12), transparent 55%),
+    var(--portal-surface-solid);
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  box-shadow: 0 24px 48px rgba(30, 27, 75, 0.12);
+}
+
+.acquire-sessions-choice-head {
+  position: relative;
+  padding-right: 44px;
+}
+
+.acquire-sessions-choice-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.acquire-sessions-choice-sub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.acquire-sessions-choice-close {
+  position: absolute;
+  top: -4px;
+  right: 0;
+}
+
+.acquire-sessions-choice-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.acquire-sessions-choice-card {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+  font-family: inherit;
+}
+
+.acquire-sessions-choice-card:hover {
+  border-color: rgba(95, 68, 235, 0.45);
+  box-shadow: 0 8px 24px rgba(95, 68, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.acquire-sessions-choice-card--secondary {
+  background: linear-gradient(180deg, #faf9ff 0%, #f4f0ff 100%);
+}
+
+.acquire-sessions-choice-card-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5f44eb;
+}
+
+.acquire-sessions-choice-card-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.acquire-sessions-choice-card-hint {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
 .summary-modal {
   width: min(540px, 100%);
   padding: 20px;
@@ -4396,6 +4488,37 @@ button.danger {
   width: min(50%, 340px);
 }
 
+.sessions-package-individual-link {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b21b6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+}
+
+.sessions-package-individual-link:hover:not(:disabled) {
+  color: #4c1d95;
+}
+
+.sessions-package-individual-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sessions-package-individual-link--solo {
+  margin-top: 0;
+  text-align: left;
+}
+
 .sessions-balance {
   display: flex;
   align-items: center;
@@ -5481,10 +5604,6 @@ button.sessions-balance {
   color: #ffffff;
 }
 
-.sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title {
-  color: rgba(255, 255, 255, 0.92);
-}
-
 .sessions-purchased-history .sessions-secondary-toggle-label {
   color: rgba(255, 255, 255, 0.88);
 }
@@ -5556,6 +5675,28 @@ button.sessions-balance {
 
 .sessions-calendar-toggle:hover .sessions-secondary-title {
   color: #0f1a31;
+}
+
+/* Tarjeta violeta "Paquetes comprados": la regla genérica de :hover arriba ganaba por orden; reforzamos contraste y alineación. */
+.sessions-purchased-history .sessions-calendar-toggle {
+  align-items: center;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+
+.sessions-purchased-history .sessions-calendar-toggle:hover,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
+  color: #ffffff;
+}
+
+.sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-toggle-label,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-toggle-label {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .sessions-secondary-toggle-label {
