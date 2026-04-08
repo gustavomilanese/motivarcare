@@ -24,6 +24,8 @@ export type ResolveWebAppApiBaseParams = {
   forceRemoteApi: boolean;
   /** `window.location.hostname` in the browser; empty during SSR or workers */
   browserHostname: string;
+  /** Optional, e.g. path-only "/api/...": configure Vite `server.proxy` in dev */
+  preferRelativeSameOriginInDev?: boolean;
   /** Optional, e.g. `window.__THERAPY_API_BASE__` from index.html */
   injectedApiBase: string | undefined;
   /** e.g. `http://localhost:4000` */
@@ -40,6 +42,9 @@ export function resolveWebAppApiBase(params: ResolveWebAppApiBaseParams): string
   const browserLocal = isLoopbackHost(params.browserHostname);
 
   if (params.isDev && browserLocal && !params.forceRemoteApi) {
+    if (params.preferRelativeSameOriginInDev) {
+      return "";
+    }
     if (fromVite && apiUrlIsLoopback(fromVite)) {
       return fromVite;
     }

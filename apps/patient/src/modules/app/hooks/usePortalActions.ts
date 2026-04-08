@@ -1,6 +1,7 @@
 import { replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { mergeRescheduledBooking, type BookingMutationApiItem } from "../../booking/bookingMappers";
 import { apiRequest } from "../services/api";
+import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
@@ -297,6 +298,16 @@ export function usePortalActions(params: {
         }
       };
     });
+
+    const completedAsTrial = remoteBooking?.bookingMode === "trial" || bookingAsTrial;
+    if (completedAsTrial && params.state.session?.id) {
+      try {
+        window.sessionStorage.setItem(POST_TRIAL_CALENDAR_PENDING_SESSION_KEY, params.state.session.id);
+      } catch {
+        // ignore
+      }
+    }
+
     return { ok: true };
   };
 

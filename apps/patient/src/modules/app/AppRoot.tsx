@@ -12,6 +12,13 @@ import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
 } from "../booking/bookingMappers";
+import {
+  POST_TRIAL_CALENDAR_PENDING_SESSION_KEY,
+  clearCalendarOfferContext,
+  clearPostTrialCalendarPending,
+  getCalendarOfferContext,
+  setCalendarOfferContext
+} from "./constants";
 import { AuthScreen } from "./pages/AuthScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
@@ -285,6 +292,8 @@ export function App() {
   useEffect(() => {
     setPatientApiUnauthorizedHandler(() => {
       clearPostIntakePhotoPending();
+      clearPostTrialCalendarPending();
+      clearCalendarOfferContext();
       setShowPostIntakePhotoStep(false);
       setProfileSyncReady(false);
       setProfessionalDirectory(professionalsCatalog);
@@ -372,6 +381,7 @@ export function App() {
     } catch {
       // ignore
     }
+    setCalendarOfferContext("pre-matching");
     setShowCalendarOnboarding(true);
   }, [
     sessionId,
@@ -380,6 +390,62 @@ export function App() {
     calendarPromptDismissedUserIds,
     showCalendarOnboarding,
     showPostIntakePhotoStep
+  ]);
+
+  /** Tras confirmar sesión de prueba: ofrecer Google Calendar si aún no está conectado. */
+  useEffect(() => {
+    if (!sessionId || !state.authToken || !profileSyncReady) {
+      return;
+    }
+    if (showPostIntakePhotoStep || showCalendarOnboarding) {
+      return;
+    }
+    if (calendarPromptDismissedUserIds.includes(sessionId)) {
+      clearPostTrialCalendarPending();
+      return;
+    }
+
+    let pending = false;
+    try {
+      pending = window.sessionStorage.getItem(POST_TRIAL_CALENDAR_PENDING_SESSION_KEY) === sessionId;
+    } catch {
+      return;
+    }
+    if (!pending) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void apiRequest<{ connected: boolean }>("/api/auth/google/calendar/status", {}, state.authToken)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        if (response.connected) {
+          clearPostTrialCalendarPending();
+          return;
+        }
+        setCalendarOfferContext("post-trial");
+        setShowCalendarOnboarding(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCalendarOfferContext("post-trial");
+          setShowCalendarOnboarding(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    sessionId,
+    state.authToken,
+    profileSyncReady,
+    showPostIntakePhotoStep,
+    showCalendarOnboarding,
+    calendarPromptDismissedUserIds
   ]);
 
   const handleConnectCalendarFromOnboarding = async () => {
@@ -398,12 +464,13 @@ export function App() {
       } catch {
         // ignore
       }
+      const returnPath = getCalendarOfferContext() === "post-trial" ? "/" : "/onboarding/final/matching";
       const response = await apiRequest<{ authUrl: string }>(
         "/api/auth/google/calendar/connect",
         {
           method: "POST",
           body: JSON.stringify({
-            returnPath: "/onboarding/final/matching",
+            returnPath,
             clientOrigin: window.location.origin
           })
         },
@@ -456,6 +523,7 @@ export function App() {
       setShowPostIntakePhotoStep(false);
       if (calendarAfterPhotoRef.current) {
         flushSync(() => {
+          setCalendarOfferContext("pre-matching");
           setShowCalendarOnboarding(true);
         });
       } else {
@@ -704,7 +772,12 @@ export function App() {
       setCalendarPromptDismissedUserIds(nextDismissed);
       setShowCalendarOnboarding(false);
       setCalendarOnboardingLoading(false);
-      calendarNav(resumeMatching ? onboardingPath : location.pathname, null);
+      const ctx = getCalendarOfferContext();
+      clearCalendarOfferContext();
+      clearPostTrialCalendarPending();
+      const targetPath =
+        ctx === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
+      calendarNav(targetPath, null);
       return;
     }
 
@@ -715,10 +788,11 @@ export function App() {
     // Keep current session stable and return safely to onboarding flow.
     setShowCalendarOnboarding(false);
     setCalendarOnboardingLoading(false);
-    calendarNav(
-      resumeMatching ? onboardingPath : location.pathname,
-      { calendar_sync: "error", calendar_reason: "session_mismatch" }
-    );
+    const ctxErr = getCalendarOfferContext();
+    clearCalendarOfferContext();
+    clearPostTrialCalendarPending();
+    const errorTarget = ctxErr === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
+    calendarNav(errorTarget, { calendar_sync: "error", calendar_reason: "session_mismatch" });
   }, [calendarPromptDismissedUserIds, location.pathname, location.search, navigate, state.session?.id]);
 
   useEffect(() => {
@@ -735,7 +809,10 @@ export function App() {
       .then((response) => {
         if (!cancelled && response.connected) {
           setShowCalendarOnboarding(false);
-          navigate("/onboarding/final/matching", { replace: true });
+          const ctx = getCalendarOfferContext();
+          clearCalendarOfferContext();
+          clearPostTrialCalendarPending();
+          navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
         }
       })
       .catch(() => {
@@ -894,8 +971,11 @@ export function App() {
                   writeDismissedCalendarPromptUsers(nextDismissed);
                   setCalendarPromptDismissedUserIds(nextDismissed);
                 }
+                const ctx = getCalendarOfferContext();
+                clearCalendarOfferContext();
+                clearPostTrialCalendarPending();
                 setShowCalendarOnboarding(false);
-                navigate("/onboarding/final/matching", { replace: true });
+                navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
               }}
               disabled={calendarOnboardingLoading}
             >
@@ -1025,6 +1105,8 @@ export function App() {
       onStateChange={updateState}
       onLogout={() => {
         clearPostIntakePhotoPending();
+        clearPostTrialCalendarPending();
+        clearCalendarOfferContext();
         setShowPostIntakePhotoStep(false);
         setProfileSyncReady(false);
         setProfessionalDirectory(professionalsCatalog);

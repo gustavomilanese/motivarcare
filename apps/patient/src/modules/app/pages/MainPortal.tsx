@@ -117,7 +117,8 @@ export function MainPortal(props: {
   const lockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
   const isOnboardingMatchingView =
     lockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
-  const hideSidebar = isOnboardingMatchingView;
+  const isBookTrialView = location.pathname === "/book/trial";
+  const hideSidebar = isOnboardingMatchingView || isBookTrialView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
     && !props.state.assignedProfessionalId

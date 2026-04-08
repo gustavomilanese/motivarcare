@@ -23,15 +23,28 @@ export interface ApiClientConfig {
 export type ApiClient = <T>(path: string, init?: RequestInit, token?: string | null) => Promise<T>;
 
 export async function apiRequestJson<T>(params: ApiRequestJsonParams): Promise<T> {
-  const response = await fetch(`${params.baseUrl}${params.path}`, {
-    credentials: params.init?.credentials ?? "include",
-    ...params.init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(params.token ? { Authorization: `Bearer ${params.token}` } : {}),
-      ...(params.init?.headers ?? {})
-    }
-  });
+  const url = `${params.baseUrl}${params.path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      credentials: params.init?.credentials ?? "include",
+      ...params.init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(params.token ? { Authorization: `Bearer ${params.token}` } : {}),
+        ...(params.init?.headers ?? {})
+      }
+    });
+  } catch (error) {
+    const original = error instanceof Error ? error.message : String(error);
+    const target =
+      params.baseUrl.trim().length > 0
+        ? params.baseUrl
+        : "this app origin (Vite dev proxy → API :4000)";
+    throw new Error(
+      `Cannot reach API at ${target}. Is the backend running? ${original}`
+    );
+  }
 
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}`;

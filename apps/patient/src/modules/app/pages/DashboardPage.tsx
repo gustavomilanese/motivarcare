@@ -198,12 +198,12 @@ export function DashboardPage(props: {
   onGoToReservations: () => void;
   onGoToBooking: (professionalId: string) => void;
   onGoToProfessional: (professionalId: string) => void;
-  /** Cuando aún no hay profesional activo, abre el listado para elegir. */
-  onGoToMatching: () => void;
   onGoToChat: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
+  /** Flujo de matching + reserva de prueba (p. ej. tras posponer onboarding). */
+  onNavigateToBookTrial: () => void;
 }) {
   const now = Date.now();
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
@@ -450,9 +450,19 @@ export function DashboardPage(props: {
                   pt: "Escolha um horario para deixar sua primeira sessao ja agendada."
                 })}
         </p>
-        <button className="trial-inline-action" type="button" onClick={openTrialModal} disabled={!hasTrialPlanned}>
-          {t(props.language, { es: "Modificar", en: "Modify", pt: "Modificar" })}
-        </button>
+        {hasTrialPlanned ? (
+          <button className="trial-inline-action" type="button" onClick={openTrialModal}>
+            {t(props.language, { es: "Modificar", en: "Modify", pt: "Modificar" })}
+          </button>
+        ) : trialStatus === "pending" ? (
+          <button className="trial-inline-action" type="button" onClick={() => props.onNavigateToBookTrial()}>
+            {t(props.language, {
+              es: "Reservar sesión de prueba",
+              en: "Book trial session",
+              pt: "Reservar sessao de teste"
+            })}
+          </button>
+        ) : null}
       </section>
 
       <section className="hero-grid">
@@ -487,7 +497,18 @@ export function DashboardPage(props: {
           <button
             className="sessions-combined-section sessions-combined-action"
             type="button"
-            onClick={() => props.onGoToBooking(props.state.selectedProfessionalId)}
+            onClick={() => {
+              const resolvedId = props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
+              if (resolvedId) {
+                props.onGoToBooking(resolvedId);
+                return;
+              }
+              if (trialStatus === "pending") {
+                props.onNavigateToBookTrial();
+                return;
+              }
+              props.onGoToReservations();
+            }}
           >
             <span className="label sessions-available-label">
               <span className="sessions-available-icon" aria-hidden="true">◌</span>
@@ -560,16 +581,7 @@ export function DashboardPage(props: {
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            className="hero-card hero-card-button active-professional-card"
-            aria-label={t(props.language, {
-              es: "Ver profesionales sugeridos para elegir el tuyo",
-              en: "See suggested professionals to choose yours",
-              pt: "Ver profissionais sugeridos para escolher o seu"
-            })}
-            onClick={() => props.onGoToMatching()}
-          >
+          <div className="hero-card active-professional-card active-professional-card--empty" aria-live="polite">
             <span className="label">{t(props.language, { es: "Profesional activo", en: "Active professional", pt: "Profissional ativo" })}</span>
             <p>
               {props.state.assignedProfessionalName
@@ -582,12 +594,21 @@ export function DashboardPage(props: {
                     { name: props.state.assignedProfessionalName }
                   )
                 : t(props.language, {
-                    es: "Tocá para ver profesionales disponibles y elegir el tuyo.",
-                    en: "Tap to see available professionals and choose yours.",
-                    pt: "Toque para ver profissionais disponiveis e escolher o seu."
+                    es: "Se definirá al reservar tu sesión de prueba o una sesión con créditos. Usá el banner de prueba o Ir a sesiones.",
+                    en: "We will set this when you book your trial or a credit session. Use the trial banner or Go to sessions.",
+                    pt: "Será definido ao reservar sua sessao de teste ou com creditos. Use o banner de teste ou Ir para sessoes."
                   })}
             </p>
-          </button>
+            {trialStatus === "pending" && !props.state.assignedProfessionalName ? (
+              <button className="chat-gradient-button" type="button" onClick={() => props.onNavigateToBookTrial()}>
+                {t(props.language, {
+                  es: "Reservar sesión de prueba",
+                  en: "Book trial session",
+                  pt: "Reservar sessao de teste"
+                })}
+              </button>
+            ) : null}
+          </div>
         )}
       </section>
 
@@ -1108,7 +1129,16 @@ export function DashboardPage(props: {
               <button
                 type="button"
                 className="dashboard-rn-fab"
-                onClick={() => props.onGoToBooking(pricingProfessionalId)}
+                onClick={() => {
+                  if (pricingProfessionalId) {
+                    props.onGoToBooking(pricingProfessionalId);
+                    return;
+                  }
+                  if (trialStatus === "pending") {
+                    props.onNavigateToBookTrial();
+                  }
+                }}
+                disabled={!pricingProfessionalId && trialStatus !== "pending"}
                 aria-label={t(props.language, {
                   es: "Agendar una sesión",
                   en: "Book a session",

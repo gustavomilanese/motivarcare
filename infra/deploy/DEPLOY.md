@@ -67,15 +67,26 @@ Copiá el resto desde `.env.example` en la raíz del repo según necesites.
 
 El repo hoy usa **`prisma db push`** (no hay carpeta `migrations` versionada en el flujo habitual).
 
-Desde tu máquina, con `DATABASE_URL` apuntando a la base **de Railway**:
+**Deploy automático (recomendado):** en `railway.toml` el servicio API define un **`releaseCommand`** que ejecuta `prisma db push` contra `DATABASE_URL` **en cada deploy**, antes de que el nuevo contenedor pase a ser el activo. Así la base de **producción** sigue el **mismo `schema.prisma`** que el código que acabás de desplegar; no “heredás” columnas viejas en prod mientras el repo ya las borró en el modelo.
+
+- **Servicio API:** no hace falta configurar nada extra para que corra el release.
+- **Servicio outbox (worker):** opcional pero recomendado: variable **`SKIP_RELEASE_DB_PUSH=1`** para no duplicar el mismo `db push` en dos contenedores (un solo push por deploy alcanza).
+
+Si el release **falla** porque Prisma detecta **pérdida de datos** (p. ej. borrar una columna que todavía tiene valores), el deploy se detiene: es una protección. En ese caso, desde tu máquina, con la `DATABASE_URL` de Railway:
 
 ```bash
 cd /ruta/al/therapy-platform
-export DATABASE_URL='mysql://...'   # pegar la de Railway
+export DATABASE_URL='mysql://...'
 npm run db:push:remote
 ```
 
-O desde Railway: **New** → **Empty service** → **Run** one-off con imagen Node y el mismo repo, o usá la CLI de Railway para ejecutar un comando. Lo más simple suele ser correr `db:push:remote` local con la URL de prod.
+Si Prisma insiste en `--accept-data-loss` y aceptás el impacto (solo en casos acotados, p. ej. columna deprecada en un entorno que controlás):
+
+```bash
+npm run db:push:remote:accept-data-loss
+```
+
+**Manual sin redeploy:** si alguna vez necesitás alinear el esquema sin pasar por un release, el mismo `db:push:remote` (o el comando con `--accept-data-loss` arriba) desde tu laptop con la URL de prod sigue siendo válido. También podés usar un one-off en Railway (CLI o “Run”).
 
 ### A5. Segundo servicio: worker Outbox
 

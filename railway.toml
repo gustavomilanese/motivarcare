@@ -7,6 +7,9 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
+# Antes de levantar la nueva versión: alinear MySQL con `schema.prisma` (mismo flujo que local `db:push`).
+# En el servicio **outbox**, definí `SKIP_RELEASE_DB_PUSH=1` para no repetir el push (opcional; dos push seguidos suelen ser inocuos).
+releaseCommand = "sh -c 'if [ \"$SKIP_RELEASE_DB_PUSH\" = \"1\" ]; then echo \"[release] omitiendo db push (SKIP_RELEASE_DB_PUSH=1)\"; exit 0; else node apps/api/scripts/prisma-with-root-env.mjs db push; fi'"
 startCommand = "npm run start -w @therapy/api"
 healthcheckPath = "/health/ready"
 healthcheckTimeout = 120

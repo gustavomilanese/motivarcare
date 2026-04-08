@@ -8852,6 +8852,13 @@ button.sessions-balance {
   transform: translateY(-1px);
 }
 
+.patient-dashboard-home .active-professional-card--empty {
+  cursor: default;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+}
+
 .patient-dashboard-home .active-professional-row {
   gap: 8px;
 }

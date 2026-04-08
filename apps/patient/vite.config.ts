@@ -25,6 +25,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     envDir: repoRoot,
+    server: {
+      proxy: {
+        "/api": {
+          target: "http://127.0.0.1:4000",
+          changeOrigin: true
+        }
+      }
+    },
     plugins: [
       {
         name: "inject-vite-api-base-meta",

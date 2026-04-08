@@ -16,6 +16,7 @@ export const API_BASE = resolveWebAppApiBase({
   isDev: env.DEV,
   forceRemoteApi: env.VITE_FORCE_REMOTE_API === "true",
   browserHostname: typeof window !== "undefined" ? window.location.hostname : "",
+  preferRelativeSameOriginInDev: true,
   injectedApiBase: typeof window !== "undefined" ? window.__THERAPY_API_BASE__ : undefined,
   loopbackDefault: "http://localhost:4000"
 });

@@ -1,5 +1,45 @@
 import type { IntakeQuestion, PackagePlan } from "./types";
 
+/** Tras confirmar sesión de prueba: AppRoot ofrece conectar Google Calendar (no aplica a compras con crédito). */
+export const POST_TRIAL_CALENDAR_PENDING_SESSION_KEY = "mc_post_trial_calendar_pending";
+
+export type CalendarOfferContext = "pre-matching" | "post-trial";
+
+const CALENDAR_OFFER_CONTEXT_SESSION_KEY = "mc_calendar_offer_context";
+
+export function setCalendarOfferContext(ctx: CalendarOfferContext): void {
+  try {
+    window.sessionStorage.setItem(CALENDAR_OFFER_CONTEXT_SESSION_KEY, ctx);
+  } catch {
+    // ignore
+  }
+}
+
+export function getCalendarOfferContext(): CalendarOfferContext {
+  try {
+    const raw = window.sessionStorage.getItem(CALENDAR_OFFER_CONTEXT_SESSION_KEY);
+    return raw === "post-trial" ? "post-trial" : "pre-matching";
+  } catch {
+    return "pre-matching";
+  }
+}
+
+export function clearCalendarOfferContext(): void {
+  try {
+    window.sessionStorage.removeItem(CALENDAR_OFFER_CONTEXT_SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function clearPostTrialCalendarPending(): void {
+  try {
+    window.sessionStorage.removeItem(POST_TRIAL_CALENDAR_PENDING_SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 /** Misma que `onHeroFallback`: evita Pexels distinto al admin y al fallback por error de carga. */
 export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.svg";
 

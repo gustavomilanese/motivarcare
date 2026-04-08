@@ -5,6 +5,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getFinanceRules } from "../finance/finance.service.js";
+import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 
@@ -442,10 +443,15 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
 export const profilesRouter = Router();
 
 profilesRouter.get("/professionals", async (_req, res) => {
-  const professionals = await listDirectoryProfessionals();
-  return res.json({
-    professionals
-  });
+  try {
+    const professionals = await listDirectoryProfessionals();
+    return res.json({
+      professionals
+    });
+  } catch (error) {
+    console.error("GET /profiles/professionals failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 });
 
 profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -464,10 +470,17 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
     return res.status(403).json({ error: "Only patients can access matching" });
   }
 
-  const [patientIntake, professionals] = await Promise.all([
-    prisma.patientIntake.findUnique({ where: { patientId: actor.patientProfileId } }),
-    listDirectoryProfessionals()
-  ]);
+  let patientIntake;
+  let professionals: DirectoryProfessional[];
+  try {
+    [patientIntake, professionals] = await Promise.all([
+      prisma.patientIntake.findUnique({ where: { patientId: actor.patientProfileId } }),
+      listDirectoryProfessionals()
+    ]);
+  } catch (error) {
+    console.error("GET /profiles/me/matching failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 
   const rankedProfessionals = professionals
     .map((professional) => {
@@ -1129,13 +1142,22 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
 
   const riskLevel = evaluateIntakeRiskLevel(parsed.data.answers);
 
-  const intake = await prisma.patientIntake.create({
-    data: {
-      patientId: actor.patientProfileId,
-      riskLevel,
-      answers: parsed.data.answers
+  let intake;
+  try {
+    intake = await prisma.patientIntake.create({
+      data: {
+        patientId: actor.patientProfileId,
+        riskLevel,
+        answers: parsed.data.answers
+      }
+    });
+  } catch (error) {
+    console.error("POST /profiles/me/intake failed", error);
+    if (isPrismaUniqueViolation(error)) {
+      return res.status(409).json({ error: "Intake already completed" });
     }
-  });
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 
   if (riskLevel !== "low") {
     const triageConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } });

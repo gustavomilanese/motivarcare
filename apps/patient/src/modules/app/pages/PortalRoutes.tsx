@@ -15,6 +15,89 @@ function t(language: PatientAppState["language"], values: LocalizedText): string
   return textByLanguage(language, values);
 }
 
+/** Mismo flujo que el matching final del onboarding; `favoritesReturnPath` al salir de favoritos. */
+function OnboardingFinalMatching(p: {
+  favoritesReturnPath: string;
+  state: PatientAppState;
+  needsInitialTherapistSelection: boolean;
+  navigate: (path: string) => void;
+  onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
+  toggleFavoriteProfessional: (professionalId: string) => void;
+  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
+  confirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => Promise<{ ok: boolean; error?: string }>;
+  handleReserveFromAnywhere: (professionalId: string) => void;
+  handleChatFromAnywhere: (professionalId: string) => void;
+  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
+}) {
+  return (
+    <MatchingPage
+      language={p.state.language}
+      authToken={p.state.authToken}
+      mode="onboarding-final"
+      intakeAnswers={p.state.intake?.answers ?? {}}
+      isFirstSelectionRequired={p.needsInitialTherapistSelection}
+      showOnlyFavorites={false}
+      favoriteProfessionalIds={p.state.favoriteProfessionalIds}
+      selectedProfessionalId={p.state.selectedProfessionalId}
+      onToggleFavorite={p.toggleFavoriteProfessional}
+      onToggleFavoritesView={(showOnlyFavorites) => {
+        p.navigate(showOnlyFavorites ? "/favorites" : p.favoritesReturnPath);
+      }}
+      onSelectProfessional={(professionalId) => {
+        p.onStateChange((current) => ({
+          ...current,
+          selectedProfessionalId: professionalId,
+          activeChatProfessionalId: professionalId
+        }));
+      }}
+      onCompleteFirstSelection={({ professionalId, professionalName }) => {
+        p.onStateChange((current) => ({
+          ...current,
+          therapistSelectionCompleted: true,
+          selectedProfessionalId: professionalId,
+          assignedProfessionalId: professionalId,
+          assignedProfessionalName: professionalName,
+          activeChatProfessionalId: professionalId
+        }));
+        void p.syncActiveProfessionalAssignment(professionalId);
+      }}
+      onDeferTherapistSelection={async () => {
+        await p.syncActiveProfessionalAssignment(null);
+        p.onStateChange((current) => ({
+          ...current,
+          therapistSelectionCompleted: true,
+          assignedProfessionalId: null,
+          assignedProfessionalName: null,
+          selectedProfessionalId: "",
+          activeChatProfessionalId: ""
+        }));
+        p.navigate("/");
+      }}
+      onCreateBooking={async (professionalId, slot) => {
+        const result = await p.confirmBooking(professionalId, slot, true);
+        if (!result.ok) {
+          throw new Error(
+            result.error ??
+              t(p.state.language, {
+                es: "No hay sesiones disponibles para confirmar esta reserva.",
+                en: "No available sessions to confirm this booking.",
+                pt: "Nao ha sessoes disponiveis para confirmar esta reserva."
+              })
+          );
+        }
+        p.onStateChange((current) => ({
+          ...current,
+          onboardingFinalCompleted: true
+        }));
+        p.navigate("/");
+      }}
+      onReserve={p.handleReserveFromAnywhere}
+      onChat={p.handleChatFromAnywhere}
+      onImageFallback={p.onImageFallback}
+    />
+  );
+}
+
 export function PortalRoutes(props: {
   state: PatientAppState;
   stateForDisplay: PatientAppState;
@@ -70,7 +153,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
-                  onGoToMatching={() => props.navigate("/matching")}
+                  onNavigateToBookTrial={() => props.navigate("/book/trial")}
                 />
               )
         }
@@ -112,70 +195,17 @@ export function PortalRoutes(props: {
         element={
           props.lockToTherapistSelection
             ? (
-                <MatchingPage
-                  language={props.state.language}
-                  authToken={props.state.authToken}
-                  mode="onboarding-final"
-                  intakeAnswers={props.state.intake?.answers ?? {}}
-                  isFirstSelectionRequired={props.needsInitialTherapistSelection}
-                  showOnlyFavorites={false}
-                  favoriteProfessionalIds={props.state.favoriteProfessionalIds}
-                  selectedProfessionalId={props.state.selectedProfessionalId}
-                  onToggleFavorite={props.toggleFavoriteProfessional}
-                  onToggleFavoritesView={(showOnlyFavorites) => {
-                    props.navigate(showOnlyFavorites ? "/favorites" : "/onboarding/final/matching");
-                  }}
-                  onSelectProfessional={(professionalId) => {
-                    // Solo highlight / flujo de reserva: el "cierre" del onboarding es al confirmar la sesión de prueba.
-                    props.onStateChange((current) => ({
-                      ...current,
-                      selectedProfessionalId: professionalId,
-                      activeChatProfessionalId: professionalId
-                    }));
-                  }}
-                  onCompleteFirstSelection={({ professionalId, professionalName }) => {
-                    props.onStateChange((current) => ({
-                      ...current,
-                      therapistSelectionCompleted: true,
-                      selectedProfessionalId: professionalId,
-                      assignedProfessionalId: professionalId,
-                      assignedProfessionalName: professionalName,
-                      activeChatProfessionalId: professionalId
-                    }));
-                    void props.syncActiveProfessionalAssignment(professionalId);
-                  }}
-                  onDeferTherapistSelection={async () => {
-                    await props.syncActiveProfessionalAssignment(null);
-                    props.onStateChange((current) => ({
-                      ...current,
-                      therapistSelectionCompleted: true,
-                      assignedProfessionalId: null,
-                      assignedProfessionalName: null,
-                      selectedProfessionalId: "",
-                      activeChatProfessionalId: ""
-                    }));
-                    props.navigate("/");
-                  }}
-                  onCreateBooking={async (professionalId, slot) => {
-                    const result = await props.confirmBooking(professionalId, slot, true);
-                    if (!result.ok) {
-                      throw new Error(
-                        result.error ??
-                          t(props.state.language, {
-                            es: "No hay sesiones disponibles para confirmar esta reserva.",
-                            en: "No available sessions to confirm this booking.",
-                            pt: "Nao ha sessoes disponiveis para confirmar esta reserva."
-                          })
-                      );
-                    }
-                    props.onStateChange((current) => ({
-                      ...current,
-                      onboardingFinalCompleted: true
-                    }));
-                    props.navigate("/");
-                  }}
-                  onReserve={props.handleReserveFromAnywhere}
-                  onChat={props.handleChatFromAnywhere}
+                <OnboardingFinalMatching
+                  favoritesReturnPath="/onboarding/final/matching"
+                  state={props.state}
+                  needsInitialTherapistSelection={props.needsInitialTherapistSelection}
+                  navigate={props.navigate}
+                  onStateChange={props.onStateChange}
+                  toggleFavoriteProfessional={props.toggleFavoriteProfessional}
+                  syncActiveProfessionalAssignment={props.syncActiveProfessionalAssignment}
+                  confirmBooking={props.confirmBooking}
+                  handleReserveFromAnywhere={props.handleReserveFromAnywhere}
+                  handleChatFromAnywhere={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
                 />
               )
@@ -195,9 +225,33 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
-                  onGoToMatching={() => props.navigate("/matching")}
+                  onNavigateToBookTrial={() => props.navigate("/book/trial")}
                 />
               )
+        }
+      />
+      <Route
+        path="/book/trial"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : props.state.intake?.riskBlocked
+              ? <Navigate replace to="/" />
+              : (
+                  <OnboardingFinalMatching
+                    favoritesReturnPath="/book/trial"
+                    state={props.state}
+                    needsInitialTherapistSelection={props.needsInitialTherapistSelection}
+                    navigate={props.navigate}
+                    onStateChange={props.onStateChange}
+                    toggleFavoriteProfessional={props.toggleFavoriteProfessional}
+                    syncActiveProfessionalAssignment={props.syncActiveProfessionalAssignment}
+                    confirmBooking={props.confirmBooking}
+                    handleReserveFromAnywhere={props.handleReserveFromAnywhere}
+                    handleChatFromAnywhere={props.handleChatFromAnywhere}
+                    onImageFallback={props.onImageFallback}
+                  />
+                )
         }
       />
       <Route
