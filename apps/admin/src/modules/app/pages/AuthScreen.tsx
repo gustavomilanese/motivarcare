@@ -90,7 +90,15 @@ export function AuthScreen(props: {
   return (
     <div className="auth-shell">
       <section className="auth-card">
-        <p className="admin-auth-eyebrow">MotivarCare</p>
+        <div className="admin-auth-brand">
+          <img
+            className="admin-auth-wordmark"
+            src="/brand/motivarcare-wordmark.png"
+            alt="MotivarCare"
+            width={200}
+            height={40}
+          />
+        </div>
         <span className="chip">{t(props.language, { es: "Consola admin", en: "Admin console", pt: "Console admin" })}</span>
         <h1>{t(props.language, { es: "Gestion centralizada", en: "Centralized management", pt: "Gestao centralizada" })}</h1>
         <p className="admin-auth-lead">

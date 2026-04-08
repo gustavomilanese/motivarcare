@@ -2116,8 +2116,7 @@ export function App() {
     <div className="landing">
       <header className="top">
         <div className="logo" aria-label="MotivarCare">
-          <span className="logo-mark" aria-hidden="true" />
-          <span className="logo-text">motivarcare</span>
+          <img className="logo-wordmark" src="/brand/motivarcare-wordmark.png" alt="" width={200} height={40} />
         </div>
         <div className="top-actions">
           <div className="language-switch" role="group" aria-label="Language switcher">
@@ -3267,9 +3266,8 @@ export function App() {
       <footer className="footer">
         <div className="footer-top">
           <section className="footer-brand">
-            <div className="logo" aria-label="MotivarCare">
-              <span className="logo-mark" aria-hidden="true" />
-              <span className="logo-text">motivarcare</span>
+            <div className="logo logo--footer" aria-label="MotivarCare">
+              <img className="logo-full" src="/brand/motivarcare-logo-full.png" alt="" width={260} height={80} />
             </div>
             <p>{t.footerBrand}</p>
             <a href="mailto:soporte@motivarcare.com">soporte@motivarcare.com</a>

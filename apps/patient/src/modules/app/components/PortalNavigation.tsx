@@ -100,11 +100,14 @@ export function PortalNavigation(props: {
       {!props.hideSidebar ? (
         <aside className="portal-sidebar">
           <div className="portal-brand">
-            <span className="portal-brand-mark">M</span>
-            <div>
-              <strong>MotivarCare</strong>
-              <p>{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
-            </div>
+            <img
+              className="portal-brand-wordmark"
+              src="/brand/motivarcare-wordmark.png"
+              alt="MotivarCare"
+              width={180}
+              height={36}
+            />
+            <p className="portal-brand-sub">{t(props.language, { es: "Portal paciente", en: "Patient portal", pt: "Portal do paciente" })}</p>
           </div>
 
           <nav className="portal-sidebar-nav">

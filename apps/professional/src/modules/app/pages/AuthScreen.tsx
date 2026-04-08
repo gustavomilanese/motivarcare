@@ -134,7 +134,15 @@ export function AuthScreen(props: {
   return (
     <div className="pro-auth-shell">
       <section className="pro-auth-card">
-        <p className="pro-auth-eyebrow">MotivarCare</p>
+        <div className="pro-auth-brand">
+          <img
+            className="pro-auth-wordmark"
+            src="/brand/motivarcare-wordmark.png"
+            alt="MotivarCare"
+            width={200}
+            height={40}
+          />
+        </div>
         <div className="pro-auth-head">
           <span className="pro-chip">{t(props.language, { es: "Acceso profesional", en: "Professional access", pt: "Acesso profissional" })}</span>
           {props.onBack ? (

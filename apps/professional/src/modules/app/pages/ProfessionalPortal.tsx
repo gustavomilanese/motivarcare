@@ -124,13 +124,14 @@ export function ProfessionalPortal(props: {
     <div className="pro-shell">
       <aside className="pro-sidebar">
         <div className="pro-brand">
-          <span className="pro-brand-mark" aria-hidden="true">
-            M
-          </span>
-          <div>
-            <strong>MotivarCare</strong>
-            <p>{t(props.language, { es: "Portal profesional", en: "Professional portal", pt: "Portal profissional" })}</p>
-          </div>
+          <img
+            className="pro-brand-wordmark"
+            src="/brand/motivarcare-wordmark.png"
+            alt="MotivarCare"
+            width={180}
+            height={36}
+          />
+          <p className="pro-brand-sub">{t(props.language, { es: "Portal profesional", en: "Professional portal", pt: "Portal profissional" })}</p>
         </div>
 
         <nav className="pro-sidebar-nav">

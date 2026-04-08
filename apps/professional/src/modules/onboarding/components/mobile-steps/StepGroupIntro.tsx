@@ -80,13 +80,14 @@ export function ProfessionalWelcomeGate(props: {
           </div>
         </div>
 
-        <div className="pro-gate-brand" aria-hidden="true">
-          <div className="pro-gate-lockup">
-            <div className="pro-gate-logo-mark">
-              <span>M</span>
-            </div>
-            <span className="pro-gate-logo-name">MotivarCare</span>
-          </div>
+        <div className="pro-gate-brand">
+          <img
+            className="pro-gate-wordmark"
+            src="/brand/motivarcare-wordmark.png"
+            alt="MotivarCare"
+            width={200}
+            height={40}
+          />
         </div>
 
         <div className="pro-gate-copy">

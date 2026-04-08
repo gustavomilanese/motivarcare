@@ -59,7 +59,15 @@ export function ResetPasswordScreen(props: { language: AppLanguage }) {
   return (
     <div className="pro-auth-shell">
       <section className="pro-auth-card">
-        <p className="pro-auth-eyebrow">MotivarCare</p>
+        <div className="pro-auth-brand">
+          <img
+            className="pro-auth-wordmark"
+            src="/brand/motivarcare-wordmark.png"
+            alt="MotivarCare"
+            width={200}
+            height={40}
+          />
+        </div>
         <div className="pro-auth-head">
           <button className="pro-auth-back" type="button" onClick={() => navigate("/", { replace: true })}>
             {t(props.language, { es: "Ir al login", en: "Go to login", pt: "Ir ao login" })}

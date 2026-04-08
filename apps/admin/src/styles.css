@@ -344,59 +344,41 @@ button.danger {
 
 .admin-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding-bottom: 14px;
   border-bottom: 1px solid #e3e5ef;
 }
 
-.admin-brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  position: relative;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
-  box-shadow:
-    0 8px 16px rgba(88, 73, 228, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
-}
-
-.admin-brand-mark::before,
-.admin-brand-mark::after {
-  content: "";
-  position: absolute;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-}
-
-.admin-brand-mark::before {
-  width: 18px;
-  height: 3px;
-  left: 7px;
-  top: 10px;
-  transform: rotate(32deg);
-}
-
-.admin-brand-mark::after {
-  width: 14px;
-  height: 3px;
-  left: 9px;
-  top: 18px;
-  transform: rotate(-26deg);
-}
-
-.admin-brand strong {
+.admin-brand-wordmark {
   display: block;
-  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 26px;
+  object-fit: contain;
+  object-position: left center;
 }
 
-.admin-brand p {
+.admin-brand-sub {
   color: var(--text-soft);
   font-size: 12px;
+  margin: 0;
+}
+
+.admin-auth-brand {
+  margin-bottom: 8px;
+}
+
+.admin-auth-wordmark {
+  display: block;
+  width: auto;
+  max-width: 220px;
+  height: auto;
+  max-height: 34px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .admin-sidebar-nav {

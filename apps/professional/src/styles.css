@@ -2665,6 +2665,15 @@ ul {
   padding-top: 4px;
 }
 
+.pro-gate-wordmark {
+  display: block;
+  width: auto;
+  max-width: min(240px, 85vw);
+  height: auto;
+  max-height: 36px;
+  object-fit: contain;
+}
+
 .pro-gate-lockup {
   display: flex;
   flex-direction: column;
@@ -3209,37 +3218,41 @@ ul {
 
 .pro-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
 
-.pro-brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
-  box-shadow: 0 6px 18px rgba(95, 68, 235, 0.35);
-}
-
-.pro-brand strong {
+.pro-brand-wordmark {
   display: block;
-  font-size: 15px;
-  letter-spacing: -0.01em;
-  font-weight: 500;
-  color: #1e293b;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 26px;
+  object-fit: contain;
+  object-position: left center;
 }
 
-.pro-brand p {
+.pro-brand-sub {
   color: var(--text-soft);
   font-size: 12px;
+  margin: 0;
+}
+
+.pro-auth-brand {
+  margin-bottom: 6px;
+}
+
+.pro-auth-wordmark {
+  display: block;
+  width: auto;
+  max-width: 220px;
+  height: auto;
+  max-height: 32px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .pro-sidebar-nav {

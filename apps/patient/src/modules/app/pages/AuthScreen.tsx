@@ -133,7 +133,15 @@ export function AuthScreen(props: {
         </div>
         <div className="auth-form-panel">
           <div className="auth-header-copy">
-            <p className="auth-eyebrow">MotivarCare</p>
+            <div className="auth-brand-mark">
+              <img
+                className="auth-brand-wordmark"
+                src="/brand/motivarcare-wordmark.png"
+                alt="MotivarCare"
+                width={200}
+                height={40}
+              />
+            </div>
             <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
             <p className="auth-lead">
               {t(props.language, {

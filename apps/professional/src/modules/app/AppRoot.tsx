@@ -151,13 +151,13 @@ export function App() {
   useEffect(() => {
     document.title = "MotivarCare | Professional Portal";
 
-    const faviconHref = "/favicon.svg?v=20260311-professional";
+    const faviconHref = "/brand/motivarcare-mark.png?v=20260408";
     let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
 
     if (!favicon) {
       favicon = document.createElement("link");
       favicon.rel = "icon";
-      favicon.type = "image/svg+xml";
+      favicon.type = "image/png";
       document.head.appendChild(favicon);
     }
 

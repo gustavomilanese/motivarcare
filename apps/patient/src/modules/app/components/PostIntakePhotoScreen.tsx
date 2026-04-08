@@ -70,13 +70,14 @@ export function PostIntakePhotoScreen(props: {
     <div className="intake-shell intake-shell--wizard">
       <section className="intake-card intake-card--wizard">
         <div className="intake-brand">
-          <span className="intake-brand-mark" aria-hidden="true">
-            &gt;
-          </span>
-          <div className="intake-brand-copy">
-            <strong>motivarcare</strong>
-            <span>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
-          </div>
+          <img
+            className="intake-brand-logo"
+            src="/brand/motivarcare-logo-full.png"
+            alt="MotivarCare"
+            width={280}
+            height={72}
+          />
+          <span className="intake-brand-context">{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
         </div>
 
         <div className="intake-wizard-top">

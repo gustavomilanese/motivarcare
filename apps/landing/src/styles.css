@@ -69,49 +69,26 @@ textarea {
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 11px;
 }
 
-.logo-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 11px;
-  position: relative;
-  background: linear-gradient(135deg, #8f85ff, #5143e6);
-  box-shadow:
-    0 8px 16px rgba(88, 73, 228, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+.logo-wordmark {
+  display: block;
+  width: auto;
+  height: 36px;
+  max-height: 36px;
+  max-width: min(220px, 58vw);
+  object-fit: contain;
+  object-position: left center;
 }
 
-.logo-mark::before,
-.logo-mark::after {
-  content: "";
-  position: absolute;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
-}
-
-.logo-mark::before {
-  width: 18px;
-  height: 3px;
-  left: 6px;
-  top: 9px;
-  transform: rotate(32deg);
-}
-
-.logo-mark::after {
-  width: 14px;
-  height: 3px;
-  left: 8px;
-  top: 17px;
-  transform: rotate(-26deg);
-}
-
-.logo-text {
-  font-family: "Sora", sans-serif;
-  font-size: 1.9rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+.logo-full {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: 76px;
+  max-width: min(280px, 100%);
+  object-fit: contain;
+  object-position: left center;
 }
 
 .partner {
@@ -1241,8 +1218,9 @@ textarea {
     flex-direction: column;
   }
 
-  .logo-text {
-    font-size: 1.55rem;
+  .logo-wordmark {
+    height: 30px;
+    max-height: 30px;
   }
 
   .top-actions {
