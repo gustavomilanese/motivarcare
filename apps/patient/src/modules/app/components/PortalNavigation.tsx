@@ -108,9 +108,6 @@ export function PortalNavigation(props: {
           </div>
 
           <nav className="portal-sidebar-nav">
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profile">
-              {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
-            </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
               {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
             </NavLink>
