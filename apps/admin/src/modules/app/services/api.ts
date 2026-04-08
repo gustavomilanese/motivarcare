@@ -10,6 +10,9 @@ export function resolveApiAssetUrl(url: string | null | undefined): string | und
   if (!s) {
     return undefined;
   }
+  if (s.startsWith("data:")) {
+    return s;
+  }
   if (/^https?:\/\//i.test(s)) {
     return s;
   }

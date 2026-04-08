@@ -121,8 +121,8 @@ export function ProfessionalAuthFlow(props: {
   const [priceData, setPriceData] = useState({
     sessionPrice: "",
     discount4: "0",
-    discount12: "10",
-    discount24: "20"
+    discount8: "0",
+    discount12: "0"
   });
   const [profilePhotoLoaded, setProfilePhotoLoaded] = useState(false);
   const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
@@ -615,6 +615,7 @@ export function ProfessionalAuthFlow(props: {
 
   return (
     <AuthScreen
+      key={authEntryMode === "register" ? "auth-register" : "auth-login"}
       language={props.language}
       currency={props.currency}
       onLanguageChange={props.onLanguageChange}
@@ -625,7 +626,7 @@ export function ProfessionalAuthFlow(props: {
           props.onRegistrationAuthSuccess?.(params.user.id);
         }
       }}
-      initialMode={authEntryMode}
+      initialMode={authEntryMode === "register" ? "register" : "login"}
       initialEmail={registerEmail}
       initialPassword={registerPassword}
       initialFullName={personalData.fullName}

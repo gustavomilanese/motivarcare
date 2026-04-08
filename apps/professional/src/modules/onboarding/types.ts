@@ -17,12 +17,14 @@ export interface OnboardingPatchDraft {
   gender: string | null;
   birthCountry: string | null;
   focusPrimary: string | null;
+  /** Áreas de atención (preferido sobre `focusPrimary`). */
+  focusAreas: string[] | null;
   languages: string[] | null;
   shortDescription: string | null;
   sessionPriceUsd: number | null;
   discount4: number | null;
+  discount8: number | null;
   discount12: number | null;
-  discount24: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   videoCoverUrl: string | null;
@@ -43,7 +45,7 @@ export interface ProfessionalWebOnboardingPayload {
   practiceBand: string;
   gender: string;
   birthCountry: string;
-  focusPrimary: string;
+  focusAreas: string[];
   languages: string[];
   yearsExperience: number | null;
   bio: string;
@@ -51,8 +53,8 @@ export interface ProfessionalWebOnboardingPayload {
   therapeuticApproach: string;
   sessionPriceUsd: number | null;
   discount4: number | null;
+  discount8: number | null;
   discount12: number | null;
-  discount24: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   videoCoverUrl: string | null;
@@ -73,8 +75,8 @@ export interface ProfessionalMobileOnboardingInputs {
   priceData: {
     sessionPrice: string;
     discount4: string;
+    discount8: string;
     discount12: string;
-    discount24: string;
   };
   personalData: {
     yearsExperience: string;

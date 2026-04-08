@@ -191,6 +191,8 @@ export interface ProfessionalProfile {
   gender: string | null;
   birthCountry: string | null;
   focusPrimary: string | null;
+  /** Áreas de atención (API); preferido para edición frente a `focusPrimary` solo texto. */
+  focusAreas?: string[];
   languages: string[];
   bio: string | null;
   shortDescription: string | null;
@@ -198,8 +200,8 @@ export interface ProfessionalProfile {
   yearsExperience: number | null;
   sessionPriceUsd: number | null;
   discount4: number | null;
+  discount8: number | null;
   discount12: number | null;
-  discount24: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   videoCoverUrl: string | null;

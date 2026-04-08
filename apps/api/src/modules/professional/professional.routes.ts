@@ -3,7 +3,6 @@ import { z } from "zod";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
-import { absolutePublicAssetUrl } from "../../lib/publicAssetUrl.js";
 
 const adminPayloadSchema = z.object({
   taxId: z.string().max(60).optional(),
@@ -347,7 +346,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
           patientId: trialBooking.patientId,
           patientName: trialBooking.patient.user.fullName,
           patientEmail: trialBooking.patient.user.email,
-          patientAvatarUrl: absolutePublicAssetUrl(trialBooking.patient.user.avatarUrl ?? null),
+          patientAvatarUrl: trialBooking.patient.user.avatarUrl ?? null,
           startsAt: trialBooking.startsAt,
           endsAt: trialBooking.endsAt,
           status: trialBooking.status.toLowerCase()
@@ -358,7 +357,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       patientId: booking.patientId,
       patientName: booking.patient.user.fullName,
       patientEmail: booking.patient.user.email,
-      patientAvatarUrl: absolutePublicAssetUrl(booking.patient.user.avatarUrl ?? null),
+      patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
       startsAt: booking.startsAt,
       endsAt: booking.endsAt,
       status: booking.status.toLowerCase(),
@@ -440,10 +439,7 @@ professionalRouter.get("/patients", async (req: AuthenticatedRequest, res) => {
   }
 
   return res.json({
-    patients: Array.from(patientsById.values()).map((patient) => ({
-      ...patient,
-      avatarUrl: absolutePublicAssetUrl(patient.avatarUrl)
-    }))
+    patients: Array.from(patientsById.values())
   });
 });
 

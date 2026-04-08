@@ -45,15 +45,15 @@ export function useProfessionalWebOnboardingWizard(input: {
     practiceBand: "1000-3000 horas",
     gender: "Hombre",
     birthCountry: "Uruguay",
-    focusPrimary: "Ansiedad",
+    focusAreas: ["Ansiedad"] as string[],
     languages: ["Espanol", "Ingles"] as string[],
     about: "Trabajo con ansiedad, autoestima y procesos de cambio vital.",
     methodology: "Enfoque integrador con herramientas cognitivo-conductuales.",
     shortDescription: "Acompanamiento cercano, practico y orientado a objetivos.",
     sessionPrice: "50",
-    discount4: "10",
-    discount12: "20",
-    discount24: "30",
+    discount4: "3",
+    discount8: "5",
+    discount12: "10",
     profilePhotoReady: false,
     profilePhotoPreview: "",
     videoReady: false,
@@ -95,9 +95,9 @@ export function useProfessionalWebOnboardingWizard(input: {
     }),
     null,
     t(input.language, {
-      es: "Defina su precio base y descuentos por paquete para mostrar planes claros desde el inicio.",
-      en: "Set your base price and package discounts to show clear plans from the start.",
-      pt: "Defina seu preco base e descontos por pacote para mostrar planos claros desde o inicio."
+      es: "Precio por sesión y descuentos por paquetes de 4, 8 y 12 sesiones (límites máximos definidos por la plataforma).",
+      en: "Per-session price and discounts for 4, 8, and 12 session bundles (platform maximums apply).",
+      pt: "Preco por sessao e descontos para pacotes de 4, 8 e 12 sessoes (limites maximos da plataforma)."
     }),
     t(input.language, {
       es: "Cargue los recursos visuales que refuerzan confianza en su perfil.",
@@ -228,12 +228,19 @@ export function useProfessionalWebOnboardingWizard(input: {
     update({ languages: next });
   };
 
-  const sanitizePercent = (raw: string) => {
+  const toggleFocusArea = (value: string) => {
+    const next = form.focusAreas.includes(value)
+      ? form.focusAreas.filter((item) => item !== value)
+      : [...form.focusAreas, value];
+    update({ focusAreas: next });
+  };
+
+  const clampDiscountInput = (raw: string, max: number) => {
     const numeric = raw.replace(/\D/g, "");
     if (!numeric) {
       return "";
     }
-    return String(Math.min(100, Number(numeric)));
+    return String(Math.min(max, Math.max(0, Number(numeric))));
   };
 
   const discountedPriceLabel = (discount: string) => {
@@ -259,7 +266,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       && form.practiceBand
       && form.gender
       && form.birthCountry
-      && form.focusPrimary
+      && form.focusAreas.length
       && form.languages.length
     ),
     Boolean(form.about.trim() && form.methodology.trim() && form.shortDescription.trim()),
@@ -321,7 +328,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       practiceBand: form.practiceBand,
       gender: form.gender,
       birthCountry: form.birthCountry,
-      focusPrimary: form.focusPrimary,
+      focusAreas: form.focusAreas,
       languages: form.languages,
       yearsExperience: form.yearsExperience.trim() ? Number(form.yearsExperience) : null,
       bio: form.about,
@@ -329,8 +336,8 @@ export function useProfessionalWebOnboardingWizard(input: {
       therapeuticApproach: form.methodology,
       sessionPriceUsd: form.sessionPrice.trim() ? Number(form.sessionPrice) : null,
       discount4: form.discount4.trim() ? Number(form.discount4) : null,
+      discount8: form.discount8.trim() ? Number(form.discount8) : null,
       discount12: form.discount12.trim() ? Number(form.discount12) : null,
-      discount24: form.discount24.trim() ? Number(form.discount24) : null,
       photoUrl: form.profilePhotoPreview || null,
       videoUrl: form.videoPreview || null,
       videoCoverUrl: form.videoCoverPreview || null,
@@ -393,7 +400,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     updateDiploma,
     addDiploma,
     toggleLanguage,
-    sanitizePercent,
+    toggleFocusArea,
+    clampDiscountInput,
     discountedPriceLabel,
     canContinue,
     handleContinue,

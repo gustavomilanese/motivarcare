@@ -3120,6 +3120,40 @@ ul {
   font-size: 20px;
 }
 
+.pro-auth-forgot {
+  margin-top: 4px;
+  align-self: center;
+  background: none;
+  border: none;
+  color: #5f44eb;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px 0;
+}
+
+.pro-web-discount-cap {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #62708a;
+}
+
+.pro-profile-focus-areas,
+.pro-web-focus-areas {
+  display: grid;
+  gap: 8px;
+}
+
+.pro-profile-focus-areas > span,
+.pro-web-focus-areas > span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #30415f;
+}
+
 .pro-switch {
   display: inline-flex;
   width: fit-content;

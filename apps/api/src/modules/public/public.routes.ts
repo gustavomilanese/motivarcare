@@ -122,17 +122,20 @@ function resolvePackageDiscountPercent(params: {
   credits: number;
   fallbackDiscountPercent: number;
   profileDiscount4: number | null | undefined;
+  profileDiscount8: number | null | undefined;
   profileDiscount12: number | null | undefined;
-  profileDiscount24: number | null | undefined;
 }): number {
+  if (params.credits === 1) {
+    return 0;
+  }
   if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
     return params.profileDiscount4;
   }
+  if (params.credits === 8 && params.profileDiscount8 !== null && params.profileDiscount8 !== undefined) {
+    return params.profileDiscount8;
+  }
   if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
     return params.profileDiscount12;
-  }
-  if (params.credits === 24 && params.profileDiscount24 !== null && params.profileDiscount24 !== undefined) {
-    return params.profileDiscount24;
   }
   return params.fallbackDiscountPercent;
 }
@@ -175,8 +178,8 @@ publicRouter.get("/session-packages", async (req, res) => {
             id: true,
             sessionPriceUsd: true,
             discount4: true,
+            discount8: true,
             discount12: true,
-            discount24: true,
             user: { select: { fullName: true } }
           }
         }
@@ -191,8 +194,8 @@ publicRouter.get("/session-packages", async (req, res) => {
             id: true,
             sessionPriceUsd: true,
             discount4: true,
+            discount8: true,
             discount12: true,
-            discount24: true,
             user: { select: { fullName: true } }
           }
         })
@@ -205,10 +208,17 @@ publicRouter.get("/session-packages", async (req, res) => {
       : parsed.data.channel === "patient"
         ? visibility.patient
         : [];
-  const orderedPackages =
+  let orderedPackages =
     parsed.data.channel
       ? requestedIds.map((id) => packages.find((item) => item.id === id)).filter((item): item is (typeof packages)[number] => Boolean(item))
       : packages.slice(0, 3);
+
+  if (parsed.data.channel === "patient") {
+    const singleCredit = packages.find((item) => item.active && item.credits === 1 && item.professionalId === null);
+    if (singleCredit && !orderedPackages.some((item) => item.id === singleCredit.id)) {
+      orderedPackages = [singleCredit, ...orderedPackages];
+    }
+  }
   const featuredPackageId =
     parsed.data.channel === "landing"
       ? visibility.featuredLanding
@@ -224,8 +234,8 @@ publicRouter.get("/session-packages", async (req, res) => {
         credits: item.credits,
         fallbackDiscountPercent: item.discountPercent,
         profileDiscount4: pricingProfile?.discount4,
-        profileDiscount12: pricingProfile?.discount12,
-        profileDiscount24: pricingProfile?.discount24
+        profileDiscount8: pricingProfile?.discount8,
+        profileDiscount12: pricingProfile?.discount12
       });
       const priceCents = resolvePackagePriceCents({
         credits: item.credits,

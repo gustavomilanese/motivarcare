@@ -14,7 +14,9 @@ import {
   type OnboardingPatchDraft
 } from "../onboarding";
 import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
+import { ForgotPasswordScreen } from "./pages/ForgotPasswordScreen";
 import { ProfessionalPortal } from "./pages/ProfessionalPortal";
+import { ResetPasswordScreen } from "./pages/ResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import {
@@ -424,6 +426,15 @@ export function App() {
 
   if (isVerifyEmailRoute) {
     return <VerifyEmailTokenScreen language={language} />;
+  }
+
+  if (!token || !user) {
+    if (location.pathname === "/forgot-password") {
+      return <ForgotPasswordScreen language={language} />;
+    }
+    if (location.pathname === "/reset-password") {
+      return <ResetPasswordScreen language={language} />;
+    }
   }
 
   if (!token || !user) {

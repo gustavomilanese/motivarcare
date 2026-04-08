@@ -12,14 +12,14 @@ export function ProfessionalPriceStep(props: {
   value: {
     sessionPrice: string;
     discount4: string;
+    discount8: string;
     discount12: string;
-    discount24: string;
   };
   onChange: (value: {
     sessionPrice: string;
     discount4: string;
+    discount8: string;
     discount12: string;
-    discount24: string;
   }) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -28,12 +28,12 @@ export function ProfessionalPriceStep(props: {
   const sessionPrice = Number(props.value.sessionPrice || "0");
   const canContinue = sessionPrice > 0;
 
-  const sanitizePercent = (raw: string) => {
+  const clampPercent = (raw: string, max: number) => {
     const numeric = raw.replace(/\D/g, "");
     if (!numeric) {
       return "";
     }
-    return String(Math.min(100, Number(numeric)));
+    return String(Math.min(max, Math.max(0, Number(numeric))));
   };
 
   const discountedPrice = (discount: string) => {
@@ -49,8 +49,8 @@ export function ProfessionalPriceStep(props: {
   };
 
   const discounted4 = discountedPrice(props.value.discount4);
+  const discounted8 = discountedPrice(props.value.discount8);
   const discounted12 = discountedPrice(props.value.discount12);
-  const discounted24 = discountedPrice(props.value.discount24);
 
   return (
     <div className="pro-register-intro-shell">
@@ -89,21 +89,21 @@ export function ProfessionalPriceStep(props: {
           <h2>{t(props.language, { es: "Descuento en planes de terapia", en: "Discount in therapy plans", pt: "Desconto em planos de terapia" })}</h2>
           <p>
             {t(props.language, {
-              es: "Aqui puede poner descuentos para clientes. Recomendamos aumentar el descuento a medida que aumenta el numero de sesiones.",
-              en: "Set discounts for clients. We recommend increasing the discount as the number of sessions grows.",
-              pt: "Aqui voce pode definir descontos para clientes. Recomendamos aumentar o desconto conforme o numero de sessoes."
+              es: "Descuentos para paquetes de 4, 8 y 12 sesiones. La plataforma limita el máximo (5%, 10% y 15%).",
+              en: "Discounts for 4, 8, and 12 session bundles. Platform caps apply (5%, 10%, and 15%).",
+              pt: "Descontos para pacotes de 4, 8 e 12 sessoes. A plataforma limita o maximo (5%, 10% e 15%)."
             })}
           </p>
         </div>
 
         <div className="pro-price-discounts">
           <div className="pro-price-discount-row">
-            <span>{t(props.language, { es: "4 sesiones (1 mes)", en: "4 sessions (1 month)", pt: "4 sessoes (1 mes)" })}</span>
+            <span>{t(props.language, { es: "4 sesiones (máx. 5%)", en: "4 sessions (max 5%)", pt: "4 sessoes (max. 5%)" })}</span>
             <label className="pro-price-percent-input">
               <input
                 inputMode="numeric"
                 value={props.value.discount4}
-                onChange={(event) => update({ discount4: sanitizePercent(event.target.value) })}
+                onChange={(event) => update({ discount4: clampPercent(event.target.value, 5) })}
               />
               <em>%</em>
             </label>
@@ -111,29 +111,29 @@ export function ProfessionalPriceStep(props: {
           </div>
 
           <div className="pro-price-discount-row">
-            <span>{t(props.language, { es: "12 sesiones (3 meses)", en: "12 sessions (3 months)", pt: "12 sessoes (3 meses)" })}</span>
+            <span>{t(props.language, { es: "8 sesiones (máx. 10%)", en: "8 sessions (max 10%)", pt: "8 sessoes (max. 10%)" })}</span>
+            <label className="pro-price-percent-input">
+              <input
+                inputMode="numeric"
+                value={props.value.discount8}
+                onChange={(event) => update({ discount8: clampPercent(event.target.value, 10) })}
+              />
+              <em>%</em>
+            </label>
+            {discounted8 ? <small>{discounted8}</small> : null}
+          </div>
+
+          <div className="pro-price-discount-row">
+            <span>{t(props.language, { es: "12 sesiones (máx. 15%)", en: "12 sessions (max 15%)", pt: "12 sessoes (max. 15%)" })}</span>
             <label className="pro-price-percent-input">
               <input
                 inputMode="numeric"
                 value={props.value.discount12}
-                onChange={(event) => update({ discount12: sanitizePercent(event.target.value) })}
+                onChange={(event) => update({ discount12: clampPercent(event.target.value, 15) })}
               />
               <em>%</em>
             </label>
             {discounted12 ? <small>{discounted12}</small> : null}
-          </div>
-
-          <div className="pro-price-discount-row">
-            <span>{t(props.language, { es: "24 sesiones (6 meses)", en: "24 sessions (6 months)", pt: "24 sessoes (6 meses)" })}</span>
-            <label className="pro-price-percent-input">
-              <input
-                inputMode="numeric"
-                value={props.value.discount24}
-                onChange={(event) => update({ discount24: sanitizePercent(event.target.value) })}
-              />
-              <em>%</em>
-            </label>
-            {discounted24 ? <small>{discounted24}</small> : null}
           </div>
         </div>
 

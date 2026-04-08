@@ -25,7 +25,7 @@ describe("onboarding defaults", () => {
       practiceBand: "1000-3000 horas",
       gender: "Hombre",
       birthCountry: "Uruguay",
-      focusPrimary: "Ansiedad",
+      focusAreas: ["Ansiedad"],
       languages: ["Espanol", "Ingles"],
       yearsExperience: 10,
       bio: "Bio de prueba",
@@ -33,8 +33,8 @@ describe("onboarding defaults", () => {
       therapeuticApproach: "Enfoque integrador",
       sessionPriceUsd: 50,
       discount4: 10,
-      discount12: 20,
-      discount24: 30,
+      discount8: 8,
+      discount12: 12,
       photoUrl: "photo-url",
       videoUrl: "video-url",
       videoCoverUrl: "cover-url",
@@ -53,6 +53,7 @@ describe("onboarding defaults", () => {
     });
 
     expect(draft.bio).toBe("Bio de prueba");
+    expect(draft.focusAreas).toEqual(["Ansiedad"]);
     expect(draft.sessionPriceUsd).toBe(50);
     expect(draft.stripeVerified).toBe(true);
     expect(draft.diplomas).toHaveLength(1);
@@ -70,8 +71,8 @@ describe("onboarding defaults", () => {
       priceData: {
         sessionPrice: "50",
         discount4: "10",
-        discount12: "20",
-        discount24: "30"
+        discount8: "8",
+        discount12: "12"
       },
       personalData: {
         yearsExperience: "10",
@@ -89,7 +90,7 @@ describe("onboarding defaults", () => {
 
     expect(draft.therapeuticApproach).toBe("Descripcion terapia");
     expect(draft.yearsExperience).toBe(10);
-    expect(draft.discount24).toBe(30);
+    expect(draft.discount8).toBe(8);
     expect(draft.photoUrl).toBe("data:image/png;base64,AAA");
     expect(draft.diplomas).toHaveLength(1);
   });
@@ -103,7 +104,7 @@ describe("onboarding defaults", () => {
       selectedPracticeHours: "1000-3000 horas",
       workLanguages: ["Espanol"],
       summaryText: "",
-      priceData: { sessionPrice: "", discount4: "", discount12: "", discount24: "" },
+      priceData: { sessionPrice: "", discount4: "", discount8: "", discount12: "" },
       personalData: { yearsExperience: "0", gender: "Hombre", birthCountry: "UY" },
       educationData: { institution: "", specialty: "", startYear: "", graduationYear: "" }
     });

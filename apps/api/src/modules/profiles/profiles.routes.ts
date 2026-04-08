@@ -6,6 +6,7 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
+import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
@@ -56,16 +57,17 @@ const updatePublicProfileSchema = z.object({
   practiceBand: z.string().trim().max(120).nullable().optional(),
   gender: z.string().trim().max(60).nullable().optional(),
   birthCountry: z.string().trim().max(120).nullable().optional(),
-  focusPrimary: z.string().trim().max(120).nullable().optional(),
+  focusPrimary: z.string().trim().max(500).nullable().optional(),
+  focusAreas: z.array(z.string().trim().min(1).max(80)).max(12).optional(),
   languages: z.array(z.string().trim().min(1).max(40)).max(10).nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
   shortDescription: z.string().max(250).nullable().optional(),
   therapeuticApproach: z.string().max(500).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   sessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
-  discount4: z.number().int().min(0).max(100).nullable().optional(),
-  discount12: z.number().int().min(0).max(100).nullable().optional(),
-  discount24: z.number().int().min(0).max(100).nullable().optional(),
+  discount4: z.number().int().min(0).max(5).nullable().optional(),
+  discount8: z.number().int().min(0).max(10).nullable().optional(),
+  discount12: z.number().int().min(0).max(15).nullable().optional(),
   photoUrl: imageSourceSchema.nullable().optional(),
   videoUrl: mediaSourceSchema.nullable().optional(),
   videoCoverUrl: mediaSourceSchema.nullable().optional(),
@@ -170,17 +172,20 @@ function resolvePackageDiscountPercent(params: {
   credits: number;
   fallbackDiscountPercent: number;
   profileDiscount4: number | null | undefined;
+  profileDiscount8: number | null | undefined;
   profileDiscount12: number | null | undefined;
-  profileDiscount24: number | null | undefined;
 }): number {
+  if (params.credits === 1) {
+    return 0;
+  }
   if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
     return params.profileDiscount4;
   }
+  if (params.credits === 8 && params.profileDiscount8 !== null && params.profileDiscount8 !== undefined) {
+    return params.profileDiscount8;
+  }
   if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
     return params.profileDiscount12;
-  }
-  if (params.credits === 24 && params.profileDiscount24 !== null && params.profileDiscount24 !== undefined) {
-    return params.profileDiscount24;
   }
   return params.fallbackDiscountPercent;
 }
@@ -191,15 +196,15 @@ function resolvePackagePricing(params: {
   fallbackDiscountPercent: number;
   sessionPriceUsd: number | null | undefined;
   profileDiscount4: number | null | undefined;
+  profileDiscount8: number | null | undefined;
   profileDiscount12: number | null | undefined;
-  profileDiscount24: number | null | undefined;
 }) {
   const discountPercent = resolvePackageDiscountPercent({
     credits: params.credits,
     fallbackDiscountPercent: params.fallbackDiscountPercent,
     profileDiscount4: params.profileDiscount4,
-    profileDiscount12: params.profileDiscount12,
-    profileDiscount24: params.profileDiscount24
+    profileDiscount8: params.profileDiscount8,
+    profileDiscount12: params.profileDiscount12
   });
 
   if (!params.sessionPriceUsd || params.sessionPriceUsd <= 0) {
@@ -393,7 +398,7 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
     fullName: professional.user.fullName,
     title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
     specialization: professional.specialization ?? null,
-    focusPrimary: professional.focusPrimary ?? null,
+    focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
     birthCountry: professional.birthCountry ?? null,
     bio: professional.bio ?? professional.shortDescription ?? null,
     therapeuticApproach: professional.therapeuticApproach,
@@ -627,7 +632,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             practiceBand: professional.practiceBand,
             gender: professional.gender,
             birthCountry: professional.birthCountry,
-            focusPrimary: professional.focusPrimary,
+            focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
+            focusAreas: normalizeFocusAreas(professional.focusAreas, professional.focusPrimary),
             languages: Array.isArray(professional.languages) ? professional.languages : [],
             bio: professional.bio,
             shortDescription: professional.shortDescription,
@@ -635,8 +641,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             yearsExperience: professional.yearsExperience,
             sessionPriceUsd: professional.sessionPriceUsd,
             discount4: professional.discount4,
+            discount8: professional.discount8,
             discount12: professional.discount12,
-            discount24: professional.discount24,
             photoUrl: professional.photoUrl,
             videoUrl: professional.videoUrl,
             videoCoverUrl: professional.videoCoverUrl,
@@ -848,7 +854,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     sessionPackage.professionalId
       ? prisma.professionalProfile.findUnique({
           where: { id: sessionPackage.professionalId },
-          select: { id: true, sessionPriceUsd: true, discount4: true, discount12: true, discount24: true }
+          select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
         })
       : Promise.resolve(null),
     getFinanceRules()
@@ -859,7 +865,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
   const activeProfessional = activeProfessionalId
     ? await prisma.professionalProfile.findUnique({
         where: { id: activeProfessionalId },
-        select: { id: true, sessionPriceUsd: true, discount4: true, discount12: true, discount24: true }
+        select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
       })
     : null;
 
@@ -870,8 +876,8 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     fallbackDiscountPercent: sessionPackage.discountPercent,
     sessionPriceUsd: pricingProfessional?.sessionPriceUsd,
     profileDiscount4: pricingProfessional?.discount4,
-    profileDiscount12: pricingProfessional?.discount12,
-    profileDiscount24: pricingProfessional?.discount24
+    profileDiscount8: pricingProfessional?.discount8,
+    profileDiscount12: pricingProfessional?.discount12
   });
 
   const purchase = await prisma.$transaction(async (tx) => {
@@ -1048,7 +1054,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       });
     }
   }
-  const { diplomas, languages, timezone, ...profileData } = parsed.data;
+  const { diplomas, languages, timezone, focusAreas, focusPrimary, ...restProfile } = parsed.data;
   const languagesUpdate =
     languages === undefined
       ? undefined
@@ -1057,11 +1063,32 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
         : languages;
   const timezoneUpdate = timezone === undefined ? undefined : sanitizeTimezone(timezone);
 
+  const focusUpdates: {
+    focusAreas?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+    focusPrimary?: string | null;
+  } = {};
+  if (focusAreas !== undefined) {
+    focusUpdates.focusAreas = focusAreas.length > 0 ? focusAreas : Prisma.JsonNull;
+    focusUpdates.focusPrimary = focusAreasDisplayLabel(focusAreas);
+  } else if (focusPrimary !== undefined) {
+    focusUpdates.focusPrimary = focusPrimary;
+    if (focusPrimary === null) {
+      focusUpdates.focusAreas = Prisma.JsonNull;
+    } else {
+      const parts = focusPrimary
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      focusUpdates.focusAreas = parts.length > 0 ? parts : Prisma.JsonNull;
+    }
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     const profile = await tx.professionalProfile.update({
       where: { id: professionalId },
       data: {
-        ...profileData,
+        ...restProfile,
+        ...focusUpdates,
         ...(languagesUpdate !== undefined ? { languages: languagesUpdate } : {}),
         ...(timezoneUpdate !== undefined ? { timezone: timezoneUpdate } : {})
       }

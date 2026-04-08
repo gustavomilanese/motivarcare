@@ -15,6 +15,7 @@ import {
   isEmailVerificationSupportedRole,
   sendEmailVerificationEmail
 } from "./emailVerification.js";
+import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -28,6 +29,16 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8)
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]).optional()
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().min(32).max(256),
+  password: z.string().min(8).max(128)
 });
 
 const avatarImageSourceSchema = z
@@ -427,6 +438,56 @@ authRouter.post("/register", async (req, res) => {
     verificationEmailSent,
     ...authResponseMeta(created.role)
   });
+});
+
+authRouter.post("/forgot-password", async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const email = parsed.data.email.trim().toLowerCase();
+  const roleFilter = parsed.data.role;
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, fullName: true, email: true, role: true }
+  });
+
+  if (!user || (roleFilter && user.role !== roleFilter)) {
+    return res.json({ ok: true });
+  }
+
+  try {
+    const { token } = await createPasswordResetToken(user.id);
+    await sendPasswordResetEmail({
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      token
+    });
+  } catch (resetError) {
+    console.error("Could not process password reset request", resetError);
+  }
+
+  return res.json({ ok: true });
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const result = await consumePasswordResetToken(parsed.data.token, hashPassword(parsed.data.password));
+  if (!result.ok) {
+    const message =
+      result.reason === "expired_token"
+        ? "Este enlace expiró. Solicitá uno nuevo desde el login."
+        : "El enlace no es válido o ya fue usado.";
+    return res.status(400).json({ error: message });
+  }
+
+  return res.json({ ok: true });
 });
 
 authRouter.post("/google/calendar/connect", requireAuth, async (req: AuthenticatedRequest, res) => {

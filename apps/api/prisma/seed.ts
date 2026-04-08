@@ -220,6 +220,27 @@ async function seedAvailability(context: SeedContext) {
 
 async function seedPackagesAndPurchase(context: SeedContext) {
   await prisma.sessionPackage.upsert({
+    where: { stripePriceId: "pkg-1-demo" },
+    update: {
+      name: "1 sesión — precio de lista",
+      credits: 1,
+      priceCents: 12000,
+      discountPercent: 0,
+      currency: "usd",
+      active: true
+    },
+    create: {
+      stripePriceId: "pkg-1-demo",
+      name: "1 sesión — precio de lista",
+      credits: 1,
+      priceCents: 12000,
+      discountPercent: 0,
+      currency: "usd",
+      active: true
+    }
+  });
+
+  await prisma.sessionPackage.upsert({
     where: { stripePriceId: "pkg-4-demo" },
     update: { name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true },
     create: { stripePriceId: "pkg-4-demo", name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true }

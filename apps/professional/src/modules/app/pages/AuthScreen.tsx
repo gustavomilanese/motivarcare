@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -25,7 +26,14 @@ export function AuthScreen(props: {
   initialFullName?: string;
   onBack?: () => void;
 }) {
-  const [mode] = useState<"login" | "register">(() => props.initialMode ?? "login");
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"login" | "register">(() =>
+    props.initialMode === "register" ? "register" : "login"
+  );
+
+  useEffect(() => {
+    setMode(props.initialMode === "register" ? "register" : "login");
+  }, [props.initialMode]);
   const [fullName, setFullName] = useState(() => props.initialFullName?.trim() ?? "");
   const [email, setEmail] = useState(() => props.initialEmail ?? "emma.collins@motivarte.com");
   const [password, setPassword] = useState(() => props.initialPassword ?? "SecurePass123");
@@ -234,6 +242,16 @@ export function AuthScreen(props: {
                 ? t(props.language, { es: "Crear cuenta", en: "Create account", pt: "Criar conta" })
                 : t(props.language, { es: "Acceder", en: "Access", pt: "Acessar" })}
           </button>
+
+          {mode === "login" ? (
+            <button className="pro-auth-forgot" type="button" onClick={() => navigate("/forgot-password")}>
+              {t(props.language, {
+                es: "Olvidé mi contraseña",
+                en: "Forgot password",
+                pt: "Esqueci minha senha"
+              })}
+            </button>
+          ) : null}
         </form>
       </section>
     </div>

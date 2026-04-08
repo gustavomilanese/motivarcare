@@ -1,13 +1,21 @@
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
+import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../onboarding/constants/latinAmericaCountries";
 import { API_BASE, apiRequest } from "../services/api";
 import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 export function ProfilePage(props: { token: string; user: AuthUser; language: AppLanguage; onUserChange: (user: AuthUser) => void }) {
@@ -21,7 +29,23 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const loadProfile = async () => {
     try {
       const response = await apiRequest<{ role: string; profile: ProfessionalProfile }>("/api/profiles/me", props.token);
-      setProfile(response.profile ? { ...response.profile, timezone: response.profile.timezone ?? detectBrowserTimezone() } : null);
+      setProfile(
+        response.profile
+          ? {
+              ...response.profile,
+              timezone: response.profile.timezone ?? detectBrowserTimezone(),
+              focusAreas:
+                Array.isArray(response.profile.focusAreas) && response.profile.focusAreas.length > 0
+                  ? response.profile.focusAreas
+                  : response.profile.focusPrimary
+                    ? response.profile.focusPrimary
+                        .split(",")
+                        .map((item) => item.trim())
+                        .filter(Boolean)
+                    : []
+            }
+          : null
+      );
       setError("");
     } catch (requestError) {
       setError(
@@ -39,6 +63,26 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   useEffect(() => {
     loadProfile();
   }, [props.token]);
+
+  const birthCountryOptions = useMemo(() => {
+    const current = profile?.birthCountry?.trim();
+    const base = LATIN_AMERICA_COUNTRY_OPTIONS;
+    if (current && !base.some((c) => c.value === current)) {
+      return [{ value: current, label: current }, ...base];
+    }
+    return base;
+  }, [profile?.birthCountry]);
+
+  const toggleProfileFocusArea = (area: string) => {
+    setProfile((current) => {
+      if (!current) {
+        return current;
+      }
+      const areas = current.focusAreas ?? [];
+      const next = areas.includes(area) ? areas.filter((item) => item !== area) : [...areas, area];
+      return { ...current, focusAreas: next };
+    });
+  };
 
   const handleSave = async () => {
     if (!profile || isSaving) {
@@ -64,6 +108,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
           gender: profile.gender,
           birthCountry: profile.birthCountry,
           focusPrimary: profile.focusPrimary,
+          focusAreas: profile.focusAreas?.length ? profile.focusAreas : undefined,
           languages: profile.languages,
           bio: profile.bio,
           shortDescription: profile.shortDescription,
@@ -71,8 +116,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
           yearsExperience: profile.yearsExperience,
           sessionPriceUsd: profile.sessionPriceUsd,
           discount4: profile.discount4,
+          discount8: profile.discount8,
           discount12: profile.discount12,
-          discount24: profile.discount24,
           photoUrl: profile.photoUrl,
           videoUrl: profile.videoUrl,
           videoCoverUrl: profile.videoCoverUrl,
@@ -247,18 +292,33 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
               </label>
               <label>
                 {t(props.language, { es: "País de nacimiento", en: "Country of birth", pt: "Pais de nascimento" })}
-                <input
+                <select
                   value={profile.birthCountry ?? ""}
                   onChange={(event) => setProfile((current) => (current ? { ...current, birthCountry: event.target.value } : current))}
-                />
+                >
+                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                  {birthCountryOptions.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <label>
-                {t(props.language, { es: "Enfoque principal", en: "Primary focus", pt: "Foco principal" })}
-                <input
-                  value={profile.focusPrimary ?? ""}
-                  onChange={(event) => setProfile((current) => (current ? { ...current, focusPrimary: event.target.value } : current))}
-                />
-              </label>
+              <div className="pro-profile-focus-areas">
+                <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
+                <div className="pro-web-checks">
+                  {ATTENTION_AREA_OPTIONS_ES.map((area) => (
+                    <button
+                      key={area}
+                      type="button"
+                      className={(profile.focusAreas ?? []).includes(area) ? "active" : ""}
+                      onClick={() => toggleProfileFocusArea(area)}
+                    >
+                      {area}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <label>
                 {t(props.language, { es: "Idiomas (separados por coma)", en: "Languages (comma separated)", pt: "Idiomas (separados por virgula)" })}
                 <input
@@ -336,33 +396,51 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                 />
               </label>
               <label>
-                {t(props.language, { es: "Descuento 4 sesiones (%)", en: "4-session discount (%)", pt: "Desconto 4 sessoes (%)" })}
+                {t(props.language, { es: "Descuento 4 sesiones (máx. 5%)", en: "4-session discount (max 5%)", pt: "Desconto 4 sessoes (max. 5%)" })}
                 <input
                   type="number"
                   min={0}
-                  max={100}
+                  max={5}
                   value={profile.discount4 ?? 0}
-                  onChange={(event) => setProfile((current) => (current ? { ...current, discount4: Number(event.target.value || 0) } : current))}
+                  onChange={(event) =>
+                    setProfile((current) =>
+                      current
+                        ? { ...current, discount4: clampInt(Number(event.target.value || 0), 0, 5) }
+                        : current
+                    )
+                  }
                 />
               </label>
               <label>
-                {t(props.language, { es: "Descuento 12 sesiones (%)", en: "12-session discount (%)", pt: "Desconto 12 sessoes (%)" })}
+                {t(props.language, { es: "Descuento 8 sesiones (máx. 10%)", en: "8-session discount (max 10%)", pt: "Desconto 8 sessoes (max. 10%)" })}
                 <input
                   type="number"
                   min={0}
-                  max={100}
+                  max={10}
+                  value={profile.discount8 ?? 0}
+                  onChange={(event) =>
+                    setProfile((current) =>
+                      current
+                        ? { ...current, discount8: clampInt(Number(event.target.value || 0), 0, 10) }
+                        : current
+                    )
+                  }
+                />
+              </label>
+              <label>
+                {t(props.language, { es: "Descuento 12 sesiones (máx. 15%)", en: "12-session discount (max 15%)", pt: "Desconto 12 sessoes (max. 15%)" })}
+                <input
+                  type="number"
+                  min={0}
+                  max={15}
                   value={profile.discount12 ?? 0}
-                  onChange={(event) => setProfile((current) => (current ? { ...current, discount12: Number(event.target.value || 0) } : current))}
-                />
-              </label>
-              <label>
-                {t(props.language, { es: "Descuento 24 sesiones (%)", en: "24-session discount (%)", pt: "Desconto 24 sessoes (%)" })}
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={profile.discount24 ?? 0}
-                  onChange={(event) => setProfile((current) => (current ? { ...current, discount24: Number(event.target.value || 0) } : current))}
+                  onChange={(event) =>
+                    setProfile((current) =>
+                      current
+                        ? { ...current, discount12: clampInt(Number(event.target.value || 0), 0, 15) }
+                        : current
+                    )
+                  }
                 />
               </label>
             </div>
@@ -519,6 +597,22 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                       />
                     </label>
                   </div>
+                  <button
+                    type="button"
+                    className="pro-secondary"
+                    onClick={() =>
+                      setProfile((current) =>
+                        current
+                          ? {
+                              ...current,
+                              diplomas: (current.diplomas ?? []).filter((_, itemIndex) => itemIndex !== index)
+                            }
+                          : current
+                      )
+                    }
+                  >
+                    {t(props.language, { es: "Eliminar diploma", en: "Remove diploma", pt: "Remover diploma" })}
+                  </button>
                 </article>
               ))}
               <button

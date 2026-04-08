@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
+import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
 import type { ProfessionalWebOnboardingPayload } from "../types";
 import {
   type WebInterstitialContent,
@@ -43,7 +44,8 @@ export function ProfessionalWebOnboardingWizard(props: {
     updateDiploma,
     addDiploma,
     toggleLanguage,
-    sanitizePercent,
+    toggleFocusArea,
+    clampDiscountInput,
     discountedPriceLabel,
     canContinue,
     handleContinue,
@@ -179,17 +181,21 @@ export function ProfessionalWebOnboardingWizard(props: {
                     ))}
                   </select>
                 </label>
-                <label>
-                  <span>Enfoque principal</span>
-                  <select value={form.focusPrimary} onChange={(event) => update({ focusPrimary: event.target.value })}>
-                    <option value="">Seleccionar</option>
-                    <option value="Ansiedad">Ansiedad</option>
-                    <option value="Autoestima">Autoestima</option>
-                    <option value="Pareja">Pareja</option>
-                    <option value="Duelo">Duelo</option>
-                    <option value="Depresion">Depresión</option>
-                  </select>
-                </label>
+                <div className="pro-web-focus-areas">
+                  <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
+                  <div className="pro-web-checks">
+                    {ATTENTION_AREA_OPTIONS_ES.map((area) => (
+                      <button
+                        key={area}
+                        type="button"
+                        className={form.focusAreas.includes(area) ? "active" : ""}
+                        onClick={() => toggleFocusArea(area)}
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="pro-web-grid-3">
                 <label>
@@ -200,7 +206,9 @@ export function ProfessionalWebOnboardingWizard(props: {
                     <option value="1-3 anos">1-3 años</option>
                     <option value="3-6 anos">3-6 años</option>
                     <option value="6-10 anos">6-10 años</option>
-                    <option value="Mas de 10 anos">Más de 10 años</option>
+                    <option value="10-15 anos">10-15 años</option>
+                    <option value="15-20 anos">15-20 años</option>
+                    <option value="Mas de 20 anos">Más de 20 años</option>
                   </select>
                 </label>
                 <label>
@@ -227,13 +235,11 @@ export function ProfessionalWebOnboardingWizard(props: {
                 <span>País de nacimiento</span>
                 <select value={form.birthCountry} onChange={(event) => update({ birthCountry: event.target.value })}>
                   <option value="">Seleccionar</option>
-                  <option value="Argentina">Argentina</option>
-                  <option value="Uruguay">Uruguay</option>
-                  <option value="Chile">Chile</option>
-                  <option value="Colombia">Colombia</option>
-                  <option value="Mexico">Mexico</option>
-                  <option value="Espana">España</option>
-                  <option value="Estados Unidos">Estados Unidos</option>
+                  {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div>
@@ -265,28 +271,46 @@ export function ProfessionalWebOnboardingWizard(props: {
               </label>
               <div className="pro-web-discount-packages">
                 <article className="pro-web-discount-card">
-                  <strong>{t(props.language, { es: "4 sesiones (1 mes)", en: "4 sessions (1 month)", pt: "4 sessoes (1 mes)" })}</strong>
+                  <strong>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</strong>
+                  <small className="pro-web-discount-cap">
+                    {t(props.language, { es: "Máx. 5%", en: "Max 5%", pt: "Max. 5%" })}
+                  </small>
                   <label className="pro-web-percent-input">
-                    <input value={form.discount4} onChange={(event) => update({ discount4: sanitizePercent(event.target.value) })} />
+                    <input
+                      value={form.discount4}
+                      onChange={(event) => update({ discount4: clampDiscountInput(event.target.value, 5) })}
+                    />
                     <em>%</em>
                   </label>
                   {discountedPriceLabel(form.discount4) ? <small>{discountedPriceLabel(form.discount4)}</small> : null}
                 </article>
                 <article className="pro-web-discount-card">
-                  <strong>{t(props.language, { es: "12 sesiones (3 meses)", en: "12 sessions (3 months)", pt: "12 sessoes (3 meses)" })}</strong>
+                  <strong>{t(props.language, { es: "8 sesiones", en: "8 sessions", pt: "8 sessoes" })}</strong>
+                  <small className="pro-web-discount-cap">
+                    {t(props.language, { es: "Máx. 10%", en: "Max 10%", pt: "Max. 10%" })}
+                  </small>
                   <label className="pro-web-percent-input">
-                    <input value={form.discount12} onChange={(event) => update({ discount12: sanitizePercent(event.target.value) })} />
+                    <input
+                      value={form.discount8}
+                      onChange={(event) => update({ discount8: clampDiscountInput(event.target.value, 10) })}
+                    />
+                    <em>%</em>
+                  </label>
+                  {discountedPriceLabel(form.discount8) ? <small>{discountedPriceLabel(form.discount8)}</small> : null}
+                </article>
+                <article className="pro-web-discount-card">
+                  <strong>{t(props.language, { es: "12 sesiones", en: "12 sessions", pt: "12 sessoes" })}</strong>
+                  <small className="pro-web-discount-cap">
+                    {t(props.language, { es: "Máx. 15%", en: "Max 15%", pt: "Max. 15%" })}
+                  </small>
+                  <label className="pro-web-percent-input">
+                    <input
+                      value={form.discount12}
+                      onChange={(event) => update({ discount12: clampDiscountInput(event.target.value, 15) })}
+                    />
                     <em>%</em>
                   </label>
                   {discountedPriceLabel(form.discount12) ? <small>{discountedPriceLabel(form.discount12)}</small> : null}
-                </article>
-                <article className="pro-web-discount-card">
-                  <strong>{t(props.language, { es: "24 sesiones (6 meses)", en: "24 sessions (6 months)", pt: "24 sessoes (6 meses)" })}</strong>
-                  <label className="pro-web-percent-input">
-                    <input value={form.discount24} onChange={(event) => update({ discount24: sanitizePercent(event.target.value) })} />
-                    <em>%</em>
-                  </label>
-                  {discountedPriceLabel(form.discount24) ? <small>{discountedPriceLabel(form.discount24)}</small> : null}
                 </article>
               </div>
             </div>
