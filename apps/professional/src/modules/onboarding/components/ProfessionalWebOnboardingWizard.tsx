@@ -1,5 +1,9 @@
 import { useMemo } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import {
+  FALLBACK_SESSION_PRICE_MAX_USD,
+  FALLBACK_SESSION_PRICE_MIN_USD
+} from "../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
 import type { ProfessionalWebOnboardingPayload } from "../types";
@@ -36,7 +40,6 @@ export function ProfessionalWebOnboardingWizard(props: {
     webSpecializationOptions,
     webPhotoInputRef,
     webVideoInputRef,
-    webVideoCoverInputRef,
     webDiplomaInputRef,
     webStripeDocInputRef,
     activeDiplomaUploadIndex,
@@ -50,6 +53,10 @@ export function ProfessionalWebOnboardingWizard(props: {
     discountedPriceLabel,
     canContinue,
     handleContinue,
+    sessionPriceBounds,
+    pricingStepError,
+    credentialsStepError,
+    credentialsChecking,
     activeInterstitialStep,
     continueFromInterstitial,
     showCompletionCelebration,
@@ -211,6 +218,56 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 0 ? (
             <div className="pro-web-fields">
+              <label>
+                <span>{t(props.language, { es: "Email de acceso", en: "Sign-in email", pt: "E-mail de acesso" })}</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(event) => update({ email: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={(event) => update({ password: event.target.value })}
+                />
+              </label>
+              <p className="pro-web-price-bounds-hint">
+                {t(props.language, {
+                  es: "Mínimo 8 caracteres (requisito del servidor al registrar la cuenta).",
+                  en: "At least 8 characters (required when registering your account).",
+                  pt: "No minimo 8 caracteres (exigido ao registrar a conta)."
+                })}
+              </p>
+              {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
+              <p className="pro-web-price-bounds-hint">
+                {t(props.language, {
+                  es: "Al continuar comprobamos en el servidor que el correo no esté ya registrado.",
+                  en: "When you continue, we check on the server that this email is not already registered.",
+                  pt: "Ao continuar, verificamos no servidor se este e-mail ainda nao esta cadastrado."
+                })}
+              </p>
+            </div>
+          ) : null}
+
+          {step === 1 ? (
+            <div className="pro-web-fields pro-web-email-verify-copy">
+              <p>
+                {t(props.language, {
+                  es: "Al finalizar el onboarding y crear tu cuenta, te enviaremos un correo para validar tu dirección. Podés revisar también la carpeta de spam.",
+                  en: "When you finish onboarding and create your account, we will send an email to verify your address. You can check your spam folder too.",
+                  pt: "Ao finalizar o onboarding e criar a conta, enviaremos um e-mail para validar seu endereco. Verifique tambem a pasta de spam."
+                })}
+              </p>
+            </div>
+          ) : null}
+
+          {step === 2 ? (
+            <div className="pro-web-fields">
               <label><span>Nombre visible</span><input value={form.fullName} onChange={(event) => update({ fullName: event.target.value })} /></label>
               <label><span>Título profesional</span><input value={form.professionalTitle} onChange={(event) => update({ professionalTitle: event.target.value })} /></label>
               <label>
@@ -309,16 +366,45 @@ export function ProfessionalWebOnboardingWizard(props: {
             </div>
           ) : null}
 
-          {step === 1 ? (
+          {step === 3 ? (
             <div className="pro-web-fields">
-              <label><span>Acerca de mí</span><textarea value={form.about} onChange={(event) => update({ about: event.target.value })} /></label>
-              <label><span>Cómo trabajo</span><textarea value={form.methodology} onChange={(event) => update({ methodology: event.target.value })} /></label>
-              <label><span>Descripción corta (250)</span><input value={form.shortDescription} onChange={(event) => update({ shortDescription: event.target.value.slice(0, 250) })} /></label>
+              <label>
+                <span>Acerca de mí</span>
+                <textarea
+                  autoComplete="off"
+                  value={form.about}
+                  onChange={(event) => update({ about: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>Cómo trabajo</span>
+                <textarea
+                  autoComplete="off"
+                  value={form.methodology}
+                  onChange={(event) => update({ methodology: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>Descripción corta (250)</span>
+                <input
+                  autoComplete="off"
+                  value={form.shortDescription}
+                  onChange={(event) => update({ shortDescription: event.target.value.slice(0, 250) })}
+                />
+              </label>
             </div>
           ) : null}
 
-          {step === 2 ? (
+          {step === 4 ? (
             <div className="pro-web-fields">
+              <p className="pro-web-price-bounds-hint">
+                {t(props.language, {
+                  es: `Precio permitido por sesión: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (entero).`,
+                  en: `Allowed per-session price: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (whole dollars).`,
+                  pt: `Preco permitido por sessao: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (inteiro).`
+                })}
+              </p>
+              {pricingStepError ? <p className="pro-web-field-error">{pricingStepError}</p> : null}
               <label>
                 <span>{t(props.language, { es: "Precio por sesión (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
                 <input value={form.sessionPrice} onChange={(event) => update({ sessionPrice: event.target.value.replace(/\D/g, "") })} />
@@ -370,8 +456,31 @@ export function ProfessionalWebOnboardingWizard(props: {
             </div>
           ) : null}
 
-          {step === 3 ? (
+          {step === 5 ? (
             <div className="pro-web-fields">
+              <div className="pro-web-video-script">
+                <strong>
+                  {t(props.language, {
+                    es: "Texto orientativo para tu video",
+                    en: "Suggested script for your video",
+                    pt: "Texto orientativo para seu video"
+                  })}
+                </strong>
+                <p>
+                  {t(props.language, {
+                    es: "Te dejamos un texto orientativo para dar un mensaje claro en el video:",
+                    en: "Here is a suggested outline for a clear message in your video:",
+                    pt: "Deixamos um texto orientativo para uma mensagem clara no video:"
+                  })}
+                </p>
+                <blockquote>
+                  {t(props.language, {
+                    es: "«Hola, soy [Nombre], psicólogo/a y especialista de Motivar Care. Trabajo acompañando a personas en [área principal: ansiedad, estrés, relaciones, adicciones, etc.] Mi enfoque principal es [breve mención: cognitivo-conductual, integrador, humanista, etc.] Podés agendar una sesión conmigo a través de la plataforma cuando lo necesites»",
+                    en: "“Hello, I’m [Name], a psychologist and Motivar Care specialist. I support people with [main area: anxiety, stress, relationships, addictions, etc.] My main approach is [brief mention: CBT, integrative, humanistic, etc.] You can book a session with me on the platform whenever you need.”",
+                    pt: "“Ola, sou [Nome], psicologo/a e especialista da Motivar Care. Acompanho pessoas em [area principal: ansiedade, estresse, relacionamentos, dependencias, etc.] Meu enfoque principal e [breve mencao: cognitivo-comportamental, integrador, humanista, etc.] Voce pode agendar uma sessao comigo pela plataforma quando precisar.”"
+                  })}
+                </blockquote>
+              </div>
               <input
                 ref={webPhotoInputRef}
                 type="file"
@@ -400,20 +509,6 @@ export function ProfessionalWebOnboardingWizard(props: {
                   update({ videoReady: true, videoPreview: preview ?? "" });
                 }}
               />
-              <input
-                ref={webVideoCoverInputRef}
-                type="file"
-                accept="image/*,video/*"
-                style={{ display: "none" }}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) {
-                    return;
-                  }
-                  const preview = await mediaPreviewFromFile(file);
-                  update({ videoCoverReady: true, videoCoverPreview: preview ?? "" });
-                }}
-              />
               <div className="pro-web-media-row">
                 <div className="pro-web-media-row-main">
                   <strong>Foto de perfil</strong>
@@ -440,23 +535,10 @@ export function ProfessionalWebOnboardingWizard(props: {
                   {form.videoReady ? "Cargado" : "Cargar"}
                 </button>
               </div>
-              <div className="pro-web-media-row">
-                <div className="pro-web-media-row-main">
-                  <strong>Portada del video</strong>
-                  {form.videoCoverPreview ? (
-                    <span className="pro-web-media-preview" aria-hidden="true">
-                      <img src={form.videoCoverPreview} alt="" />
-                    </span>
-                  ) : null}
-                </div>
-                <button type="button" className={form.videoCoverReady ? "done" : ""} onClick={() => webVideoCoverInputRef.current?.click()}>
-                  {form.videoCoverReady ? "Seleccionada" : "Elegir"}
-                </button>
-              </div>
             </div>
           ) : null}
 
-          {step === 4 ? (
+          {step === 6 ? (
             <div className="pro-web-fields">
               <input
                 ref={webDiplomaInputRef}
@@ -514,14 +596,10 @@ export function ProfessionalWebOnboardingWizard(props: {
               <button type="button" className="pro-web-add-diploma" onClick={addDiploma}>
                 {t(props.language, { es: "Agregar otro diploma", en: "Add another diploma", pt: "Adicionar outro diploma" })}
               </button>
-              <div className="pro-web-grid-2">
-                <label><span>Email de acceso</span><input type="email" value={form.email} onChange={(event) => update({ email: event.target.value })} /></label>
-                <label><span>Password</span><input type="password" value={form.password} onChange={(event) => update({ password: event.target.value })} /></label>
-              </div>
             </div>
           ) : null}
 
-          {step === 5 ? (
+          {step === 7 ? (
             <div className="pro-web-fields pro-web-stripe-fields">
               <input
                 ref={webStripeDocInputRef}
@@ -544,6 +622,13 @@ export function ProfessionalWebOnboardingWizard(props: {
                     es: "Valide su identidad y documentos para activar cobros. Este paso suele tardar entre 3 y 5 minutos.",
                     en: "Validate your identity and documents to activate payouts. This step usually takes 3 to 5 minutes.",
                     pt: "Valide sua identidade e documentos para ativar pagamentos. Esta etapa costuma levar de 3 a 5 minutos."
+                  })}
+                </p>
+                <p className="pro-web-price-bounds-hint">
+                  {t(props.language, {
+                    es: "El enlace a Stripe se abre en una pestaña nueva: volvé a esta ventana para marcar «Ya validé» y seguir al registro de cuenta.",
+                    en: "Stripe opens in a new tab—return here to click “I already validated” and continue to account signup.",
+                    pt: "O Stripe abre em nova aba: volte a esta janela para marcar «Ja validei» e seguir para criar a conta."
                   })}
                 </p>
               </div>
@@ -597,10 +682,17 @@ export function ProfessionalWebOnboardingWizard(props: {
             <button type="button" className="pro-secondary" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}>
               {t(props.language, { es: "Anterior", en: "Back", pt: "Anterior" })}
             </button>
-            <button type="button" className="pro-primary" disabled={!canContinue} onClick={handleContinue}>
-              {step === labels.length - 1
-                ? t(props.language, { es: "Continuar al alta", en: "Continue to sign up", pt: "Continuar para cadastro" })
-                : t(props.language, { es: "Siguiente paso", en: "Next step", pt: "Proximo passo" })}
+            <button
+              type="button"
+              className="pro-primary"
+              disabled={!canContinue || credentialsChecking}
+              onClick={() => void handleContinue()}
+            >
+              {credentialsChecking && step === 0
+                ? t(props.language, { es: "Verificando correo…", en: "Checking email…", pt: "Verificando e-mail…" })
+                : step === labels.length - 1
+                  ? t(props.language, { es: "Continuar al alta", en: "Continue to sign up", pt: "Continuar para cadastro" })
+                  : t(props.language, { es: "Siguiente paso", en: "Next step", pt: "Proximo passo" })}
             </button>
           </footer>
         </div>

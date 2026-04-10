@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import express, { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
+import { getFinanceRules } from "../finance/finance.service.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -117,6 +118,32 @@ export const publicRouter = Router();
 
 /** Fotos demo servidas por el mismo host que el API (útil en Expo: misma IP/LAN que login). */
 publicRouter.use("/demo-avatars", express.static(demoAvatarsDir, { index: false, maxAge: "7d" }));
+
+/** Límites de precio por sesión (USD) alineados con `getFinanceRules` y validación de perfil profesional. */
+publicRouter.get("/session-price-bounds", async (_req, res) => {
+  const rules = await getFinanceRules();
+  return res.json({
+    sessionPriceMinUsd: rules.sessionPriceMinUsd,
+    sessionPriceMaxUsd: rules.sessionPriceMaxUsd
+  });
+});
+
+const checkEmailQuerySchema = z.object({
+  email: z.string().trim().email().max(254)
+});
+
+/** Comprueba si un email está libre para registro (onboarding web antes de crear cuenta). */
+publicRouter.get("/check-email", async (req, res) => {
+  const parsed = checkEmailQuerySchema.safeParse({
+    email: typeof req.query.email === "string" ? req.query.email : ""
+  });
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  return res.json({ available: existing === null });
+});
 
 function resolvePackageDiscountPercent(params: {
   credits: number;

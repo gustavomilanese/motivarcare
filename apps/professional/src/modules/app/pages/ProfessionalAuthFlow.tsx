@@ -40,7 +40,6 @@ import {
   ProfessionalTermsStep,
   ProfessionalTherapyDescriptionInfoStep,
   ProfessionalTherapyDescriptionStep,
-  ProfessionalVideoCoverStep,
   ProfessionalVideoInfoStep,
   ProfessionalWelcomeGate,
   ProfessionalWorkAreasByClientProblemStep,
@@ -84,7 +83,6 @@ type AuthEntryMode =
   | "register-photo-upload"
   | "register-avatar-adjust"
   | "register-video-info"
-  | "register-video-cover"
   | "register-education-info"
   | "register-education"
   | "register-stripe"
@@ -126,7 +124,6 @@ export function ProfessionalAuthFlow(props: {
   });
   const [profilePhotoLoaded, setProfilePhotoLoaded] = useState(false);
   const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
-  const [videoCoverSelected, setVideoCoverSelected] = useState(false);
   const [educationData, setEducationData] = useState({
     institution: "",
     specialty: "",
@@ -527,18 +524,6 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalVideoInfoStep
         language={props.language}
         onBack={() => setAuthEntryMode("register-avatar-adjust")}
-        onContinue={() => setAuthEntryMode("register-video-cover")}
-      />
-    );
-  }
-
-  if (authEntryMode === "register-video-cover") {
-    return (
-      <ProfessionalVideoCoverStep
-        language={props.language}
-        coverSelected={videoCoverSelected}
-        onSelectCover={(_file) => setVideoCoverSelected(true)}
-        onBack={() => setAuthEntryMode("register-video-info")}
         onContinue={() => setAuthEntryMode("register-education-info")}
       />
     );
@@ -548,7 +533,7 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalEducationInfoStep
         language={props.language}
-        onBack={() => setAuthEntryMode("register-video-cover")}
+        onBack={() => setAuthEntryMode("register-video-info")}
         onContinue={() => setAuthEntryMode("register-education")}
       />
     );

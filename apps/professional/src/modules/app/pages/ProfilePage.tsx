@@ -475,14 +475,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             />
           </label>
 
-          <label>
-            {t(props.language, { es: "URL portada de video", en: "Video cover URL", pt: "URL da capa do video" })}
-            <input
-              value={profile.videoCoverUrl ?? ""}
-              onChange={(event) => setProfile((current) => (current ? { ...current, videoCoverUrl: event.target.value } : current))}
-            />
-          </label>
-
           <section className="pro-card pro-profile-section">
             <h3>{t(props.language, { es: "Formación", en: "Education", pt: "Formacao" })}</h3>
             <div className="pro-stack">

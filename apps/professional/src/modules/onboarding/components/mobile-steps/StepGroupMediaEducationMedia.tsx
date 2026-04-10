@@ -1,5 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
+import {
+  FALLBACK_SESSION_PRICE_MAX_USD,
+  FALLBACK_SESSION_PRICE_MIN_USD,
+  fetchSessionPriceBoundsUsd
+} from "../../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -27,6 +32,34 @@ export function ProfessionalPriceStep(props: {
   const update = (patch: Partial<typeof props.value>) => props.onChange({ ...props.value, ...patch });
   const sessionPrice = Number(props.value.sessionPrice || "0");
   const canContinue = sessionPrice > 0;
+  const [bounds, setBounds] = useState<{ min: number; max: number } | null>(null);
+  const [priceError, setPriceError] = useState("");
+
+  useEffect(() => {
+    void fetchSessionPriceBoundsUsd().then(setBounds);
+  }, []);
+
+  useEffect(() => {
+    setPriceError("");
+  }, [props.value.sessionPrice]);
+
+  const tryContinue = () => {
+    const priceUsd = Number(props.value.sessionPrice || "0");
+    const min = bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
+    const max = bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
+    if (!Number.isInteger(priceUsd) || priceUsd < min || priceUsd > max) {
+      setPriceError(
+        t(props.language, {
+          es: `El precio debe ser un entero en USD entre ${min} y ${max} (límites de la plataforma).`,
+          en: `Price must be a whole USD amount between ${min} and ${max} (platform limits).`,
+          pt: `O preco deve ser um valor inteiro em USD entre ${min} e ${max} (limites da plataforma).`
+        })
+      );
+      return;
+    }
+    setPriceError("");
+    props.onContinue();
+  };
 
   const clampPercent = (raw: string, max: number) => {
     const numeric = raw.replace(/\D/g, "");
@@ -76,6 +109,14 @@ export function ProfessionalPriceStep(props: {
           </p>
         </div>
 
+        <p className="pro-price-bounds-hint">
+          {t(props.language, {
+            es: `Precio permitido por sesión: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (entero).`,
+            en: `Allowed per-session price: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (whole dollars).`,
+            pt: `Preco permitido por sessao: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (inteiro).`
+          })}
+        </p>
+        {priceError ? <p className="pro-form-step-error">{priceError}</p> : null}
         <label className="pro-form-step-field">
           <input
             inputMode="numeric"
@@ -137,7 +178,7 @@ export function ProfessionalPriceStep(props: {
           </div>
         </div>
 
-        <button className="pro-primary pro-register-intro-cta" type="button" disabled={!canContinue} onClick={props.onContinue}>
+        <button className="pro-primary pro-register-intro-cta" type="button" disabled={!canContinue} onClick={tryContinue}>
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>
@@ -527,6 +568,30 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
             })}
           </p>
 
+          <div className="pro-video-script-hint">
+            <strong>
+              {t(props.language, {
+                es: "Texto orientativo para tu video",
+                en: "Suggested script for your video",
+                pt: "Texto orientativo para seu video"
+              })}
+            </strong>
+            <p>
+              {t(props.language, {
+                es: "Te dejamos un texto orientativo para dar un mensaje claro en el video:",
+                en: "Here is a suggested outline for a clear message in your video:",
+                pt: "Deixamos um texto orientativo para uma mensagem clara no video:"
+              })}
+            </p>
+            <p className="pro-video-script-block">
+              {t(props.language, {
+                es: "«Hola, soy [Nombre], psicólogo/a y especialista de Motivar Care. Trabajo acompañando a personas en [área principal: ansiedad, estrés, relaciones, adicciones, etc.] Mi enfoque principal es [breve mención: cognitivo-conductual, integrador, humanista, etc.] Podés agendar una sesión conmigo a través de la plataforma cuando lo necesites»",
+                en: "“Hello, I’m [Name], a psychologist and Motivar Care specialist. I support people with [main area: anxiety, stress, relationships, addictions, etc.] My main approach is [brief mention: CBT, integrative, humanistic, etc.] You can book a session with me on the platform whenever you need.”",
+                pt: "“Ola, sou [Nome], psicologo/a e especialista da Motivar Care. Acompanho pessoas em [area principal: ansiedade, estresse, relacionamentos, dependencias, etc.] Meu enfoque principal e [breve mencao: cognitivo-comportamental, integrador, humanista, etc.] Voce pode agendar uma sessao comigo pela plataforma quando precisar.”"
+              })}
+            </p>
+          </div>
+
           <p>{t(props.language, { es: "Principales requisitos del video:", en: "Main video requirements:", pt: "Principais requisitos do video:" })}</p>
           <ul>
             <li>{t(props.language, { es: "No mencione su apellido, solo su nombre.", en: "Mention only your first name, not your surname.", pt: "Nao mencione o sobrenome, apenas o nome." })}</li>
@@ -539,100 +604,6 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
 
         <button className="pro-primary pro-register-intro-cta" type="button" onClick={props.onContinue}>
           {t(props.language, { es: "Seguimos", en: "Continue", pt: "Continuar" })}
-        </button>
-      </section>
-    </div>
-  );
-}
-
-export function ProfessionalVideoCoverStep(props: {
-  language: AppLanguage;
-  coverSelected: boolean;
-  onSelectCover: (file: File) => void;
-  onBack: () => void;
-  onContinue: () => void;
-}) {
-  const [selectedCoverPreview, setSelectedCoverPreview] = useState<string | null>(null);
-  const coverInputRef = useRef<HTMLInputElement | null>(null);
-
-  return (
-    <div className="pro-register-intro-shell">
-      <section className="pro-form-step-card">
-        <header className="pro-form-step-head">
-          <button className="pro-register-intro-back" type="button" onClick={props.onBack} aria-label="Back">
-            ←
-          </button>
-          <div className="pro-form-step-progress" aria-hidden="true">
-            <span className="active progress-photo" />
-          </div>
-          <span className="pro-register-intro-info" aria-hidden="true">i</span>
-        </header>
-
-        <div className="pro-price-copy">
-          <h1>{t(props.language, { es: "Elija una portada para su video", en: "Choose a cover for your video", pt: "Escolha uma capa para seu video" })}</h1>
-          <p>
-            {t(props.language, {
-              es: "Elija una bonita portada de video, seleccionando el fotograma que mas le guste. Aparecera en lugar de su video hasta que el usuario comience a verlo.",
-              en: "Choose a nice video cover by selecting the frame you like the most. It will be shown before users start playing your video.",
-              pt: "Escolha uma capa para o video selecionando o quadro que mais gostar. Ela sera exibida ate o usuario iniciar o video."
-            })}
-          </p>
-        </div>
-
-        <div className="pro-video-cover-preview" aria-hidden="true">
-          <div className="pro-video-cover-frame" />
-          <div className="pro-video-cover-controls">
-            <span>0:01 / 0:06</span>
-            <span>◉</span>
-            <span>◲</span>
-            <span>⋮</span>
-          </div>
-          <div className="pro-video-cover-timeline">
-            <span className={props.coverSelected ? "selected" : ""} />
-          </div>
-        </div>
-
-        <input
-          ref={coverInputRef}
-          type="file"
-          accept="image/*,video/*"
-          style={{ display: "none" }}
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) {
-              return;
-            }
-            const preview = await mediaPreviewFromFile(file);
-            setSelectedCoverPreview(preview);
-            props.onSelectCover(file);
-          }}
-        />
-        <button
-          type="button"
-          className={props.coverSelected ? "pro-photo-secondary pro-video-cover-change" : "pro-photo-upload-main"}
-          onClick={() => coverInputRef.current?.click()}
-        >
-          {props.coverSelected
-            ? t(props.language, { es: "Cambiar portada", en: "Change cover", pt: "Alterar capa" })
-            : t(props.language, { es: "Elija una portada", en: "Choose cover", pt: "Escolher capa" })}
-        </button>
-        {selectedCoverPreview ? (
-          <div className="pro-media-mini-preview" aria-hidden="true">
-            <img src={selectedCoverPreview} alt="" />
-          </div>
-        ) : null}
-
-        {props.coverSelected ? (
-          <div className="pro-video-cover-result">
-            <strong>{t(props.language, { es: "Asi se vera la portada de su video", en: "This is how your video cover will look", pt: "Assim sua capa de video sera exibida" })}</strong>
-            <div className="pro-video-cover-preview static" aria-hidden="true">
-              <div className="pro-video-cover-frame" />
-            </div>
-          </div>
-        ) : null}
-
-        <button className="pro-primary pro-register-intro-cta" type="button" disabled={!props.coverSelected} onClick={props.onContinue}>
-          {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>
     </div>

@@ -39,8 +39,8 @@ export function AuthScreen(props: {
     setMode(props.initialMode === "register" ? "register" : "login");
   }, [props.initialMode]);
   const [fullName, setFullName] = useState(() => props.initialFullName?.trim() ?? "");
-  const [email, setEmail] = useState(() => props.initialEmail ?? "emma.collins@motivarte.com");
-  const [password, setPassword] = useState(() => props.initialPassword ?? "SecurePass123");
+  const [email, setEmail] = useState(() => props.initialEmail ?? "");
+  const [password, setPassword] = useState(() => props.initialPassword ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

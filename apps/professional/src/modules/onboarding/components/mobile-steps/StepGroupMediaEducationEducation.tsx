@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
@@ -66,7 +66,10 @@ export function ProfessionalEducationStep(props: {
   onContinue: () => void;
 }) {
   const update = (patch: Partial<typeof props.value>) => props.onChange({ ...props.value, ...patch });
-  const years = Array.from({ length: 51 }, (_, i) => String(2000 + i));
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: currentYear - 1969 }, (_, index) => String(currentYear - index));
+  }, []);
   const canContinue = Boolean(
     props.value.institution.trim()
     && props.value.specialty.trim()
