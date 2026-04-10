@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
+import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { prisma } from "../../lib/prisma.js";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
@@ -9,6 +10,16 @@ import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finan
 const deleteAdminUserBodySchema = z.object({
   purgeHistoricalData: z.boolean().optional()
 });
+
+function purgeHistoricalDataFromRequest(req: Pick<AuthenticatedRequest, "body" | "query">): boolean {
+  const bodyParsed = deleteAdminUserBodySchema.safeParse(req.body ?? {});
+  if (bodyParsed.success && bodyParsed.data.purgeHistoricalData === true) {
+    return true;
+  }
+  const raw = req.query.purgeHistoricalData;
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  return s === "true" || s === "1";
+}
 
 const kpisQuerySchema = z.object({
   month: z
@@ -1103,8 +1114,7 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
     }
   }
 
-  const bodyParsed = deleteAdminUserBodySchema.safeParse(req.body ?? {});
-  const purgeHistoricalData = bodyParsed.success && Boolean(bodyParsed.data.purgeHistoricalData);
+  const purgeHistoricalData = purgeHistoricalDataFromRequest(req);
 
   if (hasHistoricalActivity && !existing.isTestUser && !purgeHistoricalData) {
     if (!existing.isActive) {
@@ -1150,7 +1160,8 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
     });
   }
 
-  await prisma.$transaction(async (tx) => {
+  try {
+    await prisma.$transaction(async (tx) => {
     if (existing.patient?.id) {
       const patientId = existing.patient.id;
 
@@ -1190,6 +1201,11 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
       });
       if (bookingIds.length > 0) {
         await tx.videoSession.deleteMany({
+          where: { bookingId: { in: bookingIds } }
+        });
+      }
+      if (bookingIds.length > 0) {
+        await tx.aIAuditJob.deleteMany({
           where: { bookingId: { in: bookingIds } }
         });
       }
@@ -1262,6 +1278,11 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
           where: { bookingId: { in: professionalBookingIds } }
         });
       }
+      if (professionalBookingIds.length > 0) {
+        await tx.aIAuditJob.deleteMany({
+          where: { bookingId: { in: professionalBookingIds } }
+        });
+      }
       await tx.financeSessionRecord.deleteMany({
         where: {
           OR: [
@@ -1300,6 +1321,10 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
     await tx.chatMessage.deleteMany({ where: { senderUserId: existing.id } });
     await tx.user.delete({ where: { id: existing.id } });
   });
+  } catch (error: unknown) {
+    console.error("admin delete user transaction failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 
   return res.json({
     ok: true,

@@ -445,12 +445,13 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     setDeleteLoadingUserId(user.id);
 
     try {
+      const purgeQuery = purgeHistoricalOnDelete ? "?purgeHistoricalData=true" : "";
       const response = await apiRequest<{
         ok: true;
         action?: "deleted" | "deactivated";
         message?: string;
       }>(
-        `/api/admin/users/${user.id}`,
+        `/api/admin/users/${user.id}${purgeQuery}`,
         {
           method: "DELETE",
           body: JSON.stringify({ purgeHistoricalData: purgeHistoricalOnDelete }),
