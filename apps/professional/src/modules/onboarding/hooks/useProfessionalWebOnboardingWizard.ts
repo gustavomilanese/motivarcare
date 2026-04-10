@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { WEB_SPECIALIZATION_CANONICAL } from "../constants/webSpecializationOptions";
 import type { ProfessionalWebOnboardingPayload } from "../types";
+
+function yearsExperienceFromGraduationYearClient(graduationYear: number): number {
+  const y = new Date().getFullYear() - graduationYear;
+  return Math.max(0, Math.min(80, y));
+}
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -37,23 +43,23 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [activeDiplomaUploadIndex, setActiveDiplomaUploadIndex] = useState<number | null>(null);
 
   const [form, setForm] = useState({
-    fullName: "Gustavo Milanese",
-    professionalTitle: "Psicologo clinico",
-    yearsExperience: "10",
-    specialization: "Psicologo",
-    experienceBand: "6-10 anos",
-    practiceBand: "1000-3000 horas",
-    gender: "Hombre",
-    birthCountry: "Uruguay",
-    focusAreas: ["Ansiedad"] as string[],
-    languages: ["Espanol", "Ingles"] as string[],
-    about: "Trabajo con ansiedad, autoestima y procesos de cambio vital.",
-    methodology: "Enfoque integrador con herramientas cognitivo-conductuales.",
-    shortDescription: "Acompanamiento cercano, practico y orientado a objetivos.",
-    sessionPrice: "50",
-    discount4: "3",
-    discount8: "5",
-    discount12: "10",
+    fullName: "",
+    professionalTitle: "",
+    graduationYear: "",
+    specialization: "",
+    experienceBand: "",
+    practiceBand: "",
+    gender: "",
+    birthCountry: "",
+    focusAreas: [] as string[],
+    languages: [] as string[],
+    about: "",
+    methodology: "",
+    shortDescription: "",
+    sessionPrice: "",
+    discount4: "",
+    discount8: "",
+    discount12: "",
     profilePhotoReady: false,
     profilePhotoPreview: "",
     videoReady: false,
@@ -62,19 +68,19 @@ export function useProfessionalWebOnboardingWizard(input: {
     videoCoverPreview: "",
     diplomas: [
       {
-        institution: "Colegio Manuel Belgrano",
-        degree: "Psicólogo social",
-        startYear: "2014",
-        graduationYear: "2018",
+        institution: "",
+        degree: "",
+        startYear: "",
+        graduationYear: "",
         diplomaUploaded: false,
         diplomaPreview: ""
       }
     ],
-    stripeVerified: true,
+    stripeVerified: false,
     stripeDocPreview: "",
-    stripeVerificationStarted: true,
-    email: "gustavo@example.com",
-    password: "SecurePass123"
+    stripeVerificationStarted: false,
+    email: "",
+    password: ""
   });
 
   const years = Array.from({ length: 31 }, (_, index) => String(2000 + index));
@@ -112,21 +118,10 @@ export function useProfessionalWebOnboardingWizard(input: {
     })
   ] as const;
 
-  const webSpecializationOptions = [
-    { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" },
-    { es: "Psicoterapeuta", en: "Psychotherapist", pt: "Psicoterapeuta" },
-    { es: "Psicoanalista", en: "Psychoanalyst", pt: "Psicanalista" },
-    { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" },
-    { es: "Terapeuta Gestalt", en: "Gestalt therapist", pt: "Terapeuta Gestalt" },
-    { es: "Sexologo", en: "Sexologist", pt: "Sexologo" },
-    { es: "Coach", en: "Coach", pt: "Coach" },
-    { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" },
-    { es: "Doc. de Ciencias Medicas", en: "Medical sciences PhD", pt: "Doutor em ciencias medicas" },
-    { es: "Doc. de Ciencias Psicologicas", en: "Psychological sciences PhD", pt: "Doutor em ciencias psicologicas" },
-    { es: "Psicólogo en prácticas", en: "Psychologist in training", pt: "Psicologo em formacao" },
-    { es: "Psicólogo perinatal", en: "Perinatal psychologist", pt: "Psicologo perinatal" },
-    { es: "Psicólogo para militares y sus familiares", en: "Psychologist for military families", pt: "Psicologo para militares e familiares" }
-  ].map((option) => t(input.language, option));
+  const webSpecializationOptions = WEB_SPECIALIZATION_CANONICAL.map((item) => ({
+    value: item.value,
+    label: t(input.language, { es: item.es, en: item.en, pt: item.pt })
+  }));
 
   const interstitialByStep: Partial<Record<number, WebInterstitialContent>> = {
     0: {
@@ -260,7 +255,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     Boolean(
       form.fullName.trim()
       && form.professionalTitle.trim()
-      && form.yearsExperience.trim()
+      && form.graduationYear.trim()
       && form.specialization
       && form.experienceBand
       && form.practiceBand
@@ -318,6 +313,9 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, [step, seenInterstitials, activeInterstitialStep, interstitialByStep]);
 
   const finishWebOnboarding = () => {
+    const gy = form.graduationYear.trim() ? Number(form.graduationYear) : null;
+    const yearsExperience =
+      gy !== null && Number.isFinite(gy) ? yearsExperienceFromGraduationYearClient(gy) : null;
     input.onFinish({
       fullName: form.fullName,
       email: form.email,
@@ -330,7 +328,8 @@ export function useProfessionalWebOnboardingWizard(input: {
       birthCountry: form.birthCountry,
       focusAreas: form.focusAreas,
       languages: form.languages,
-      yearsExperience: form.yearsExperience.trim() ? Number(form.yearsExperience) : null,
+      graduationYear: gy !== null && Number.isFinite(gy) ? gy : null,
+      yearsExperience,
       bio: form.about,
       shortDescription: form.shortDescription,
       therapeuticApproach: form.methodology,

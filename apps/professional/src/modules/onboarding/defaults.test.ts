@@ -9,7 +9,7 @@ describe("onboarding defaults", () => {
   it("crea draft por defecto consistente", () => {
     const draft = createDefaultOnboardingPatchDraft();
 
-    expect(draft.visible).toBe(true);
+    expect(draft.visible).toBe(false);
     expect(draft.stripeVerified).toBe(false);
     expect(draft.diplomas).toEqual([]);
   });
@@ -27,6 +27,7 @@ describe("onboarding defaults", () => {
       birthCountry: "Uruguay",
       focusAreas: ["Ansiedad"],
       languages: ["Espanol", "Ingles"],
+      graduationYear: 2016,
       yearsExperience: 10,
       bio: "Bio de prueba",
       shortDescription: "Descripcion corta",
@@ -56,6 +57,8 @@ describe("onboarding defaults", () => {
     expect(draft.focusAreas).toEqual(["Ansiedad"]);
     expect(draft.sessionPriceUsd).toBe(50);
     expect(draft.stripeVerified).toBe(true);
+    expect(draft.visible).toBe(false);
+    expect(draft.graduationYear).toBe(2016);
     expect(draft.diplomas).toHaveLength(1);
   });
 
@@ -75,7 +78,7 @@ describe("onboarding defaults", () => {
         discount12: "12"
       },
       personalData: {
-        yearsExperience: "10",
+        graduationYear: "2018",
         gender: "Hombre",
         birthCountry: "Uruguay"
       },
@@ -89,9 +92,14 @@ describe("onboarding defaults", () => {
     });
 
     expect(draft.therapeuticApproach).toBe("Descripcion terapia");
-    expect(draft.yearsExperience).toBe(10);
+    expect(draft.graduationYear).toBe(2018);
+    expect(draft.yearsExperience).toBe(
+      Math.max(0, Math.min(80, new Date().getFullYear() - 2018))
+    );
     expect(draft.discount8).toBe(8);
     expect(draft.photoUrl).toBe("data:image/png;base64,AAA");
+    expect(draft.visible).toBe(false);
+    expect(draft.stripeVerified).toBe(false);
     expect(draft.diplomas).toHaveLength(1);
   });
 
@@ -105,7 +113,7 @@ describe("onboarding defaults", () => {
       workLanguages: ["Espanol"],
       summaryText: "",
       priceData: { sessionPrice: "", discount4: "", discount8: "", discount12: "" },
-      personalData: { yearsExperience: "0", gender: "Hombre", birthCountry: "UY" },
+      personalData: { graduationYear: "", gender: "Hombre", birthCountry: "UY" },
       educationData: { institution: "", specialty: "", startYear: "", graduationYear: "" }
     });
     expect(draft.photoUrl).toBeNull();

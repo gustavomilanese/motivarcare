@@ -128,18 +128,18 @@ export function ProfessionalAuthFlow(props: {
   const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
   const [videoCoverSelected, setVideoCoverSelected] = useState(false);
   const [educationData, setEducationData] = useState({
-    institution: "Colegio Manuel Belgrano",
-    specialty: "Psicologo social",
-    startYear: "2014",
-    graduationYear: "2018",
-    diplomaUploaded: true
+    institution: "",
+    specialty: "",
+    startYear: "",
+    graduationYear: "",
+    diplomaUploaded: false
   });
   const [personalData, setPersonalData] = useState({
     publicName: "",
     firstName: "",
     fullName: "",
     practiceHours: "",
-    yearsExperience: "",
+    graduationYear: "",
     gender: "",
     birthYear: "",
     birthCountry: ""
@@ -155,7 +155,7 @@ export function ProfessionalAuthFlow(props: {
     summaryText,
     priceData,
     personalData: {
-      yearsExperience: personalData.yearsExperience,
+      graduationYear: personalData.graduationYear,
       gender: personalData.gender,
       birthCountry: personalData.birthCountry
     },

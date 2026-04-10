@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
@@ -55,6 +56,48 @@ export function ProfessionalWebOnboardingWizard(props: {
     setShowCompletionCelebration,
     finishWebOnboarding
   } = wizard;
+
+  const graduationYearOptions = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: current - 1969 }, (_, index) => String(current - index));
+  }, []);
+
+  const genderWebOptions = useMemo(
+    () =>
+      [
+        { value: "Hombre", label: t(props.language, { es: "Hombre", en: "Man", pt: "Homem" }) },
+        { value: "Mujer", label: t(props.language, { es: "Mujer", en: "Woman", pt: "Mulher" }) },
+        {
+          value: "Persona no binaria",
+          label: t(props.language, { es: "Persona no binaria", en: "Non-binary", pt: "Pessoa nao binaria" })
+        },
+        {
+          value: "Mujer trans",
+          label: t(props.language, { es: "Mujer trans", en: "Trans woman", pt: "Mulher trans" })
+        },
+        {
+          value: "Hombre trans",
+          label: t(props.language, { es: "Hombre trans", en: "Trans man", pt: "Homem trans" })
+        },
+        {
+          value: "Otra identidad LGBTQ+",
+          label: t(props.language, {
+            es: "Otra identidad LGBTQ+",
+            en: "Another LGBTQ+ identity",
+            pt: "Outra identidade LGBTQIA+"
+          })
+        },
+        {
+          value: "Prefiero no decirlo",
+          label: t(props.language, {
+            es: "Prefiero no decirlo",
+            en: "Prefer not to say",
+            pt: "Prefiro nao dizer"
+          })
+        }
+      ] as const,
+    [props.language]
+  );
 
   const renderWebInterstitialVisual = (content: WebInterstitialContent) => {
     if (content.visual === "earnings") {
@@ -170,33 +213,28 @@ export function ProfessionalWebOnboardingWizard(props: {
             <div className="pro-web-fields">
               <label><span>Nombre visible</span><input value={form.fullName} onChange={(event) => update({ fullName: event.target.value })} /></label>
               <label><span>Título profesional</span><input value={form.professionalTitle} onChange={(event) => update({ professionalTitle: event.target.value })} /></label>
-              <label><span>Años de experiencia</span><input value={form.yearsExperience} onChange={(event) => update({ yearsExperience: event.target.value.replace(/\D/g, "") })} /></label>
-              <div className="pro-web-grid-2">
-                <label>
-                  <span>Especialización</span>
-                  <select value={form.specialization} onChange={(event) => update({ specialization: event.target.value })}>
-                    <option value="">Seleccionar</option>
-                    {webSpecializationOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </label>
-                <div className="pro-web-focus-areas">
-                  <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
-                  <div className="pro-web-checks">
-                    {ATTENTION_AREA_OPTIONS_ES.map((area) => (
-                      <button
-                        key={area}
-                        type="button"
-                        className={form.focusAreas.includes(area) ? "active" : ""}
-                        onClick={() => toggleFocusArea(area)}
-                      >
-                        {area}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <label>
+                <span>{t(props.language, { es: "Especialización", en: "Specialization", pt: "Especializacao" })}</span>
+                <select
+                  className="pro-web-select-full"
+                  value={form.specialization}
+                  onChange={(event) => update({ specialization: event.target.value })}
+                >
+                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                  {webSpecializationOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>{t(props.language, { es: "Año de egreso", en: "Graduation year", pt: "Ano de formatura" })}</span>
+                <select value={form.graduationYear} onChange={(event) => update({ graduationYear: event.target.value })}>
+                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                  {graduationYearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
               <div className="pro-web-grid-3">
                 <label>
                   <span>Experiencia (rango)</span>
@@ -223,11 +261,12 @@ export function ProfessionalWebOnboardingWizard(props: {
                   </select>
                 </label>
                 <label>
-                  <span>Género</span>
+                  <span>{t(props.language, { es: "Género", en: "Gender", pt: "Genero" })}</span>
                   <select value={form.gender} onChange={(event) => update({ gender: event.target.value })}>
-                    <option value="">Seleccionar</option>
-                    <option value="Hombre">Hombre</option>
-                    <option value="Mujer">Mujer</option>
+                    <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                    {genderWebOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </label>
               </div>
@@ -248,6 +287,21 @@ export function ProfessionalWebOnboardingWizard(props: {
                   {["Espanol", "Ingles", "Portugues"].map((lang) => (
                     <button key={lang} type="button" className={form.languages.includes(lang) ? "active" : ""} onClick={() => toggleLanguage(lang)}>
                       {lang}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pro-web-focus-areas pro-web-focus-areas--last">
+                <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
+                <div className="pro-web-checks">
+                  {ATTENTION_AREA_OPTIONS_ES.map((area) => (
+                    <button
+                      key={area}
+                      type="button"
+                      className={form.focusAreas.includes(area) ? "active" : ""}
+                      onClick={() => toggleFocusArea(area)}
+                    >
+                      {area}
                     </button>
                   ))}
                 </div>

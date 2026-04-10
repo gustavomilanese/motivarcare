@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -232,7 +232,7 @@ export function ProfessionalPersonalDataStep(props: {
     firstName: string;
     fullName: string;
     practiceHours: string;
-    yearsExperience: string;
+    graduationYear: string;
     gender: string;
     birthYear: string;
     birthCountry: string;
@@ -242,7 +242,7 @@ export function ProfessionalPersonalDataStep(props: {
     firstName: string;
     fullName: string;
     practiceHours: string;
-    yearsExperience: string;
+    graduationYear: string;
     gender: string;
     birthYear: string;
     birthCountry: string;
@@ -253,6 +253,10 @@ export function ProfessionalPersonalDataStep(props: {
   const [genderOpen, setGenderOpen] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
+  const graduationYearOptions = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: current - 1969 }, (_, index) => String(current - index));
+  }, []);
   const countries = [
     "Afganistan", "Albania", "Alemania", "Andorra", "Angola", "Anguila", "Antartida", "Antigua y Barbuda",
     "Arabia Saudita", "Argelia", "Argentina", "Armenia", "Aruba", "Australia", "Austria", "Azerbaiyan",
@@ -274,13 +278,54 @@ export function ProfessionalPersonalDataStep(props: {
   );
   const birthYears = Array.from({ length: 81 }, (_, index) => String(new Date().getFullYear() - 18 - index));
 
+  const genderChoices = useMemo(
+    () =>
+      [
+        { value: "Hombre", label: t(props.language, { es: "Hombre", en: "Man", pt: "Homem" }) },
+        { value: "Mujer", label: t(props.language, { es: "Mujer", en: "Woman", pt: "Mulher" }) },
+        {
+          value: "Persona no binaria",
+          label: t(props.language, { es: "Persona no binaria", en: "Non-binary", pt: "Pessoa nao binaria" })
+        },
+        {
+          value: "Mujer trans",
+          label: t(props.language, { es: "Mujer trans", en: "Trans woman", pt: "Mulher trans" })
+        },
+        {
+          value: "Hombre trans",
+          label: t(props.language, { es: "Hombre trans", en: "Trans man", pt: "Homem trans" })
+        },
+        {
+          value: "Otra identidad LGBTQ+",
+          label: t(props.language, {
+            es: "Otra identidad LGBTQ+",
+            en: "Another LGBTQ+ identity",
+            pt: "Outra identidade LGBTQIA+"
+          })
+        },
+        {
+          value: "Prefiero no decirlo",
+          label: t(props.language, {
+            es: "Prefiero no decirlo",
+            en: "Prefer not to say",
+            pt: "Prefiro nao dizer"
+          })
+        }
+      ] as const,
+    [props.language]
+  );
+
   const next = (patch: Partial<typeof props.value>) => props.onChange({ ...props.value, ...patch });
+  const genderLabel =
+    props.value.gender.trim().length > 0
+      ? genderChoices.find((c) => c.value === props.value.gender)?.label ?? props.value.gender
+      : "";
   const canContinue = Boolean(
     props.value.publicName.trim()
     && props.value.firstName.trim()
     && props.value.fullName.trim()
     && props.value.practiceHours.trim()
-    && props.value.yearsExperience.trim()
+    && props.value.graduationYear.trim()
     && props.value.gender.trim()
     && props.value.birthYear.trim()
     && props.value.birthCountry.trim()
@@ -321,15 +366,20 @@ export function ProfessionalPersonalDataStep(props: {
               <input placeholder={t(props.language, { es: "Horas de práctica", en: "Practice hours", pt: "Horas de pratica" })} value={props.value.practiceHours} onChange={(event) => next({ practiceHours: event.target.value.replace(/\D/g, "") })} />
               <small>{t(props.language, { es: "Ejemplo: 3000", en: "Example: 3000", pt: "Exemplo: 3000" })}</small>
             </label>
-            <label>
-              <input placeholder={t(props.language, { es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })} value={props.value.yearsExperience} onChange={(event) => next({ yearsExperience: event.target.value.replace(/\D/g, "") })} />
-              <small>{t(props.language, { es: "Ejemplo: 5", en: "Example: 5", pt: "Exemplo: 5" })}</small>
+            <label className="pro-personal-year-wrap">
+              <select value={props.value.graduationYear} onChange={(event) => next({ graduationYear: event.target.value })}>
+                <option value="">{t(props.language, { es: "Año de egreso", en: "Graduation year", pt: "Ano de formatura" })}</option>
+                {graduationYearOptions.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <em aria-hidden="true">⌄</em>
             </label>
           </div>
 
           <div className="pro-personal-two-cols">
             <button type="button" className="pro-personal-select" onClick={() => setGenderOpen(true)}>
-              <span>{props.value.gender || t(props.language, { es: "Genero", en: "Gender", pt: "Genero" })}</span>
+              <span>{genderLabel || t(props.language, { es: "Genero", en: "Gender", pt: "Genero" })}</span>
               <em>⌄</em>
             </button>
 
@@ -357,12 +407,18 @@ export function ProfessionalPersonalDataStep(props: {
         {genderOpen ? (
           <div className="pro-sheet-backdrop" role="presentation" onClick={() => setGenderOpen(false)}>
             <div className="pro-gender-sheet" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-              <button type="button" onClick={() => { next({ gender: t(props.language, { es: "Hombre", en: "Man", pt: "Homem" }) }); setGenderOpen(false); }}>
-                {t(props.language, { es: "Hombre", en: "Man", pt: "Homem" })}
-              </button>
-              <button type="button" onClick={() => { next({ gender: t(props.language, { es: "Mujer", en: "Woman", pt: "Mulher" }) }); setGenderOpen(false); }}>
-                {t(props.language, { es: "Mujer", en: "Woman", pt: "Mulher" })}
-              </button>
+              {genderChoices.map((choice) => (
+                <button
+                  key={choice.value}
+                  type="button"
+                  onClick={() => {
+                    next({ gender: choice.value });
+                    setGenderOpen(false);
+                  }}
+                >
+                  {choice.label}
+                </button>
+              ))}
               <button type="button" className="cancel" onClick={() => setGenderOpen(false)}>
                 {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
               </button>

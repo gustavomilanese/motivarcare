@@ -34,6 +34,12 @@ enum ConsentType {
   AI_AUDIO_AUDIT
 }
 
+/// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio.
+enum ProfessionalRegistrationApproval {
+  PENDING
+  APPROVED
+}
+
 model User {
   id            String               @id @default(cuid())
   email         String               @unique
@@ -131,6 +137,9 @@ model ProfessionalProfile {
   shortDescription      String?                  @db.Text
   therapeuticApproach   String?                  @db.Text
   yearsExperience       Int?
+  /// Año de egreso del título (onboarding); si existe, el matching puede derivar años de práctica.
+  graduationYear        Int?                     @map("graduation_year")
+  registrationApproval  ProfessionalRegistrationApproval @default(APPROVED) @map("registration_approval")
   sessionPriceUsd       Int?
   discount4             Int?
   discount8             Int?

@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { randomUUID } from "node:crypto";
 import { google } from "googleapis";
+import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { sendApiError } from "../../lib/http.js";
@@ -392,7 +393,8 @@ authRouter.post("/register", async (req, res) => {
               create: {
                 timezone: parsed.data.timezone ?? "America/New_York",
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York",
-                visible: true,
+                visible: false,
+                registrationApproval: ProfessionalRegistrationApproval.PENDING,
                 cancellationHours: 24
               }
             }

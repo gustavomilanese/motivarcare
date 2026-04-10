@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
@@ -210,12 +211,14 @@ const updateBookingSchema = z
 
 const listProfessionalsQuerySchema = z.object({
   visible: z.enum(["true", "false"]).optional(),
+  registrationApproval: z.enum(["PENDING", "APPROVED"]).optional(),
   search: z.string().trim().min(1).max(120).optional()
 });
 
 const updateProfessionalSchema = z
   .object({
     visible: z.boolean().optional(),
+    registrationApproval: z.nativeEnum(ProfessionalRegistrationApproval).optional(),
     cancellationHours: z.number().int().min(0).max(168).optional(),
     bio: z.string().trim().max(2000).nullable().optional(),
     therapeuticApproach: z.string().trim().max(500).nullable().optional(),
@@ -1642,6 +1645,9 @@ adminRouter.get("/professionals", async (req, res) => {
     prisma.professionalProfile.findMany({
       where: {
         ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
+        ...(parsed.data.registrationApproval
+          ? { registrationApproval: parsed.data.registrationApproval }
+          : {}),
         ...(search
           ? {
               user: {
@@ -1673,6 +1679,7 @@ adminRouter.get("/professionals", async (req, res) => {
       fullName: item.user.fullName,
       email: item.user.email,
       visible: item.visible,
+      registrationApproval: item.registrationApproval,
       cancellationHours: item.cancellationHours,
       bio: item.bio,
       therapeuticApproach: item.therapeuticApproach,
@@ -1708,6 +1715,7 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     where: { id: existing.id },
     data: {
       ...(parsed.data.visible !== undefined ? { visible: parsed.data.visible } : {}),
+      ...(parsed.data.registrationApproval !== undefined ? { registrationApproval: parsed.data.registrationApproval } : {}),
       ...(parsed.data.cancellationHours !== undefined ? { cancellationHours: parsed.data.cancellationHours } : {}),
       ...(parsed.data.bio !== undefined ? { bio: parsed.data.bio } : {}),
       ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),

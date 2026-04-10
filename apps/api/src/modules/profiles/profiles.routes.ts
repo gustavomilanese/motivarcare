@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
+import { Prisma, ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
+import { professionalListingDisplayName, yearsExperienceFromGraduationYear } from "../../lib/professionalListingDisplayName.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getFinanceRules } from "../finance/finance.service.js";
@@ -65,6 +66,7 @@ const updatePublicProfileSchema = z.object({
   shortDescription: z.string().max(250).nullable().optional(),
   therapeuticApproach: z.string().max(500).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
+  graduationYear: z.number().int().min(1950).max(2035).nullable().optional(),
   sessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
   discount4: z.number().int().min(0).max(5).nullable().optional(),
   discount8: z.number().int().min(0).max(10).nullable().optional(),
@@ -381,7 +383,10 @@ interface DirectoryProfessional {
 
 async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
   const professionals = await prisma.professionalProfile.findMany({
-    where: { visible: true },
+    where: {
+      visible: true,
+      registrationApproval: ProfessionalRegistrationApproval.APPROVED
+    },
     include: {
       user: {
         select: {
@@ -472,7 +477,7 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
   return professionals.map((professional) => ({
     id: professional.id,
     userId: professional.user.id,
-    fullName: professional.user.fullName,
+    fullName: professionalListingDisplayName(professional.user.fullName),
     title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
     specialization: professional.specialization ?? null,
     focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
@@ -482,7 +487,10 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
     languages: Array.isArray(professional.languages)
       ? professional.languages.filter((value): value is string => typeof value === "string")
       : [],
-    yearsExperience: professional.yearsExperience,
+    yearsExperience:
+      professional.graduationYear != null
+        ? yearsExperienceFromGraduationYear(professional.graduationYear)
+        : professional.yearsExperience,
     sessionPriceUsd: professional.sessionPriceUsd,
     photoUrl: professional.photoUrl,
     videoUrl: professional.videoUrl,
@@ -727,7 +735,12 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             bio: professional.bio,
             shortDescription: professional.shortDescription,
             therapeuticApproach: professional.therapeuticApproach,
-            yearsExperience: professional.yearsExperience,
+            graduationYear: professional.graduationYear,
+            registrationApproval: professional.registrationApproval,
+            yearsExperience:
+              professional.graduationYear != null
+                ? yearsExperienceFromGraduationYear(professional.graduationYear)
+                : professional.yearsExperience,
             sessionPriceUsd: professional.sessionPriceUsd,
             discount4: professional.discount4,
             discount8: professional.discount8,
@@ -1282,7 +1295,27 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       });
     }
   }
-  const { diplomas, languages, timezone, focusAreas, focusPrimary, ...restProfile } = parsed.data;
+  const {
+    diplomas,
+    languages,
+    timezone,
+    focusAreas,
+    focusPrimary,
+    graduationYear,
+    visible,
+    ...restProfile
+  } = parsed.data;
+
+  const graduationPatch: { graduationYear?: number | null; yearsExperience?: number } = {};
+  if (graduationYear !== undefined) {
+    if (graduationYear === null) {
+      graduationPatch.graduationYear = null;
+    } else {
+      graduationPatch.graduationYear = graduationYear;
+      graduationPatch.yearsExperience = yearsExperienceFromGraduationYear(graduationYear);
+    }
+  }
+
   const languagesUpdate =
     languages === undefined
       ? undefined
@@ -1312,10 +1345,26 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
   }
 
   const updated = await prisma.$transaction(async (tx) => {
+    const before = await tx.professionalProfile.findUnique({
+      where: { id: professionalId },
+      select: { registrationApproval: true }
+    });
+
+    const visibleUpdate: { visible?: boolean } = {};
+    if (visible !== undefined) {
+      if (before?.registrationApproval === ProfessionalRegistrationApproval.APPROVED) {
+        visibleUpdate.visible = visible;
+      } else if (visible === false) {
+        visibleUpdate.visible = false;
+      }
+    }
+
     const profile = await tx.professionalProfile.update({
       where: { id: professionalId },
       data: {
         ...restProfile,
+        ...graduationPatch,
+        ...visibleUpdate,
         ...focusUpdates,
         ...(languagesUpdate !== undefined ? { languages: languagesUpdate } : {}),
         ...(timezoneUpdate !== undefined ? { timezone: timezoneUpdate } : {})

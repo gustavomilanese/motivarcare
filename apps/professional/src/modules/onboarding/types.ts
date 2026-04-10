@@ -20,6 +20,7 @@ export interface OnboardingPatchDraft {
   /** Áreas de atención (preferido sobre `focusPrimary`). */
   focusAreas: string[] | null;
   languages: string[] | null;
+  graduationYear: number | null;
   shortDescription: string | null;
   sessionPriceUsd: number | null;
   discount4: number | null;
@@ -47,6 +48,9 @@ export interface ProfessionalWebOnboardingPayload {
   birthCountry: string;
   focusAreas: string[];
   languages: string[];
+  /** Año de egreso del título principal (onboarding). */
+  graduationYear: number | null;
+  /** Derivado del año de egreso para scoring / compatibilidad. */
   yearsExperience: number | null;
   bio: string;
   shortDescription: string;
@@ -79,7 +83,8 @@ export interface ProfessionalMobileOnboardingInputs {
     discount12: string;
   };
   personalData: {
-    yearsExperience: string;
+    /** Año de egreso del título (paso identidad móvil). */
+    graduationYear: string;
     gender: string;
     birthCountry: string;
   };

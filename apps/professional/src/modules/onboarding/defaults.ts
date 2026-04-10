@@ -18,6 +18,11 @@ function parseNumericOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function yearsExperienceFromGraduationYear(graduationYear: number): number {
+  const y = new Date().getFullYear() - graduationYear;
+  return Math.max(0, Math.min(80, y));
+}
+
 export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
   return {
     bio: null,
@@ -32,6 +37,7 @@ export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
     focusPrimary: null,
     focusAreas: null,
     languages: null,
+    graduationYear: null,
     shortDescription: null,
     sessionPriceUsd: null,
     discount4: null,
@@ -43,7 +49,7 @@ export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
     stripeDocUrl: null,
     stripeVerified: false,
     stripeVerificationStarted: false,
-    visible: true,
+    visible: false,
     diplomas: []
   };
 }
@@ -53,6 +59,7 @@ export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboarding
     bio: trimOrNull(payload.bio) ?? null,
     therapeuticApproach: trimOrNull(payload.therapeuticApproach) ?? null,
     yearsExperience: payload.yearsExperience,
+    graduationYear: payload.graduationYear,
     professionalTitle: trimOrNull(payload.professionalTitle),
     specialization: trimOrNull(payload.specialization),
     experienceBand: trimOrNull(payload.experienceBand),
@@ -76,16 +83,23 @@ export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboarding
     stripeDocUrl: payload.stripeDocUrl,
     stripeVerified: payload.stripeVerified,
     stripeVerificationStarted: payload.stripeVerificationStarted,
-    visible: true,
+    visible: false,
     diplomas: payload.diplomas
   };
 }
 
 export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboardingInputs): OnboardingPatchDraft {
+  const gyPersonal = parseNumericOrNull(inputs.personalData.graduationYear);
+  const gyEdu = parseNumericOrNull(inputs.educationData.graduationYear);
+  const graduationYear = gyPersonal ?? gyEdu;
+  const yearsExperience =
+    graduationYear !== null ? yearsExperienceFromGraduationYear(graduationYear) : null;
+
   return {
     bio: trimOrNull(inputs.aboutText),
     therapeuticApproach: trimOrNull(inputs.therapyDescriptionText),
-    yearsExperience: parseNumericOrNull(inputs.personalData.yearsExperience),
+    yearsExperience,
+    graduationYear,
     professionalTitle: null,
     specialization: trimOrNull(inputs.selectedSpecialization),
     experienceBand: trimOrNull(inputs.selectedExperience),
@@ -104,9 +118,9 @@ export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboar
     videoUrl: null,
     videoCoverUrl: null,
     stripeDocUrl: null,
-    stripeVerified: true,
-    stripeVerificationStarted: true,
-    visible: true,
+    stripeVerified: false,
+    stripeVerificationStarted: false,
+    visible: false,
     diplomas: [
       {
         institution: inputs.educationData.institution.trim(),

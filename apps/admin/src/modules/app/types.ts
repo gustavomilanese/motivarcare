@@ -287,6 +287,7 @@ export interface AdminProfessionalOps {
   fullName: string;
   email: string;
   visible: boolean;
+  registrationApproval: "PENDING" | "APPROVED";
   cancellationHours: number;
   bio: string | null;
   therapeuticApproach: string | null;

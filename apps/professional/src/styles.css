@@ -7644,6 +7644,11 @@ button:disabled {
   resize: vertical;
 }
 
+.pro-web-select-full {
+  width: 100%;
+  min-width: 0;
+}
+
 .pro-web-grid-2,
 .pro-web-grid-3 {
   display: grid;
