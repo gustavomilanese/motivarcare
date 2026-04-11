@@ -13,6 +13,9 @@ function escapeAttr(value: string): string {
 
 export default defineConfig(({ mode }) => {
   const fromFiles = loadEnv(mode, repoRoot, "");
+  const portRaw = fromFiles.PORT ?? process.env.PORT ?? "4000";
+  const portN = Number.parseInt(String(portRaw), 10);
+  const localApiPort = Number.isFinite(portN) && portN > 0 && portN < 65536 ? portN : 4000;
   /** Vercel/Railway: VITE_API_URL o API_PUBLIC_URL (misma URL pública del API que en el backend). */
   const apiBase = (
     fromFiles.VITE_API_URL ??
@@ -28,7 +31,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: "http://127.0.0.1:4000",
+          target: `http://127.0.0.1:${localApiPort}`,
           changeOrigin: true
         }
       }
