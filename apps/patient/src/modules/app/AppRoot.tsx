@@ -263,6 +263,33 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
   };
 }
 
+/** Profesional asignado por admin que no entra en el directorio (p. ej. visible=false); slots vacíos — la agenda se pide por API en Reservas. */
+function professionalStubFromActiveProfile(active: {
+  id: string;
+  fullName: string;
+  email: string;
+  photoUrl?: string | null;
+}): Professional {
+  return {
+    id: active.id,
+    fullName: active.fullName,
+    title: "Profesional de salud mental",
+    yearsExperience: 0,
+    compatibility: 50,
+    specialties: [],
+    languages: [],
+    approach: "",
+    bio: "",
+    rating: 0,
+    reviewsCount: 0,
+    verified: false,
+    sessionPriceUsd: undefined,
+    activePatients: 0,
+    introVideoUrl: "",
+    slots: []
+  };
+}
+
 function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   const img = event.currentTarget;
   img.onerror = null;
@@ -562,9 +589,13 @@ export function App() {
 
         let mergedPhotos: Record<string, string> = { ...professionalImageMap };
 
-        if (professionalDirectoryResponse && professionalDirectoryResponse.length > 0) {
-          const mapped = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
-          setProfessionalDirectory(mapped);
+        if (professionalDirectoryResult.status === "fulfilled" && professionalDirectoryResponse !== null) {
+          let directoryList = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
+          const assignedForDirectory = profileResponse?.profile?.activeProfessional;
+          if (assignedForDirectory?.id && !directoryList.some((p) => p.id === assignedForDirectory.id)) {
+            directoryList = [professionalStubFromActiveProfile(assignedForDirectory), ...directoryList];
+          }
+          setProfessionalDirectory(directoryList);
           for (const professional of professionalDirectoryResponse) {
             const resolved = resolvePublicAssetUrl(professional.photoUrl);
             if (resolved) {

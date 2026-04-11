@@ -381,33 +381,43 @@ interface DirectoryProfessional {
   }>;
 }
 
-async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
-  const professionals = await prisma.professionalProfile.findMany({
-    where: {
-      visible: true,
-      registrationApproval: ProfessionalRegistrationApproval.APPROVED
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true
-        }
-      },
-      availabilitySlots: {
-        where: {
-          startsAt: { gte: new Date() },
-          isBlocked: false
-        },
-        orderBy: { startsAt: "asc" },
-        take: DIRECTORY_AVAILABILITY_SLOT_FETCH
+function professionalDirectoryQueryInclude(): Prisma.ProfessionalProfileInclude {
+  return {
+    user: {
+      select: {
+        id: true,
+        fullName: true,
+        email: true
       }
     },
+    availabilitySlots: {
+      where: {
+        startsAt: { gte: new Date() },
+        isBlocked: false
+      },
+      orderBy: { startsAt: "asc" },
+      take: DIRECTORY_AVAILABILITY_SLOT_FETCH
+    }
+  };
+}
+
+type ProfessionalProfileDirectoryRow = Prisma.ProfessionalProfileGetPayload<{
+  include: ReturnType<typeof professionalDirectoryQueryInclude>;
+}>;
+
+async function loadProfessionalProfilesForDirectory(where: Prisma.ProfessionalProfileWhereInput): Promise<ProfessionalProfileDirectoryRow[]> {
+  return prisma.professionalProfile.findMany({
+    where,
+    include: professionalDirectoryQueryInclude(),
     orderBy: { createdAt: "asc" }
   });
+}
 
+async function materializeDirectoryProfessionals(professionals: ProfessionalProfileDirectoryRow[]): Promise<DirectoryProfessional[]> {
   const professionalIds = professionals.map((professional) => professional.id);
+  if (professionalIds.length === 0) {
+    return [];
+  }
 
   const now = new Date();
   let vacationRangeEnd = new Date(now);
@@ -426,39 +436,33 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
     rangeEnd: vacationRangeEnd
   });
   const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig] = await Promise.all([
-    professionalIds.length > 0
-      ? prisma.booking.groupBy({
-          by: ["professionalId"],
-          where: {
-            professionalId: { in: professionalIds },
-            status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] }
-          },
-          _count: { _all: true }
-        })
-      : [],
-    professionalIds.length > 0
-      ? prisma.booking.groupBy({
-          by: ["professionalId"],
-          where: {
-            professionalId: { in: professionalIds },
-            status: "COMPLETED"
-          },
-          _count: { _all: true }
-        })
-      : [],
-    professionalIds.length > 0
-      ? prisma.booking.findMany({
-          where: {
-            professionalId: { in: professionalIds },
-            status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] }
-          },
-          select: {
-            professionalId: true,
-            patientId: true
-          },
-          distinct: ["professionalId", "patientId"]
-        })
-      : [],
+    prisma.booking.groupBy({
+      by: ["professionalId"],
+      where: {
+        professionalId: { in: professionalIds },
+        status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] }
+      },
+      _count: { _all: true }
+    }),
+    prisma.booking.groupBy({
+      by: ["professionalId"],
+      where: {
+        professionalId: { in: professionalIds },
+        status: "COMPLETED"
+      },
+      _count: { _all: true }
+    }),
+    prisma.booking.findMany({
+      where: {
+        professionalId: { in: professionalIds },
+        status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] }
+      },
+      select: {
+        professionalId: true,
+        patientId: true
+      },
+      distinct: ["professionalId", "patientId"]
+    }),
     prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
   ]);
 
@@ -521,6 +525,24 @@ async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
   }));
 }
 
+async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
+  const professionals = await loadProfessionalProfilesForDirectory({
+    visible: true,
+    registrationApproval: ProfessionalRegistrationApproval.APPROVED
+  });
+  return materializeDirectoryProfessionals(professionals);
+}
+
+/** Profesionales por id sin filtro de directorio (p. ej. asignado a un paciente pero no visible/aprobado). */
+async function directoryProfessionalsForIds(ids: string[]): Promise<DirectoryProfessional[]> {
+  const unique = [...new Set(ids.filter((id) => id.length > 0))];
+  if (unique.length === 0) {
+    return [];
+  }
+  const professionals = await loadProfessionalProfilesForDirectory({ id: { in: unique } });
+  return materializeDirectoryProfessionals(professionals);
+}
+
 export const profilesRouter = Router();
 
 profilesRouter.get("/professionals", async (_req, res) => {
@@ -553,14 +575,26 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
 
   let patientIntake;
   let professionals: DirectoryProfessional[];
+  let assignmentConfig: { value: Prisma.JsonValue } | null;
   try {
-    [patientIntake, professionals] = await Promise.all([
+    [patientIntake, professionals, assignmentConfig] = await Promise.all([
       prisma.patientIntake.findUnique({ where: { patientId: actor.patientProfileId } }),
-      listDirectoryProfessionals()
+      listDirectoryProfessionals(),
+      prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } })
     ]);
   } catch (error) {
     console.error("GET /profiles/me/matching failed", error);
     return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
+
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const assignedProfessionalId = assignments[actor.patientProfileId] ?? null;
+  if (assignedProfessionalId && !professionals.some((row) => row.id === assignedProfessionalId)) {
+    const extraRows = await directoryProfessionalsForIds([assignedProfessionalId]);
+    const extra = extraRows[0];
+    if (extra) {
+      professionals = [extra, ...professionals];
+    }
   }
 
   const rankedProfessionals = professionals
