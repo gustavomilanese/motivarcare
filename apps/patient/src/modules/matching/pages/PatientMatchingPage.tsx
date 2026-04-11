@@ -348,11 +348,17 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                     en: "You have not saved favorite professionals yet.",
                     pt: "Voce ainda nao salvou profissionais favoritos."
                   })
-                : t(props.language, {
-                    es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
-                    en: "No results with those filters. Remove one to see more options.",
-                    pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
-                  })}
+                : professionals.length === 0
+                  ? t(props.language, {
+                      es: "No hay profesionales publicados en el directorio todavía. En el panel Admin, cada profesional debe tener «Perfil visible» activado y el alta aprobada para que aparezcan acá.",
+                      en: "No professionals are published in the directory yet. In the Admin panel, each professional needs “Profile visible” on and registration approved to appear here.",
+                      pt: "Nao ha profissionais publicados no diretorio. No Admin, cada profissional precisa de «Perfil visivel» ligado e cadastro aprovado para aparecer aqui."
+                    })
+                  : t(props.language, {
+                      es: "No encontramos resultados con esos filtros. Prueba quitando algún filtro para ver más opciones.",
+                      en: "No results with those filters. Remove one to see more options.",
+                      pt: "Nao encontramos resultados com esses filtros. Remova um para ver mais opcoes."
+                    })}
             </p>
           </section>
         </>
