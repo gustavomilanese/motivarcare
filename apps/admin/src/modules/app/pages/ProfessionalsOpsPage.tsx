@@ -650,9 +650,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           </label>
           <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
             {t(props.language, {
-              es: "Para listar todos los perfiles usá * en el buscador.",
-              en: "Use * in the search field to list all profiles.",
-              pt: "Use * na busca para listar todos os perfis."
+              es: "Para listar todos los perfiles usá * en el buscador. El resumen y la aprobación rápida de altas pendientes está en Dashboard, debajo de «Resumen del mes».",
+              en: "Use * in the search field to list all profiles. Pending sign-ups are summarized on the Dashboard under Month at a glance.",
+              pt: "Use * na busca para listar todos os perfis. Cadastros pendentes aparecem no Dashboard, abaixo de «Resumo do mes»."
             })}
           </p>
         </div>

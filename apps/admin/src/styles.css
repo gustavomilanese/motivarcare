@@ -401,6 +401,23 @@ button.danger {
   gap: 10px;
 }
 
+.admin-sidebar-notify-pref {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f1d1d;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.admin-sidebar-notify-pref:hover {
+  background: #ffe4e6;
+}
+
 .locale-controls.sidebar {
   display: grid;
   gap: 10px;
@@ -2281,15 +2298,27 @@ label {
 
 .dashboard-page-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
   padding: 20px 22px;
   background: linear-gradient(145deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   box-shadow: 0 4px 22px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-page-header__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-page-header .dashboard-pending-approvals {
+  margin-top: 14px;
+  width: 100%;
 }
 
 .dashboard-pending-approvals {

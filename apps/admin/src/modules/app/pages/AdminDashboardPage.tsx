@@ -87,6 +87,11 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
         props.token
       );
       await load();
+      try {
+        window.dispatchEvent(new CustomEvent("mc-admin-pending-prof-refresh"));
+      } catch {
+        // ignore
+      }
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setActionError(adminSurfaceMessage("prof-ops-update", props.language, raw));
@@ -261,25 +266,26 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
   return (
     <div className="dashboard-page">
       <header className="dashboard-page-header">
-        <div>
-          <p className="dashboard-hero-eyebrow">{t(props.language, { es: "Panel ejecutivo", en: "Executive overview", pt: "Painel executivo" })}</p>
-          <h1 className="dashboard-page-title">{t(props.language, { es: "Resumen del mes", en: "Month at a glance", pt: "Resumo do mes" })}</h1>
-        </div>
-        <div className="dashboard-header-controls">
-          <div className="dashboard-month-field">
-            <input
-              className="dashboard-month-input"
-              type="month"
-              value={selectedMonth}
-              max={maxMonth}
-              onChange={(event) => setSelectedMonth(event.target.value)}
-              aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
-            />
+        <div className="dashboard-page-header__top">
+          <div>
+            <p className="dashboard-hero-eyebrow">{t(props.language, { es: "Panel ejecutivo", en: "Executive overview", pt: "Painel executivo" })}</p>
+            <h1 className="dashboard-page-title">{t(props.language, { es: "Resumen del mes", en: "Month at a glance", pt: "Resumo do mes" })}</h1>
+          </div>
+          <div className="dashboard-header-controls">
+            <div className="dashboard-month-field">
+              <input
+                className="dashboard-month-input"
+                type="month"
+                value={selectedMonth}
+                max={maxMonth}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+                aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
+              />
+            </div>
           </div>
         </div>
+        <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
       </header>
-
-      <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
 
       {error ? (
         <section className="card">

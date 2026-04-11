@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import { FinancesPage } from "../../finance";
@@ -12,7 +12,7 @@ import { SessionsOpsPage } from "./SessionsOpsPage";
 import { SettingsPage } from "./SettingsPage";
 import { SettingsOutletLayout } from "./SettingsOutletLayout";
 import { apiRequest } from "../services/api";
-import type { PortalPath } from "../types";
+import type { PortalPath, ProfessionalsResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -28,38 +28,63 @@ export function AdminPortal(props: {
 }) {
   const location = useLocation();
   const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
+  const [pendingProfRegistrationCount, setPendingProfRegistrationCount] = useState(0);
+  const lastProfPendingRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const loadSidebarAlertCounts = useCallback(async () => {
+    try {
+      const [triageResponse, profResponse] = await Promise.all([
+        apiRequest<{ pending: number }>("/api/admin/patients/risk-triage", {}, props.token),
+        apiRequest<ProfessionalsResponse>("/api/admin/professionals?registrationApproval=PENDING", {}, props.token)
+      ]);
+      const triage = Number(triageResponse.pending) || 0;
+      const profPending = (profResponse.professionals ?? []).filter((p) => p.registrationApproval === "PENDING").length;
+      setPendingRiskTriageCount(triage);
+      setPendingProfRegistrationCount(profPending);
 
-    const loadPendingRiskTriage = async () => {
-      try {
-        const response = await apiRequest<{ pending: number }>(
-          "/api/admin/patients/risk-triage",
-          {},
-          props.token
-        );
-        if (!active) {
-          return;
-        }
-        setPendingRiskTriageCount(Number(response.pending) || 0);
-      } catch {
-        if (active) {
-          setPendingRiskTriageCount(0);
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        const prev = lastProfPendingRef.current;
+        if (prev !== null && profPending > prev) {
+          new Notification(
+            textByLanguage(props.language, {
+              es: "Nuevas altas de psicólogos pendientes",
+              en: "New psychologist sign-ups pending review",
+              pt: "Novos cadastros de psicologos pendentes"
+            }),
+            {
+              body: textByLanguage(props.language, {
+                es: `Hay ${profPending} alta(s) esperando aprobación.`,
+                en: `${profPending} registration(s) await approval.`,
+                pt: `${profPending} cadastro(s) aguardando aprovacao.`
+              }),
+              tag: "mc-prof-pending"
+            }
+          );
         }
       }
-    };
+      lastProfPendingRef.current = profPending;
+    } catch {
+      setPendingRiskTriageCount(0);
+      setPendingProfRegistrationCount(0);
+    }
+  }, [props.language, props.token]);
 
-    void loadPendingRiskTriage();
+  useEffect(() => {
+    void loadSidebarAlertCounts();
     const intervalId = window.setInterval(() => {
-      void loadPendingRiskTriage();
+      void loadSidebarAlertCounts();
     }, 30000);
 
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
+    const onProfRefresh = () => {
+      void loadSidebarAlertCounts();
     };
-  }, [props.token, location.pathname]);
+    window.addEventListener("mc-admin-pending-prof-refresh", onProfRefresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("mc-admin-pending-prof-refresh", onProfRefresh);
+    };
+  }, [loadSidebarAlertCounts, location.pathname]);
 
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
@@ -128,12 +153,33 @@ export function AdminPortal(props: {
                 {link.to === "/patients" && pendingRiskTriageCount > 0 ? (
                   <small className="admin-link-badge">{pendingRiskTriageCount}</small>
                 ) : null}
+                {link.to === "/" && pendingProfRegistrationCount > 0 ? (
+                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
+                ) : null}
+                {link.to === "/professionals" && pendingProfRegistrationCount > 0 ? (
+                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
+                ) : null}
               </span>
             </NavLink>
           ))}
         </nav>
 
         <div className="sidebar-controls">
+          {typeof Notification !== "undefined" && Notification.permission === "default" ? (
+            <button
+              type="button"
+              className="admin-sidebar-notify-pref"
+              onClick={() => {
+                void Notification.requestPermission();
+              }}
+            >
+              {t(props.language, {
+                es: "Activar avisos del navegador (altas pendientes)",
+                en: "Enable browser alerts (pending sign-ups)",
+                pt: "Ativar alertas do navegador (cadastros pendentes)"
+              })}
+            </button>
+          ) : null}
           <button className="danger" type="button" onClick={props.onLogout}>
             {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
           </button>
@@ -160,6 +206,12 @@ export function AdminPortal(props: {
                 <span>{labelForLink(link.to)}</span>
                 {link.to === "/patients" && pendingRiskTriageCount > 0 ? (
                   <small className="admin-link-badge">{pendingRiskTriageCount}</small>
+                ) : null}
+                {link.to === "/" && pendingProfRegistrationCount > 0 ? (
+                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
+                ) : null}
+                {link.to === "/professionals" && pendingProfRegistrationCount > 0 ? (
+                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
                 ) : null}
               </span>
             </NavLink>
