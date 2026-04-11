@@ -1,5 +1,5 @@
 import { Router, type Response } from "express";
-import { ProfessionalRegistrationApproval } from "@prisma/client";
+import { ProfessionalRegistrationApproval, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
@@ -1300,22 +1300,19 @@ async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
           where: { bookingId: { in: professionalBookingIds } }
         });
       }
+      const professionalFinanceSessionWhere: Prisma.FinanceSessionRecordWhereInput = {
+        OR: [
+          { professionalId },
+          ...(professionalBookingIds.length > 0 ? [{ bookingId: { in: professionalBookingIds } }] : []),
+          { payoutLine: { professionalId } }
+        ]
+      };
       await tx.financeSessionRecord.updateMany({
-        where: {
-          OR: [
-            { professionalId },
-            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        },
+        where: professionalFinanceSessionWhere,
         data: { payoutLineId: null, purchaseId: null }
       });
       await tx.financeSessionRecord.deleteMany({
-        where: {
-          OR: [
-            { professionalId },
-            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
+        where: professionalFinanceSessionWhere
       });
       if (professionalBookingIds.length > 0) {
         await tx.creditLedger.deleteMany({
@@ -1337,6 +1334,37 @@ async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
         where: { professionalId },
         data: { professionalId: null }
       });
+
+      const displayCfg = await tx.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } });
+      const displayOverrides = parseProfessionalDisplayOverrides(displayCfg?.value);
+      if (displayOverrides[professionalId] !== undefined) {
+        const nextDisplay = { ...displayOverrides };
+        delete nextDisplay[professionalId];
+        await tx.systemConfig.upsert({
+          where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY },
+          create: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY, value: nextDisplay as Prisma.InputJsonValue },
+          update: { value: nextDisplay as Prisma.InputJsonValue }
+        });
+      }
+
+      const paCfg = await tx.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+      const assignments = parsePatientAssignments(paCfg?.value);
+      const nextAssignments: Record<string, string | null> = { ...assignments };
+      let assignmentsTouched = false;
+      for (const [patientProfileId, assignedProfessionalId] of Object.entries(assignments)) {
+        if (assignedProfessionalId === professionalId) {
+          nextAssignments[patientProfileId] = null;
+          assignmentsTouched = true;
+        }
+      }
+      if (assignmentsTouched) {
+        await tx.systemConfig.upsert({
+          where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
+          create: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY, value: nextAssignments as Prisma.InputJsonValue },
+          update: { value: nextAssignments as Prisma.InputJsonValue }
+        });
+      }
+
       await tx.professionalProfile.delete({ where: { id: professionalId } });
     }
 
