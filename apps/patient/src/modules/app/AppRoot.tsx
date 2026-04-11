@@ -290,6 +290,28 @@ function professionalStubFromActiveProfile(active: {
   };
 }
 
+/** Evita pedir disponibilidad con ids del catálogo demo cuando el directorio real ya cargó (Sesiones / Reservas). */
+function pickPreferredProfessionalIds(
+  directoryList: Professional[],
+  assignedProfessionalId: string | null,
+  currentSelectedId: string,
+  currentChatProfessionalId: string
+): { selectedProfessionalId: string; activeChatProfessionalId: string } {
+  const ids = new Set(directoryList.map((p) => p.id));
+  if (ids.size === 0) {
+    return {
+      selectedProfessionalId: currentSelectedId,
+      activeChatProfessionalId: currentChatProfessionalId
+    };
+  }
+  const pick = (id: string | null | undefined) => (id && ids.has(id) ? id : null);
+  const selected =
+    pick(assignedProfessionalId) ?? pick(currentSelectedId) ?? directoryList[0]?.id ?? currentSelectedId;
+  const chat =
+    pick(currentChatProfessionalId) ?? pick(assignedProfessionalId) ?? selected;
+  return { selectedProfessionalId: selected, activeChatProfessionalId: chat };
+}
+
 function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   const img = event.currentTarget;
   img.onerror = null;
@@ -588,6 +610,7 @@ export function App() {
         const professionalDirectoryResponse = professionalDirectoryResult.status === "fulfilled" ? professionalDirectoryResult.value : null;
 
         let mergedPhotos: Record<string, string> = { ...professionalImageMap };
+        let directoryListForClamp: Professional[] | null = null;
 
         if (professionalDirectoryResult.status === "fulfilled" && professionalDirectoryResponse !== null) {
           let directoryList = professionalDirectoryResponse.map(mapDirectoryProfessionalToLegacyProfessional);
@@ -595,6 +618,7 @@ export function App() {
           if (assignedForDirectory?.id && !directoryList.some((p) => p.id === assignedForDirectory.id)) {
             directoryList = [professionalStubFromActiveProfile(assignedForDirectory), ...directoryList];
           }
+          directoryListForClamp = directoryList;
           setProfessionalDirectory(directoryList);
           for (const professional of professionalDirectoryResponse) {
             const resolved = resolvePublicAssetUrl(professional.photoUrl);
@@ -602,6 +626,13 @@ export function App() {
               mergedPhotos[professional.id] = resolved;
             }
           }
+        } else if (
+          professionalDirectoryResult.status === "rejected"
+          && profileResponse?.profile?.activeProfessional?.id
+        ) {
+          const stubOnly = [professionalStubFromActiveProfile(profileResponse.profile.activeProfessional)];
+          directoryListForClamp = stubOnly;
+          setProfessionalDirectory(stubOnly);
         }
 
         const activePro = profileResponse?.profile?.activeProfessional;
@@ -661,6 +692,16 @@ export function App() {
             ? current.assignedProfessionalName
             : remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName;
 
+          const selectionFromApiDirectory =
+            directoryListForClamp && directoryListForClamp.length > 0
+              ? pickPreferredProfessionalIds(
+                  directoryListForClamp,
+                  remoteAssignedProfessional?.id ?? null,
+                  current.selectedProfessionalId,
+                  current.activeChatProfessionalId
+                )
+              : null;
+
           return {
             ...current,
             onboardingFinalCompleted:
@@ -670,13 +711,15 @@ export function App() {
             assignedProfessionalId: assignedProfessionalIdMerged,
             assignedProfessionalName: assignedProfessionalNameMerged,
             selectedProfessionalId:
-              remoteAssignedProfessional
+              selectionFromApiDirectory?.selectedProfessionalId
+              ?? (remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
-                : current.selectedProfessionalId,
+                : current.selectedProfessionalId),
             activeChatProfessionalId:
-              remoteAssignedProfessional
+              selectionFromApiDirectory?.activeChatProfessionalId
+              ?? (remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
-                : current.activeChatProfessionalId,
+                : current.activeChatProfessionalId),
             profile: {
               ...current.profile,
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
@@ -751,7 +794,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, state.authToken]);
+  }, [sessionId, state.authToken, state.language]);
 
   useEffect(() => {
     if (!sessionId || !state.authToken) {

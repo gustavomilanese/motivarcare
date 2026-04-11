@@ -6,7 +6,15 @@ export function getFallbackProfessional(professionals: Professional[]): Professi
 }
 
 export function findProfessionalById(professionalId: string, professionals: Professional[]): Professional {
-  return professionals.find((item) => item.id === professionalId) ?? getFallbackProfessional(professionals);
+  const hit = professionals.find((item) => item.id === professionalId);
+  if (hit) {
+    return hit;
+  }
+  /** Evita ids del catálogo demo cuando ya hay filas reales del API (Reservas / Sesiones). */
+  if (professionals.length > 0) {
+    return professionals[0];
+  }
+  return getFallbackProfessional(professionals);
 }
 
 export function findSlotIdForBooking(
