@@ -2291,6 +2291,111 @@ label {
   box-shadow: 0 4px 22px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
+.dashboard-pending-approvals {
+  margin: 0;
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(185, 28, 28, 0.42);
+  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 45%, #fecdd3 100%);
+  color: #7f1d1d;
+  box-shadow: 0 2px 12px rgba(185, 28, 28, 0.12);
+}
+
+.dashboard-pending-approvals__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.dashboard-pending-approvals__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #450a0a;
+}
+
+.dashboard-pending-approvals__link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #991b1b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dashboard-pending-approvals__link:hover {
+  color: #7f1d1d;
+}
+
+.dashboard-pending-approvals__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-pending-approvals__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  font-size: 0.875rem;
+}
+
+.dashboard-pending-approvals__meta {
+  min-width: 0;
+}
+
+.dashboard-pending-approvals__meta strong {
+  display: block;
+  color: #450a0a;
+  font-weight: 600;
+}
+
+.dashboard-pending-approvals__meta span {
+  display: block;
+  color: #9f1239;
+  font-size: 0.8125rem;
+  word-break: break-word;
+}
+
+.dashboard-pending-approvals__approve {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #b91c1c;
+  background: #fff;
+  color: #991b1b;
+  cursor: pointer;
+}
+
+.dashboard-pending-approvals__approve:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.dashboard-pending-approvals__approve:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.dashboard-pending-approvals__error {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
 .dashboard-page-title {
   margin: 0;
   font-size: clamp(24px, 3.6vw, 30px);

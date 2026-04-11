@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -9,7 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
-import type { KpisResponse } from "../types";
+import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -42,6 +43,105 @@ function StatCard(props: {
       <strong className="dashboard-stat-value">{props.value}</strong>
       {props.hint ? <p className="dashboard-stat-hint">{props.hint}</p> : null}
     </article>
+  );
+}
+
+function DashboardPendingProfessionalApprovals(props: { token: string; language: AppLanguage }) {
+  const [rows, setRows] = useState<AdminProfessionalOps[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setActionError("");
+    try {
+      const data = await apiRequest<ProfessionalsResponse>(
+        "/api/admin/professionals?registrationApproval=PENDING",
+        {},
+        props.token
+      );
+      const pending = (data.professionals ?? []).filter((p) => p.registrationApproval === "PENDING");
+      setRows(pending);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [props.token]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const approveOne = async (professional: AdminProfessionalOps) => {
+    setActionError("");
+    setApprovingId(professional.id);
+    try {
+      await apiRequest<{ professional: AdminProfessionalOps }>(
+        `/api/admin/professionals/${professional.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ registrationApproval: "APPROVED", visible: true })
+        },
+        props.token
+      );
+      await load();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setActionError(adminSurfaceMessage("prof-ops-update", props.language, raw));
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  if (loading || rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <section
+      className="dashboard-pending-approvals"
+      aria-label={t(props.language, {
+        es: "Profesionales con alta pendiente de aprobación",
+        en: "Professionals pending registration approval",
+        pt: "Profissionais com cadastro pendente de aprovacao"
+      })}
+    >
+      <div className="dashboard-pending-approvals__head">
+        <h2 className="dashboard-pending-approvals__title">
+          {t(props.language, {
+            es: "Altas de profesionales pendientes",
+            en: "Pending professional sign-ups",
+            pt: "Cadastros de profissionais pendentes"
+          })}
+        </h2>
+        <Link className="dashboard-pending-approvals__link" to="/professionals">
+          {t(props.language, { es: "Ir a Psicólogos", en: "Open Psychologists", pt: "Ir a Psicologos" })}
+        </Link>
+      </div>
+      <ul className="dashboard-pending-approvals__list">
+        {rows.map((professional) => (
+          <li key={professional.id} className="dashboard-pending-approvals__row">
+            <div className="dashboard-pending-approvals__meta">
+              <strong>{professional.fullName}</strong>
+              <span>{professional.email}</span>
+            </div>
+            <button
+              type="button"
+              className="dashboard-pending-approvals__approve"
+              disabled={approvingId === professional.id}
+              onClick={() => void approveOne(professional)}
+            >
+              {approvingId === professional.id
+                ? t(props.language, { es: "Aprobando…", en: "Approving…", pt: "Aprovando…" })
+                : t(props.language, { es: "Aprobar", en: "Approve", pt: "Aprovar" })}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {actionError ? <p className="dashboard-pending-approvals__error">{actionError}</p> : null}
+    </section>
   );
 }
 
@@ -178,6 +278,8 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
           </div>
         </div>
       </header>
+
+      <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
 
       {error ? (
         <section className="card">
