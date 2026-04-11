@@ -1300,11 +1300,17 @@ async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
           where: { bookingId: { in: professionalBookingIds } }
         });
       }
+      const payoutLineIdsForPro = (
+        await tx.financePayoutLine.findMany({
+          where: { professionalId },
+          select: { id: true }
+        })
+      ).map((row) => row.id);
       const professionalFinanceSessionWhere: Prisma.FinanceSessionRecordWhereInput = {
         OR: [
           { professionalId },
           ...(professionalBookingIds.length > 0 ? [{ bookingId: { in: professionalBookingIds } }] : []),
-          { payoutLine: { professionalId } }
+          ...(payoutLineIdsForPro.length > 0 ? [{ payoutLineId: { in: payoutLineIdsForPro } }] : [])
         ]
       };
       await tx.financeSessionRecord.updateMany({
