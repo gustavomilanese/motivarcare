@@ -28,7 +28,7 @@ healthRouter.get("/live", (_req, res) => {
 
 healthRouter.get("/ready", async (_req, res) => {
   const [database, redis] = await Promise.all([checkDatabase(), isRedisReady()]);
-  const redisRequired = env.API_RATE_LIMIT_BACKEND === "redis";
+  const redisRequired = env.API_RATE_LIMIT_BACKEND === "redis" && env.NODE_ENV === "production";
   const ready = !runtimeState.shuttingDown && database === "ok" && (!redisRequired || redis);
 
   res.status(ready ? 200 : 503).json({

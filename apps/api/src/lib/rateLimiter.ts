@@ -92,7 +92,7 @@ function createRedisRateLimiter(config: RateLimiterConfig): RateLimiter {
 
       const redis = await getRedisClient();
       if (!redis) {
-        if (env.API_RATE_LIMIT_BACKEND === "redis") {
+        if (env.API_RATE_LIMIT_BACKEND === "redis" && env.NODE_ENV === "production") {
           throw new Error("Redis unavailable for mandatory rate limiter");
         }
         return fallback.consume(key);
@@ -124,7 +124,7 @@ function createRedisRateLimiter(config: RateLimiterConfig): RateLimiter {
           limit: config.maxRequests
         };
       } catch {
-        if (env.API_RATE_LIMIT_BACKEND === "redis") {
+        if (env.API_RATE_LIMIT_BACKEND === "redis" && env.NODE_ENV === "production") {
           throw new Error("Redis eval failed for mandatory rate limiter");
         }
         return fallback.consume(key);

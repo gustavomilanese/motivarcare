@@ -12,6 +12,29 @@ function isTemporarilyDisabled() {
   return Date.now() < redisDisabledUntil;
 }
 
+function resetRedisClient(): void {
+  if (!client) {
+    return;
+  }
+  try {
+    client.removeAllListeners();
+    client.disconnect(false);
+  } catch {
+    // ignore
+  }
+  client = null;
+}
+
+function attachRedisErrorHandler(instance: Redis): void {
+  instance.on("error", (error) => {
+    // Evita "Unhandled error event" cuando Redis no está levantado (dev local sin Docker).
+    if (env.NODE_ENV === "development") {
+      return;
+    }
+    console.error("[redis] client error", error);
+  });
+}
+
 export async function getRedisClient(): Promise<Redis | null> {
   if (isTemporarilyDisabled()) {
     return null;
@@ -23,6 +46,7 @@ export async function getRedisClient(): Promise<Redis | null> {
       maxRetriesPerRequest: 1,
       enableReadyCheck: true
     });
+    attachRedisErrorHandler(client);
   }
 
   if (client.status === "wait") {
@@ -30,12 +54,14 @@ export async function getRedisClient(): Promise<Redis | null> {
       await client.connect();
     } catch {
       disableRedisTemporarily();
+      resetRedisClient();
       return null;
     }
   }
 
   if (client.status !== "ready") {
     disableRedisTemporarily();
+    resetRedisClient();
     return null;
   }
 
@@ -65,7 +91,11 @@ export async function disconnectRedis(): Promise<void> {
   try {
     await client.quit();
   } catch {
-    client.disconnect();
+    try {
+      client.disconnect(false);
+    } catch {
+      // ignore
+    }
   } finally {
     client = null;
   }
