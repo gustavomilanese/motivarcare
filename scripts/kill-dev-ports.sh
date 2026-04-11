@@ -23,4 +23,4 @@ for port in "${PORTS[@]}"; do
   fi
 done
 
-echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all"
+echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all (suben Docker MySQL+Redis y esperan al puerto antes de los apps)."

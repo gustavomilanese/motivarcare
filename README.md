@@ -161,17 +161,16 @@ Run only professional app:
 
 ## Full Local Setup
 1. Copy `.env.example` to `.env` and fill credentials.
-2. Start local infra:
-   - `npm run db:up`
-3. Install dependencies:
+2. Install dependencies:
    - `npm install`
-4. Prisma:
+3. Prisma (first time or after schema changes):
    - `npm run prisma:generate -w @therapy/api`
    - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:push -w @therapy/api`
    - `DATABASE_URL='mysql://root:root@127.0.0.1:3307/therapy_platform' npm run prisma:seed -w @therapy/api`
-5. Run all apps:
-   - `npm run dev`
-6. Run outbox worker (required for async events like Stripe webhook processing):
+4. Run all apps (Docker MySQL + Redis, wait for MySQL, then API + Vite apps):
+   - `npm run dev` (API + patient + professional + admin) or `npm run dev:all` (adds landing).
+   - Sin Docker: `npm run dev:apps` / `npm run dev:all:apps`.
+5. Run outbox worker (required for async events like Stripe webhook processing):
    - `npm run dev:outbox -w @therapy/api`
 
 ## Stripe multi-currency configuration

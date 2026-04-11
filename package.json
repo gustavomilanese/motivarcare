@@ -10,9 +10,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
-    "dev:all": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
-    "dev:full": "npm run db:up && npm run db:wait && npm run dev:all",
+    "db:pre": "npm run db:up && npm run db:wait",
+    "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
+    "dev:all:apps": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
+    "dev": "npm run db:pre && npm run dev:apps",
+    "dev:all": "npm run db:pre && npm run dev:all:apps",
+    "dev:full": "npm run dev:all",
     "dev:kill": "bash scripts/kill-dev-ports.sh",
     "dev:api": "npm run dev -w @therapy/api",
     "dev:patient": "npm run dev -w @therapy/patient",
