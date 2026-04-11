@@ -372,6 +372,10 @@ export function adminSurfaceMessage(context: AdminSurfaceContext, language: AppL
     if (net) {
       return net;
     }
+    /** En desarrollo, el mensaje genérico ocultaba el error real del API (KPIs / Prisma / 503). */
+    if (context === "admin-kpis-load" && import.meta.env.DEV) {
+      return `${t(language, SURFACE[context])}\n\n${raw.trim()}`;
+    }
   }
   return t(language, SURFACE[context]);
 }

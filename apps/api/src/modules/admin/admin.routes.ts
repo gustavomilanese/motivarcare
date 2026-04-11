@@ -525,6 +525,7 @@ adminRouter.get("/kpis", async (req, res) => {
     return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
   }
 
+  try {
   let monthStart: Date;
   let monthEnd: Date;
   let monthKey: string;
@@ -758,6 +759,10 @@ adminRouter.get("/kpis", async (req, res) => {
       monthEnd: monthEnd.toISOString()
     }
   });
+  } catch (error) {
+    console.error("GET /admin/kpis failed", error);
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 });
 
 adminRouter.get("/users", async (req, res) => {

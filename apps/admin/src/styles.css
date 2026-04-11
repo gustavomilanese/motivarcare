@@ -1639,6 +1639,7 @@ label {
 .error-text {
   color: #b91c1c;
   font-size: 14px;
+  white-space: pre-wrap;
 }
 
 .success-text {
