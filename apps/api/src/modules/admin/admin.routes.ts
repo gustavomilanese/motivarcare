@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
@@ -20,6 +20,10 @@ function purgeHistoricalDataFromRequest(req: Pick<AuthenticatedRequest, "body" |
   const s = Array.isArray(raw) ? raw[0] : raw;
   return s === "true" || s === "1";
 }
+
+/** Prisma interactive transactions default to ~5s; full user teardown can exceed that (see scripts/wipe-non-admin.ts). */
+const ADMIN_USER_DELETE_TX_OPTIONS = { maxWait: 15_000, timeout: 120_000 } as const;
+const ADMIN_USER_SOFT_DELETE_TX_OPTIONS = { maxWait: 10_000, timeout: 30_000 } as const;
 
 const kpisQuerySchema = z.object({
   month: z
@@ -1044,7 +1048,7 @@ adminRouter.patch("/users/:userId", async (req, res) => {
   });
 });
 
-adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
+async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
   const userId = req.params.userId;
 
   if (!userId) {
@@ -1125,7 +1129,8 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(
+      async (tx) => {
       if (existing.patient?.id) {
         await tx.patientProfile.update({
           where: { id: existing.patient.id },
@@ -1151,7 +1156,9 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
           deactivatedAt: new Date()
         }
       });
-    });
+    },
+      ADMIN_USER_SOFT_DELETE_TX_OPTIONS
+    );
 
     return res.json({
       ok: true,
@@ -1161,7 +1168,8 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(
+      async (tx) => {
     if (existing.patient?.id) {
       const patientId = existing.patient.id;
 
@@ -1209,6 +1217,15 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
           where: { bookingId: { in: bookingIds } }
         });
       }
+      await tx.financeSessionRecord.updateMany({
+        where: {
+          OR: [
+            { patientId },
+            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        },
+        data: { payoutLineId: null, purchaseId: null }
+      });
       await tx.financeSessionRecord.deleteMany({
         where: {
           OR: [
@@ -1283,6 +1300,15 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
           where: { bookingId: { in: professionalBookingIds } }
         });
       }
+      await tx.financeSessionRecord.updateMany({
+        where: {
+          OR: [
+            { professionalId },
+            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
+          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
+        },
+        data: { payoutLineId: null, purchaseId: null }
+      });
       await tx.financeSessionRecord.deleteMany({
         where: {
           OR: [
@@ -1320,7 +1346,9 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
 
     await tx.chatMessage.deleteMany({ where: { senderUserId: existing.id } });
     await tx.user.delete({ where: { id: existing.id } });
-  });
+  },
+      ADMIN_USER_DELETE_TX_OPTIONS
+    );
   } catch (error: unknown) {
     console.error("admin delete user transaction failed", error);
     return res.status(500).json({ error: prismaErrorUserMessage(error) });
@@ -1335,7 +1363,10 @@ adminRouter.delete("/users/:userId", async (req: AuthenticatedRequest, res) => {
         ? "Test user deleted permanently with all related records."
         : "User deleted permanently because no booking/payment history was found."
   });
-});
+}
+
+adminRouter.delete("/users/:userId", handleAdminDeleteUser);
+adminRouter.post("/users/:userId/delete", handleAdminDeleteUser);
 
 adminRouter.get("/session-packages", async (req, res) => {
   const parsed = listPackagesQuerySchema.safeParse(req.query);

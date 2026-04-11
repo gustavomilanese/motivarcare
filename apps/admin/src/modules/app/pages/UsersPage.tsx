@@ -451,9 +451,9 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         action?: "deleted" | "deactivated";
         message?: string;
       }>(
-        `/api/admin/users/${user.id}${purgeQuery}`,
+        `/api/admin/users/${user.id}/delete${purgeQuery}`,
         {
-          method: "DELETE",
+          method: "POST",
           body: JSON.stringify({ purgeHistoricalData: purgeHistoricalOnDelete }),
           signal: controller.signal
         },
