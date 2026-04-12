@@ -127,5 +127,5 @@ export const professionalImageMap: Record<string, string> = {
   "pro-4": "https://images.unsplash.com/photo-1594824804732-ca8db7d6e6f8?auto=format&fit=crop&w=900&q=80"
 };
 
-export const heroImage =
-  "https://images.unsplash.com/photo-1590166045671-9bb0c0a76ea4?auto=format&fit=crop&w=1600&q=80";
+/** Hero login paciente: asset en `public/images/auth-hero-patient.png`. */
+export const heroImage = "/images/auth-hero-patient.png";
