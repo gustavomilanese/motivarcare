@@ -1,11 +1,11 @@
 import type { SyntheticEvent } from "react";
 
 /**
- * Hero login profesional: MacBook + entorno abierto / montaña (Pexels, CDN estable).
- * El paciente usa Unsplash mar + laptop; acá otro asset para contraste y menos riesgo de hotlink.
+ * Hero login profesional: laptop frente al mar (trabajo remoto en la costa).
+ * Pexels 4350063 (mujer con notebook en playa / mar); evitar 3229984 u otros IDs que no correspondan.
  */
 export const PROFESSIONAL_AUTH_HERO_IMAGE =
-  "https://images.pexels.com/photos/3229984/pexels-photo-3229984.jpeg?auto=compress&cs=tinysrgb&w=1600";
+  "https://images.pexels.com/photos/4350063/pexels-photo-4350063.jpeg?auto=compress&cs=tinysrgb&w=1600";
 
 export function professionalAuthHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   const img = event.currentTarget;

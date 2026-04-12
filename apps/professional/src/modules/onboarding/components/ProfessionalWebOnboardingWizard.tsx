@@ -235,38 +235,34 @@ export function ProfessionalWebOnboardingWizard(props: {
 
           {step === 0 ? (
             <div className="pro-web-fields pro-web-fields--single">
-              <input
-                type="email"
-                autoComplete="email"
-                value={form.email}
-                onChange={(event) => update({ email: event.target.value })}
-                aria-label={t(props.language, {
-                  es: "Correo electrónico",
-                  en: "Email address",
-                  pt: "E-mail"
-                })}
-                placeholder={t(props.language, {
-                  es: "nombre@ejemplo.com",
-                  en: "name@example.com",
-                  pt: "nome@exemplo.com"
-                })}
-              />
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={form.password}
-                onChange={(event) => update({ password: event.target.value })}
-                aria-label={t(props.language, {
-                  es: "Contraseña",
-                  en: "Password",
-                  pt: "Senha"
-                })}
-                placeholder={t(props.language, {
-                  es: "Mínimo 8 caracteres",
-                  en: "At least 8 characters",
-                  pt: "Minimo 8 caracteres"
-                })}
-              />
+              <label>
+                <span>{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(event) => update({ email: event.target.value })}
+                  placeholder={t(props.language, {
+                    es: "nombre@ejemplo.com",
+                    en: "name@example.com",
+                    pt: "nome@exemplo.com"
+                  })}
+                />
+              </label>
+              <label>
+                <span>{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={(event) => update({ password: event.target.value })}
+                  placeholder={t(props.language, {
+                    es: "Mínimo 8 caracteres",
+                    en: "At least 8 characters",
+                    pt: "Minimo 8 caracteres"
+                  })}
+                />
+              </label>
               {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
             </div>
           ) : null}

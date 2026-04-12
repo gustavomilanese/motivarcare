@@ -182,9 +182,9 @@ export function AuthScreen(props: {
             <img
               src={props.heroImage}
               alt={t(props.language, {
-                es: "Profesional en sesión online",
-                en: "Professional in an online session",
-                pt: "Profissional em sessao online"
+                es: "Laptop frente al mar, trabajo remoto desde la costa",
+                en: "Laptop by the sea, remote work from the coast",
+                pt: "Notebook de frente para o mar, trabalho remoto na costa"
               })}
               loading="eager"
               decoding="async"

@@ -204,6 +204,16 @@ ul {
   gap: 14px;
 }
 
+/* Formulario login/registro: más aire entre bloques (email → fila contraseña + olvidé). */
+.pro-auth-shell .auth-form.pro-auth-simple-form {
+  gap: 22px;
+}
+
+/* Fila «Contraseña» + «Olvidé»: separación respecto al bloque de email */
+.pro-auth-shell .auth-form.pro-auth-simple-form > .auth-field-stack + .auth-field-stack:has(.auth-field-label-row) {
+  margin-top: 6px;
+}
+
 .pro-auth-shell .auth-field-stack {
   display: grid;
   gap: 6px;
@@ -7857,7 +7867,7 @@ button:disabled {
 .pro-web-panel {
   padding: 26px;
   display: grid;
-  gap: 18px;
+  gap: 22px;
   position: relative;
   overflow: hidden;
 }
@@ -7933,7 +7943,7 @@ button:disabled {
 
 .pro-web-fields {
   display: grid;
-  gap: 14px;
+  gap: 20px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--portal-border);
   border-radius: var(--portal-radius-sm);
@@ -7970,12 +7980,23 @@ button:disabled {
   background: transparent;
   border: none;
   padding: 0;
-  gap: 10px;
+  gap: 20px;
 }
 
 .pro-web-fields.pro-web-fields--single::before,
 .pro-web-fields.pro-web-fields--single::after {
   display: none;
+}
+
+.pro-web-fields.pro-web-fields--single label {
+  display: grid;
+  gap: 8px;
+}
+
+.pro-web-fields.pro-web-fields--single label > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334764;
 }
 
 .pro-web-verify-pending {
@@ -8021,13 +8042,19 @@ button:disabled {
 
 .pro-web-fields label {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .pro-web-fields span {
   font-size: 13px;
   font-weight: 600;
   color: #334764;
+}
+
+/* Etiquetas de bloques siguientes (p. ej. «Cómo trabajo» tras «Acerca de mí», contraseña tras email): margen superior */
+.pro-web-fields > label:not(:first-child) > span:first-of-type,
+.pro-web-fields > .pro-web-grid-2 + label > span:first-of-type {
+  margin-top: 6px;
 }
 
 .pro-web-fields input,
