@@ -287,6 +287,12 @@ export function ProfessionalAuthFlow(props: {
     }
   }, [mobilePreAuthSession, registerEmail, registerPassword, props.language]);
 
+  /** El portal profesional es web: siempre el wizard web: el flujo “móvil” por pasos queda solo vía “Versión móvil” dentro del wizard. */
+  const startProfessionalWebRegistration = useCallback(() => {
+    setRegisterBackMode("register-web");
+    setAuthEntryMode("register-web");
+  }, []);
+
   const buildMobileDraft = () => buildPatchDraftFromMobileInputs({
     aboutText,
     therapyDescriptionText,
@@ -310,23 +316,13 @@ export function ProfessionalAuthFlow(props: {
     photoUrl: registerProfilePhotoDataUrl
   });
 
-  const handleRegisterStart = () => {
-    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
-      setRegisterBackMode("register-web");
-      setAuthEntryMode("register-web");
-      return;
-    }
-    setRegisterBackMode("register-profile-full");
-    setAuthEntryMode("register-intro");
-  };
-
   if (authEntryMode === "welcome") {
     return (
       <ProfessionalWelcomeGate
         language={props.language}
         onLanguageChange={props.onLanguageChange}
         onLogin={() => setAuthEntryMode("login")}
-        onRegister={handleRegisterStart}
+        onRegister={startProfessionalWebRegistration}
       />
     );
   }
@@ -840,8 +836,7 @@ export function ProfessionalAuthFlow(props: {
       heroImage={PROFESSIONAL_AUTH_HERO_IMAGE}
       onHeroFallback={professionalAuthHeroFallback}
       onCreateAccount={() => {
-        setRegisterBackMode("register-profile-full");
-        setAuthEntryMode("register-intro");
+        startProfessionalWebRegistration();
       }}
       onAuthSuccess={(params) => {
         props.onAuthSuccess(params);

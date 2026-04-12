@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
@@ -16,7 +17,12 @@ function emailVerifySuccessStorageKey(token: string): string {
 
 const verifyEmailRequestByToken = new Map<string, Promise<unknown>>();
 
-export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
+export function VerifyEmailTokenScreen(props: {
+  language: AppLanguage;
+  /** Misma pestaña con sesión: evita que, al salir de /verify-email, el guard te mande otra vez a «confirmar correo». */
+  onSessionEmailVerified?: () => void;
+}) {
+  const navigate = useNavigate();
   const [state, setState] = useState<VerificationState>("loading");
   const [message, setMessage] = useState("");
 
@@ -34,6 +40,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
 
     const storageKey = emailVerifySuccessStorageKey(token);
     if (sessionStorage.getItem(storageKey) === "1") {
+      props.onSessionEmailVerified?.();
       setState("success");
       return;
     }
@@ -55,6 +62,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
         await request;
         sessionStorage.setItem(storageKey, "1");
         if (!cancelled) {
+          props.onSessionEmailVerified?.();
           setState("success");
         }
       } catch (requestError) {
@@ -76,7 +84,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
     return () => {
       cancelled = true;
     };
-  }, [props.language, token]);
+  }, [props.language, props.onSessionEmailVerified, token]);
 
   return (
     <div className="auth-shell">
@@ -141,14 +149,22 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
               </h1>
               <p className="verify-email-lead">
                 {t(props.language, {
-                  es: "Tu correo quedó confirmado. Volvé al inicio para entrar con tu cuenta.",
-                  en: "Your email is confirmed. Go to home to sign in with your account.",
-                  pt: "Seu e-mail foi confirmado. Volte ao inicio para entrar com sua conta."
+                  es: "Tu correo quedó confirmado. Seguí con el onboarding para completar tu perfil y continuar en MotivarCare.",
+                  en: "Your email is confirmed. Continue onboarding to finish your profile and move forward in MotivarCare.",
+                  pt: "Seu e-mail foi confirmado. Continue o onboarding para concluir seu perfil e seguir na MotivarCare."
                 })}
               </p>
               <div className="stack verify-email-actions">
-                <button className="primary" type="button" onClick={() => window.location.assign("/")}>
-                  {t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={() => navigate("/onboarding/final/matching", { replace: true })}
+                >
+                  {t(props.language, {
+                    es: "Comenzar onboarding",
+                    en: "Start onboarding",
+                    pt: "Começar onboarding"
+                  })}
                 </button>
               </div>
             </>

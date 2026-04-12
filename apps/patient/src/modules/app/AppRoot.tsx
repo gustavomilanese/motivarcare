@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { flushSync } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -374,6 +374,18 @@ export function App() {
   const updateState = (updater: (current: PatientAppState) => PatientAppState) => {
     setState((current) => updater(current));
   };
+
+  const handlePatientSessionEmailVerified = useCallback(() => {
+    setState((current) =>
+      current.session
+        ? {
+            ...current,
+            session: { ...current.session, emailVerified: true },
+            emailVerificationRequired: false
+          }
+        : current
+    );
+  }, []);
 
   const sessionId = state.session?.id;
 
@@ -913,7 +925,7 @@ export function App() {
   }, [location.pathname, navigate, state.emailVerificationRequired, state.session?.emailVerified, state.session?.id]);
 
   if (isVerifyEmailRoute) {
-    return <VerifyEmailTokenScreen language={state.language} />;
+    return <VerifyEmailTokenScreen language={state.language} onSessionEmailVerified={handlePatientSessionEmailVerified} />;
   }
 
   if (!state.session && isForgotPasswordRoute) {

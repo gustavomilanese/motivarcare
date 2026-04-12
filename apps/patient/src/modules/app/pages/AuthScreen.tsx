@@ -63,7 +63,8 @@ export function AuthScreen(props: {
 }) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(readRememberedPatientEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -85,15 +86,19 @@ export function AuthScreen(props: {
       return;
     }
 
-    if (mode === "register" && fullName.trim().length < 2) {
-      setError(
-        t(props.language, {
-          es: "Falta cómo querés que te llamemos (nombre y apellido). Completalo arriba y seguimos.",
-          en: "We still need how you’d like to be called (full name). Add it above and we’ll continue.",
-          pt: "Ainda precisamos de como voce gostaria de ser chamado (nome completo). Preencha acima e seguimos."
-        })
-      );
-      return;
+    if (mode === "register") {
+      const given = firstName.trim();
+      const family = lastName.trim();
+      if (given.length < 1 || family.length < 1) {
+        setError(
+          t(props.language, {
+            es: "Completá tu nombre y tu apellido para crear la cuenta.",
+            en: "Please enter your first and last name to create your account.",
+            pt: "Preencha seu nome e sobrenome para criar a conta."
+          })
+        );
+        return;
+      }
     }
 
     setError("");
@@ -101,10 +106,11 @@ export function AuthScreen(props: {
 
     try {
       const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
+      const registerFullName = `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, " ").trim();
       const payload =
         mode === "register"
           ? {
-              fullName: fullName.trim(),
+              fullName: registerFullName,
               email: email.trim().toLowerCase(),
               password,
               role: "PATIENT",
@@ -205,16 +211,30 @@ export function AuthScreen(props: {
 
           <form className="stack auth-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
-              <div className="auth-field-stack">
-                <span className="auth-field-label">{t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}</span>
-                <div className="auth-input-shell">
-                  <input
-                    className="auth-input-inset"
-                    name="name"
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                  />
+              <div className="auth-field-row-2">
+                <div className="auth-field-stack">
+                  <span className="auth-field-label">{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</span>
+                  <div className="auth-input-shell">
+                    <input
+                      className="auth-input-inset"
+                      name="given-name"
+                      autoComplete="given-name"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="auth-field-stack">
+                  <span className="auth-field-label">{t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}</span>
+                  <div className="auth-input-shell">
+                    <input
+                      className="auth-input-inset"
+                      name="family-name"
+                      autoComplete="family-name"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -299,7 +319,14 @@ export function AuthScreen(props: {
                   en: "Is this your first time on MotivarCare?",
                   pt: "E sua primeira vez no MotivarCare?"
                 })}{" "}
-                <button type="button" className="auth-footer-cta" onClick={() => setMode("register")}>
+                <button
+                  type="button"
+                  className="auth-footer-cta"
+                  onClick={() => {
+                    setError("");
+                    setMode("register");
+                  }}
+                >
                   {t(props.language, { es: "Crear una cuenta", en: "Create an account", pt: "Criar uma conta" })}
                 </button>
               </p>
@@ -310,7 +337,14 @@ export function AuthScreen(props: {
                   en: "Already have an account?",
                   pt: "Ja tem conta?"
                 })}{" "}
-                <button type="button" className="auth-footer-cta" onClick={() => setMode("login")}>
+                <button
+                  type="button"
+                  className="auth-footer-cta"
+                  onClick={() => {
+                    setError("");
+                    setMode("login");
+                  }}
+                >
                   {t(props.language, { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" })}
                 </button>
               </p>

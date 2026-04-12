@@ -442,6 +442,19 @@ ul {
   width: 100%;
 }
 
+.auth-field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .auth-field-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .auth-field-label {
   font-size: 13px;
   font-weight: 600;

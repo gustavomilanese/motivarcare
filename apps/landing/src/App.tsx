@@ -21,11 +21,6 @@ const PROFESSIONAL_PORTAL_URL = portalUrl(
   "http://localhost:5174",
   "https://motivarcare-professional.vercel.app"
 );
-const ADMIN_PORTAL_URL = portalUrl(
-  viteEnv.VITE_ADMIN_PORTAL_URL,
-  "http://localhost:5175",
-  "https://motivarcare-admin.vercel.app"
-);
 
 const localPatientHeroImage = "/images/patient-hero.jpg";
 const localProfessionalHeroImage = "/images/professional-hero.jpg";
@@ -292,7 +287,6 @@ const UI_TEXT: Record<
     supportLine: string;
     patientPortalShort: string;
     professionalPortalShort: string;
-    adminPortalShort: string;
     footerLanguage: string;
     footerBrand: string;
     terms: string;
@@ -309,7 +303,6 @@ const UI_TEXT: Record<
     accountAccessCopy: string;
     accountPortalPatient: string;
     accountPortalProfessional: string;
-    accountPortalAdmin: string;
   }
 > = {
   es: {
@@ -353,7 +346,6 @@ const UI_TEXT: Record<
     supportLine: "Línea 988 de prevención del suicidio",
     patientPortalShort: "Portal pacientes",
     professionalPortalShort: "Portal psicólogos",
-    adminPortalShort: "Portal admin",
     footerLanguage: "Español",
     footerBrand: "La oportunidad de cuidar el bienestar mental debería estar al alcance de todos.",
     terms: "Términos y condiciones",
@@ -369,8 +361,7 @@ const UI_TEXT: Record<
     accountAccessTitle: "Accede a tu cuenta",
     accountAccessCopy: "Elige tu perfil para ingresar al portal correspondiente.",
     accountPortalPatient: "Soy paciente",
-    accountPortalProfessional: "Soy profesional",
-    accountPortalAdmin: "Soy admin"
+    accountPortalProfessional: "Soy profesional"
   },
   en: {
     heroTitle: "Take care of your mental health with MotivarCare",
@@ -413,7 +404,6 @@ const UI_TEXT: Record<
     supportLine: "988 suicide prevention hotline",
     patientPortalShort: "Patient portal",
     professionalPortalShort: "Psychologist portal",
-    adminPortalShort: "Admin portal",
     footerLanguage: "English",
     footerBrand: "Mental wellbeing care should be within everyone's reach.",
     terms: "Terms and conditions",
@@ -429,8 +419,7 @@ const UI_TEXT: Record<
     accountAccessTitle: "Access your account",
     accountAccessCopy: "Choose your profile to enter the right portal.",
     accountPortalPatient: "I am a patient",
-    accountPortalProfessional: "I am a professional",
-    accountPortalAdmin: "I am an admin"
+    accountPortalProfessional: "I am a professional"
   },
   pt: {
     heroTitle: "Cuide da sua saude mental com MotivarCare",
@@ -473,7 +462,6 @@ const UI_TEXT: Record<
     supportLine: "Linha 988 de prevencao ao suicidio",
     patientPortalShort: "Portal pacientes",
     professionalPortalShort: "Portal psicologos",
-    adminPortalShort: "Portal admin",
     footerLanguage: "Portugues",
     footerBrand: "A oportunidade de cuidar do bem-estar mental deve estar ao alcance de todos.",
     terms: "Termos e condicoes",
@@ -489,8 +477,7 @@ const UI_TEXT: Record<
     accountAccessTitle: "Acesse sua conta",
     accountAccessCopy: "Escolha seu perfil para entrar no portal correto.",
     accountPortalPatient: "Sou paciente",
-    accountPortalProfessional: "Sou profissional",
-    accountPortalAdmin: "Sou admin"
+    accountPortalProfessional: "Sou profissional"
   }
 };
 
@@ -3288,9 +3275,6 @@ export function App() {
                 <a href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer" onClick={() => setIsAccountOpen(false)}>
                   {t.accountPortalProfessional}
                 </a>
-                <a href={ADMIN_PORTAL_URL} target="_blank" rel="noreferrer" onClick={() => setIsAccountOpen(false)}>
-                  {t.accountPortalAdmin}
-                </a>
               </div>
             </div>
           </article>
@@ -3334,9 +3318,6 @@ export function App() {
             </a>
             <a href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
               {t.professionalPortalShort}
-            </a>
-            <a href={ADMIN_PORTAL_URL} target="_blank" rel="noreferrer">
-              {t.adminPortalShort}
             </a>
           </section>
         </div>

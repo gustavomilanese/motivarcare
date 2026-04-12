@@ -1,8 +1,11 @@
 import type { SyntheticEvent } from "react";
 
-/** Misma imagen hero que el portal paciente (sesión online). */
+/**
+ * Hero login profesional: MacBook + entorno abierto / montaña (Pexels, CDN estable).
+ * El paciente usa Unsplash mar + laptop; acá otro asset para contraste y menos riesgo de hotlink.
+ */
 export const PROFESSIONAL_AUTH_HERO_IMAGE =
-  "https://images.unsplash.com/photo-1590166045671-9bb0c0a76ea4?auto=format&fit=crop&w=1600&q=80";
+  "https://images.pexels.com/photos/3229984/pexels-photo-3229984.jpeg?auto=compress&cs=tinysrgb&w=1600";
 
 export function professionalAuthHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
   const img = event.currentTarget;

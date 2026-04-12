@@ -186,6 +186,9 @@ export function AuthScreen(props: {
                 en: "Professional in an online session",
                 pt: "Profissional em sessao online"
               })}
+              loading="eager"
+              decoding="async"
+              referrerPolicy="no-referrer"
               onError={props.onHeroFallback}
             />
           </div>
