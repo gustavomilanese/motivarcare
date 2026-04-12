@@ -1,8 +1,9 @@
 import { Router, type Response } from "express";
-import { ProfessionalRegistrationApproval, type Prisma } from "@prisma/client";
+import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
+import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
@@ -21,8 +22,6 @@ function purgeHistoricalDataFromRequest(req: Pick<AuthenticatedRequest, "body" |
   return s === "true" || s === "1";
 }
 
-/** Prisma interactive transactions default to ~5s; full user teardown can exceed that (see scripts/wipe-non-admin.ts). */
-const ADMIN_USER_DELETE_TX_OPTIONS = { maxWait: 15_000, timeout: 120_000 } as const;
 const ADMIN_USER_SOFT_DELETE_TX_OPTIONS = { maxWait: 10_000, timeout: 30_000 } as const;
 
 const kpisQuerySchema = z.object({
@@ -1175,217 +1174,8 @@ async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
   try {
     await prisma.$transaction(
       async (tx) => {
-    if (existing.patient?.id) {
-      const patientId = existing.patient.id;
-
-      const patientBookings = await tx.booking.findMany({
-        where: { patientId },
-        select: { id: true }
-      });
-      const bookingIds = patientBookings.map((item) => item.id);
-
-      await tx.chatMessage.deleteMany({
-        where: {
-          OR: [
-            {
-              thread: {
-                patientId
-              }
-            },
-            bookingIds.length > 0
-              ? {
-                  thread: {
-                    bookingId: {
-                      in: bookingIds
-                    }
-                  }
-                }
-              : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      await tx.chatThread.deleteMany({
-        where: {
-          OR: [
-            { patientId },
-            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      if (bookingIds.length > 0) {
-        await tx.videoSession.deleteMany({
-          where: { bookingId: { in: bookingIds } }
-        });
-      }
-      if (bookingIds.length > 0) {
-        await tx.aIAuditJob.deleteMany({
-          where: { bookingId: { in: bookingIds } }
-        });
-      }
-      await tx.financeSessionRecord.updateMany({
-        where: {
-          OR: [
-            { patientId },
-            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        },
-        data: { payoutLineId: null, purchaseId: null }
-      });
-      await tx.financeSessionRecord.deleteMany({
-        where: {
-          OR: [
-            { patientId },
-            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      await tx.creditLedger.deleteMany({
-        where: {
-          OR: [
-            { patientId },
-            bookingIds.length > 0 ? { bookingId: { in: bookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      if (bookingIds.length > 0) {
-        await tx.booking.deleteMany({
-          where: { id: { in: bookingIds } }
-        });
-      }
-      await tx.patientPackagePurchase.deleteMany({ where: { patientId } });
-      await tx.consent.deleteMany({ where: { patientId } });
-      await tx.aIAuditJob.deleteMany({ where: { patientId } });
-      await tx.patientIntake.deleteMany({ where: { patientId } });
-      await tx.patientProfile.delete({ where: { id: patientId } });
-    }
-
-    if (existing.professional?.id) {
-      const professionalId = existing.professional.id;
-      const professionalBookings = await tx.booking.findMany({
-        where: { professionalId },
-        select: { id: true }
-      });
-      const professionalBookingIds = professionalBookings.map((item) => item.id);
-
-      await tx.chatMessage.deleteMany({
-        where: {
-          OR: [
-            {
-              thread: {
-                professionalId
-              }
-            },
-            professionalBookingIds.length > 0
-              ? {
-                  thread: {
-                    bookingId: {
-                      in: professionalBookingIds
-                    }
-                  }
-                }
-              : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      await tx.chatThread.deleteMany({
-        where: {
-          OR: [
-            { professionalId },
-            professionalBookingIds.length > 0 ? { bookingId: { in: professionalBookingIds } } : undefined
-          ].filter((value): value is NonNullable<typeof value> => Boolean(value))
-        }
-      });
-      if (professionalBookingIds.length > 0) {
-        await tx.videoSession.deleteMany({
-          where: { bookingId: { in: professionalBookingIds } }
-        });
-      }
-      if (professionalBookingIds.length > 0) {
-        await tx.aIAuditJob.deleteMany({
-          where: { bookingId: { in: professionalBookingIds } }
-        });
-      }
-      const payoutLineIdsForPro = (
-        await tx.financePayoutLine.findMany({
-          where: { professionalId },
-          select: { id: true }
-        })
-      ).map((row) => row.id);
-      const professionalFinanceSessionWhere: Prisma.FinanceSessionRecordWhereInput = {
-        OR: [
-          { professionalId },
-          ...(professionalBookingIds.length > 0 ? [{ bookingId: { in: professionalBookingIds } }] : []),
-          ...(payoutLineIdsForPro.length > 0 ? [{ payoutLineId: { in: payoutLineIdsForPro } }] : [])
-        ]
-      };
-      await tx.financeSessionRecord.updateMany({
-        where: professionalFinanceSessionWhere,
-        data: { payoutLineId: null, purchaseId: null }
-      });
-      await tx.financeSessionRecord.deleteMany({
-        where: professionalFinanceSessionWhere
-      });
-      if (professionalBookingIds.length > 0) {
-        await tx.creditLedger.deleteMany({
-          where: { bookingId: { in: professionalBookingIds } }
-        });
-      }
-      if (professionalBookingIds.length > 0) {
-        await tx.booking.deleteMany({
-          where: { id: { in: professionalBookingIds } }
-        });
-      }
-      await tx.financePayoutLine.deleteMany({
-        where: { professionalId }
-      });
-      await tx.aIAuditJob.deleteMany({ where: { professionalId } });
-      await tx.availabilitySlot.deleteMany({ where: { professionalId } });
-      await tx.professionalDiploma.deleteMany({ where: { professionalId } });
-      await tx.sessionPackage.updateMany({
-        where: { professionalId },
-        data: { professionalId: null }
-      });
-
-      const displayCfg = await tx.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } });
-      const displayOverrides = parseProfessionalDisplayOverrides(displayCfg?.value);
-      if (displayOverrides[professionalId] !== undefined) {
-        const nextDisplay = { ...displayOverrides };
-        delete nextDisplay[professionalId];
-        await tx.systemConfig.upsert({
-          where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY },
-          create: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY, value: nextDisplay as Prisma.InputJsonValue },
-          update: { value: nextDisplay as Prisma.InputJsonValue }
-        });
-      }
-
-      const paCfg = await tx.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
-      const assignments = parsePatientAssignments(paCfg?.value);
-      const nextAssignments: Record<string, string | null> = { ...assignments };
-      let assignmentsTouched = false;
-      for (const [patientProfileId, assignedProfessionalId] of Object.entries(assignments)) {
-        if (assignedProfessionalId === professionalId) {
-          nextAssignments[patientProfileId] = null;
-          assignmentsTouched = true;
-        }
-      }
-      if (assignmentsTouched) {
-        await tx.systemConfig.upsert({
-          where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
-          create: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY, value: nextAssignments as Prisma.InputJsonValue },
-          update: { value: nextAssignments as Prisma.InputJsonValue }
-        });
-      }
-
-      await tx.professionalProfile.delete({ where: { id: professionalId } });
-    }
-
-    if (existing.admin?.id) {
-      await tx.adminProfile.delete({ where: { id: existing.admin.id } });
-    }
-
-    await tx.chatMessage.deleteMany({ where: { senderUserId: existing.id } });
-    await tx.user.delete({ where: { id: existing.id } });
-  },
+        await hardDeleteUserInTransaction(tx, existing);
+      },
       ADMIN_USER_DELETE_TX_OPTIONS
     );
   } catch (error: unknown) {

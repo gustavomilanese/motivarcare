@@ -36,6 +36,20 @@ export interface OnboardingPatchDraft {
   diplomas: OnboardingDiplomaDraft[];
 }
 
+/** Sesión creada al registrar al inicio del onboarding web (validación de correo antes de seguir). */
+export type ProfessionalWebOnboardingFinishMeta = {
+  token: string;
+  emailVerificationRequired: boolean;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    emailVerified: boolean;
+    professionalProfileId: string;
+    avatarUrl?: string | null;
+  };
+};
+
 export interface ProfessionalWebOnboardingPayload {
   fullName: string;
   email: string;

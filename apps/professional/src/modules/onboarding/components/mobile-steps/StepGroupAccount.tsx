@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
-import { PATIENT_PORTAL_URL } from "../../../app/services/api";
+import { professionalAuthSurfaceMessage } from "../../../app/lib/friendlyProfessionalSurfaceMessages";
+import { apiRequest, PATIENT_PORTAL_URL } from "../../../app/services/api";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -559,23 +560,49 @@ export function ProfessionalTermsStep(props: { language: AppLanguage; onBack: ()
   );
 }
 
-export function ProfessionalEmailStep(props: {
+export function ProfessionalEmailPasswordStep(props: {
   language: AppLanguage;
-  value: string;
-  onChange: (value: string) => void;
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
   onBack: () => void;
-  onContinue: () => void;
+  onContinue: () => void | Promise<void>;
+  submitError?: string;
 }) {
-  const [showError, setShowError] = useState(false);
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(props.value.trim());
-  const handleContinue = () => {
+  const [visible, setVisible] = useState(false);
+  const [showEmailError, setShowEmailError] = useState(false);
+  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [continueBusy, setContinueBusy] = useState(false);
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(props.email.trim());
+  const isValidPassword = props.password.trim().length >= 8;
+
+  const handleContinue = async () => {
+    let ok = true;
     if (!isValidEmail) {
-      setShowError(true);
+      setShowEmailError(true);
+      ok = false;
+    } else {
+      setShowEmailError(false);
+    }
+    if (!isValidPassword) {
+      setShowPasswordError(true);
+      ok = false;
+    } else {
+      setShowPasswordError(false);
+    }
+    if (!ok) {
       return;
     }
-    setShowError(false);
-    props.onContinue();
+    setContinueBusy(true);
+    try {
+      await props.onContinue();
+    } finally {
+      setContinueBusy(false);
+    }
   };
+
+  const canSubmit = isValidEmail && isValidPassword;
 
   return (
     <div className="pro-register-intro-shell">
@@ -600,15 +627,14 @@ export function ProfessionalEmailStep(props: {
         </div>
 
         <div className="pro-form-step-copy">
-          <h1>{t(props.language, { es: "Comencemos a crear su cuenta en MotivarCare!", en: "Let's start creating your MotivarCare account!", pt: "Vamos comecar a criar sua conta no MotivarCare!" })}</h1>
-          <p>{t(props.language, { es: "Necesitamos un e-mail válido para continuar.", en: "We need a valid email to continue.", pt: "Precisamos de um e-mail valido para continuar." })}</p>
+          <h1>{t(props.language, { es: "Correo y contraseña", en: "Email and password", pt: "E-mail e senha" })}</h1>
         </div>
 
-        <label className={`pro-form-step-field ${showError ? "error" : ""}`}>
+        <label className={`pro-form-step-field ${showEmailError ? "error" : ""}`}>
           <input
             type="email"
-            value={props.value}
-            placeholder={t(props.language, { es: "Introduzca su correo electrónico", en: "Enter your email address", pt: "Digite seu e-mail" })}
+            value={props.email}
+            placeholder={t(props.language, { es: "Correo electrónico", en: "Email address", pt: "E-mail" })}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -616,72 +642,33 @@ export function ProfessionalEmailStep(props: {
               }
             }}
             onChange={(event) => {
-              props.onChange(event.target.value);
-              if (showError) {
-                setShowError(false);
+              props.onEmailChange(event.target.value);
+              if (showEmailError) {
+                setShowEmailError(false);
               }
             }}
           />
         </label>
-        {showError ? (
+        {showEmailError ? (
           <span className="pro-form-step-inline-error">
-            {t(props.language, { es: "Ingrese un correo válido (ej: nombre@dominio.com)", en: "Enter a valid email (e.g. name@domain.com)", pt: "Digite um e-mail valido (ex: nome@dominio.com)" })}
+            {t(props.language, {
+              es: "Ingrese un correo válido (ej: nombre@dominio.com)",
+              en: "Enter a valid email (e.g. name@domain.com)",
+              pt: "Digite um e-mail valido (ex: nome@dominio.com)"
+            })}
           </span>
         ) : null}
 
-        <button className="pro-primary pro-register-intro-cta" type="button" disabled={!isValidEmail} onClick={handleContinue}>
-          {t(props.language, { es: "Seguimos", en: "Continue", pt: "Continuar" })}
-        </button>
-      </section>
-    </div>
-  );
-}
-
-export function ProfessionalPasswordStep(props: {
-  language: AppLanguage;
-  value: string;
-  onChange: (value: string) => void;
-  onBack: () => void;
-  onContinue: () => void;
-}) {
-  const [visible, setVisible] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const isValidPassword = props.value.trim().length >= 6;
-
-  const handleContinue = () => {
-    if (!isValidPassword) {
-      setShowError(true);
-      return;
-    }
-
-    setShowError(false);
-    props.onContinue();
-  };
-
-  return (
-    <div className="pro-register-intro-shell">
-      <section className="pro-form-step-card">
-        <header className="pro-form-step-head">
-          <button className="pro-register-intro-back" type="button" onClick={props.onBack} aria-label="Back">
-            ←
-          </button>
-          <div className="pro-form-step-progress" aria-hidden="true">
-            <span className="active progress-password" />
-          </div>
-          <span className="pro-register-intro-info" aria-hidden="true">i</span>
-        </header>
-
-        <div className="pro-form-step-copy">
-          <h1>{t(props.language, { es: "Establecer una contraseña", en: "Set a password", pt: "Defina uma senha" })}</h1>
-          <p>{t(props.language, { es: "La contraseña debe tener al menos 6 caracteres", en: "Password must be at least 6 characters long", pt: "A senha deve ter pelo menos 6 caracteres" })}</p>
-        </div>
-
-        <label className={`pro-form-step-field password ${showError ? "error" : ""}`}>
+        <label className={`pro-form-step-field password ${showPasswordError ? "error" : ""}`}>
           <div className="pro-password-input-wrap">
             <input
               type={visible ? "text" : "password"}
-              value={props.value}
-              placeholder={t(props.language, { es: "Ingrese su contraseña", en: "Enter your password", pt: "Digite sua senha" })}
+              value={props.password}
+              placeholder={t(props.language, {
+                es: "Contraseña (mín. 8 caracteres)",
+                en: "Password (min. 8 characters)",
+                pt: "Senha (min. 8 caracteres)"
+              })}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -689,9 +676,9 @@ export function ProfessionalPasswordStep(props: {
                 }
               }}
               onChange={(event) => {
-                props.onChange(event.target.value);
-                if (showError && event.target.value.trim().length >= 6) {
-                  setShowError(false);
+                props.onPasswordChange(event.target.value);
+                if (showPasswordError && event.target.value.trim().length >= 8) {
+                  setShowPasswordError(false);
                 }
               }}
             />
@@ -706,18 +693,149 @@ export function ProfessionalPasswordStep(props: {
           </div>
         </label>
 
-        <button className="pro-primary pro-register-intro-cta" type="button" onClick={handleContinue}>
-          {t(props.language, { es: "Seguimos", en: "Continue", pt: "Continuar" })}
+        {props.submitError ? <p className="pro-form-step-inline-error">{props.submitError}</p> : null}
+
+        <button
+          className="pro-primary pro-register-intro-cta"
+          type="button"
+          disabled={!canSubmit || continueBusy}
+          onClick={() => void handleContinue()}
+        >
+          {continueBusy
+            ? t(props.language, { es: "Creando cuenta…", en: "Creating account…", pt: "Criando conta…" })
+            : t(props.language, { es: "Seguimos", en: "Continue", pt: "Continuar" })}
         </button>
 
-        {showError ? (
+        {showPasswordError ? (
           <div className="pro-password-error-sheet" role="alert">
-            <p>{t(props.language, { es: "La contraseña debe contener 6 o más caracteres.", en: "Password must contain 6 or more characters.", pt: "A senha deve conter 6 ou mais caracteres." })}</p>
-            <button type="button" onClick={() => setShowError(false)}>
+            <p>
+              {t(props.language, {
+                es: "La contraseña debe contener 8 o más caracteres.",
+                en: "Password must contain 8 or more characters.",
+                pt: "A senha deve conter 8 ou mais caracteres."
+              })}
+            </p>
+            <button type="button" onClick={() => setShowPasswordError(false)}>
               {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
             </button>
           </div>
         ) : null}
+      </section>
+    </div>
+  );
+}
+
+export function ProfessionalMobileEmailVerificationStep(props: {
+  language: AppLanguage;
+  token: string;
+  email: string;
+  onBack: () => void;
+  onVerified: () => void;
+}) {
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
+
+  const onVerifiedRef = useRef(props.onVerified);
+  onVerifiedRef.current = props.onVerified;
+
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const me = await apiRequest<{ user: { emailVerified: boolean } }>("/api/auth/me", props.token);
+        if (cancelled) {
+          return;
+        }
+        if (me.user.emailVerified) {
+          onVerifiedRef.current();
+        }
+      } catch {
+        // ignore transient errors while polling
+      }
+    };
+    const intervalId = window.setInterval(() => {
+      void tick();
+    }, 2800);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [props.token]);
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendError("");
+    setResendMessage("");
+    try {
+      const response = await apiRequest<{ message: string }>(
+        "/api/auth/email-verification/resend",
+        props.token,
+        { method: "POST" }
+      );
+      setResendMessage(response.message);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setResendError(professionalAuthSurfaceMessage(raw || " ", props.language));
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  return (
+    <div className="pro-register-intro-shell">
+      <section className="pro-form-step-card">
+        <header className="pro-form-step-head">
+          <button className="pro-register-intro-back" type="button" onClick={props.onBack} aria-label="Back">
+            ←
+          </button>
+          <div className="pro-form-step-progress" aria-hidden="true">
+            <span className="active" />
+          </div>
+          <span className="pro-register-intro-info" aria-hidden="true">i</span>
+        </header>
+
+        <div className="pro-form-step-copy">
+          <h1>
+            {t(props.language, {
+              es: "Validá tu correo",
+              en: "Verify your email",
+              pt: "Valide seu e-mail"
+            })}
+          </h1>
+          <p>
+            {t(props.language, {
+              es: "Te enviamos un enlace a",
+              en: "We sent a link to",
+              pt: "Enviamos um link para"
+            })}{" "}
+            <strong>{props.email}</strong>
+            {t(props.language, {
+              es: ". Abrilo para continuar; esta pantalla avanza sola al confirmarse.",
+              en: ". Open it to continue; this screen moves forward automatically once confirmed.",
+              pt: ". Abra para continuar; esta tela avanca sozinha ao confirmar."
+            })}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="pro-secondary pro-register-intro-cta"
+          disabled={resendLoading}
+          onClick={() => void handleResend()}
+        >
+          {resendLoading
+            ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
+            : t(props.language, { es: "Reenviar correo", en: "Resend email", pt: "Reenviar e-mail" })}
+        </button>
+
+        {resendMessage ? (
+          <p className="pro-form-step-inline-error" style={{ color: "#15803d", marginTop: 8 }}>
+            {resendMessage}
+          </p>
+        ) : null}
+        {resendError ? <p className="pro-form-step-inline-error" style={{ marginTop: 8 }}>{resendError}</p> : null}
       </section>
     </div>
   );

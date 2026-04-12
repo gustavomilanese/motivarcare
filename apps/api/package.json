@@ -19,6 +19,7 @@
     "prisma:push": "node scripts/prisma-with-root-env.mjs db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "db:wipe-non-admin": "tsx scripts/wipe-non-admin.ts",
+    "db:delete-user-email": "tsx scripts/delete-user-by-email.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
@@ -13,6 +13,14 @@ import {
   createDefaultOnboardingPatchDraft,
   type OnboardingPatchDraft
 } from "../onboarding";
+import {
+  clearPendingWebOnboardingAuth,
+  clearResumeWebOnboardingStep,
+  readContinueWebOnboardingAfterEmailVerify,
+  readPendingWebOnboardingAuth,
+  readResumeWebOnboardingStep,
+  WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
+} from "../onboarding/webOnboardingResumeStorage.js";
 import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
 import { ForgotPasswordScreen } from "./pages/ForgotPasswordScreen";
 import { ProfessionalPortal } from "./pages/ProfessionalPortal";
@@ -131,6 +139,10 @@ export function App() {
   const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
+  const resumeWebOnboarding = useMemo(
+    () => new URLSearchParams(location.search).get("resumeWebOnboarding") === "1",
+    [location.search]
+  );
   const [language, setLanguage] = useState<AppLanguage>(() => {
     const saved = window.localStorage.getItem(LANGUAGE_KEY);
     return (SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "") ? (saved as AppLanguage) : "es";
@@ -171,6 +183,8 @@ export function App() {
       window.localStorage.removeItem(TOKEN_KEY);
       window.localStorage.removeItem(USER_KEY);
       window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+      clearPendingWebOnboardingAuth();
+      clearResumeWebOnboardingStep();
       clearCalendarOnboardingPending();
       setToken("");
       setUser(null);
@@ -201,6 +215,8 @@ export function App() {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
     window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    clearPendingWebOnboardingAuth();
+    clearResumeWebOnboardingStep();
     clearCalendarOnboardingPending();
     if (location.pathname === "/verify-email-required") {
       navigate("/", { replace: true });
@@ -420,6 +436,48 @@ export function App() {
     return <VerifyEmailTokenScreen language={language} />;
   }
 
+  const resumeWizardStep = readResumeWebOnboardingStep();
+  const continueWebAfterVerify = readContinueWebOnboardingAfterEmailVerify();
+  const effectiveResumeWizardStep =
+    resumeWizardStep ?? (continueWebAfterVerify ? WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY : null);
+  const pendingWebOnboarding = readPendingWebOnboardingAuth();
+  const wantsWebOnboardingResume = Boolean(
+    token && user?.emailVerified && resumeWebOnboarding && effectiveResumeWizardStep !== null
+  );
+
+  if (wantsWebOnboardingResume) {
+    if (!pendingWebOnboarding || pendingWebOnboarding.user.id !== user.id) {
+      clearResumeWebOnboardingStep();
+      return <Navigate to="/" replace />;
+    }
+    return (
+      <ProfessionalAuthFlow
+        language={language}
+        currency={currency}
+        onLanguageChange={setLanguage}
+        onCurrencyChange={setCurrency}
+        onAuthSuccess={handleAuthSuccess}
+        onRegistrationAuthSuccess={(userId) => {
+          persistCalendarOnboardingPending(userId);
+          setShowCalendarOnboarding(true);
+        }}
+        onPrepareOnboardingSync={handlePrepareOnboardingSync}
+        webOnboardingResume={{
+          initialWizardStep: effectiveResumeWizardStep!,
+          onResumeConsumed: () => {
+            navigate("/", { replace: true });
+          }
+        }}
+        onAbandonWebOnboardingResume={() => {
+          clearPendingWebOnboardingAuth();
+          clearResumeWebOnboardingStep();
+          handleLogout();
+          navigate("/", { replace: true });
+        }}
+      />
+    );
+  }
+
   if (!token || !user) {
     if (location.pathname === "/forgot-password") {
       return <ForgotPasswordScreen language={language} />;
@@ -459,18 +517,7 @@ export function App() {
   /** Antes de Calendar: verificación de email primero (evita que /verify-email-required quede tapada). */
   if (emailVerificationRequired && !user.emailVerified) {
     return (
-      <VerifyEmailRequiredScreen
-        language={language}
-        token={token}
-        email={user.email}
-        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
-        onVerified={() => {
-          const verifiedUser = { ...user, emailVerified: true };
-          window.localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
-          setUser(verifiedUser);
-        }}
-        onLogout={handleLogout}
-      />
+      <VerifyEmailRequiredScreen language={language} token={token} email={user.email} onLogout={handleLogout} />
     );
   }
 

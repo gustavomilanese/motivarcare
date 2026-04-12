@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { detectBrowserTimezone } from "@therapy/auth";
 import {
   type AppLanguage,
-  type SupportedCurrency
+  type LocalizedText,
+  type SupportedCurrency,
+  textByLanguage
 } from "@therapy/i18n-config";
 import {
   buildPatchDraftFromMobileInputs,
   buildPatchDraftFromWebPayload,
-  type OnboardingPatchDraft
+  type OnboardingPatchDraft,
+  type ProfessionalWebOnboardingFinishMeta
 } from "../../onboarding";
 import {
   ProfessionalAboutInfoIntroStep,
@@ -17,10 +21,10 @@ import {
   ProfessionalEarningsPlanStep,
   ProfessionalEducationInfoStep,
   ProfessionalEducationStep,
-  ProfessionalEmailStep,
+  ProfessionalEmailPasswordStep,
+  ProfessionalMobileEmailVerificationStep,
   ProfessionalExperienceStep,
   ProfessionalFirstClientsStep,
-  ProfessionalPasswordStep,
   ProfessionalPersonalDataStep,
   ProfessionalPhotoInfoStep,
   ProfessionalPhotoStep,
@@ -47,8 +51,30 @@ import {
   ProfessionalWorkLanguagesStep
 } from "../../onboarding/components/MobileOnboardingSteps";
 import { ProfessionalWebOnboardingWizard } from "../../onboarding/components/ProfessionalWebOnboardingWizard";
+import {
+  clearPendingWebOnboardingAuth,
+  clearResumeWebOnboardingStep,
+  readPendingWebOnboardingAuth,
+  savePendingWebOnboardingAuth
+} from "../../onboarding/webOnboardingResumeStorage.js";
+import { professionalAuthSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { apiRequest } from "../services/api";
+import { checkProfessionalEmailAvailable } from "../services/checkProfessionalEmail";
+import { PROFESSIONAL_AUTH_HERO_IMAGE, professionalAuthHeroFallback } from "../data/authHero";
 import { AuthScreen } from "./AuthScreen";
-import type { AuthUser } from "../types";
+import type { AuthResponse, AuthUser } from "../types";
+
+function t(language: AppLanguage, values: LocalizedText): string {
+  return textByLanguage(language, values);
+}
+
+function placeholderFullNameFromEmail(email: string): string {
+  const local = email.trim().split("@")[0]?.trim() ?? "";
+  if (local.length >= 2) {
+    return local.slice(0, 120);
+  }
+  return "Profesional";
+}
 
 type AuthEntryMode =
   | "welcome"
@@ -64,7 +90,7 @@ type AuthEntryMode =
   | "register-earnings-calculator"
   | "register-terms"
   | "register-email"
-  | "register-password"
+  | "register-email-verify"
   | "register-profile-intro"
   | "register-photo"
   | "register-profile-specialization"
@@ -101,8 +127,16 @@ export function ProfessionalAuthFlow(props: {
   onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
   onPrepareOnboardingSync: (draft: OnboardingPatchDraft) => void;
+  /** Reanudar onboarding web tras verificar el mail (mismo navegador). */
+  webOnboardingResume?: {
+    initialWizardStep: number;
+    onResumeConsumed: () => void;
+  } | null;
+  onAbandonWebOnboardingResume?: () => void;
 }) {
-  const [authEntryMode, setAuthEntryMode] = useState<AuthEntryMode>("welcome");
+  const [authEntryMode, setAuthEntryMode] = useState<AuthEntryMode>(() =>
+    props.webOnboardingResume ? "register-web" : "welcome"
+  );
   const [registerBackMode, setRegisterBackMode] = useState<RegisterBackMode>("register-profile-full");
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [selectedExperience, setSelectedExperience] = useState("");
@@ -141,6 +175,117 @@ export function ProfessionalAuthFlow(props: {
     birthYear: "",
     birthCountry: ""
   });
+  const [mobilePreAuthSession, setMobilePreAuthSession] = useState<ProfessionalWebOnboardingFinishMeta | null>(null);
+  const [mobileRegisterError, setMobileRegisterError] = useState("");
+
+  const completeMobileOnboardingWithSession = () => {
+    if (!mobilePreAuthSession) {
+      return;
+    }
+    const displayName = personalData.fullName.trim() || mobilePreAuthSession.user.fullName;
+    props.onPrepareOnboardingSync(buildMobileDraft());
+    props.onAuthSuccess({
+      token: mobilePreAuthSession.token,
+      user: {
+        id: mobilePreAuthSession.user.id,
+        fullName: displayName,
+        email: mobilePreAuthSession.user.email,
+        emailVerified: mobilePreAuthSession.user.emailVerified,
+        role: "PROFESSIONAL",
+        professionalProfileId: mobilePreAuthSession.user.professionalProfileId,
+        avatarUrl: mobilePreAuthSession.user.avatarUrl ?? null
+      },
+      emailVerificationRequired: mobilePreAuthSession.emailVerificationRequired
+    });
+    props.onRegistrationAuthSuccess?.(mobilePreAuthSession.user.id);
+  };
+
+  const handleMobileEmailPasswordContinue = useCallback(async () => {
+    setMobileRegisterError("");
+    if (mobilePreAuthSession?.user.emailVerified) {
+      setAuthEntryMode("register-specialization");
+      return;
+    }
+    if (
+      mobilePreAuthSession
+      && mobilePreAuthSession.emailVerificationRequired
+      && !mobilePreAuthSession.user.emailVerified
+    ) {
+      setAuthEntryMode("register-email-verify");
+      return;
+    }
+
+    const email = registerEmail.trim().toLowerCase();
+    try {
+      const available = await checkProfessionalEmailAvailable(email);
+      if (!available) {
+        setMobileRegisterError(
+          t(props.language, {
+            es: "Este correo ya está registrado. Iniciá sesión o usá otro email.",
+            en: "This email is already registered. Sign in or use another email.",
+            pt: "Este e-mail ja esta cadastrado. Faca login ou use outro endereco."
+          })
+        );
+        return;
+      }
+    } catch {
+      setMobileRegisterError(
+        t(props.language, {
+          es: "No pudimos verificar el correo. Revisá tu conexión e intentá de nuevo.",
+          en: "We couldn't verify the email. Check your connection and try again.",
+          pt: "Nao foi possivel verificar o e-mail. Verifique a conexao e tente de novo."
+        })
+      );
+      return;
+    }
+
+    try {
+      const response = await apiRequest<AuthResponse>("/api/auth/register", undefined, {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password: registerPassword,
+          fullName: placeholderFullNameFromEmail(email),
+          role: "PROFESSIONAL",
+          timezone: detectBrowserTimezone()
+        })
+      });
+
+      if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
+        setMobileRegisterError(
+          t(props.language, {
+            es: "No pudimos crear la cuenta profesional. Probá de nuevo o contactá soporte.",
+            en: "We could not create your professional account. Try again or contact support.",
+            pt: "Nao foi possivel criar a conta profissional. Tente de novo ou fale com o suporte."
+          })
+        );
+        return;
+      }
+
+      const meta: ProfessionalWebOnboardingFinishMeta = {
+        token: response.token,
+        emailVerificationRequired: response.emailVerificationRequired,
+        user: {
+          id: response.user.id,
+          fullName: response.user.fullName,
+          email: response.user.email,
+          emailVerified: response.user.emailVerified,
+          professionalProfileId: response.user.professionalProfileId,
+          avatarUrl: response.user.avatarUrl ?? null
+        }
+      };
+      setMobilePreAuthSession(meta);
+
+      if (response.emailVerificationRequired && !response.user.emailVerified) {
+        setAuthEntryMode("register-email-verify");
+        return;
+      }
+      setAuthEntryMode("register-specialization");
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setMobileRegisterError(professionalAuthSurfaceMessage(raw || " ", props.language));
+    }
+  }, [mobilePreAuthSession, registerEmail, registerPassword, props.language]);
 
   const buildMobileDraft = () => buildPatchDraftFromMobileInputs({
     aboutText,
@@ -187,21 +332,74 @@ export function ProfessionalAuthFlow(props: {
   }
 
   if (authEntryMode === "register-web") {
+    const resume = props.webOnboardingResume;
+    const pendingResume = resume ? readPendingWebOnboardingAuth() : null;
+    const initialWebSession =
+      resume && pendingResume
+        ? {
+            token: pendingResume.token,
+            emailVerificationRequired: pendingResume.emailVerificationRequired,
+            user: {
+              id: pendingResume.user.id,
+              email: pendingResume.user.email,
+              emailVerified: pendingResume.user.emailVerified,
+              fullName: pendingResume.user.fullName,
+              professionalProfileId: pendingResume.user.professionalProfileId,
+              avatarUrl: pendingResume.user.avatarUrl ?? undefined
+            }
+          }
+        : null;
+    const credentialsSeed =
+      resume && pendingResume
+        ? {
+            email: pendingResume.user.email,
+            password: pendingResume.password,
+            fullName: pendingResume.user.fullName
+          }
+        : null;
+
     return (
       <ProfessionalWebOnboardingWizard
         language={props.language}
-        onBack={() => setAuthEntryMode("welcome")}
+        initialWizardStep={resume?.initialWizardStep}
+        initialWebSession={initialWebSession}
+        credentialsSeed={credentialsSeed}
+        onAfterRegisterPendingAuth={resume ? undefined : savePendingWebOnboardingAuth}
+        onBack={() => {
+          if (resume) {
+            props.onAbandonWebOnboardingResume?.();
+            return;
+          }
+          setAuthEntryMode("welcome");
+        }}
         onSwitchToMobile={() => {
           setRegisterBackMode("register-profile-full");
           setAuthEntryMode("register-intro");
         }}
-        onFinish={(payload) => {
+        onFinish={(payload, meta) => {
+          clearPendingWebOnboardingAuth();
+          clearResumeWebOnboardingStep();
+          resume?.onResumeConsumed();
           setRegisterEmail(payload.email);
           setRegisterPassword(payload.password);
           setPersonalData((current) => ({ ...current, fullName: payload.fullName }));
           props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload));
           setRegisterBackMode("register-web");
-          setAuthEntryMode("register");
+          const displayName = payload.fullName.trim() || meta.user.fullName;
+          props.onAuthSuccess({
+            token: meta.token,
+            user: {
+              id: meta.user.id,
+              fullName: displayName,
+              email: meta.user.email,
+              emailVerified: meta.user.emailVerified,
+              role: "PROFESSIONAL",
+              professionalProfileId: meta.user.professionalProfileId,
+              avatarUrl: meta.user.avatarUrl ?? null
+            },
+            emailVerificationRequired: meta.emailVerificationRequired
+          });
+          props.onRegistrationAuthSuccess?.(meta.user.id);
         }}
       />
     );
@@ -211,8 +409,58 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalRegisterIntro
         language={props.language}
-        onBack={() => setAuthEntryMode("welcome")}
-        onContinue={() => setAuthEntryMode("register-specialization")}
+        onBack={() => {
+          setMobilePreAuthSession(null);
+          setMobileRegisterError("");
+          setAuthEntryMode("welcome");
+        }}
+        onContinue={() => setAuthEntryMode("register-email")}
+      />
+    );
+  }
+
+  if (authEntryMode === "register-email") {
+    return (
+      <ProfessionalEmailPasswordStep
+        language={props.language}
+        email={registerEmail}
+        password={registerPassword}
+        onEmailChange={(value) => {
+          setRegisterEmail(value);
+          setMobileRegisterError("");
+        }}
+        onPasswordChange={(value) => {
+          setRegisterPassword(value);
+          setMobileRegisterError("");
+        }}
+        onBack={() => {
+          setMobilePreAuthSession(null);
+          setMobileRegisterError("");
+          setAuthEntryMode("register-intro");
+        }}
+        submitError={mobileRegisterError}
+        onContinue={handleMobileEmailPasswordContinue}
+      />
+    );
+  }
+
+  if (authEntryMode === "register-email-verify" && mobilePreAuthSession) {
+    return (
+      <ProfessionalMobileEmailVerificationStep
+        language={props.language}
+        token={mobilePreAuthSession.token}
+        email={mobilePreAuthSession.user.email}
+        onBack={() => {
+          setMobilePreAuthSession(null);
+          setMobileRegisterError("");
+          setAuthEntryMode("register-email");
+        }}
+        onVerified={() => {
+          setMobilePreAuthSession((prev) =>
+            prev ? { ...prev, user: { ...prev.user, emailVerified: true } } : prev
+          );
+          setAuthEntryMode("register-specialization");
+        }}
       />
     );
   }
@@ -223,7 +471,7 @@ export function ProfessionalAuthFlow(props: {
         language={props.language}
         value={selectedSpecialization}
         onSelect={setSelectedSpecialization}
-        onBack={() => setAuthEntryMode("register-intro")}
+        onBack={() => setAuthEntryMode("register-email")}
         onContinue={() => setAuthEntryMode("register-first-clients")}
       />
     );
@@ -297,30 +545,6 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalTermsStep
         language={props.language}
         onBack={() => setAuthEntryMode("register-earnings-calculator")}
-        onContinue={() => setAuthEntryMode("register-email")}
-      />
-    );
-  }
-
-  if (authEntryMode === "register-email") {
-    return (
-      <ProfessionalEmailStep
-        language={props.language}
-        value={registerEmail}
-        onChange={setRegisterEmail}
-        onBack={() => setAuthEntryMode("register-terms")}
-        onContinue={() => setAuthEntryMode("register-password")}
-      />
-    );
-  }
-
-  if (authEntryMode === "register-password") {
-    return (
-      <ProfessionalPasswordStep
-        language={props.language}
-        value={registerPassword}
-        onChange={setRegisterPassword}
-        onBack={() => setAuthEntryMode("register-email")}
         onContinue={() => setAuthEntryMode("register-profile-intro")}
       />
     );
@@ -330,7 +554,7 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalProfileIntroStep
         language={props.language}
-        onBack={() => setAuthEntryMode("register-password")}
+        onBack={() => setAuthEntryMode("register-terms")}
         onContinue={() => setAuthEntryMode("register-photo")}
       />
     );
@@ -567,9 +791,13 @@ export function ProfessionalAuthFlow(props: {
         language={props.language}
         onBack={() => setAuthEntryMode("register-stripe")}
         onContinue={() => {
-          props.onPrepareOnboardingSync(buildMobileDraft());
           setRegisterBackMode("register-success-info");
-          setAuthEntryMode("register");
+          if (mobilePreAuthSession) {
+            completeMobileOnboardingWithSession();
+          } else {
+            props.onPrepareOnboardingSync(buildMobileDraft());
+            setAuthEntryMode("register");
+          }
         }}
       />
     );
@@ -591,8 +819,12 @@ export function ProfessionalAuthFlow(props: {
         language={props.language}
         onBack={() => setAuthEntryMode("register-profile-card")}
         onContinue={() => {
-          props.onPrepareOnboardingSync(buildMobileDraft());
-          setAuthEntryMode("register");
+          if (mobilePreAuthSession) {
+            completeMobileOnboardingWithSession();
+          } else {
+            props.onPrepareOnboardingSync(buildMobileDraft());
+            setAuthEntryMode("register");
+          }
         }}
       />
     );
@@ -605,6 +837,12 @@ export function ProfessionalAuthFlow(props: {
       currency={props.currency}
       onLanguageChange={props.onLanguageChange}
       onCurrencyChange={props.onCurrencyChange}
+      heroImage={PROFESSIONAL_AUTH_HERO_IMAGE}
+      onHeroFallback={professionalAuthHeroFallback}
+      onCreateAccount={() => {
+        setRegisterBackMode("register-profile-full");
+        setAuthEntryMode("register-intro");
+      }}
       onAuthSuccess={(params) => {
         props.onAuthSuccess(params);
         if (authEntryMode === "register") {

@@ -339,14 +339,6 @@ export function friendlyVerifyEmailResendMessage(raw: string, language: AppLangu
   });
 }
 
-export function friendlyVerifyEmailDevMessage(language: AppLanguage): string {
-  return t(language, {
-    es: "El atajo de verificación (solo desarrollo) no funcionó. En tu entorno local revisá la consola del API o probá reenviar el mail de verificación.",
-    en: "The development verification shortcut didn’t work. In local dev, check the API console or resend the verification email.",
-    pt: "O atalho de verificacao (dev) nao funcionou. Em local, veja o console da API ou reenvie o e-mail."
-  });
-}
-
 export function friendlyVerifyEmailTokenMissingMessage(language: AppLanguage): string {
   return t(language, {
     es: "El enlace llegó incompleto (falta información al final). Abrilo de nuevo desde el mail, o pedí un nuevo correo desde «Reenviar email».",

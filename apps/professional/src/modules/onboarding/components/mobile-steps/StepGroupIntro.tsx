@@ -114,12 +114,26 @@ export function ProfessionalWelcomeGate(props: {
           </p>
         </div>
 
-        <div className="pro-gate-actions">
-          <button className="pro-primary pro-gate-primary" type="button" onClick={props.onLogin}>
-            {t(props.language, { es: "Iniciar Sesión", en: "Sign In", pt: "Entrar" })}
+        <div className="pro-gate-actions pro-gate-actions--stacked">
+          <p className="pro-gate-first-run">
+            {t(props.language, {
+              es: "¿Primera vez en MotivarCare?",
+              en: "First time on MotivarCare?",
+              pt: "Primeira vez no MotivarCare?"
+            })}
+          </p>
+          <button className="pro-primary pro-gate-register-hero" type="button" onClick={props.onRegister}>
+            {t(props.language, { es: "Crear cuenta gratis", en: "Create a free account", pt: "Criar conta gratis" })}
           </button>
-          <button className="pro-secondary pro-gate-secondary" type="button" onClick={props.onRegister}>
-            {t(props.language, { es: "Registrarse", en: "Register", pt: "Cadastrar-se" })}
+          <p className="pro-gate-already">
+            {t(props.language, {
+              es: "¿Ya tenés cuenta?",
+              en: "Already have an account?",
+              pt: "Ja tem conta?"
+            })}
+          </p>
+          <button className="pro-secondary pro-gate-login-quiet" type="button" onClick={props.onLogin}>
+            {t(props.language, { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" })}
           </button>
         </div>
 

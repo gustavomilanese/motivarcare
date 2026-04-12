@@ -133,7 +133,6 @@ export type ProfessionalSurfaceContext =
   | "forgot-password-email"
   | "forgot-password-send"
   | "verify-resend"
-  | "verify-dev"
   | "verify-token-missing"
   | "verify-token-fail"
   | "availability-month-load"
@@ -314,11 +313,6 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     es: "No pudimos reenviar el mail. Esperá un minuto, revisá spam o iniciá sesión si ya verificaste.",
     en: "We couldn’t resend the email. Wait a minute, check spam, or sign in if you already verified.",
     pt: "Nao foi possivel reenviar o e-mail. Aguarde ou verifique o spam."
-  },
-  "verify-dev": {
-    es: "El atajo de verificación (solo desarrollo) falló. Revisá logs del API o reenviá el correo.",
-    en: "Dev verification shortcut failed. Check API logs or resend the email.",
-    pt: "Atalho de verificacao (dev) falhou. Veja os logs da API."
   },
   "verify-token-missing": {
     es: "El enlace llegó incompleto. Abrilo desde el correo más reciente o pedí uno nuevo con «Reenviar».",

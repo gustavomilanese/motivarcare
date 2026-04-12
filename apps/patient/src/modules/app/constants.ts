@@ -40,7 +40,7 @@ export function clearPostTrialCalendarPending(): void {
   }
 }
 
-/** Misma que `onHeroFallback`: evita Pexels distinto al admin y al fallback por error de carga. */
+/** Misma que `onHeroFallback`: fallback local si falla la URL remota del hero. */
 export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.svg";
 
 /** Separador de opciones en `mainReason` cuando hay multiselección (alineado con patient-mobile). */

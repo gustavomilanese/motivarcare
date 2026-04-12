@@ -1,4 +1,41 @@
 import { FormEvent, SyntheticEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const PATIENT_AUTH_REMEMBER_KEY = "motivarcare_patient_auth_remember";
+const PATIENT_AUTH_EMAIL_KEY = "motivarcare_patient_auth_email";
+
+function readRememberedPatientEmail(): string {
+  try {
+    if (typeof window === "undefined" || window.localStorage.getItem(PATIENT_AUTH_REMEMBER_KEY) !== "1") {
+      return "";
+    }
+    return window.localStorage.getItem(PATIENT_AUTH_EMAIL_KEY)?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function readPatientRememberFlag(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(PATIENT_AUTH_REMEMBER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistPatientRemember(remember: boolean, emailLower: string): void {
+  try {
+    if (remember && emailLower) {
+      window.localStorage.setItem(PATIENT_AUTH_REMEMBER_KEY, "1");
+      window.localStorage.setItem(PATIENT_AUTH_EMAIL_KEY, emailLower);
+    } else {
+      window.localStorage.removeItem(PATIENT_AUTH_REMEMBER_KEY);
+      window.localStorage.removeItem(PATIENT_AUTH_EMAIL_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
 import {
   type AppLanguage,
   type LocalizedText,
@@ -24,11 +61,13 @@ export function AuthScreen(props: {
     authEntryMode: "login" | "register";
   }) => void;
 }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(readRememberedPatientEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(readPatientRememberFlag);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -89,6 +128,10 @@ export function AuthScreen(props: {
             pt: "Esta conta nao pertence ao portal do paciente."
           })
         );
+      }
+
+      if (mode === "login") {
+        persistPatientRemember(rememberMe, email.trim().toLowerCase());
       }
 
       props.onLogin({
@@ -162,50 +205,81 @@ export function AuthScreen(props: {
 
           <form className="stack auth-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
-              <label>
-                {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
-                <input
-                  name="name"
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                />
-              </label>
+              <div className="auth-field-stack">
+                <span className="auth-field-label">{t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}</span>
+                <div className="auth-input-shell">
+                  <input
+                    className="auth-input-inset"
+                    name="name"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                  />
+                </div>
+              </div>
             ) : null}
 
-            <label>
-              Email
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
+            <div className="auth-field-stack">
+              <span className="auth-field-label">{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
+              <div className="auth-input-shell">
+                <input
+                  className="auth-input-inset"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+            </div>
 
-            <label className="auth-password-field">
-              <span className="auth-password-label-row">
-                <span>{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
-                <button
-                  type="button"
-                  className="auth-link-button auth-show-password"
-                  onClick={() => setShowPassword((v) => !v)}
-                >
+            <div className="auth-field-stack">
+              <div className="auth-field-label-row">
+                <span className="auth-field-label">{t(props.language, { es: "Contraseña", en: "Password", pt: "Senha" })}</span>
+                {mode === "login" ? (
+                  <button type="button" className="auth-link-inline" onClick={() => navigate("/forgot-password")}>
+                    {t(props.language, {
+                      es: "¿Olvidaste tu contraseña?",
+                      en: "Forgot your password?",
+                      pt: "Esqueceu sua senha?"
+                    })}
+                  </button>
+                ) : null}
+              </div>
+              <div className="auth-input-shell auth-input-shell--with-suffix">
+                <input
+                  className="auth-input-inset"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <button type="button" className="auth-input-suffix" onClick={() => setShowPassword((v) => !v)}>
                   {showPassword
                     ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-                    : t(props.language, { es: "Ver contraseña", en: "Show password", pt: "Ver senha" })}
+                    : t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
                 </button>
-              </span>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                autoComplete={mode === "register" ? "new-password" : "current-password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
+              </div>
+            </div>
+
+            {mode === "login" ? (
+              <label className="auth-remember">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
+                <span>
+                  {t(props.language, {
+                    es: "Recordarme en este dispositivo",
+                    en: "Remember me on this device",
+                    pt: "Lembrar neste dispositivo"
+                  })}
+                </span>
+              </label>
+            ) : null}
 
             {error ? <p className="error-text auth-error" role="status">{error}</p> : null}
             <button className="primary auth-submit" type="submit" disabled={loading}>
@@ -217,23 +291,31 @@ export function AuthScreen(props: {
             </button>
           </form>
 
-          <div className="auth-switch-inline">
+          <footer className="auth-card-footer">
             {mode === "login" ? (
-              <>
-                <span>{t(props.language, { es: "No tienes cuenta?", en: "No account yet?", pt: "Ainda nao tem conta?" })}</span>
-                <button type="button" className="auth-link-button" onClick={() => setMode("register")}>
-                  {t(props.language, { es: "Registrarme", en: "Sign up", pt: "Cadastrar" })}
+              <p className="auth-card-footer-copy">
+                {t(props.language, {
+                  es: "¿Es tu primera vez en MotivarCare?",
+                  en: "Is this your first time on MotivarCare?",
+                  pt: "E sua primeira vez no MotivarCare?"
+                })}{" "}
+                <button type="button" className="auth-footer-cta" onClick={() => setMode("register")}>
+                  {t(props.language, { es: "Crear una cuenta", en: "Create an account", pt: "Criar uma conta" })}
                 </button>
-              </>
+              </p>
             ) : (
-              <>
-                <span>{t(props.language, { es: "Ya tienes cuenta?", en: "Already have an account?", pt: "Ja tem conta?" })}</span>
-                <button type="button" className="auth-link-button" onClick={() => setMode("login")}>
-                  {t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
+              <p className="auth-card-footer-copy auth-card-footer-copy--muted">
+                {t(props.language, {
+                  es: "¿Ya tenés cuenta?",
+                  en: "Already have an account?",
+                  pt: "Ja tem conta?"
+                })}{" "}
+                <button type="button" className="auth-footer-cta" onClick={() => setMode("login")}>
+                  {t(props.language, { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" })}
                 </button>
-              </>
+              </p>
             )}
-          </div>
+          </footer>
         </div>
       </section>
     </div>

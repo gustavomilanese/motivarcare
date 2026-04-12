@@ -20,6 +20,8 @@ import {
   setCalendarOfferContext
 } from "./constants";
 import { AuthScreen } from "./pages/AuthScreen";
+import { PatientForgotPasswordScreen } from "./pages/PatientForgotPasswordScreen";
+import { PatientResetPasswordScreen } from "./pages/PatientResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
@@ -334,6 +336,8 @@ export function App() {
   const calendarAfterPhotoRef = useRef(false);
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
+  const isForgotPasswordRoute = useMemo(() => location.pathname === "/forgot-password", [location.pathname]);
+  const isResetPasswordRoute = useMemo(() => location.pathname === "/reset-password", [location.pathname]);
 
   useEffect(() => {
     saveState(state);
@@ -912,6 +916,14 @@ export function App() {
     return <VerifyEmailTokenScreen language={state.language} />;
   }
 
+  if (!state.session && isForgotPasswordRoute) {
+    return <PatientForgotPasswordScreen language={state.language} />;
+  }
+
+  if (!state.session && isResetPasswordRoute) {
+    return <PatientResetPasswordScreen language={state.language} />;
+  }
+
   if (!state.session) {
     return (
       <AuthScreen
@@ -951,13 +963,6 @@ export function App() {
         language={state.language}
         token={state.authToken ?? ""}
         email={state.session.email}
-        showDevBypass={(import.meta as { env?: Record<string, boolean | string | undefined> }).env?.DEV === true}
-        onVerified={() =>
-          setState((current) => ({
-            ...current,
-            session: current.session ? { ...current.session, emailVerified: true } : null
-          }))
-        }
         onLogout={() => {
           if (location.pathname === "/verify-email-required") {
             navigate("/", { replace: true });

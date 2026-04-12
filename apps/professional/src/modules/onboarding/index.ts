@@ -6,5 +6,6 @@ export {
 export type {
   OnboardingPatchDraft,
   ProfessionalMobileOnboardingInputs,
+  ProfessionalWebOnboardingFinishMeta,
   ProfessionalWebOnboardingPayload
 } from "./types";

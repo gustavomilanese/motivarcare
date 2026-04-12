@@ -86,6 +86,16 @@ export function AdminPortal(props: {
     };
   }, [loadSidebarAlertCounts, location.pathname]);
 
+  const handleNotificationCenterClick = useCallback(() => {
+    const el = document.getElementById("admin-pending-prof-approvals");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      void Notification.requestPermission();
+    }
+  }, []);
+
   const labelForLink = (to: PortalPath): string => {
     if (to === "/") {
       return t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
@@ -165,21 +175,6 @@ export function AdminPortal(props: {
         </nav>
 
         <div className="sidebar-controls">
-          {typeof Notification !== "undefined" && Notification.permission === "default" ? (
-            <button
-              type="button"
-              className="admin-sidebar-notify-pref"
-              onClick={() => {
-                void Notification.requestPermission();
-              }}
-            >
-              {t(props.language, {
-                es: "Activar avisos del navegador (altas pendientes)",
-                en: "Enable browser alerts (pending sign-ups)",
-                pt: "Ativar alertas do navegador (cadastros pendentes)"
-              })}
-            </button>
-          ) : null}
           <button className="danger" type="button" onClick={props.onLogout}>
             {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
           </button>
@@ -220,7 +215,18 @@ export function AdminPortal(props: {
 
         <main>
           <Routes>
-            <Route path="/" element={<AdminDashboardPage token={props.token} language={props.language} currency={props.currency} />} />
+            <Route
+              path="/"
+              element={
+                <AdminDashboardPage
+                  token={props.token}
+                  language={props.language}
+                  currency={props.currency}
+                  pendingProfessionalRegistrationCount={pendingProfRegistrationCount}
+                  onNotificationCenterClick={handleNotificationCenterClick}
+                />
+              }
+            />
             <Route
               path="/patients"
               element={

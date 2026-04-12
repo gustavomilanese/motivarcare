@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { friendlyVerifyEmailDevMessage, friendlyVerifyEmailResendMessage } from "../lib/friendlyPatientMessages";
+import { friendlyVerifyEmailResendMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -11,12 +11,9 @@ export function VerifyEmailRequiredScreen(props: {
   language: AppLanguage;
   token: string;
   email: string;
-  showDevBypass: boolean;
-  onVerified: () => void;
   onLogout: () => void;
 }) {
   const [loadingResend, setLoadingResend] = useState(false);
-  const [loadingDevVerify, setLoadingDevVerify] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -37,21 +34,6 @@ export function VerifyEmailRequiredScreen(props: {
       setError(friendlyVerifyEmailResendMessage(raw, props.language));
     } finally {
       setLoadingResend(false);
-    }
-  };
-
-  const handleDevVerify = async () => {
-    setLoadingDevVerify(true);
-    setError("");
-    setMessage("");
-
-    try {
-      await apiRequest<{ message: string }>("/api/auth/email-verification/dev-verify", { method: "POST" }, props.token);
-      props.onVerified();
-    } catch {
-      setError(friendlyVerifyEmailDevMessage(props.language));
-    } finally {
-      setLoadingDevVerify(false);
     }
   };
 
@@ -107,19 +89,13 @@ export function VerifyEmailRequiredScreen(props: {
             })}
           </p>
           <div className="stack verify-email-actions">
-            <button className="primary" type="button" onClick={handleResend} disabled={loadingResend || loadingDevVerify}>
+            <button className="primary" type="button" onClick={handleResend} disabled={loadingResend}>
               {loadingResend
                 ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
                 : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
             </button>
 
-            {props.showDevBypass ? (
-              <button type="button" className="verify-email-dev" onClick={handleDevVerify} disabled={loadingResend || loadingDevVerify}>
-                {loadingDevVerify ? "Verify Email (DEV)..." : "Verify Email (DEV)"}
-              </button>
-            ) : null}
-
-            <button type="button" className="verify-email-secondary" onClick={props.onLogout} disabled={loadingResend || loadingDevVerify}>
+            <button type="button" className="verify-email-secondary" onClick={props.onLogout} disabled={loadingResend}>
               {t(props.language, { es: "Salir", en: "Log out", pt: "Sair" })}
             </button>
           </div>

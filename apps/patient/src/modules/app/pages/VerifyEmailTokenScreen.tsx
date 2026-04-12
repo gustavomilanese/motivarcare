@@ -9,6 +9,13 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+/** Strict Mode (dev) runs the effect twice; the first /verify-email call already consumes the one-time token. */
+function emailVerifySuccessStorageKey(token: string): string {
+  return `motivarcare:email-verified:${token}`;
+}
+
+const verifyEmailRequestByToken = new Map<string, Promise<unknown>>();
+
 export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
   const [state, setState] = useState<VerificationState>("loading");
   const [message, setMessage] = useState("");
@@ -25,15 +32,31 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
       return;
     }
 
+    const storageKey = emailVerifySuccessStorageKey(token);
+    if (sessionStorage.getItem(storageKey) === "1") {
+      setState("success");
+      return;
+    }
+
     let cancelled = false;
 
     const verifyEmail = async () => {
       try {
-        await apiRequest<{ message: string }>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
-        if (cancelled) {
-          return;
+        let request = verifyEmailRequestByToken.get(token);
+        if (!request) {
+          const pending = apiRequest<{ message: string }>(
+            `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+          );
+          request = pending.finally(() => {
+            verifyEmailRequestByToken.delete(token);
+          });
+          verifyEmailRequestByToken.set(token, request);
         }
-        setState("success");
+        await request;
+        sessionStorage.setItem(storageKey, "1");
+        if (!cancelled) {
+          setState("success");
+        }
       } catch (requestError) {
         if (cancelled) {
           return;

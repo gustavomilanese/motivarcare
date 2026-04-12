@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
+import {
+  finalizeWebOnboardingAfterEmailLink,
+  readContinueWebOnboardingAfterEmailVerify,
+  readPendingWebOnboardingAuth
+} from "../../onboarding/webOnboardingResumeStorage.js";
 
 type VerificationState = "loading" | "success" | "error";
 
@@ -9,9 +14,33 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+/** Strict Mode (dev) runs the effect twice; the first /verify-email call already consumes the one-time token. */
+function emailVerifySuccessStorageKey(token: string): string {
+  return `motivarcare:email-verified:${token}`;
+}
+
+type VerifyEmailApiResponse = {
+  message: string;
+  userId?: string;
+  email?: string;
+  role?: string;
+};
+
+const verifyEmailRequestByToken = new Map<string, Promise<VerifyEmailApiResponse>>();
+
+function goHomeAfterProfessionalEmailVerify(): void {
+  if (readContinueWebOnboardingAfterEmailVerify()) {
+    window.location.assign(`${window.location.origin}/?resumeWebOnboarding=1`);
+    return;
+  }
+  window.location.assign(`${window.location.origin}/`);
+}
+
 export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
   const [state, setState] = useState<VerificationState>("loading");
   const [message, setMessage] = useState("");
+  /** Tras verificar: flujo web de registro (localStorage), no releer en cada render. */
+  const [resumeWebOnboardingAfterSuccess, setResumeWebOnboardingAfterSuccess] = useState(false);
 
   const token = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -25,15 +54,44 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
       return;
     }
 
+    const storageKey = emailVerifySuccessStorageKey(token);
+    if (sessionStorage.getItem(storageKey) === "1") {
+      setResumeWebOnboardingAfterSuccess(readContinueWebOnboardingAfterEmailVerify());
+      setState("success");
+      return;
+    }
+
     let cancelled = false;
 
     const verifyEmail = async () => {
       try {
-        await apiRequest<{ message: string }>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
-        if (cancelled) {
-          return;
+        let request = verifyEmailRequestByToken.get(token);
+        if (!request) {
+          const pending = apiRequest<VerifyEmailApiResponse>(
+            `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+          );
+          request = pending.finally(() => {
+            verifyEmailRequestByToken.delete(token);
+          });
+          verifyEmailRequestByToken.set(token, request);
         }
-        setState("success");
+        const data = await request;
+        const pendingAuth = readPendingWebOnboardingAuth();
+        if (pendingAuth) {
+          const uidMatch = Boolean(data.userId && pendingAuth.user.id === data.userId);
+          const emailMatch = Boolean(
+            data.email
+            && pendingAuth.user.email.toLowerCase() === String(data.email).trim().toLowerCase()
+          );
+          if (uidMatch || emailMatch) {
+            finalizeWebOnboardingAfterEmailLink(pendingAuth);
+          }
+        }
+        sessionStorage.setItem(storageKey, "1");
+        if (!cancelled) {
+          setResumeWebOnboardingAfterSuccess(readContinueWebOnboardingAfterEmailVerify());
+          setState("success");
+        }
       } catch (requestError) {
         if (cancelled) {
           return;
@@ -112,16 +170,24 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
               <h1 id="pro-verify-token-title">
                 {t(props.language, { es: "Email verificado", en: "Email verified", pt: "E-mail verificado" })}
               </h1>
-              <p className="pro-verify-email-lead">
-                {t(props.language, {
-                  es: "Tu correo quedó confirmado. Volvé al inicio para entrar con tu cuenta.",
-                  en: "Your email is confirmed. Go to home to sign in with your account.",
-                  pt: "Seu e-mail foi confirmado. Volte ao inicio para entrar com sua conta."
-                })}
-              </p>
+              {resumeWebOnboardingAfterSuccess ? null : (
+                <p className="pro-verify-email-lead">
+                  {t(props.language, {
+                    es: "Tu correo quedó confirmado. Volvé al inicio para entrar con tu cuenta.",
+                    en: "Your email is confirmed. Go to home to sign in with your account.",
+                    pt: "Seu e-mail foi confirmado. Volte ao inicio para entrar com sua conta."
+                  })}
+                </p>
+              )}
               <div className="pro-stack pro-verify-email-actions">
-                <button className="pro-primary" type="button" onClick={() => window.location.assign("/")}>
-                  {t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
+                <button className="pro-primary" type="button" onClick={goHomeAfterProfessionalEmailVerify}>
+                  {resumeWebOnboardingAfterSuccess
+                    ? t(props.language, {
+                        es: "Continuar registro",
+                        en: "Continue signup",
+                        pt: "Continuar cadastro"
+                      })
+                    : t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
                 </button>
               </div>
             </>
@@ -154,7 +220,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
                 })}
               </p>
               <div className="pro-stack pro-verify-email-actions">
-                <button className="pro-primary" type="button" onClick={() => window.location.assign("/")}>
+                <button className="pro-primary" type="button" onClick={goHomeAfterProfessionalEmailVerify}>
                   {t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
                 </button>
               </div>

@@ -106,6 +106,7 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
 
   return (
     <section
+      id="admin-pending-prof-approvals"
       className="dashboard-pending-approvals"
       aria-label={t(props.language, {
         es: "Profesionales con alta pendiente de aprobación",
@@ -182,7 +183,15 @@ function BarCompare(props: {
   );
 }
 
-function OverviewPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
+type OverviewPageProps = {
+  token: string;
+  language: AppLanguage;
+  currency: SupportedCurrency;
+  pendingProfessionalRegistrationCount?: number;
+  onNotificationCenterClick?: () => void;
+};
+
+function OverviewPage(props: OverviewPageProps) {
   const [response, setResponse] = useState<KpisResponse | null>(null);
   const [error, setError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(() => utcMonthKeyFromDate(new Date()));
@@ -271,7 +280,27 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
             <p className="dashboard-hero-eyebrow">{t(props.language, { es: "Panel ejecutivo", en: "Executive overview", pt: "Painel executivo" })}</p>
             <h1 className="dashboard-page-title">{t(props.language, { es: "Resumen del mes", en: "Month at a glance", pt: "Resumo do mes" })}</h1>
           </div>
-          <div className="dashboard-header-controls">
+          <div className="dashboard-header-actions">
+            {typeof props.onNotificationCenterClick === "function" ? (
+              <button
+                type="button"
+                className="dashboard-notify-bell"
+                onClick={props.onNotificationCenterClick}
+                aria-label={t(props.language, {
+                  es: "Notificaciones: altas de psicólogos pendientes",
+                  en: "Notifications: pending psychologist sign-ups",
+                  pt: "Notificacoes: cadastros de psicologos pendentes"
+                })}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {(props.pendingProfessionalRegistrationCount ?? 0) > 0 ? (
+                  <span className="dashboard-notify-badge">{props.pendingProfessionalRegistrationCount}</span>
+                ) : null}
+              </button>
+            ) : null}
             <div className="dashboard-month-field">
               <input
                 className="dashboard-month-input"
@@ -550,6 +579,14 @@ function OverviewPage(props: { token: string; language: AppLanguage; currency: S
   );
 }
 
-export function AdminDashboardPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
-  return <OverviewPage token={props.token} language={props.language} currency={props.currency} />;
+export function AdminDashboardPage(props: OverviewPageProps) {
+  return (
+    <OverviewPage
+      token={props.token}
+      language={props.language}
+      currency={props.currency}
+      pendingProfessionalRegistrationCount={props.pendingProfessionalRegistrationCount}
+      onNotificationCenterClick={props.onNotificationCenterClick}
+    />
+  );
 }

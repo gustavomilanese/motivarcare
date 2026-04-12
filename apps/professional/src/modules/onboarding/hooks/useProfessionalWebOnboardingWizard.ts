@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { detectBrowserTimezone } from "@therapy/auth";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalAuthSurfaceMessage } from "../../app/lib/friendlyProfessionalSurfaceMessages";
+import type { AuthResponse } from "../../app/types";
+import { apiRequest } from "../../app/services/api";
 import { checkProfessionalEmailAvailable } from "../../app/services/checkProfessionalEmail";
 import {
   FALLBACK_SESSION_PRICE_MAX_USD,
@@ -7,7 +11,13 @@ import {
   fetchSessionPriceBoundsUsd
 } from "../../app/services/sessionPriceBounds";
 import { WEB_SPECIALIZATION_CANONICAL } from "../constants/webSpecializationOptions";
-import type { ProfessionalWebOnboardingPayload } from "../types";
+import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
+import type { PendingWebOnboardingAuth } from "../webOnboardingResumeStorage.js";
+import {
+  WEB_ONBOARDING_BROADCAST_CHANNEL,
+  WEB_ONBOARDING_PENDING_AUTH_STORAGE_KEY,
+  WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
+} from "../webOnboardingResumeStorage.js";
 
 function yearsExperienceFromGraduationYearClient(graduationYear: number): number {
   const y = new Date().getFullYear() - graduationYear;
@@ -23,6 +33,31 @@ function looksLikeEmail(value: string): boolean {
   return v.includes("@") && v.length >= 5 && !v.startsWith("@") && !v.endsWith("@");
 }
 
+function placeholderFullNameFromEmail(email: string): string {
+  const local = email.trim().split("@")[0]?.trim() ?? "";
+  if (local.length >= 2) {
+    return local.slice(0, 120);
+  }
+  return "Profesional";
+}
+
+function joinWebOnboardingFullName(firstName: string, lastName: string): string {
+  return [firstName, lastName].map((s) => s.trim()).filter(Boolean).join(" ").trim();
+}
+
+export type WebOnboardingSessionState = {
+  token: string;
+  emailVerificationRequired: boolean;
+  user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    fullName: string;
+    professionalProfileId: string;
+    avatarUrl?: string | null;
+  };
+};
+
 export type WebInterstitialVisual = "earnings" | "reservations" | "growth" | "trust";
 
 export type WebInterstitialContent = {
@@ -37,10 +72,16 @@ export type WebInterstitialContent = {
 
 export function useProfessionalWebOnboardingWizard(input: {
   language: AppLanguage;
-  onFinish: (payload: ProfessionalWebOnboardingPayload) => void;
+  onFinish: (payload: ProfessionalWebOnboardingPayload, meta: ProfessionalWebOnboardingFinishMeta) => void;
+  /** Reanudar tras verificar email (mismo navegador). */
+  initialWizardStep?: number;
+  initialWebSession?: WebOnboardingSessionState | null;
+  credentialsSeed?: { email: string; password: string; fullName: string } | null;
+  onAfterRegisterPendingAuth?: (data: PendingWebOnboardingAuth) => void;
 }) {
-  const [step, setStep] = useState(0);
-  const [maxReachedStep, setMaxReachedStep] = useState(0);
+  const initialStep = input.initialWizardStep ?? 0;
+  const [step, setStep] = useState(() => initialStep);
+  const [maxReachedStep, setMaxReachedStep] = useState(() => initialStep);
   const [activeInterstitialStep, setActiveInterstitialStep] = useState<number | null>(null);
   const [seenInterstitials, setSeenInterstitials] = useState<Record<number, true>>({});
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
@@ -48,6 +89,13 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [pricingStepError, setPricingStepError] = useState("");
   const [credentialsStepError, setCredentialsStepError] = useState("");
   const [credentialsChecking, setCredentialsChecking] = useState(false);
+  const [registerInFlight, setRegisterInFlight] = useState(false);
+  const [webOnboardingSession, setWebOnboardingSession] = useState<WebOnboardingSessionState | null>(
+    () => input.initialWebSession ?? null
+  );
+  const [resendVerificationMessage, setResendVerificationMessage] = useState("");
+  const [resendVerificationError, setResendVerificationError] = useState("");
+  const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
 
   const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const webVideoInputRef = useRef<HTMLInputElement | null>(null);
@@ -57,7 +105,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [activeDiplomaUploadIndex, setActiveDiplomaUploadIndex] = useState<number | null>(null);
 
   const [form, setForm] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     professionalTitle: "",
     graduationYear: "",
     specialization: "",
@@ -101,8 +150,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, []);
 
   const labels = [
-    t(input.language, { es: "Cuenta de acceso", en: "Sign-in account", pt: "Conta de acesso" }),
-    t(input.language, { es: "Validación de correo", en: "Email verification", pt: "Validacao de e-mail" }),
+    t(input.language, { es: "Correo y contraseña", en: "Email and password", pt: "E-mail e senha" }),
+    t(input.language, { es: "Revisá tu correo", en: "Check your email", pt: "Verifique seu e-mail" }),
     t(input.language, { es: "Identidad profesional", en: "Professional identity", pt: "Identidade profissional" }),
     t(input.language, { es: "Perfil público", en: "Public profile", pt: "Perfil publico" }),
     t(input.language, { es: "Servicios y precios", en: "Services and pricing", pt: "Servicos e precos" }),
@@ -112,16 +161,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   ];
 
   const stepSubtitles = [
-    t(input.language, {
-      es: "Ingresá el email y contraseña con los que ingresarás a MotivarCare.",
-      en: "Enter the email and password you will use to sign in to MotivarCare.",
-      pt: "Informe o e-mail e a senha que usara para entrar na MotivarCare."
-    }),
-    t(input.language, {
-      es: "Luego de crear la cuenta, validarás tu correo con el enlace que te enviamos. Podés seguir completando el perfil mientras tanto.",
-      en: "After creating your account, you will verify your email via the link we send. You can keep completing your profile.",
-      pt: "Apos criar a conta, voce validara o e-mail pelo link que enviamos. Pode continuar preenchendo o perfil."
-    }),
+    null,
+    null,
     t(input.language, {
       es: "Complete sus datos principales para definir como se mostrara su perfil profesional.",
       en: "Complete your core data to define how your professional profile will appear.",
@@ -208,9 +249,27 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   const update = (patch: Partial<typeof form>) => setForm((current) => ({ ...current, ...patch }));
 
+  const resetWebOnboardingSession = () => {
+    setWebOnboardingSession(null);
+    setResendVerificationMessage("");
+    setResendVerificationError("");
+  };
+
   useEffect(() => {
     void fetchSessionPriceBoundsUsd().then(setSessionPriceBounds);
   }, []);
+
+  useEffect(() => {
+    const seed = input.credentialsSeed;
+    if (!seed) {
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      email: seed.email,
+      password: seed.password
+    }));
+  }, [input.credentialsSeed?.email, input.credentialsSeed?.password]);
 
   useEffect(() => {
     setPricingStepError("");
@@ -293,9 +352,13 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   const stepValidations = [
     Boolean(looksLikeEmail(form.email) && form.password.trim().length >= 8),
-    true,
     Boolean(
-      form.fullName.trim()
+      webOnboardingSession
+      && (!webOnboardingSession.emailVerificationRequired || webOnboardingSession.user.emailVerified)
+    ),
+    Boolean(
+      form.firstName.trim()
+      && form.lastName.trim()
       && form.professionalTitle.trim()
       && form.graduationYear.trim()
       && form.specialization
@@ -323,36 +386,137 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   const canContinue = stepValidations[step];
 
+  const pollMeForVerified = useCallback(
+    async (token: string): Promise<boolean> => {
+      try {
+        const me = await apiRequest<{
+          user: { emailVerified: boolean };
+        }>("/api/auth/me", token);
+        return Boolean(me.user.emailVerified);
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
   const handleContinue = async () => {
     if (!canContinue) {
       return;
     }
     if (step === 0) {
       setCredentialsStepError("");
+      setResendVerificationMessage("");
+      setResendVerificationError("");
+
       setCredentialsChecking(true);
-      try {
-        const available = await checkProfessionalEmailAvailable(form.email);
-        if (!available) {
+        try {
+          const available = await checkProfessionalEmailAvailable(form.email);
+          if (!available) {
+            setCredentialsStepError(
+              t(input.language, {
+                es: "Este correo ya está registrado. Iniciá sesión o usá otro email.",
+                en: "This email is already registered. Sign in or use another email.",
+                pt: "Este e-mail ja esta cadastrado. Faca login ou use outro endereco."
+              })
+            );
+            return;
+          }
+        } catch {
           setCredentialsStepError(
             t(input.language, {
-              es: "Este correo ya está registrado. Iniciá sesión o usá otro email.",
-              en: "This email is already registered. Sign in or use another email.",
-              pt: "Este e-mail ja esta cadastrado. Faca login ou use outro endereco."
+              es: "No pudimos verificar el correo. Revisá tu conexión e intentá de nuevo.",
+              en: "We couldn't verify the email. Check your connection and try again.",
+              pt: "Nao foi possivel verificar o e-mail. Verifique a conexao e tente de novo."
+            })
+          );
+          return;
+        } finally {
+          setCredentialsChecking(false);
+        }
+
+        setRegisterInFlight(true);
+        try {
+          const email = form.email.trim().toLowerCase();
+          const response = await apiRequest<AuthResponse>("/api/auth/register", undefined, {
+            method: "POST",
+            body: JSON.stringify({
+              email,
+              password: form.password,
+              fullName: placeholderFullNameFromEmail(email),
+              role: "PROFESSIONAL",
+              timezone: detectBrowserTimezone()
+            })
+          });
+
+          if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
+            setCredentialsStepError(
+              t(input.language, {
+                es: "No pudimos crear la cuenta profesional. Probá de nuevo o contactá soporte.",
+                en: "We could not create your professional account. Try again or contact support.",
+                pt: "Nao foi possivel criar a conta profissional. Tente de novo ou fale com o suporte."
+              })
+            );
+            return;
+          }
+
+          const session: WebOnboardingSessionState = {
+            token: response.token,
+            emailVerificationRequired: response.emailVerificationRequired,
+            user: {
+              id: response.user.id,
+              email: response.user.email,
+              emailVerified: response.user.emailVerified,
+              fullName: response.user.fullName,
+              professionalProfileId: response.user.professionalProfileId,
+              avatarUrl: response.user.avatarUrl ?? null
+            }
+          };
+          setWebOnboardingSession(session);
+          if (response.emailVerificationRequired && !response.user.emailVerified) {
+            input.onAfterRegisterPendingAuth?.({
+              token: session.token,
+              emailVerificationRequired: session.emailVerificationRequired,
+              password: form.password,
+              user: {
+                id: session.user.id,
+                fullName: session.user.fullName,
+                email: session.user.email,
+                emailVerified: session.user.emailVerified,
+                professionalProfileId: session.user.professionalProfileId,
+                avatarUrl: session.user.avatarUrl ?? null
+              }
+            });
+          }
+        } catch (requestError) {
+          const raw = requestError instanceof Error ? requestError.message : "";
+          setCredentialsStepError(professionalAuthSurfaceMessage(raw || " ", input.language));
+          return;
+        } finally {
+          setRegisterInFlight(false);
+        }
+    }
+    if (step === 1) {
+      setCredentialsStepError("");
+      if (!webOnboardingSession) {
+        return;
+      }
+      if (webOnboardingSession.emailVerificationRequired && !webOnboardingSession.user.emailVerified) {
+        const ok = await pollMeForVerified(webOnboardingSession.token);
+        if (ok) {
+          setWebOnboardingSession((prev) =>
+            prev ? { ...prev, user: { ...prev.user, emailVerified: true } } : prev
+          );
+        } else {
+          setCredentialsStepError(
+            t(input.language, {
+              es: "Todavía no detectamos el correo validado. Abrí el enlace del mail y volvé a intentar.",
+              en: "We still do not see your email as verified. Open the link in the email and try again.",
+              pt: "Ainda nao detectamos o e-mail validado. Abra o link do e-mail e tente de novo."
             })
           );
           return;
         }
-      } catch {
-        setCredentialsStepError(
-          t(input.language, {
-            es: "No pudimos verificar el correo. Revisá tu conexión e intentá de nuevo.",
-            en: "We couldn't verify the email. Check your connection and try again.",
-            pt: "Nao foi possivel verificar o e-mail. Verifique a conexao e tente de novo."
-          })
-        );
-        return;
-      } finally {
-        setCredentialsChecking(false);
       }
     }
     if (step === 4) {
@@ -379,6 +543,114 @@ export function useProfessionalWebOnboardingWizard(input: {
     setShowCompletionCelebration(true);
   };
 
+  const resendVerificationEmail = useCallback(async () => {
+    if (!webOnboardingSession) {
+      return;
+    }
+    setResendVerificationLoading(true);
+    setResendVerificationError("");
+    setResendVerificationMessage("");
+    try {
+      const response = await apiRequest<{ message: string }>(
+        "/api/auth/email-verification/resend",
+        webOnboardingSession.token,
+        { method: "POST" }
+      );
+      setResendVerificationMessage(response.message);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setResendVerificationError(professionalAuthSurfaceMessage(raw || " ", input.language));
+    } finally {
+      setResendVerificationLoading(false);
+    }
+  }, [webOnboardingSession]);
+
+  useEffect(() => {
+    if (step !== 1 || !webOnboardingSession) {
+      return;
+    }
+    if (!webOnboardingSession.emailVerificationRequired || webOnboardingSession.user.emailVerified) {
+      return;
+    }
+
+    let cancelled = false;
+    const tick = async () => {
+      const ok = await pollMeForVerified(webOnboardingSession.token);
+      if (cancelled || !ok) {
+        return;
+      }
+      setWebOnboardingSession((prev) => (prev ? { ...prev, user: { ...prev.user, emailVerified: true } } : prev));
+      setMaxReachedStep((current) => Math.max(current, WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY));
+      setStep(WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY);
+    };
+
+    const intervalId = window.setInterval(() => {
+      void tick();
+    }, 2800);
+    void tick();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [step, webOnboardingSession, pollMeForVerified]);
+
+  /** Otra pestaña verificó el mail (Gmail abre enlace en pestaña nueva): avanzar acá también. */
+  useEffect(() => {
+    if (step !== 1 || !webOnboardingSession) {
+      return;
+    }
+    if (!webOnboardingSession.emailVerificationRequired || webOnboardingSession.user.emailVerified) {
+      return;
+    }
+
+    const token = webOnboardingSession.token;
+
+    const advanceAfterVerifiedElsewhere = () => {
+      setWebOnboardingSession((prev) =>
+        prev ? { ...prev, user: { ...prev.user, emailVerified: true } } : prev
+      );
+      setMaxReachedStep((current) => Math.max(current, WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY));
+      setStep(WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY);
+    };
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(WEB_ONBOARDING_BROADCAST_CHANNEL);
+    } catch {
+      bc = null;
+    }
+
+    const onBroadcast = (event: MessageEvent) => {
+      if (event?.data?.type === "email_verified") {
+        advanceAfterVerifiedElsewhere();
+      }
+    };
+
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key !== WEB_ONBOARDING_PENDING_AUTH_STORAGE_KEY || !ev.newValue) {
+        return;
+      }
+      try {
+        const next = JSON.parse(ev.newValue) as PendingWebOnboardingAuth;
+        if (next.user?.emailVerified && next.token === token) {
+          advanceAfterVerifiedElsewhere();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    bc?.addEventListener("message", onBroadcast);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      bc?.removeEventListener("message", onBroadcast);
+      bc?.close();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [step, webOnboardingSession]);
+
   const continueFromInterstitial = () => {
     if (activeInterstitialStep === null) {
       return;
@@ -397,11 +669,18 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, [step, seenInterstitials, activeInterstitialStep, interstitialByStep]);
 
   const finishWebOnboarding = () => {
+    if (!webOnboardingSession) {
+      console.error("finishWebOnboarding: missing webOnboardingSession");
+      return;
+    }
     const gy = form.graduationYear.trim() ? Number(form.graduationYear) : null;
     const yearsExperience =
       gy !== null && Number.isFinite(gy) ? yearsExperienceFromGraduationYearClient(gy) : null;
-    input.onFinish({
-      fullName: form.fullName,
+    const resolvedFullName =
+      joinWebOnboardingFullName(form.firstName, form.lastName) || webOnboardingSession.user.fullName;
+
+    const payload: ProfessionalWebOnboardingPayload = {
+      fullName: resolvedFullName,
       email: form.email.trim().toLowerCase(),
       password: form.password,
       professionalTitle: form.professionalTitle,
@@ -436,7 +715,22 @@ export function useProfessionalWebOnboardingWizard(input: {
           graduationYear: Number(diploma.graduationYear),
           documentUrl: diploma.diplomaPreview || null
         }))
-    });
+    };
+
+    const meta: ProfessionalWebOnboardingFinishMeta = {
+      token: webOnboardingSession.token,
+      emailVerificationRequired: webOnboardingSession.emailVerificationRequired,
+      user: {
+        id: webOnboardingSession.user.id,
+        fullName: resolvedFullName,
+        email: webOnboardingSession.user.email,
+        emailVerified: webOnboardingSession.user.emailVerified,
+        professionalProfileId: webOnboardingSession.user.professionalProfileId,
+        avatarUrl: webOnboardingSession.user.avatarUrl ?? null
+      }
+    };
+
+    input.onFinish(payload, meta);
   };
 
   useEffect(() => {
@@ -491,6 +785,13 @@ export function useProfessionalWebOnboardingWizard(input: {
     pricingStepError,
     credentialsStepError,
     credentialsChecking,
+    registerInFlight,
+    webOnboardingSession,
+    resetWebOnboardingSession,
+    resendVerificationEmail,
+    resendVerificationLoading,
+    resendVerificationMessage,
+    resendVerificationError,
     activeInterstitialStep,
     interstitialByStep,
     continueFromInterstitial,

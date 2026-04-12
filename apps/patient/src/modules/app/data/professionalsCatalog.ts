@@ -128,4 +128,4 @@ export const professionalImageMap: Record<string, string> = {
 };
 
 export const heroImage =
-  "https://images.pexels.com/photos/5699466/pexels-photo-5699466.jpeg?auto=compress&cs=tinysrgb&w=1600";
+  "https://images.unsplash.com/photo-1590166045671-9bb0c0a76ea4?auto=format&fit=crop&w=1600&q=80";
