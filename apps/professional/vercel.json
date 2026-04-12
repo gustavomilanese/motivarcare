@@ -2,5 +2,11 @@
   "installCommand": "cd ../.. && npm ci",
   "buildCommand": "cd ../.. && npm run build -w @therapy/professional",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    {
+      "source": "/((?!api/|assets/|images/|brand/|favicon\\.svg).+)",
+      "destination": "/index.html"
+    }
+  ]
 }

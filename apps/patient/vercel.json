@@ -4,6 +4,9 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
-    { "source": "/((?!api/).+)", "destination": "/index.html" }
+    {
+      "source": "/((?!api/|assets/|images/|brand/|favicon\\.svg).+)",
+      "destination": "/index.html"
+    }
   ]
 }
