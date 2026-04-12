@@ -441,11 +441,14 @@ export function App() {
   const effectiveResumeWizardStep =
     resumeWizardStep ?? (continueWebAfterVerify ? WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY : null);
   const pendingWebOnboarding = readPendingWebOnboardingAuth();
-  const wantsWebOnboardingResume = Boolean(
-    token && user && user.emailVerified && resumeWebOnboarding && effectiveResumeWizardStep !== null
-  );
-
-  if (wantsWebOnboardingResume) {
+  // No guardar la condición en un boolean suelto: TS no estrecha `user` y falla el build (TS18047).
+  if (
+    token &&
+    user &&
+    user.emailVerified &&
+    resumeWebOnboarding &&
+    effectiveResumeWizardStep !== null
+  ) {
     if (!pendingWebOnboarding || pendingWebOnboarding.user.id !== user.id) {
       clearResumeWebOnboardingStep();
       return <Navigate to="/" replace />;
