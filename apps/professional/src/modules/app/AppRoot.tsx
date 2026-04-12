@@ -442,7 +442,7 @@ export function App() {
     resumeWizardStep ?? (continueWebAfterVerify ? WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY : null);
   const pendingWebOnboarding = readPendingWebOnboardingAuth();
   const wantsWebOnboardingResume = Boolean(
-    token && user?.emailVerified && resumeWebOnboarding && effectiveResumeWizardStep !== null
+    token && user && user.emailVerified && resumeWebOnboarding && effectiveResumeWizardStep !== null
   );
 
   if (wantsWebOnboardingResume) {
