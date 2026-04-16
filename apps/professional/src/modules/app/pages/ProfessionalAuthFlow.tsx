@@ -12,6 +12,7 @@ import {
   type OnboardingPatchDraft,
   type ProfessionalWebOnboardingFinishMeta
 } from "../../onboarding";
+import { professionalProblemSelectionIsComplete } from "../../onboarding/constants/professionalClientProblemQuestionnaire";
 import {
   ProfessionalAboutInfoIntroStep,
   ProfessionalAboutStep,
@@ -299,6 +300,7 @@ export function ProfessionalAuthFlow(props: {
     selectedSpecialization,
     selectedExperience,
     selectedPracticeHours,
+    problemFocusSelections: workAreasByProblem,
     workLanguages,
     summaryText,
     priceData,
@@ -621,7 +623,12 @@ export function ProfessionalAuthFlow(props: {
         values={workAreasByProblem}
         onChange={setWorkAreasByProblem}
         onBack={() => setAuthEntryMode("register-work-languages")}
-        onContinue={() => setAuthEntryMode("register-about-info-intro")}
+        onContinue={() => {
+          if (!professionalProblemSelectionIsComplete(workAreasByProblem)) {
+            return;
+          }
+          setAuthEntryMode("register-about-info-intro");
+        }}
       />
     );
   }

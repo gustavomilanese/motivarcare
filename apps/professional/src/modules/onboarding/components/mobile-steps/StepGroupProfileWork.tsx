@@ -1,4 +1,11 @@
+import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import {
+  PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE,
+  professionalProblemSelectionHasCrisisSentimiento,
+  professionalProblemSelectionIsComplete,
+  type ProblemQuestionBlock
+} from "../../constants/professionalClientProblemQuestionnaire";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -196,6 +203,26 @@ export function ProfessionalWorkLanguagesStep(props: {
   );
 }
 
+function optionValueSet(block: ProblemQuestionBlock): Set<string> {
+  return new Set(block.options.map((o) => o.valueEs));
+}
+
+function otherEntryForBlock(block: ProblemQuestionBlock, values: string[]): string | null {
+  if (!block.otherValuePrefixEs) {
+    return null;
+  }
+  const hit = values.find((v) => v.startsWith(block.otherValuePrefixEs));
+  if (!hit) {
+    return null;
+  }
+  return hit.slice(block.otherValuePrefixEs.length).trim();
+}
+
+function stripBlockOptionValues(block: ProblemQuestionBlock, values: string[]): string[] {
+  const allowed = optionValueSet(block);
+  return values.filter((v) => !allowed.has(v));
+}
+
 export function ProfessionalWorkAreasByClientProblemStep(props: {
   language: AppLanguage;
   values: string[];
@@ -203,82 +230,175 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const sections = [
-    {
-      title: { es: "Fobias", en: "Phobias", pt: "Fobias" },
-      items: [
-        { es: "Miedo a volar", en: "Fear of flying", pt: "Medo de voar" },
-        { es: "Miedo a conducir", en: "Fear of driving", pt: "Medo de dirigir" },
-        { es: "Claustrofobia", en: "Claustrophobia", pt: "Claustrofobia" },
-        { es: "Agorafobia", en: "Agoraphobia", pt: "Agorafobia" },
-        { es: "Fobia social", en: "Social phobia", pt: "Fobia social" }
-      ]
-    },
-    {
-      title: { es: "Ansiedad y panico", en: "Anxiety and panic", pt: "Ansiedade e panico" },
-      items: [
-        { es: "Ansiedad generalizada", en: "Generalized anxiety", pt: "Ansiedade generalizada" },
-        { es: "Ataques de panico", en: "Panic attacks", pt: "Ataques de panico" },
-        { es: "Estres cronico", en: "Chronic stress", pt: "Estresse cronico" },
-        { es: "Insomnio por ansiedad", en: "Anxiety insomnia", pt: "Insomnia por ansiedade" }
-      ]
-    },
-    {
-      title: { es: "Desarrollo personal", en: "Personal development", pt: "Desenvolvimento pessoal" },
-      items: [
-        { es: "Aumentar la autoestima", en: "Self-esteem", pt: "Autoestima" },
-        { es: "Gestion de emociones", en: "Emotional management", pt: "Gestao emocional" },
-        { es: "Procrastinacion", en: "Procrastination", pt: "Procrastinacao" },
-        { es: "Habitos saludables", en: "Healthy habits", pt: "Habitos saudaveis" }
-      ]
-    },
-    {
-      title: { es: "Relaciones de pareja", en: "Couple relationships", pt: "Relacionamentos" },
-      items: [
-        { es: "Conflictos de pareja", en: "Relationship conflicts", pt: "Conflitos no casal" },
-        { es: "Celos y desconfianza", en: "Jealousy and distrust", pt: "Ciumes e desconfianca" },
-        { es: "Separacion o divorcio", en: "Separation or divorce", pt: "Separacao ou divorcio" },
-        { es: "Dependencia emocional", en: "Emotional dependency", pt: "Dependencia emocional" }
-      ]
-    },
-    {
-      title: { es: "Traumas y eventos vitales", en: "Trauma and life events", pt: "Trauma e eventos de vida" },
-      items: [
-        { es: "Duelo", en: "Grief", pt: "Luto" },
-        { es: "Trauma infantil", en: "Childhood trauma", pt: "Trauma infantil" },
-        { es: "Violencia psicologica", en: "Psychological abuse", pt: "Violencia psicologica" },
-        { es: "Cambios de vida", en: "Life transitions", pt: "Mudancas de vida" }
-      ]
-    },
-    {
-      title: { es: "Adicciones", en: "Addictions", pt: "Dependencias" },
-      items: [
-        { es: "Alcohol", en: "Alcohol", pt: "Alcool" },
-        { es: "Sustancias", en: "Substances", pt: "Substancias" },
-        { es: "Juego compulsivo", en: "Compulsive gambling", pt: "Jogo compulsivo" },
-        { es: "Uso problematico de pantallas", en: "Problematic screen use", pt: "Uso excessivo de telas" }
-      ]
-    },
-    {
-      title: { es: "Infancia y adolescencia", en: "Childhood and adolescence", pt: "Infancia e adolescencia" },
-      items: [
-        { es: "Conducta desafiante", en: "Defiant behavior", pt: "Comportamento desafiador" },
-        { es: "Dificultades escolares", en: "School difficulties", pt: "Dificuldades escolares" },
-        { es: "Bullying", en: "Bullying", pt: "Bullying" },
-        { es: "Vinculo con padres", en: "Parent bond", pt: "Vinculo com os pais" }
-      ]
-    }
-  ].map((section) => ({
-    title: t(props.language, section.title),
-    items: section.items.map((item) => t(props.language, item))
-  }));
+  const [otherForcedOpen, setOtherForcedOpen] = useState<Partial<Record<ProblemQuestionBlock["id"], boolean>>>({});
+  const [crisisGate, setCrisisGate] = useState(false);
 
-  const toggleOption = (option: string) => {
-    const nextValues = props.values.includes(option)
-      ? props.values.filter((item) => item !== option)
-      : [...props.values, option];
+  useEffect(() => {
+    if (props.values.length === 0) {
+      setOtherForcedOpen({});
+    }
+  }, [props.values.length]);
+
+  useEffect(() => {
+    if (crisisGate && !professionalProblemSelectionHasCrisisSentimiento(props.values)) {
+      setCrisisGate(false);
+    }
+  }, [props.values, crisisGate]);
+
+  const otherDrafts = useMemo(() => {
+    const drafts: Record<string, string> = {};
+    for (const block of PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE) {
+      drafts[block.id] = otherEntryForBlock(block, props.values) ?? "";
+    }
+    return drafts;
+  }, [props.values]);
+
+  const setOtherDraft = (block: ProblemQuestionBlock, text: string) => {
+    if (!block.otherValuePrefixEs) {
+      return;
+    }
+    const prefix = block.otherValuePrefixEs;
+    const without = props.values.filter((v) => !v.startsWith(prefix));
+    const trimmed = text.trim();
+    if (!trimmed) {
+      props.onChange(without);
+      return;
+    }
+    const entry = `${prefix} ${trimmed}`.slice(0, 400);
+    props.onChange([...without, entry]);
+  };
+
+  const toggleMultiOption = (block: ProblemQuestionBlock, valueEs: string) => {
+    const allowed = optionValueSet(block);
+    const exclusive = block.exclusiveOptionValueEs;
+    if (exclusive && valueEs === exclusive) {
+      const withoutBlock = props.values.filter((v) => {
+        if (block.otherValuePrefixEs && v.startsWith(block.otherValuePrefixEs)) {
+          return false;
+        }
+        return !allowed.has(v);
+      });
+      props.onChange([...withoutBlock, exclusive]);
+      setOtherForcedOpen((current) => ({ ...current, [block.id]: false }));
+      return;
+    }
+    const base = exclusive ? props.values.filter((v) => v !== exclusive) : props.values;
+    const nextValues = base.includes(valueEs) ? base.filter((item) => item !== valueEs) : [...base, valueEs];
     props.onChange(nextValues);
   };
+
+  const chooseSingle = (block: ProblemQuestionBlock, valueEs: string) => {
+    const without = stripBlockOptionValues(block, props.values);
+    props.onChange([...without, valueEs]);
+  };
+
+  const otherHasSavedText = (block: ProblemQuestionBlock) =>
+    (otherEntryForBlock(block, props.values) ?? "").length > 0;
+
+  const otherUiOpen = (block: ProblemQuestionBlock) =>
+    Boolean(block.otherLabel && (otherForcedOpen[block.id] || otherHasSavedText(block)));
+
+  const toggleOtherChip = (block: ProblemQuestionBlock) => {
+    if (!block.otherValuePrefixEs || !block.otherLabel) {
+      return;
+    }
+    if (otherUiOpen(block)) {
+      setOtherForcedOpen((current) => ({ ...current, [block.id]: false }));
+      props.onChange(props.values.filter((v) => !v.startsWith(block.otherValuePrefixEs!)));
+      return;
+    }
+    if (block.exclusiveOptionValueEs) {
+      props.onChange(props.values.filter((v) => v !== block.exclusiveOptionValueEs));
+    }
+    setOtherForcedOpen((current) => ({ ...current, [block.id]: true }));
+  };
+
+  const otherChipSelected = (block: ProblemQuestionBlock) =>
+    Boolean(block.otherLabel && (otherForcedOpen[block.id] || otherHasSavedText(block)));
+
+  const tryContinue = () => {
+    if (!professionalProblemSelectionIsComplete(props.values)) {
+      return;
+    }
+    if (professionalProblemSelectionHasCrisisSentimiento(props.values)) {
+      setCrisisGate(true);
+      return;
+    }
+    props.onContinue();
+  };
+
+  if (crisisGate) {
+    return (
+      <div className="pro-register-intro-shell">
+        <section className="pro-profile-select-card pro-crisis-gate-card">
+          <header className="pro-form-step-head">
+            <button className="pro-register-intro-back" type="button" onClick={() => setCrisisGate(false)} aria-label="Back">
+              ←
+            </button>
+            <div className="pro-form-step-progress" aria-hidden="true">
+              <span className="active progress-photo" />
+            </div>
+            <span className="pro-register-intro-info" aria-hidden="true">i</span>
+          </header>
+
+          <div className="pro-crisis-gate-body">
+            <h1 className="pro-crisis-gate-title">
+              {t(props.language, {
+                es: "Tu bienestar es lo primero",
+                en: "Your wellbeing comes first",
+                pt: "Seu bem-estar vem em primeiro lugar"
+              })}
+            </h1>
+            <p className="pro-crisis-gate-lead">
+              {t(props.language, {
+                es: "Si estás en peligro inmediato o tenés pensamientos de hacerte daño, buscá ayuda ahora. No estás solo/a.",
+                en: "If you are in immediate danger or having thoughts of hurting yourself, seek help now. You are not alone.",
+                pt: "Se voce estiver em perigo imediato ou tiver pensamentos de se machucar, busque ajuda agora. Voce nao esta so/a."
+              })}
+            </p>
+            <ul className="pro-crisis-gate-list">
+              <li>
+                {t(props.language, {
+                  es: "Emergencias: llamá al número local (p. ej. 911, 112 o el de tu país) o acudí a la guardia más cercana.",
+                  en: "Emergencies: call your local emergency number or go to the nearest ER.",
+                  pt: "Emergencias: ligue para o numero local ou va a emergencia mais proxima."
+                })}
+              </li>
+              <li>
+                {t(props.language, {
+                  es: "Argentina — Línea 135 (CABA y GBA) / 143 atención en crisis y prevención del suicidio.",
+                  en: "Argentina — 135 (CABA/GBA) / 143 crisis and suicide prevention line.",
+                  pt: "Argentina — Linha 135 / 143."
+                })}
+              </li>
+              <li>
+                {t(props.language, {
+                  es: "México — SAPTEL 55 5259 8121 (CDMX) u orientación en tu estado.",
+                  en: "Mexico — SAPTEL 55 5259 8121 (Mexico City) or local guidance.",
+                  pt: "Mexico — SAPTEL 55 5259 8121."
+                })}
+              </li>
+            </ul>
+            <p className="pro-crisis-gate-foot">
+              {t(props.language, {
+                es: "Para seguir con el registro, volvé al cuestionario y elegí otra opción en “¿Cómo te sentís hoy?”.",
+                en: "To continue signing up, go back and choose another answer under “How are you feeling today?”.",
+                pt: "Para continuar o cadastro, volte e escolha outra opcao em “Como voce se sente hoje?”."
+              })}
+            </p>
+          </div>
+
+          <button className="pro-primary pro-register-intro-cta" type="button" onClick={() => setCrisisGate(false)}>
+            {t(props.language, {
+              es: "Volver al cuestionario",
+              en: "Back to questionnaire",
+              pt: "Voltar ao questionario"
+            })}
+          </button>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="pro-register-intro-shell">
@@ -295,12 +415,18 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
 
         <div className="pro-profile-select-head">
           <div className="pro-profile-select-copy">
-            <h1>{t(props.language, { es: "Seleccione con que ayuda trabaja", en: "Select what you help with", pt: "Selecione com o que voce trabalha" })}</h1>
+            <h1>
+              {t(props.language, {
+                es: "Contanos un poco más",
+                en: "Tell us a bit more",
+                pt: "Conte-nos um pouco mais"
+              })}
+            </h1>
             <p>
               {t(props.language, {
-                es: "Marque todo lo que sea relevante para usted.",
-                en: "Select everything relevant to your practice.",
-                pt: "Marque tudo o que for relevante para sua pratica."
+                es: "Estas respuestas ayudan a orientar la experiencia. Donde diga, podés marcar varias opciones.",
+                en: "These answers help shape the experience. Where indicated, you can select several options.",
+                pt: "Essas respostas ajudam a orientar a experiencia. Onde indicado, voce pode marcar varias opcoes."
               })}
             </p>
           </div>
@@ -316,36 +442,77 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
         </div>
 
         <div className="pro-problem-sections">
-          {sections.map((section) => (
-            <section key={section.title} className="pro-problem-section">
-              <h2>{section.title}</h2>
-              <div className="pro-profile-check-list">
-                {section.items.map((option) => {
-                  const checked = props.values.includes(option);
-
-                  return (
+          {PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE.map((block) => {
+            const role = block.selectionMode === "single" ? "radiogroup" : undefined;
+            return (
+              <section key={block.id} className="pro-problem-section" role={role} aria-labelledby={`pro-q-${block.id}`}>
+                <h2 id={`pro-q-${block.id}`}>{t(props.language, block.title)}</h2>
+                {block.hint ? <p className="pro-problem-section-hint">{t(props.language, block.hint)}</p> : null}
+                <div className="pro-profile-check-list">
+                  {block.options.map((option) => {
+                    const checked = props.values.includes(option.valueEs);
+                    const label = t(props.language, option.label);
+                    const desc = option.description ? t(props.language, option.description) : null;
+                    const crisisClass = option.isCrisis ? " pro-problem-crisis-option" : "";
+                    return (
+                      <button
+                        key={option.valueEs}
+                        className={`pro-profile-check-item${crisisClass} ${checked ? "selected" : ""}`}
+                        type="button"
+                        role={block.selectionMode === "single" ? "radio" : undefined}
+                        aria-checked={checked}
+                        aria-pressed={block.selectionMode === "multi" ? checked : undefined}
+                        onClick={() =>
+                          block.selectionMode === "single"
+                            ? chooseSingle(block, option.valueEs)
+                            : toggleMultiOption(block, option.valueEs)
+                        }
+                      >
+                        <span className="pro-profile-checkbox" aria-hidden="true" />
+                        <span className="pro-problem-option-text">
+                          <span className="pro-problem-option-label">{label}</span>
+                          {desc ? <span className="pro-problem-option-desc">{desc}</span> : null}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {block.otherLabel && block.otherValuePrefixEs ? (
                     <button
-                      key={option}
-                      className={`pro-profile-check-item ${checked ? "selected" : ""}`}
                       type="button"
-                      onClick={() => toggleOption(option)}
-                      aria-pressed={checked}
+                      className={`pro-profile-check-item ${otherChipSelected(block) ? "selected" : ""}`}
+                      onClick={() => toggleOtherChip(block)}
+                      aria-pressed={otherChipSelected(block)}
                     >
                       <span className="pro-profile-checkbox" aria-hidden="true" />
-                      <span>{option}</span>
+                      <span>{t(props.language, block.otherLabel)}</span>
                     </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                  ) : null}
+                </div>
+                {block.otherLabel && block.otherValuePrefixEs && otherUiOpen(block) ? (
+                  <label className="pro-problem-other-field">
+                    <span className="sr-only">{t(props.language, block.otherLabel)}</span>
+                    <textarea
+                      rows={2}
+                      value={otherDrafts[block.id] ?? ""}
+                      placeholder={t(props.language, {
+                        es: "Especificá brevemente…",
+                        en: "Briefly specify…",
+                        pt: "Especifique brevemente…"
+                      })}
+                      onChange={(event) => setOtherDraft(block, event.target.value)}
+                    />
+                  </label>
+                ) : null}
+              </section>
+            );
+          })}
         </div>
 
         <button
           className="pro-primary pro-register-intro-cta"
           type="button"
-          disabled={props.values.length === 0}
-          onClick={props.onContinue}
+          disabled={!professionalProblemSelectionIsComplete(props.values)}
+          onClick={tryContinue}
         >
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>

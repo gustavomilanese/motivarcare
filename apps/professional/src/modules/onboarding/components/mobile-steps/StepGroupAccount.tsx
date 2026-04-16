@@ -571,11 +571,15 @@ export function ProfessionalEmailPasswordStep(props: {
   submitError?: string;
 }) {
   const [visible, setVisible] = useState(false);
+  const [visibleConfirm, setVisibleConfirm] = useState(false);
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showEmailError, setShowEmailError] = useState(false);
   const [showPasswordError, setShowPasswordError] = useState(false);
+  const [showPasswordMismatch, setShowPasswordMismatch] = useState(false);
   const [continueBusy, setContinueBusy] = useState(false);
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(props.email.trim());
   const isValidPassword = props.password.trim().length >= 8;
+  const passwordsMatch = props.password === passwordConfirm;
 
   const handleContinue = async () => {
     let ok = true;
@@ -591,6 +595,12 @@ export function ProfessionalEmailPasswordStep(props: {
     } else {
       setShowPasswordError(false);
     }
+    if (!passwordsMatch) {
+      setShowPasswordMismatch(true);
+      ok = false;
+    } else {
+      setShowPasswordMismatch(false);
+    }
     if (!ok) {
       return;
     }
@@ -602,7 +612,7 @@ export function ProfessionalEmailPasswordStep(props: {
     }
   };
 
-  const canSubmit = isValidEmail && isValidPassword;
+  const canSubmit = isValidEmail && isValidPassword && passwordsMatch;
 
   return (
     <div className="pro-register-intro-shell">
@@ -680,6 +690,9 @@ export function ProfessionalEmailPasswordStep(props: {
                 if (showPasswordError && event.target.value.trim().length >= 8) {
                   setShowPasswordError(false);
                 }
+                if (showPasswordMismatch && event.target.value === passwordConfirm) {
+                  setShowPasswordMismatch(false);
+                }
               }}
             />
             <button
@@ -692,6 +705,49 @@ export function ProfessionalEmailPasswordStep(props: {
             </button>
           </div>
         </label>
+
+        <label className={`pro-form-step-field password ${showPasswordMismatch ? "error" : ""}`}>
+          <div className="pro-password-input-wrap">
+            <input
+              type={visibleConfirm ? "text" : "password"}
+              value={passwordConfirm}
+              placeholder={t(props.language, {
+                es: "Repetir contraseña",
+                en: "Repeat password",
+                pt: "Repetir senha"
+              })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleContinue();
+                }
+              }}
+              onChange={(event) => {
+                setPasswordConfirm(event.target.value);
+                if (showPasswordMismatch && event.target.value === props.password) {
+                  setShowPasswordMismatch(false);
+                }
+              }}
+            />
+            <button
+              className="pro-password-toggle"
+              type="button"
+              aria-label={visibleConfirm ? "Hide password confirmation" : "Show password confirmation"}
+              onClick={() => setVisibleConfirm((current) => !current)}
+            >
+              {visibleConfirm ? "◉" : "◌"}
+            </button>
+          </div>
+        </label>
+        {showPasswordMismatch ? (
+          <span className="pro-form-step-inline-error">
+            {t(props.language, {
+              es: "Las contraseñas no coinciden.",
+              en: "Passwords do not match.",
+              pt: "As senhas nao coincidem."
+            })}
+          </span>
+        ) : null}
 
         {props.submitError ? <p className="pro-form-step-inline-error">{props.submitError}</p> : null}
 

@@ -6,7 +6,7 @@ export function normalizeFocusAreas(focusAreasJson: unknown, focusPrimary: strin
       .map((x) => x.trim())
       .filter(Boolean);
     if (out.length > 0) {
-      return out.slice(0, 12);
+      return out.slice(0, 25);
     }
   }
   const legacy = (focusPrimary ?? "").trim();
@@ -15,7 +15,7 @@ export function normalizeFocusAreas(focusAreasJson: unknown, focusPrimary: strin
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean)
-      .slice(0, 12);
+      .slice(0, 25);
   }
   return [];
 }

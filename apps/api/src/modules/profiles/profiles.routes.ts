@@ -60,7 +60,7 @@ const updatePublicProfileSchema = z.object({
   gender: z.string().trim().max(60).nullable().optional(),
   birthCountry: z.string().trim().max(120).nullable().optional(),
   focusPrimary: z.string().trim().max(500).nullable().optional(),
-  focusAreas: z.array(z.string().trim().min(1).max(80)).max(12).optional(),
+  focusAreas: z.array(z.string().trim().min(1).max(120)).max(25).optional(),
   languages: z.array(z.string().trim().min(1).max(40)).max(10).nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
   shortDescription: z.string().max(250).nullable().optional(),

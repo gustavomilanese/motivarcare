@@ -1,3 +1,4 @@
+import { packProblemFocusSelectionsForApi } from "./constants/professionalClientProblemQuestionnaire";
 import type {
   OnboardingPatchDraft,
   ProfessionalMobileOnboardingInputs,
@@ -106,8 +107,14 @@ export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboar
     practiceBand: trimOrNull(inputs.selectedPracticeHours),
     gender: trimOrNull(inputs.personalData.gender),
     birthCountry: trimOrNull(inputs.personalData.birthCountry),
-    focusPrimary: null,
-    focusAreas: null,
+    focusPrimary:
+      inputs.problemFocusSelections && inputs.problemFocusSelections.length > 0
+        ? packProblemFocusSelectionsForApi(inputs.problemFocusSelections).join(" · ").slice(0, 500)
+        : null,
+    focusAreas:
+      inputs.problemFocusSelections && inputs.problemFocusSelections.length > 0
+        ? packProblemFocusSelectionsForApi(inputs.problemFocusSelections)
+        : null,
     languages: inputs.workLanguages.length ? inputs.workLanguages : [],
     shortDescription: trimOrNull(inputs.summaryText),
     sessionPriceUsd: parseNumericOrNull(inputs.priceData.sessionPrice),

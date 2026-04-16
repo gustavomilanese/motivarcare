@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { detectBrowserTimezone } from "@therapy/auth";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { professionalAuthSurfaceMessage } from "../../app/lib/friendlyProfessionalSurfaceMessages";
+import {
+  professionalAuthSurfaceMessage,
+  professionalSurfaceMessage
+} from "../../app/lib/friendlyProfessionalSurfaceMessages";
 import type { AuthResponse } from "../../app/types";
 import { apiRequest } from "../../app/services/api";
 import { checkProfessionalEmailAvailable } from "../../app/services/checkProfessionalEmail";
@@ -96,6 +99,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [resendVerificationMessage, setResendVerificationMessage] = useState("");
   const [resendVerificationError, setResendVerificationError] = useState("");
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
+  const [devVerifyLoading, setDevVerifyLoading] = useState(false);
+  const [devVerifyError, setDevVerifyError] = useState("");
 
   const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const webVideoInputRef = useRef<HTMLInputElement | null>(null);
@@ -141,7 +146,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     stripeDocPreview: "",
     stripeVerificationStarted: false,
     email: "",
-    password: ""
+    password: "",
+    passwordConfirm: ""
   });
 
   const years = useMemo(() => {
@@ -267,7 +273,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     setForm((current) => ({
       ...current,
       email: seed.email,
-      password: seed.password
+      password: seed.password,
+      passwordConfirm: seed.password
     }));
   }, [input.credentialsSeed?.email, input.credentialsSeed?.password]);
 
@@ -277,7 +284,7 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   useEffect(() => {
     setCredentialsStepError("");
-  }, [form.email, form.password]);
+  }, [form.email, form.password, form.passwordConfirm]);
 
   const updateDiploma = (
     index: number,
@@ -351,7 +358,11 @@ export function useProfessionalWebOnboardingWizard(input: {
   };
 
   const stepValidations = [
-    Boolean(looksLikeEmail(form.email) && form.password.trim().length >= 8),
+    Boolean(
+      looksLikeEmail(form.email)
+      && form.password.trim().length >= 8
+      && form.password === form.passwordConfirm
+    ),
     Boolean(
       webOnboardingSession
       && (!webOnboardingSession.emailVerificationRequired || webOnboardingSession.user.emailVerified)
@@ -559,9 +570,33 @@ export function useProfessionalWebOnboardingWizard(input: {
       setResendVerificationMessage(response.message);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
-      setResendVerificationError(professionalAuthSurfaceMessage(raw || " ", input.language));
+      setResendVerificationError(professionalSurfaceMessage("verify-resend", input.language, raw));
     } finally {
       setResendVerificationLoading(false);
+    }
+  }, [webOnboardingSession, input.language]);
+
+  /** Solo API con `NODE_ENV=development` (ver `POST /api/auth/email-verification/dev-verify`). */
+  const devVerifyEmailInLocalDevelopment = useCallback(async () => {
+    if (!webOnboardingSession?.token) {
+      return;
+    }
+    setDevVerifyLoading(true);
+    setDevVerifyError("");
+    try {
+      await apiRequest("/api/auth/email-verification/dev-verify", webOnboardingSession.token, {
+        method: "POST"
+      });
+      setWebOnboardingSession((prev) =>
+        prev ? { ...prev, user: { ...prev.user, emailVerified: true } } : prev
+      );
+      setMaxReachedStep((current) => Math.max(current, WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY));
+      setStep(WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setDevVerifyError(professionalAuthSurfaceMessage(raw || " ", input.language));
+    } finally {
+      setDevVerifyLoading(false);
     }
   }, [webOnboardingSession]);
 
@@ -792,6 +827,9 @@ export function useProfessionalWebOnboardingWizard(input: {
     resendVerificationLoading,
     resendVerificationMessage,
     resendVerificationError,
+    devVerifyEmailInLocalDevelopment,
+    devVerifyLoading,
+    devVerifyError,
     activeInterstitialStep,
     interstitialByStep,
     continueFromInterstitial,

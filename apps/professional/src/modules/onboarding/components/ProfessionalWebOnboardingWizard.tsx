@@ -74,6 +74,9 @@ export function ProfessionalWebOnboardingWizard(props: {
     resendVerificationLoading,
     resendVerificationMessage,
     resendVerificationError,
+    devVerifyEmailInLocalDevelopment,
+    devVerifyLoading,
+    devVerifyError,
     activeInterstitialStep,
     continueFromInterstitial,
     showCompletionCelebration,
@@ -263,6 +266,20 @@ export function ProfessionalWebOnboardingWizard(props: {
                   })}
                 />
               </label>
+              <label>
+                <span>{t(props.language, { es: "Repetir contraseña", en: "Repeat password", pt: "Repetir senha" })}</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.passwordConfirm}
+                  onChange={(event) => update({ passwordConfirm: event.target.value })}
+                  placeholder={t(props.language, {
+                    es: "Igual que la anterior",
+                    en: "Same as above",
+                    pt: "Igual à anterior"
+                  })}
+                />
+              </label>
               {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
             </div>
           ) : null}
@@ -304,7 +321,25 @@ export function ProfessionalWebOnboardingWizard(props: {
                         ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
                         : t(props.language, { es: "Reenviar correo", en: "Resend email", pt: "Reenviar e-mail" })}
                     </button>
+                    {import.meta.env.DEV ? (
+                      <button
+                        type="button"
+                        className="pro-secondary"
+                        disabled={devVerifyLoading}
+                        onClick={() => void devVerifyEmailInLocalDevelopment()}
+                        title="Llama a POST /api/auth/email-verification/dev-verify (solo si el API corre en NODE_ENV=development)"
+                      >
+                        {devVerifyLoading
+                          ? t(props.language, { es: "Marcando…", en: "Marking…", pt: "Marcando…" })
+                          : t(props.language, {
+                              es: "Solo dev: marcar correo verificado",
+                              en: "Dev only: mark email verified",
+                              pt: "So dev: marcar e-mail verificado"
+                            })}
+                      </button>
+                    ) : null}
                   </div>
+                  {devVerifyError ? <p className="pro-web-field-error">{devVerifyError}</p> : null}
                   {resendVerificationMessage ? (
                     <p className="pro-web-price-bounds-hint" style={{ color: "#15803d" }}>
                       {resendVerificationMessage}

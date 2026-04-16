@@ -1,3 +1,5 @@
+import { allQuestionnaireValueEs } from "./professionalClientProblemQuestionnaire";
+
 /** Países de Latinoamérica y el Caribe (habitual en onboarding). Valor = etiqueta en español. */
 export const LATIN_AMERICA_COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "Antigua y Barbuda", label: "Antigua y Barbuda" },
@@ -36,7 +38,7 @@ export const LATIN_AMERICA_COUNTRY_OPTIONS: { value: string; label: string }[] =
   { value: "Venezuela", label: "Venezuela" }
 ].sort((a, b) => a.label.localeCompare(b.label, "es"));
 
-export const ATTENTION_AREA_OPTIONS_ES = [
+const ATTENTION_AREA_BASE_ES = [
   "Ansiedad",
   "Autoestima",
   "Pareja",
@@ -51,4 +53,15 @@ export const ATTENTION_AREA_OPTIONS_ES = [
   "Dolor crónico",
   "TOC",
   "Mindfulness"
-];
+] as const;
+
+/** Áreas de atención en perfil + opciones del cuestionario de problemáticas (onboarding profesional). */
+export const ATTENTION_AREA_OPTIONS_ES: string[] = (() => {
+  const merged = [...ATTENTION_AREA_BASE_ES];
+  for (const v of allQuestionnaireValueEs()) {
+    if (!merged.includes(v)) {
+      merged.push(v);
+    }
+  }
+  return merged;
+})();

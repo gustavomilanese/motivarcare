@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  packProblemFocusSelectionsForApi,
+  professionalProblemSelectionIsComplete
+} from "./constants/professionalClientProblemQuestionnaire";
+import {
   buildPatchDraftFromMobileInputs,
   buildPatchDraftFromWebPayload,
   createDefaultOnboardingPatchDraft
@@ -101,6 +105,40 @@ describe("onboarding defaults", () => {
     expect(draft.visible).toBe(false);
     expect(draft.stripeVerified).toBe(false);
     expect(draft.diplomas).toHaveLength(1);
+  });
+
+  it("el cuestionario clínico completo valida seis bloques", () => {
+    const selections = [
+      "Ansiedad",
+      "Sentirme mejor emocionalmente",
+      "No tengo preferencias",
+      "Terapia cognitivo-conductual (TCC)",
+      "No, nunca fui a terapia",
+      "Bastante bien"
+    ];
+    expect(professionalProblemSelectionIsComplete(selections)).toBe(true);
+    expect(packProblemFocusSelectionsForApi(selections)).toHaveLength(6);
+  });
+
+  it("mapea problemFocusSelections del cuestionario móvil a focusAreas resumidas", () => {
+    const draft = buildPatchDraftFromMobileInputs({
+      aboutText: "Sobre mi",
+      therapyDescriptionText: "Descripcion terapia",
+      selectedSpecialization: "Psicologo",
+      selectedExperience: "6-10 anos",
+      selectedPracticeHours: "1000-3000 horas",
+      problemFocusSelections: ["Ansiedad", "Otro (objetivos): definir límites"],
+      workLanguages: ["Espanol"],
+      summaryText: "Resumen",
+      priceData: { sessionPrice: "50", discount4: "10", discount8: "8", discount12: "12" },
+      personalData: { graduationYear: "2018", gender: "Hombre", birthCountry: "Uruguay" },
+      educationData: { institution: "U", specialty: "Lic", startYear: "2014", graduationYear: "2018" }
+    });
+    expect(draft.focusAreas).toEqual([
+      "Motivos: Ansiedad",
+      "Objetivos: Otro (objetivos): definir límites"
+    ]);
+    expect(draft.focusPrimary).toContain("Motivos: Ansiedad");
   });
 
   it("mobile sin foto deja photoUrl en null", () => {

@@ -88,6 +88,8 @@ export interface ProfessionalMobileOnboardingInputs {
   selectedSpecialization: string;
   selectedExperience: string;
   selectedPracticeHours: string;
+  /** Motivos / objetivos / preferencias (cuestionario de problemáticas, onboarding móvil). */
+  problemFocusSelections?: string[];
   workLanguages: string[];
   summaryText: string;
   priceData: {
