@@ -1,11 +1,6 @@
 import { FormEvent, SyntheticEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  type AppLanguage,
-  type LocalizedText,
-  type SupportedCurrency,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
 import {
   professionalAuthSurfaceMessage,
@@ -56,9 +51,6 @@ function persistProRemember(remember: boolean, emailLower: string): void {
 
 export function AuthScreen(props: {
   language: AppLanguage;
-  currency: SupportedCurrency;
-  onLanguageChange: (language: AppLanguage) => void;
-  onCurrencyChange: (currency: SupportedCurrency) => void;
   onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
   initialMode?: "login" | "register";
   initialEmail?: string;

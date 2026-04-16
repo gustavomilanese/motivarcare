@@ -457,8 +457,6 @@ export function App() {
       <ProfessionalAuthFlow
         language={language}
         currency={currency}
-        onLanguageChange={setLanguage}
-        onCurrencyChange={setCurrency}
         onAuthSuccess={handleAuthSuccess}
         onRegistrationAuthSuccess={(userId) => {
           persistCalendarOnboardingPending(userId);
@@ -495,8 +493,6 @@ export function App() {
       <ProfessionalAuthFlow
         language={language}
         currency={currency}
-        onLanguageChange={setLanguage}
-        onCurrencyChange={setCurrency}
         onAuthSuccess={handleAuthSuccess}
         onRegistrationAuthSuccess={(userId) => {
           persistCalendarOnboardingPending(userId);

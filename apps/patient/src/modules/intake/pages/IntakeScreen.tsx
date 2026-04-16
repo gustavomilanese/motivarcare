@@ -3,6 +3,7 @@ import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage }
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
+import { PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES } from "../patientClinicalIntakeQuestions";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -12,27 +13,31 @@ function wizardHeading(title: string): string {
   return title.replace(/^\s*\d+\.\s*/, "").trim();
 }
 
+function intakePieces(raw: string): string[] {
+  return raw
+    .split(INTAKE_MAIN_REASON_VALUE_JOINER)
+    .map((piece) => piece.trim())
+    .filter(Boolean);
+}
+
+function isCrisisEmotionalAnswer(raw: string): boolean {
+  return raw.trim() === PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES;
+}
+
 function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage): IntakeQuestion {
   if (question.id === "mainReason") {
     return {
       ...question,
       title: t(language, {
-        es: "1. ¿Cuáles son tus motivos de consulta?",
-        en: "1. What are you looking for support with?",
-        pt: "1. Com o que voce busca apoio?"
+        es: "1. ¿Cuáles son tus motivos principales de consulta?",
+        en: "1. What are your main reasons for seeking support?",
+        pt: "1. Quais sao seus principais motivos de busca?"
       }),
       help: t(language, {
-        es: "Podés elegir una o más opciones.",
-        en: "You can select one or more options.",
-        pt: "Voce pode escolher uma ou mais opcoes."
-      }),
-      options: [
-        t(language, { es: "Ansiedad", en: "Anxiety", pt: "Ansiedade" }),
-        t(language, { es: "Depresión", en: "Depression", pt: "Depressao" }),
-        t(language, { es: "Vínculos y pareja", en: "Relationships", pt: "Relacionamentos e casal" }),
-        t(language, { es: "Estrés / burnout", en: "Stress / burnout", pt: "Estresse / burnout" }),
-        t(language, { es: "Otro", en: "Other", pt: "Outro" })
-      ]
+        es: "Podés marcar uno o varios.",
+        en: "You can select one or more.",
+        pt: "Voce pode marcar uma ou varias."
+      })
     };
   }
 
@@ -40,14 +45,30 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "2. ¿Qué objetivo te gustaría lograr en terapia?",
-        en: "2. What goal would you like to achieve in therapy?",
-        pt: "2. Qual objetivo voce gostaria de alcancar na terapia?"
+        es: "2. ¿Qué te gustaría lograr con la terapia?",
+        en: "2. What would you like to achieve with therapy?",
+        pt: "2. O que voce gostaria de alcancar com a terapia?"
       }),
       help: t(language, {
-        es: "Esta respuesta mejora la calidad del matching.",
-        en: "This answer improves matching quality.",
-        pt: "Esta resposta melhora a qualidade do matching."
+        es: "Podés marcar uno o varios.",
+        en: "You can select one or more.",
+        pt: "Voce pode marcar uma ou varias."
+      })
+    };
+  }
+
+  if (question.id === "therapistPreferences") {
+    return {
+      ...question,
+      title: t(language, {
+        es: "3. ¿Tenés alguna preferencia respecto de tu psicólogo/a?",
+        en: "3. Do you have any preferences about your therapist?",
+        pt: "3. Voce tem alguma preferencia sobre seu psicologo/a?"
+      }),
+      help: t(language, {
+        es: "Marcá lo que aplique, o elegí “No tengo preferencias”.",
+        en: "Select what applies, or choose “I have no preferences”.",
+        pt: "Marque o que se aplica ou escolha “Nao tenho preferencias”."
       })
     };
   }
@@ -56,22 +77,15 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "3. Enfoque terapéutico preferido",
-        en: "3. Preferred therapeutic approach",
-        pt: "3. Abordagem terapeutica preferida"
+        es: "4. ¿Qué tipo de terapia preferís?",
+        en: "4. What type of therapy do you prefer?",
+        pt: "4. Que tipo de terapia voce prefere?"
       }),
       help: t(language, {
-        es: "Si no sabes, no hay problema.",
-        en: "If you are not sure, that is okay.",
-        pt: "Se voce nao souber, tudo bem."
-      }),
-      options: [
-        "CBT",
-        t(language, { es: "Psicodinámico", en: "Psychodynamic", pt: "Psicodinamico" }),
-        t(language, { es: "Integrativo", en: "Integrative", pt: "Integrativo" }),
-        "Mindfulness",
-        t(language, { es: "No estoy seguro", en: "I am not sure", pt: "Nao tenho certeza" })
-      ]
+        es: "Elegí una opción. Si no estás seguro/a, podés dejarlo en manos del profesional.",
+        en: "Choose one. If unsure, you can leave it to the professional.",
+        pt: "Escolha uma opcao. Se nao tiver certeza, deixe a cargo do profissional."
+      })
     };
   }
 
@@ -79,21 +93,15 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "4. Experiencia previa en terapia",
-        en: "4. Previous therapy experience",
-        pt: "4. Experiencia previa em terapia"
+        es: "5. ¿Ya estuviste en terapia antes?",
+        en: "5. Have you been in therapy before?",
+        pt: "5. Voce ja fez terapia antes?"
       }),
       help: t(language, {
-        es: "Te ayuda a elegir ritmo y profesional.",
-        en: "This helps choose pace and therapist.",
-        pt: "Isso ajuda a definir ritmo e profissional."
-      }),
-      options: [
-        t(language, { es: "No", en: "No", pt: "Nao" }),
-        t(language, { es: "Sí, menos de 3 meses", en: "Yes, less than 3 months", pt: "Sim, menos de 3 meses" }),
-        t(language, { es: "Sí, entre 3 y 12 meses", en: "Yes, between 3 and 12 months", pt: "Sim, entre 3 e 12 meses" }),
-        t(language, { es: "Sí, más de 1 año", en: "Yes, more than 1 year", pt: "Sim, mais de 1 ano" })
-      ]
+        es: "Elegí la opción que mejor te represente.",
+        en: "Pick the option that fits you best.",
+        pt: "Escolha a opcao que melhor te representa."
+      })
     };
   }
 
@@ -101,22 +109,15 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "5. ¿Cómo te sentís hoy?",
-        en: "5. How do you feel today?",
-        pt: "5. Como voce se sente hoje?"
+        es: "6. ¿Cómo te sentís hoy?",
+        en: "6. How are you feeling today?",
+        pt: "6. Como voce se sente hoje?"
       }),
       help: t(language, {
-        es: "Estado emocional actual.",
-        en: "Current emotional state.",
-        pt: "Estado emocional atual."
-      }),
-      options: [
-        t(language, { es: "Estable", en: "Stable", pt: "Estavel" }),
-        t(language, { es: "Sobrepasado", en: "Overwhelmed", pt: "Sobrecarregado" }),
-        t(language, { es: "Triste", en: "Sad", pt: "Triste" }),
-        t(language, { es: "Ansioso", en: "Anxious", pt: "Ansioso" }),
-        t(language, { es: "No lo se", en: "I do not know", pt: "Nao sei" })
-      ]
+        es: "Elegí la opción que mejor describa cómo estás ahora.",
+        en: "Pick the option that best describes how you are right now.",
+        pt: "Escolha a opcao que melhor descreve como voce esta agora."
+      })
     };
   }
 
@@ -124,9 +125,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "6. Disponibilidad horaria preferida",
-        en: "6. Preferred availability",
-        pt: "6. Disponibilidade horaria preferida"
+        es: "7. Disponibilidad horaria preferida",
+        en: "7. Preferred availability",
+        pt: "7. Disponibilidade horaria preferida"
       }),
       help: t(language, {
         es: "Para mostrarte los mejores slots disponibles.",
@@ -146,9 +147,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "7. Idioma para la sesión",
-        en: "7. Session language",
-        pt: "7. Idioma para a sessao"
+        es: "8. Idioma para la sesión",
+        en: "8. Session language",
+        pt: "8. Idioma para a sessao"
       }),
       help: t(language, {
         es: "Se usa para el matching.",
@@ -167,9 +168,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "8. Presupuesto estimado",
-        en: "8. Estimated budget",
-        pt: "8. Orcamento estimado"
+        es: "9. Presupuesto estimado",
+        en: "9. Estimated budget",
+        pt: "9. Orcamento estimado"
       }),
       help: t(language, {
         es: "Luego podrás elegir paquetes de sesiones.",
@@ -189,9 +190,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "9. ¿Contás con red de apoyo (familia/amigos)?",
-        en: "9. Do you have a support network (family/friends)?",
-        pt: "9. Voce conta com rede de apoio (familia/amigos)?"
+        es: "10. ¿Contás con red de apoyo (familia/amigos)?",
+        en: "10. Do you have a support network (family/friends)?",
+        pt: "10. Voce conta com rede de apoio (familia/amigos)?"
       }),
       help: t(language, {
         es: "Contexto para continuidad terapéutica.",
@@ -211,9 +212,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "10. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
-        en: "10. In the last 2 weeks, have you had self-harm thoughts?",
-        pt: "10. Nas ultimas 2 semanas voce teve ideias de autoagressao?"
+        es: "11. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
+        en: "11. In the last 2 weeks, have you had self-harm thoughts?",
+        pt: "11. Nas ultimas 2 semanas voce teve ideias de autoagressao?"
       }),
       help: t(language, {
         es: "Pregunta de seguridad obligatoria antes de habilitar reservas.",
@@ -250,6 +251,7 @@ export function IntakeScreen(props: {
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [crisisGate, setCrisisGate] = useState(false);
 
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
@@ -287,6 +289,11 @@ export function IntakeScreen(props: {
     handleBack();
   };
 
+  const baseQuestion = useMemo(
+    () => (current ? intakeQuestions.find((q) => q.id === current.id) : undefined),
+    [current]
+  );
+
   const validateCurrent = (): boolean => {
     if (!current) {
       return false;
@@ -306,12 +313,33 @@ export function IntakeScreen(props: {
       );
       return false;
     }
+    const follow = baseQuestion?.otherFollowupOption;
+    if (follow && current.allowMultiple) {
+      const pcs = intakePieces(value);
+      if (pcs.includes(follow)) {
+        const detail = pcs.find((p) => p.startsWith(`${follow}:`));
+        if (!detail || detail.slice(follow.length + 1).trim().length === 0) {
+          setError(
+            t(props.language, {
+              es: `Si elegiste «${follow}», especificá brevemente en el campo de texto.`,
+              en: `If you picked “${follow}”, please add a short note in the text field.`,
+              pt: `Se voce escolheu “${follow}”, escreva um detalhe no campo de texto.`
+            })
+          );
+          return false;
+        }
+      }
+    }
     setError("");
     return true;
   };
 
   const goNext = () => {
     if (!validateCurrent()) {
+      return;
+    }
+    if (current?.id === "emotionalState" && isCrisisEmotionalAnswer(answers.emotionalState ?? "")) {
+      setCrisisGate(true);
       return;
     }
     if (!isLast) {
@@ -323,6 +351,75 @@ export function IntakeScreen(props: {
     setError("");
     setStepIndex((s) => Math.max(0, s - 1));
   };
+
+  if (crisisGate) {
+    return (
+      <div className="intake-shell intake-shell--wizard">
+        <section className="intake-card intake-card--wizard intake-crisis-card">
+          <h2 className="intake-question-title">
+            {t(props.language, {
+              es: "Tu bienestar es lo primero",
+              en: "Your wellbeing comes first",
+              pt: "Seu bem-estar vem em primeiro lugar"
+            })}
+          </h2>
+          <p className="intake-question-help">
+            {t(props.language, {
+              es: "Si estás en peligro inmediato o tenés pensamientos de hacerte daño, buscá ayuda ahora. No estás solo/a.",
+              en: "If you are in immediate danger or having thoughts of hurting yourself, seek help now. You are not alone.",
+              pt: "Se voce estiver em perigo imediato ou tiver pensamentos de se machucar, busque ajuda agora. Voce nao esta so/a."
+            })}
+          </p>
+          <ul className="intake-crisis-list">
+            <li>
+              {t(props.language, {
+                es: "Emergencias: llamá al número local (911, 112, etc.) o acudí a la guardia más cercana.",
+                en: "Emergencies: call your local emergency number or go to the nearest ER.",
+                pt: "Emergencias: ligue para o numero local ou va a emergencia mais proxima."
+              })}
+            </li>
+            <li>
+              {t(props.language, {
+                es: "Argentina — Línea 135 (CABA y GBA) / 143 (crisis y prevención del suicidio).",
+                en: "Argentina — 135 / 143 crisis and suicide prevention line.",
+                pt: "Argentina — Linhas 135 / 143."
+              })}
+            </li>
+            <li>
+              {t(props.language, {
+                es: "México — SAPTEL 55 5259 8121 (CDMX).",
+                en: "Mexico — SAPTEL 55 5259 8121.",
+                pt: "Mexico — SAPTEL 55 5259 8121."
+              })}
+            </li>
+          </ul>
+          <p className="intake-question-help">
+            {t(props.language, {
+              es: "Para seguir con el cuestionario, elegí otra opción en “¿Cómo te sentís hoy?”.",
+              en: "To continue the questionnaire, pick another answer under “How are you feeling today?”.",
+              pt: "Para continuar, escolha outra opcao em “Como voce se sente hoje?”."
+            })}
+          </p>
+          <div className="intake-wizard-actions">
+            <button
+              className="primary intake-wizard-primary"
+              type="button"
+              onClick={() => {
+                setCrisisGate(false);
+                setAnswers((prev) => ({ ...prev, emotionalState: "" }));
+              }}
+            >
+              {t(props.language, {
+                es: "Volver al cuestionario",
+                en: "Back to questionnaire",
+                pt: "Voltar ao questionario"
+              })}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -443,53 +540,113 @@ export function IntakeScreen(props: {
                   })}
                 />
               ) : (
-                <div
-                  className="intake-option-grid"
-                  role="group"
-                  aria-label={wizardHeading(current.title)}
-                  aria-multiselectable={current.allowMultiple ? true : undefined}
-                >
-                  {current.options?.map((option) => {
-                    const multi = Boolean(current.allowMultiple);
-                    const raw = answers[current.id] ?? "";
-                    const selected = multi
-                      ? raw
-                          .split(/\n/)
-                          .map((piece) => piece.trim())
-                          .filter(Boolean)
-                          .includes(option)
-                      : raw === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}`}
-                        aria-pressed={selected}
-                        onClick={() => {
-                          setError("");
+                <>
+                  <div
+                    className="intake-option-grid"
+                    role="group"
+                    aria-label={wizardHeading(current.title)}
+                    aria-multiselectable={current.allowMultiple ? true : undefined}
+                  >
+                    {current.options?.map((option, optIdx) => {
+                      const multi = Boolean(current.allowMultiple);
+                      const raw = answers[current.id] ?? "";
+                      const pieces = intakePieces(raw);
+                      const follow = current.otherFollowupOption;
+                      const selected = multi
+                        ? pieces.includes(option) ||
+                          Boolean(follow && option === follow && pieces.some((p) => p.startsWith(`${follow}:`)))
+                        : raw === option;
+                      const isCrisisChip =
+                        Boolean(current.crisisLastOption) &&
+                        current.options &&
+                        optIdx === current.options.length - 1;
+                      const sub = current.optionSubtexts?.[optIdx];
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`intake-option-chip ${selected ? "intake-option-chip--selected" : ""}${isCrisisChip ? " intake-option-chip--crisis" : ""}`}
+                          aria-pressed={selected}
+                          onClick={() => {
+                            setError("");
+                            setAnswers((prev) => {
+                              const id = current.id;
+                              const prevRaw = prev[id] ?? "";
+                              let pcs = intakePieces(prevRaw);
+                              const base = intakeQuestions.find((q) => q.id === id);
+                              const exclusiveEs = base?.exclusiveOptionEs;
+                              if (!multi) {
+                                return { ...prev, [id]: option };
+                              }
+                              if (exclusiveEs && option === exclusiveEs) {
+                                return { ...prev, [id]: exclusiveEs };
+                              }
+                              if (exclusiveEs && pcs.includes(exclusiveEs)) {
+                                pcs = pcs.filter((p) => p !== exclusiveEs);
+                              }
+                              if (pcs.includes(option)) {
+                                const next = pcs.filter((p) => {
+                                  if (p === option) {
+                                    return false;
+                                  }
+                                  if (base?.otherFollowupOption && option === base.otherFollowupOption) {
+                                    return !p.startsWith(`${base.otherFollowupOption}:`);
+                                  }
+                                  return true;
+                                });
+                                return { ...prev, [id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+                              }
+                              return { ...prev, [id]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+                            });
+                          }}
+                        >
+                          <span className="intake-option-chip-label">{option}</span>
+                          {sub ? <span className="intake-option-chip-sub">{sub}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {current.otherFollowupOption &&
+                  intakePieces(answers[current.id] ?? "").some(
+                    (p) => p === current.otherFollowupOption || p.startsWith(`${current.otherFollowupOption}:`)
+                  ) ? (
+                    <label className="intake-other-followup">
+                      <span className="intake-question-help">
+                        {t(props.language, {
+                          es: "Detalle (obligatorio si elegiste «Otro»)",
+                          en: "Details (required if you picked “Other”)",
+                          pt: "Detalhes (obrigatorio se escolheu “Outro”)"
+                        })}
+                      </span>
+                      <textarea
+                        className="intake-textarea-touch"
+                        rows={3}
+                        value={(() => {
+                          const mark = current.otherFollowupOption!;
+                          const hit = intakePieces(answers[current.id] ?? "").find((p) => p.startsWith(`${mark}:`));
+                          return hit ? hit.slice(mark.length + 1).trim() : "";
+                        })()}
+                        onChange={(event) => {
+                          const mark = current.otherFollowupOption!;
+                          const v = event.target.value;
                           setAnswers((prev) => {
-                            if (!multi) {
-                              return { ...prev, [current.id]: option };
-                            }
-                            const pieces = (prev[current.id] ?? "")
-                              .split(/\n/)
-                              .map((piece) => piece.trim())
-                              .filter(Boolean);
-                            const nextPieces = pieces.includes(option)
-                              ? pieces.filter((p) => p !== option)
-                              : [...pieces, option];
-                            return {
-                              ...prev,
-                              [current.id]: nextPieces.join(INTAKE_MAIN_REASON_VALUE_JOINER)
-                            };
+                            const pcs = intakePieces(prev[current.id] ?? "").filter(
+                              (p) => p !== mark && !p.startsWith(`${mark}:`)
+                            );
+                            const trimmed = v.trim();
+                            const next = trimmed ? [...pcs, `${mark}: ${v}`] : pcs;
+                            return { ...prev, [current.id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
                           });
                         }}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
+                        placeholder={t(props.language, {
+                          es: "Escribí brevemente…",
+                          en: "Briefly describe…",
+                          pt: "Descreva brevemente…"
+                        })}
+                      />
+                    </label>
+                  ) : null}
+                </>
               )}
             </article>
           ) : null}

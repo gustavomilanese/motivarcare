@@ -11,7 +11,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../constants/intakeQuestions";
+import {
+  applyIntakeOptionSelection,
+  intakePieces,
+  INTAKE_MAIN_REASON_VALUE_JOINER,
+  intakeQuestions,
+  PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES
+} from "../../constants/intakeQuestions";
 import { submitPatientIntake } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
@@ -81,6 +87,10 @@ function buildIntakeStyles(colors: AppThemeColors) {
       shadowOffset: { width: 0, height: 10 },
       elevation: 3
     },
+    crisisCard: {
+      borderColor: colors.dangerBorder,
+      backgroundColor: colors.dangerSurface
+    },
     qTitle: {
       fontSize: 20,
       fontWeight: "800",
@@ -95,6 +105,15 @@ function buildIntakeStyles(colors: AppThemeColors) {
     options: {
       gap: 10
     },
+    optionBlock: {
+      gap: 6
+    },
+    optionSub: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: colors.textMuted,
+      marginHorizontal: 4
+    },
     optionBtn: {
       minHeight: 48
     },
@@ -107,6 +126,20 @@ function buildIntakeStyles(colors: AppThemeColors) {
       fontSize: 16,
       color: colors.text,
       backgroundColor: colors.surfaceMuted
+    },
+    otherFollowLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginTop: 4
+    },
+    crisisList: {
+      marginTop: 8,
+      gap: 10
+    },
+    crisisBullet: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text
     },
     actions: {
       flexDirection: "row",
@@ -134,36 +167,45 @@ export function IntakeWizardScreen() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [crisisGate, setCrisisGate] = useState(false);
 
   const question = intakeQuestions[index];
   const progress = useMemo(() => ((index + 1) / intakeQuestions.length) * 100, [index]);
 
-  const persistAnswer = useCallback((value: string) => {
-    setAnswers((prev) => ({ ...prev, [question.id]: value }));
-  }, [question.id]);
-
-  const toggleMultiOption = useCallback(
-    (option: string) => {
-      setAnswers((prev) => {
-        const pieces = (prev[question.id] ?? "")
-          .split(/\n/)
-          .map((piece) => piece.trim())
-          .filter(Boolean);
-        const next = pieces.includes(option) ? pieces.filter((p) => p !== option) : [...pieces, option];
-        return { ...prev, [question.id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
-      });
+  const persistAnswer = useCallback(
+    (value: string) => {
+      setAnswers((prev) => ({ ...prev, [question.id]: value }));
     },
     [question.id]
   );
 
   const goNext = useCallback(async () => {
     Keyboard.dismiss();
-    const currentAnswer = answers[question.id]?.trim() ?? "";
+    const raw = answers[question.id] ?? "";
+    const currentAnswer = raw.trim();
     if (!currentAnswer) {
       setError("Completá esta respuesta para continuar.");
       return;
     }
+
+    const follow = question.otherFollowupOption;
+    if (follow && question.allowMultiple) {
+      const pcs = intakePieces(raw);
+      if (pcs.includes(follow)) {
+        const detail = pcs.find((p) => p.startsWith(`${follow}:`));
+        if (!detail || detail.slice(follow.length + 1).trim().length === 0) {
+          setError(`Si elegiste «${follow}», completá el detalle en el campo de texto.`);
+          return;
+        }
+      }
+    }
+
     setError("");
+
+    if (question.id === "emotionalState" && raw.trim() === PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES) {
+      setCrisisGate(true);
+      return;
+    }
 
     if (index < intakeQuestions.length - 1) {
       setIndex((i) => i + 1);
@@ -176,7 +218,7 @@ export function IntakeWizardScreen() {
 
     setLoading(true);
     try {
-      await submitPatientIntake({ token, answers: { ...answers, [question.id]: currentAnswer } });
+      await submitPatientIntake({ token, answers: { ...answers, [question.id]: raw } });
       await refresh();
     } catch (submissionError) {
       const message = submissionError instanceof Error ? submissionError.message : "No se pudo guardar el intake.";
@@ -184,7 +226,7 @@ export function IntakeWizardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [answers, index, question.id, refresh, token]);
+  }, [answers, index, question.allowMultiple, question.id, question.otherFollowupOption, refresh, token]);
 
   const goBack = useCallback(() => {
     Keyboard.dismiss();
@@ -193,6 +235,60 @@ export function IntakeWizardScreen() {
   }, []);
 
   const draft = answers[question.id] ?? "";
+  const pieces = useMemo(() => intakePieces(draft), [draft]);
+  const followMark = question.otherFollowupOption;
+  const showOtherFollowup =
+    Boolean(followMark) && pieces.some((p) => p === followMark || (followMark && p.startsWith(`${followMark}:`)));
+  const otherDetailValue = (() => {
+    if (!followMark) {
+      return "";
+    }
+    const hit = pieces.find((p) => p.startsWith(`${followMark}:`));
+    return hit ? hit.slice(followMark.length + 1) : "";
+  })();
+
+  const scrollPad = { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 };
+
+  if (crisisGate) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 4 : 0}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.scrollContent, scrollPad]}
+        >
+          <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+            <Text style={styles.heroKicker}>Apoyo inmediato</Text>
+            <Text style={styles.heroTitle}>Tu bienestar es lo primero</Text>
+            <Text style={styles.heroLead}>Si estás en peligro o con pensamientos de hacerte daño, buscá ayuda ahora.</Text>
+          </LinearGradient>
+
+          <View style={[styles.card, styles.crisisCard]}>
+            <Text style={styles.qTitle}>Recursos de emergencia</Text>
+            <View style={styles.crisisList}>
+              <Text style={styles.crisisBullet}>• Emergencias: 911 / 112 o la guardia más cercana.</Text>
+              <Text style={styles.crisisBullet}>• Argentina: 135 (CABA y GBA) / 143 (crisis y prevención del suicidio).</Text>
+              <Text style={styles.crisisBullet}>• México: SAPTEL 55 5259 8121 (CDMX).</Text>
+            </View>
+            <Text style={styles.qHelp}>
+              Para seguir con el cuestionario, elegí otra opción en «¿Cómo te sentís hoy?».
+            </Text>
+            <PrimaryButton
+              label="Volver al cuestionario"
+              onPress={() => {
+                setCrisisGate(false);
+                setAnswers((prev) => ({ ...prev, emotionalState: "" }));
+              }}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -204,13 +300,12 @@ export function IntakeWizardScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 }
-        ]}
+        contentContainerStyle={[styles.scrollContent, scrollPad]}
       >
         <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-          <Text style={styles.heroKicker}>Paso {index + 1} de {intakeQuestions.length}</Text>
+          <Text style={styles.heroKicker}>
+            Paso {index + 1} de {intakeQuestions.length}
+          </Text>
           <Text style={styles.heroTitle}>Tu bienestar empieza acá</Text>
           <Text style={styles.heroLead}>Respuestas confidenciales · Mejor matching con tu profesional</Text>
           <View style={styles.progressTrack}>
@@ -224,30 +319,31 @@ export function IntakeWizardScreen() {
 
           {question.options ? (
             <View style={styles.options}>
-              {question.options.map((opt) => {
-                const selected = question.allowMultiple
-                  ? draft
-                      .split(/\n/)
-                      .map((piece) => piece.trim())
-                      .filter(Boolean)
-                      .includes(opt)
+              {question.options.map((opt, optIdx) => {
+                const multi = Boolean(question.allowMultiple);
+                const follow = question.otherFollowupOption;
+                const selected = multi
+                  ? pieces.includes(opt) ||
+                    Boolean(follow && opt === follow && pieces.some((p) => follow && p.startsWith(`${follow}:`)))
                   : draft === opt;
+                const isCrisisOption =
+                  Boolean(question.crisisLastOption && question.options && optIdx === question.options.length - 1);
+                const sub = question.optionSubtexts?.[optIdx];
+                const variant = isCrisisOption ? "danger" : selected ? "primary" : "ghost";
                 return (
-                  <PrimaryButton
-                    key={opt}
-                    label={opt}
-                    variant={selected ? "primary" : "ghost"}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      setError("");
-                      if (question.allowMultiple) {
-                        toggleMultiOption(opt);
-                      } else {
-                        persistAnswer(opt);
-                      }
-                    }}
-                    style={styles.optionBtn}
-                  />
+                  <View key={opt} style={styles.optionBlock}>
+                    <PrimaryButton
+                      label={opt}
+                      variant={variant}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setError("");
+                        setAnswers((prev) => applyIntakeOptionSelection(prev, question, opt));
+                      }}
+                      style={styles.optionBtn}
+                    />
+                    {sub ? <Text style={styles.optionSub}>{sub}</Text> : null}
+                  </View>
                 );
               })}
             </View>
@@ -266,6 +362,32 @@ export function IntakeWizardScreen() {
               blurOnSubmit={false}
             />
           )}
+
+          {showOtherFollowup && followMark ? (
+            <>
+              <Text style={styles.otherFollowLabel}>Detalle (obligatorio si elegiste «Otro»)</Text>
+              <TextInput
+                value={otherDetailValue}
+                onChangeText={(text) => {
+                  setError("");
+                  setAnswers((prev) => {
+                    const pcs = intakePieces(prev[question.id] ?? "").filter(
+                      (p) => p !== followMark && !p.startsWith(`${followMark}:`)
+                    );
+                    const trimmed = text.trim();
+                    const next = trimmed ? [...pcs, `${followMark}: ${text}`] : pcs;
+                    return { ...prev, [question.id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+                  });
+                }}
+                placeholder="Escribí brevemente…"
+                placeholderTextColor={colors.textSubtle}
+                multiline
+                style={styles.textArea}
+                textAlignVertical="top"
+                blurOnSubmit={false}
+              />
+            </>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { PATIENT_PORTAL_URL } from "../../../app/services/api";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
@@ -9,77 +8,12 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function ProfessionalWelcomeGate(props: {
   language: AppLanguage;
-  onLanguageChange: (language: AppLanguage) => void;
   onLogin: () => void;
   onRegister: () => void;
 }) {
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-  const languageSwitchRef = useRef<HTMLDivElement | null>(null);
-  const languageOptions: Array<{ value: AppLanguage; label: string }> = [
-    { value: "es", label: "Español" },
-    { value: "en", label: "English" },
-    { value: "pt", label: "Português" }
-  ];
-  const currentLanguageLabel = languageOptions.find((option) => option.value === props.language)?.label ?? "Español";
-
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (!languageSwitchRef.current || languageSwitchRef.current.contains(event.target as Node)) {
-        return;
-      }
-      setLanguageMenuOpen(false);
-    }
-
-    if (!languageMenuOpen) {
-      return;
-    }
-
-    window.addEventListener("mousedown", handleOutsideClick);
-    return () => window.removeEventListener("mousedown", handleOutsideClick);
-  }, [languageMenuOpen]);
-
   return (
     <div className="pro-gate-shell">
       <section className="pro-gate-card">
-        <div className="pro-gate-topbar">
-          <div className="pro-gate-lang-switch" ref={languageSwitchRef}>
-            <button
-              type="button"
-              className="pro-gate-lang-button"
-              aria-haspopup="menu"
-              aria-expanded={languageMenuOpen}
-              onClick={() => setLanguageMenuOpen((current) => !current)}
-            >
-              <span className="pro-gate-lang-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 0c2.8 2.4 4.3 5.4 4.3 9s-1.5 6.6-4.3 9m0-18C9.2 5.4 7.7 8.4 7.7 12s1.5 6.6 4.3 9M4 12h16m-14 5.2h12M6 6.8h12" />
-                </svg>
-              </span>
-              <span className="pro-gate-lang-current">{currentLanguageLabel}</span>
-              <span className="pro-gate-lang-caret" aria-hidden="true">▾</span>
-            </button>
-            {languageMenuOpen ? (
-              <div className="pro-gate-lang-menu" role="menu">
-                {languageOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="menuitem"
-                    className={props.language === option.value ? "active" : ""}
-                    onClick={() => {
-                      props.onLanguageChange(option.value);
-                      setLanguageMenuOpen(false);
-                    }}
-                  >
-                    <span>{option.label}</span>
-                    {props.language === option.value ? <span aria-hidden="true">✓</span> : null}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
         <div className="pro-gate-brand">
           <img
             className="pro-gate-brand-mark-img"

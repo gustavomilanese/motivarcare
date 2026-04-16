@@ -1,13 +1,5 @@
 import { FormEvent, useState } from "react";
-import {
-  SUPPORTED_CURRENCIES,
-  SUPPORTED_LANGUAGES,
-  type AppLanguage,
-  type LocalizedText,
-  type SupportedCurrency,
-  currencyOptionLabel,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { adminAuthSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, AuthUser } from "../types";
@@ -18,9 +10,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function AuthScreen(props: {
   language: AppLanguage;
-  currency: SupportedCurrency;
-  onLanguageChange: (language: AppLanguage) => void;
-  onCurrencyChange: (currency: SupportedCurrency) => void;
   onAuthSuccess: (token: string, user: AuthUser) => void;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -108,30 +97,6 @@ export function AuthScreen(props: {
             pt: "Pacientes, profissionais, financas e conteudo em uma unica experiencia operacional."
           })}
         </p>
-
-        <div className="admin-locale-panel">
-          <label>
-            {t(props.language, { es: "Idioma", en: "Language", pt: "Idioma" })}
-            <select value={props.language} onChange={(event) => props.onLanguageChange(event.target.value as AppLanguage)}>
-              {SUPPORTED_LANGUAGES.map((language) => (
-                <option key={language} value={language}>
-                  {language === "es" ? "Espanol" : language === "en" ? "English" : "Portugues"}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            {t(props.language, { es: "Moneda", en: "Currency", pt: "Moeda" })}
-            <select value={props.currency} onChange={(event) => props.onCurrencyChange(event.target.value as SupportedCurrency)}>
-              {SUPPORTED_CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currencyOptionLabel(currency, props.language)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
 
         <div className="auth-mode-switch">
           <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>

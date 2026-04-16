@@ -156,6 +156,14 @@ function resolveIntakeTriageDecision(
 }
 
 function evaluateIntakeRiskLevel(answers: Record<string, string>): "low" | "medium" | "high" {
+  const emotional = (answers.emotionalState ?? "").toLowerCase();
+  if (
+    emotional.includes("pensamientos")
+    && (emotional.includes("daño") || emotional.includes("dano") || emotional.includes("vivir"))
+  ) {
+    return "high";
+  }
+
   const safetyAnswer = (answers.safetyRisk ?? "").toLowerCase();
 
   if (["frequently", "frecuentemente", "frequentemente"].includes(safetyAnswer)) {

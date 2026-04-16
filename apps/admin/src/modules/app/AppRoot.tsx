@@ -93,13 +93,7 @@ export function App() {
 
   if (!token || !user) {
     return (
-      <AuthScreen
-        language={language}
-        currency={currency}
-        onLanguageChange={setLanguage}
-        onCurrencyChange={setCurrency}
-        onAuthSuccess={handleAuthSuccess}
-      />
+      <AuthScreen language={language} onAuthSuccess={handleAuthSuccess} />
     );
   }
 

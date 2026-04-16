@@ -1,69 +1,11 @@
-export type IntakeQuestionDef = {
-  id: string;
-  title: string;
-  help: string;
-  options?: string[];
-  multiline?: boolean;
-  allowMultiple?: boolean;
-  optional?: boolean;
-  optionSubtexts?: string[];
-  exclusiveOptionEs?: string;
-  otherFollowupOption?: string;
-  crisisLastOption?: boolean;
-};
+import type { IntakeQuestion } from "../app/types";
 
-/** Mismo separador que apps/patient `INTAKE_MAIN_REASON_VALUE_JOINER`. */
-export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";
-
-/** Alineado con apps/patient `patientClinicalIntakeQuestions`. */
+/** Texto canónico (ES) de la opción de crisis en “¿Cómo te sentís hoy?”. */
 export const PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES =
   "Estoy teniendo pensamientos de hacerme daño o de no querer vivir";
 
-export function intakePieces(raw: string): string[] {
-  return raw
-    .split(INTAKE_MAIN_REASON_VALUE_JOINER)
-    .map((piece) => piece.trim())
-    .filter(Boolean);
-}
-
-export function applyIntakeOptionSelection(
-  prev: Record<string, string>,
-  def: IntakeQuestionDef,
-  option: string
-): Record<string, string> {
-  const id = def.id;
-  const prevRaw = prev[id] ?? "";
-  let pcs = intakePieces(prevRaw);
-
-  if (!def.allowMultiple) {
-    return { ...prev, [id]: option };
-  }
-
-  const exclusive = def.exclusiveOptionEs;
-  if (exclusive && option === exclusive) {
-    return { ...prev, [id]: exclusive };
-  }
-  if (exclusive && pcs.includes(exclusive)) {
-    pcs = pcs.filter((p) => p !== exclusive);
-  }
-
-  if (pcs.includes(option)) {
-    const next = pcs.filter((p) => {
-      if (p === option) {
-        return false;
-      }
-      if (def.otherFollowupOption && option === def.otherFollowupOption) {
-        return !p.startsWith(`${def.otherFollowupOption}:`);
-      }
-      return true;
-    });
-    return { ...prev, [id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
-  }
-
-  return { ...prev, [id]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
-}
-
-const CLINICAL_STEPS: IntakeQuestionDef[] = [
+/** Primeros 6 pasos del intake (voz paciente); después siguen logística y seguridad en `constants.ts`. */
+export const PATIENT_CLINICAL_INTAKE_FIRST_STEPS: IntakeQuestion[] = [
   {
     id: "mainReason",
     title: "1. ¿Cuáles son tus motivos principales de consulta?",
@@ -167,38 +109,3 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
     crisisLastOption: true
   }
 ];
-
-const LOGISTICS: IntakeQuestionDef[] = [
-  {
-    id: "availability",
-    title: "7. Disponibilidad horaria preferida",
-    help: "Para mostrarte los mejores horarios.",
-    options: ["Por la mañana", "Tarde", "Noche", "Flexible"]
-  },
-  {
-    id: "language",
-    title: "8. Idioma para la sesión",
-    help: "Se usa en el matching.",
-    options: ["Inglés", "Español", "Bilingüe"]
-  },
-  {
-    id: "budget",
-    title: "9. Presupuesto estimado",
-    help: "Después podrás elegir paquetes de sesiones.",
-    options: ["Paquete inicial", "Paquete intermedio", "Paquete intensivo", "No estoy seguro"]
-  },
-  {
-    id: "supportNetwork",
-    title: "10. ¿Contás con red de apoyo (familia/amigos)?",
-    help: "Contexto para continuidad terapéutica.",
-    options: ["Apoyo fuerte", "Apoyo limitado", "Sin apoyo", "Prefiero no responder"]
-  },
-  {
-    id: "safetyRisk",
-    title: "11. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
-    help: "Pregunta de seguridad obligatoria.",
-    options: ["No", "A veces", "Frecuentemente", "Prefiero no responder"]
-  }
-];
-
-export const intakeQuestions: IntakeQuestionDef[] = [...CLINICAL_STEPS, ...LOGISTICS];

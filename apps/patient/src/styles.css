@@ -8855,6 +8855,10 @@ button.sessions-balance {
 }
 
 .intake-option-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   min-height: var(--touch-min);
   padding: 12px 14px;
   border-radius: 14px;
@@ -8877,6 +8881,58 @@ button.sessions-balance {
   border-color: var(--brand);
   background: linear-gradient(135deg, rgba(95, 68, 235, 0.08) 0%, rgba(115, 89, 245, 0.06) 100%);
   box-shadow: 0 0 0 1px rgba(95, 68, 235, 0.2);
+}
+
+.intake-option-chip-label {
+  display: block;
+  width: 100%;
+}
+
+.intake-option-chip-sub {
+  display: block;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-soft);
+}
+
+.intake-option-chip--crisis {
+  border-color: #fecaca;
+  background: linear-gradient(165deg, #fff1f2 0%, #ffffff 55%);
+  color: #7f1d1d;
+}
+
+.intake-option-chip--crisis.intake-option-chip--selected {
+  border-color: #f87171;
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.12) 0%, rgba(254, 226, 226, 0.35) 100%);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.intake-other-followup {
+  display: block;
+  margin-top: 14px;
+}
+
+.intake-other-followup .intake-textarea-touch {
+  margin-top: 8px;
+}
+
+.intake-crisis-card {
+  border-color: #fecaca;
+  background: linear-gradient(165deg, #fff1f2 0%, #ffffff 60%);
+}
+
+.intake-crisis-list {
+  margin: 12px 0 0;
+  padding-left: 1.2rem;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.intake-crisis-list li + li {
+  margin-top: 8px;
 }
 
 .intake-textarea-touch {

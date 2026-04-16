@@ -129,6 +129,14 @@ export interface IntakeQuestion {
   optional?: boolean;
   /** Subida de foto de perfil; no se incluye en el body de intake (se envía aparte con PATCH /me). */
   profilePhoto?: boolean;
+  /** Texto bajo cada opción (mismo orden y longitud que `options`). */
+  optionSubtexts?: string[];
+  /** Con `allowMultiple`: si se elige esta opción (texto en ES), se limpian el resto de chips del paso. */
+  exclusiveOptionEs?: string;
+  /** Con `allowMultiple`: abre textarea cuando esta opción está entre las elegidas. */
+  otherFollowupOption?: string;
+  /** Si es true, la última opción de la lista abre pantalla de crisis al intentar avanzar. */
+  crisisLastOption?: boolean;
 }
 
 export interface IntakeState {

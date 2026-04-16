@@ -123,8 +123,6 @@ type RegisterBackMode = "register-web" | "register-profile-full" | "register-suc
 export function ProfessionalAuthFlow(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
-  onLanguageChange: (language: AppLanguage) => void;
-  onCurrencyChange: (currency: SupportedCurrency) => void;
   onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
   onPrepareOnboardingSync: (draft: OnboardingPatchDraft) => void;
@@ -322,7 +320,6 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalWelcomeGate
         language={props.language}
-        onLanguageChange={props.onLanguageChange}
         onLogin={() => setAuthEntryMode("login")}
         onRegister={startProfessionalWebRegistration}
       />
@@ -837,9 +834,6 @@ export function ProfessionalAuthFlow(props: {
     <AuthScreen
       key={authEntryMode === "register" ? "auth-register" : "auth-login"}
       language={props.language}
-      currency={props.currency}
-      onLanguageChange={props.onLanguageChange}
-      onCurrencyChange={props.onCurrencyChange}
       heroImage={PROFESSIONAL_AUTH_HERO_IMAGE}
       onHeroFallback={professionalAuthHeroFallback}
       onCreateAccount={() => {
