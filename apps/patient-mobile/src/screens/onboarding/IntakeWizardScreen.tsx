@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,10 +15,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   applyIntakeOptionSelection,
+  buildTherapistPreferencesStored,
+  coerceTherapistOption,
   intakePieces,
   INTAKE_MAIN_REASON_VALUE_JOINER,
   intakeQuestions,
-  PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES
+  isSafetyRiskFrequentlyAnswer,
+  parseTherapistPreferencesStored,
+  PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
+  THERAPIST_PREF_AGE_OPTIONS_ES,
+  THERAPIST_PREF_EXCLUSIVE_ES,
+  THERAPIST_PREF_GENDER_OPTIONS_ES,
+  THERAPIST_PREF_LGBT_OPTIONS_ES
 } from "../../constants/intakeQuestions";
 import { submitPatientIntake } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
@@ -153,6 +163,117 @@ function buildIntakeStyles(colors: AppThemeColors) {
       color: colors.danger,
       fontWeight: "600",
       fontSize: 14
+    },
+    therapistPrefWrap: {
+      gap: 16,
+      marginTop: 4
+    },
+    therapistNoPref: {
+      width: "100%",
+      alignSelf: "stretch",
+      minHeight: 52,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 14,
+      paddingHorizontal: 16
+    },
+    therapistNoPrefActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary
+    },
+    therapistNoPrefText: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: colors.primary,
+      textAlign: "center"
+    },
+    therapistNoPrefTextActive: {
+      color: "#FFFFFF"
+    },
+    prefFieldBlock: {
+      gap: 6
+    },
+    prefFieldLabel: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 0.5
+    },
+    prefFieldOpen: {
+      minHeight: 50,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      justifyContent: "center",
+      backgroundColor: colors.surfaceMuted
+    },
+    prefFieldOpenText: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: "600"
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15, 23, 42, 0.45)",
+      justifyContent: "flex-end"
+    },
+    modalSheet: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingHorizontal: 12,
+      paddingTop: 12,
+      paddingBottom: 28,
+      maxHeight: "58%"
+    },
+    modalOption: {
+      paddingVertical: 14,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceMuted,
+      marginBottom: 8
+    },
+    modalOptionText: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: "600"
+    },
+    safetyModalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15, 23, 42, 0.55)",
+      justifyContent: "center",
+      padding: 20
+    },
+    safetyModalCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+      padding: 20,
+      gap: 12,
+      borderWidth: 1,
+      borderColor: colors.dangerBorder,
+      maxHeight: "90%"
+    },
+    safetyModalTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: colors.text
+    },
+    safetyModalBody: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text
+    },
+    safetyModalSubhead: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+      marginTop: 4
     }
   });
 }
@@ -161,13 +282,15 @@ export function IntakeWizardScreen() {
   const insets = useSafeAreaInsets();
   const { colors, gradients } = useThemeMode();
   const styles = useMemo(() => buildIntakeStyles(colors), [colors]);
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const { refresh } = usePatientProfile();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [crisisGate, setCrisisGate] = useState(false);
+  const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
+  const [picker, setPicker] = useState<null | "gender" | "age" | "lgbt">(null);
 
   const question = intakeQuestions[index];
   const progress = useMemo(() => ((index + 1) / intakeQuestions.length) * 100, [index]);
@@ -212,6 +335,11 @@ export function IntakeWizardScreen() {
       return;
     }
 
+    if (question.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(currentAnswer)) {
+      setSafetyFrequentModal(true);
+      return;
+    }
+
     if (!token) {
       return;
     }
@@ -246,6 +374,30 @@ export function IntakeWizardScreen() {
     const hit = pieces.find((p) => p.startsWith(`${followMark}:`));
     return hit ? hit.slice(followMark.length + 1) : "";
   })();
+
+  const therapistPrefParsed = question.therapistPreferenceComposite
+    ? parseTherapistPreferencesStored(answers.therapistPreferences ?? "")
+    : null;
+
+  useEffect(() => {
+    if (question.id !== "therapistPreferences") {
+      return;
+    }
+    setAnswers((prev) => {
+      if (prev.therapistPreferences?.trim()) {
+        return prev;
+      }
+      return {
+        ...prev,
+        therapistPreferences: buildTherapistPreferencesStored(
+          false,
+          THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+          THERAPIST_PREF_AGE_OPTIONS_ES[0],
+          THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+        )
+      };
+    });
+  }, [question.id]);
 
   const scrollPad = { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 };
 
@@ -290,13 +442,23 @@ export function IntakeWizardScreen() {
     );
   }
 
+  const pickerOptions =
+    picker === "gender"
+      ? THERAPIST_PREF_GENDER_OPTIONS_ES
+      : picker === "age"
+        ? THERAPIST_PREF_AGE_OPTIONS_ES
+        : picker === "lgbt"
+          ? THERAPIST_PREF_LGBT_OPTIONS_ES
+          : [];
+
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 4 : 0}
-    >
-      <ScrollView
+    <>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 4 : 0}
+      >
+        <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         showsVerticalScrollIndicator={false}
@@ -317,7 +479,64 @@ export function IntakeWizardScreen() {
           <Text style={styles.qTitle}>{question.title}</Text>
           <Text style={styles.qHelp}>{question.help}</Text>
 
-          {question.options ? (
+          {question.therapistPreferenceComposite && therapistPrefParsed ? (
+            <View style={styles.therapistPrefWrap}>
+              <Pressable
+                onPress={() => {
+                  setError("");
+                  setAnswers((prev) => {
+                    const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                    if (p.exclusive) {
+                      return {
+                        ...prev,
+                        therapistPreferences: buildTherapistPreferencesStored(
+                          false,
+                          THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+                          THERAPIST_PREF_AGE_OPTIONS_ES[0],
+                          THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+                        )
+                      };
+                    }
+                    return { ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES };
+                  });
+                }}
+                style={[styles.therapistNoPref, therapistPrefParsed.exclusive && styles.therapistNoPrefActive]}
+              >
+                <Text style={[styles.therapistNoPrefText, therapistPrefParsed.exclusive && styles.therapistNoPrefTextActive]}>
+                  {THERAPIST_PREF_EXCLUSIVE_ES}
+                </Text>
+              </Pressable>
+
+              {!therapistPrefParsed.exclusive ? (
+                <View style={{ gap: 12 }}>
+                  <View style={styles.prefFieldBlock}>
+                    <Text style={styles.prefFieldLabel}>Género del/de la psicólogo/a</Text>
+                    <Pressable style={styles.prefFieldOpen} onPress={() => setPicker("gender")}>
+                      <Text style={styles.prefFieldOpenText}>
+                        {coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, therapistPrefParsed.gender)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.prefFieldBlock}>
+                    <Text style={styles.prefFieldLabel}>Edad aproximada del/de la psicólogo/a</Text>
+                    <Pressable style={styles.prefFieldOpen} onPress={() => setPicker("age")}>
+                      <Text style={styles.prefFieldOpenText}>
+                        {coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, therapistPrefParsed.age)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.prefFieldBlock}>
+                    <Text style={styles.prefFieldLabel}>Experiencia en temas LGBTIQ+</Text>
+                    <Pressable style={styles.prefFieldOpen} onPress={() => setPicker("lgbt")}>
+                      <Text style={styles.prefFieldOpenText}>
+                        {coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, therapistPrefParsed.lgbtq)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : question.options ? (
             <View style={styles.options}>
               {question.options.map((opt, optIdx) => {
                 const multi = Boolean(question.allowMultiple);
@@ -338,6 +557,11 @@ export function IntakeWizardScreen() {
                       onPress={() => {
                         Keyboard.dismiss();
                         setError("");
+                        if (question.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(opt)) {
+                          setAnswers((prev) => applyIntakeOptionSelection(prev, question, opt));
+                          setSafetyFrequentModal(true);
+                          return;
+                        }
                         setAnswers((prev) => applyIntakeOptionSelection(prev, question, opt));
                       }}
                       style={styles.optionBtn}
@@ -408,6 +632,99 @@ export function IntakeWizardScreen() {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+
+      <Modal
+        visible={safetyFrequentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setSafetyFrequentModal(false);
+          void signOut();
+        }}
+      >
+        <View style={styles.safetyModalBackdrop}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
+            <View style={styles.safetyModalCard}>
+              <Text style={styles.safetyModalTitle}>Apoyo inmediato</Text>
+              <Text style={styles.safetyModalBody}>
+                Lo que estás sintiendo es importante y no tenés que afrontarlo solo/a. En este momento, lo más recomendable es
+                buscar ayuda inmediata a través de un servicio de emergencia, una línea de apoyo en crisis o una persona de
+                confianza que pueda acompañarte ahora.
+              </Text>
+              <Text style={styles.safetyModalSubhead}>Argentina — recursos</Text>
+              <Text style={styles.safetyModalBody}>• Línea de apoyo al suicida y crisis: 0800-345-1435 (gratis, las 24 h).</Text>
+              <Text style={styles.safetyModalBody}>• Emergencias: 911.</Text>
+              <Text style={styles.safetyModalBody}>
+                Gracias por tu tiempo. No guardamos este cuestionario; podés iniciar sesión de nuevo cuando te sientas en
+                condiciones.
+              </Text>
+              <PrimaryButton
+                label="Entendido, salir"
+                onPress={() => {
+                  setSafetyFrequentModal(false);
+                  void signOut();
+                }}
+              />
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={picker !== null} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setPicker(null)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {pickerOptions.map((opt) => (
+                <Pressable
+                  key={opt}
+                  style={styles.modalOption}
+                  onPress={() => {
+                    setError("");
+                    setAnswers((prev) => {
+                      const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                      if (picker === "gender") {
+                        return {
+                          ...prev,
+                          therapistPreferences: buildTherapistPreferencesStored(
+                            false,
+                            opt,
+                            coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
+                            coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
+                          )
+                        };
+                      }
+                      if (picker === "age") {
+                        return {
+                          ...prev,
+                          therapistPreferences: buildTherapistPreferencesStored(
+                            false,
+                            coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
+                            opt,
+                            coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
+                          )
+                        };
+                      }
+                      return {
+                        ...prev,
+                        therapistPreferences: buildTherapistPreferencesStored(
+                          false,
+                          coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
+                          coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
+                          opt
+                        )
+                      };
+                    });
+                    setPicker(null);
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>{opt}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }

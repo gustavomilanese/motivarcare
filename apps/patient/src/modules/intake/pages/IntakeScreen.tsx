@@ -1,9 +1,18 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
-import { PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES } from "../patientClinicalIntakeQuestions";
+import {
+  isSafetyRiskFrequentlyAnswer,
+  PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
+  THERAPIST_PREF_AGE_OPTIONS_ES,
+  THERAPIST_PREF_EXCLUSIVE_ES,
+  THERAPIST_PREF_GENDER_OPTIONS_ES,
+  THERAPIST_PREF_LGBT_OPTIONS_ES,
+  buildTherapistPreferencesStored,
+  parseTherapistPreferencesStored
+} from "../patientClinicalIntakeQuestions";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -22,6 +31,55 @@ function intakePieces(raw: string): string[] {
 
 function isCrisisEmotionalAnswer(raw: string): boolean {
   return raw.trim() === PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES;
+}
+
+function therapistPrefGenderOptionLabel(lang: AppLanguage, valueEs: string): string {
+  switch (valueEs) {
+    case "Sin preferencia":
+      return t(lang, { es: "Sin preferencia", en: "No preference", pt: "Sem preferencia" });
+    case "Hombre":
+      return t(lang, { es: "Hombre", en: "Man", pt: "Homem" });
+    case "Mujer":
+      return t(lang, { es: "Mujer", en: "Woman", pt: "Mulher" });
+    case "Me da igual":
+      return t(lang, { es: "Me da igual", en: "Either is fine", pt: "Tanto faz" });
+    default:
+      return valueEs;
+  }
+}
+
+function therapistPrefAgeOptionLabel(lang: AppLanguage, valueEs: string): string {
+  const labels: Record<string, LocalizedText> = {
+    "Sin preferencia": { es: "Sin preferencia", en: "No preference", pt: "Sem preferencia" },
+    "25 a 35": { es: "25 a 35", en: "25 to 35", pt: "25 a 35" },
+    "35 a 45": { es: "35 a 45", en: "35 to 45", pt: "35 a 45" },
+    "45 a 55": { es: "45 a 55", en: "45 to 55", pt: "45 a 55" },
+    "55 a 65": { es: "55 a 65", en: "55 to 65", pt: "55 a 65" },
+    "65 a 75": { es: "65 a 75", en: "65 to 75", pt: "65 a 75" },
+    "75 o más": { es: "75 o más", en: "75 or older", pt: "75 ou mais" }
+  };
+  return t(lang, labels[valueEs] ?? { es: valueEs, en: valueEs, pt: valueEs });
+}
+
+function therapistPrefLgbtOptionLabel(lang: AppLanguage, valueEs: string): string {
+  const labels: Record<string, LocalizedText> = {
+    "Sin preferencia": { es: "Sin preferencia", en: "No preference", pt: "Sem preferencia" },
+    "Sí, prefiero experiencia o formación en temas LGBTIQ+": {
+      es: "Sí, prefiero experiencia o formación en temas LGBTIQ+",
+      en: "Yes, I prefer experience or training in LGBTIQ+ topics",
+      pt: "Sim, prefiro experiencia ou formacao em temas LGBTIQ+"
+    },
+    "No es un criterio para mí": {
+      es: "No es un criterio para mí",
+      en: "Not a criterion for me",
+      pt: "Nao e um criterio para mim"
+    }
+  };
+  return t(lang, labels[valueEs] ?? { es: valueEs, en: valueEs, pt: valueEs });
+}
+
+function coerceTherapistOption<T extends readonly string[]>(list: T, value: string): string {
+  return list.includes(value as T[number]) ? value : list[0]!;
 }
 
 function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage): IntakeQuestion {
@@ -66,9 +124,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "3. Voce tem alguma preferencia sobre seu psicologo/a?"
       }),
       help: t(language, {
-        es: "Marcá lo que aplique, o elegí “No tengo preferencias”.",
-        en: "Select what applies, or choose “I have no preferences”.",
-        pt: "Marque o que se aplica ou escolha “Nao tenho preferencias”."
+        es: "Elegí “No tengo preferencias” o indicá género, edad y enfoque LGBTIQ+ con los desplegables.",
+        en: "Choose “I have no preferences” or set gender, age, and LGBTIQ+ focus using the dropdowns.",
+        pt: "Escolha “Nao tenho preferencias” ou indique genero, idade e LGBTIQ+ nos menus."
       })
     };
   }
@@ -82,9 +140,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "4. Que tipo de terapia voce prefere?"
       }),
       help: t(language, {
-        es: "Elegí una opción. Si no estás seguro/a, podés dejarlo en manos del profesional.",
-        en: "Choose one. If unsure, you can leave it to the professional.",
-        pt: "Escolha uma opcao. Se nao tiver certeza, deixe a cargo do profissional."
+        es: "Podés marcar una o varias. Si no estás seguro/a, elegí la última opción (limpia el resto).",
+        en: "You can pick one or more. If unsure, pick the last option (it clears the others).",
+        pt: "Voce pode marcar uma ou mais. Se nao tiver certeza, escolha a ultima opcao (limpa as demais)."
       })
     };
   }
@@ -121,78 +179,13 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     };
   }
 
-  if (question.id === "availability") {
-    return {
-      ...question,
-      title: t(language, {
-        es: "7. Disponibilidad horaria preferida",
-        en: "7. Preferred availability",
-        pt: "7. Disponibilidade horaria preferida"
-      }),
-      help: t(language, {
-        es: "Para mostrarte los mejores slots disponibles.",
-        en: "To show the best available slots.",
-        pt: "Para mostrar os melhores horarios disponiveis."
-      }),
-      options: [
-        t(language, { es: "Por la mañana", en: "Morning", pt: "Manhã" }),
-        t(language, { es: "Tarde", en: "Afternoon", pt: "Tarde" }),
-        t(language, { es: "Noche", en: "Evening", pt: "Noite" }),
-        t(language, { es: "Flexible", en: "Flexible", pt: "Flexivel" })
-      ]
-    };
-  }
-
-  if (question.id === "language") {
-    return {
-      ...question,
-      title: t(language, {
-        es: "8. Idioma para la sesión",
-        en: "8. Session language",
-        pt: "8. Idioma para a sessao"
-      }),
-      help: t(language, {
-        es: "Se usa para el matching.",
-        en: "Used for matching.",
-        pt: "Usado para o matching."
-      }),
-      options: [
-        t(language, { es: "Inglés", en: "English", pt: "Ingles" }),
-        t(language, { es: "Español", en: "Spanish", pt: "Espanhol" }),
-        t(language, { es: "Bilingüe", en: "Bilingual", pt: "Bilingue" })
-      ]
-    };
-  }
-
-  if (question.id === "budget") {
-    return {
-      ...question,
-      title: t(language, {
-        es: "9. Presupuesto estimado",
-        en: "9. Estimated budget",
-        pt: "9. Orcamento estimado"
-      }),
-      help: t(language, {
-        es: "Luego podrás elegir paquetes de sesiones.",
-        en: "You can choose session packages afterwards.",
-        pt: "Depois voce podera escolher pacotes de sessoes."
-      }),
-      options: [
-        t(language, { es: "Paquete inicial", en: "Starter package", pt: "Pacote inicial" }),
-        t(language, { es: "Paquete intermedio", en: "Growth package", pt: "Pacote intermediario" }),
-        t(language, { es: "Paquete intensivo", en: "Intensive package", pt: "Pacote intensivo" }),
-        t(language, { es: "No estoy seguro", en: "I am not sure", pt: "Nao tenho certeza" })
-      ]
-    };
-  }
-
   if (question.id === "supportNetwork") {
     return {
       ...question,
       title: t(language, {
-        es: "10. ¿Contás con red de apoyo (familia/amigos)?",
-        en: "10. Do you have a support network (family/friends)?",
-        pt: "10. Voce conta com rede de apoio (familia/amigos)?"
+        es: "7. ¿Contás con red de apoyo (familia/amigos)?",
+        en: "7. Do you have a support network (family/friends)?",
+        pt: "7. Voce conta com rede de apoio (familia/amigos)?"
       }),
       help: t(language, {
         es: "Contexto para continuidad terapéutica.",
@@ -212,9 +205,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
     return {
       ...question,
       title: t(language, {
-        es: "11. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
-        en: "11. In the last 2 weeks, have you had self-harm thoughts?",
-        pt: "11. Nas ultimas 2 semanas voce teve ideias de autoagressao?"
+        es: "8. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
+        en: "8. In the last 2 weeks, have you had self-harm thoughts?",
+        pt: "8. Nas ultimas 2 semanas voce teve ideias de autoagressao?"
       }),
       help: t(language, {
         es: "Pregunta de seguridad obligatoria antes de habilitar reservas.",
@@ -239,6 +232,8 @@ export function IntakeScreen(props: {
   onComplete: (payload: IntakeCompletionPayload) => Promise<void>;
   onBack?: () => void;
   onCancel?: () => void;
+  /** Sin guardar intake: cierra sesión / estado del portal (p. ej. respuesta “Frecuentemente” en seguridad). */
+  onSafetyFrequentAbandon?: () => void;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -252,6 +247,7 @@ export function IntakeScreen(props: {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [crisisGate, setCrisisGate] = useState(false);
+  const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
 
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
@@ -352,6 +348,31 @@ export function IntakeScreen(props: {
     setStepIndex((s) => Math.max(0, s - 1));
   };
 
+  const therapistPrefParsed =
+    current?.id === "therapistPreferences"
+      ? parseTherapistPreferencesStored(answers.therapistPreferences ?? "")
+      : null;
+
+  useEffect(() => {
+    if (current?.id !== "therapistPreferences") {
+      return;
+    }
+    setAnswers((prev) => {
+      if (prev.therapistPreferences?.trim()) {
+        return prev;
+      }
+      return {
+        ...prev,
+        therapistPreferences: buildTherapistPreferencesStored(
+          false,
+          THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+          THERAPIST_PREF_AGE_OPTIONS_ES[0],
+          THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+        )
+      };
+    });
+  }, [current?.id]);
+
   if (crisisGate) {
     return (
       <div className="intake-shell intake-shell--wizard">
@@ -440,6 +461,11 @@ export function IntakeScreen(props: {
       return;
     }
 
+    if (isSafetyRiskFrequentlyAnswer(answers.safetyRisk ?? "")) {
+      setSafetyFrequentModal(true);
+      return;
+    }
+
     setSubmitting(true);
     setError("");
 
@@ -454,7 +480,13 @@ export function IntakeScreen(props: {
     }
   };
 
+  const dismissSafetyFrequentModal = () => {
+    setSafetyFrequentModal(false);
+    (props.onSafetyFrequentAbandon ?? props.onCancel)?.();
+  };
+
   return (
+    <Fragment>
     <div className="intake-shell intake-shell--wizard">
       <section className="intake-card intake-card--wizard">
         <div className="intake-brand">
@@ -522,7 +554,151 @@ export function IntakeScreen(props: {
               <h2 className="intake-question-title">{wizardHeading(current.title)}</h2>
               <p className="intake-question-help">{current.help}</p>
 
-              {current.multiline ? (
+              {baseQuestion?.therapistPreferenceComposite && therapistPrefParsed ? (
+                <div className="intake-therapist-pref">
+                  <button
+                    type="button"
+                    className={`intake-therapist-no-pref ${therapistPrefParsed.exclusive ? "intake-therapist-no-pref--active" : ""}`}
+                    aria-pressed={therapistPrefParsed.exclusive}
+                    onClick={() => {
+                      setError("");
+                      setAnswers((prev) => {
+                        const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                        if (p.exclusive) {
+                          return {
+                            ...prev,
+                            therapistPreferences: buildTherapistPreferencesStored(
+                              false,
+                              THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+                              THERAPIST_PREF_AGE_OPTIONS_ES[0],
+                              THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+                            )
+                          };
+                        }
+                        return { ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES };
+                      });
+                    }}
+                  >
+                    {t(props.language, {
+                      es: THERAPIST_PREF_EXCLUSIVE_ES,
+                      en: "I have no preferences",
+                      pt: "Nao tenho preferencias"
+                    })}
+                  </button>
+
+                  {!therapistPrefParsed.exclusive ? (
+                    <div className="intake-therapist-pref-fields">
+                      <label className="intake-select-field">
+                        <span className="intake-select-field-label">
+                          {t(props.language, {
+                            es: "Género del/de la psicólogo/a",
+                            en: "Therapist gender",
+                            pt: "Genero do/da psicologo/a"
+                          })}
+                        </span>
+                        <select
+                          className="intake-select-touch"
+                          value={coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, therapistPrefParsed.gender)}
+                          onChange={(event) => {
+                            setError("");
+                            const v = event.target.value;
+                            setAnswers((prev) => {
+                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                              return {
+                                ...prev,
+                                therapistPreferences: buildTherapistPreferencesStored(
+                                  false,
+                                  v,
+                                  coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
+                                  coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
+                                )
+                              };
+                            });
+                          }}
+                        >
+                          {THERAPIST_PREF_GENDER_OPTIONS_ES.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {therapistPrefGenderOptionLabel(props.language, opt)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="intake-select-field">
+                        <span className="intake-select-field-label">
+                          {t(props.language, {
+                            es: "Edad aproximada del/de la psicólogo/a",
+                            en: "Approximate age of therapist",
+                            pt: "Idade aproximada do/da psicologo/a"
+                          })}
+                        </span>
+                        <select
+                          className="intake-select-touch"
+                          value={coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, therapistPrefParsed.age)}
+                          onChange={(event) => {
+                            setError("");
+                            const v = event.target.value;
+                            setAnswers((prev) => {
+                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                              return {
+                                ...prev,
+                                therapistPreferences: buildTherapistPreferencesStored(
+                                  false,
+                                  coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
+                                  v,
+                                  coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, p.lgbtq)
+                                )
+                              };
+                            });
+                          }}
+                        >
+                          {THERAPIST_PREF_AGE_OPTIONS_ES.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {therapistPrefAgeOptionLabel(props.language, opt)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="intake-select-field">
+                        <span className="intake-select-field-label">
+                          {t(props.language, {
+                            es: "Experiencia en temas LGBTIQ+",
+                            en: "Experience with LGBTIQ+ topics",
+                            pt: "Experiencia em temas LGBTIQ+"
+                          })}
+                        </span>
+                        <select
+                          className="intake-select-touch"
+                          value={coerceTherapistOption(THERAPIST_PREF_LGBT_OPTIONS_ES, therapistPrefParsed.lgbtq)}
+                          onChange={(event) => {
+                            setError("");
+                            const v = event.target.value;
+                            setAnswers((prev) => {
+                              const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
+                              return {
+                                ...prev,
+                                therapistPreferences: buildTherapistPreferencesStored(
+                                  false,
+                                  coerceTherapistOption(THERAPIST_PREF_GENDER_OPTIONS_ES, p.gender),
+                                  coerceTherapistOption(THERAPIST_PREF_AGE_OPTIONS_ES, p.age),
+                                  v
+                                )
+                              };
+                            });
+                          }}
+                        >
+                          {THERAPIST_PREF_LGBT_OPTIONS_ES.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {therapistPrefLgbtOptionLabel(props.language, opt)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : current.multiline ? (
                 <textarea
                   className="intake-textarea-touch"
                   rows={4}
@@ -569,6 +745,11 @@ export function IntakeScreen(props: {
                           aria-pressed={selected}
                           onClick={() => {
                             setError("");
+                            if (!multi && current.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(option)) {
+                              setAnswers((prev) => ({ ...prev, [current.id]: option }));
+                              setSafetyFrequentModal(true);
+                              return;
+                            }
                             setAnswers((prev) => {
                               const id = current.id;
                               const prevRaw = prev[id] ?? "";
@@ -681,5 +862,71 @@ export function IntakeScreen(props: {
         </form>
       </section>
     </div>
+
+    {safetyFrequentModal ? (
+      <div
+        className="session-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="intake-safety-frequent-title"
+      >
+        <div className="session-modal intake-safety-frequent-modal" onClick={(e) => e.stopPropagation()}>
+          <h2 id="intake-safety-frequent-title" className="intake-question-title">
+            {t(props.language, {
+              es: "Apoyo inmediato",
+              en: "Immediate support",
+              pt: "Apoio imediato"
+            })}
+          </h2>
+          <p className="intake-question-help">
+            {t(props.language, {
+              es: "Lo que estás sintiendo es importante y no tenés que afrontarlo solo/a. En este momento, lo más recomendable es buscar ayuda inmediata a través de un servicio de emergencia, una línea de apoyo en crisis o una persona de confianza que pueda acompañarte ahora.",
+              en: "What you are feeling matters, and you do not have to face it alone. Right now, the safest next step is to reach an emergency service, a crisis helpline, or a trusted person who can be with you.",
+              pt: "O que voce esta sentindo importa e voce nao precisa enfrentar isso sozinho/a. Agora, o mais seguro e buscar um servico de emergencia, uma linha de crise ou uma pessoa de confianca que possa estar com voce."
+            })}
+          </p>
+          <p className="intake-question-help intake-safety-frequent-subhead">
+            {t(props.language, {
+              es: "Argentina — recursos",
+              en: "Argentina — resources",
+              pt: "Argentina — recursos"
+            })}
+          </p>
+          <ul className="intake-crisis-list">
+            <li>
+              {t(props.language, {
+                es: "Línea de apoyo al suicida y crisis: 0800-345-1435 (gratis, las 24 h).",
+                en: "Suicide and crisis support line: 0800-345-1435 (free, 24/7).",
+                pt: "Linha de apoio ao suicidio e crise: 0800-345-1435 (gratuita, 24 h)."
+              })}
+            </li>
+            <li>
+              {t(props.language, {
+                es: "Emergencias: 911.",
+                en: "Emergencies: 911.",
+                pt: "Emergencias: 911."
+              })}
+            </li>
+          </ul>
+          <p className="intake-question-help">
+            {t(props.language, {
+              es: "Gracias por tu tiempo. No guardamos este cuestionario; podés volver a registrarte cuando te sientas en condiciones.",
+              en: "Thank you for your time. We are not saving this questionnaire—you can sign up again when you feel ready.",
+              pt: "Obrigado pelo seu tempo. Nao salvamos este questionario; voce pode se registrar de novo quando se sentir preparado/a."
+            })}
+          </p>
+          <div className="intake-wizard-actions">
+            <button className="primary intake-wizard-primary" type="button" onClick={dismissSafetyFrequentModal}>
+              {t(props.language, {
+                es: "Entendido, salir",
+                en: "OK, exit",
+                pt: "Entendi, sair"
+              })}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </Fragment>
   );
 }

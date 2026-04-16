@@ -137,6 +137,8 @@ export interface IntakeQuestion {
   otherFollowupOption?: string;
   /** Si es true, la última opción de la lista abre pantalla de crisis al intentar avanzar. */
   crisisLastOption?: boolean;
+  /** Paso 3 preferencias: UI compuesta (desplegables + “No tengo preferencias”), no chips de `options`. */
+  therapistPreferenceComposite?: boolean;
 }
 
 export interface IntakeState {

@@ -112,14 +112,20 @@ export function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const onSubmit = async () => {
     Keyboard.dismiss();
-    setLoading(true);
     setError("");
+    if (password !== passwordConfirm) {
+      setError("Las contraseñas no coinciden. Escribí la misma en ambos campos.");
+      return;
+    }
+    setLoading(true);
     try {
       await signUp({
         fullName: fullName.trim(),
@@ -202,6 +208,38 @@ export function RegisterScreen() {
             >
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color={colors.primary}
+              />
+            </Pressable>
+          </View>
+
+          <Text style={styles.label}>Repetir contraseña</Text>
+          <View style={styles.passwordRow}>
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                value={passwordConfirm}
+                onChangeText={setPasswordConfirm}
+                secureTextEntry={!showPasswordConfirm}
+                style={styles.input}
+                editable={!loading}
+                placeholder="Misma contraseña"
+                placeholderTextColor={colors.textSubtle}
+                returnKeyType="go"
+                onSubmitEditing={() => {
+                  void onSubmit();
+                }}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showPasswordConfirm ? "Ocultar repetición" : "Ver repetición"}
+              onPress={() => setShowPasswordConfirm((v) => !v)}
+              style={({ pressed }) => [styles.eyeBtn, pressed && { opacity: 0.85 }]}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={showPasswordConfirm ? "eye-off-outline" : "eye-outline"}
                 size={22}
                 color={colors.primary}
               />

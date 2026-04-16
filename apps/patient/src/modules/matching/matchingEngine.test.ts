@@ -71,4 +71,27 @@ describe("rankProfessionalsForPatient", () => {
     });
     expect(topics).toEqual(expect.arrayContaining(["anxiety", "depression"]));
   });
+
+  it("interpreta varias preferencias de enfoque (misma puntuación de enfoque que una sola si coincide)", () => {
+    const base = {
+      mainReason: "Ansiedad",
+      therapyGoal: "quiero bajar ataques de panico y estres laboral",
+      language: "Espanol",
+      availability: "Manana"
+    } as const;
+    const single = rankProfessionalsForPatient({
+      professionals: candidates,
+      intakeAnswers: { ...base, preferredApproach: "TCC" },
+      language: "es"
+    });
+    const multi = rankProfessionalsForPatient({
+      professionals: candidates,
+      intakeAnswers: { ...base, preferredApproach: "TCC\nPsicodinámico" },
+      language: "es"
+    });
+    const scoreSingle = single.find((r) => r.professional.id === "pro-1")?.score;
+    const scoreMulti = multi.find((r) => r.professional.id === "pro-1")?.score;
+    expect(scoreSingle).toBeDefined();
+    expect(scoreMulti).toBe(scoreSingle);
+  });
 });

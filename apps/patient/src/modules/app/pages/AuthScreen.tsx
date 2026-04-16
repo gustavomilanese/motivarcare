@@ -67,7 +67,9 @@ export function AuthScreen(props: {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(readRememberedPatientEmail);
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(readPatientRememberFlag);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,6 +97,16 @@ export function AuthScreen(props: {
             es: "Completá tu nombre y tu apellido para crear la cuenta.",
             en: "Please enter your first and last name to create your account.",
             pt: "Preencha seu nome e sobrenome para criar a conta."
+          })
+        );
+        return;
+      }
+      if (password !== passwordConfirm) {
+        setError(
+          t(props.language, {
+            es: "Las contraseñas no coinciden. Volvé a escribirlas igual en ambos campos.",
+            en: "Passwords do not match. Enter the same password in both fields.",
+            pt: "As senhas nao coincidem. Digite a mesma senha nos dois campos."
           })
         );
         return;
@@ -284,6 +296,38 @@ export function AuthScreen(props: {
               </div>
             </div>
 
+            {mode === "register" ? (
+              <div className="auth-field-stack">
+                <span className="auth-field-label">
+                  {t(props.language, {
+                    es: "Repetir contraseña",
+                    en: "Confirm password",
+                    pt: "Confirmar senha"
+                  })}
+                </span>
+                <div className="auth-input-shell auth-input-shell--with-suffix">
+                  <input
+                    className="auth-input-inset"
+                    type={showPasswordConfirm ? "text" : "password"}
+                    name="password-confirm"
+                    autoComplete="new-password"
+                    value={passwordConfirm}
+                    onChange={(event) => setPasswordConfirm(event.target.value)}
+                    aria-invalid={passwordConfirm.length > 0 && password !== passwordConfirm}
+                  />
+                  <button
+                    type="button"
+                    className="auth-input-suffix"
+                    onClick={() => setShowPasswordConfirm((v) => !v)}
+                  >
+                    {showPasswordConfirm
+                      ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
+                      : t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {mode === "login" ? (
               <label className="auth-remember">
                 <input
@@ -324,6 +368,7 @@ export function AuthScreen(props: {
                   className="auth-footer-cta"
                   onClick={() => {
                     setError("");
+                    setPasswordConfirm("");
                     setMode("register");
                   }}
                 >
@@ -342,6 +387,7 @@ export function AuthScreen(props: {
                   className="auth-footer-cta"
                   onClick={() => {
                     setError("");
+                    setPasswordConfirm("");
                     setMode("login");
                   }}
                 >

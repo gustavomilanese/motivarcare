@@ -1100,6 +1100,12 @@ export function App() {
           setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
+        onSafetyFrequentAbandon={() => {
+          setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
+          setState(defaultState);
+        }}
         onComplete={async ({ answers }) => {
           if (!state.authToken) {
             throw new Error("No se encontró sesión autenticada");

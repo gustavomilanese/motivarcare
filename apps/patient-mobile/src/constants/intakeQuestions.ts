@@ -10,6 +10,7 @@ export type IntakeQuestionDef = {
   exclusiveOptionEs?: string;
   otherFollowupOption?: string;
   crisisLastOption?: boolean;
+  therapistPreferenceComposite?: boolean;
 };
 
 /** Mismo separador que apps/patient `INTAKE_MAIN_REASON_VALUE_JOINER`. */
@@ -18,6 +19,11 @@ export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";
 /** Alineado con apps/patient `patientClinicalIntakeQuestions`. */
 export const PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES =
   "Estoy teniendo pensamientos de hacerme daño o de no querer vivir";
+
+export function isSafetyRiskFrequentlyAnswer(raw: string): boolean {
+  const v = raw.trim().toLowerCase();
+  return v === "frecuentemente" || v === "frequently" || v === "frequentemente";
+}
 
 export function intakePieces(raw: string): string[] {
   return raw
@@ -61,6 +67,101 @@ export function applyIntakeOptionSelection(
   }
 
   return { ...prev, [id]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+}
+
+/** Misma semántica que apps/patient (valor guardado del paso 3). */
+export const THERAPIST_PREF_EXCLUSIVE_ES = "No tengo preferencias";
+
+const TH_PREFIX_G = "Género del/de la psicólogo/a: ";
+const TH_PREFIX_AGE = "Edad aproximada del/de la psicólogo/a: ";
+const TH_PREFIX_LGBT = "Experiencia en temas LGBTIQ+: ";
+
+export const THERAPIST_PREF_GENDER_OPTIONS_ES = ["Sin preferencia", "Hombre", "Mujer", "Me da igual"] as const;
+export const THERAPIST_PREF_AGE_OPTIONS_ES = [
+  "Sin preferencia",
+  "25 a 35",
+  "35 a 45",
+  "45 a 55",
+  "55 a 65",
+  "65 a 75",
+  "75 o más"
+] as const;
+export const THERAPIST_PREF_LGBT_OPTIONS_ES = [
+  "Sin preferencia",
+  "Sí, prefiero experiencia o formación en temas LGBTIQ+",
+  "No es un criterio para mí"
+] as const;
+
+export type TherapistPrefParsedMobile = {
+  exclusive: boolean;
+  gender: string;
+  age: string;
+  lgbtq: string;
+};
+
+function normalizeTherapistLine(line: string): string {
+  const legacyGender = "Género: ";
+  const legacyAge = "Edad aproximada: ";
+  const legacyLgbt = "LGBTIQ+: ";
+  if (line.startsWith(TH_PREFIX_G)) {
+    return line;
+  }
+  if (line.startsWith(legacyGender)) {
+    return TH_PREFIX_G + line.slice(legacyGender.length).trim();
+  }
+  if (line.startsWith(TH_PREFIX_AGE)) {
+    return line;
+  }
+  if (line.startsWith(legacyAge)) {
+    return TH_PREFIX_AGE + line.slice(legacyAge.length).trim();
+  }
+  if (line.startsWith(TH_PREFIX_LGBT)) {
+    return line;
+  }
+  if (line.startsWith(legacyLgbt)) {
+    return TH_PREFIX_LGBT + line.slice(legacyLgbt.length).trim();
+  }
+  return line;
+}
+
+export function parseTherapistPreferencesStored(raw: string): TherapistPrefParsedMobile {
+  const trimmed = raw.trim();
+  if (trimmed === THERAPIST_PREF_EXCLUSIVE_ES) {
+    return {
+      exclusive: true,
+      gender: THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+      age: THERAPIST_PREF_AGE_OPTIONS_ES[0],
+      lgbtq: THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+    };
+  }
+  let gender: string = THERAPIST_PREF_GENDER_OPTIONS_ES[0];
+  let age: string = THERAPIST_PREF_AGE_OPTIONS_ES[0];
+  let lgbtq: string = THERAPIST_PREF_LGBT_OPTIONS_ES[0];
+  for (const piece of raw
+    .split(INTAKE_MAIN_REASON_VALUE_JOINER)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map(normalizeTherapistLine)) {
+    if (piece.startsWith(TH_PREFIX_G)) {
+      gender = piece.slice(TH_PREFIX_G.length).trim() || gender;
+    } else if (piece.startsWith(TH_PREFIX_AGE)) {
+      age = piece.slice(TH_PREFIX_AGE.length).trim() || age;
+    } else if (piece.startsWith(TH_PREFIX_LGBT)) {
+      lgbtq = piece.slice(TH_PREFIX_LGBT.length).trim() || lgbtq;
+    }
+  }
+  return { exclusive: false, gender, age, lgbtq };
+}
+
+export function buildTherapistPreferencesStored(exclusive: boolean, gender: string, age: string, lgbtq: string): string {
+  if (exclusive) {
+    return THERAPIST_PREF_EXCLUSIVE_ES;
+  }
+  return [TH_PREFIX_G + gender, TH_PREFIX_AGE + age, TH_PREFIX_LGBT + lgbtq].join(INTAKE_MAIN_REASON_VALUE_JOINER);
+}
+
+export function coerceTherapistOption(list: readonly string[], value: string): string {
+  return list.includes(value) ? value : list[0]!;
 }
 
 const CLINICAL_STEPS: IntakeQuestionDef[] = [
@@ -113,23 +214,13 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
   {
     id: "therapistPreferences",
     title: "3. ¿Tenés alguna preferencia respecto de tu psicólogo/a?",
-    help: "Marcá lo que aplique, o elegí “No tengo preferencias”.",
-    options: [
-      "Género del/de la psicólogo/a",
-      "Edad aproximada del/de la psicólogo/a",
-      "País o acento",
-      "Experiencia en temas LGBTIQ+",
-      "No tengo preferencias",
-      "Otro"
-    ],
-    allowMultiple: true,
-    exclusiveOptionEs: "No tengo preferencias",
-    otherFollowupOption: "Otro"
+    help: "Elegí “No tengo preferencias” o completá género, edad y LGBTIQ+.",
+    therapistPreferenceComposite: true
   },
   {
     id: "preferredApproach",
     title: "4. ¿Qué tipo de terapia preferís?",
-    help: "Elegí una opción. Si no estás seguro/a, podés dejarlo en manos del profesional.",
+    help: "Podés marcar una o varias. Si no estás seguro/a, elegí la última opción (limpia el resto).",
     options: [
       "Terapia cognitivo-conductual (TCC)",
       "Psicodinámica o psicoanalítica",
@@ -138,6 +229,8 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
       "Integradora o ecléctica",
       "No estoy seguro/a; lo que recomiende el profesional"
     ],
+    allowMultiple: true,
+    exclusiveOptionEs: "No estoy seguro/a; lo que recomiende el profesional",
     optionSubtexts: [
       "Enfoque en pensamientos y conductas; suele incluir técnicas concretas y tareas entre sesiones.",
       "Exploración del pasado, los vínculos y patrones que hoy se repiten.",
@@ -157,45 +250,20 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
     id: "emotionalState",
     title: "6. ¿Cómo te sentís hoy?",
     help: "Elegí la opción que mejor describa cómo estás ahora.",
-    options: [
-      "Bastante bien",
-      "Con altibajos, pero puedo",
-      "Mal/a, me cuesta",
-      "Muy mal/a o desbordado/a",
-      PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES
-    ],
-    crisisLastOption: true
+    options: ["Bastante bien", "Con altibajos", "Me siento muy mal", "Estoy desbordado/a"]
   }
 ];
 
 const LOGISTICS: IntakeQuestionDef[] = [
   {
-    id: "availability",
-    title: "7. Disponibilidad horaria preferida",
-    help: "Para mostrarte los mejores horarios.",
-    options: ["Por la mañana", "Tarde", "Noche", "Flexible"]
-  },
-  {
-    id: "language",
-    title: "8. Idioma para la sesión",
-    help: "Se usa en el matching.",
-    options: ["Inglés", "Español", "Bilingüe"]
-  },
-  {
-    id: "budget",
-    title: "9. Presupuesto estimado",
-    help: "Después podrás elegir paquetes de sesiones.",
-    options: ["Paquete inicial", "Paquete intermedio", "Paquete intensivo", "No estoy seguro"]
-  },
-  {
     id: "supportNetwork",
-    title: "10. ¿Contás con red de apoyo (familia/amigos)?",
+    title: "7. ¿Contás con red de apoyo (familia/amigos)?",
     help: "Contexto para continuidad terapéutica.",
     options: ["Apoyo fuerte", "Apoyo limitado", "Sin apoyo", "Prefiero no responder"]
   },
   {
     id: "safetyRisk",
-    title: "11. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
+    title: "8. En las últimas 2 semanas, ¿tuviste ideas de autolesión?",
     help: "Pregunta de seguridad obligatoria.",
     options: ["No", "A veces", "Frecuentemente", "Prefiero no responder"]
   }

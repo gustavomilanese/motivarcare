@@ -87,6 +87,57 @@ const APPROACH_KEYWORDS: Record<string, string[]> = {
   mindfulness: ["mindfulness", "aceptacion", "atencion plena"]
 };
 
+function approachKeywordListsForSegments(preferredApproachRaw: string): string[][] {
+  const normAll = normalize(preferredApproachRaw);
+  if (!normAll) {
+    return [];
+  }
+  if (normAll.includes("no estoy seguro") || normAll.includes("recomiende el profesional")) {
+    return [];
+  }
+  const segments = preferredApproachRaw
+    .split(/\n+/)
+    .map((line) => normalize(line.trim()))
+    .filter(Boolean);
+  if (segments.length === 0) {
+    return [];
+  }
+  const lists: string[][] = [];
+  for (const seg of segments) {
+    const keywords =
+      APPROACH_KEYWORDS[seg]
+      ?? (seg.includes("cognitiv") || seg.includes("tcc")
+        ? APPROACH_KEYWORDS.tcc
+        : seg.includes("psicodin")
+          ? APPROACH_KEYWORDS.psicodinamico
+          : seg.includes("human")
+            ? APPROACH_KEYWORDS.integrativo
+            : seg.includes("sistemic") || seg.includes("familiar")
+              ? APPROACH_KEYWORDS.integrativo
+              : seg.includes("integr")
+                ? APPROACH_KEYWORDS.integrativo
+                : []);
+    if (keywords.length > 0) {
+      lists.push(keywords);
+    }
+  }
+  return lists;
+}
+
+function professionalMatchesApproachPreferences(preferredApproachRaw: string, therapeuticApproach: string | null | undefined): boolean {
+  const approachText = normalize(therapeuticApproach ?? "");
+  const lists = approachKeywordListsForSegments(preferredApproachRaw);
+  return lists.some((keywords) => keywords.some((keyword) => approachText.includes(keyword)));
+}
+
+function hasSpecificTherapyApproachPreference(preferredApproachRaw: string): boolean {
+  const normAll = normalize(preferredApproachRaw);
+  if (!normAll) {
+    return false;
+  }
+  return !normAll.includes("no estoy seguro") && !normAll.includes("recomiende el profesional");
+}
+
 function normalize(value: string | undefined | null): string {
   if (!value) {
     return "";
@@ -198,7 +249,7 @@ export function rankProfessionalMatch(params: {
   const answers = parseIntakeAnswers(params.intakeAnswers);
   const patientTopics = extractPatientTopics(answers);
   const availabilityPreference = normalize(answers.availability);
-  const preferredApproach = normalize(answers.preferredApproach);
+  const preferredApproachRaw = answers.preferredApproach ?? "";
   const preferredLanguage = normalize(answers.language);
   const previousTherapy = normalize(answers.previousTherapy);
 
@@ -210,26 +261,8 @@ export function rankProfessionalMatch(params: {
   let score = 35;
   score += Math.min(36, matchedTopics.length * 14);
 
-  if (
-    preferredApproach
-    && !preferredApproach.includes("no estoy seguro")
-    && !preferredApproach.includes("recomiende el profesional")
-  ) {
-    const approachText = normalize(params.professional.therapeuticApproach ?? "");
-    const approachKeywords =
-      APPROACH_KEYWORDS[preferredApproach]
-      ?? (preferredApproach.includes("cognitiv") || preferredApproach.includes("tcc")
-        ? APPROACH_KEYWORDS.tcc
-        : preferredApproach.includes("psicodin")
-          ? APPROACH_KEYWORDS.psicodinamico
-          : preferredApproach.includes("human")
-            ? APPROACH_KEYWORDS.integrativo
-            : preferredApproach.includes("sistemic") || preferredApproach.includes("familiar")
-              ? APPROACH_KEYWORDS.integrativo
-              : preferredApproach.includes("integr")
-                ? APPROACH_KEYWORDS.integrativo
-                : []);
-    if (approachKeywords.length > 0 && approachKeywords.some((keyword) => approachText.includes(keyword))) {
+  if (hasSpecificTherapyApproachPreference(preferredApproachRaw)) {
+    if (professionalMatchesApproachPreferences(preferredApproachRaw, params.professional.therapeuticApproach)) {
       score += 14;
     }
   } else {
@@ -279,37 +312,23 @@ export function rankProfessionalMatch(params: {
     );
   }
 
-  if (
-    preferredApproach
-    && !preferredApproach.includes("no estoy seguro")
-    && !preferredApproach.includes("recomiende el profesional")
-  ) {
-    const approachText = normalize(params.professional.therapeuticApproach ?? "");
-    const approachKeywords =
-      APPROACH_KEYWORDS[preferredApproach]
-      ?? (preferredApproach.includes("cognitiv") || preferredApproach.includes("tcc")
-        ? APPROACH_KEYWORDS.tcc
-        : preferredApproach.includes("psicodin")
-          ? APPROACH_KEYWORDS.psicodinamico
-          : preferredApproach.includes("human")
-            ? APPROACH_KEYWORDS.integrativo
-            : preferredApproach.includes("sistemic") || preferredApproach.includes("familiar")
-              ? APPROACH_KEYWORDS.integrativo
-              : preferredApproach.includes("integr")
-                ? APPROACH_KEYWORDS.integrativo
-                : []);
-    if (approachKeywords.length > 0 && approachKeywords.some((keyword) => approachText.includes(keyword))) {
+  if (hasSpecificTherapyApproachPreference(preferredApproachRaw)) {
+    if (professionalMatchesApproachPreferences(preferredApproachRaw, params.professional.therapeuticApproach)) {
       reasons.push(
         localize(params.language, {
-          es: "Su enfoque terapéutico coincide con tu preferencia.",
-          en: "Therapeutic approach matches your preference.",
-          pt: "A abordagem terapeutica coincide com sua preferencia."
+          es: "Su enfoque terapéutico coincide con alguna de tus preferencias.",
+          en: "Therapeutic approach matches at least one of your preferences.",
+          pt: "A abordagem terapeutica coincide com pelo menos uma das suas preferencias."
         })
       );
     }
   }
 
-  if (availabilityMatches) {
+  if (
+    availabilityPreference &&
+    availabilityPreference !== "flexible" &&
+    availabilityMatches
+  ) {
     reasons.push(
       localize(params.language, {
         es: "Tiene horarios en tu franja horaria preferida.",
