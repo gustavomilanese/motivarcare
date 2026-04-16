@@ -208,14 +208,15 @@ function optionValueSet(block: ProblemQuestionBlock): Set<string> {
 }
 
 function otherEntryForBlock(block: ProblemQuestionBlock, values: string[]): string | null {
-  if (!block.otherValuePrefixEs) {
+  const prefix = block.otherValuePrefixEs;
+  if (!prefix) {
     return null;
   }
-  const hit = values.find((v) => v.startsWith(block.otherValuePrefixEs));
+  const hit = values.find((v) => v.startsWith(prefix));
   if (!hit) {
     return null;
   }
-  return hit.slice(block.otherValuePrefixEs.length).trim();
+  return hit.slice(prefix.length).trim();
 }
 
 function stripBlockOptionValues(block: ProblemQuestionBlock, values: string[]): string[] {

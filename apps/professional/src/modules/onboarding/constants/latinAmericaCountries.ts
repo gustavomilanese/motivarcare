@@ -57,7 +57,7 @@ const ATTENTION_AREA_BASE_ES = [
 
 /** Áreas de atención en perfil + opciones del cuestionario de problemáticas (onboarding profesional). */
 export const ATTENTION_AREA_OPTIONS_ES: string[] = (() => {
-  const merged = [...ATTENTION_AREA_BASE_ES];
+  const merged: string[] = [...ATTENTION_AREA_BASE_ES];
   for (const v of allQuestionnaireValueEs()) {
     if (!merged.includes(v)) {
       merged.push(v);
