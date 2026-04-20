@@ -787,10 +787,51 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
 
   const googleOAuthReady = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
   let meetProvisioned = false;
+  /**
+   * Si hay calendario de plataforma (GOOGLE_REFRESH_TOKEN + GOOGLE_CALENDAR_ID), intentar Meet ahí primero
+   * en cualquier NODE_ENV: evita depender del token del profesional demo (suele estar vencido) y coincide con
+   * OAuth Playground en .env. Si falla, se sigue con pro → paciente → segundo intento plataforma.
+   */
+  let skipFinalPlatformCalendarPass = false;
+  if (isPlatformGoogleMeetEnabled()) {
+    try {
+      const meet = await createGoogleMeetForPlatformCalendar({
+        bookingId: createdBooking.booking.id,
+        startsAt: createdBooking.booking.startsAt,
+        endsAt: createdBooking.booking.endsAt,
+        professionalName: professional.user.fullName,
+        patientName: actor.fullName,
+        participants: [
+          { email: actor.email, displayName: actor.fullName },
+          { email: professional.user.email, displayName: professional.user.fullName }
+        ]
+      });
 
-  // Try professional calendar first; on failure fall through to patient calendar, then platform.
+      await prisma.videoSession.update({
+        where: { bookingId: createdBooking.booking.id },
+        data: {
+          provider: "google_meet_platform",
+          externalRoomId: meet.eventId,
+          joinUrlPatient: meet.joinUrl,
+          joinUrlProfessional: meet.joinUrl
+        }
+      });
+
+      joinUrlPatient = meet.joinUrl;
+      joinUrlProfessional = meet.joinUrl;
+      meetProvisioned = true;
+      skipFinalPlatformCalendarPass = true;
+    } catch (googleMeetError) {
+      console.error(
+        "Could not provision Google Meet on platform calendar (first pass); trying professional/patient calendars",
+        googleMeetError
+      );
+    }
+  }
+
+  // Try professional calendar; on failure fall through to patient calendar, then platform.
   // (Previously an else-if chain skipped patient/platform when the pro had a broken/stale connection.)
-  if (googleOAuthReady && professionalCalendarConnection) {
+  if (!meetProvisioned && googleOAuthReady && professionalCalendarConnection) {
     try {
       const meet = await createGoogleMeetForUserCalendar({
         clientId: env.GOOGLE_CLIENT_ID,
@@ -902,7 +943,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
     }
   }
 
-  if (!meetProvisioned && isPlatformGoogleMeetEnabled()) {
+  if (!meetProvisioned && isPlatformGoogleMeetEnabled() && !skipFinalPlatformCalendarPass) {
     try {
       const meet = await createGoogleMeetForPlatformCalendar({
         bookingId: createdBooking.booking.id,

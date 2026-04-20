@@ -4,6 +4,7 @@ import { google } from "googleapis";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
+import { userNamePartsFromFullNameString } from "@therapy/types";
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
@@ -164,6 +165,8 @@ function shapeUserResponse(user: {
   id: string;
   email: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   avatarUrl: string | null;
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   emailVerified: boolean;
@@ -174,6 +177,8 @@ function shapeUserResponse(user: {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    firstName: user.firstName,
+    lastName: user.lastName,
     avatarUrl: user.avatarUrl,
     role: user.role,
     emailVerified: user.emailVerified,
@@ -371,10 +376,14 @@ authRouter.post("/register", async (req, res) => {
   const passwordHash = hashPassword(parsed.data.password);
   const isTestUser = env.NODE_ENV !== "production" && parsed.data.isTestUser === true;
 
+  const nameParts = userNamePartsFromFullNameString(parsed.data.fullName.trim());
+
   const created = await prisma.user.create({
     data: {
       email,
-      fullName: parsed.data.fullName.trim(),
+      fullName: nameParts.fullName,
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
       role: parsed.data.role,
       passwordHash,
       isTestUser,
@@ -698,7 +707,11 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
       clientOrigin: oauthClientOrigin
     });
   } catch (error) {
-    console.error("Could not complete Google Calendar OAuth callback", error);
+    console.error("Could not complete Google Calendar OAuth callback", {
+      redirectUriUsed: getGoogleOauthRedirectUri(),
+      hint: "Debe coincidir exactamente con una «URI de redireccionamiento autorizada» en Google Cloud (mismo esquema, host y puerto que API_PUBLIC_URL).",
+      error
+    });
     return redirectWithCookieClear({
       role: stateToken.user.role,
       status: "error",
@@ -821,13 +834,21 @@ authRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.auth.userId },
-    include: {
-      patient: { select: { id: true } },
-      professional: { select: { id: true } }
-    }
-  });
+  const userId = req.auth.userId;
+
+  const [user, googleCalendarConnection] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        patient: { select: { id: true } },
+        professional: { select: { id: true } }
+      }
+    }),
+    prisma.googleCalendarConnection.findUnique({
+      where: { userId },
+      select: { id: true }
+    })
+  ]);
 
   if (!user) {
     return res.status(404).json({ error: "User not found" });
@@ -835,7 +856,8 @@ authRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
 
   return res.json({
     user: shapeUserResponse(user),
-    ...authResponseMeta(user.role)
+    ...authResponseMeta(user.role),
+    googleCalendarConnected: Boolean(googleCalendarConnection)
   });
 });
 
@@ -849,10 +871,21 @@ authRouter.patch("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
   }
 
+  const namePatch =
+    parsed.data.fullName !== undefined
+      ? userNamePartsFromFullNameString(parsed.data.fullName.trim())
+      : null;
+
   const updated = await prisma.user.update({
     where: { id: req.auth.userId },
     data: {
-      ...(parsed.data.fullName !== undefined ? { fullName: parsed.data.fullName } : {}),
+      ...(namePatch
+        ? {
+            fullName: namePatch.fullName,
+            firstName: namePatch.firstName,
+            lastName: namePatch.lastName
+          }
+        : {}),
       ...(parsed.data.avatarUrl !== undefined ? { avatarUrl: parsed.data.avatarUrl } : {})
     },
     include: {

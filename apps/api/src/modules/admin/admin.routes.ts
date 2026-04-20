@@ -5,6 +5,7 @@ import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } fro
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
+import { userNamePartsFromFullNameString } from "@therapy/types";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 
@@ -317,6 +318,8 @@ type AdminUserRecord = {
   id: string;
   email: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   avatarUrl: string | null;
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   isActive: boolean;
@@ -349,6 +352,8 @@ function shapeAdminUser(user: AdminUserRecord) {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    firstName: user.firstName,
+    lastName: user.lastName,
     avatarUrl: user.avatarUrl,
     role: user.role,
     isActive: user.isActive,
@@ -849,10 +854,14 @@ adminRouter.post("/users", async (req, res) => {
     return res.status(409).json({ error: "Email already in use" });
   }
 
+  const nameParts = userNamePartsFromFullNameString(parsed.data.fullName.trim());
+
   const created = await prisma.user.create({
     data: {
       email,
-      fullName: parsed.data.fullName.trim(),
+      fullName: nameParts.fullName,
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
       passwordHash: hashPassword(parsed.data.password),
       role: parsed.data.role,
       isTestUser: parsed.data.isTestUser ?? false,
@@ -935,7 +944,10 @@ adminRouter.patch("/users/:userId", async (req, res) => {
   const data: Record<string, unknown> = {};
 
   if (parsed.data.fullName) {
-    data.fullName = parsed.data.fullName.trim();
+    const nameParts = userNamePartsFromFullNameString(parsed.data.fullName.trim());
+    data.fullName = nameParts.fullName;
+    data.firstName = nameParts.firstName;
+    data.lastName = nameParts.lastName;
   }
 
   if (parsed.data.email) {

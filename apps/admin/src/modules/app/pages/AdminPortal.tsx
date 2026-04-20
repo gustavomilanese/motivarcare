@@ -1,3 +1,4 @@
+import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
@@ -71,9 +72,9 @@ export function AdminPortal(props: {
 
   useEffect(() => {
     void loadSidebarAlertCounts();
-    const intervalId = window.setInterval(() => {
+    const unsubscribePoll = subscribeDocumentVisibleInterval(() => {
       void loadSidebarAlertCounts();
-    }, 30000);
+    }, 30_000);
 
     const onProfRefresh = () => {
       void loadSidebarAlertCounts();
@@ -81,7 +82,7 @@ export function AdminPortal(props: {
     window.addEventListener("mc-admin-pending-prof-refresh", onProfRefresh);
 
     return () => {
-      window.clearInterval(intervalId);
+      unsubscribePoll();
       window.removeEventListener("mc-admin-pending-prof-refresh", onProfRefresh);
     };
   }, [loadSidebarAlertCounts, location.pathname]);

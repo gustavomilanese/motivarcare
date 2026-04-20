@@ -26,19 +26,21 @@ import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
 import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
-import { friendlyCalendarOnboardingMessage } from "./lib/friendlyPatientMessages";
+import {
+  friendlyCalendarOAuthReturnMessage,
+  friendlyCalendarOnboardingMessage
+} from "./lib/friendlyPatientMessages";
+import { sessionUserFromAuthMe } from "./lib/sessionFromAuthMe";
 import { PostIntakePhotoScreen } from "./components/PostIntakePhotoScreen";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
+import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
 import type {
   Booking,
-  AuthMeApiResponse,
-  BookingsMineApiResponse,
   Message,
   PatientAppState,
   PatientProfile,
-  ProfileMeApiResponse,
   Professional,
   RiskLevel,
   SessionUser,
@@ -96,6 +98,7 @@ const defaultProfile: PatientProfile = {
 const defaultState: PatientAppState = {
   session: null,
   authToken: null,
+  googleCalendarConnected: false,
   emailVerificationRequired: false,
   language: "es",
   currency: "USD",
@@ -162,6 +165,7 @@ function loadState(): PatientAppState {
       session: parsed.session
         ? {
             ...parsed.session,
+            id: String((parsed.session as { id?: unknown }).id ?? ""),
             emailVerified:
               typeof (parsed.session as { emailVerified?: unknown }).emailVerified === "boolean"
                 ? Boolean((parsed.session as { emailVerified?: unknown }).emailVerified)
@@ -188,6 +192,8 @@ function loadState(): PatientAppState {
             && typeof item?.name === "string"
             && typeof item?.credits === "number"
             && typeof item?.purchasedAt === "string"
+            && (item?.priceCents === undefined || item?.priceCents === null || typeof item?.priceCents === "number")
+            && (item?.currency === undefined || item?.currency === null || typeof item?.currency === "string")
           ))
           : []
       },
@@ -195,7 +201,8 @@ function loadState(): PatientAppState {
         ...defaultProfile,
         ...parsed.profile,
         cards: parsed.profile?.cards ?? []
-      }
+      },
+      googleCalendarConnected: false
     };
   } catch {
     return defaultState;
@@ -203,7 +210,9 @@ function loadState(): PatientAppState {
 }
 
 function saveState(state: PatientAppState): void {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const { googleCalendarConnected: _gc, ...persisted } = state;
+  void _gc;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
 }
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -230,6 +239,8 @@ function writeDismissedCalendarPromptUsers(userIds: string[]): void {
 function mapDirectoryProfessionalToLegacyProfessional(item: {
   id: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   title: string;
   yearsExperience: number;
   compatibilityBase: number;
@@ -248,6 +259,8 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
   return {
     id: item.id,
     fullName: item.fullName,
+    firstName: item.firstName,
+    lastName: item.lastName,
     title: item.title || "Profesional de salud mental",
     yearsExperience: item.yearsExperience,
     compatibility: item.compatibilityBase,
@@ -334,6 +347,39 @@ export function App() {
   const [showPostIntakePhotoStep, setShowPostIntakePhotoStep] = useState(false);
   const [postIntakePhotoBusy, setPostIntakePhotoBusy] = useState(false);
   const calendarAfterPhotoRef = useRef(false);
+  /**
+   * Cada incremento invalida el lote de `syncFromApi` en vuelo (p. ej. verificación de email completada).
+   * Así una respuesta vieja de GET /me no pisa estado ya actualizado.
+   * Solo ref (no estado): si el epoch vive en `useState`, cada bump re-dispara el efecto de sync y
+   * puede encadenar ráfagas a /profiles/me + /auth/me cuando hay muchos resyncs (p. ej. visibility).
+   */
+  const portalSyncEpochRef = useRef(0);
+  /** `true` = saltear throttle (email verificado, otra pestaña, etc.). */
+  const schedulePortalSyncRef = useRef<(force?: boolean) => void>(() => {});
+
+  /**
+   * Clave estable por sesión: evita que `id` número vs string u oscilaciones en token
+   * re-disparen el efecto de sync en bucle (ráfagas a /profiles/me + /auth/me).
+   */
+  const portalLoginKey = useMemo(() => {
+    const rawId = state.session?.id;
+    const tok = state.authToken;
+    if (rawId == null || tok == null) {
+      return null;
+    }
+    const id = String(rawId).trim();
+    const token = String(tok).trim();
+    if (id.length === 0 || token.length === 0) {
+      return null;
+    }
+    return `${id}::${token}`;
+  }, [state.session?.id, state.authToken]);
+
+  const requestPortalResync = useCallback(() => {
+    portalSyncEpochRef.current += 1;
+    schedulePortalSyncRef.current(true);
+  }, []);
+
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const isForgotPasswordRoute = useMemo(() => location.pathname === "/forgot-password", [location.pathname]);
@@ -371,23 +417,108 @@ export function App() {
     };
   }, [navigate]);
 
-  const updateState = (updater: (current: PatientAppState) => PatientAppState) => {
+  const updateState = useCallback((updater: (current: PatientAppState) => PatientAppState) => {
     setState((current) => updater(current));
-  };
+  }, []);
 
   const handlePatientSessionEmailVerified = useCallback(() => {
     setState((current) =>
       current.session
         ? {
             ...current,
-            session: { ...current.session, emailVerified: true },
-            emailVerificationRequired: false
+            session: { ...current.session, emailVerified: true }
           }
         : current
     );
-  }, []);
+    requestPortalResync();
+  }, [requestPortalResync]);
+
+  /** Otra pestaña guardó estado verificado en localStorage: alinear UI y pedir un sync fresco al servidor. */
+  useEffect(() => {
+    function handleStorageEvent(event: StorageEvent) {
+      if (event.key !== STORAGE_KEY || typeof event.newValue !== "string") {
+        return;
+      }
+      let parsed: PatientAppState;
+      try {
+        parsed = JSON.parse(event.newValue) as PatientAppState;
+      } catch {
+        return;
+      }
+      const remote = parsed.session;
+      if (!remote?.id || remote.emailVerified !== true) {
+        return;
+      }
+      setState((current) => {
+        if (!current.session || current.session.id !== remote.id || current.session.emailVerified) {
+          return current;
+        }
+        return {
+          ...current,
+          session: { ...current.session, emailVerified: true }
+        };
+      });
+      requestPortalResync();
+    }
+
+    window.addEventListener("storage", handleStorageEvent);
+    return () => window.removeEventListener("storage", handleStorageEvent);
+  }, [requestPortalResync]);
+
+  /** Volvés a la pestaña donde seguía «revisá tu correo»: un resync trae /me autoritativo. */
+  useEffect(() => {
+    if (
+      location.pathname !== "/verify-email-required"
+      || !state.session?.id
+      || state.session.emailVerified
+      || !state.authToken
+    ) {
+      return;
+    }
+
+    let lastVisibilityResyncAt = 0;
+
+    function onVisibility() {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      const now = Date.now();
+      if (now - lastVisibilityResyncAt < 2000) {
+        return;
+      }
+      lastVisibilityResyncAt = now;
+      requestPortalResync();
+    }
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [
+    location.pathname,
+    requestPortalResync,
+    state.authToken,
+    state.session?.emailVerified,
+    state.session?.id
+  ]);
 
   const sessionId = state.session?.id;
+
+  const portalSyncThrottleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const portalSyncLastBatchAtRef = useRef(0);
+
+  const portalSyncDepsRef = useRef({
+    sessionId: undefined as string | undefined,
+    authToken: null as string | null,
+    language: "es" as AppLanguage
+  });
+  portalSyncDepsRef.current = {
+    sessionId: sessionId == null ? undefined : String(sessionId),
+    authToken: state.authToken,
+    language: state.language
+  };
+
+  const portalSyncMutexRef = useRef({ inFlight: false, rerun: false });
+  /** Evita GET /matching duplicado al montar; solo refetch de directorio cuando el usuario cambia idioma. */
+  const portalLanguageBootstrapRef = useRef(false);
 
   /** Calendar opcional tras intake y antes del matching; deja de aplicar al elegir terapeuta / reservar. */
   useEffect(() => {
@@ -458,7 +589,7 @@ export function App() {
     showPostIntakePhotoStep
   ]);
 
-  /** Tras confirmar sesión de prueba: ofrecer Google Calendar si aún no está conectado. */
+  /** Tras confirmar sesión de prueba: ofrecer Google Calendar si aún no está conectado (flag en GET /me, sin polling extra). */
   useEffect(() => {
     if (!sessionId || !state.authToken || !profileSyncReady) {
       return;
@@ -481,37 +612,21 @@ export function App() {
       return;
     }
 
-    let cancelled = false;
+    if (state.googleCalendarConnected) {
+      clearPostTrialCalendarPending();
+      return;
+    }
 
-    void apiRequest<{ connected: boolean }>("/api/auth/google/calendar/status", {}, state.authToken)
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
-        if (response.connected) {
-          clearPostTrialCalendarPending();
-          return;
-        }
-        setCalendarOfferContext("post-trial");
-        setShowCalendarOnboarding(true);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCalendarOfferContext("post-trial");
-          setShowCalendarOnboarding(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    setCalendarOfferContext("post-trial");
+    setShowCalendarOnboarding(true);
   }, [
     sessionId,
     state.authToken,
     profileSyncReady,
     showPostIntakePhotoStep,
     showCalendarOnboarding,
-    calendarPromptDismissedUserIds
+    calendarPromptDismissedUserIds,
+    state.googleCalendarConnected
   ]);
 
   const handleConnectCalendarFromOnboarding = async () => {
@@ -596,27 +711,40 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!sessionId || !state.authToken) {
+    if (!portalLoginKey) {
+      if (portalSyncThrottleTimerRef.current) {
+        clearTimeout(portalSyncThrottleTimerRef.current);
+        portalSyncThrottleTimerRef.current = null;
+      }
+      portalSyncLastBatchAtRef.current = 0;
       setProfileSyncReady(false);
       setProfessionalDirectory(professionalsCatalog);
       setProfessionalPhotoMap(professionalImageMap);
       return;
     }
 
-    setProfileSyncReady(false);
-
-    let cancelled = false;
-
-    const syncFromApi = async () => {
+    /**
+     * No bajar `profileSyncReady` en cada sync del mismo login: desmontaba todo el portal (parpadeo).
+     * Un solo sync en vuelo; si llegan más disparos (deps), se encola `rerun` con deps al día (ref).
+     * Evita ráfagas paralelas a /profiles/me + /bookings/mine + /auth/me.
+     * Throttle entre lotes (salvo `force`) corta bucles si el efecto se re-dispara más rápido que ~1s.
+     */
+    const runSyncFromApi = async () => {
+      const batchEpoch = portalSyncEpochRef.current;
+      const { sessionId: sid, authToken: tokenFromRef, language: languageSnapshot } = portalSyncDepsRef.current;
+      const tokenSnapshot = tokenFromRef ?? undefined;
+      if (!sid || !tokenSnapshot) {
+        return;
+      }
       try {
-        const [profileResult, bookingsResult, authResult, professionalDirectoryResult] = await Promise.allSettled([
-          apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, state.authToken ?? undefined),
-          apiRequest<BookingsMineApiResponse>("/api/bookings/mine", {}, state.authToken ?? undefined),
-          apiRequest<AuthMeApiResponse>("/api/auth/me", {}, state.authToken ?? undefined),
-          fetchProfessionalDirectory(state.authToken ?? undefined, state.language)
-        ]);
+        const { profileResult, bookingsResult, authResult, professionalDirectoryResult } =
+          await fetchPatientPortalSyncBatchShared({
+            token: tokenSnapshot,
+            epoch: batchEpoch,
+            language: languageSnapshot
+          });
 
-        if (cancelled) {
+        if (batchEpoch !== portalSyncEpochRef.current) {
           return;
         }
 
@@ -669,7 +797,8 @@ export function App() {
           .filter((booking): booking is Booking => booking !== null);
 
         setState((current) => {
-          if (!current.session || current.session.id !== sessionId) {
+          const liveSid = portalSyncDepsRef.current.sessionId;
+          if (!current.session || !liveSid || String(current.session.id) !== String(liveSid)) {
             return current;
           }
 
@@ -741,18 +870,16 @@ export function App() {
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
             },
             session: authResponse?.user
-              ? {
-                  id: authResponse.user.id,
-                  fullName: authResponse.user.fullName,
-                  email: authResponse.user.email,
-                  emailVerified: authResponse.user.emailVerified,
-                  avatarUrl: authResponse.user.avatarUrl ?? null
-                }
+              ? sessionUserFromAuthMe(authResponse.user, current.session)
               : current.session,
             emailVerificationRequired:
               typeof authResponse?.emailVerificationRequired === "boolean"
                 ? authResponse.emailVerificationRequired
                 : current.emailVerificationRequired,
+            googleCalendarConnected:
+              typeof authResponse?.googleCalendarConnected === "boolean"
+                ? authResponse.googleCalendarConnected
+                : current.googleCalendarConnected,
             intake: profileResponse?.profile?.intakeCompletedAt
               ? {
                   completed: true,
@@ -799,18 +926,102 @@ export function App() {
       } catch (error) {
         console.error("Could not sync patient portal from API", error);
       } finally {
-        if (!cancelled) {
+        const deps = portalSyncDepsRef.current;
+        if (
+          batchEpoch === portalSyncEpochRef.current
+          && Boolean(String(deps.sessionId ?? "").trim())
+          && Boolean(deps.authToken)
+        ) {
           setProfileSyncReady(true);
         }
       }
     };
 
-    void syncFromApi();
+    const PORTAL_SYNC_MIN_GAP_MS = 1100;
 
+    const schedulePortalSync = (force = false): void => {
+      const startBatch = (): void => {
+        if (portalSyncMutexRef.current.inFlight) {
+          portalSyncMutexRef.current.rerun = true;
+          return;
+        }
+
+        const runWithRetry = async (): Promise<void> => {
+          portalSyncMutexRef.current.inFlight = true;
+          try {
+            do {
+              portalSyncMutexRef.current.rerun = false;
+              await runSyncFromApi();
+            } while (portalSyncMutexRef.current.rerun);
+          } finally {
+            portalSyncMutexRef.current.inFlight = false;
+          }
+        };
+
+        void runWithRetry();
+      };
+
+      if (force) {
+        if (portalSyncThrottleTimerRef.current) {
+          clearTimeout(portalSyncThrottleTimerRef.current);
+          portalSyncThrottleTimerRef.current = null;
+        }
+        portalSyncLastBatchAtRef.current = Date.now();
+        startBatch();
+        return;
+      }
+
+      const now = Date.now();
+      const since = now - portalSyncLastBatchAtRef.current;
+      if (since >= PORTAL_SYNC_MIN_GAP_MS || portalSyncLastBatchAtRef.current === 0) {
+        portalSyncLastBatchAtRef.current = now;
+        startBatch();
+        return;
+      }
+
+      if (portalSyncThrottleTimerRef.current) {
+        return;
+      }
+      portalSyncThrottleTimerRef.current = setTimeout(() => {
+        portalSyncThrottleTimerRef.current = null;
+        portalSyncLastBatchAtRef.current = Date.now();
+        startBatch();
+      }, PORTAL_SYNC_MIN_GAP_MS - since);
+    };
+
+    schedulePortalSyncRef.current = schedulePortalSync;
+    schedulePortalSync();
+
+    return () => {
+      portalSyncEpochRef.current += 1;
+      if (portalSyncThrottleTimerRef.current) {
+        clearTimeout(portalSyncThrottleTimerRef.current);
+        portalSyncThrottleTimerRef.current = null;
+      }
+      portalSyncLastBatchAtRef.current = 0;
+    };
+  }, [portalLoginKey]);
+
+  useEffect(() => {
+    if (!sessionId || !state.authToken) {
+      portalLanguageBootstrapRef.current = false;
+      return;
+    }
+    if (!portalLanguageBootstrapRef.current) {
+      portalLanguageBootstrapRef.current = true;
+      return;
+    }
+    let cancelled = false;
+    void fetchProfessionalDirectory(state.authToken, state.language).then((rows) => {
+      if (cancelled) {
+        return;
+      }
+      setProfessionalDirectory(rows.map(mapDirectoryProfessionalToLegacyProfessional));
+    }).catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [sessionId, state.authToken, state.language]);
+  }, [state.language, sessionId, state.authToken]);
 
   useEffect(() => {
     if (!sessionId || !state.authToken) {
@@ -828,13 +1039,19 @@ export function App() {
   }, [sessionId, sessionTimezone, state.authToken]);
 
   useEffect(() => {
-    if (!state.session?.id) {
+    const sessionUserId = state.session?.id;
+    if (!sessionUserId) {
       return;
     }
 
     const query = new URLSearchParams(location.search);
     const calendarSync = query.get("calendar_sync");
+    if (!calendarSync) {
+      return;
+    }
+
     const callbackUserId = query.get("calendar_user_id");
+    const calendarReason = query.get("calendar_reason");
     const onboardingPath = "/onboarding/final/matching";
     const resumeMatching = location.pathname.startsWith("/onboarding/final");
 
@@ -842,6 +1059,7 @@ export function App() {
       const nextSearch = new URLSearchParams(location.search);
       nextSearch.delete("calendar_sync");
       nextSearch.delete("calendar_user_id");
+      nextSearch.delete("calendar_reason");
       if (extraSearch) {
         for (const [k, v] of Object.entries(extraSearch)) {
           nextSearch.set(k, v);
@@ -851,10 +1069,36 @@ export function App() {
       navigate({ pathname, search: qs ? `?${qs}` : "" }, { replace: true });
     };
 
-    if (calendarSync === "connected" && callbackUserId === state.session.id) {
-      const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
-      writeDismissedCalendarPromptUsers(nextDismissed);
-      setCalendarPromptDismissedUserIds(nextDismissed);
+    const stripCalendarQueryOnly = () => {
+      calendarNav(location.pathname, null);
+    };
+
+    // Otro usuario en el mismo navegador: OAuth volvió con un userId distinto al de la sesión actual.
+    if (callbackUserId && callbackUserId !== sessionUserId) {
+      setShowCalendarOnboarding(false);
+      setCalendarOnboardingLoading(false);
+      const ctxErr = getCalendarOfferContext();
+      clearCalendarOfferContext();
+      clearPostTrialCalendarPending();
+      const errorTarget = ctxErr === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
+      calendarNav(errorTarget, { calendar_sync: "error", calendar_reason: "session_mismatch" });
+      return;
+    }
+
+    if (calendarSync === "connected" && callbackUserId === sessionUserId) {
+      /**
+       * No usar `calendarPromptDismissedUserIds` en las deps de este efecto: al actualizar la lista el
+       * efecto se vuelve a disparar mientras `location.search` sigue teniendo `calendar_sync=connected`
+       * (navigate aún no aplicó), y re-entrar repite setState → Maximum update depth (p. ej. en matching).
+       */
+      setCalendarPromptDismissedUserIds((current) => {
+        if (current.includes(sessionUserId)) {
+          return current;
+        }
+        const nextDismissed = [...current, sessionUserId];
+        writeDismissedCalendarPromptUsers(nextDismissed);
+        return nextDismissed;
+      });
       setShowCalendarOnboarding(false);
       setCalendarOnboardingLoading(false);
       const ctx = getCalendarOfferContext();
@@ -866,47 +1110,40 @@ export function App() {
       return;
     }
 
-    if (!callbackUserId || callbackUserId === state.session.id) {
+    if (
+      (calendarSync === "error" || calendarSync === "cancelled")
+      && callbackUserId === sessionUserId
+    ) {
+      setCalendarOnboardingLoading(false);
+      setShowCalendarOnboarding(true);
+      setCalendarOnboardingError(
+        friendlyCalendarOAuthReturnMessage(state.language, {
+          status: calendarSync === "cancelled" ? "cancelled" : "error",
+          reason: calendarReason
+        })
+      );
+      stripCalendarQueryOnly();
       return;
     }
 
-    // Keep current session stable and return safely to onboarding flow.
+    // Params huérfanos o mismatch ya manejado: limpiar la barra de dirección.
+    stripCalendarQueryOnly();
+  }, [location.pathname, location.search, navigate, state.language, state.session?.id]);
+
+  /** Si el modal de Calendar está abierto y el sync ya trajo `googleCalendarConnected`, cerrar sin GET /calendar/status. */
+  useEffect(() => {
+    if (!showCalendarOnboarding || !state.authToken || !sessionId) {
+      return;
+    }
+    if (!state.googleCalendarConnected) {
+      return;
+    }
     setShowCalendarOnboarding(false);
-    setCalendarOnboardingLoading(false);
-    const ctxErr = getCalendarOfferContext();
+    const ctx = getCalendarOfferContext();
     clearCalendarOfferContext();
     clearPostTrialCalendarPending();
-    const errorTarget = ctxErr === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
-    calendarNav(errorTarget, { calendar_sync: "error", calendar_reason: "session_mismatch" });
-  }, [calendarPromptDismissedUserIds, location.pathname, location.search, navigate, state.session?.id]);
-
-  useEffect(() => {
-    if (!showCalendarOnboarding || !state.authToken || !state.session) {
-      return;
-    }
-
-    let cancelled = false;
-    void apiRequest<{ connected: boolean }>(
-      "/api/auth/google/calendar/status",
-      {},
-      state.authToken
-    )
-      .then((response) => {
-        if (!cancelled && response.connected) {
-          setShowCalendarOnboarding(false);
-          const ctx = getCalendarOfferContext();
-          clearCalendarOfferContext();
-          clearPostTrialCalendarPending();
-          navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
-        }
-      })
-      .catch(() => {
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showCalendarOnboarding, state.authToken, state.session, navigate]);
+    navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
+  }, [showCalendarOnboarding, state.authToken, sessionId, state.googleCalendarConnected, navigate]);
 
   useEffect(() => {
     if (!state.session || location.pathname === "/verify-email") {
@@ -974,7 +1211,6 @@ export function App() {
       <VerifyEmailRequiredScreen
         language={state.language}
         token={state.authToken ?? ""}
-        email={state.session.email}
         onLogout={() => {
           if (location.pathname === "/verify-email-required") {
             navigate("/", { replace: true });

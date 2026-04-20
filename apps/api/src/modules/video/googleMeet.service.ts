@@ -113,6 +113,42 @@ export function isPlatformGoogleMeetEnabled(): boolean {
   return Boolean(getPlatformCalendarAuthConfig());
 }
 
+/** Una línea al levantar el API: no imprime secretos. */
+export function logGoogleMeetStartupHints(): void {
+  if (env.NODE_ENV === "test") {
+    return;
+  }
+  const oauthApp = Boolean(env.GOOGLE_CLIENT_ID?.trim() && env.GOOGLE_CLIENT_SECRET?.trim());
+  const platform = isPlatformGoogleMeetEnabled();
+  const refresh = Boolean(env.GOOGLE_REFRESH_TOKEN?.trim());
+  const calId = Boolean(env.GOOGLE_CALENDAR_ID?.trim());
+  if (env.NODE_ENV === "production") {
+    if (!oauthApp) {
+      console.warn("[Google Meet] Falta GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: sin OAuth no hay Calendar connect ni Meet en cuentas de usuario.");
+    }
+    if (oauthApp && !platform) {
+      console.warn(
+        "[Google Meet] Sin calendario de plataforma (GOOGLE_REFRESH_TOKEN + GOOGLE_CALENDAR_ID): si falla Meet en el calendario del pro/paciente, quedará el fallback Daily."
+      );
+    }
+    return;
+  }
+  console.log(
+    `[Google Meet] development — oauthApp=${oauthApp} platformCalendar=${platform}` +
+      (refresh && !calId ? " (GOOGLE_REFRESH_TOKEN ok pero falta GOOGLE_CALENDAR_ID, p. ej. primary)" : "") +
+      (!refresh && calId ? " (falta GOOGLE_REFRESH_TOKEN)" : "") +
+      (platform ? " | reservas: calendario de plataforma primero si está configurado" : "")
+  );
+  if (!oauthApp) {
+    console.warn("[Google Meet] Completá GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env (misma app que el redirect de Calendar).");
+  }
+  if (!platform) {
+    console.warn(
+      "[Google Meet] Para Meet real en local sin enlazar cada usuario: añadí GOOGLE_REFRESH_TOKEN + GOOGLE_CALENDAR_ID (ver comentarios en .env.example)."
+    );
+  }
+}
+
 export async function createGoogleMeetForPlatformCalendar(params: {
   bookingId: string;
   startsAt: Date;

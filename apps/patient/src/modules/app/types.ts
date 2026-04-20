@@ -9,6 +9,8 @@ export type PackagePurchaseSource = "checkout_button";
 export interface SessionUser {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   emailVerified: boolean;
   /** Foto de perfil (URL o data URL); la ven profesionales y apps móviles. */
@@ -18,6 +20,8 @@ export interface SessionUser {
 export interface AuthApiUser {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   avatarUrl?: string | null;
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
@@ -38,6 +42,8 @@ export interface AuthMeApiResponse {
   user: AuthApiUser;
   emailVerificationRequired: boolean;
   devEmailVerificationBypassEnabled?: boolean;
+  /** Viene de GET /me; no persistir en localStorage (se renueva en cada sync). */
+  googleCalendarConnected?: boolean;
 }
 
 export interface ProfileMeApiResponse {
@@ -63,6 +69,8 @@ export interface ProfileMeApiResponse {
       name: string;
       credits: number;
       purchasedAt: string;
+      priceCents?: number | null;
+      currency?: string | null;
     }>;
     activeProfessional?: {
       id: string;
@@ -79,6 +87,8 @@ export interface PurchasePackageApiResponse {
     id: string;
     packageId: string;
     packageName: string;
+    packagePriceCents?: number;
+    packageCurrency?: string;
     totalCredits: number;
     remainingCredits: number;
     purchasedAt: string;
@@ -157,6 +167,8 @@ export type IntakeCompletionPayload = {
 export interface Professional {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   title: string;
   yearsExperience: number;
   compatibility: number;
@@ -212,6 +224,8 @@ export interface SubscriptionState {
     name: string;
     credits: number;
     purchasedAt: string;
+    priceCents?: number | null;
+    currency?: string | null;
   }>;
 }
 
@@ -236,6 +250,8 @@ export interface PatientProfile {
 export interface PatientAppState {
   session: SessionUser | null;
   authToken: string | null;
+  /** Conexión Google Calendar (servidor); no hidratar desde localStorage. */
+  googleCalendarConnected: boolean;
   emailVerificationRequired: boolean;
   language: AppLanguage;
   currency: SupportedCurrency;

@@ -5,6 +5,8 @@ export interface ProfessionalDirectoryApiItem {
   id: string;
   userId: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   title: string;
   specialization: string | null;
   focusPrimary: string | null;
@@ -47,6 +49,8 @@ export interface ProfessionalDirectoryApiResponse {
 export interface MatchCardProfessional {
   id: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   title: string;
   specialization: string | null;
   focusPrimary: string | null;

@@ -484,21 +484,21 @@ export function IntakeWizardScreen() {
               <Pressable
                 onPress={() => {
                   setError("");
-                  setAnswers((prev) => {
-                    const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
-                    if (p.exclusive) {
-                      return {
-                        ...prev,
-                        therapistPreferences: buildTherapistPreferencesStored(
-                          false,
-                          THERAPIST_PREF_GENDER_OPTIONS_ES[0],
-                          THERAPIST_PREF_AGE_OPTIONS_ES[0],
-                          THERAPIST_PREF_LGBT_OPTIONS_ES[0]
-                        )
-                      };
-                    }
-                    return { ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES };
-                  });
+                  const p = parseTherapistPreferencesStored(answers.therapistPreferences ?? "");
+                  if (p.exclusive) {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      therapistPreferences: buildTherapistPreferencesStored(
+                        false,
+                        THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+                        THERAPIST_PREF_AGE_OPTIONS_ES[0],
+                        THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+                      )
+                    }));
+                    return;
+                  }
+                  setAnswers((prev) => ({ ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES }));
+                  setIndex((i) => Math.min(i + 1, intakeQuestions.length - 1));
                 }}
                 style={[styles.therapistNoPref, therapistPrefParsed.exclusive && styles.therapistNoPrefActive]}
               >

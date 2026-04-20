@@ -156,6 +156,8 @@ export function AuthScreen(props: {
         user: {
           id: response.user.id,
           fullName: response.user.fullName,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
           email: response.user.email,
           emailVerified: response.user.emailVerified,
           avatarUrl: response.user.avatarUrl ?? null
@@ -204,13 +206,6 @@ export function AuthScreen(props: {
               />
             </div>
             <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
-            <p className="auth-lead">
-              {t(props.language, {
-                es: "Accede con tu cuenta. Luego podras completar tu perfil, y si queres, conectar Google Calendar para recordatorios.",
-                en: "Sign in to your account. Then you can complete your profile and optionally connect Google Calendar for reminders.",
-                pt: "Acesse sua conta. Depois voce completa seu perfil e, se quiser, conecta o Google Calendar para lembretes."
-              })}
-            </p>
           </div>
 
           <div className="auth-divider" aria-hidden="true">

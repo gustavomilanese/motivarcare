@@ -2,6 +2,7 @@ import type { FormEvent, Dispatch, SetStateAction } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { TIMEZONE_OPTIONS } from "../../constants";
+import { splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminUser,
   CreateUserFormState,
@@ -48,10 +49,20 @@ export function UsersCreateSection(props: {
           </label>
 
           <label>
-            {props.t({ es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+            {props.t({ es: "Nombre", en: "First name", pt: "Nome" })}
             <input
-              value={props.createForm.fullName}
-              onChange={(event) => props.setCreateForm((current) => ({ ...current, fullName: event.target.value }))}
+              autoComplete="given-name"
+              value={props.createForm.firstName}
+              onChange={(event) => props.setCreateForm((current) => ({ ...current, firstName: event.target.value }))}
+            />
+          </label>
+
+          <label>
+            {props.t({ es: "Apellido", en: "Last name", pt: "Sobrenome" })}
+            <input
+              autoComplete="family-name"
+              value={props.createForm.lastName}
+              onChange={(event) => props.setCreateForm((current) => ({ ...current, lastName: event.target.value }))}
             />
           </label>
 
@@ -132,7 +143,11 @@ export function UsersCreateSection(props: {
               </label>
 
               <label>
-                {props.t({ es: "Horas de cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}
+                {props.t({
+                  es: "Anticipación mínima definida para cancelar una sesión (en horas)",
+                  en: "Minimum advance notice required to cancel a session (hours)",
+                  pt: "Antecedência mínima definida para cancelar uma sessão (horas)"
+                })}
                 <input
                   value={props.createForm.professionalCancellationHours}
                   onChange={(event) =>
@@ -241,13 +256,19 @@ export function UsersListSection(props: {
 
     props.setEditingUserId(user.id);
     props.setEditError("");
+    const fn = user.firstName?.trim() ?? "";
+    const ln = user.lastName?.trim() ?? "";
+    const { firstName, lastName } =
+      fn !== "" || ln !== "" ? { firstName: fn, lastName: ln } : splitFullNameToFirstLast(user.fullName);
     props.setEditDrafts((current) => ({
       ...current,
       [user.id]: {
         role: user.role,
         isTestUser: user.isTestUser,
-        fullName: user.fullName,
+        firstName,
+        lastName,
         password: "",
+        passwordConfirm: "",
         patientAvatarUrl: user.avatarUrl ?? "",
         patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
         patientTimezone: user.patientProfile?.timezone ?? "America/New_York",
@@ -320,7 +341,24 @@ export function UsersListSection(props: {
 
             return (
               <article className={`user-card user-card-compact${isExpanded ? " expanded" : ""}`} key={user.id}>
-                <div className="user-row">
+                <div
+                  className="user-row user-row--toggles"
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-label={props.t({
+                    es: `${isExpanded ? "Contraer" : "Expandir"} fila de ${user.fullName}`,
+                    en: `${isExpanded ? "Collapse" : "Expand"} row for ${user.fullName}`,
+                    pt: `${isExpanded ? "Fechar" : "Expandir"} linha de ${user.fullName}`
+                  })}
+                  onClick={() => toggleExpand(user)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggleExpand(user);
+                    }
+                  }}
+                >
                   <div className="user-row-main">
                     <strong>{user.fullName}</strong>
                     <span>
@@ -332,305 +370,503 @@ export function UsersListSection(props: {
                     </span>
                   </div>
 
-                  <div className="user-row-actions">
-                    <button type="button" onClick={() => toggleExpand(user)}>
+                  <div className="user-row-actions" aria-hidden="true">
+                    <span className="user-row-expand-pill">
                       {isExpanded
                         ? props.t({ es: "Contraer", en: "Collapse", pt: "Fechar" })
                         : props.t({ es: "Expandir", en: "Expand", pt: "Expandir" })}
-                    </button>
+                    </span>
                   </div>
                 </div>
 
                 {isExpanded && draft ? (
-                  <div className="stack">
-                    <div className="user-grid">
-                      <div>
-                        <strong>{props.t({ es: "Creado", en: "Created", pt: "Criado" })}</strong>
-                        <p>{props.formatDate(user.createdAt)}</p>
-                      </div>
-                      <div>
-                        <strong>{props.t({ es: "Actualizado", en: "Updated", pt: "Atualizado" })}</strong>
-                        <p>{props.formatDate(user.updatedAt)}</p>
-                      </div>
-                      <div>
-                        <strong>{props.t({ es: "Cuenta", en: "Account", pt: "Conta" })}</strong>
-                        <p>
-                          {user.isActive
-                            ? props.t({ es: "Activa", en: "Active", pt: "Ativa" })
-                            : props.t({ es: "Desactivada", en: "Disabled", pt: "Desativada" })}
-                        </p>
-                      </div>
-                      {!user.isActive && user.deactivatedAt ? (
-                        <div>
-                          <strong>{props.t({ es: "Desactivada el", en: "Disabled on", pt: "Desativada em" })}</strong>
-                          <p>{props.formatDate(user.deactivatedAt)}</p>
+                  <div
+                    className="user-edit-form"
+                    role="region"
+                    aria-label={props.t({
+                      es: "Formulario de edición de usuario",
+                      en: "User edit form",
+                      pt: "Formulario de edição de usuario"
+                    })}
+                  >
+                    <div className="user-edit-form__body">
+                      <details className="user-edit-accordion">
+                        <summary>
+                          <span>{props.t({ es: "Información registrada", en: "Saved snapshot", pt: "Informação registrada" })}</span>
+                          <span className="user-edit-accordion__hint">
+                            {props.t({
+                              es: "Solo lectura · valores en servidor",
+                              en: "Read-only · server values",
+                              pt: "Somente leitura · valores no servidor"
+                            })}
+                          </span>
+                        </summary>
+                        <div className="user-edit-accordion__panel">
+                          <div className="user-grid user-grid--snapshot">
+                            <div>
+                              <strong>{props.t({ es: "Creado", en: "Created", pt: "Criado" })}</strong>
+                              <p>{props.formatDate(user.createdAt)}</p>
+                            </div>
+                            <div>
+                              <strong>{props.t({ es: "Actualizado", en: "Updated", pt: "Atualizado" })}</strong>
+                              <p>{props.formatDate(user.updatedAt)}</p>
+                            </div>
+                            <div>
+                              <strong>{props.t({ es: "Cuenta", en: "Account", pt: "Conta" })}</strong>
+                              <p>
+                                {user.isActive
+                                  ? props.t({ es: "Activa", en: "Active", pt: "Ativa" })
+                                  : props.t({ es: "Desactivada", en: "Disabled", pt: "Desativada" })}
+                              </p>
+                            </div>
+                            {!user.isActive && user.deactivatedAt ? (
+                              <div>
+                                <strong>{props.t({ es: "Desactivada el", en: "Disabled on", pt: "Desativada em" })}</strong>
+                                <p>{props.formatDate(user.deactivatedAt)}</p>
+                              </div>
+                            ) : null}
+
+                            {user.patientProfile ? (
+                              <>
+                                <div>
+                                  <strong>{props.t({ es: "Paciente · Estado", en: "Patient · Status", pt: "Paciente · Status" })}</strong>
+                                  <p>{props.patientStatusLabel(user.patientProfile.status)}</p>
+                                </div>
+                                <div>
+                                  <strong>
+                                    {props.t({ es: "Paciente · Zona horaria", en: "Patient · Time zone", pt: "Paciente · Fuso horario" })}
+                                  </strong>
+                                  <p>{user.patientProfile.timezone}</p>
+                                </div>
+                              </>
+                            ) : null}
+
+                            {user.professionalProfile ? (
+                              <>
+                                <div>
+                                  <strong>
+                                    {props.t({ es: "Profesional · Visible", en: "Professional · Visible", pt: "Profissional · Visivel" })}
+                                  </strong>
+                                  <p>{props.yesNoLabel(user.professionalProfile.visible)}</p>
+                                </div>
+                                <div>
+                                  <strong>
+                                    {props.t({
+                                      es: "Anticipación mínima definida para cancelar una sesión",
+                                      en: "Minimum advance notice to cancel a session",
+                                      pt: "Antecedência mínima definida para cancelar uma sessão"
+                                    })}
+                                  </strong>
+                                  <p>{user.professionalProfile.cancellationHours}h</p>
+                                </div>
+                                <div>
+                                  <strong>{props.t({ es: "Bio", en: "Bio", pt: "Bio" })}</strong>
+                                  <p>{user.professionalProfile.bio || "-"}</p>
+                                </div>
+                                <div>
+                                  <strong>{props.t({ es: "Video presentación", en: "Intro video", pt: "Video de apresentacao" })}</strong>
+                                  <p>{user.professionalProfile.videoUrl || "-"}</p>
+                                </div>
+                              </>
+                            ) : null}
+                          </div>
                         </div>
-                      ) : null}
+                      </details>
 
-                      {user.patientProfile ? (
-                        <>
-                          <div>
-                            <strong>{props.t({ es: "Paciente · Estado", en: "Patient · Status", pt: "Paciente · Status" })}</strong>
-                            <p>{props.patientStatusLabel(user.patientProfile.status)}</p>
-                          </div>
-                          <div>
-                            <strong>{props.t({ es: "Paciente · Zona horaria", en: "Patient · Time zone", pt: "Paciente · Fuso horario" })}</strong>
-                            <p>{user.patientProfile.timezone}</p>
-                          </div>
-                        </>
-                      ) : null}
+                      <details className="user-edit-accordion">
+                        <summary>
+                          <span>{props.t({ es: "Cuenta y acceso", en: "Account & access", pt: "Conta e acesso" })}</span>
+                          <span className="user-edit-accordion__hint">
+                            {props.t({
+                              es: "Nombre, contraseña (doble) y tipo de cuenta",
+                              en: "Name, password (twice) & account type",
+                              pt: "Nome, senha (dupla) e tipo de conta"
+                            })}
+                          </span>
+                        </summary>
+                        <div className="user-edit-accordion__panel">
+                          <div className="user-edit-pro user-edit-account">
+                            <div className="user-edit-pro-group">
+                              <p className="user-edit-pro-group-title">
+                                {props.t({ es: "Identidad", en: "Identity", pt: "Identidade" })}
+                              </p>
+                              <div className="user-edit-pro-pair">
+                                <label>
+                                  {props.t({ es: "Nombre", en: "First name", pt: "Nome" })}
+                                  <input
+                                    autoComplete="given-name"
+                                    value={draft.firstName}
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          firstName: event.target.value
+                                        }
+                                      }))
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  {props.t({ es: "Apellido", en: "Last name", pt: "Sobrenome" })}
+                                  <input
+                                    autoComplete="family-name"
+                                    value={draft.lastName}
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          lastName: event.target.value
+                                        }
+                                      }))
+                                    }
+                                  />
+                                </label>
+                              </div>
+                            </div>
 
-                      {user.professionalProfile ? (
-                        <>
-                          <div>
-                            <strong>{props.t({ es: "Profesional · Visible", en: "Professional · Visible", pt: "Profissional · Visivel" })}</strong>
-                            <p>{props.yesNoLabel(user.professionalProfile.visible)}</p>
-                          </div>
-                          <div>
-                            <strong>{props.t({ es: "Horas cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}</strong>
-                            <p>{user.professionalProfile.cancellationHours}h</p>
-                          </div>
-                          <div>
-                            <strong>{props.t({ es: "Bio", en: "Bio", pt: "Bio" })}</strong>
-                            <p>{user.professionalProfile.bio || "-"}</p>
-                          </div>
-                          <div>
-                            <strong>{props.t({ es: "Video presentación", en: "Intro video", pt: "Video de apresentacao" })}</strong>
-                            <p>{user.professionalProfile.videoUrl || "-"}</p>
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
+                            <div className="user-edit-pro-group">
+                              <p className="user-edit-pro-group-title">
+                                {props.t({ es: "Contraseña", en: "Password", pt: "Senha" })}
+                              </p>
+                              <p className="user-edit-account-hint">
+                                {props.t({
+                                  es: "Opcional: dejá ambos campos vacíos si no querés cambiarla.",
+                                  en: "Optional: leave both fields blank to keep the current password.",
+                                  pt: "Opcional: deixe os dois em branco para manter a senha atual."
+                                })}
+                              </p>
+                              <div className="user-edit-pro-pair user-edit-account-password-pair">
+                                <label>
+                                  {props.t({ es: "Nueva contraseña", en: "New password", pt: "Nova senha" })}
+                                  <input
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={draft.password}
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          password: event.target.value
+                                        }
+                                      }))
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  {props.t({ es: "Repetir contraseña", en: "Repeat password", pt: "Repetir senha" })}
+                                  <input
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={draft.passwordConfirm}
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          passwordConfirm: event.target.value
+                                        }
+                                      }))
+                                    }
+                                  />
+                                </label>
+                              </div>
+                            </div>
 
-                    <div className="grid-form">
-                      <label>
-                        {props.t({ es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
-                        <input
-                          value={draft.fullName}
-                          onChange={(event) =>
-                            props.setEditDrafts((current) => ({
-                              ...current,
-                              [user.id]: {
-                                ...draft,
-                                fullName: event.target.value
-                              }
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label>
-                        {props.t({ es: "Nueva contraseña (opcional)", en: "New password (optional)", pt: "Nova senha (opcional)" })}
-                        <input
-                          type="password"
-                          value={draft.password}
-                          onChange={(event) =>
-                            props.setEditDrafts((current) => ({
-                              ...current,
-                              [user.id]: {
-                                ...draft,
-                                password: event.target.value
-                              }
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="inline-toggle">
-                        <input
-                          checked={draft.isTestUser}
-                          type="checkbox"
-                          onChange={(event) =>
-                            props.setEditDrafts((current) => ({
-                              ...current,
-                              [user.id]: {
-                                ...draft,
-                                isTestUser: event.target.checked
-                              }
-                            }))
-                          }
-                        />
-                        {props.t({ es: "Usuario de prueba (permite borrado total)", en: "Test user (allows full delete)", pt: "Usuario de teste (permite exclusao total)" })}
-                      </label>
+                            <div className="user-edit-pro-group">
+                              <p className="user-edit-pro-group-title">
+                                {props.t({ es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}
+                              </p>
+                              <div className="user-edit-pro-visibility">
+                                <label className="inline-toggle user-edit-pro-visibility-toggle">
+                                  <input
+                                    checked={draft.isTestUser}
+                                    type="checkbox"
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          isTestUser: event.target.checked
+                                        }
+                                      }))
+                                    }
+                                  />
+                                  {props.t({
+                                    es: "Usuario de prueba (permite borrado total)",
+                                    en: "Test user (allows full delete)",
+                                    pt: "Usuario de teste (permite exclusao total)"
+                                  })}
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
 
                       {draft.role === "PATIENT" ? (
-                        <>
-                          <label>
-                            {props.t({ es: "Estado del paciente", en: "Patient status", pt: "Status do paciente" })}
-                            <select
-                              value={draft.patientStatus}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    patientStatus: event.target.value as PatientStatus
+                        <details className="user-edit-accordion">
+                          <summary>
+                            <span>{props.t({ es: "Perfil del paciente", en: "Patient profile", pt: "Perfil do paciente" })}</span>
+                            <span className="user-edit-accordion__hint">
+                              {props.t({ es: "Estado, zona y avatar", en: "Status, zone & avatar", pt: "Status, fuso e avatar" })}
+                            </span>
+                          </summary>
+                          <div className="user-edit-accordion__panel">
+                            <div className="grid-form">
+                              <label>
+                                {props.t({ es: "Estado del paciente", en: "Patient status", pt: "Status do paciente" })}
+                                <select
+                                  value={draft.patientStatus}
+                                  onChange={(event) =>
+                                    props.setEditDrafts((current) => ({
+                                      ...current,
+                                      [user.id]: {
+                                        ...draft,
+                                        patientStatus: event.target.value as PatientStatus
+                                      }
+                                    }))
                                   }
-                                }))
-                              }
-                            >
-                              <option value="active">{props.patientStatusLabel("active")}</option>
-                              <option value="pause">{props.patientStatusLabel("pause")}</option>
-                              <option value="cancelled">{props.patientStatusLabel("cancelled")}</option>
-                              <option value="trial">{props.patientStatusLabel("trial")}</option>
-                            </select>
-                          </label>
+                                >
+                                  <option value="active">{props.patientStatusLabel("active")}</option>
+                                  <option value="pause">{props.patientStatusLabel("pause")}</option>
+                                  <option value="cancelled">{props.patientStatusLabel("cancelled")}</option>
+                                  <option value="trial">{props.patientStatusLabel("trial")}</option>
+                                </select>
+                              </label>
 
-                          <label>
-                            {props.t({ es: "Zona horaria", en: "Time zone", pt: "Fuso horario" })}
-                            <input
-                              value={draft.patientTimezone}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    patientTimezone: event.target.value
+                              <label>
+                                {props.t({ es: "Zona horaria", en: "Time zone", pt: "Fuso horario" })}
+                                <input
+                                  value={draft.patientTimezone}
+                                  onChange={(event) =>
+                                    props.setEditDrafts((current) => ({
+                                      ...current,
+                                      [user.id]: {
+                                        ...draft,
+                                        patientTimezone: event.target.value
+                                      }
+                                    }))
                                   }
-                                }))
-                              }
-                            />
-                          </label>
+                                />
+                              </label>
 
-                          <ProfessionalPhotoUrlField
-                            variant="patient"
-                            language={props.language}
-                            disabled={props.saveLoading}
-                            value={draft.patientAvatarUrl}
-                            onChange={(next) =>
-                              props.setEditDrafts((current) => ({
-                                ...current,
-                                [user.id]: {
-                                  ...draft,
-                                  patientAvatarUrl: next
+                              <ProfessionalPhotoUrlField
+                                variant="patient"
+                                language={props.language}
+                                disabled={props.saveLoading}
+                                value={draft.patientAvatarUrl}
+                                onChange={(next) =>
+                                  props.setEditDrafts((current) => ({
+                                    ...current,
+                                    [user.id]: {
+                                      ...draft,
+                                      patientAvatarUrl: next
+                                    }
+                                  }))
                                 }
-                              }))
-                            }
-                          />
-                        </>
+                              />
+                            </div>
+                          </div>
+                        </details>
                       ) : null}
 
                       {draft.role === "PROFESSIONAL" ? (
-                        <>
-                          <label className="inline-toggle">
-                            <input
-                              checked={draft.professionalVisible}
-                              type="checkbox"
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalVisible: event.target.checked
-                                  }
-                                }))
-                              }
-                            />
-                            {props.t({ es: "Perfil visible", en: "Visible profile", pt: "Perfil visivel" })}
-                          </label>
+                        <details className="user-edit-accordion">
+                          <summary>
+                            <span>{props.t({ es: "Perfil profesional", en: "Professional profile", pt: "Perfil profissional" })}</span>
+                            <span className="user-edit-accordion__hint">
+                              {props.t({
+                                es: "Visibilidad, reservas, presentación y medios",
+                                en: "Visibility, bookings, presentation & media",
+                                pt: "Visibilidade, reservas, apresentação e midia"
+                              })}
+                            </span>
+                          </summary>
+                          <div className="user-edit-accordion__panel">
+                            <div className="user-edit-pro">
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({ es: "Visibilidad", en: "Visibility", pt: "Visibilidade" })}
+                                </p>
+                                <div className="user-edit-pro-visibility">
+                                  <label className="inline-toggle user-edit-pro-visibility-toggle">
+                                    <input
+                                      checked={draft.professionalVisible}
+                                      type="checkbox"
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalVisible: event.target.checked
+                                          }
+                                        }))
+                                      }
+                                    />
+                                    {props.t({ es: "Perfil visible en la plataforma", en: "Profile visible on the platform", pt: "Perfil visivel na plataforma" })}
+                                  </label>
+                                </div>
+                              </div>
 
-                          <label>
-                            {props.t({ es: "Horas de cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}
-                            <input
-                              value={draft.professionalCancellationHours}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalCancellationHours: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({ es: "Reservas y experiencia", en: "Bookings & experience", pt: "Reservas e experiencia" })}
+                                </p>
+                                <div className="user-edit-pro-pair">
+                                  <label>
+                                    {props.t({
+                                      es: "Anticipación mínima definida para cancelar una sesión (en horas)",
+                                      en: "Minimum advance notice required to cancel a session (hours)",
+                                      pt: "Antecedência mínima definida para cancelar uma sessão (horas)"
+                                    })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalCancellationHours}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalCancellationHours: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalYearsExperience}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalYearsExperience: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              </div>
 
-                          <label>
-                            {props.t({ es: "Años de experiencia", en: "Years of experience", pt: "Anos de experiencia" })}
-                            <input
-                              value={draft.professionalYearsExperience}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalYearsExperience: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({ es: "Presentación", en: "Presentation", pt: "Apresentação" })}
+                                </p>
+                                <div className="user-edit-pro-stack">
+                                  <label>
+                                    {props.t({ es: "Enfoque terapéutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
+                                    <input
+                                      value={draft.professionalTherapeuticApproach}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalTherapeuticApproach: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Bio", en: "Bio", pt: "Bio" })}
+                                    <textarea
+                                      className="user-edit-pro-textarea"
+                                      rows={4}
+                                      value={draft.professionalBio}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalBio: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              </div>
 
-                          <label>
-                            {props.t({ es: "Bio", en: "Bio", pt: "Bio" })}
-                            <textarea
-                              rows={3}
-                              value={draft.professionalBio}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalBio: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({ es: "Medios", en: "Media", pt: "Midia" })}
+                                </p>
+                                <div className="user-edit-pro-stack user-edit-pro-stack--media">
+                                  <div className="user-edit-pro-photo-wrap">
+                                    <ProfessionalPhotoUrlField
+                                      language={props.language}
+                                      disabled={props.saveLoading}
+                                      value={draft.professionalPhotoUrl}
+                                      onChange={(next) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalPhotoUrl: next
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <label>
+                                    {props.t({ es: "URL video presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
+                                    <input
+                                      type="url"
+                                      autoComplete="off"
+                                      value={draft.professionalVideoUrl}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalVideoUrl: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+                      ) : null}
 
-                          <label>
-                            {props.t({ es: "Enfoque terapéutico", en: "Therapeutic approach", pt: "Abordagem terapeutica" })}
-                            <input
-                              value={draft.professionalTherapeuticApproach}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalTherapeuticApproach: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
-
-                          <ProfessionalPhotoUrlField
-                            language={props.language}
-                            disabled={props.saveLoading}
-                            value={draft.professionalPhotoUrl}
-                            onChange={(next) =>
-                              props.setEditDrafts((current) => ({
-                                ...current,
-                                [user.id]: {
-                                  ...draft,
-                                  professionalPhotoUrl: next
-                                }
-                              }))
-                            }
-                          />
-
-                          <label>
-                            {props.t({ es: "URL video presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
-                            <input
-                              value={draft.professionalVideoUrl}
-                              onChange={(event) =>
-                                props.setEditDrafts((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...draft,
-                                    professionalVideoUrl: event.target.value
-                                  }
-                                }))
-                              }
-                            />
-                          </label>
-                        </>
+                      {draft.role === "ADMIN" ? (
+                        <details className="user-edit-accordion">
+                          <summary>
+                            <span>{props.t({ es: "Administrador", en: "Administrator", pt: "Administrador" })}</span>
+                            <span className="user-edit-accordion__hint">
+                              {props.t({
+                                es: "Sin campos de perfil adicionales",
+                                en: "No extra profile fields",
+                                pt: "Sem campos de perfil extras"
+                              })}
+                            </span>
+                          </summary>
+                          <div className="user-edit-accordion__panel">
+                            <p className="user-edit-admin-note">
+                              {props.t({
+                                es: "Los administradores solo usan cuenta y acceso. Guardá los cambios en la barra inferior.",
+                                en: "Admins only use account fields. Save changes using the bar below.",
+                                pt: "Administradores usam apenas conta e acesso. Salve na barra abaixo."
+                              })}
+                            </p>
+                          </div>
+                        </details>
                       ) : null}
                     </div>
 
-                    <div className="user-card-footer">
-                      <small>ID: {user.id}</small>
-                      <div className="ops-actions">
+                    <div className="user-edit-actions" role="toolbar" aria-label={props.t({ es: "Acciones del usuario", en: "User actions", pt: "Ações do usuario" })}>
+                      <div className="user-edit-actions__primary">
                         <button className="primary" disabled={props.saveLoading} type="button" onClick={() => props.onSaveEdit(user)}>
                           {props.saveLoading
                             ? props.t({ es: "Guardando...", en: "Saving...", pt: "Salvando..." })
@@ -645,6 +881,8 @@ export function UsersListSection(props: {
                         >
                           {props.t({ es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
                         </button>
+                      </div>
+                      <div className="user-edit-actions__danger">
                         <button
                           type="button"
                           className="danger"

@@ -1,5 +1,6 @@
 export { resolveWebAppApiBase } from "./resolveWebAppApiBase";
 export type { ResolveWebAppApiBaseParams } from "./resolveWebAppApiBase";
+export { subscribeDocumentVisibleInterval } from "./subscribeDocumentVisibleInterval";
 
 export interface ApiErrorShape {
   error?: string;

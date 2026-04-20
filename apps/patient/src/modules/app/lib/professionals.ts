@@ -1,6 +1,11 @@
 import { professionalsCatalog } from "../data/professionalsCatalog";
 import type { Professional } from "../types";
 
+/** Profesional de referencia asignado en backend (p. ej. tras matching o alta); si falta, no mostrar compras atadas a tarifa de un pro. */
+export function patientHasAssignedProfessional(assignedProfessionalId: string | null | undefined): boolean {
+  return Boolean(assignedProfessionalId?.trim());
+}
+
 export function getFallbackProfessional(professionals: Professional[]): Professional {
   return professionals[0] ?? professionalsCatalog[0];
 }

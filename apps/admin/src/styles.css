@@ -1008,8 +1008,41 @@ label {
   gap: 8px;
 }
 
+.user-row--toggles {
+  cursor: pointer;
+  border-radius: 10px;
+  margin: -6px -8px;
+  padding: 6px 8px;
+  outline: none;
+  transition: background 0.14s ease;
+}
+
+.user-row--toggles:hover {
+  background: rgba(88, 62, 130, 0.07);
+}
+
+.user-row--toggles:focus-visible {
+  box-shadow: 0 0 0 2px rgba(124, 107, 181, 0.55);
+}
+
+.user-row-expand-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #c5b8dc;
+  background: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #3a2f55;
+  white-space: nowrap;
+}
+
 .user-card-compact.expanded {
-  background: #f4f6fc;
+  background: linear-gradient(165deg, #f0e8fb 0%, #ebe4f7 45%, #e8e0f4 100%);
+  border-color: #d4c4ea;
 }
 
 .button-row {
@@ -1624,6 +1657,39 @@ label {
   gap: 10px;
 }
 
+/** Solo lectura (usuarios): cada campo en celda con borde para escanear más rápido */
+.user-grid--snapshot {
+  gap: 10px;
+  align-items: stretch;
+}
+
+.user-grid--snapshot > div {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #e4daf0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(88, 62, 130, 0.06);
+}
+
+.user-grid--snapshot > div > strong {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5c678a;
+  margin-bottom: 6px;
+}
+
+.user-grid--snapshot > div > p {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  color: #243652;
+  word-break: break-word;
+}
+
 .user-card-footer {
   display: flex;
   justify-content: space-between;
@@ -1634,6 +1700,250 @@ label {
 
 .user-card-footer small {
   color: var(--text-soft);
+}
+
+/* Usuarios admin: formulario de edición por secciones + barra de acciones */
+.user-edit-form {
+  margin-top: 4px;
+  border: 1px solid #c5b8dc;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(88, 62, 130, 0.1), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  overflow: clip;
+}
+
+.user-edit-admin-note {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #58627d;
+  line-height: 1.45;
+}
+
+.user-edit-form__body {
+  padding: 6px 0 10px;
+  display: grid;
+  gap: 0;
+}
+
+.user-edit-form__body > .user-edit-accordion:first-child > summary {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.user-edit-accordion {
+  border-bottom: 1px solid #ebe4f4;
+}
+
+.user-edit-accordion:last-of-type {
+  border-bottom: none;
+}
+
+.user-edit-accordion > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #243652;
+  background: #faf8fd;
+  transition: background 0.12s ease;
+}
+
+.user-edit-accordion > summary > span:first-of-type {
+  min-width: min(100%, 160px);
+  flex: 1 1 auto;
+}
+
+.user-edit-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+
+.user-edit-accordion > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #6b7a9a;
+  border-bottom: 2px solid #6b7a9a;
+  transform: rotate(45deg) translateY(-2px);
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: transform 0.18s ease;
+}
+
+.user-edit-accordion[open] > summary {
+  background: #f2eef9;
+}
+
+.user-edit-accordion[open] > summary::after {
+  transform: rotate(225deg) translateY(2px);
+}
+
+.user-edit-accordion > summary:hover {
+  background: #ede8f6;
+}
+
+.user-edit-accordion__hint {
+  font-weight: 400;
+  font-size: 0.82rem;
+  color: #6b7894;
+}
+
+.user-edit-accordion__panel {
+  padding: 12px 16px 16px;
+  display: grid;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.user-edit-accordion__panel .user-grid {
+  margin-top: 0;
+}
+
+/* Perfil profesional (ABM usuarios): grupos alineados */
+.user-edit-pro {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.user-edit-pro-group {
+  display: grid;
+  gap: 8px;
+}
+
+.user-edit-pro-group-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5c678a;
+}
+
+.user-edit-pro-visibility {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e4daf0;
+  background: #faf8fd;
+}
+
+.user-edit-pro-visibility-toggle {
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.35;
+}
+
+.user-edit-pro-visibility-toggle input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.user-edit-pro-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.user-edit-pro-pair label {
+  min-width: 0;
+}
+
+.user-edit-pro-pair input {
+  width: 100%;
+}
+
+.user-edit-pro-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.user-edit-pro-stack label {
+  min-width: 0;
+}
+
+.user-edit-pro-stack input,
+.user-edit-pro-stack textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.user-edit-pro-textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.user-edit-pro-stack--media {
+  gap: 14px;
+}
+
+.user-edit-pro-photo-wrap .admin-pro-photo-field {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .user-edit-pro-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.user-edit-account-hint {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: #6b7894;
+}
+
+.user-edit-account-password-pair label {
+  align-self: stretch;
+}
+
+.user-edit-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid #e4daf0;
+  background: linear-gradient(180deg, #f7f2fc 0%, #ede6f7 100%);
+  box-shadow: 0 -6px 16px rgba(88, 62, 130, 0.08);
+}
+
+.user-edit-actions__primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-edit-actions__danger {
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .user-edit-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-edit-actions__danger {
+    margin-left: 0;
+  }
+
+  .user-edit-actions__danger button {
+    width: 100%;
+  }
 }
 
 .error-text {

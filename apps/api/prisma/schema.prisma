@@ -49,6 +49,8 @@ model User {
   deactivatedAt DateTime?
   passwordHash  String
   fullName      String
+  firstName     String               @default("") @map("first_name")
+  lastName      String               @default("") @map("last_name")
   /// Foto de perfil (URL https o data URI).
   avatarUrl     String?              @map("avatar_url") @db.LongText
   role          Role

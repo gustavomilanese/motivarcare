@@ -2,6 +2,7 @@ import http from "node:http";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
+import { logGoogleMeetStartupHints } from "./modules/video/googleMeet.service.js";
 import { markShuttingDown, runtimeState } from "./lib/operational.js";
 import { disconnectRedis } from "./lib/redis.js";
 
@@ -15,10 +16,12 @@ const listenHost = env.apiListenHost;
 if (listenHost !== undefined) {
   server.listen(env.PORT, listenHost, () => {
     console.log(`API listening on http://${listenHost}:${env.PORT}`);
+    logGoogleMeetStartupHints();
   });
 } else {
   server.listen(env.PORT, () => {
     console.log(`API listening on http://localhost:${env.PORT}`);
+    logGoogleMeetStartupHints();
   });
 }
 

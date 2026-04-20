@@ -1,4 +1,4 @@
-import { type ReactElement, useEffect, useMemo, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useRef, useState } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
@@ -108,15 +108,23 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     [favoriteIds, ordered, props.showOnlyFavorites]
   );
 
+  /**
+   * El portal suele pasar `onSelectProfessional` como función inline (nueva referencia cada render).
+   * No debe ir en las deps del efecto: dispara el efecto en bucle y, si el id seleccionado queda fuera
+   * de la lista visible (p. ej. tras reservar/sync), cada paso vuelve a llamar setState → "Maximum update depth".
+   */
+  const onSelectProfessionalRef = useRef(props.onSelectProfessional);
+  onSelectProfessionalRef.current = props.onSelectProfessional;
+
   useEffect(() => {
     if (visibleOrdered.length === 0) {
       return;
     }
     const selectedVisible = visibleOrdered.some((item) => item.professional.id === props.selectedProfessionalId);
     if (!selectedVisible) {
-      props.onSelectProfessional(visibleOrdered[0].professional.id);
+      onSelectProfessionalRef.current(visibleOrdered[0].professional.id);
     }
-  }, [visibleOrdered, props.onSelectProfessional, props.selectedProfessionalId]);
+  }, [visibleOrdered, props.selectedProfessionalId]);
 
   const selected = visibleOrdered.find((item) => item.professional.id === props.selectedProfessionalId) ?? visibleOrdered[0] ?? null;
 

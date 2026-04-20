@@ -104,12 +104,20 @@ export function packageBenefitLines(credits: number, t: (values: { es: string; e
   ];
 }
 
-export async function loadPublicPackagePlans(params: {
+type PublicPackageCatalog = { plans: PackagePlan[]; featuredPackageId: string | null };
+
+const publicPackageCatalogInflight = new Map<string, Promise<PublicPackageCatalog>>();
+
+function publicPackageCatalogKey(language: AppLanguage, professionalId?: string): string {
+  return `${language}\0${professionalId ?? ""}`;
+}
+
+async function loadPublicPackagePlansOnce(params: {
   language: AppLanguage;
   professionalId?: string;
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
-}): Promise<{ plans: PackagePlan[]; featuredPackageId: string | null }> {
+}): Promise<PublicPackageCatalog> {
   try {
     const query = new URLSearchParams({ channel: "patient" });
     if (params.professionalId) {
@@ -157,4 +165,26 @@ export async function loadPublicPackagePlans(params: {
       plans: top
     };
   }
+}
+
+/**
+ * Misma clave (idioma + profesional) puede dispararse desde varios efectos seguidos;
+ * compartir la promesa en vuelo evita tormentas a `/api/public/session-packages`.
+ */
+export function loadPublicPackagePlans(params: {
+  language: AppLanguage;
+  professionalId?: string;
+  t: (values: { es: string; en: string; pt: string }) => string;
+  fallbackPlans?: PackagePlan[];
+}): Promise<PublicPackageCatalog> {
+  const key = publicPackageCatalogKey(params.language, params.professionalId);
+  const existing = publicPackageCatalogInflight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const pending = loadPublicPackagePlansOnce(params).finally(() => {
+    publicPackageCatalogInflight.delete(key);
+  });
+  publicPackageCatalogInflight.set(key, pending);
+  return pending;
 }

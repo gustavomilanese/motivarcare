@@ -6,6 +6,37 @@ import { apiRequest } from "../services/api";
 
 type VerificationState = "loading" | "success" | "error";
 
+function preIntakeIntroCopy(language: AppLanguage): {
+  title: string;
+  body: readonly [string, string];
+  cta: string;
+} {
+  return {
+    title: textByLanguage(language, {
+      es: "Antes de las preguntas",
+      en: "Before the questions",
+      pt: "Antes das perguntas"
+    }),
+    body: [
+      textByLanguage(language, {
+        es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
+        en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
+        pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
+      }),
+      textByLanguage(language, {
+        es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
+        en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
+        pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
+      })
+    ] as const,
+    cta: textByLanguage(language, {
+      es: "Continuar",
+      en: "Continue",
+      pt: "Continuar"
+    })
+  };
+}
+
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
@@ -86,6 +117,8 @@ export function VerifyEmailTokenScreen(props: {
     };
   }, [props.language, props.onSessionEmailVerified, token]);
 
+  const intro = preIntakeIntroCopy(props.language);
+
   return (
     <div className="auth-shell">
       <section
@@ -149,24 +182,11 @@ export function VerifyEmailTokenScreen(props: {
               </h1>
               <p className="verify-email-lead">
                 {t(props.language, {
-                  es: "Tu correo quedó confirmado. Seguí con el onboarding para completar tu perfil y continuar en MotivarCare.",
-                  en: "Your email is confirmed. Continue onboarding to finish your profile and move forward in MotivarCare.",
-                  pt: "Seu e-mail foi confirmado. Continue o onboarding para concluir seu perfil e seguir na MotivarCare."
+                  es: "Tu correo quedó confirmado. En el siguiente paso te contamos cómo seguimos y arrancamos el cuestionario.",
+                  en: "Your email is confirmed. Next, we’ll explain how we’ll proceed and start the questionnaire.",
+                  pt: "Seu e-mail foi confirmado. No proximo passo explicamos como seguimos e iniciamos o questionario."
                 })}
               </p>
-              <div className="stack verify-email-actions">
-                <button
-                  className="primary"
-                  type="button"
-                  onClick={() => navigate("/onboarding/final/matching", { replace: true })}
-                >
-                  {t(props.language, {
-                    es: "Comenzar onboarding",
-                    en: "Start onboarding",
-                    pt: "Começar onboarding"
-                  })}
-                </button>
-              </div>
             </>
           ) : null}
 
@@ -205,6 +225,44 @@ export function VerifyEmailTokenScreen(props: {
           ) : null}
         </div>
       </section>
+
+      {state === "success" ? (
+        <div className="pre-intake-intro-backdrop" role="presentation">
+          <div
+            className="pre-intake-intro-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pre-intake-intro-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="pre-intake-intro-modal-inner">
+              <div className="pre-intake-intro-accent" aria-hidden="true" />
+              <p className="pre-intake-intro-eyebrow">
+                {t(props.language, { es: "MotivarCare", en: "MotivarCare", pt: "MotivarCare" })}
+              </p>
+              <h2 id="pre-intake-intro-title" className="pre-intake-intro-title">
+                {intro.title}
+              </h2>
+              <div className="pre-intake-intro-body-stack">
+                {intro.body.map((paragraph, index) => (
+                  <p key={index} className="pre-intake-intro-body">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+              <div className="pre-intake-intro-actions">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => navigate("/", { replace: true })}
+                >
+                  {intro.cta}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

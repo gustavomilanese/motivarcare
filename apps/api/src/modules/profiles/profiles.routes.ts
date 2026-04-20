@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Prisma, ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { professionalListingDisplayName, yearsExperienceFromGraduationYear } from "../../lib/professionalListingDisplayName.js";
+import { professionalPublicListingLabel, yearsExperienceFromGraduationYear } from "../../lib/professionalListingDisplayName.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getFinanceRules } from "../finance/finance.service.js";
@@ -361,7 +361,11 @@ async function vacationDayKeysByProfessional(params: {
 interface DirectoryProfessional {
   id: string;
   userId: string;
+  /** Listado público ("María L."). */
   fullName: string;
+  /** Para iniciales / UI; mismo criterio que en directorio. */
+  firstName: string;
+  lastName: string;
   title: string;
   specialization: string | null;
   focusPrimary: string | null;
@@ -395,6 +399,8 @@ function professionalDirectoryQueryInclude(): Prisma.ProfessionalProfileInclude 
       select: {
         id: true,
         fullName: true,
+        firstName: true,
+        lastName: true,
         email: true
       }
     },
@@ -489,7 +495,13 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
   return professionals.map((professional) => ({
     id: professional.id,
     userId: professional.user.id,
-    fullName: professionalListingDisplayName(professional.user.fullName),
+    firstName: professional.user.firstName ?? "",
+    lastName: professional.user.lastName ?? "",
+    fullName: professionalPublicListingLabel({
+      firstName: professional.user.firstName,
+      lastName: professional.user.lastName,
+      fullNameLegacy: professional.user.fullName
+    }),
     title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
     specialization: professional.specialization ?? null,
     focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
@@ -692,6 +704,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
               select: {
                 id: true,
                 fullName: true,
+                firstName: true,
+                lastName: true,
                 email: true
               }
             }
@@ -724,13 +738,21 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
           id: purchase.id,
           name: purchase.sessionPackage.name,
           credits: purchase.packageCreditsSnapshot ?? purchase.sessionPackage.credits,
-          purchasedAt: purchase.purchasedAt
+          purchasedAt: purchase.purchasedAt,
+          priceCents: purchase.packagePriceCentsSnapshot ?? null,
+          currency: purchase.packageCurrencySnapshot
+            ? String(purchase.packageCurrencySnapshot).toLowerCase()
+            : null
         })),
         activeProfessional: activeProfessional
           ? {
               id: activeProfessional.id,
               userId: activeProfessional.user.id,
-              fullName: activeProfessional.user.fullName,
+              fullName: professionalPublicListingLabel({
+                firstName: activeProfessional.user.firstName,
+                lastName: activeProfessional.user.lastName,
+                fullNameLegacy: activeProfessional.user.fullName
+              }),
               email: activeProfessional.user.email,
               photoUrl: activeProfessional.photoUrl ?? null
             }
@@ -747,6 +769,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
           select: {
             id: true,
             fullName: true,
+            firstName: true,
+            lastName: true,
             email: true
           }
         },
@@ -908,6 +932,8 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
           select: {
             id: true,
             fullName: true,
+            firstName: true,
+            lastName: true,
             email: true
           }
         }
@@ -921,7 +947,11 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
     activeProfessional = {
       id: professional.id,
       userId: professional.user.id,
-      fullName: professional.user.fullName,
+      fullName: professionalPublicListingLabel({
+        firstName: professional.user.firstName,
+        lastName: professional.user.lastName,
+        fullNameLegacy: professional.user.fullName
+      }),
       email: professional.user.email
     };
   }
@@ -1092,6 +1122,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       packageName: sessionPackage.name,
       packagePriceCents: pricing.priceCents,
       packageDiscountPercent: pricing.discountPercent,
+      packageCurrency: sessionPackage.currency?.toLowerCase() ?? "usd",
       totalCredits: purchase.totalCredits,
       remainingCredits: purchase.remainingCredits,
       purchasedAt: purchase.purchasedAt
@@ -1222,6 +1253,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
       packageName: displayName,
       packagePriceCents: totalPriceCents,
       packageDiscountPercent: pricing.discountPercent,
+      packageCurrency: unitPackage.currency?.toLowerCase() ?? "usd",
       totalCredits: purchase.totalCredits,
       remainingCredits: purchase.remainingCredits,
       purchasedAt: purchase.purchasedAt

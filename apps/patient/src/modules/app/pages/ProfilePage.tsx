@@ -7,6 +7,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { avatarInitialsFromNameParts } from "@therapy/types";
 import {
   friendlyProfileAvatarErrorMessage,
   friendlyProfileCalendarConnectMessage
@@ -161,7 +162,11 @@ export function ProfilePage(props: {
 
   const avatarDisplaySrc =
     resolvePublicAssetUrl(props.user.avatarUrl ?? null) ?? DEFAULT_PROFESSIONAL_AVATAR_SRC;
-  const avatarInitial = props.user.fullName.trim().charAt(0).toUpperCase() || "?";
+  const avatarInitial = avatarInitialsFromNameParts(
+    props.user.firstName ?? "",
+    props.user.lastName ?? "",
+    props.user.fullName
+  );
 
   const persistAvatar = async (avatarUrl: string | null) => {
     if (!props.authToken) {

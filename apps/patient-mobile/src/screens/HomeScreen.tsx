@@ -609,7 +609,13 @@ export function HomeScreen() {
               hitSlop={10}
             >
               <View style={styles.avatarWrap}>
-                <PersonAvatar uri={patientAvatarUri} name={displayName} size={AVATAR_HEADER} />
+                <PersonAvatar
+                  uri={patientAvatarUri}
+                  name={displayName}
+                  firstName={user?.firstName}
+                  lastName={user?.lastName}
+                  size={AVATAR_HEADER}
+                />
                 {showProfilePulse ? <View style={styles.avatarStatusDot} /> : null}
               </View>
             </Pressable>

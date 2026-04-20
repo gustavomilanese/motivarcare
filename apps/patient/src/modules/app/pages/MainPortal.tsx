@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
@@ -169,6 +169,13 @@ export function MainPortal(props: {
     onStateChange: props.onStateChange
   });
 
+  const onBookingSelectProfessional = useCallback(
+    (professionalId: string) => {
+      props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }));
+    },
+    [props.onStateChange]
+  );
+
   useEffect(() => {
     if (!location.pathname.startsWith("/onboarding/final")) {
       return;
@@ -191,6 +198,8 @@ export function MainPortal(props: {
         language={props.state.language}
         sessionEmail={props.state.session?.email}
         sessionFullName={props.state.session?.fullName}
+        sessionFirstName={props.state.session?.firstName}
+        sessionLastName={props.state.session?.lastName}
         unreadMessagesCount={unreadMessagesCount}
         notificationsUnreadCount={notificationsUnreadCount}
         notificationsOpen={ui.notificationsOpen}
@@ -253,6 +262,7 @@ export function MainPortal(props: {
             purchaseIndividualSessions={purchaseIndividualSessions}
             sendMessage={sendMessage}
             markThreadAsRead={markThreadAsRead}
+            onBookingSelectProfessional={onBookingSelectProfessional}
           />
         </main>
       </PortalNavigation>

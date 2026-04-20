@@ -185,6 +185,8 @@ export function ProfileScreen() {
               <PersonAvatar
                 uri={patientProfile?.avatarUrl ?? user?.avatarUrl ?? null}
                 name={user?.fullName ?? "Paciente"}
+                firstName={user?.firstName}
+                lastName={user?.lastName}
                 size={56}
               />
             </View>

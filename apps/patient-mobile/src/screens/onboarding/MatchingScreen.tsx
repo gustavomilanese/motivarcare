@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +21,7 @@ import type { MatchingProfessional, MatchingSlot } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import { useBookingsRefresh } from "../../context/BookingsRefreshContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
+import { PersonAvatar } from "../../components/PersonAvatar";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import type { AppThemeColors } from "../../theme/colors";
 import { useThemeMode } from "../../theme/ThemeContext";
@@ -79,21 +79,6 @@ function buildMatchingStyles(colors: AppThemeColors) {
     row: {
       flexDirection: "row",
       gap: 12
-    },
-    avatar: {
-      width: 56,
-      height: 56,
-      borderRadius: 16
-    },
-    avatarPh: {
-      backgroundColor: colors.primarySoft,
-      alignItems: "center",
-      justifyContent: "center"
-    },
-    avatarTxt: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: colors.primary
     },
     cardBody: {
       flex: 1,
@@ -300,13 +285,13 @@ export function MatchingScreen() {
           style={[styles.card, active && styles.cardActive]}
         >
           <View style={styles.row}>
-            {item.photoUrl ? (
-              <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPh]}>
-                <Text style={styles.avatarTxt}>{item.fullName.slice(0, 1)}</Text>
-              </View>
-            )}
+            <PersonAvatar
+              uri={item.photoUrl}
+              name={item.fullName}
+              firstName={item.firstName}
+              lastName={item.lastName}
+              size={56}
+            />
             <View style={styles.cardBody}>
               <Text style={styles.name}>{item.fullName}</Text>
               <Text style={styles.title}>{item.title}</Text>

@@ -13,7 +13,8 @@ import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceM
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
-import { findProfessionalById } from "../lib/professionals";
+import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
+import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import type {
   Booking,
   PackageId,
@@ -28,6 +29,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
+
+const ASSIGN_PRO_MODAL_DISMISS_KEY = "mc.assignProPromptDismissed";
 
 function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
   if (!planId) {
@@ -207,8 +210,11 @@ export function DashboardPage(props: {
   onNavigateToIndividualSessions: () => void;
   /** Flujo de matching + reserva de prueba (p. ej. tras posponer onboarding). */
   onNavigateToBookTrial: () => void;
+  /** Sin profesional asignado: volver al matching del onboarding para elegir uno. */
+  onNavigateToAssignProfessional: () => void;
 }) {
   const now = Date.now();
+  const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
   const pricingProfessionalId = canChangeProfessionalForNewPackage
     ? props.state.selectedProfessionalId
@@ -219,6 +225,7 @@ export function DashboardPage(props: {
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
+  const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
@@ -339,6 +346,14 @@ export function DashboardPage(props: {
   useEffect(() => {
     let active = true;
 
+    if (!hasAssignedProfessional) {
+      setPackagePlans([]);
+      setFeaturedPackageId(null);
+      return () => {
+        active = false;
+      };
+    }
+
     void loadPublicPackagePlans({
       language: props.language,
       professionalId: pricingProfessionalId,
@@ -353,7 +368,30 @@ export function DashboardPage(props: {
     return () => {
       active = false;
     };
-  }, [pricingProfessionalId, props.language]);
+  }, [hasAssignedProfessional, pricingProfessionalId, props.language]);
+
+  const ASSIGN_PRO_DISMISS_KEY = "mc.assignProPromptDismissed";
+
+  useEffect(() => {
+    if (hasAssignedProfessional) {
+      try {
+        window.sessionStorage.removeItem(ASSIGN_PRO_MODAL_DISMISS_KEY);
+      } catch {
+        // ignore
+      }
+      setAssignProModalOpen(false);
+      return;
+    }
+    try {
+      if (window.sessionStorage.getItem(ASSIGN_PRO_MODAL_DISMISS_KEY) === "1") {
+        setAssignProModalOpen(false);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    setAssignProModalOpen(true);
+  }, [hasAssignedProfessional]);
 
   const rnPackagePlansSorted = useMemo(
     () => [...packagePlans].sort((a, b) => a.credits - b.credits),
@@ -424,7 +462,7 @@ export function DashboardPage(props: {
               pt: "Daqui voce pode ver sua agenda, reservar novas sessoes e manter continuidade terapeutica."
             })}
           </p>
-          {defaultPackagePlan ? (
+          {hasAssignedProfessional && defaultPackagePlan ? (
             <button
               className="sessions-hero-buy-button dashboard-hero-buy-button"
               type="button"
@@ -875,6 +913,50 @@ export function DashboardPage(props: {
         )}
       </section>
 
+      <section className="sessions-secondary-section dashboard-compact-section sessions-purchased-history">
+        <button
+          type="button"
+          className="sessions-calendar-toggle"
+          aria-expanded={isPackagesExpanded}
+          onClick={() => setIsPackagesExpanded((current) => !current)}
+        >
+          <h2 className="sessions-secondary-title">{t(props.language, { es: "Paquetes comprados", en: "Purchased packages", pt: "Pacotes comprados" })}</h2>
+          <span className="sessions-secondary-toggle-label">{isPackagesExpanded
+            ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
+            : t(props.language, { es: "Expandir", en: "Expand", pt: "Expandir" })}
+          </span>
+        </button>
+        {isPackagesExpanded ? (
+          props.state.subscription.purchaseHistory.length === 0 ? (
+            <p>{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
+          ) : (
+            <ul className="simple-list session-history-list">
+              {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => {
+                const amountLabel = formatSubscriptionPurchasePrice({
+                  priceCents: item.priceCents,
+                  language: props.language,
+                  displayCurrency: props.currency
+                });
+                return (
+                  <li key={item.id}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{replaceTemplate(t(props.language, { es: "{count} sesiones", en: "{count} sessions", pt: "{count} sessoes" }), { count: String(item.credits) })}</span>
+                    </div>
+                    <div className="session-purchase-row-meta">
+                      <span className="session-purchase-row-date">
+                        {formatDateOnly({ isoDate: item.purchasedAt, timezone: props.state.profile.timezone, language: props.language })}
+                      </span>
+                      {amountLabel ? <span className="session-purchase-row-amount">{amountLabel}</span> : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : null}
+      </section>
+
       <section className="sessions-calendar-collapsible sessions-secondary-section dashboard-compact-section">
         <button
           type="button"
@@ -900,39 +982,7 @@ export function DashboardPage(props: {
         ) : null}
       </section>
 
-      <section className="sessions-secondary-section dashboard-compact-section sessions-purchased-history">
-        <button
-          type="button"
-          className="sessions-calendar-toggle"
-          aria-expanded={isPackagesExpanded}
-          onClick={() => setIsPackagesExpanded((current) => !current)}
-        >
-          <h2 className="sessions-secondary-title">{t(props.language, { es: "Paquetes comprados", en: "Purchased packages", pt: "Pacotes comprados" })}</h2>
-          <span className="sessions-secondary-toggle-label">{isPackagesExpanded
-            ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-            : t(props.language, { es: "Expandir", en: "Expand", pt: "Expandir" })}
-          </span>
-        </button>
-        {isPackagesExpanded ? (
-          props.state.subscription.purchaseHistory.length === 0 ? (
-            <p>{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
-          ) : (
-            <ul className="simple-list session-history-list">
-              {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>{replaceTemplate(t(props.language, { es: "{count} sesiones", en: "{count} sessions", pt: "{count} sessoes" }), { count: String(item.credits) })}</span>
-                  </div>
-                  <span>{formatDateOnly({ isoDate: item.purchasedAt, timezone: props.state.profile.timezone, language: props.language })}</span>
-                </li>
-              ))}
-            </ul>
-          )
-        ) : null}
-      </section>
-
-      {packagePlans.length > 0 ? (
+      {hasAssignedProfessional && packagePlans.length > 0 ? (
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
           <div className="session-booking-panel-head">
             <div>
@@ -1160,6 +1210,10 @@ export function DashboardPage(props: {
                 type="button"
                 className="dashboard-rn-fab"
                 onClick={() => {
+                  if (!hasAssignedProfessional) {
+                    props.onNavigateToAssignProfessional();
+                    return;
+                  }
                   if (pricingProfessionalId) {
                     props.onGoToBooking(pricingProfessionalId);
                     return;
@@ -1168,11 +1222,11 @@ export function DashboardPage(props: {
                     props.onNavigateToBookTrial();
                   }
                 }}
-                disabled={!pricingProfessionalId && trialStatus !== "pending"}
+                disabled={hasAssignedProfessional ? !pricingProfessionalId && trialStatus !== "pending" : false}
                 aria-label={t(props.language, {
-                  es: "Agendar una sesión",
-                  en: "Book a session",
-                  pt: "Agendar uma sessao"
+                  es: hasAssignedProfessional ? "Agendar una sesión" : "Elegir profesional",
+                  en: hasAssignedProfessional ? "Book a session" : "Choose a professional",
+                  pt: hasAssignedProfessional ? "Agendar uma sessao" : "Escolher profissional"
                 })}
               >
                 <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
@@ -1208,11 +1262,17 @@ export function DashboardPage(props: {
                   {t(props.language, { es: "Sin turnos agendados", en: "No appointments scheduled", pt: "Sem horarios agendados" })}
                 </p>
                 <p className="dashboard-rn-empty-meta">
-                  {t(props.language, {
-                    es: "Tocá el + al lado de tu saldo para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
-                    en: "Tap + next to your balance to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
-                    pt: "Toque no + ao lado do saldo para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
-                  })}
+                  {hasAssignedProfessional
+                    ? t(props.language, {
+                        es: "Tocá el + al lado de tu saldo para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
+                        en: "Tap + next to your balance to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
+                        pt: "Toque no + ao lado do saldo para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
+                      })
+                    : t(props.language, {
+                        es: "Primero elegí un profesional con el botón + (o desde el aviso que apareció al entrar). Después vas a poder agendar y ver opciones de compra.",
+                        en: "First pick a professional using the + button (or the notice when you arrived). Then you can book and see purchase options.",
+                        pt: "Primeiro escolha um profissional com o botao + (ou pelo aviso ao entrar). Depois voce podera agendar e ver opcoes de compra."
+                      })}
                 </p>
               </div>
             ) : (
@@ -1233,6 +1293,7 @@ export function DashboardPage(props: {
             )}
           </section>
 
+          {hasAssignedProfessional ? (
           <section className="dashboard-rn-mcare-outer">
             <div className="dashboard-rn-mcare-gradient" aria-hidden="true" />
             <div className="dashboard-rn-mcare-inner">
@@ -1298,9 +1359,10 @@ export function DashboardPage(props: {
               </div>
             </div>
           </section>
+          ) : null}
         </div>
 
-        {rnSelectedPlan ? (
+        {hasAssignedProfessional && rnSelectedPlan ? (
           <div className="dashboard-rn-mcare-sticky">
             <button
               type="button"
@@ -1321,6 +1383,66 @@ export function DashboardPage(props: {
           </div>
         ) : null}
       </div>
+
+      {assignProModalOpen ? (
+        <div
+          className="session-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="assign-pro-modal-title"
+        >
+          <div className="session-modal intake-safety-frequent-modal" onClick={(event) => event.stopPropagation()}>
+            <h2 id="assign-pro-modal-title" className="intake-question-title">
+              {t(props.language, {
+                es: "Elegí un profesional",
+                en: "Choose a professional",
+                pt: "Escolha um profissional"
+              })}
+            </h2>
+            <p className="intake-question-help">
+              {t(props.language, {
+                es: "Para ver precios de paquetes y comprar sesiones necesitás tener un profesional asignado. Te llevamos a la selección del onboarding.",
+                en: "To see package prices and buy sessions you need an assigned professional. We will take you to the onboarding selection.",
+                pt: "Para ver precos de pacotes e comprar sessoes voce precisa de um profissional atribuido. Vamos para a selecao do onboarding."
+              })}
+            </p>
+            <div className="intake-wizard-actions">
+              <button
+                type="button"
+                className="primary intake-wizard-primary"
+                onClick={() => {
+                  setAssignProModalOpen(false);
+                  props.onNavigateToAssignProfessional();
+                }}
+              >
+                {t(props.language, {
+                  es: "Ir a elegir profesional",
+                  en: "Go to professional selection",
+                  pt: "Ir para escolher profissional"
+                })}
+              </button>
+              <button
+                type="button"
+                className="ghost intake-wizard-secondary"
+                onClick={() => {
+                  try {
+                    window.sessionStorage.setItem(ASSIGN_PRO_MODAL_DISMISS_KEY, "1");
+                  } catch {
+                    // ignore
+                  }
+                  setAssignProModalOpen(false);
+                }}
+              >
+                {t(props.language, {
+                  es: "Más tarde",
+                  en: "Later",
+                  pt: "Depois"
+                })}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {acquireSessionsModalOpen ? (
         <AcquireSessionsChoiceModal

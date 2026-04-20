@@ -220,6 +220,95 @@ ul {
   font-size: 16px;
 }
 
+/* Tras verificar email: intro al cuestionario (modal sobre auth-shell) */
+.pre-intake-intro-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: grid;
+  place-items: center;
+  padding: max(16px, var(--safe-top)) 18px max(24px, var(--safe-bottom));
+}
+
+.pre-intake-intro-modal {
+  width: min(520px, 100%);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.06),
+    0 24px 48px rgba(79, 70, 229, 0.14);
+}
+
+.pre-intake-intro-modal-inner {
+  padding: 0 0 22px;
+  display: grid;
+  gap: 0;
+}
+
+.pre-intake-intro-accent {
+  height: 5px;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(90deg, #7c3aed 0%, #5b4ae8 45%, #22c55e 100%);
+}
+
+.pre-intake-intro-eyebrow {
+  margin: 18px 24px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.pre-intake-intro-title {
+  margin: 8px 24px 0;
+  font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.pre-intake-intro-body-stack {
+  margin: 14px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pre-intake-intro-body-stack .pre-intake-intro-body {
+  margin: 0;
+}
+
+.pre-intake-intro-body {
+  margin: 14px 24px 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #374151;
+}
+
+.pre-intake-intro-actions {
+  margin-top: 22px;
+  padding: 18px 24px 0;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pre-intake-intro-actions .primary {
+  border-radius: 999px;
+  min-width: 160px;
+  min-height: 46px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .auth-shell {
   background:
     linear-gradient(118deg, rgba(255, 190, 140, 0.42) 0%, transparent 36%),
@@ -287,6 +376,18 @@ ul {
   max-width: 34ch;
 }
 
+.verify-email-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3d4a63;
+  max-width: 38ch;
+}
+
+.verify-email-body + .verify-email-body--spam {
+  margin-top: 8px;
+}
+
 .verify-email-address {
   font-weight: 600;
   color: #1f2b40;
@@ -329,6 +430,91 @@ ul {
 .verify-email-secondary:hover:not(:disabled) {
   background: #f6f8fc;
   border-color: #b8c2d8;
+}
+
+.verify-email-resend-row {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #62708a;
+  text-align: center;
+  max-width: 34ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.verify-email-resend-label {
+  display: inline;
+}
+
+.verify-email-resend-link {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: #5f44eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: unset;
+  width: auto;
+}
+
+.verify-email-resend-link:hover:not(:disabled) {
+  color: #4b36c4;
+}
+
+.verify-email-resend-link:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Pie de tarjeta: salir = terciario (común en Auth0, Stripe, flujos de verificación). */
+.verify-email-card-footer {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: center;
+  max-width: 38ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.verify-email-footer-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.verify-email-logout-link {
+  display: inline-block;
+  padding: 4px 2px;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: unset;
+  width: auto;
+}
+
+.verify-email-logout-link:hover:not(:disabled) {
+  color: #475569;
+}
+
+.verify-email-logout-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .verify-email-dev {
@@ -642,6 +828,7 @@ ul {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  justify-content: flex-start;
 }
 
 .auth-narrow-back:hover {
@@ -761,6 +948,10 @@ button {
   cursor: pointer;
   padding: 10px 14px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 button:hover {
@@ -1371,6 +1562,7 @@ button.danger {
 .menu-item {
   min-height: var(--touch-min);
   text-align: left;
+  justify-content: flex-start;
   border-radius: var(--portal-radius-sm);
   border: 1px solid #e8ecf4;
   background: #ffffff;
@@ -1988,6 +2180,7 @@ button.danger {
 .sessions-combined-action {
   width: 100%;
   text-align: left;
+  justify-content: flex-start;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -2056,6 +2249,7 @@ button.danger {
 .hero-card-button {
   width: 100%;
   text-align: left;
+  justify-content: flex-start;
 }
 
 .hero-card-button:hover {
@@ -2070,6 +2264,20 @@ button.danger {
 
 .hero-card-button:disabled:hover {
   background: linear-gradient(180deg, #f4f5fa 0%, #f7f8fc 100%);
+}
+
+/* Tarjeta "Profesional activo": misma lectura visual que las KPI (centrado); anular .hero-card-button. */
+.hero-card.hero-card-button.active-professional-card--has-pro {
+  display: grid;
+  text-align: center;
+  justify-items: center;
+  justify-content: normal;
+}
+
+.hero-card.active-professional-card--has-pro .label {
+  padding-left: 0;
+  text-align: center;
+  width: 100%;
 }
 
 .hero-card-link {
@@ -2088,14 +2296,17 @@ button.danger {
 }
 
 .active-professional-card-hit {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
   gap: 8px;
   cursor: pointer;
   border-radius: 12px;
   padding: 4px;
   margin: -4px;
   text-align: center;
-  justify-items: center;
 }
 
 .active-professional-card-hit:hover {
@@ -2119,7 +2330,14 @@ button.danger {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
   gap: 10px;
+}
+
+.active-professional-card--has-pro .active-professional-row > div {
+  text-align: center;
+  min-width: 0;
 }
 
 .active-professional-avatar {
@@ -2133,6 +2351,7 @@ button.danger {
 .active-professional-row h3 {
   font-size: 17px;
   line-height: 1.2;
+  text-align: center;
 }
 
 .active-professional-row p,
@@ -2573,6 +2792,7 @@ button.danger {
   text-align: left;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 220px;
 }
@@ -3879,6 +4099,7 @@ button.danger {
   background: transparent;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   width: 100%;
   gap: 10px;
   color: #1f2a44;
@@ -4594,6 +4815,14 @@ button.danger {
   font-weight: 500;
 }
 
+.session-detail-meet-fallback-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
 .session-detail-meet-actions {
   display: flex;
   flex-wrap: wrap;
@@ -4991,6 +5220,8 @@ button.sessions-balance {
   width: 100%;
   font: inherit;
   text-align: left;
+  justify-content: flex-start;
+  align-items: flex-start;
   appearance: none;
   -webkit-appearance: none;
 }
@@ -5991,44 +6222,83 @@ button.sessions-balance {
   padding-top: 14px;
 }
 
-/** Paquetes comprados: fondo violeta oscuro (misma familia que botones primary). */
+/** Solo Paquetes comprados: fondo violeta muy suave (resto de secciones = estilo calendario). */
 .sessions-secondary-section.sessions-purchased-history {
-  border-top: none;
   margin-top: min(10%, 28px);
-  padding: 16px 16px 18px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #3a23a8 0%, var(--brand) 52%, #4329a8 100%);
-  box-shadow: 0 10px 28px rgba(58, 35, 168, 0.28);
+  padding: 14px 16px 16px;
+  border-radius: 14px;
+  background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07);
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.sessions-secondary-section.sessions-purchased-history:hover,
+.sessions-secondary-section.sessions-purchased-history:focus-within {
+  border-color: rgba(139, 92, 246, 0.22);
+  box-shadow: 0 10px 28px rgba(95, 68, 235, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .sessions-purchased-history .sessions-secondary-title {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .sessions-purchased-history .sessions-secondary-toggle-label {
-  color: rgba(255, 255, 255, 0.88);
+  color: #5f45ee;
 }
 
 .sessions-purchased-history > p,
 .sessions-purchased-history p {
-  color: rgba(255, 255, 255, 0.9);
+  color: #4b5872;
 }
 
-.sessions-purchased-history .session-history-list li {
-  border-bottom-color: rgba(255, 255, 255, 0.22);
+.sessions-purchased-history .sessions-calendar-toggle + ul,
+.sessions-purchased-history .sessions-calendar-toggle + p {
+  margin-top: 16px;
+}
+
+/* Filas solo en Paquetes comprados (lista de compras). */
+.sessions-purchased-history .session-history-list li,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li {
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-sm);
+  padding: 12px 14px;
+  background: var(--portal-surface-solid);
+  box-shadow: none;
+}
+
+.sessions-purchased-history .session-history-list li:last-child,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li:last-child {
+  border-bottom: 1px solid var(--portal-border);
 }
 
 .sessions-purchased-history .session-history-list li strong {
-  color: #ffffff;
+  color: #131f39;
 }
 
-.sessions-purchased-history .session-history-list li span {
-  color: rgba(255, 255, 255, 0.78);
+.sessions-purchased-history .session-history-list li span:not(.session-status-pill) {
+  color: var(--text-soft);
+}
+
+.sessions-purchased-history .session-purchase-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+  text-align: right;
+}
+
+.sessions-purchased-history .session-history-list li span.session-purchase-row-amount {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #3730a3;
 }
 
 .sessions-purchased-history .simple-list li {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--portal-border);
+  background: var(--portal-surface-solid);
 }
 
 .dashboard-compact-section.sessions-purchased-history {
@@ -6078,26 +6348,27 @@ button.sessions-balance {
   color: #0f1a31;
 }
 
-/* Tarjeta violeta "Paquetes comprados": la regla genérica de :hover arriba ganaba por orden; reforzamos contraste y alineación. */
-.sessions-purchased-history .sessions-calendar-toggle {
+.sessions-secondary-section.sessions-purchased-history .sessions-calendar-toggle {
   align-items: center;
-  border-radius: 12px;
-  transition: background-color 0.15s ease;
+  border-radius: var(--portal-radius-sm);
+  padding: 8px 10px;
+  margin: -4px -6px 0;
+  box-sizing: border-box;
 }
 
-.sessions-purchased-history .sessions-calendar-toggle:hover,
 .sessions-purchased-history .sessions-calendar-toggle:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
+  outline: 2px solid rgba(95, 68, 235, 0.35);
+  outline-offset: 2px;
 }
 
 .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
 .sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-toggle-label,
 .sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-toggle-label {
-  color: rgba(255, 255, 255, 0.92);
+  color: #4f3ed4;
 }
 
 .sessions-secondary-toggle-label {
@@ -6133,7 +6404,7 @@ button.sessions-balance {
   font-size: 11px;
 }
 
-.dashboard-compact-section .sessions-calendar-toggle {
+.dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle {
   padding-left: 5px;
 }
 
@@ -6193,6 +6464,48 @@ button.sessions-balance {
   margin: 0;
   color: #4b5872;
   font-size: 14px;
+}
+
+/* Última sección (calendario) en /sessions: aire inferior. */
+.sessions-booking-page .sessions-booking-calendar-tail {
+  margin-bottom: clamp(24px, 5vh, 40px);
+}
+
+/* Historial y Calendario: mismo patrón de encabezado (estilo calendario). */
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle {
+  align-items: center;
+  border-radius: var(--portal-radius-sm);
+  padding: 10px 12px;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease;
+}
+
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover,
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:hover,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:focus-visible {
+  background: rgba(95, 68, 235, 0.08);
+}
+
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover .sessions-secondary-title,
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible .sessions-secondary-title,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:hover .sessions-secondary-title,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
+  color: #111827;
+}
+
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover .sessions-secondary-toggle-label,
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible .sessions-secondary-toggle-label,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:hover .sessions-secondary-toggle-label,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:focus-visible .sessions-secondary-toggle-label {
+  color: #5b41e8;
+}
+
+.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible,
+.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.4);
+  outline-offset: 2px;
 }
 
 .sessions-calendar-grid-wrap {
@@ -8857,7 +9170,8 @@ button.sessions-balance {
 .intake-option-chip {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
   min-height: var(--touch-min);
   padding: 12px 14px;
@@ -8867,7 +9181,7 @@ button.sessions-balance {
   font-size: 15px;
   font-weight: 600;
   color: #1e293b;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -9519,6 +9833,34 @@ button.sessions-balance {
   gap: 6px;
 }
 
+/* La fila KPI del home usa .hero-card .label con padding para el ::before; acá debe quedar centrado. */
+.patient-dashboard-home .hero-card.active-professional-card--has-pro {
+  text-align: center;
+  justify-items: center;
+  justify-content: normal;
+}
+
+.patient-dashboard-home .hero-card.hero-card-button.active-professional-card--has-pro {
+  display: grid;
+  text-align: center;
+  justify-items: center;
+  justify-content: normal;
+}
+
+.patient-dashboard-home .hero-card.active-professional-card--has-pro .label {
+  padding-left: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.patient-dashboard-home .active-professional-card--has-pro .active-professional-row > div {
+  text-align: center;
+}
+
+.patient-dashboard-home .active-professional-card--has-pro .active-professional-row h3 {
+  text-align: center;
+}
+
 .patient-dashboard-home button.active-professional-card {
   cursor: pointer;
   transition:
@@ -9553,6 +9895,7 @@ button.sessions-balance {
   cursor: default;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
   text-align: left;
 }
 
@@ -9572,6 +9915,8 @@ button.sessions-balance {
 .patient-dashboard-home .active-professional-card .chat-gradient-button {
   padding: 6px 12px;
   font-size: 12px;
+  justify-self: center;
+  align-self: center;
 }
 
 @media (max-width: 1080px) {
@@ -9596,53 +9941,75 @@ button.sessions-balance {
   }
 }
 
-/*
- * Paquetes comprados: refuerzo al final de la hoja para ganar cualquier cascada
- * (p. ej. .session-history-list o :hover del toggle).
- */
+/* Paquetes comprados: violeta liviano (refuerzo cascada). */
 .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history,
 .sessions-booking-page .sessions-secondary-section.sessions-purchased-history {
-  background: linear-gradient(135deg, #3a23a8 0%, #5f44eb 52%, #4329a8 100%) !important;
-  border-top: none !important;
-  box-shadow: 0 10px 28px rgba(58, 35, 168, 0.28);
+  background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%) !important;
+  border: 1px solid rgba(139, 92, 246, 0.14) !important;
+  box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07) !important;
+  transition: box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+
+.patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:hover,
+.sessions-booking-page .sessions-secondary-section.sessions-purchased-history:hover,
+.patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:focus-within,
+.sessions-booking-page .sessions-secondary-section.sessions-purchased-history:focus-within {
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  box-shadow: 0 10px 28px rgba(95, 68, 235, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
 .patient-dashboard-home .sessions-purchased-history .sessions-secondary-title,
 .sessions-booking-page .sessions-purchased-history .sessions-secondary-title,
 .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
 .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title {
-  color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 .patient-dashboard-home .sessions-purchased-history .sessions-secondary-toggle-label,
 .sessions-booking-page .sessions-purchased-history .sessions-secondary-toggle-label {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: #5f45ee !important;
 }
 
 .patient-dashboard-home .sessions-purchased-history p,
 .sessions-booking-page .sessions-purchased-history p {
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: #4b5872 !important;
 }
 
 .patient-dashboard-home .sessions-purchased-history .session-history-list li,
 .sessions-booking-page .sessions-purchased-history .session-history-list li {
-  border-bottom-color: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  border-radius: var(--portal-radius-sm) !important;
+  padding: 12px 14px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.patient-dashboard-home .sessions-purchased-history .session-history-list li:last-child,
+.sessions-booking-page .sessions-purchased-history .session-history-list li:last-child {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
 }
 
 .patient-dashboard-home .sessions-purchased-history .session-history-list li strong,
 .sessions-booking-page .sessions-purchased-history .session-history-list li strong {
-  color: #ffffff !important;
+  color: #131f39 !important;
 }
 
-.patient-dashboard-home .sessions-purchased-history .session-history-list li span,
-.sessions-booking-page .sessions-purchased-history .session-history-list li span {
-  color: rgba(255, 255, 255, 0.8) !important;
+.patient-dashboard-home .sessions-purchased-history .session-history-list li span:not(.session-status-pill),
+.sessions-booking-page .sessions-purchased-history .session-history-list li span:not(.session-status-pill) {
+  color: #617086 !important;
+}
+
+.patient-dashboard-home .sessions-purchased-history .session-purchase-row-amount,
+.sessions-booking-page .sessions-purchased-history .session-purchase-row-amount {
+  color: #3730a3 !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .patient-dashboard-home .sessions-purchased-history .simple-list li,
 .sessions-booking-page .sessions-purchased-history .simple-list li {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  background: #ffffff !important;
 }
 
 /* Inicio móvil alineado con patient-mobile `HomeScreen` (≤680px) */
@@ -9871,6 +10238,8 @@ button.sessions-balance {
   .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
     width: 100%;
     text-align: left;
+    justify-content: flex-start;
+    align-items: stretch;
     cursor: pointer;
     font-family: inherit;
     -webkit-tap-highlight-color: transparent;
@@ -9936,6 +10305,8 @@ button.sessions-balance {
     box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
     cursor: pointer;
     text-align: left;
+    justify-content: flex-start;
+    align-items: stretch;
     font-family: inherit;
     -webkit-tap-highlight-color: transparent;
     transition:

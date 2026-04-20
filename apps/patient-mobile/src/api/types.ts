@@ -4,6 +4,8 @@ export type AuthUser = {
   id: string;
   email: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   /** Foto de perfil (https). Null hasta que el usuario suba una; seed demo trae URL de prueba. */
   avatarUrl: string | null;
   role: AppRole;
@@ -183,6 +185,8 @@ export type MatchingProfessional = {
   id: string;
   userId: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   title: string;
   specialization: string | null;
   focusPrimary: string | null;

@@ -9,7 +9,13 @@ function safeString(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export async function fetchProfessionalDirectory(token?: string | null, language: "es" | "en" | "pt" = "es"): Promise<MatchCardProfessional[]> {
+const directoryInflight = new Map<string, Promise<MatchCardProfessional[]>>();
+
+function directoryRequestKey(token: string | null | undefined, language: string): string {
+  return token ? `auth:${token}:${language}` : "public";
+}
+
+async function fetchProfessionalDirectoryOnce(token?: string | null, language: "es" | "en" | "pt" = "es"): Promise<MatchCardProfessional[]> {
   const endpoint = token
     ? `/api/profiles/me/matching?language=${encodeURIComponent(language)}`
     : "/api/profiles/professionals";
@@ -22,6 +28,8 @@ export async function fetchProfessionalDirectory(token?: string | null, language
   return (response.professionals ?? []).map((item) => ({
     id: item.id,
     fullName: item.fullName,
+    firstName: item.firstName ?? "",
+    lastName: item.lastName ?? "",
     title: safeString(item.title) ?? "Profesional de salud mental",
     specialization: safeString(item.specialization),
     focusPrimary: safeString(item.focusPrimary),
@@ -46,4 +54,21 @@ export async function fetchProfessionalDirectory(token?: string | null, language
     compatibilityBase: item.compatibility ?? 0,
     slots: Array.isArray(item.slots) ? item.slots : []
   }));
+}
+
+/**
+ * Varias partes del portal (sync batch, cambio de idioma, matching) pueden pedir el mismo listado a la vez;
+ * una sola petición en vuelo por token+idioma.
+ */
+export async function fetchProfessionalDirectory(token?: string | null, language: "es" | "en" | "pt" = "es"): Promise<MatchCardProfessional[]> {
+  const key = directoryRequestKey(token ?? null, language);
+  const existing = directoryInflight.get(key);
+  if (existing) {
+    return existing;
+  }
+  const pending = fetchProfessionalDirectoryOnce(token, language).finally(() => {
+    directoryInflight.delete(key);
+  });
+  directoryInflight.set(key, pending);
+  return pending;
 }

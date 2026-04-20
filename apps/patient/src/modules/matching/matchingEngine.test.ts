@@ -1,11 +1,16 @@
+import { splitFullNameToFirstLast } from "@therapy/types";
 import { describe, expect, it } from "vitest";
 import { professionalsCatalog } from "../app/data/professionalsCatalog";
 import { extractPatientTopics, rankProfessionalsForPatient } from "./matchingEngine";
 import type { MatchCardProfessional } from "./types";
 
-const candidates: MatchCardProfessional[] = professionalsCatalog.map((professional) => ({
+const candidates: MatchCardProfessional[] = professionalsCatalog.map((professional) => {
+  const { firstName, lastName } = splitFullNameToFirstLast(professional.fullName);
+  return {
   id: professional.id,
   fullName: professional.fullName,
+  firstName,
+  lastName,
   title: professional.title,
   specialization: professional.specialties[0] ?? null,
   focusPrimary: professional.specialties[0] ?? null,
@@ -25,7 +30,8 @@ const candidates: MatchCardProfessional[] = professionalsCatalog.map((profession
   sessionsCount: 0,
   compatibilityBase: professional.compatibility,
   slots: professional.slots
-}));
+};
+});
 
 describe("rankProfessionalsForPatient", () => {
   it("prioriza profesionales con especialidad alineada al motivo principal", () => {

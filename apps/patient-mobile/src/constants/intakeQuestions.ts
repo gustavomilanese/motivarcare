@@ -76,7 +76,7 @@ const TH_PREFIX_G = "Género del/de la psicólogo/a: ";
 const TH_PREFIX_AGE = "Edad aproximada del/de la psicólogo/a: ";
 const TH_PREFIX_LGBT = "Experiencia en temas LGBTIQ+: ";
 
-export const THERAPIST_PREF_GENDER_OPTIONS_ES = ["Sin preferencia", "Hombre", "Mujer", "Me da igual"] as const;
+export const THERAPIST_PREF_GENDER_OPTIONS_ES = ["Sin preferencia", "Hombre", "Mujer"] as const;
 export const THERAPIST_PREF_AGE_OPTIONS_ES = [
   "Sin preferencia",
   "25 a 35",

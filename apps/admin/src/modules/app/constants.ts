@@ -16,7 +16,8 @@ export const links: Array<{ to: PortalPath; label: string }> = [
 export const defaultCreateForm: CreateUserFormState = {
   role: "PATIENT",
   isTestUser: false,
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   password: "",
   timezone: "",

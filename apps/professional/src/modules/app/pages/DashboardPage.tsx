@@ -1,3 +1,4 @@
+import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -123,11 +124,13 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     };
 
     load();
-    const timer = window.setInterval(load, 15000);
+    const unsubscribe = subscribeDocumentVisibleInterval(() => {
+      void load();
+    }, 30_000);
 
     return () => {
       active = false;
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [props.language, props.token, revenueQuery]);
 

@@ -41,8 +41,6 @@ function therapistPrefGenderOptionLabel(lang: AppLanguage, valueEs: string): str
       return t(lang, { es: "Hombre", en: "Man", pt: "Homem" });
     case "Mujer":
       return t(lang, { es: "Mujer", en: "Woman", pt: "Mulher" });
-    case "Me da igual":
-      return t(lang, { es: "Me da igual", en: "Either is fine", pt: "Tanto faz" });
     default:
       return valueEs;
   }
@@ -451,13 +449,7 @@ export function IntakeScreen(props: {
       if (idx >= 0) {
         setStepIndex(idx);
       }
-      setError(
-        t(props.language, {
-          es: "Falta alguna pregunta obligatoria. Te llevamos a la primera pendiente: completala y tocá continuar.",
-          en: "A required question is still missing. We’ve jumped you to the first one—complete it and continue.",
-          pt: "Falta alguma pergunta obrigatoria. Levamos voce a primeira pendente: complete e continue."
-        })
-      );
+      setError("");
       return;
     }
 
@@ -562,21 +554,21 @@ export function IntakeScreen(props: {
                     aria-pressed={therapistPrefParsed.exclusive}
                     onClick={() => {
                       setError("");
-                      setAnswers((prev) => {
-                        const p = parseTherapistPreferencesStored(prev.therapistPreferences ?? "");
-                        if (p.exclusive) {
-                          return {
-                            ...prev,
-                            therapistPreferences: buildTherapistPreferencesStored(
-                              false,
-                              THERAPIST_PREF_GENDER_OPTIONS_ES[0],
-                              THERAPIST_PREF_AGE_OPTIONS_ES[0],
-                              THERAPIST_PREF_LGBT_OPTIONS_ES[0]
-                            )
-                          };
-                        }
-                        return { ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES };
-                      });
+                      const p = parseTherapistPreferencesStored(answers.therapistPreferences ?? "");
+                      if (p.exclusive) {
+                        setAnswers((prev) => ({
+                          ...prev,
+                          therapistPreferences: buildTherapistPreferencesStored(
+                            false,
+                            THERAPIST_PREF_GENDER_OPTIONS_ES[0],
+                            THERAPIST_PREF_AGE_OPTIONS_ES[0],
+                            THERAPIST_PREF_LGBT_OPTIONS_ES[0]
+                          )
+                        }));
+                        return;
+                      }
+                      setAnswers((prev) => ({ ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES }));
+                      setStepIndex((s) => Math.min(s + 1, totalSteps - 1));
                     }}
                   >
                     {t(props.language, {

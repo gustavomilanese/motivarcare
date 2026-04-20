@@ -39,7 +39,7 @@ export function ProfessionalPortal(props: {
   const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const links = useMemo(() => getPortalNavLinks(props.language), [props.language]);
-  const { threads, unreadMessagesCount } = usePortalChatThreads(props.token);
+  const { threads, unreadMessagesCount, reloadThreads } = usePortalChatThreads(props.token);
 
   const notificationItems = useMemo(
     () => buildPatientMessageNotificationItems(props.language, threads),
@@ -306,7 +306,18 @@ export function ProfessionalPortal(props: {
             <Route path="/agenda/ajustes" element={<SchedulePage token={props.token} language={props.language} mode="settings" />} />
             <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route path="/pacientes" element={<PatientsPage token={props.token} language={props.language} />} />
-            <Route path="/chat" element={<ChatPage token={props.token} user={props.user} language={props.language} />} />
+            <Route
+              path="/chat"
+              element={
+                <ChatPage
+                  token={props.token}
+                  user={props.user}
+                  language={props.language}
+                  portalThreads={threads}
+                  reloadPortalThreads={reloadThreads}
+                />
+              }
+            />
             <Route path="/ingresos" element={<IncomePage token={props.token} language={props.language} currency={props.currency} />} />
             <Route path="/admin" element={<AdminPage token={props.token} language={props.language} />} />
             <Route

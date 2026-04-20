@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { subscribeDocumentVisibleInterval } from "@therapy/auth";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { replaceTemplate, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
-import { apiRequest } from "../services/api";
+import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
 import type { ApiChatThread, Message } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -138,6 +139,7 @@ export function usePortalNotifications(params: {
 }) {
   const [remoteUnreadMessagesCount, setRemoteUnreadMessagesCount] = useState<number | null>(null);
   const [remoteNotificationThreads, setRemoteNotificationThreads] = useState<ApiChatThread[]>([]);
+  const threadsPollInFlight = useRef(false);
 
   useEffect(() => {
     const authToken = params.authToken ?? undefined;
@@ -148,38 +150,38 @@ export function usePortalNotifications(params: {
     }
 
     let active = true;
-    const loadUnread = async () => {
-      try {
-        const response = await apiRequest<{ threads: Array<{ unreadCount: number }> }>("/api/chat/threads", {}, authToken);
-        if (active) {
-          const unread = response.threads.reduce((total, thread) => total + Math.max(0, thread.unreadCount || 0), 0);
-          setRemoteUnreadMessagesCount(unread);
-        }
-      } catch {
-        // fallback to previous value
+    const POLL_MS = 20_000;
+
+    const syncThreadsOnce = async () => {
+      if (threadsPollInFlight.current) {
+        return;
       }
-    };
-    const loadNotifications = async () => {
+      threadsPollInFlight.current = true;
       try {
-        const response = await apiRequest<{ threads: ApiChatThread[] }>("/api/chat/threads", {}, authToken);
-        if (active) {
-          setRemoteNotificationThreads(response.threads ?? []);
+        const response = await fetchSharedPatientChatThreads(authToken);
+        if (!active) {
+          return;
         }
+        const threads = response.threads ?? [];
+        setRemoteNotificationThreads(threads);
+        const unread = threads.reduce((total, thread) => total + Math.max(0, thread.unreadCount || 0), 0);
+        setRemoteUnreadMessagesCount(unread);
       } catch {
-        // fallback to previous value
+        // keep previous counts / threads
+      } finally {
+        threadsPollInFlight.current = false;
       }
     };
 
-    void loadUnread();
-    void loadNotifications();
-    const timer = window.setInterval(() => {
-      void loadUnread();
-      void loadNotifications();
-    }, 5000);
+    void syncThreadsOnce();
+    const unsubscribe = subscribeDocumentVisibleInterval(() => {
+      void syncThreadsOnce();
+    }, POLL_MS);
 
     return () => {
       active = false;
-      window.clearInterval(timer);
+      threadsPollInFlight.current = false;
+      unsubscribe();
     };
   }, [params.authToken]);
 

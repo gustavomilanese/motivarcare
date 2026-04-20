@@ -1,3 +1,4 @@
+import { userNamePartsFromFullNameString } from "@therapy/types";
 import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/auth.js";
 
@@ -42,18 +43,23 @@ async function upsertUser(params: {
   avatarUrl?: string | null;
 }) {
   const passwordHash = hashPassword(defaultPassword);
+  const nameParts = userNamePartsFromFullNameString(params.fullName);
 
   return prisma.user.upsert({
     where: { email: params.email },
     update: {
-      fullName: params.fullName,
+      fullName: nameParts.fullName,
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
       role: params.role,
       passwordHash,
       ...(params.avatarUrl !== undefined ? { avatarUrl: params.avatarUrl } : {})
     },
     create: {
       email: params.email,
-      fullName: params.fullName,
+      fullName: nameParts.fullName,
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
       role: params.role,
       passwordHash,
       avatarUrl: params.avatarUrl ?? null

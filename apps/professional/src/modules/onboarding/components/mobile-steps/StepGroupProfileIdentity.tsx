@@ -230,7 +230,7 @@ export function ProfessionalPersonalDataStep(props: {
   value: {
     publicName: string;
     firstName: string;
-    fullName: string;
+    lastName: string;
     practiceHours: string;
     graduationYear: string;
     gender: string;
@@ -240,7 +240,7 @@ export function ProfessionalPersonalDataStep(props: {
   onChange: (nextValue: {
     publicName: string;
     firstName: string;
-    fullName: string;
+    lastName: string;
     practiceHours: string;
     graduationYear: string;
     gender: string;
@@ -323,7 +323,7 @@ export function ProfessionalPersonalDataStep(props: {
   const canContinue = Boolean(
     props.value.publicName.trim()
     && props.value.firstName.trim()
-    && props.value.fullName.trim()
+    && props.value.lastName.trim()
     && props.value.practiceHours.trim()
     && props.value.graduationYear.trim()
     && props.value.gender.trim()
@@ -358,8 +358,14 @@ export function ProfessionalPersonalDataStep(props: {
         <div className="pro-personal-form">
           <input placeholder={t(props.language, { es: "Mi nombre", en: "My name", pt: "Meu nome" })} value={props.value.publicName} onChange={(event) => next({ publicName: event.target.value })} />
           <input placeholder={t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })} value={props.value.firstName} onChange={(event) => next({ firstName: event.target.value })} />
-          <input placeholder={t(props.language, { es: "Nombre y Apellido", en: "Full name", pt: "Nome e sobrenome" })} value={props.value.fullName} onChange={(event) => next({ fullName: event.target.value })} />
-          <small>{t(props.language, { es: "Ejemplo: Maria Antonia Lopez", en: "Example: Maria Antonia Lopez", pt: "Exemplo: Maria Antonia Lopez" })}</small>
+          <input placeholder={t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })} value={props.value.lastName} onChange={(event) => next({ lastName: event.target.value })} />
+          <small>
+            {t(props.language, {
+              es: "Apellido completo (si hay varios apellidos, en un solo campo). Ej.: García López",
+              en: "Full last name(s) in one field. E.g. García López",
+              pt: "Sobrenome completo em um campo. Ex.: Silva Santos"
+            })}
+          </small>
 
           <div className="pro-personal-two-cols">
             <label>

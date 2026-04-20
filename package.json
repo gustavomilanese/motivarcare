@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "db:pre": "npm run db:up && npm run db:wait",
-    "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
-    "dev:all:apps": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"npm run dev:patient\" \"npm run dev:professional\" \"npm run dev:admin\"",
+    "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
+    "dev:all:apps": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
     "dev": "npm run db:pre && npm run dev:apps",
     "dev:all": "npm run db:pre && npm run dev:all:apps",
     "dev:full": "npm run dev:all",
@@ -44,6 +44,7 @@
   "devDependencies": {
     "autocannon": "^8.0.0",
     "concurrently": "^9.2.1",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "wait-on": "^8.0.5"
   }
 }

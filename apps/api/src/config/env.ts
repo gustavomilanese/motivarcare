@@ -19,6 +19,8 @@ const EnvSchema = z.object({
   API_RATE_LIMIT_BACKEND: z.enum(["auto", "memory", "redis"]).default("auto"),
   API_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   API_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(300),
+  /** Presupuesto mayor por IP cuando el cliente envía Bearer (portales SPA: muchas peticiones legítimas en paralelo). */
+  API_RATE_LIMIT_MAX_REQUESTS_AUTHENTICATED: z.coerce.number().int().positive().default(2000),
   API_AUTH_LOGIN_WINDOW_MS: z.coerce.number().int().positive().default(600000),
   API_AUTH_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().positive().default(20),
   API_MAX_INFLIGHT_REQUESTS: z.coerce.number().int().positive().default(500),

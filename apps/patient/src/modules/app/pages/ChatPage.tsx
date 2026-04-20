@@ -1,4 +1,5 @@
 import { type KeyboardEvent, type SyntheticEvent, useEffect, useMemo, useState } from "react";
+import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -6,12 +7,12 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
+import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
 import { friendlyChatSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import type {
   ApiChatMessage,
   ApiChatThread,
-  ApiChatThreadsResponse,
   Message,
   PatientAppState,
   Professional
@@ -180,11 +181,7 @@ export function ChatPage(props: {
     }
 
     try {
-      const response = await apiRequest<ApiChatThreadsResponse>(
-        "/api/chat/threads",
-        {},
-        props.authToken ?? undefined
-      );
+      const response = await fetchSharedPatientChatThreads(props.authToken);
       setApiThreads(
         response.threads.map((thread) => ({
           ...thread,
@@ -243,13 +240,13 @@ export function ChatPage(props: {
       return;
     }
 
-    loadThreads();
-    const timer = window.setInterval(() => {
-      loadThreads();
-    }, 3500);
+    void loadThreads();
+    const unsubscribe = subscribeDocumentVisibleInterval(() => {
+      void loadThreads();
+    }, 20_000);
 
     return () => {
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [remoteMode, props.authToken]);
 
@@ -286,12 +283,12 @@ export function ChatPage(props: {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      loadMessages(activeThreadId);
-    }, 2500);
+    const unsubscribe = subscribeDocumentVisibleInterval(() => {
+      void loadMessages(activeThreadId);
+    }, 15_000);
 
     return () => {
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [remoteMode, props.authToken, activeThreadId]);
 

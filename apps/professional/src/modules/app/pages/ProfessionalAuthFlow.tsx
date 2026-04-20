@@ -6,6 +6,7 @@ import {
   type SupportedCurrency,
   textByLanguage
 } from "@therapy/i18n-config";
+import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
 import {
   buildPatchDraftFromMobileInputs,
   buildPatchDraftFromWebPayload,
@@ -167,7 +168,7 @@ export function ProfessionalAuthFlow(props: {
   const [personalData, setPersonalData] = useState({
     publicName: "",
     firstName: "",
-    fullName: "",
+    lastName: "",
     practiceHours: "",
     graduationYear: "",
     gender: "",
@@ -181,7 +182,8 @@ export function ProfessionalAuthFlow(props: {
     if (!mobilePreAuthSession) {
       return;
     }
-    const displayName = personalData.fullName.trim() || mobilePreAuthSession.user.fullName;
+    const displayName =
+      joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim() || mobilePreAuthSession.user.fullName;
     props.onPrepareOnboardingSync(buildMobileDraft());
     props.onAuthSuccess({
       token: mobilePreAuthSession.token,
@@ -274,6 +276,14 @@ export function ProfessionalAuthFlow(props: {
         }
       };
       setMobilePreAuthSession(meta);
+      {
+        const nameParts = splitFullNameToFirstLast(response.user.fullName);
+        setPersonalData((current) => ({
+          ...current,
+          firstName: nameParts.firstName,
+          lastName: nameParts.lastName
+        }));
+      }
 
       if (response.emailVerificationRequired && !response.user.emailVerified) {
         setAuthEntryMode("register-email-verify");
@@ -377,7 +387,10 @@ export function ProfessionalAuthFlow(props: {
           resume?.onResumeConsumed();
           setRegisterEmail(payload.email);
           setRegisterPassword(payload.password);
-          setPersonalData((current) => ({ ...current, fullName: payload.fullName }));
+          setPersonalData((current) => {
+            const parts = splitFullNameToFirstLast(payload.fullName);
+            return { ...current, firstName: parts.firstName, lastName: parts.lastName };
+          });
           props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload));
           setRegisterBackMode("register-web");
           const displayName = payload.fullName.trim() || meta.user.fullName;
@@ -848,7 +861,7 @@ export function ProfessionalAuthFlow(props: {
       initialMode={authEntryMode === "register" ? "register" : "login"}
       initialEmail={registerEmail}
       initialPassword={registerPassword}
-      initialFullName={personalData.fullName}
+      initialFullName={joinFirstLastToFullName(personalData.firstName, personalData.lastName)}
       onBack={() => setAuthEntryMode((mode) => (mode === "register" ? registerBackMode : "welcome"))}
     />
   );

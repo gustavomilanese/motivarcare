@@ -63,6 +63,11 @@ export function SessionDetailModal(props: {
   const [copied, setCopied] = useState(false);
   const joinUrl = props.booking.joinUrl?.trim() ?? "";
   const isGoogleMeet = joinUrl.includes("meet.google.");
+  /** Enlace provisional del API cuando no se pudo crear Meet (Daily demo / placeholder local). */
+  const isLikelyNonMeetVideoLink =
+    Boolean(joinUrl)
+    && !isGoogleMeet
+    && (/\bdaily\.co\b/i.test(joinUrl) || /\bvideo\.therapy\.local\b/i.test(joinUrl));
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -164,7 +169,7 @@ export function SessionDetailModal(props: {
                   <p className="session-detail-meet-lead">
                     {isGoogleMeet
                       ? t(props.language, {
-                          es: "El enlace se creo al reservar. Abri Meet en el navegador o en la app.",
+                          es: "El enlace se creó al reservar. Abrí Meet en el navegador o en la app.",
                           en: "Your link was created when you booked. Open Meet in your browser or the app.",
                           pt: "O link foi criado ao reservar. Abra o Meet no navegador ou no app."
                         })
@@ -174,6 +179,15 @@ export function SessionDetailModal(props: {
                           pt: "Use este link para entrar na sessao no horario combinado."
                         })}
                   </p>
+                  {isLikelyNonMeetVideoLink ? (
+                    <p className="session-detail-meet-fallback-hint">
+                      {t(props.language, {
+                        es: "Si esperabas Google Meet: el servidor no pudo crear el evento Meet (revisá GOOGLE_CLIENT_ID/SECRET, tokens del calendario del profesional o tuyo, o consola del API). Este enlace es solo respaldo.",
+                        en: "If you expected Google Meet, the server could not create the Meet event (check GOOGLE_CLIENT_ID/SECRET, your or your professional’s calendar tokens, or the API console). This link is only a fallback.",
+                        pt: "Se voce esperava Google Meet, o servidor nao criou o evento Meet (confira GOOGLE_CLIENT_ID/SECRET, tokens do calendario seu ou do profissional, ou o console da API). Este link e apenas reserva."
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="session-detail-meet-actions">

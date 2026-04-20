@@ -10,6 +10,7 @@
     "web": "bash ../../scripts/start-patient-mobile-expo.sh --web"
   },
   "dependencies": {
+    "@therapy/types": "0.1.0",
     "@expo/metro-runtime": "~55.0.7",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",

@@ -39,6 +39,8 @@ export interface AdminUser {
   id: string;
   email: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   /** Foto de perfil a nivel cuenta (paciente / cualquier rol con User.avatarUrl). */
   avatarUrl?: string | null;
   role: Role;
@@ -339,7 +341,8 @@ export interface AdminBookingsResponse {
 export interface CreateUserFormState {
   role: Role;
   isTestUser: boolean;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   timezone: string;
@@ -356,8 +359,11 @@ export interface CreateUserFormState {
 export interface EditUserDraft {
   role: Role;
   isTestUser: boolean;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   password: string;
+  /** Repetición para validar; no se envía al API. */
+  passwordConfirm: string;
   /** Foto de perfil del usuario (paciente): URL o data URL. */
   patientAvatarUrl: string;
   patientStatus: PatientStatus;

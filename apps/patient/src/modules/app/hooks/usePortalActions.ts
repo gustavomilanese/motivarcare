@@ -85,7 +85,8 @@ export function usePortalActions(params: {
             id: purchasedPackage?.id ?? `local-${Date.now().toString(36)}`,
             name: purchasedPackage?.packageName ?? plan.name,
             credits: plan.credits,
-            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString()
+            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+            priceCents: purchasedPackage?.packagePriceCents ?? plan.priceCents ?? null
           },
           ...current.subscription.purchaseHistory
         ].slice(0, 20)
@@ -144,7 +145,8 @@ export function usePortalActions(params: {
             id: purchasedPackage?.id ?? `local-ind-${Date.now().toString(36)}`,
             name: purchasedPackage?.packageName ?? `${sessionCount} sesiones`,
             credits: sessionCount,
-            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString()
+            purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
+            priceCents: purchasedPackage?.packagePriceCents ?? null
           },
           ...current.subscription.purchaseHistory
         ].slice(0, 20)

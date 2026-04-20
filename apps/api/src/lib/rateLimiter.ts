@@ -143,6 +143,13 @@ export const rateLimiter = createRateLimiter({
   maxRequests: env.API_RATE_LIMIT_MAX_REQUESTS
 });
 
+/** Misma ventana que `rateLimiter`; tope más alto para `Authorization: Bearer` (evita 429 en uso normal del portal). */
+export const rateLimiterAuthenticated = createRateLimiter({
+  keyPrefix: "global-auth",
+  windowMs: env.API_RATE_LIMIT_WINDOW_MS,
+  maxRequests: env.API_RATE_LIMIT_MAX_REQUESTS_AUTHENTICATED
+});
+
 export const authLoginRateLimiter = createRateLimiter({
   keyPrefix: "auth_login",
   windowMs: env.API_AUTH_LOGIN_WINDOW_MS,

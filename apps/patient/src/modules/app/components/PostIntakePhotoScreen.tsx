@@ -1,5 +1,6 @@
 import { type ChangeEvent, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { avatarInitialsFromNameParts } from "@therapy/types";
 import { DEFAULT_PROFESSIONAL_AVATAR_SRC } from "../services/api";
 import type { SessionUser } from "../types";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
@@ -18,7 +19,11 @@ export function PostIntakePhotoScreen(props: {
   const [fileBusy, setFileBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const initial = props.user.fullName.trim().charAt(0).toUpperCase() || "?";
+  const initial = avatarInitialsFromNameParts(
+    props.user.firstName ?? "",
+    props.user.lastName ?? "",
+    props.user.fullName
+  );
 
   const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

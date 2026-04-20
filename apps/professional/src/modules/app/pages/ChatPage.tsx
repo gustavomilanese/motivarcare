@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useSearchParams } from "react-router-dom";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
@@ -51,7 +52,13 @@ function mergeThreadsByCounterpart(threads: ThreadSummary[]): ThreadSummary[] {
   });
 }
 
-export function ChatPage(props: { token: string; user: AuthUser; language: AppLanguage }) {
+export function ChatPage(props: {
+  token: string;
+  user: AuthUser;
+  language: AppLanguage;
+  portalThreads: ThreadSummary[];
+  reloadPortalThreads: () => Promise<void>;
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPatientId = searchParams.get("patientId")?.trim() ?? "";
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -86,23 +93,17 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
     setSearchParams(nextParams, { replace: true });
   }, [requestedPatientId, searchParams, setSearchParams, threads]);
 
-  const loadThreads = useCallback(async () => {
-    try {
-      const response = await apiRequest<{ threads: ThreadSummary[] }>("/api/chat/threads", props.token);
-      const mergedThreads = mergeThreadsByCounterpart(response.threads);
-      setThreads(mergedThreads);
-      setSelectedThreadId((current) => {
-        if (current && mergedThreads.some((thread) => thread.id === current)) {
-          return current;
-        }
-        return mergedThreads[0]?.id ?? "";
-      });
-      setError("");
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(professionalSurfaceMessage("chat-threads", props.language, raw));
-    }
-  }, [props.token, props.language]);
+  useEffect(() => {
+    const mergedThreads = mergeThreadsByCounterpart(props.portalThreads);
+    setThreads(mergedThreads);
+    setError("");
+    setSelectedThreadId((current) => {
+      if (current && mergedThreads.some((thread) => thread.id === current)) {
+        return current;
+      }
+      return mergedThreads[0]?.id ?? "";
+    });
+  }, [props.portalThreads]);
 
   const loadMessages = useCallback(async (threadId: string) => {
     try {
@@ -115,12 +116,6 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
       setError(professionalSurfaceMessage("chat-messages", props.language, raw));
     }
   }, [props.token, props.language]);
-
-  useEffect(() => {
-    void loadThreads();
-    const timer = window.setInterval(loadThreads, 3000);
-    return () => window.clearInterval(timer);
-  }, [loadThreads]);
 
   useEffect(() => {
     if (!selectedThread) {
@@ -138,17 +133,20 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
       await apiRequest<{ markedAsRead: number }>(`/api/chat/threads/${threadId}/read`, props.token, {
         method: "POST"
       }).catch(() => undefined);
+      if (!active) {
+        return;
+      }
       await loadMessages(threadId);
     };
 
     void readAndLoad();
-    const timer = window.setInterval(() => {
+    const unsubscribe = subscribeDocumentVisibleInterval(() => {
       void readAndLoad();
-    }, 2500);
+    }, 15_000);
 
     return () => {
       active = false;
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [selectedThread?.id, props.token, loadMessages]);
 
@@ -164,7 +162,7 @@ export function ChatPage(props: { token: string; user: AuthUser; language: AppLa
       });
       setDraft("");
       await loadMessages(selectedThread.id);
-      await loadThreads();
+      await props.reloadPortalThreads();
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(professionalSurfaceMessage("chat-send", props.language, raw));

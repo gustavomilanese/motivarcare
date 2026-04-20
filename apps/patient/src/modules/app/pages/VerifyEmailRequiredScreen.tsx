@@ -10,7 +10,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function VerifyEmailRequiredScreen(props: {
   language: AppLanguage;
   token: string;
-  email: string;
+  /** Cierra sesión en el portal (limpia token y estado local). */
   onLogout: () => void;
 }) {
   const [loadingResend, setLoadingResend] = useState(false);
@@ -73,32 +73,56 @@ export function VerifyEmailRequiredScreen(props: {
               pt: "Verifique seu e-mail para continuar"
             })}
           </h1>
-          <p className="verify-email-lead">
+          <p className="verify-email-body">
             {t(props.language, {
-              es: "Te enviamos un enlace a",
-              en: "We sent a link to",
-              pt: "Enviamos um link para"
-            })}{" "}
-            <span className="verify-email-address">{props.email}</span>
-          </p>
-          <p className="verify-email-hint">
-            {t(props.language, {
-              es: "Revisa también la carpeta de spam. El enlace puede caducar.",
-              en: "Check your spam folder too. The link may expire.",
-              pt: "Verifique também o spam. O link pode expirar."
+              es: "Abrí tu correo y seguí las instrucciones.",
+              en: "Open your email and follow the instructions.",
+              pt: "Abra seu e-mail e siga as instruções."
             })}
           </p>
-          <div className="stack verify-email-actions">
-            <button className="primary" type="button" onClick={handleResend} disabled={loadingResend}>
+          <p className="verify-email-body verify-email-body--spam">
+            {t(props.language, {
+              es: "Chequea SPAM si no lo ves.",
+              en: "Check your spam folder if you don’t see it.",
+              pt: "Verifique o spam se não encontrar."
+            })}
+          </p>
+          <p className="verify-email-resend-row" role="status" aria-live="polite">
+            <span className="verify-email-resend-label">
+              {t(props.language, {
+                es: "¿No te llegó después de unos minutos?",
+                en: "Still nothing after a few minutes?",
+                pt: "Ainda nada depois de alguns minutos?"
+              })}{" "}
+            </span>
+            <button
+              type="button"
+              className="verify-email-resend-link"
+              onClick={() => void handleResend()}
+              disabled={loadingResend}
+            >
               {loadingResend
-                ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
-                : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
+                ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
+                : t(props.language, { es: "Reenviar correo", en: "Resend email", pt: "Reenviar e-mail" })}
             </button>
-
-            <button type="button" className="verify-email-secondary" onClick={props.onLogout} disabled={loadingResend}>
-              {t(props.language, { es: "Salir", en: "Log out", pt: "Sair" })}
+          </p>
+          <footer className="verify-email-card-footer">
+            <p className="verify-email-footer-label">
+              {t(props.language, {
+                es: "¿No es tu cuenta o querés usar otro correo?",
+                en: "Not your account, or need a different email?",
+                pt: "Nao e sua conta ou precisa de outro e-mail?"
+              })}
+            </p>
+            <button
+              type="button"
+              className="verify-email-logout-link"
+              onClick={props.onLogout}
+              disabled={loadingResend}
+            >
+              {t(props.language, { es: "Cerrar sesión", en: "Log out", pt: "Sair" })}
             </button>
-          </div>
+          </footer>
           {message ? <p className="success-text verify-email-feedback">{message}</p> : null}
           {error ? <p className="error-text verify-email-feedback">{error}</p> : null}
         </div>

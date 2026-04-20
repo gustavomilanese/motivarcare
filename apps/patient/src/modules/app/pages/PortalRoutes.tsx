@@ -126,6 +126,7 @@ export function PortalRoutes(props: {
   purchaseIndividualSessions: (sessionCount: number) => Promise<boolean>;
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
+  onBookingSelectProfessional: (professionalId: string) => void;
 }) {
   const startPackagePurchase = (plan: PackagePlan) => {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
@@ -133,6 +134,10 @@ export function PortalRoutes(props: {
 
   const startIndividualSessionsFromDashboard = () => {
     props.navigate("/sessions?flow=checkout&purchase=individual&source=dashboard");
+  };
+
+  const navigateToAssignProfessional = () => {
+    props.navigate("/onboarding/final/matching");
   };
 
   return (
@@ -160,6 +165,7 @@ export function PortalRoutes(props: {
                   onStartPackagePurchase={startPackagePurchase}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
+                  onNavigateToAssignProfessional={navigateToAssignProfessional}
                 />
               )
         }
@@ -199,12 +205,14 @@ export function PortalRoutes(props: {
       <Route
         path="/onboarding/final/matching"
         element={
-          props.lockToTherapistSelection
+          props.lockToTherapistSelection || !props.state.assignedProfessionalId?.trim()
             ? (
                 <OnboardingFinalMatching
                   favoritesReturnPath="/onboarding/final/matching"
                   state={props.state}
-                  needsInitialTherapistSelection={props.needsInitialTherapistSelection}
+                  needsInitialTherapistSelection={
+                    props.lockToTherapistSelection ? props.needsInitialTherapistSelection : false
+                  }
                   navigate={props.navigate}
                   onStateChange={props.onStateChange}
                   toggleFavoriteProfessional={props.toggleFavoriteProfessional}
@@ -287,14 +295,13 @@ export function PortalRoutes(props: {
                   language={props.state.language}
                   currency={props.state.currency}
                   onImageFallback={props.onImageFallback}
-                  onSelectProfessional={(professionalId) =>
-                    props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
-                  }
+                  onSelectProfessional={props.onBookingSelectProfessional}
                   onConfirmBooking={props.confirmBooking}
                   onRescheduleBooking={props.rescheduleBooking}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
                   onPurchaseIndividualSessions={props.purchaseIndividualSessions}
+                  onNavigateToAssignProfessional={navigateToAssignProfessional}
                 />
               )
         }

@@ -4,7 +4,7 @@ import { env } from "./config/env.js";
 import { sendApiError } from "./lib/http.js";
 import { metricsContentType, metricsSnapshot, observeHttpRequest } from "./lib/metrics.js";
 import { runtimeState } from "./lib/operational.js";
-import { rateLimiter } from "./lib/rateLimiter.js";
+import { rateLimiter, rateLimiterAuthenticated } from "./lib/rateLimiter.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { profilesRouter } from "./modules/profiles/profiles.routes.js";
@@ -134,7 +134,16 @@ app.use((req, res, next) => {
     return;
   }
 
-  void rateLimiter.consume(getRequestIp(req)).then((result) => {
+  const authHeader = typeof req.headers.authorization === "string" ? req.headers.authorization.trim() : "";
+  const bearerToken =
+    authHeader.length > 7 && authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+  /** JWT real; evita que `Bearer x` dispare el toque alto en rutas públicas (p. ej. login). */
+  const useAuthenticatedBudget = bearerToken.length >= 32;
+  const limiter = useAuthenticatedBudget ? rateLimiterAuthenticated : rateLimiter;
+
+  void limiter.consume(getRequestIp(req)).then((result) => {
     res.setHeader("X-RateLimit-Limit", String(result.limit));
     res.setHeader("X-RateLimit-Remaining", String(result.remaining));
     res.setHeader("X-RateLimit-Reset", String(Math.floor(result.resetAt / 1000)));

@@ -4,6 +4,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { avatarInitialsFromNameParts } from "@therapy/types";
 import type { ReactNode, SyntheticEvent } from "react";
 import { NavLink } from "react-router-dom";
 import type { ProfileTab } from "../types";
@@ -66,6 +67,8 @@ export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
   sessionFullName?: string;
+  sessionFirstName?: string;
+  sessionLastName?: string;
   unreadMessagesCount: number;
   favoriteCount: number;
   notificationsUnreadCount: number;
@@ -94,6 +97,11 @@ export function PortalNavigation(props: {
   children: ReactNode;
 }) {
   const mobileFirstName = firstNameOnly(props.sessionFullName);
+  const mobileAvatarInitials = avatarInitialsFromNameParts(
+    props.sessionFirstName ?? "",
+    props.sessionLastName ?? "",
+    props.sessionFullName ?? ""
+  );
 
   return (
     <>
@@ -160,7 +168,7 @@ export function PortalNavigation(props: {
                 />
               ) : (
                 <span className="portal-header-patient-avatar portal-header-patient-avatar--fallback" aria-hidden>
-                  {mobileFirstName ? mobileFirstName.charAt(0).toUpperCase() : "?"}
+                  {mobileAvatarInitials || "?"}
                 </span>
               )}
               <span className="portal-header-patient-name">{mobileFirstName}</span>

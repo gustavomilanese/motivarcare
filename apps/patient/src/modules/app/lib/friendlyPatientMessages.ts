@@ -437,3 +437,58 @@ export function friendlyCalendarOnboardingMessage(
     pt: "Nao foi possivel abrir o Google Calendar. Sua conta esta ok — tente em breve ou conecte em Perfil quando quiser."
   });
 }
+
+/** Tras el redirect de Google OAuth (`?calendar_sync=…` en la URL del portal). */
+export function friendlyCalendarOAuthReturnMessage(
+  language: AppLanguage,
+  params: { status: "error" | "cancelled"; reason: string | null }
+): string {
+  if (params.status === "cancelled") {
+    return t(language, {
+      es: "No conectamos Google Calendar en este paso. Podés tocar «Conectar ahora» de nuevo, o hacerlo más tarde desde Perfil.",
+      en: "We didn’t connect Google Calendar this time. Tap “Connect now” again, or do it later from Profile.",
+      pt: "Nao conectamos o Google Calendar neste passo. Toque em «Conectar agora» de novo ou faca depois em Perfil."
+    });
+  }
+  const r = (params.reason ?? "").trim();
+  if (r === "missing_refresh_token") {
+    return t(language, {
+      es: "Google no devolvió permiso de acceso prolongado (suele pasar si ya habías autorizado la app). En Google: Cuenta → Seguridad → Acceso de terceros, revocá «MotivarCare» y probá «Conectar ahora» otra vez; o probá en una ventana de incógnito.",
+      en: "Google didn’t return long-lived access (common if you already authorized the app). In your Google account, revoke MotivarCare under third-party access, then try “Connect again”—or use a private/incognito window.",
+      pt: "O Google nao devolveu acesso prolongado (comum se voce ja autorizou o app). Na conta Google, revogue o acesso do MotivarCare em apps de terceiros e tente «Conectar» de novo, ou use uma janela anonima."
+    });
+  }
+  if (r === "oauth_exchange_failed") {
+    return t(language, {
+      es: "No pudimos cerrar la conexión con Google (credenciales o URI de redirección). Si sos quien administra el entorno, revisá GOOGLE_CLIENT_ID/SECRET y que la URI de callback del API esté en Google Cloud. Podés seguir sin calendario.",
+      en: "We couldn’t finish the Google connection (credentials or redirect URI). If you manage this environment, check GOOGLE_CLIENT_ID/SECRET and the API callback URI in Google Cloud. You can continue without calendar.",
+      pt: "Nao foi possivel concluir a conexao com o Google (credenciais ou URI). Se voce administra o ambiente, confira GOOGLE_CLIENT_ID/SECRET e a URI de callback na Google Cloud. Pode seguir sem calendario."
+    });
+  }
+  if (r === "missing_code") {
+    return t(language, {
+      es: "La respuesta de Google llegó incompleta. Probá «Conectar ahora» de nuevo.",
+      en: "Google’s response was incomplete. Try “Connect now” again.",
+      pt: "A resposta do Google veio incompleta. Tente «Conectar agora» de novo."
+    });
+  }
+  if (r === "session_mismatch") {
+    return t(language, {
+      es: "La cuenta con la que volviste no coincide con tu sesión actual. Cerrá otras pestañas o volvé a iniciar sesión e intentá de nuevo.",
+      en: "The account you returned with doesn’t match your current session. Close other tabs or sign in again and retry.",
+      pt: "A conta com que voce voltou nao coincide com a sessao atual. Feche outras abas ou entre de novo e tente outra vez."
+    });
+  }
+  if (r === "access_denied") {
+    return t(language, {
+      es: "Google no recibió el permiso necesario. Probá de nuevo o conectá el calendario más tarde desde Perfil.",
+      en: "Google didn’t get the permission needed. Try again or connect your calendar later from Profile.",
+      pt: "O Google nao recebeu a permissao necessaria. Tente de novo ou conecte o calendario depois em Perfil."
+    });
+  }
+  return t(language, {
+    es: "No pudimos completar la conexión con Google Calendar. Probá de nuevo en un rato o desde Perfil.",
+    en: "We couldn’t finish connecting Google Calendar. Try again shortly or from Profile.",
+    pt: "Nao foi possivel concluir a conexao com o Google Calendar. Tente em breve ou em Perfil."
+  });
+}

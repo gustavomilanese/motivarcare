@@ -7,6 +7,7 @@ import { UsersCreateSection, UsersListSection } from "../components/users/UsersP
 import { closeStickyCollapsibleSection, useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
+import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminUser,
   CreateUserFormState,
@@ -50,11 +51,17 @@ function parseIntField(rawValue: string): number | null {
 }
 
 function buildEditDraft(user: AdminUser): EditUserDraft {
+  const fn = user.firstName?.trim() ?? "";
+  const ln = user.lastName?.trim() ?? "";
+  const { firstName, lastName } =
+    fn !== "" || ln !== "" ? { firstName: fn, lastName: ln } : splitFullNameToFirstLast(user.fullName);
   return {
     role: user.role,
     isTestUser: user.isTestUser,
-    fullName: user.fullName,
+    firstName,
+    lastName,
     password: "",
+    passwordConfirm: "",
     patientAvatarUrl: user.avatarUrl ?? "",
     patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
     patientTimezone: user.patientProfile?.timezone ?? "America/New_York",
@@ -210,6 +217,19 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       return;
     }
 
+    if (!createForm.firstName.trim() || !createForm.lastName.trim()) {
+      setCreateError(
+        t(props.language, {
+          es: "Completá nombre y apellido.",
+          en: "Enter first name and last name.",
+          pt: "Preencha nome e sobrenome."
+        })
+      );
+      return;
+    }
+
+    const createFullName = joinFirstLastToFullName(createForm.firstName, createForm.lastName);
+
     const payload: {
       email: string;
       fullName: string;
@@ -227,7 +247,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       professionalVideoUrl?: string;
     } = {
       email: createForm.email.trim().toLowerCase(),
-      fullName: createForm.fullName.trim(),
+      fullName: createFullName,
       password: createForm.password,
       role: createForm.role,
       isTestUser: createForm.isTestUser
@@ -316,6 +336,18 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     setEditError("");
     setEditSuccess("");
 
+    if (!draft.firstName.trim() || !draft.lastName.trim()) {
+      setSaveLoading(false);
+      setEditError(
+        t(props.language, {
+          es: "Completá nombre y apellido.",
+          en: "Enter first name and last name.",
+          pt: "Preencha nome e sobrenome."
+        })
+      );
+      return;
+    }
+
     const payload: {
       fullName: string;
       password?: string;
@@ -331,11 +363,35 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       professionalPhotoUrl?: string | null;
       professionalVideoUrl?: string | null;
     } = {
-      fullName: draft.fullName.trim()
+      fullName: joinFirstLastToFullName(draft.firstName, draft.lastName)
     };
 
-    if (draft.password.trim().length > 0) {
-      payload.password = draft.password.trim();
+    const passwordTrim = draft.password.trim();
+    const passwordConfirmTrim = draft.passwordConfirm.trim();
+    if (passwordTrim.length === 0 && passwordConfirmTrim.length === 0) {
+      // sin cambio de contraseña
+    } else if (passwordTrim.length === 0 || passwordConfirmTrim.length === 0) {
+      setSaveLoading(false);
+      setEditError(
+        t(props.language, {
+          es: "Completá la nueva contraseña y la confirmación, o dejá ambos campos vacíos.",
+          en: "Enter both the new password and confirmation, or leave both fields blank.",
+          pt: "Preencha a nova senha e a confirmacao, ou deixe os dois campos em branco."
+        })
+      );
+      return;
+    } else if (passwordTrim !== passwordConfirmTrim) {
+      setSaveLoading(false);
+      setEditError(
+        t(props.language, {
+          es: "Las contraseñas no coinciden.",
+          en: "Passwords do not match.",
+          pt: "As senhas nao coincidem."
+        })
+      );
+      return;
+    } else {
+      payload.password = passwordTrim;
     }
     payload.isTestUser = draft.isTestUser;
 
