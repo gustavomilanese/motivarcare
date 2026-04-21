@@ -5,6 +5,7 @@ import { env } from "../../config/env.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
+import type { Market } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 
 const supportedCurrencySchema = z.enum(["USD", "EUR", "GBP", "BRL", "ARS"]);
@@ -124,6 +125,19 @@ paymentsRouter.post("/stripe/checkout-session", requireAuth, async (req: Authent
     });
   }
 
+  const patientRow = await prisma.patientProfile.findUnique({
+    where: { id: actor.patientProfileId },
+    select: { market: true }
+  });
+  const checkoutMarket: Market = parsed.data.currency === "USD" ? "US" : "AR";
+  if (patientRow && patientRow.market !== checkoutMarket) {
+    return res.status(409).json({
+      error: "Checkout currency does not match patient market",
+      patientMarket: patientRow.market,
+      requestedMarket: checkoutMarket
+    });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [{ price: priceId, quantity: 1 }],
@@ -133,7 +147,8 @@ paymentsRouter.post("/stripe/checkout-session", requireAuth, async (req: Authent
       patientId: actor.patientProfileId,
       packageSize: parsed.data.packageSize,
       currency: parsed.data.currency,
-      stripePriceId: priceId
+      stripePriceId: priceId,
+      market: checkoutMarket
     }
   });
 

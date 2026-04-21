@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Market, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { getFinanceRules } from "../modules/finance/finance.service.js";
 
@@ -31,10 +31,20 @@ async function resolvePackageForCheckout(params: {
   stripePriceId: string | null;
   packageCredits: number | null;
   currency: string;
+  market: Market | null;
 }) {
   if (params.stripePriceId) {
-    const byPrice = await params.tx.sessionPackage.findUnique({
-      where: { stripePriceId: params.stripePriceId }
+    if (params.market) {
+      const byComposite = await params.tx.sessionPackage.findUnique({
+        where: { market_stripePriceId: { market: params.market, stripePriceId: params.stripePriceId } }
+      });
+      if (byComposite) {
+        return byComposite;
+      }
+    }
+    const byPrice = await params.tx.sessionPackage.findFirst({
+      where: { stripePriceId: params.stripePriceId, active: true },
+      orderBy: { createdAt: "asc" }
     });
     if (byPrice) {
       return byPrice;
@@ -46,7 +56,8 @@ async function resolvePackageForCheckout(params: {
       where: {
         credits: params.packageCredits,
         currency: params.currency,
-        active: true
+        active: true,
+        ...(params.market ? { market: params.market } : {})
       },
       orderBy: { createdAt: "asc" }
     });
@@ -56,7 +67,8 @@ async function resolvePackageForCheckout(params: {
 
     return params.tx.sessionPackage.findFirst({
       where: {
-        credits: params.packageCredits
+        credits: params.packageCredits,
+        ...(params.market ? { market: params.market } : {})
       },
       orderBy: { createdAt: "asc" }
     });
@@ -76,6 +88,9 @@ async function processStripeCheckoutCompleted(payload: unknown) {
   const stripePriceId = typeof metadata?.stripePriceId === "string" ? metadata.stripePriceId : null;
   const packageCredits = parsePackageCredits(metadata?.packageSize);
   const currency = normalizeCurrency(checkoutSession?.currency ?? metadata?.currency);
+  const marketRaw = metadata?.market;
+  const market: Market | null =
+    marketRaw === "AR" || marketRaw === "US" ? marketRaw : stripePriceId ? "US" : "AR";
   const paymentStatus = typeof checkoutSession?.payment_status === "string" ? checkoutSession.payment_status : "unknown";
 
   if (!checkoutSessionId || !patientId) {
@@ -108,7 +123,8 @@ async function processStripeCheckoutCompleted(payload: unknown) {
       tx,
       stripePriceId,
       packageCredits,
-      currency
+      currency,
+      market
     });
     if (!sessionPackage) {
       throw new Error("Could not resolve package for checkout session");

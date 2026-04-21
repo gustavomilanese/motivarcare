@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Prisma, ProfessionalRegistrationApproval } from "@prisma/client";
+import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { professionalPublicListingLabel, yearsExperienceFromGraduationYear } from "../../lib/professionalListingDisplayName.js";
@@ -102,6 +102,9 @@ const purchasePackageSchema = z.object({
 });
 const purchaseIndividualSessionsSchema = z.object({
   sessionCount: z.coerce.number().int().min(1).max(99)
+});
+const patchPatientMarketSchema = z.object({
+  market: z.enum(["AR", "US"])
 });
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()
@@ -244,7 +247,7 @@ function resolvePackagePricing(params: {
  */
 const AUTO_INDIVIDUAL_SESSION_STRIPE_ID = "motivar-auto-catalog-individual-1";
 
-async function getOrCreateGlobalIndividualSessionPackage(): Promise<{
+async function getOrCreateGlobalIndividualSessionPackage(market: Market): Promise<{
   id: string;
   name: string;
   credits: number;
@@ -255,7 +258,7 @@ async function getOrCreateGlobalIndividualSessionPackage(): Promise<{
   professionalId: string | null;
 }> {
   const existing = await prisma.sessionPackage.findFirst({
-    where: { active: true, credits: 1, professionalId: null },
+    where: { active: true, credits: 1, professionalId: null, market },
     select: {
       id: true,
       name: true,
@@ -273,19 +276,24 @@ async function getOrCreateGlobalIndividualSessionPackage(): Promise<{
   }
 
   const referenceBundle = await prisma.sessionPackage.findFirst({
-    where: { active: true, credits: { gt: 1 }, professionalId: null },
+    where: { active: true, credits: { gt: 1 }, professionalId: null, market },
     orderBy: [{ credits: "asc" }],
     select: { priceCents: true, credits: true, currency: true }
   });
 
   const priceCents = referenceBundle
     ? Math.max(100, Math.round(referenceBundle.priceCents / referenceBundle.credits))
-    : 12_000;
-  const currency = referenceBundle?.currency ?? "usd";
+    : market === "US"
+      ? 12_000
+      : 120_000;
+  const currency = referenceBundle?.currency ?? (market === "US" ? "usd" : "ars");
+  const paymentProvider = market === "US" ? "STRIPE" : "MERCADOPAGO";
 
   return prisma.sessionPackage.upsert({
-    where: { stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID },
+    where: { market_stripePriceId: { market, stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID } },
     create: {
+      market,
+      paymentProvider,
       stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID,
       name: "Sesión individual",
       credits: 1,
@@ -718,6 +726,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       profile: {
         id: patient?.id,
         avatarUrl: patient?.user?.avatarUrl ?? null,
+        market: patient?.market ?? "AR",
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
         status: patient?.status,
@@ -894,6 +903,30 @@ profilesRouter.patch("/me/timezone", requireAuth, async (req: AuthenticatedReque
   return res.status(403).json({ error: "Role cannot sync timezone" });
 });
 
+profilesRouter.patch("/me/market", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = patchPatientMarketSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can update market" });
+  }
+
+  const updated = await prisma.patientProfile.update({
+    where: { id: actor.patientProfileId },
+    data: { market: parsed.data.market },
+    select: { id: true, market: true }
+  });
+
+  return res.json({ role: "PATIENT" as const, profile: updated });
+});
+
 profilesRouter.patch("/me/active-professional", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -997,7 +1030,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
 
   const patient = await prisma.patientProfile.findUnique({
     where: { id: actor.patientProfileId },
-    select: { id: true }
+    select: { id: true, market: true }
   });
   if (!patient) {
     return res.status(404).json({ error: "Patient profile not found" });
@@ -1013,11 +1046,15 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       priceCents: true,
       discountPercent: true,
       currency: true,
-      professionalId: true
+      professionalId: true,
+      market: true
     }
   });
   if (!sessionPackage) {
     return res.status(404).json({ error: "Session package not found" });
+  }
+  if (sessionPackage.market !== patient.market) {
+    return res.status(403).json({ error: "Package is not available in this patient's market" });
   }
   if (!sessionPackage.active) {
     return res.status(409).json({ error: "Session package is not active" });
@@ -1147,7 +1184,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
 
   const patient = await prisma.patientProfile.findUnique({
     where: { id: actor.patientProfileId },
-    select: { id: true }
+    select: { id: true, market: true }
   });
   if (!patient) {
     return res.status(404).json({ error: "Patient profile not found" });
@@ -1155,7 +1192,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
 
   const sessionCount = parsed.data.sessionCount;
 
-  const unitPackage = await getOrCreateGlobalIndividualSessionPackage();
+  const unitPackage = await getOrCreateGlobalIndividualSessionPackage(patient.market);
 
   const [assignmentConfig, financeRules] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),

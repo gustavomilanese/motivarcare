@@ -102,6 +102,7 @@ const defaultState: PatientAppState = {
   emailVerificationRequired: false,
   language: "es",
   currency: "USD",
+  patientMarket: "AR",
   intake: null,
   onboardingFinalCompleted: false,
   therapistSelectionCompleted: false,
@@ -161,6 +162,7 @@ function loadState(): PatientAppState {
       currency: (SUPPORTED_CURRENCIES as readonly string[]).includes((parsed as any).currency)
         ? (parsed as any).currency
         : "USD",
+      patientMarket: (parsed as { patientMarket?: unknown }).patientMarket === "US" ? "US" : "AR",
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
         ? {
@@ -405,6 +407,7 @@ export function App() {
         ...defaultState,
         language: current.language,
         currency: current.currency,
+        patientMarket: current.patientMarket,
         profile: {
           ...defaultProfile,
           timezone: current.profile.timezone
@@ -865,6 +868,7 @@ export function App() {
               ?? (remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
                 : current.activeChatProfessionalId),
+            patientMarket: profileResponse?.profile?.market === "US" ? "US" : "AR",
             profile: {
               ...current.profile,
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
@@ -1192,6 +1196,7 @@ export function App() {
             ...defaultState,
             language: current.language,
             currency: current.currency,
+            patientMarket: current.patientMarket,
             profile: {
               ...defaultProfile,
               timezone: sessionTimezone

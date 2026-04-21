@@ -357,6 +357,7 @@ export function DashboardPage(props: {
     void loadPublicPackagePlans({
       language: props.language,
       professionalId: pricingProfessionalId,
+      market: props.state.patientMarket,
       t: (values) => t(props.language, values)
     }).then((catalog) => {
       if (active) {
@@ -368,7 +369,7 @@ export function DashboardPage(props: {
     return () => {
       active = false;
     };
-  }, [hasAssignedProfessional, pricingProfessionalId, props.language]);
+  }, [hasAssignedProfessional, pricingProfessionalId, props.language, props.state.patientMarket]);
 
   const ASSIGN_PRO_DISMISS_KEY = "mc.assignProPromptDismissed";
 

@@ -8,6 +8,11 @@ import { prisma } from "../../lib/prisma.js";
 import { userNamePartsFromFullNameString } from "@therapy/types";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import {
+  parseSessionPackagesVisibility,
+  sessionPackagesVisibilityPutSchema,
+  visibilityPayloadForStorage
+} from "../../lib/sessionPackageVisibility.js";
 
 const deleteAdminUserBodySchema = z.object({
   purgeHistoricalData: z.boolean().optional()
@@ -162,12 +167,15 @@ const bookingStatusSchema = z.enum(["REQUESTED", "CONFIRMED", "CANCELLED", "COMP
 const listPackagesQuerySchema = z.object({
   active: z.enum(["true", "false"]).optional(),
   professionalId: z.string().min(1).optional(),
-  search: z.string().trim().min(1).max(120).optional()
+  search: z.string().trim().min(1).max(120).optional(),
+  market: z.enum(["AR", "US"]).optional()
 });
 
 const createPackageSchema = z.object({
   professionalId: z.string().min(1).nullable().optional(),
   stripePriceId: z.string().trim().min(2).max(120).optional(),
+  market: z.enum(["AR", "US"]).default("AR"),
+  paymentProvider: z.enum(["STRIPE", "MERCADOPAGO"]).default("STRIPE"),
   name: z.string().trim().min(2).max(120),
   credits: z.number().int().min(1).max(200),
   priceCents: z.number().int().min(1).max(100000000),
@@ -180,6 +188,8 @@ const updatePackageSchema = z
   .object({
     professionalId: z.string().min(1).nullable().optional(),
     stripePriceId: z.string().trim().min(2).max(120).optional(),
+    market: z.enum(["AR", "US"]).optional(),
+    paymentProvider: z.enum(["STRIPE", "MERCADOPAGO"]).optional(),
     name: z.string().trim().min(2).max(120).optional(),
     credits: z.number().int().min(1).max(200).optional(),
     priceCents: z.number().int().min(1).max(100000000).optional(),
@@ -190,13 +200,6 @@ const updatePackageSchema = z
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one field is required"
   });
-
-const sessionPackagesVisibilitySchema = z.object({
-  landing: z.array(z.string().min(1)).max(3),
-  patient: z.array(z.string().min(1)).max(3),
-  featuredLanding: z.string().min(1).nullable().optional(),
-  featuredPatient: z.string().min(1).nullable().optional()
-});
 
 const listBookingsQuerySchema = z.object({
   status: bookingStatusSchema.optional(),
@@ -385,23 +388,6 @@ function shapeAdminUser(user: AdminUserRecord) {
           id: user.admin.id
         }
       : null
-  };
-}
-
-function parseSessionPackagesVisibility(value: unknown) {
-  const parsed = sessionPackagesVisibilitySchema.safeParse(value);
-  if (!parsed.success) {
-    return { landing: [] as string[], patient: [] as string[], featuredLanding: null as string | null, featuredPatient: null as string | null };
-  }
-
-  const landing = Array.from(new Set(parsed.data.landing));
-  const patient = Array.from(new Set(parsed.data.patient));
-
-  return {
-    landing,
-    patient,
-    featuredLanding: parsed.data.featuredLanding && landing.includes(parsed.data.featuredLanding) ? parsed.data.featuredLanding : null,
-    featuredPatient: parsed.data.featuredPatient && patient.includes(parsed.data.featuredPatient) ? parsed.data.featuredPatient : null
   };
 }
 
@@ -1221,6 +1207,7 @@ adminRouter.get("/session-packages", async (req, res) => {
       where: {
         ...(parsed.data.active ? { active: parsed.data.active === "true" } : {}),
         ...(parsed.data.professionalId ? { professionalId: parsed.data.professionalId } : {}),
+        ...(parsed.data.market ? { market: parsed.data.market } : {}),
         ...(search ? { name: { contains: search } } : {})
       },
       include: {
@@ -1240,6 +1227,8 @@ adminRouter.get("/session-packages", async (req, res) => {
       professionalId: item.professionalId,
       professionalName: item.professional?.user.fullName ?? null,
       stripePriceId: item.stripePriceId,
+      market: item.market,
+      paymentProvider: item.paymentProvider,
       name: item.name,
       credits: item.credits,
       priceCents: item.priceCents,
@@ -1249,18 +1238,26 @@ adminRouter.get("/session-packages", async (req, res) => {
       createdAt: item.createdAt,
       purchasesCount: item._count.purchases,
       landingPublished: visibility.landing.includes(item.id),
-      patientPublished: visibility.patient.includes(item.id)
+      patientPublishedAr: visibility.patientByMarket.AR.includes(item.id),
+      patientPublishedUs: visibility.patientByMarket.US.includes(item.id)
     }))
   });
 });
 
 adminRouter.put("/session-packages/visibility", async (req, res) => {
-  const parsed = sessionPackagesVisibilitySchema.safeParse(req.body);
+  const parsed = sessionPackagesVisibilityPutSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
   }
 
-  const requestedIds = Array.from(new Set([...parsed.data.landing, ...parsed.data.patient]));
+  const normalized = visibilityPayloadForStorage(parsed.data);
+  const requestedIds = Array.from(
+    new Set([
+      ...normalized.landing,
+      ...normalized.patientByMarket.AR,
+      ...normalized.patientByMarket.US
+    ])
+  );
   const existingPackages = requestedIds.length
     ? await prisma.sessionPackage.findMany({
         where: {
@@ -1275,23 +1272,10 @@ adminRouter.put("/session-packages/visibility", async (req, res) => {
     return res.status(400).json({ error: "Only active packages can be published." });
   }
 
-  const visibility = {
-    landing: Array.from(new Set(parsed.data.landing)),
-    patient: Array.from(new Set(parsed.data.patient)),
-    featuredLanding:
-      parsed.data.featuredLanding && parsed.data.landing.includes(parsed.data.featuredLanding)
-        ? parsed.data.featuredLanding
-        : null,
-    featuredPatient:
-      parsed.data.featuredPatient && parsed.data.patient.includes(parsed.data.featuredPatient)
-        ? parsed.data.featuredPatient
-        : null
-  };
-
   const saved = await prisma.systemConfig.upsert({
     where: { key: SESSION_PACKAGES_VISIBILITY_KEY },
-    update: { value: visibility },
-    create: { key: SESSION_PACKAGES_VISIBILITY_KEY, value: visibility }
+    update: { value: normalized as object },
+    create: { key: SESSION_PACKAGES_VISIBILITY_KEY, value: normalized as object }
   });
 
   return res.json({ visibility: parseSessionPackagesVisibility(saved.value) });
@@ -1304,11 +1288,14 @@ adminRouter.post("/session-packages", async (req, res) => {
   }
 
   const packageData = parsed.data;
-  const stripePriceId = packageData.stripePriceId?.trim() || `pkg-admin-${Date.now().toString(36)}`;
+  const stripePriceId =
+    packageData.stripePriceId?.trim() || `pkg-admin-${packageData.market}-${Date.now().toString(36)}`;
 
   const created = await prisma.sessionPackage.create({
     data: {
       professionalId: packageData.professionalId ?? null,
+      market: packageData.market,
+      paymentProvider: packageData.paymentProvider,
       stripePriceId,
       name: packageData.name.trim(),
       credits: packageData.credits,
@@ -1338,6 +1325,8 @@ adminRouter.patch("/session-packages/:packageId", async (req, res) => {
     data: {
       ...(parsed.data.professionalId !== undefined ? { professionalId: parsed.data.professionalId } : {}),
       ...(parsed.data.stripePriceId !== undefined ? { stripePriceId: parsed.data.stripePriceId } : {}),
+      ...(parsed.data.market !== undefined ? { market: parsed.data.market } : {}),
+      ...(parsed.data.paymentProvider !== undefined ? { paymentProvider: parsed.data.paymentProvider } : {}),
       ...(parsed.data.name !== undefined ? { name: parsed.data.name.trim() } : {}),
       ...(parsed.data.credits !== undefined ? { credits: parsed.data.credits } : {}),
       ...(parsed.data.priceCents !== undefined ? { priceCents: parsed.data.priceCents } : {}),

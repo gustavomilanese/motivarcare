@@ -1,4 +1,5 @@
 import type { AppLanguage, SupportedCurrency } from "@therapy/i18n-config";
+import type { Market } from "@therapy/types";
 
 export type RiskLevel = "low" | "medium" | "high";
 export type PackageId = string;
@@ -50,6 +51,8 @@ export interface ProfileMeApiResponse {
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   profile: {
     id?: string;
+    /** Mercado comercial del paciente (catálogo de paquetes). */
+    market?: Market;
     timezone?: string;
     lastSeenTimezone?: string | null;
     status?: string;
@@ -255,6 +258,8 @@ export interface PatientAppState {
   emailVerificationRequired: boolean;
   language: AppLanguage;
   currency: SupportedCurrency;
+  /** Mercado (AR por defecto); alineado con `PatientProfile.market` en API. */
+  patientMarket: Market;
   intake: IntakeState | null;
   onboardingFinalCompleted: boolean;
   therapistSelectionCompleted: boolean;
@@ -316,6 +321,7 @@ export interface PackagePlan {
 }
 
 export interface PublicSessionPackagesResponse {
+  market?: Market;
   featuredPackageId: string | null;
   sessionPackages: Array<{
     id: string;

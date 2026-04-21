@@ -34,6 +34,18 @@ enum ConsentType {
   AI_AUDIO_AUDIT
 }
 
+/// Mercado comercial para precios, catálogo y preferencia del paciente.
+enum Market {
+  AR
+  US
+}
+
+/// Pasarela prevista para el cobro del paquete (Stripe en USA; Mercado Pago en Argentina cuando esté cableado).
+enum PackagePaymentProvider {
+  STRIPE
+  MERCADOPAGO
+}
+
 /// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio.
 enum ProfessionalRegistrationApproval {
   PENDING
@@ -102,6 +114,8 @@ model GoogleCalendarConnection {
 model PatientProfile {
   id             String                   @id @default(cuid())
   userId         String                   @unique
+  /// Catálogo de paquetes y reglas de cobro asociadas (AR por defecto en lanzamiento).
+  market         Market                   @default(AR)
   timezone       String                   @default("America/New_York")
   lastSeenTimezone String?
   status         String                   @default("active")
@@ -201,7 +215,10 @@ model PatientIntake {
 model SessionPackage {
   id                String                   @id @default(cuid())
   professionalId    String?
-  stripePriceId     String                   @unique
+  /// ID en Stripe (price_…) u otro identificador estable por mercado (único junto con `market`).
+  stripePriceId     String
+  market            Market                   @default(AR)
+  paymentProvider   PackagePaymentProvider   @default(STRIPE)
   name              String
   credits           Int
   priceCents        Int
@@ -212,6 +229,8 @@ model SessionPackage {
   purchases         PatientPackagePurchase[]
   professional      ProfessionalProfile?     @relation(fields: [professionalId], references: [id])
   financeRecords    FinanceSessionRecord[]
+
+  @@unique([market, stripePriceId])
 }
 
 model PatientPackagePurchase {

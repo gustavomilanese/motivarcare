@@ -176,8 +176,8 @@ export async function getBookingsMine(token: string) {
   });
 }
 
-export async function getSessionPackages(params: { token: string; professionalId?: string | null }) {
-  const query = new URLSearchParams({ channel: "patient" });
+export async function getSessionPackages(params: { token: string; professionalId?: string | null; market?: "AR" | "US" }) {
+  const query = new URLSearchParams({ channel: "patient", market: params.market ?? "AR" });
   if (params.professionalId) {
     query.set("professionalId", params.professionalId);
   }

@@ -11,28 +11,17 @@ function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: st
   return raw.replace(/\/+$/, "");
 }
 
-const PATIENT_PORTAL_URL = portalUrl(
-  viteEnv.VITE_PATIENT_PORTAL_URL,
-  "http://localhost:5173",
-  "https://motivarcare-patient.vercel.app"
-);
 const PROFESSIONAL_PORTAL_URL = portalUrl(
   viteEnv.VITE_PROFESSIONAL_PORTAL_URL,
   "http://localhost:5174",
   "https://motivarcare-professional.vercel.app"
 );
 
-const localPatientHeroImage = "/images/patient-hero.jpg";
 const localProfessionalHeroImage = "/images/professional-hero.jpg";
-const fallbackPatientHeroImage = "/images/patient-hero.svg";
 const fallbackProfessionalHeroImage = "/images/professional-hero.svg";
 const heroWidths = [480, 768, 1280, 1600] as const;
 
 const sessionImage = localProfessionalHeroImage;
-const defaultPatientHeroImage = localPatientHeroImage;
-
-const appStoreBadge = "https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg";
-const googlePlayBadge = "https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg";
 
 function handleImageFallback(event: SyntheticEvent<HTMLImageElement>, fallback: string) {
   const image = event.currentTarget;
@@ -186,64 +175,6 @@ interface WebContentResponse {
   blogPosts: BlogPost[];
 }
 
-interface SessionPackageCard {
-  id: string;
-  name: string;
-  credits: number;
-  priceCents: number;
-  discountPercent: number;
-  currency: string;
-  professionalName?: string | null;
-}
-
-interface SessionPackagesResponse {
-  featuredPackageId: string | null;
-  sessionPackages: SessionPackageCard[];
-}
-
-function describeLandingPackage(credits: number, language: Language): string {
-  if (credits >= 12) {
-    return language === "en"
-      ? "Higher frequency for high-demand therapy processes."
-      : language === "pt"
-        ? "Maior frequencia para processos terapeuticos de alta demanda."
-        : "Mayor frecuencia para procesos terapeuticos de alta demanda.";
-  }
-  if (credits >= 8) {
-    return language === "en"
-      ? "Recommended for sustained monthly therapeutic work."
-      : language === "pt"
-        ? "Recomendado para um ritmo terapeutico mensal sustentado."
-        : "Recomendado para un ritmo terapeutico mensual sostenido.";
-  }
-  return language === "en"
-    ? "Ideal for a first therapy stage."
-    : language === "pt"
-      ? "Ideal para uma primeira etapa de trabalho terapeutico."
-      : "Ideal para una primera etapa de trabajo terapeutico.";
-}
-
-function localizeLandingPackageName(name: string, credits: number, language: Language): string {
-  if (language === "es") {
-    return name;
-  }
-
-  if (credits >= 24) {
-    return language === "en" ? "Long-term - 24 sessions" : "Longo prazo - 24 sessoes";
-  }
-  if (credits >= 12) {
-    return language === "en" ? "Intensive - 12 sessions" : "Intensivo - 12 sessoes";
-  }
-  if (credits >= 8) {
-    return language === "en" ? "Continuity - 8 sessions" : "Continuidade - 8 sessoes";
-  }
-  if (credits >= 4) {
-    return language === "en" ? "Starter - 4 sessions" : "Inicio - 4 sessoes";
-  }
-
-  return name;
-}
-
 const UI_TEXT: Record<
   Language,
   {
@@ -306,22 +237,24 @@ const UI_TEXT: Record<
   }
 > = {
   es: {
-    heroTitle: "Cuida tu bienestar emocional con Motivar Care",
+    heroTitle: "MotivarCare para profesionales: tu consulta online, sin fricción",
     patientHeadline: "Terapia online desde tu teléfono o notebook…",
     patients: "Pacientes",
     psychologists: "Psicólogos",
-    professionalHeadline: "Conecta con nuevos pacientes con una administración muy sencilla",
+    professionalHeadline: "Conectá con nuevos pacientes y administrá tu práctica con claridad",
     patientCopy: "Una experiencia simple para reservar, entrar a sesión y comenzar tu proceso terapéutico.",
-    professionalCopy: "Una plataforma diseñada para psicólogos que quieren ampliar su práctica, gestionar sesiones online y trabajar con mayor libertad.",
+    professionalCopy:
+      "Gestioná agenda, videollamadas y seguimiento en un solo lugar. Menos logística, más foco clínico.",
     patientPortal: "Portal web para pacientes",
-    professionalPortal: "Portal web para psicólogos",
-    reviewsTitle: "Lo que dicen pacientes y profesionales",
+    professionalPortal: "Entrar al portal de profesionales",
+    reviewsTitle: "Experiencias de quienes ya usan la plataforma",
     reviewsTag: "Reseñas",
     reviewsNavPrev: "Ver reseñas anteriores",
     reviewsNavNext: "Ver reseñas siguientes",
-    blogTitleA: "Blogs de psicología de MotivarCare:",
-    blogTitleB: "artículos para tu bienestar emocional.",
-    blogIntro: "En este espacio vas a encontrar contenido claro sobre ansiedad, relaciones, duelo, autoestima y otros temas trabajados en terapia.",
+    blogTitleA: "Biblioteca clínica MotivarCare:",
+    blogTitleB: "lecturas breves para aplicar en tu práctica.",
+    blogIntro:
+      "Textos claros sobre ansiedad, vínculos, duelo, estrés y más: pensados para complementar tu trabajo con pacientes.",
     blogSearch: "Busca por temática…",
     found: "artículos encontrados",
     readMore: "Leer más",
@@ -347,7 +280,7 @@ const UI_TEXT: Record<
     patientPortalShort: "Portal pacientes",
     professionalPortalShort: "Portal psicólogos",
     footerLanguage: "Español",
-    footerBrand: "La oportunidad de cuidar el bienestar mental debería estar al alcance de todos.",
+    footerBrand: "Herramientas digitales para profesionales que acompañan el bienestar emocional.",
     terms: "Términos y condiciones",
     privacy: "Política de privacidad",
     acceptableUse: "Política de uso aceptable",
@@ -358,28 +291,30 @@ const UI_TEXT: Record<
     blogAria: "Blog de salud mental",
     categoriesAria: "Categorías del blog",
     myAccount: "Mi cuenta",
-    accountAccessTitle: "Accede a tu cuenta",
-    accountAccessCopy: "Elige tu perfil para ingresar al portal correspondiente.",
+    accountAccessTitle: "Portal para profesionales",
+    accountAccessCopy: "Ingresá con tu cuenta para gestionar pacientes, sesiones y tu perfil.",
     accountPortalPatient: "Soy paciente",
-    accountPortalProfessional: "Soy profesional"
+    accountPortalProfessional: "Ir al portal de profesionales"
   },
   en: {
-    heroTitle: "Take care of your mental health with MotivarCare",
+    heroTitle: "MotivarCare for professionals: your online practice, streamlined",
     patientHeadline: "Online therapy from your phone or laptop.",
     patients: "Patients",
     psychologists: "Psychologists",
-    professionalHeadline: "Grow your practice and connect with new patients",
+    professionalHeadline: "Reach new patients and run your practice with clarity",
     patientCopy: "A simple experience to book, join your session, and keep your process moving.",
-    professionalCopy: "A platform designed for psychologists who want to grow their practice, manage online sessions, and work with more freedom.",
+    professionalCopy:
+      "Manage scheduling, video sessions, and follow-up in one place. Less admin, more clinical focus.",
     patientPortal: "Web portal for patients",
-    professionalPortal: "Web portal for psychologists",
-    reviewsTitle: "What patients and professionals say",
+    professionalPortal: "Open professional portal",
+    reviewsTitle: "What colleagues and users say about the platform",
     reviewsTag: "Reviews",
     reviewsNavPrev: "See previous reviews",
     reviewsNavNext: "See next reviews",
-    blogTitleA: "MotivarCare psychology blog:",
-    blogTitleB: "articles for your emotional wellbeing",
-    blogIntro: "In this space you'll find clear content about anxiety, relationships, grief, self-esteem, and other topics usually worked in therapy.",
+    blogTitleA: "MotivarCare clinical library:",
+    blogTitleB: "short reads for your practice.",
+    blogIntro:
+      "Clear articles on anxiety, relationships, grief, stress, and more—written to support your work with clients.",
     blogSearch: "Search by topic...",
     found: "articles found",
     readMore: "Read more",
@@ -405,7 +340,7 @@ const UI_TEXT: Record<
     patientPortalShort: "Patient portal",
     professionalPortalShort: "Psychologist portal",
     footerLanguage: "English",
-    footerBrand: "Mental wellbeing care should be within everyone's reach.",
+    footerBrand: "Digital tools for professionals who support mental wellbeing.",
     terms: "Terms and conditions",
     privacy: "Privacy policy",
     acceptableUse: "Acceptable use policy",
@@ -416,28 +351,30 @@ const UI_TEXT: Record<
     blogAria: "Mental health blog",
     categoriesAria: "Blog categories",
     myAccount: "My account",
-    accountAccessTitle: "Access your account",
-    accountAccessCopy: "Choose your profile to enter the right portal.",
+    accountAccessTitle: "Professional portal",
+    accountAccessCopy: "Sign in to manage clients, sessions, and your profile.",
     accountPortalPatient: "I am a patient",
-    accountPortalProfessional: "I am a professional"
+    accountPortalProfessional: "Open professional portal"
   },
   pt: {
-    heroTitle: "Cuide da sua saude mental com MotivarCare",
+    heroTitle: "MotivarCare para profissionais: sua consulta online, sem atrito",
     patientHeadline: "Terapia online pelo celular ou notebook.",
     patients: "Pacientes",
-    psychologists: "Psicologos",
-    professionalHeadline: "Faca sua consulta crescer e conecte com novos pacientes",
-    patientCopy: "Uma experiencia simples para agendar, entrar na sessao e continuar o processo.",
-    professionalCopy: "Uma plataforma desenhada para psicologos que querem ampliar sua pratica, gerir sessoes online e trabalhar com mais liberdade.",
+    psychologists: "Psicólogos",
+    professionalHeadline: "Conecte-se a novos pacientes e organize sua prática com clareza",
+    patientCopy: "Uma experiência simples para agendar, entrar na sessão e continuar o processo.",
+    professionalCopy:
+      "Gerencie agenda, videochamadas e acompanhamento em um só lugar. Menos burocracia, mais foco clínico.",
     patientPortal: "Portal web para pacientes",
-    professionalPortal: "Portal web para psicologos",
-    reviewsTitle: "O que pacientes e profissionais dizem",
+    professionalPortal: "Abrir portal do profissional",
+    reviewsTitle: "Experiências de quem já usa a plataforma",
     reviewsTag: "Avaliações",
     reviewsNavPrev: "Ver reviews anteriores",
     reviewsNavNext: "Ver proximas reviews",
-    blogTitleA: "Blog de psicologia da MotivarCare:",
-    blogTitleB: "artigos para seu bem-estar emocional",
-    blogIntro: "Neste espaco voce encontra conteudo claro sobre ansiedade, relacionamentos, luto, autoestima e outros temas trabalhados em terapia.",
+    blogTitleA: "Biblioteca clínica MotivarCare:",
+    blogTitleB: "leituras curtas para a sua prática.",
+    blogIntro:
+      "Textos claros sobre ansiedade, vínculos, luto, estresse e outros temas para apoiar seu trabalho com pacientes.",
     blogSearch: "Buscar por tema...",
     found: "artigos encontrados",
     readMore: "Ler mais",
@@ -462,8 +399,8 @@ const UI_TEXT: Record<
     supportLine: "Linha 988 de prevencao ao suicidio",
     patientPortalShort: "Portal pacientes",
     professionalPortalShort: "Portal psicologos",
-    footerLanguage: "Portugues",
-    footerBrand: "A oportunidade de cuidar do bem-estar mental deve estar ao alcance de todos.",
+    footerLanguage: "Português",
+    footerBrand: "Ferramentas digitais para profissionais que cuidam do bem-estar emocional.",
     terms: "Termos e condicoes",
     privacy: "Politica de privacidade",
     acceptableUse: "Politica de uso aceitavel",
@@ -474,10 +411,10 @@ const UI_TEXT: Record<
     blogAria: "Blog de saude mental",
     categoriesAria: "Categorias do blog",
     myAccount: "Minha conta",
-    accountAccessTitle: "Acesse sua conta",
-    accountAccessCopy: "Escolha seu perfil para entrar no portal correto.",
+    accountAccessTitle: "Portal do profissional",
+    accountAccessCopy: "Entre com sua conta para gerir pacientes, sessões e seu perfil.",
     accountPortalPatient: "Sou paciente",
-    accountPortalProfessional: "Sou profissional"
+    accountPortalProfessional: "Abrir portal do profissional"
   }
 };
 
@@ -490,13 +427,13 @@ const metricsByLanguage: Record<Language, PlatformMetric[]> = {
     },
     {
       id: "sessions",
-      title: "+10 000 sesiones realizadas",
-      description: "Miles de personas ya encontraron apoyo."
+      title: "+10 000 sesiones coordinadas en la plataforma",
+      description: "Encuentros entre pacientes y profesionales, con herramientas integradas."
     },
     {
       id: "wellbeing",
-      title: "9 de cada 10 pacientes reportan mejora en su bienestar",
-      description: ""
+      title: "Soporte dedicado para tu práctica digital",
+      description: "Equipo y recursos para que la experiencia en la plataforma sea fluida."
     }
   ],
   en: [
@@ -507,13 +444,13 @@ const metricsByLanguage: Record<Language, PlatformMetric[]> = {
     },
     {
       id: "sessions",
-      title: "+10,000 sessions completed",
-      description: "Thousands of people have already found support."
+      title: "+10,000 sessions coordinated on the platform",
+      description: "Meetings between clients and professionals with integrated tools."
     },
     {
       id: "wellbeing",
-      title: "9 out of 10 patients report improvements in wellbeing",
-      description: ""
+      title: "Dedicated support for your digital practice",
+      description: "Team and resources to keep the platform experience smooth."
     }
   ],
   pt: [
@@ -524,13 +461,13 @@ const metricsByLanguage: Record<Language, PlatformMetric[]> = {
     },
     {
       id: "sessions",
-      title: "+10 000 sessoes realizadas",
-      description: "Milhares de pessoas ja encontraram apoio."
+      title: "+10 000 sessoes coordenadas na plataforma",
+      description: "Encontros entre pacientes e profissionais, com ferramentas integradas."
     },
     {
       id: "wellbeing",
-      title: "9 em cada 10 pacientes relatam melhora no bem-estar",
-      description: ""
+      title: "Suporte dedicado à sua prática digital",
+      description: "Equipe e recursos para uma experiência fluida na plataforma."
     }
   ]
 };
@@ -1589,7 +1526,7 @@ const categoryResourceLinks: Record<string, ResourceLink[]> = {
 
 const globalResourceLinks: ResourceLink[] = [
   { label: "MotivarCare - Linea de crisis", href: "/docs/crisis.html" },
-  { label: "MotivarCare - Politica de privacidad", href: "/docs/privacy.html" }
+  { label: "Privacy Policy / Política de Privacidad – MotivarCare", href: "/docs/privacy.html" }
 ];
 
 const titleLinksByCategory: Record<string, string> = {
@@ -1644,31 +1581,14 @@ function RatingStars({ value }: { value: number }) {
   );
 }
 
-function StoreBadges() {
-  return (
-    <div className="store-row" aria-label="Descarga aplicaciones">
-      <a className="store-image-link" href="#" aria-label="Download on the App Store">
-        <img src={appStoreBadge} alt="Download on the App Store" loading="lazy" />
-      </a>
-      <a className="store-image-link" href="#" aria-label="Get it on Google Play">
-        <img src={googlePlayBadge} alt="Get it on Google Play" loading="lazy" />
-      </a>
-    </div>
-  );
-}
-
 export function App() {
   const reviewsTrackRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
   const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
   const [language, setLanguage] = useState<Language>("es");
-  const [patientHeroDesktopImage, setPatientHeroDesktopImage] = useState(defaultPatientHeroImage);
-  const [patientHeroMobileImage, setPatientHeroMobileImage] = useState(defaultPatientHeroImage);
   const [professionalHeroDesktopImage, setProfessionalHeroDesktopImage] = useState(sessionImage);
   const [professionalHeroMobileImage, setProfessionalHeroMobileImage] = useState(sessionImage);
   const [managedBlogPosts, setManagedBlogPosts] = useState<BlogPost[]>(blogPosts);
-  const [sessionPackages, setSessionPackages] = useState<SessionPackageCard[]>([]);
-  const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 700);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1677,7 +1597,6 @@ export function App() {
   const [openPostId, setOpenPostId] = useState<string | null>(null);
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isAcceptableUseOpen, setIsAcceptableUseOpen] = useState(false);
   const [isInformedConsentOpen, setIsInformedConsentOpen] = useState(false);
   const [likeDeltas, setLikeDeltas] = useState<Record<string, number>>({});
@@ -1688,13 +1607,10 @@ export function App() {
   const metrics = metricsByLanguage[language];
   const postsPerPage = isMobile ? 4 : 6;
   const localeByLanguage: Record<Language, string> = { es: "es-AR", en: "en-US", pt: "pt-BR" };
-  const packagesTitle = language === "en" ? "Session Packages" : language === "pt" ? "Pacotes de sessoes" : "Paquetes de sesiones";
-  const packagesIntro = language === "en" ? "Choose the format that best supports your therapy rhythm." : language === "pt" ? "Escolha o formato que melhor acompanha seu ritmo terapeutico." : "Elegi el formato que mejor acompana tu ritmo terapeutico.";
-  const packagesCta = language === "en" ? "Go to patient portal" : language === "pt" ? "Ir para o portal de pacientes" : "Ir al portal de pacientes";
-  const languageMeta: Record<Language, { label: string; flag: string }> = {
-    es: { label: "Español", flag: "🇦🇷" },
-    en: { label: "English", flag: "🇺🇸" },
-    pt: { label: "Português", flag: "🇧🇷" }
+  const languageMeta: Record<Language, { label: string }> = {
+    es: { label: "Español" },
+    en: { label: "English" },
+    pt: { label: "Português" }
   };
 
   useEffect(() => {
@@ -1726,10 +1642,7 @@ export function App() {
 
     async function loadLandingSettings() {
       try {
-        const [contentResponse, packagesResponse] = await Promise.all([
-          fetch(API_BASE + "/api/public/web-content"),
-          fetch(API_BASE + "/api/public/session-packages?channel=landing")
-        ]);
+        const contentResponse = await fetch(API_BASE + "/api/public/web-content");
         if (!contentResponse.ok) {
           return;
         }
@@ -1738,13 +1651,9 @@ export function App() {
           return;
         }
 
-        const patientDesktop = data.settings.patientDesktopImageUrl ?? data.settings.patientHeroImageUrl ?? defaultPatientHeroImage;
-        const patientMobile = data.settings.patientMobileImageUrl ?? patientDesktop;
         const professionalDesktop = data.settings.professionalDesktopImageUrl ?? sessionImage;
         const professionalMobile = data.settings.professionalMobileImageUrl ?? professionalDesktop;
 
-        setPatientHeroDesktopImage(patientDesktop);
-        setPatientHeroMobileImage(patientMobile);
         setProfessionalHeroDesktopImage(professionalDesktop);
         setProfessionalHeroMobileImage(professionalMobile);
 
@@ -1754,14 +1663,6 @@ export function App() {
 
         if (Array.isArray(data.blogPosts) && data.blogPosts.length > 0) {
           setManagedBlogPosts(data.blogPosts);
-        }
-
-        if (packagesResponse.ok) {
-          const packageData = (await packagesResponse.json()) as SessionPackagesResponse;
-          if (Array.isArray(packageData.sessionPackages)) {
-            setSessionPackages(packageData.sessionPackages.slice(0, 3));
-            setFeaturedPackageId(packageData.featuredPackageId);
-          }
         }
       } catch {
         // fallback to default content
@@ -1800,8 +1701,6 @@ export function App() {
     }
     return review.relativeDate;
   }
-
-  const featuredPackage = sessionPackages.find((item) => item.id === featuredPackageId) ?? null;
 
   function localizeReviewRole(role: string) {
     if (language === "en" && role.toLowerCase() === "paciente") {
@@ -1957,21 +1856,6 @@ export function App() {
   }, [isTermsOpen]);
 
   useEffect(() => {
-    if (!isPrivacyOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsPrivacyOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isPrivacyOpen]);
-
-  useEffect(() => {
     if (!isAcceptableUseOpen) {
       return;
     }
@@ -2038,9 +1922,9 @@ export function App() {
       }
       meta.content = openPost.seoDescription || openPost.excerpt;
     } else {
-      document.title = "MotivarCare";
+      document.title = "MotivarCare — Profesionales";
       if (meta) {
-        meta.content = previousDescription || "Terapia online con profesionales certificados.";
+        meta.content = previousDescription || "Plataforma para psicólogos: agenda, videollamadas y gestión de pacientes.";
       }
     }
 
@@ -2130,14 +2014,24 @@ export function App() {
           <img className="logo-wordmark" src="/brand/motivarcare-wordmark.png" alt="" width={200} height={40} />
         </div>
         <div className="top-actions">
-          <div className="language-switch" role="group" aria-label="Language switcher">
-            {(["es", "en", "pt"] as const).map((lang) => (
-              <button key={lang} type="button" className={language === lang ? "active" : ""} onClick={() => setLanguage(lang)}>
-                <span aria-hidden="true">{languageMeta[lang].flag}</span>
-                <span>{languageMeta[lang].label}</span>
-              </button>
-            ))}
-          </div>
+          <label className="lang-select-wrap">
+            <span className="lang-select-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+            </span>
+            <select
+              className="lang-select"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value as Language)}
+              aria-label="Idioma / Language"
+            >
+              <option value="es">{languageMeta.es.label}</option>
+              <option value="en">{languageMeta.en.label}</option>
+              <option value="pt">{languageMeta.pt.label}</option>
+            </select>
+          </label>
           <button type="button" className="account-trigger" onClick={() => setIsAccountOpen(true)}>
             {t.myAccount}
           </button>
@@ -2147,61 +2041,14 @@ export function App() {
       <main className="main">
         <h1>{t.heroTitle}</h1>
 
-        <section className="cards-stack" aria-label={t.cardsAria}>
-          <article className="card card-primary">
-            <div className="card-copy">
-              <p className="tag">{t.patients}</p>
-              <h2>{t.patientHeadline}</h2>
-              <p className="copy">{t.patientCopy}</p>
-
-              <StoreBadges />
-
-              <a href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                {t.patientPortal} <span aria-hidden="true">→</span>
-              </a>
-            </div>
-
-            <div className="device-showcase">
-              <figure className="macbook-shell">
-                <div className="macbook-screen">
-                  <HeroShowcaseImage
-                    src={patientHeroDesktopImage}
-                    alt="Sesion remota en MacBook Air"
-                    fallback={fallbackPatientHeroImage}
-                    originalPath={localPatientHeroImage}
-                    optimizedBaseName="patient-hero"
-                    loading="eager"
-                    fetchPriority="high"
-                    sizes="(max-width: 700px) 86vw, 38vw"
-                  />
-                </div>
-                <div className="macbook-hinge" aria-hidden="true" />
-                <div className="macbook-base" aria-hidden="true" />
-              </figure>
-
-              <figure className="phone-shell">
-                <span className="phone-notch" aria-hidden="true" />
-                <HeroShowcaseImage
-                  src={patientHeroMobileImage}
-                  alt="Sesion remota en celular"
-                  fallback={fallbackPatientHeroImage}
-                  originalPath={localPatientHeroImage}
-                  optimizedBaseName="patient-hero"
-                  sizes="(max-width: 700px) 54vw, 18vw"
-                />
-              </figure>
-            </div>
-          </article>
-
-          <article className="card card-secondary">
+        <section className="cards-stack cards-stack--single" aria-label={t.cardsAria}>
+          <article className="card card-primary card-hero-professional">
             <div className="card-copy compact">
               <p className="tag">{t.psychologists}</p>
               <h2>{t.professionalHeadline}</h2>
               <p className="copy">{t.professionalCopy}</p>
 
-              <StoreBadges />
-
-              <a className="card-link-break" href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
+              <a className="card-link-break card-cta-primary" href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
                 {t.professionalPortal} <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -2211,10 +2058,12 @@ export function App() {
                 <div className="macbook-screen">
                   <HeroShowcaseImage
                     src={professionalHeroDesktopImage}
-                    alt="Sesion remota desde MacBook Air"
+                    alt="Sesión remota desde MacBook Air"
                     fallback={fallbackProfessionalHeroImage}
                     originalPath={localProfessionalHeroImage}
                     optimizedBaseName="professional-hero"
+                    loading="eager"
+                    fetchPriority="high"
                     sizes="(max-width: 700px) 86vw, 38vw"
                   />
                 </div>
@@ -2226,7 +2075,7 @@ export function App() {
                 <span className="phone-notch" aria-hidden="true" />
                 <HeroShowcaseImage
                   src={professionalHeroMobileImage}
-                  alt="Sesion remota desde celular"
+                  alt="Sesión remota desde celular"
                   fallback={fallbackProfessionalHeroImage}
                   originalPath={localProfessionalHeroImage}
                   optimizedBaseName="professional-hero"
@@ -2242,66 +2091,6 @@ export function App() {
             <TrendMetric key={item.id} item={item} index={index} />
           ))}
         </section>
-
-        {sessionPackages.length > 0 ? (
-          <section className="packages-showcase" aria-label={packagesTitle}>
-            <header className="purchase-head packages-showcase-head">
-              <div>
-                <h3>{packagesTitle}</h3>
-                <p>{packagesIntro}</p>
-              </div>
-              <a className="packages-showcase-link" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                {packagesCta} <span aria-hidden="true">→</span>
-              </a>
-            </header>
-            <figure className="purchase-art packages-showcase-art package-sale-art" aria-hidden="true">
-              <span className="package-sale-art-percent">Ψ</span>
-            </figure>
-            <div className="deal-grid packages-showcase-grid">
-              {sessionPackages.slice(0, 3).map((item) => (
-                <div key={item.id} className={"deal-card-shell" + (featuredPackageId === item.id ? " featured" : "")}>
-                  <div className="deal-card-roof" aria-hidden={featuredPackageId !== item.id}>
-                    {featuredPackageId === item.id ? (
-                      <span className="deal-card-featured-kicker">
-                        {language === "en" ? "Best seller" : language === "pt" ? "Mais escolhido" : "Mas elegido"}
-                      </span>
-                    ) : null}
-                  </div>
-                  <article className={"deal-card dashboard-deal-card landing-package-card" + (featuredPackageId === item.id ? " featured" : "")}>
-                    <h3>{localizeLandingPackageName(item.name, item.credits, language)}</h3>
-                    <p>{describeLandingPackage(item.credits, language)}</p>
-                    <div className="deal-pricing-top">
-                      <span className="deal-list-price">
-                        {new Intl.NumberFormat(localeByLanguage[language], { style: "currency", currency: (item.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format(Math.round(item.priceCents / 100 / Math.max(0.01, 1 - item.discountPercent / 100)))}
-                      </span>
-                      <span className="deal-discount-badge">{item.discountPercent}% OFF</span>
-                    </div>
-                    <p className="deal-main-price">
-                      {new Intl.NumberFormat(localeByLanguage[language], { style: "currency", currency: (item.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format(item.priceCents / 100)}
-                    </p>
-                    <p className="deal-caption-strong">
-                      {language === "en"
-                        ? `Includes ${item.credits} sessions.`
-                        : language === "pt"
-                          ? `Inclui ${item.credits} sessoes.`
-                          : `Incluye ${item.credits} sesiones.`}
-                    </p>
-                    <a className="deal-select-button" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                      {language === "en" ? "Choose plan" : language === "pt" ? "Escolher plano" : "Elegir plan"}
-                    </a>
-                    <p className="deal-caption">
-                      {language === "en"
-                        ? `Includes ${item.credits} sessions for this cycle.`
-                        : language === "pt"
-                          ? `Inclui ${item.credits} sessoes para este ciclo.`
-                          : `Incluye ${item.credits} sesiones para este ciclo.`}
-                    </p>
-                  </article>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         <section className="reviews" aria-label={t.reviewsAria}>
           <header className="reviews-head">
@@ -2421,7 +2210,7 @@ export function App() {
 
       {openPost ? (
         <div className="blog-modal-backdrop" role="dialog" aria-modal="true" onClick={() => setOpenPostId(null)}>
-          <article className="blog-modal" onClick={(event) => event.stopPropagation()}>
+          <article className="blog-modal blog-modal--article" onClick={(event) => event.stopPropagation()}>
             <header className="blog-modal-head">
               <p>{translateCategory(openPost.category)}</p>
               <button type="button" onClick={() => setOpenPostId(null)} aria-label={t.close}>
@@ -2831,197 +2620,6 @@ export function App() {
         </div>
       ) : null}
 
-      {isPrivacyOpen ? (
-        <div className="blog-modal-backdrop" role="dialog" aria-modal="true" onClick={() => setIsPrivacyOpen(false)}>
-          <article className="blog-modal legal-modal" onClick={(event) => event.stopPropagation()}>
-            <header className="blog-modal-head">
-              <p>Legal</p>
-              <button type="button" onClick={() => setIsPrivacyOpen(false)} aria-label="Cerrar politica de privacidad">
-                ×
-              </button>
-            </header>
-
-            <div className="legal-modal-body">
-              <h4>Politica de Privacidad</h4>
-              <p><strong>MotivarCare</strong></p>
-              <p>Ultima actualizacion: 7 de marzo de 2026</p>
-              <p>
-                MotivarCare (nosotros, nuestro o la plataforma) se compromete a proteger la privacidad de los usuarios. Esta
-                Politica de Privacidad explica como recopilamos, utilizamos y protegemos su informacion cuando utiliza nuestro sitio
-                web, aplicaciones moviles y servicios asociados.
-              </p>
-              <p>
-                Al acceder o utilizar MotivarCare, usted acepta la recopilacion y uso de informacion de acuerdo con esta politica.
-              </p>
-
-              <h5>1. Definiciones</h5>
-              <p>Para facilitar la comprension de esta politica, los siguientes terminos tendran el significado indicado:</p>
-              <h6>Plataforma</h6>
-              <p>Sitio web, aplicaciones moviles y servicios digitales operados por MotivarCare.</p>
-              <h6>Usuario</h6>
-              <p>Persona que accede o utiliza la plataforma, incluyendo pacientes y profesionales.</p>
-              <h6>Paciente</h6>
-              <p>Usuario que utiliza la plataforma para acceder a servicios de acompanamiento psicologico o terapeutico.</p>
-              <h6>Profesional / Terapeuta</h6>
-              <p>Profesional de salud mental que ofrece servicios a traves de la plataforma.</p>
-              <h6>Datos personales</h6>
-              <p>
-                Cualquier informacion que permita identificar directa o indirectamente a una persona, como nombre, correo
-                electronico, telefono o datos de pago.
-              </p>
-              <h6>Cookies</h6>
-              <p>
-                Pequenos archivos de datos almacenados en su dispositivo que ayudan a mejorar la experiencia de navegacion.
-              </p>
-
-              <h5>2. Informacion que recopilamos</h5>
-              <p>Podemos recopilar distintos tipos de informacion cuando utiliza la plataforma, incluyendo:</p>
-              <h6>Informacion proporcionada por el usuario</h6>
-              <ul>
-                <li>nombre</li>
-                <li>direccion de correo electronico</li>
-                <li>numero de telefono</li>
-                <li>informacion de perfil</li>
-                <li>datos necesarios para reservar sesiones</li>
-              </ul>
-              <h6>Informacion de uso</h6>
-              <p>Podemos recopilar datos tecnicos relacionados con el uso de la plataforma, como:</p>
-              <ul>
-                <li>direccion IP</li>
-                <li>tipo de dispositivo</li>
-                <li>navegador utilizado</li>
-                <li>paginas visitadas</li>
-                <li>duracion de la sesion</li>
-              </ul>
-              <h6>Informacion de pago</h6>
-              <p>Los pagos se procesan a traves de proveedores externos de pago seguros.</p>
-              <p>MotivarCare no almacena directamente informacion completa de tarjetas de credito.</p>
-
-              <h5>3. Como utilizamos la informacion</h5>
-              <p>La informacion recopilada puede utilizarse para:</p>
-              <ul>
-                <li>crear y administrar cuentas de usuario</li>
-                <li>facilitar la conexion entre pacientes y profesionales</li>
-                <li>gestionar reservas de sesiones</li>
-                <li>procesar pagos</li>
-                <li>mejorar el funcionamiento de la plataforma</li>
-                <li>enviar comunicaciones relacionadas con el servicio</li>
-                <li>cumplir obligaciones legales</li>
-              </ul>
-              <p>No utilizamos la informacion personal para fines no relacionados con la prestacion del servicio.</p>
-
-              <h5>4. Comparticion de informacion</h5>
-              <p>MotivarCare puede compartir informacion con terceros unicamente en los siguientes casos:</p>
-              <h6>Proveedores de servicios</h6>
-              <p>Empresas que nos ayudan a operar la plataforma, como:</p>
-              <ul>
-                <li>servicios de hosting</li>
-                <li>procesamiento de pagos</li>
-                <li>soporte tecnico</li>
-                <li>analisis de uso</li>
-              </ul>
-              <p>Estos proveedores solo pueden utilizar la informacion para prestar servicios en nuestro nombre.</p>
-              <h6>Cumplimiento legal</h6>
-              <p>Podremos divulgar informacion si es requerido por ley o por autoridades competentes.</p>
-              <h6>Transacciones comerciales</h6>
-              <p>
-                En caso de fusion, adquisicion o reorganizacion empresarial, la informacion de los usuarios podria transferirse como
-                parte de los activos del servicio.
-              </p>
-
-              <h5>5. Seguridad de la informacion</h5>
-              <p>
-                Implementamos medidas tecnicas y organizativas para proteger la informacion personal de los usuarios, incluyendo:
-              </p>
-              <ul>
-                <li>cifrado de datos</li>
-                <li>servidores seguros</li>
-                <li>controles de acceso</li>
-                <li>proteccion de infraestructura</li>
-              </ul>
-              <p>Sin embargo, ningun sistema es completamente infalible y no podemos garantizar seguridad absoluta.</p>
-
-              <h5>6. Conservacion de datos</h5>
-              <p>Conservamos la informacion personal unicamente durante el tiempo necesario para:</p>
-              <ul>
-                <li>prestar los servicios solicitados</li>
-                <li>cumplir obligaciones legales</li>
-                <li>resolver disputas</li>
-                <li>mantener la seguridad de la plataforma</li>
-              </ul>
-              <p>Cuando la informacion ya no es necesaria, puede eliminarse o anonimizarse.</p>
-
-              <h5>7. Derechos de los usuarios</h5>
-              <p>Dependiendo de la legislacion aplicable, los usuarios pueden tener derecho a:</p>
-              <ul>
-                <li>acceder a sus datos personales</li>
-                <li>solicitar la correccion de informacion incorrecta</li>
-                <li>solicitar la eliminacion de sus datos</li>
-                <li>restringir el tratamiento de informacion</li>
-                <li>retirar su consentimiento</li>
-              </ul>
-              <p>
-                Para ejercer estos derechos, puede contactarnos a traves del correo indicado al final de esta politica.
-              </p>
-
-              <h5>8. Cookies y tecnologias similares</h5>
-              <p>MotivarCare utiliza cookies para mejorar la experiencia del usuario, incluyendo:</p>
-              <ul>
-                <li>recordar preferencias</li>
-                <li>mantener sesiones activas</li>
-                <li>analizar el uso del sitio</li>
-              </ul>
-              <p>
-                Los usuarios pueden configurar su navegador para rechazar cookies, aunque algunas funcionalidades del sitio podrian
-                verse afectadas.
-              </p>
-
-              <h5>9. Enlaces a sitios externos</h5>
-              <p>La plataforma puede contener enlaces a sitios web de terceros.</p>
-              <p>MotivarCare no es responsable de las practicas de privacidad de dichos sitios.</p>
-              <p>Se recomienda revisar las politicas de privacidad de cualquier sitio externo que visite.</p>
-
-              <h5>10. Cambios en esta politica</h5>
-              <p>
-                Podemos actualizar esta Politica de Privacidad ocasionalmente para reflejar cambios en los servicios o en la
-                normativa aplicable.
-              </p>
-              <p>Las modificaciones seran publicadas en esta pagina con la fecha de actualizacion correspondiente.</p>
-              <p>
-                El uso continuado de la plataforma despues de dichos cambios implica la aceptacion de la version actualizada.
-              </p>
-
-              <h5>11. Contacto</h5>
-              <p>
-                Si tiene preguntas sobre esta Politica de Privacidad o sobre el tratamiento de sus datos personales, puede
-                contactarnos en:
-              </p>
-              <p>
-                <a href="mailto:support@motivarcare.com">support@motivarcare.com</a>
-              </p>
-
-              <h5>Recursos de apoyo</h5>
-              <p>
-                Si usted o alguien que conoce esta atravesando una crisis de salud mental, puede buscar ayuda en los siguientes
-                recursos:
-              </p>
-              <h6>Argentina</h6>
-              <p>Telefono de la Esperanza: 902 500 002</p>
-              <h6>Estados Unidos</h6>
-              <p>Linea de Prevencion del Suicidio: 988</p>
-              <h6>Organizacion Mundial de la Salud</h6>
-              <p>
-                <a href="https://www.who.int" target="_blank" rel="noreferrer">
-                  https://www.who.int
-                </a>
-              </p>
-
-              <p>© 2026 MotivarCare. Todos los derechos reservados.</p>
-            </div>
-          </article>
-        </div>
-      ) : null}
-
       {isAcceptableUseOpen ? (
         <div className="blog-modal-backdrop" role="dialog" aria-modal="true" onClick={() => setIsAcceptableUseOpen(false)}>
           <article className="blog-modal legal-modal" onClick={(event) => event.stopPropagation()}>
@@ -3268,14 +2866,15 @@ export function App() {
             <div className="account-modal-body">
               <h4>{t.accountAccessTitle}</h4>
               <p>{t.accountAccessCopy}</p>
-              <div className="account-grid">
-                <a href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer" onClick={() => setIsAccountOpen(false)}>
-                  {t.accountPortalPatient}
-                </a>
-                <a href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer" onClick={() => setIsAccountOpen(false)}>
-                  {t.accountPortalProfessional}
-                </a>
-              </div>
+              <a
+                className="account-modal-cta"
+                href={PROFESSIONAL_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setIsAccountOpen(false)}
+              >
+                {t.accountPortalProfessional} <span aria-hidden="true">→</span>
+              </a>
             </div>
           </article>
         </div>
@@ -3299,11 +2898,11 @@ export function App() {
             <button type="button" className="footer-disclaimer-trigger" onClick={() => setIsTermsOpen(true)}>
               {t.terms}
             </button>
-            <button type="button" className="footer-disclaimer-trigger" onClick={() => setIsPrivacyOpen(true)}>
+            <a className="footer-disclaimer-trigger" href="/docs/privacy.html">
               {t.privacy}
-            </button>
+            </a>
             <button type="button" className="footer-disclaimer-trigger" onClick={() => setIsAcceptableUseOpen(true)}>
-              Politica de uso aceptable
+              Política de uso aceptable
             </button>
             <button type="button" className="footer-disclaimer-trigger" onClick={() => setIsInformedConsentOpen(true)}>
               Consentimiento informado
@@ -3313,9 +2912,6 @@ export function App() {
           <section className="footer-col">
             <h5>{t.useful}</h5>
             <a href="/docs/crisis.html">{t.supportLine}</a>
-            <a href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-              {t.patientPortalShort}
-            </a>
             <a href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
               {t.professionalPortalShort}
             </a>

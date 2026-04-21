@@ -25,7 +25,9 @@ const registerSchema = z.object({
   fullName: z.string().min(2),
   role: z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]),
   timezone: z.string().optional(),
-  isTestUser: z.boolean().optional()
+  isTestUser: z.boolean().optional(),
+  /** Solo paciente: mercado por defecto AR. */
+  market: z.enum(["AR", "US"]).optional()
 });
 
 const loginSchema = z.object({
@@ -391,6 +393,7 @@ authRouter.post("/register", async (req, res) => {
         parsed.data.role === "PATIENT"
           ? {
               create: {
+                market: parsed.data.market === "US" ? "US" : "AR",
                 timezone: parsed.data.timezone ?? "America/New_York",
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York"
               }

@@ -1,0 +1,1256 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: light;
+  --ink: #0f1117;
+  --muted: #5c6478;
+  --line: #e4e8f2;
+  --violet-400: #8b7bff;
+  --violet-500: #6d56ff;
+  --violet-600: #5f48e8;
+  --violet-700: #4d38d9;
+  --violet-900: #2d2466;
+  --surface: #f8f7fc;
+  --surface-2: #ffffff;
+  --hero-deep: #1e1548;
+  --container: min(1200px, 100% - clamp(20px, 5vw, 64px));
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Manrope", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+/* ——— Shell: ancho completo del viewport ——— */
+.patient-ar-page {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-ar-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.patient-ar-container {
+  width: var(--container);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ——— Header ——— */
+.patient-ar-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  width: 100%;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.patient-ar-header--hero {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+.patient-ar-header--hero .patient-ar-nav a {
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+
+.patient-ar-header--hero .patient-ar-nav a:hover {
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+.patient-ar-header--hero .patient-ar-logo img {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 16px rgba(0, 0, 0, 0.35));
+}
+
+.patient-ar-header--solid {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 8px 32px rgba(15, 17, 23, 0.06);
+}
+
+.patient-ar-header--solid .patient-ar-nav a {
+  color: var(--muted);
+  text-shadow: none;
+}
+
+.patient-ar-header--solid .patient-ar-nav a:hover {
+  color: var(--violet-700);
+  border-bottom-color: rgba(109, 86, 255, 0.35);
+}
+
+.patient-ar-header--solid .patient-ar-logo img {
+  filter: none;
+}
+
+.patient-ar-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 3vw, 28px);
+  padding: 14px 0;
+  flex-wrap: wrap;
+}
+
+.patient-ar-logo img {
+  height: clamp(30px, 3.5vw, 38px);
+  width: auto;
+  max-width: min(220px, 48vw);
+  object-fit: contain;
+  display: block;
+}
+
+.patient-ar-nav {
+  display: none;
+  align-items: center;
+  gap: clamp(8px, 2vw, 24px);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.patient-ar-nav a {
+  text-decoration: none;
+  color: inherit;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.patient-ar-nav a:hover {
+  color: var(--violet-700);
+  border-bottom-color: rgba(109, 86, 255, 0.35);
+}
+
+@media (min-width: 768px) {
+  .patient-ar-nav {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .patient-ar-header-inner {
+    flex-wrap: nowrap;
+  }
+}
+
+.patient-ar-top-cta {
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  background: linear-gradient(135deg, #7662ff, #5945df);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(95, 68, 235, 0.35);
+  white-space: nowrap;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.patient-ar-top-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(95, 68, 235, 0.4);
+}
+
+/* ——— Hero: imagen full-bleed + parallax ——— */
+.patient-ar-hero-shell {
+  position: relative;
+  width: 100%;
+  min-height: min(100svh, 1080px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff;
+  overflow: clip;
+}
+
+.patient-ar-hero-media {
+  position: absolute;
+  inset: -12% -5% -8%;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .patient-ar-hero-media {
+    will-change: transform;
+  }
+}
+
+.patient-ar-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  display: block;
+}
+
+/* Hero con foto apaisada (14): menos recorte, más sombra donde va el texto */
+.patient-ar-hero-img--panorama {
+  object-position: center center;
+}
+
+.patient-ar-hero-shell--panorama .patient-ar-hero-media {
+  inset: -8% -4% -6%;
+}
+
+.patient-ar-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg, rgba(12, 10, 32, 0.92) 0%, rgba(25, 18, 58, 0.72) 38%, rgba(30, 21, 72, 0.35) 72%, rgba(15, 12, 40, 0.55) 100%),
+    radial-gradient(90% 70% at 20% 20%, rgba(109, 86, 255, 0.25) 0%, transparent 55%);
+}
+
+.patient-ar-hero-shell--panorama .patient-ar-hero-scrim {
+  background:
+    linear-gradient(115deg, rgba(6, 5, 18, 0.94) 0%, rgba(14, 10, 36, 0.82) 28%, rgba(20, 14, 44, 0.5) 55%, rgba(8, 6, 20, 0.72) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, transparent 42%, rgba(6, 4, 16, 0.55) 100%),
+    radial-gradient(80% 60% at 15% 35%, rgba(109, 86, 255, 0.2) 0%, transparent 52%);
+}
+
+.patient-ar-hero-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.patient-ar-hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(32px, 5vw, 56px);
+  align-items: end;
+  padding: clamp(104px, 18vh, 160px) 0 clamp(56px, 9vw, 100px);
+}
+
+@media (min-width: 960px) {
+  .patient-ar-hero-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    align-items: end;
+  }
+}
+
+.patient-ar-hero-panel-wrap {
+  position: relative;
+  z-index: 2;
+}
+
+.patient-ar-scroll-hint {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 20px;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.patient-ar-scroll-hint:hover {
+  opacity: 1;
+}
+
+.patient-ar-scroll-hint-line {
+  width: 1px;
+  height: 44px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent);
+  border-radius: 999px;
+  animation: patient-ar-float 2.4s ease-in-out infinite;
+}
+
+@keyframes patient-ar-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patient-ar-scroll-hint-line {
+    animation: none;
+  }
+}
+
+.patient-ar-kicker {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.patient-ar-hero-copy h1 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.85rem, 2.8vw + 1rem, 3.15rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  color: #fff;
+  max-width: 18ch;
+}
+
+@media (min-width: 960px) {
+  .patient-ar-hero-copy h1 {
+    max-width: none;
+  }
+}
+
+.patient-ar-lead {
+  margin: 18px 0 0;
+  font-size: clamp(1rem, 0.6vw + 0.95rem, 1.2rem);
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.65;
+  max-width: 52ch;
+}
+
+.patient-ar-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.patient-ar-checks {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+@media (min-width: 640px) {
+  .patient-ar-checks {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+.patient-ar-checks li {
+  position: relative;
+  padding-left: 26px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.9rem;
+}
+
+.patient-ar-checks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.patient-ar-checks li::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0.55em;
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg);
+}
+
+.patient-ar-hero-panel {
+  border-radius: 22px;
+  background: rgba(10, 8, 28, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+}
+
+.patient-ar-hero-panel-visual {
+  position: relative;
+  height: clamp(140px, 22vw, 200px);
+  overflow: hidden;
+}
+
+.patient-ar-hero-panel-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  opacity: 0.95;
+}
+
+.patient-ar-hero-panel-inner {
+  padding: clamp(20px, 3.5vw, 28px);
+}
+
+.patient-ar-hero-panel-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.patient-ar-hero-panel-title {
+  margin: 8px 0 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.5rem, 2vw + 1rem, 2rem);
+  font-weight: 700;
+  color: #fff;
+}
+
+.patient-ar-hero-panel-text {
+  margin: 12px 0 0;
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+}
+
+.patient-ar-hero-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.patient-ar-stat-num {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.patient-ar-stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ——— Buttons ——— */
+.patient-ar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.patient-ar-btn--primary {
+  background: linear-gradient(135deg, #9b8cff 0%, #6d56ff 45%, #5945df 100%);
+  color: #fff;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.25);
+}
+
+.patient-ar-btn--primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+}
+
+.patient-ar-btn--ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.patient-ar-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.patient-ar-btn--secondary {
+  background: var(--surface-2);
+  color: var(--violet-700);
+  border-color: rgba(109, 86, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(25, 20, 60, 0.06);
+}
+
+.patient-ar-btn--secondary:hover {
+  background: #f3f0ff;
+  transform: translateY(-1px);
+}
+
+.patient-ar-btn--light {
+  background: #fff;
+  color: var(--violet-700);
+  width: 100%;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+.patient-ar-btn--light:hover {
+  filter: brightness(1.03);
+  transform: translateY(-2px);
+}
+
+/* ——— Sections ——— */
+main {
+  flex: 1;
+  width: 100%;
+}
+
+.patient-ar-section {
+  width: 100%;
+  padding: clamp(48px, 8vw, 96px) 0;
+  scroll-margin-top: 72px;
+}
+
+.patient-ar-section--tight {
+  padding-top: clamp(36px, 6vw, 64px);
+}
+
+.patient-ar-section--muted {
+  background: linear-gradient(180deg, #f0eef8 0%, #faf9ff 100%);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.patient-ar-section-intro {
+  margin-bottom: clamp(28px, 4vw, 40px);
+  max-width: 720px;
+}
+
+.patient-ar-section-intro--center {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.patient-ar-eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--violet-600);
+}
+
+.patient-ar-eyebrow--on-dark {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.patient-ar-section-intro h2,
+.patient-ar-section-intro--center h2 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.5rem, 1.2vw + 1.2rem, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.patient-ar-section-lead {
+  margin: 14px 0 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* ——— Feature cards ——— */
+.patient-ar-feature-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 700px) {
+  .patient-ar-feature-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.patient-ar-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(20px, 3vw, 28px);
+  box-shadow: 0 8px 30px rgba(20, 24, 45, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.patient-ar-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(45, 36, 120, 0.1);
+}
+
+.patient-ar-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.patient-ar-card-icon--violet {
+  background: linear-gradient(135deg, #b8a9ff, #6d56ff);
+}
+
+.patient-ar-card-icon--green {
+  background: linear-gradient(135deg, #86efac, #22c55e);
+}
+
+.patient-ar-card-icon--amber {
+  background: linear-gradient(135deg, #fde047, #eab308);
+}
+
+.patient-ar-card h3 {
+  margin: 0 0 10px;
+  font-family: "Sora", sans-serif;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.patient-ar-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+/* ——— Split about ——— */
+.patient-ar-split {
+  display: grid;
+  gap: clamp(24px, 4vw, 40px);
+  align-items: start;
+}
+
+@media (min-width: 880px) {
+  .patient-ar-split {
+    grid-template-columns: minmax(200px, 0.35fr) minmax(0, 1fr);
+  }
+}
+
+.patient-ar-prose p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.patient-ar-prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* ——— Bento + about + parallax ——— */
+.patient-ar-bento {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .patient-ar-bento {
+    grid-template-columns: 1.4fr 0.9fr;
+    grid-template-rows: auto auto;
+  }
+
+  .patient-ar-bento-card--wide {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-height: 420px;
+  }
+
+  .patient-ar-bento-card--tall {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 200px;
+  }
+
+  .patient-ar-bento-card--plain {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+.patient-ar-bento-card {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  min-height: 200px;
+}
+
+.patient-ar-bento-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.patient-ar-bento-card:hover img {
+  transform: scale(1.04);
+}
+
+.patient-ar-bento-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 20%, rgba(15, 17, 23, 0.88) 100%);
+}
+
+.patient-ar-bento-scrim--soft {
+  background: linear-gradient(200deg, rgba(15, 17, 23, 0.2) 0%, rgba(15, 17, 23, 0.75) 100%);
+}
+
+.patient-ar-bento-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: clamp(20px, 4vw, 32px);
+  z-index: 1;
+}
+
+.patient-ar-bento-copy h3 {
+  margin: 0 0 8px;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-weight: 700;
+  color: #fff;
+}
+
+.patient-ar-bento-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  max-width: 42ch;
+}
+
+.patient-ar-bento-card--plain {
+  background: var(--surface-2);
+  padding: clamp(22px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.patient-ar-bento-card--plain h3 {
+  color: var(--ink);
+}
+
+.patient-ar-bento-card--plain p {
+  color: var(--muted);
+}
+
+.patient-ar-about {
+  display: grid;
+  gap: clamp(28px, 5vw, 48px);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .patient-ar-about {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.patient-ar-about-figure {
+  margin: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(25, 20, 60, 0.12);
+  border: 1px solid var(--line);
+}
+
+.patient-ar-about-figure img {
+  width: 100%;
+  height: clamp(280px, 40vw, 420px);
+  object-fit: cover;
+  object-position: center 30%;
+  display: block;
+}
+
+.patient-ar-about-caption {
+  display: block;
+  padding: 14px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+.patient-ar-about-copy h2 {
+  margin: 8px 0 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.patient-ar-btn--inline {
+  margin-top: 20px;
+}
+
+.patient-ar-parallax-strip {
+  position: relative;
+  height: clamp(220px, 32vw, 380px);
+  overflow: hidden;
+  margin: 0;
+}
+
+.patient-ar-parallax-strip-inner {
+  position: absolute;
+  inset: -15% -5%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .patient-ar-parallax-strip-inner {
+    will-change: transform;
+  }
+}
+
+.patient-ar-parallax-strip-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  display: block;
+}
+
+.patient-ar-parallax-strip-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(109, 86, 255, 0.2) 0%, transparent 40%, rgba(15, 17, 23, 0.25) 100%);
+  pointer-events: none;
+}
+
+/* ——— Steps ——— */
+.patient-ar-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: clamp(16px, 2.5vw, 22px);
+}
+
+@media (min-width: 900px) {
+  .patient-ar-steps {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+}
+
+.patient-ar-steps li {
+  display: flex;
+  gap: 16px;
+  padding: clamp(18px, 2.5vw, 22px);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: 0 4px 20px rgba(20, 24, 40, 0.04);
+}
+
+.patient-ar-step-num {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+}
+
+.patient-ar-steps strong {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.patient-ar-steps p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.patient-ar-steps--visual li {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.patient-ar-step-thumb {
+  height: 112px;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.patient-ar-steps--visual .patient-ar-step-num {
+  margin: -22px 18px 0;
+  align-self: flex-start;
+  box-shadow: 0 8px 24px rgba(45, 36, 102, 0.25);
+  z-index: 1;
+}
+
+.patient-ar-steps--visual li > div:last-child {
+  padding: 16px 18px 20px;
+}
+
+.patient-ar-cta-row {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ——— Pricing accent ——— */
+.patient-ar-section--accent {
+  background: linear-gradient(135deg, #3d2fa8 0%, var(--violet-700) 40%, #3a2d8a 100%);
+  color: #fff;
+  padding: clamp(56px, 9vw, 100px) 0;
+}
+
+.patient-ar-pricing-layout {
+  display: grid;
+  gap: clamp(32px, 5vw, 48px);
+  align-items: center;
+}
+
+@media (min-width: 880px) {
+  .patient-ar-pricing-layout {
+    grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+  }
+}
+
+.patient-ar-section--accent h2 {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.55rem, 1.5vw + 1.1rem, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.patient-ar-pricing-lead {
+  margin: 16px 0 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.65;
+  max-width: 52ch;
+}
+
+.patient-ar-pricing-list {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.patient-ar-pricing-list li {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.5;
+}
+
+.patient-ar-pricing-card {
+  border-radius: 22px;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(15, 10, 40, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.patient-ar-pricing-card-visual {
+  height: 140px;
+  overflow: hidden;
+}
+
+.patient-ar-pricing-card-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+.patient-ar-pricing-card .patient-ar-pricing-card-title,
+.patient-ar-pricing-card .patient-ar-pricing-card-text,
+.patient-ar-pricing-card .patient-ar-btn {
+  margin-left: clamp(24px, 4vw, 32px);
+  margin-right: clamp(24px, 4vw, 32px);
+}
+
+.patient-ar-pricing-card .patient-ar-pricing-card-title {
+  margin-top: clamp(22px, 3vw, 28px);
+}
+
+.patient-ar-pricing-card .patient-ar-btn {
+  margin-bottom: clamp(24px, 4vw, 32px);
+  width: calc(100% - 2 * clamp(24px, 4vw, 32px));
+}
+
+.patient-ar-pricing-card-title {
+  margin: 0;
+  font-family: "Sora", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.patient-ar-pricing-card-text {
+  margin: 12px 0 20px;
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.6;
+}
+
+/* ——— Quotes ——— */
+.patient-ar-section--quotes {
+  background: linear-gradient(180deg, #fff 0%, #f4f2ff 100%);
+  border-top: 1px solid var(--line);
+}
+
+.patient-ar-quote-row {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 800px) {
+  .patient-ar-quote-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.patient-ar-quote-card {
+  margin: 0;
+  padding: clamp(24px, 3vw, 32px);
+  border-radius: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 48px rgba(20, 24, 45, 0.06);
+}
+
+.patient-ar-quote-card blockquote {
+  margin: 0 0 20px;
+}
+
+.patient-ar-quote-card blockquote p {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.patient-ar-quote-card figcaption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.patient-ar-quote-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(109, 86, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.patient-ar-quote-meta {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* ——— FAQ ——— */
+.patient-ar-faq-grid {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.patient-ar-faq-list {
+  margin: 0;
+}
+
+.patient-ar-faq-list--grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .patient-ar-faq-list--grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.patient-ar-faq-list--grid > div {
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: 0 6px 22px rgba(20, 24, 40, 0.04);
+}
+
+.patient-ar-faq dt {
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.patient-ar-faq dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+/* ——— Footer ——— */
+.patient-ar-footer {
+  width: 100%;
+  margin-top: auto;
+  background: #0f1117;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 32px 0 36px;
+}
+
+.patient-ar-footer-inner {
+  text-align: center;
+}
+
+.patient-ar-footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+}
+
+.patient-ar-footer-legal a {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.patient-ar-footer-legal a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.patient-ar-footer-copy {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.patient-ar-footer-copy a {
+  color: var(--violet-400);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.patient-ar-footer-copy a:hover {
+  text-decoration: underline;
+}
+
+.patient-ar-footer-photo {
+  margin: 16px 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+  max-width: 52ch;
+  margin-inline: auto;
+}
+
+.patient-ar-footer-photo a {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.patient-ar-footer-code {
+  font-size: 0.72rem;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}

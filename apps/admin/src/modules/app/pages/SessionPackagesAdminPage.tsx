@@ -11,8 +11,11 @@ import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation"
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type {
+  AdminMarket,
+  AdminPackagePaymentProvider,
   AdminSessionPackage,
-  SessionPackagesResponse
+  SessionPackagesResponse,
+  SessionPackagesVisibilityPayload
 } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -34,13 +37,25 @@ export function SessionPackagesAdminPage(props: {
   embedded?: boolean;
 }) {
   const embedded = props.embedded ?? false;
-  const emptyForm = {
+  const emptyForm: {
+    name: string;
+    credits: string;
+    discountPercent: string;
+    currency: string;
+    professionalId: string;
+    stripePriceId: string;
+    market: AdminMarket;
+    paymentProvider: AdminPackagePaymentProvider;
+    active: boolean;
+  } = {
     name: "",
     credits: "4",
     discountPercent: "30",
     currency: "usd",
     professionalId: "",
     stripePriceId: "",
+    market: "AR",
+    paymentProvider: "MERCADOPAGO",
     active: true
   };
   const [loading, setLoading] = useState(true);
@@ -53,18 +68,16 @@ export function SessionPackagesAdminPage(props: {
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [visibilityDraft, setVisibilityDraft] = useState<{ landing: string[]; patient: string[]; featuredLanding: string | null; featuredPatient: string | null }>({
+  const emptyVisibility = (): SessionPackagesVisibilityPayload => ({
     landing: [],
     patient: [],
+    patientByMarket: { AR: [], US: [] },
     featuredLanding: null,
-    featuredPatient: null
+    featuredPatient: null,
+    featuredPatientByMarket: { AR: null, US: null }
   });
-  const [savedVisibility, setSavedVisibility] = useState<{ landing: string[]; patient: string[]; featuredLanding: string | null; featuredPatient: string | null }>({
-    landing: [],
-    patient: [],
-    featuredLanding: null,
-    featuredPatient: null
-  });
+  const [visibilityDraft, setVisibilityDraft] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
+  const [savedVisibility, setSavedVisibility] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
 
   const load = async () => {
     setLoading(true);
@@ -92,7 +105,7 @@ export function SessionPackagesAdminPage(props: {
       return packages;
     }
     return packages.filter((item) =>
-      [item.name, item.professionalName ?? "", String(item.credits)]
+      [item.name, item.professionalName ?? "", String(item.credits), item.market, item.paymentProvider]
         .join(" ")
         .toLowerCase()
         .includes(q)
@@ -115,11 +128,19 @@ export function SessionPackagesAdminPage(props: {
     setSuccess("");
     setSavingVisibility(true);
     try {
-      await apiRequest<{ visibility: { landing: string[]; patient: string[]; featuredLanding: string | null; featuredPatient: string | null } }>(
+      const visibilityPayload = {
+        landing: visibilityDraft.landing,
+        patient: visibilityDraft.patientByMarket.AR,
+        patientByMarket: visibilityDraft.patientByMarket,
+        featuredLanding: visibilityDraft.featuredLanding,
+        featuredPatient: visibilityDraft.featuredPatientByMarket.AR ?? visibilityDraft.featuredPatient,
+        featuredPatientByMarket: visibilityDraft.featuredPatientByMarket
+      };
+      await apiRequest<{ visibility: SessionPackagesVisibilityPayload }>(
         "/api/admin/session-packages/visibility",
         {
           method: "PUT",
-          body: JSON.stringify(visibilityDraft)
+          body: JSON.stringify(visibilityPayload)
         },
         props.token
       );
@@ -133,46 +154,120 @@ export function SessionPackagesAdminPage(props: {
     }
   };
 
-  const togglePublished = (channel: "landing" | "patient", packageId: string, checked: boolean) => {
-    if (checked && !visibilityDraft[channel].includes(packageId) && visibilityDraft[channel].length >= 3) {
+  const togglePublished = (channel: "landing" | "patientAR" | "patientUS", packageId: string, checked: boolean) => {
+    const channelLabel =
+      channel === "landing" ? "landing" : channel === "patientAR" ? "paciente (Argentina)" : "paciente (EE.UU.)";
+    if (checked && channel !== "landing") {
+      const pkg = packagesById.get(packageId);
+      if (pkg && pkg.market !== (channel === "patientAR" ? "AR" : "US")) {
+        setError(
+          t(props.language, {
+            es: "Ese paquete es de otro mercado. Publicá solo paquetes AR en Portal AR y US en Portal US.",
+            en: "That package belongs to another market. Publish AR packages to the AR portal and US packages to the US portal.",
+            pt: "Esse pacote e de outro mercado."
+          })
+        );
+        return;
+      }
+    }
+    if (
+      checked
+      && (channel === "landing" ? !visibilityDraft.landing.includes(packageId) : channel === "patientAR"
+        ? !visibilityDraft.patientByMarket.AR.includes(packageId)
+        : !visibilityDraft.patientByMarket.US.includes(packageId))
+      && (channel === "landing" ? visibilityDraft.landing : channel === "patientAR" ? visibilityDraft.patientByMarket.AR : visibilityDraft.patientByMarket.US).length >= 3
+    ) {
       setError(
         t(props.language, {
-          es: `En ${channel === "landing" ? "landing" : "paciente"} solo podés tener hasta 3 paquetes visibles. Sacá uno de la lista o desmarcá otro antes de agregar este.`,
-          en: `You can only show up to 3 packages on ${channel === "landing" ? "landing" : "patient"}. Remove one from the list before adding this.`,
-          pt: `So e possivel exibir ate 3 pacotes em ${channel === "landing" ? "landing" : "paciente"}. Remova outro antes de adicionar este.`
+          es: `En ${channelLabel} solo podés tener hasta 3 paquetes visibles. Sacá uno de la lista o desmarcá otro antes de agregar este.`,
+          en: `You can only show up to 3 packages on ${channelLabel}. Remove one from the list before adding this.`,
+          pt: `So e possivel exibir ate 3 pacotes em ${channelLabel}. Remova outro antes de adicionar este.`
         })
       );
       return;
     }
 
     setVisibilityDraft((current) => {
-      const currentIds = current[channel];
+      if (channel === "landing") {
+        const currentIds = current.landing;
+        if (checked) {
+          if (currentIds.includes(packageId)) {
+            return current;
+          }
+          return { ...current, landing: [...currentIds, packageId] };
+        }
+        const nextIds = currentIds.filter((id) => id !== packageId);
+        return {
+          ...current,
+          landing: nextIds,
+          featuredLanding: current.featuredLanding === packageId ? null : current.featuredLanding
+        };
+      }
+
+      const market = channel === "patientAR" ? "AR" : "US";
+      const currentIds = current.patientByMarket[market];
       if (checked) {
         if (currentIds.includes(packageId)) {
           return current;
         }
-        return { ...current, [channel]: [...currentIds, packageId] };
+        const next = [...currentIds, packageId];
+        return {
+          ...current,
+          patient: market === "AR" ? next : current.patient,
+          patientByMarket: { ...current.patientByMarket, [market]: next },
+          featuredPatient: market === "AR" ? current.featuredPatient : current.featuredPatient,
+          featuredPatientByMarket: {
+            ...current.featuredPatientByMarket,
+            [market]: current.featuredPatientByMarket[market]
+          }
+        };
       }
       const nextIds = currentIds.filter((id) => id !== packageId);
-      const featuredKey = channel === "landing" ? "featuredLanding" : "featuredPatient";
       return {
         ...current,
-        [channel]: nextIds,
-        [featuredKey]: current[featuredKey] === packageId ? null : current[featuredKey]
+        patient: market === "AR" ? nextIds : current.patient,
+        patientByMarket: { ...current.patientByMarket, [market]: nextIds },
+        featuredPatient: market === "AR" && current.featuredPatient === packageId ? null : current.featuredPatient,
+        featuredPatientByMarket: {
+          ...current.featuredPatientByMarket,
+          [market]: current.featuredPatientByMarket[market] === packageId ? null : current.featuredPatientByMarket[market]
+        }
       };
     });
   };
 
-  const setFeatured = (channel: "landing" | "patient", packageId: string | null) => {
-    setVisibilityDraft((current) => ({
-      ...current,
-      [channel === "landing" ? "featuredLanding" : "featuredPatient"]: packageId
-    }));
+  const setFeatured = (channel: "landing" | "patientAR" | "patientUS", packageId: string | null) => {
+    setVisibilityDraft((current) => {
+      if (channel === "landing") {
+        return { ...current, featuredLanding: packageId };
+      }
+      const market = channel === "patientAR" ? "AR" : "US";
+      return {
+        ...current,
+        featuredPatient: market === "AR" ? packageId : current.featuredPatient,
+        featuredPatientByMarket: {
+          ...current.featuredPatientByMarket,
+          [market]: packageId
+        }
+      };
+    });
   };
 
-  const setPublishedOrder = (channel: "landing" | "patient", packageId: string, nextOrder: number) => {
+  const setPublishedOrder = (channel: "landing" | "patientAR" | "patientUS", packageId: string, nextOrder: number) => {
     setVisibilityDraft((current) => {
-      const currentIds = [...current[channel]];
+      if (channel === "landing") {
+        const currentIds = [...current.landing];
+        const currentIndex = currentIds.indexOf(packageId);
+        const targetIndex = nextOrder - 1;
+        if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length || currentIndex === targetIndex) {
+          return current;
+        }
+        const [moved] = currentIds.splice(currentIndex, 1);
+        currentIds.splice(targetIndex, 0, moved);
+        return { ...current, landing: currentIds };
+      }
+      const market = channel === "patientAR" ? "AR" : "US";
+      const currentIds = [...current.patientByMarket[market]];
       const currentIndex = currentIds.indexOf(packageId);
       const targetIndex = nextOrder - 1;
       if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length || currentIndex === targetIndex) {
@@ -180,7 +275,11 @@ export function SessionPackagesAdminPage(props: {
       }
       const [moved] = currentIds.splice(currentIndex, 1);
       currentIds.splice(targetIndex, 0, moved);
-      return { ...current, [channel]: currentIds };
+      const next = {
+        ...current,
+        patientByMarket: { ...current.patientByMarket, [market]: currentIds }
+      };
+      return market === "AR" ? { ...next, patient: currentIds } : next;
     });
   };
 
@@ -210,6 +309,8 @@ export function SessionPackagesAdminPage(props: {
       currency: item.currency,
       professionalId: item.professionalId ?? "",
       stripePriceId: item.stripePriceId,
+      market: item.market,
+      paymentProvider: item.paymentProvider,
       active: item.active
     });
     setError("");
@@ -264,6 +365,8 @@ export function SessionPackagesAdminPage(props: {
         currency: form.currency.trim().toLowerCase() || "usd",
         professionalId: form.professionalId.trim().length > 0 ? form.professionalId : null,
         stripePriceId: form.stripePriceId.trim().length > 0 ? form.stripePriceId.trim() : undefined,
+        market: form.market,
+        paymentProvider: form.paymentProvider,
         active: form.active
       };
 
@@ -365,7 +468,9 @@ export function SessionPackagesAdminPage(props: {
                 <span>Paquete</span>
                 <span>Landing</span>
                 <span>Orden</span>
-                <span>Patient</span>
+                <span>Portal AR</span>
+                <span>Orden</span>
+                <span>Portal US</span>
                 <span>Orden</span>
                 <span />
               </div>
@@ -376,6 +481,8 @@ export function SessionPackagesAdminPage(props: {
                     <div>
                         <div className="package-admin-card-title-row">
                           <h4>{item.name}</h4>
+                          <span className="role-pill muted">{item.market}</span>
+                          <span className="role-pill muted">{item.paymentProvider}</span>
                           <span className={"role-pill" + (item.active ? "" : " muted")}>{item.active ? "Activo" : "Inactivo"}</span>
                         </div>
                         {item.professionalName ? <p>{`Asignado a ${item.professionalName}`}</p> : null}
@@ -435,39 +542,112 @@ export function SessionPackagesAdminPage(props: {
                     <div className="package-admin-channel-options">
                       <button
                         type="button"
-                        className={"package-admin-publish-icon-button" + (visibilityDraft.patient.includes(item.id) ? " active" : "")}
-                        aria-label={visibilityDraft.patient.includes(item.id) ? "Quitar de patient" : "Publicar en patient"}
-                        title={visibilityDraft.patient.includes(item.id) ? "Quitar de patient" : "Publicar en patient"}
+                        className={"package-admin-publish-icon-button" + (visibilityDraft.patientByMarket.AR.includes(item.id) ? " active" : "")}
+                        aria-label={visibilityDraft.patientByMarket.AR.includes(item.id) ? "Quitar de portal AR" : "Publicar en portal AR"}
+                        title={visibilityDraft.patientByMarket.AR.includes(item.id) ? "Quitar de portal AR" : "Publicar en portal AR"}
                         disabled={!item.active}
-                        onClick={() => togglePublished("patient", item.id, !visibilityDraft.patient.includes(item.id))}
+                        onClick={() =>
+                          togglePublished("patientAR", item.id, !visibilityDraft.patientByMarket.AR.includes(item.id))
+                        }
                       >
-                        {visibilityDraft.patient.includes(item.id) ? "✓" : ""}
+                        {visibilityDraft.patientByMarket.AR.includes(item.id) ? "✓" : ""}
                       </button>
                     </div>
                   </div>
 
                   <div className="package-admin-card-channel package-admin-card-order-column">
                     <div className="package-admin-channel-options">
-                      {visibilityDraft.patient.includes(item.id) ? (
+                      {visibilityDraft.patientByMarket.AR.includes(item.id) ? (
                         <div className="package-admin-channel-order">
                           <select
                             className="package-admin-order-select"
-                            aria-label="Orden en patient"
-                            value={String(visibilityDraft.patient.indexOf(item.id) + 1)}
-                            onChange={(event) => setPublishedOrder("patient", item.id, Number(event.target.value))}
+                            aria-label="Orden en portal AR"
+                            value={String(visibilityDraft.patientByMarket.AR.indexOf(item.id) + 1)}
+                            onChange={(event) => setPublishedOrder("patientAR", item.id, Number(event.target.value))}
                           >
-                            {visibilityDraft.patient.map((_, index) => (
-                              <option key={`patient-order-${index + 1}`} value={String(index + 1)}>
+                            {visibilityDraft.patientByMarket.AR.map((_, index) => (
+                              <option key={`patient-ar-order-${index + 1}`} value={String(index + 1)}>
                                 {index + 1}
                               </option>
                             ))}
                           </select>
                           <button
                             type="button"
-                            className={"package-admin-featured-icon-button" + (visibilityDraft.featuredPatient === item.id ? " active" : "")}
-                            aria-label={visibilityDraft.featuredPatient === item.id ? "Quitar mas elegido en patient" : "Marcar mas elegido en patient"}
-                            title={visibilityDraft.featuredPatient === item.id ? "Quitar mas elegido en patient" : "Marcar mas elegido en patient"}
-                            onClick={() => setFeatured("patient", visibilityDraft.featuredPatient === item.id ? null : item.id)}
+                            className={
+                              "package-admin-featured-icon-button" +
+                              (visibilityDraft.featuredPatientByMarket.AR === item.id ? " active" : "")
+                            }
+                            aria-label={
+                              visibilityDraft.featuredPatientByMarket.AR === item.id
+                                ? "Quitar destacado AR"
+                                : "Destacado AR"
+                            }
+                            onClick={() =>
+                              setFeatured(
+                                "patientAR",
+                                visibilityDraft.featuredPatientByMarket.AR === item.id ? null : item.id
+                              )
+                            }
+                          >
+                            ★
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="package-admin-order-placeholder">-</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="package-admin-card-channel">
+                    <div className="package-admin-channel-options">
+                      <button
+                        type="button"
+                        className={"package-admin-publish-icon-button" + (visibilityDraft.patientByMarket.US.includes(item.id) ? " active" : "")}
+                        aria-label={visibilityDraft.patientByMarket.US.includes(item.id) ? "Quitar de portal US" : "Publicar en portal US"}
+                        title={visibilityDraft.patientByMarket.US.includes(item.id) ? "Quitar de portal US" : "Publicar en portal US"}
+                        disabled={!item.active}
+                        onClick={() =>
+                          togglePublished("patientUS", item.id, !visibilityDraft.patientByMarket.US.includes(item.id))
+                        }
+                      >
+                        {visibilityDraft.patientByMarket.US.includes(item.id) ? "✓" : ""}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="package-admin-card-channel package-admin-card-order-column">
+                    <div className="package-admin-channel-options">
+                      {visibilityDraft.patientByMarket.US.includes(item.id) ? (
+                        <div className="package-admin-channel-order">
+                          <select
+                            className="package-admin-order-select"
+                            aria-label="Orden en portal US"
+                            value={String(visibilityDraft.patientByMarket.US.indexOf(item.id) + 1)}
+                            onChange={(event) => setPublishedOrder("patientUS", item.id, Number(event.target.value))}
+                          >
+                            {visibilityDraft.patientByMarket.US.map((_, index) => (
+                              <option key={`patient-us-order-${index + 1}`} value={String(index + 1)}>
+                                {index + 1}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className={
+                              "package-admin-featured-icon-button" +
+                              (visibilityDraft.featuredPatientByMarket.US === item.id ? " active" : "")
+                            }
+                            aria-label={
+                              visibilityDraft.featuredPatientByMarket.US === item.id
+                                ? "Quitar destacado US"
+                                : "Destacado US"
+                            }
+                            onClick={() =>
+                              setFeatured(
+                                "patientUS",
+                                visibilityDraft.featuredPatientByMarket.US === item.id ? null : item.id
+                              )
+                            }
                           >
                             ★
                           </button>
@@ -518,7 +698,8 @@ export function SessionPackagesAdminPage(props: {
           <div className="toolbar-actions package-admin-toolbar">
             <div className="package-admin-toolbar-status">
               <span className="role-pill">Landing: {visibilityDraft.landing.length}/3</span>
-              <span className="role-pill">Patient: {visibilityDraft.patient.length}/3</span>
+              <span className="role-pill">Portal AR: {visibilityDraft.patientByMarket.AR.length}/3</span>
+              <span className="role-pill">Portal US: {visibilityDraft.patientByMarket.US.length}/3</span>
             </div>
             <button
               className={"primary" + (hasPendingVisibilityChanges ? " package-admin-save-pending" : "")}
@@ -549,8 +730,41 @@ export function SessionPackagesAdminPage(props: {
             </header>
             <div className="grid-form">
               <label>Nombre<input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></label>
+              <label>
+                Mercado
+                <select
+                  value={form.market}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      market: event.target.value === "US" ? "US" : "AR",
+                      paymentProvider: event.target.value === "US" ? "STRIPE" : "MERCADOPAGO"
+                    }))
+                  }
+                >
+                  <option value="AR">Argentina (AR)</option>
+                  <option value="US">Estados Unidos (US)</option>
+                </select>
+              </label>
+              <label>
+                Cobro previsto
+                <select
+                  value={form.paymentProvider}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      paymentProvider: event.target.value === "MERCADOPAGO" ? "MERCADOPAGO" : "STRIPE"
+                    }))
+                  }
+                >
+                  <option value="MERCADOPAGO">Mercado Pago</option>
+                  <option value="STRIPE">Stripe</option>
+                </select>
+              </label>
               <label>Sesiones incluidas<input type="number" min="1" value={form.credits} onChange={(event) => setForm((current) => ({ ...current, credits: event.target.value }))} /></label>
               <label>Descuento (%)<input type="number" min="0" max="100" step="1" value={form.discountPercent} onChange={(event) => setForm((current) => ({ ...current, discountPercent: event.target.value }))} /></label>
+              <label>ID catálogo / Stripe Price<input value={form.stripePriceId} onChange={(event) => setForm((current) => ({ ...current, stripePriceId: event.target.value }))} placeholder="price_… o id interno" /></label>
+              <label>Moneda (ISO)<input value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))} placeholder="ars / usd" /></label>
               <label className="inline-toggle package-admin-toggle"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} />Activo para patient y landing</label>
             </div>
             <div className="toolbar-actions">

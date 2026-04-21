@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-PORTS=(4000 5172 5173 5174 5175 5176 8081 8190)
+PORTS=(4000 5172 5173 5174 5175 5176 5177 8081 8190)
 
 echo "Buscando procesos en puertos: ${PORTS[*]}"
 
@@ -23,4 +23,4 @@ for port in "${PORTS[@]}"; do
   fi
 done
 
-echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all (suben Docker MySQL+Redis y esperan al puerto antes de los apps)."
+echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all (Docker MySQL+Redis; dev:all incluye API, landing pros, landings pacientes AR + alternativa 2, patient-mobile Expo, patient web, pro y admin)."

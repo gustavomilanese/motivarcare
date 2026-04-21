@@ -12,7 +12,7 @@
   "scripts": {
     "db:pre": "npm run db:up && npm run db:wait",
     "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
-    "dev:all:apps": "concurrently -n API,LANDING,PATIENT,PRO,ADMIN -c cyan,blue,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
+    "dev:all:apps": "concurrently -n API,LANDING,PATIENT_AR,PATIENT_AR2,PATIENT_MOB,PATIENT,PRO,ADMIN -c cyan,blue,red,white,gray,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-landing-v2\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-mobile\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
     "dev": "npm run db:pre && npm run dev:apps",
     "dev:all": "npm run db:pre && npm run dev:all:apps",
     "dev:full": "npm run dev:all",
@@ -34,6 +34,8 @@
     "db:seed": "npm run prisma:seed -w @therapy/api",
     "db:wipe-non-admin": "npm run db:wipe-non-admin -w @therapy/api",
     "dev:landing": "npm run dev -w @therapy/landing",
+    "dev:patient-landing": "npm run dev -w @therapy/patient-landing",
+    "dev:patient-landing-v2": "npm run dev -w @therapy/patient-landing-v2",
     "test": "npm run test --workspaces --if-present",
     "load:smoke": "node scripts/load/smoke.mjs",
     "prisma:generate:api": "prisma generate --schema=./apps/api/prisma/schema.prisma",

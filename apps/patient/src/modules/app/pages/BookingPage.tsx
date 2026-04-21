@@ -216,12 +216,14 @@ export function BookingPage(props: {
   const packageCatalogDepsRef = useRef({
     hasAssignedProfessional,
     professionalId: professional.id,
-    language: props.language
+    language: props.language,
+    patientMarket: props.state.patientMarket
   });
   packageCatalogDepsRef.current = {
     hasAssignedProfessional,
     professionalId: professional.id,
-    language: props.language
+    language: props.language,
+    patientMarket: props.state.patientMarket
   };
 
   const slotsFetchGenerationRef = useRef(0);
@@ -503,6 +505,7 @@ export function BookingPage(props: {
       void loadPublicPackagePlans({
         language: snap.language,
         professionalId: snap.professionalId,
+        market: snap.patientMarket,
         t: (values) => t(snap.language, values),
         fallbackPlans: defaultPackagePlans
       })
@@ -525,7 +528,7 @@ export function BookingPage(props: {
       packagesFetchGenerationRef.current += 1;
       window.clearTimeout(timer);
     };
-  }, [hasAssignedProfessional, professional.id, props.language]);
+  }, [hasAssignedProfessional, professional.id, props.language, props.state.patientMarket]);
 
   useEffect(() => {
     if (hasAssignedProfessional || !isCheckoutFlow) {

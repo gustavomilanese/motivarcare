@@ -226,45 +226,176 @@ async function seedAvailability(context: SeedContext) {
 
 async function seedPackagesAndPurchase(context: SeedContext) {
   await prisma.sessionPackage.upsert({
-    where: { stripePriceId: "pkg-1-demo" },
+    where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-1-demo" } },
     update: {
       name: "1 sesión — precio de lista",
       credits: 1,
       priceCents: 12000,
       discountPercent: 0,
-      currency: "usd",
-      active: true
+      currency: "ars",
+      active: true,
+      paymentProvider: "MERCADOPAGO"
     },
     create: {
+      market: "AR",
+      paymentProvider: "MERCADOPAGO",
       stripePriceId: "pkg-1-demo",
       name: "1 sesión — precio de lista",
       credits: 1,
       priceCents: 12000,
       discountPercent: 0,
+      currency: "ars",
+      active: true
+    }
+  });
+
+  await prisma.sessionPackage.upsert({
+    where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-4-demo" } },
+    update: {
+      name: "Inicio - 4 sesiones",
+      credits: 4,
+      priceCents: 3_600_000,
+      discountPercent: 30,
+      currency: "ars",
+      active: true,
+      paymentProvider: "MERCADOPAGO"
+    },
+    create: {
+      market: "AR",
+      paymentProvider: "MERCADOPAGO",
+      stripePriceId: "pkg-4-demo",
+      name: "Inicio - 4 sesiones",
+      credits: 4,
+      priceCents: 3_600_000,
+      discountPercent: 30,
+      currency: "ars",
+      active: true
+    }
+  });
+
+  await prisma.sessionPackage.upsert({
+    where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-8-demo" } },
+    update: {
+      name: "Continuidad - 8 sesiones",
+      credits: 8,
+      priceCents: 6_800_000,
+      discountPercent: 36,
+      currency: "ars",
+      active: true,
+      paymentProvider: "MERCADOPAGO"
+    },
+    create: {
+      market: "AR",
+      paymentProvider: "MERCADOPAGO",
+      stripePriceId: "pkg-8-demo",
+      name: "Continuidad - 8 sesiones",
+      credits: 8,
+      priceCents: 6_800_000,
+      discountPercent: 36,
+      currency: "ars",
+      active: true
+    }
+  });
+
+  await prisma.sessionPackage.upsert({
+    where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-12-demo" } },
+    update: {
+      name: "Intensivo - 12 sesiones",
+      credits: 12,
+      priceCents: 9_600_000,
+      discountPercent: 40,
+      currency: "ars",
+      active: true,
+      paymentProvider: "MERCADOPAGO"
+    },
+    create: {
+      market: "AR",
+      paymentProvider: "MERCADOPAGO",
+      stripePriceId: "pkg-12-demo",
+      name: "Intensivo - 12 sesiones",
+      credits: 12,
+      priceCents: 9_600_000,
+      discountPercent: 40,
+      currency: "ars",
+      active: true
+    }
+  });
+
+  await prisma.sessionPackage.upsert({
+    where: { market_stripePriceId: { market: "US", stripePriceId: "us-pkg-4-demo" } },
+    update: {
+      name: "Starter - 4 sessions (US)",
+      credits: 4,
+      priceCents: 36000,
+      discountPercent: 30,
+      currency: "usd",
+      active: true,
+      paymentProvider: "STRIPE"
+    },
+    create: {
+      market: "US",
+      paymentProvider: "STRIPE",
+      stripePriceId: "us-pkg-4-demo",
+      name: "Starter - 4 sessions (US)",
+      credits: 4,
+      priceCents: 36000,
+      discountPercent: 30,
       currency: "usd",
       active: true
     }
   });
 
   await prisma.sessionPackage.upsert({
-    where: { stripePriceId: "pkg-4-demo" },
-    update: { name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-4-demo", name: "Inicio - 4 sesiones", credits: 4, priceCents: 36000, discountPercent: 30, currency: "usd", active: true }
+    where: { market_stripePriceId: { market: "US", stripePriceId: "us-pkg-8-demo" } },
+    update: {
+      name: "Continuity - 8 sessions (US)",
+      credits: 8,
+      priceCents: 68000,
+      discountPercent: 36,
+      currency: "usd",
+      active: true,
+      paymentProvider: "STRIPE"
+    },
+    create: {
+      market: "US",
+      paymentProvider: "STRIPE",
+      stripePriceId: "us-pkg-8-demo",
+      name: "Continuity - 8 sessions (US)",
+      credits: 8,
+      priceCents: 68000,
+      discountPercent: 36,
+      currency: "usd",
+      active: true
+    }
   });
 
   await prisma.sessionPackage.upsert({
-    where: { stripePriceId: "pkg-8-demo" },
-    update: { name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, discountPercent: 36, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-8-demo", name: "Continuidad - 8 sesiones", credits: 8, priceCents: 68000, discountPercent: 36, currency: "usd", active: true }
+    where: { market_stripePriceId: { market: "US", stripePriceId: "us-pkg-12-demo" } },
+    update: {
+      name: "Intensive - 12 sessions (US)",
+      credits: 12,
+      priceCents: 96000,
+      discountPercent: 40,
+      currency: "usd",
+      active: true,
+      paymentProvider: "STRIPE"
+    },
+    create: {
+      market: "US",
+      paymentProvider: "STRIPE",
+      stripePriceId: "us-pkg-12-demo",
+      name: "Intensive - 12 sessions (US)",
+      credits: 12,
+      priceCents: 96000,
+      discountPercent: 40,
+      currency: "usd",
+      active: true
+    }
   });
 
-  await prisma.sessionPackage.upsert({
-    where: { stripePriceId: "pkg-12-demo" },
-    update: { name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, discountPercent: 40, currency: "usd", active: true },
-    create: { stripePriceId: "pkg-12-demo", name: "Intensivo - 12 sesiones", credits: 12, priceCents: 96000, discountPercent: 40, currency: "usd", active: true }
+  const growthPackage = await prisma.sessionPackage.findUniqueOrThrow({
+    where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-8-demo" } }
   });
-
-  const growthPackage = await prisma.sessionPackage.findUniqueOrThrow({ where: { stripePriceId: "pkg-8-demo" } });
 
   await prisma.patientPackagePurchase.upsert({
     where: { stripeCheckoutSessionId: "checkout-demo-1" },

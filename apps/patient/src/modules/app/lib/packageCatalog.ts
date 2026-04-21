@@ -1,4 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
+import type { Market } from "@therapy/types";
 import type { PackagePlan, PublicSessionPackagesResponse } from "../types";
 import { API_BASE } from "../services/api";
 
@@ -108,18 +109,19 @@ type PublicPackageCatalog = { plans: PackagePlan[]; featuredPackageId: string | 
 
 const publicPackageCatalogInflight = new Map<string, Promise<PublicPackageCatalog>>();
 
-function publicPackageCatalogKey(language: AppLanguage, professionalId?: string): string {
-  return `${language}\0${professionalId ?? ""}`;
+function publicPackageCatalogKey(language: AppLanguage, professionalId: string | undefined, market: Market): string {
+  return `${language}\0${professionalId ?? ""}\0${market}`;
 }
 
 async function loadPublicPackagePlansOnce(params: {
   language: AppLanguage;
   professionalId?: string;
+  market: Market;
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
   try {
-    const query = new URLSearchParams({ channel: "patient" });
+    const query = new URLSearchParams({ channel: "patient", market: params.market });
     if (params.professionalId) {
       query.set("professionalId", params.professionalId);
     }
@@ -174,10 +176,11 @@ async function loadPublicPackagePlansOnce(params: {
 export function loadPublicPackagePlans(params: {
   language: AppLanguage;
   professionalId?: string;
+  market: Market;
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
-  const key = publicPackageCatalogKey(params.language, params.professionalId);
+  const key = publicPackageCatalogKey(params.language, params.professionalId, params.market);
   const existing = publicPackageCatalogInflight.get(key);
   if (existing) {
     return existing;

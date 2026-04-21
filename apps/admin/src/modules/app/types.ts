@@ -189,11 +189,16 @@ export interface WebContentResponse {
   };
 }
 
+export type AdminMarket = "AR" | "US";
+export type AdminPackagePaymentProvider = "STRIPE" | "MERCADOPAGO";
+
 export interface AdminSessionPackage {
   id: string;
   professionalId: string | null;
   professionalName: string | null;
   stripePriceId: string;
+  market: AdminMarket;
+  paymentProvider: AdminPackagePaymentProvider;
   name: string;
   credits: number;
   priceCents: number;
@@ -203,17 +208,22 @@ export interface AdminSessionPackage {
   createdAt: string;
   purchasesCount: number;
   landingPublished: boolean;
-  patientPublished: boolean;
+  patientPublishedAr: boolean;
+  patientPublishedUs: boolean;
+}
+
+export interface SessionPackagesVisibilityPayload {
+  landing: string[];
+  patient: string[];
+  patientByMarket: { AR: string[]; US: string[] };
+  featuredLanding: string | null;
+  featuredPatient: string | null;
+  featuredPatientByMarket: { AR: string | null; US: string | null };
 }
 
 export interface SessionPackagesResponse {
   sessionPackages: AdminSessionPackage[];
-  visibility: {
-    landing: string[];
-    patient: string[];
-    featuredLanding: string | null;
-    featuredPatient: string | null;
-  };
+  visibility: SessionPackagesVisibilityPayload;
 }
 
 export interface AdminPatientOps {
