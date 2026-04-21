@@ -1,5 +1,30 @@
 import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+
+function preIntakeIntroCopy(language: AppLanguage): {
+  title: string;
+  body: readonly [string, string];
+} {
+  return {
+    title: textByLanguage(language, {
+      es: "Antes de las preguntas",
+      en: "Before the questions",
+      pt: "Antes das perguntas"
+    }),
+    body: [
+      textByLanguage(language, {
+        es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
+        en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
+        pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
+      }),
+      textByLanguage(language, {
+        es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
+        en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
+        pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
+      })
+    ] as const
+  };
+}
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
@@ -252,10 +277,14 @@ export function IntakeScreen(props: {
     [props.language]
   );
 
-  const totalSteps = localizedQuestions.length;
-  const current = localizedQuestions[stepIndex];
-  const progressPct = ((stepIndex + 1) / totalSteps) * 100;
-  const isLast = stepIndex >= totalSteps - 1;
+  const introCopy = useMemo(() => preIntakeIntroCopy(props.language), [props.language]);
+  const questionCount = localizedQuestions.length;
+  /** Paso 0 = intro; pasos 1…N = preguntas. */
+  const totalWizardSteps = 1 + questionCount;
+  const questionStepIndex = stepIndex > 0 ? stepIndex - 1 : -1;
+  const current = questionStepIndex >= 0 ? localizedQuestions[questionStepIndex] : null;
+  const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
+  const isLast = stepIndex >= totalWizardSteps - 1;
 
   const handleBack = () => {
     if (props.onBack) {
@@ -289,6 +318,10 @@ export function IntakeScreen(props: {
   );
 
   const validateCurrent = (): boolean => {
+    if (stepIndex === 0) {
+      setError("");
+      return true;
+    }
     if (!current) {
       return false;
     }
@@ -329,6 +362,11 @@ export function IntakeScreen(props: {
   };
 
   const goNext = () => {
+    if (stepIndex === 0) {
+      setError("");
+      setStepIndex(1);
+      return;
+    }
     if (!validateCurrent()) {
       return;
     }
@@ -337,7 +375,7 @@ export function IntakeScreen(props: {
       return;
     }
     if (!isLast) {
-      setStepIndex((s) => Math.min(s + 1, totalSteps - 1));
+      setStepIndex((s) => Math.min(s + 1, totalWizardSteps - 1));
     }
   };
 
@@ -447,7 +485,7 @@ export function IntakeScreen(props: {
     if (missing.length > 0) {
       const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
       if (idx >= 0) {
-        setStepIndex(idx);
+        setStepIndex(idx + 1);
       }
       setError("");
       return;
@@ -501,7 +539,7 @@ export function IntakeScreen(props: {
                   en: "Step {current} of {total}",
                   pt: "Passo {current} de {total}"
                 }),
-                { current: String(stepIndex + 1), total: String(totalSteps) }
+                { current: String(stepIndex + 1), total: String(totalWizardSteps) }
               )}
             </p>
             <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
@@ -512,7 +550,13 @@ export function IntakeScreen(props: {
             </button>
           </div>
 
-          <div className="intake-progress" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={totalSteps}>
+          <div
+            className="intake-progress"
+            role="progressbar"
+            aria-valuenow={stepIndex + 1}
+            aria-valuemin={1}
+            aria-valuemax={totalWizardSteps}
+          >
             <div className="intake-progress-track">
               <div className="intake-progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
@@ -538,7 +582,51 @@ export function IntakeScreen(props: {
         </div>
 
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
-          {current ? (
+          {stepIndex === 0 ? (
+            <article className="question-card question-card--wizard intake-intro-card" key="intake-pre-questions-intro">
+              <div className="intake-intro-card-accent" aria-hidden="true" />
+              <div className="intake-intro-card-body">
+                <div className="intake-intro-title-row">
+                  <span className="intake-intro-hero-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+                      />
+                    </svg>
+                  </span>
+                  <h2 className="intake-question-title intake-intro-title">{introCopy.title}</h2>
+                </div>
+                <div className="intake-intro-points">
+                  {introCopy.body.map((paragraph, index) => (
+                    <div className="intake-intro-point" key={index}>
+                      <span className="intake-intro-point-icon-wrap" aria-hidden="true">
+                        {index === 0 ? (
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.65">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+                            />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.65">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                            />
+                          </svg>
+                        )}
+                      </span>
+                      <p className="intake-intro-point-text">{paragraph}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ) : current ? (
             <article
               className={`question-card question-card--wizard ${current.id === "safetyRisk" ? "question-card--safety" : ""}`}
               key={current.id}
@@ -568,7 +656,7 @@ export function IntakeScreen(props: {
                         return;
                       }
                       setAnswers((prev) => ({ ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES }));
-                      setStepIndex((s) => Math.min(s + 1, totalSteps - 1));
+                      setStepIndex((s) => Math.min(s + 1, totalWizardSteps - 1));
                     }}
                   >
                     {t(props.language, {

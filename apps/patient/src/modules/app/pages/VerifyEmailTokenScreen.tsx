@@ -4,39 +4,6 @@ import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i
 import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
-type VerificationState = "loading" | "success" | "error";
-
-function preIntakeIntroCopy(language: AppLanguage): {
-  title: string;
-  body: readonly [string, string];
-  cta: string;
-} {
-  return {
-    title: textByLanguage(language, {
-      es: "Antes de las preguntas",
-      en: "Before the questions",
-      pt: "Antes das perguntas"
-    }),
-    body: [
-      textByLanguage(language, {
-        es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
-        en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
-        pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
-      }),
-      textByLanguage(language, {
-        es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
-        en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
-        pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
-      })
-    ] as const,
-    cta: textByLanguage(language, {
-      es: "Continuar",
-      en: "Continue",
-      pt: "Continuar"
-    })
-  };
-}
-
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
@@ -47,6 +14,8 @@ function emailVerifySuccessStorageKey(token: string): string {
 }
 
 const verifyEmailRequestByToken = new Map<string, Promise<unknown>>();
+
+type VerificationState = "loading" | "error";
 
 export function VerifyEmailTokenScreen(props: {
   language: AppLanguage;
@@ -72,7 +41,7 @@ export function VerifyEmailTokenScreen(props: {
     const storageKey = emailVerifySuccessStorageKey(token);
     if (sessionStorage.getItem(storageKey) === "1") {
       props.onSessionEmailVerified?.();
-      setState("success");
+      navigate("/", { replace: true });
       return;
     }
 
@@ -94,7 +63,7 @@ export function VerifyEmailTokenScreen(props: {
         sessionStorage.setItem(storageKey, "1");
         if (!cancelled) {
           props.onSessionEmailVerified?.();
-          setState("success");
+          navigate("/", { replace: true });
         }
       } catch (requestError) {
         if (cancelled) {
@@ -115,9 +84,7 @@ export function VerifyEmailTokenScreen(props: {
     return () => {
       cancelled = true;
     };
-  }, [props.language, props.onSessionEmailVerified, token]);
-
-  const intro = preIntakeIntroCopy(props.language);
+  }, [props.language, props.onSessionEmailVerified, token, navigate]);
 
   return (
     <div className="auth-shell">
@@ -152,39 +119,6 @@ export function VerifyEmailTokenScreen(props: {
                   es: "Estamos validando tu enlace. Solo lleva un momento.",
                   en: "We are validating your link. This only takes a moment.",
                   pt: "Estamos validando seu link. So um instante."
-                })}
-              </p>
-            </>
-          ) : null}
-
-          {state === "success" ? (
-            <>
-              <div className="verify-email-icon verify-email-icon--success" aria-hidden="true">
-                <svg viewBox="0 0 48 48" width="52" height="52" fill="none">
-                  <circle cx="24" cy="24" r="22" fill="rgba(22, 163, 74, 0.12)" />
-                  <path
-                    d="M16 24.5 21.2 30 32 18"
-                    stroke="#16a34a"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <span className="chip chip--success">
-                {t(props.language, { es: "Email", en: "Email", pt: "E-mail" })}
-              </span>
-              <p className="verify-email-success-kicker">
-                {t(props.language, { es: "Cuenta confirmada", en: "Account confirmed", pt: "Conta confirmada" })}
-              </p>
-              <h1 id="verify-token-title">
-                {t(props.language, { es: "Email verificado", en: "Email verified", pt: "E-mail verificado" })}
-              </h1>
-              <p className="verify-email-lead">
-                {t(props.language, {
-                  es: "Tu correo quedó confirmado. En el siguiente paso te contamos cómo seguimos y arrancamos el cuestionario.",
-                  en: "Your email is confirmed. Next, we’ll explain how we’ll proceed and start the questionnaire.",
-                  pt: "Seu e-mail foi confirmado. No proximo passo explicamos como seguimos e iniciamos o questionario."
                 })}
               </p>
             </>
@@ -225,44 +159,6 @@ export function VerifyEmailTokenScreen(props: {
           ) : null}
         </div>
       </section>
-
-      {state === "success" ? (
-        <div className="pre-intake-intro-backdrop" role="presentation">
-          <div
-            className="pre-intake-intro-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="pre-intake-intro-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="pre-intake-intro-modal-inner">
-              <div className="pre-intake-intro-accent" aria-hidden="true" />
-              <p className="pre-intake-intro-eyebrow">
-                {t(props.language, { es: "MotivarCare", en: "MotivarCare", pt: "MotivarCare" })}
-              </p>
-              <h2 id="pre-intake-intro-title" className="pre-intake-intro-title">
-                {intro.title}
-              </h2>
-              <div className="pre-intake-intro-body-stack">
-                {intro.body.map((paragraph, index) => (
-                  <p key={index} className="pre-intake-intro-body">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-              <div className="pre-intake-intro-actions">
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() => navigate("/", { replace: true })}
-                >
-                  {intro.cta}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

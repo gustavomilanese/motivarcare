@@ -220,95 +220,6 @@ ul {
   font-size: 16px;
 }
 
-/* Tras verificar email: intro al cuestionario (modal sobre auth-shell) */
-.pre-intake-intro-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(15, 23, 42, 0.42);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: grid;
-  place-items: center;
-  padding: max(16px, var(--safe-top)) 18px max(24px, var(--safe-bottom));
-}
-
-.pre-intake-intro-modal {
-  width: min(520px, 100%);
-  max-height: min(88vh, 640px);
-  overflow: auto;
-  border-radius: 22px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow:
-    0 4px 6px -1px rgba(15, 23, 42, 0.06),
-    0 24px 48px rgba(79, 70, 229, 0.14);
-}
-
-.pre-intake-intro-modal-inner {
-  padding: 0 0 22px;
-  display: grid;
-  gap: 0;
-}
-
-.pre-intake-intro-accent {
-  height: 5px;
-  border-radius: 22px 22px 0 0;
-  background: linear-gradient(90deg, #7c3aed 0%, #5b4ae8 45%, #22c55e 100%);
-}
-
-.pre-intake-intro-eyebrow {
-  margin: 18px 24px 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.pre-intake-intro-title {
-  margin: 8px 24px 0;
-  font-size: clamp(1.35rem, 3.5vw, 1.65rem);
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: #111827;
-}
-
-.pre-intake-intro-body-stack {
-  margin: 14px 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.pre-intake-intro-body-stack .pre-intake-intro-body {
-  margin: 0;
-}
-
-.pre-intake-intro-body {
-  margin: 14px 24px 0;
-  font-size: 16px;
-  line-height: 1.55;
-  color: #374151;
-}
-
-.pre-intake-intro-actions {
-  margin-top: 22px;
-  padding: 18px 24px 0;
-  border-top: 1px solid #f3f4f6;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.pre-intake-intro-actions .primary {
-  border-radius: 999px;
-  min-width: 160px;
-  min-height: 46px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .auth-shell {
   background:
     linear-gradient(118deg, rgba(255, 190, 140, 0.42) 0%, transparent 36%),
@@ -9153,6 +9064,98 @@ button.sessions-balance {
   line-height: 1.45;
   color: var(--text-soft);
   margin-top: 6px;
+}
+
+/* Paso intro del wizard: mismo marco, más carácter visual */
+.question-card--wizard.intake-intro-card {
+  padding: 0;
+  background: linear-gradient(168deg, #fefeff 0%, #f5f2ff 38%, #ede8fc 100%);
+  border-color: rgba(139, 92, 246, 0.22);
+  box-shadow:
+    0 10px 36px rgba(95, 68, 235, 0.11),
+    0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.intake-intro-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.intake-intro-card-accent {
+  height: 4px;
+  width: 100%;
+  border-radius: 17px 17px 0 0;
+  background: linear-gradient(90deg, #c4b5fd 0%, #7c3aed 38%, #34d399 100%);
+}
+
+.intake-intro-card-body {
+  padding: 16px 16px 2px;
+}
+
+.intake-intro-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.intake-intro-hero-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.18), rgba(59, 130, 246, 0.1));
+  color: #5b21b6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.intake-intro-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-top: 2px;
+}
+
+.intake-intro-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.intake-intro-point {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 14px 14px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  box-shadow: 0 2px 14px rgba(95, 68, 235, 0.07);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.intake-intro-point-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, rgba(167, 139, 250, 0.35), rgba(129, 140, 248, 0.2));
+  color: #4c1d95;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.intake-intro-point-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.58;
+  letter-spacing: -0.01em;
+  color: #334155;
 }
 
 .intake-option-grid {
