@@ -21,6 +21,15 @@ describe("API contract basics", () => {
     expect(response.body.service).toBe("therapy-api");
   });
 
+  it("GET /health/live con Origin arbitrario sigue 200 (healthcheck PaaS no debe pasar por CORS)", async () => {
+    const response = await request(app)
+      .get("/health/live")
+      .set("Origin", "https://healthcheck-not-in-cors-list.example");
+
+    expect(response.status).toBe(200);
+    expect(response.body.ok).toBe(true);
+  });
+
   it("GET /metrics expone metricas Prometheus", async () => {
     const response = await request(app).get("/metrics");
 

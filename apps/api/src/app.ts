@@ -81,6 +81,9 @@ app.use((_req, res, next) => {
   next();
 });
 
+// Antes de CORS: el healthcheck de PaaS a veces manda `Origin` no listado; si CORS corre primero, la petición nunca llega a /health/*.
+app.use("/health", healthRouter);
+
 app.use(
   cors({
     origin(origin, callback) {
@@ -251,7 +254,6 @@ if (env.API_METRICS_ENABLED) {
   });
 }
 
-app.use("/health", healthRouter);
 function mountApiRoutes(prefix: "/api" | "/api/v1") {
   app.use(`${prefix}/auth`, authRouter);
   app.use(`${prefix}/profiles`, profilesRouter);
