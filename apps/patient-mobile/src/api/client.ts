@@ -56,7 +56,13 @@ export async function login(params: { email: string; password: string }) {
   });
 }
 
-export async function registerPatient(params: { email: string; password: string; fullName: string; timezone?: string }) {
+export async function registerPatient(params: {
+  email: string;
+  password: string;
+  fullName: string;
+  timezone?: string;
+  residencyCountry: string;
+}) {
   return requestJson<RegisterResponse>({
     path: "/api/auth/register",
     method: "POST",
@@ -65,7 +71,8 @@ export async function registerPatient(params: { email: string; password: string;
       password: params.password,
       fullName: params.fullName.trim(),
       role: "PATIENT",
-      timezone: params.timezone
+      timezone: params.timezone,
+      residencyCountry: params.residencyCountry.trim().toUpperCase()
     }
   });
 }

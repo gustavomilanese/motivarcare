@@ -8,6 +8,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { majorCurrencyCodeForMarket } from "@therapy/types";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
@@ -247,9 +248,17 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
                       <dd>{professional.specialization?.trim() || "—"}</dd>
                     </div>
                     <div>
-                      <dt>{t(props.language, { es: "Sesión USD", en: "Session (USD)", pt: "Sessao USD" })}</dt>
+                      <dt>
+                        {t(props.language, {
+                          es: "Precio lista / sesión",
+                          en: "List price / session",
+                          pt: "Preco lista / sessao"
+                        })}
+                      </dt>
                       <dd>
-                        {professional.sessionPriceUsd != null ? `$${professional.sessionPriceUsd}` : "—"}
+                        {professional.sessionPriceUsd != null
+                          ? `${majorCurrencyCodeForMarket(professional.market)} ${professional.sessionPriceUsd}`
+                          : "—"}
                       </dd>
                     </div>
                     <div>

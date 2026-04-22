@@ -22,6 +22,7 @@ export const defaultCreateForm: CreateUserFormState = {
   password: "",
   timezone: "",
   patientStatus: "active",
+  patientResidencyCountry: "",
   professionalVisible: true,
   professionalCancellationHours: "24",
   professionalBio: "",

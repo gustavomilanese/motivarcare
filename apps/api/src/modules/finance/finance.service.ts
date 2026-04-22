@@ -4,7 +4,7 @@ import { financeRepository } from "./finance.repository.js";
 
 const FINANCE_RULES_KEY = "finance-rules";
 
-type FinanceRules = {
+export type FinanceRules = {
   platformCommissionPercent: number;
   trialPlatformPercent: number;
   defaultSessionPriceCents: number;

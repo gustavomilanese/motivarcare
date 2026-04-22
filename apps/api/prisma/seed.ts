@@ -1,4 +1,4 @@
-import { userNamePartsFromFullNameString } from "@therapy/types";
+import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/auth.js";
 
@@ -102,22 +102,29 @@ async function seedCoreUsers(): Promise<SeedContext> {
     role: "ADMIN"
   });
 
+  const alexResidency = "US";
   const patientProfile = await prisma.patientProfile.upsert({
     where: { userId: patientUser.id },
     update: {
       timezone: "America/New_York",
-      status: "active"
+      status: "active",
+      residencyCountry: alexResidency,
+      market: marketFromResidencyCountry(alexResidency)
     },
     create: {
       userId: patientUser.id,
       timezone: "America/New_York",
-      status: "active"
+      status: "active",
+      residencyCountry: alexResidency,
+      market: marketFromResidencyCountry(alexResidency)
     }
   });
 
   const professionalConfigs = [
     {
       userId: professionalUsers[0].id,
+      residencyCountry: "AR" as const,
+      sessionPriceUsd: 15_000,
       bio: "Especialista en ansiedad, estres y burnout laboral.",
       therapeuticApproach: "CBT + mindfulness",
       yearsExperience: 11,
@@ -126,6 +133,8 @@ async function seedCoreUsers(): Promise<SeedContext> {
     },
     {
       userId: professionalUsers[1].id,
+      residencyCountry: "US" as const,
+      sessionPriceUsd: 90,
       bio: "Trabajo en vinculos, trauma y regulacion emocional.",
       therapeuticApproach: "Integrativo psicodinamico",
       yearsExperience: 14,
@@ -134,6 +143,8 @@ async function seedCoreUsers(): Promise<SeedContext> {
     },
     {
       userId: professionalUsers[2].id,
+      residencyCountry: "US" as const,
+      sessionPriceUsd: 85,
       bio: "Enfoque breve para depresion y transiciones vitales.",
       therapeuticApproach: "Evidencia + plan de objetivos",
       yearsExperience: 9,
@@ -148,6 +159,9 @@ async function seedCoreUsers(): Promise<SeedContext> {
       where: { userId: config.userId },
       update: {
         visible: true,
+        residencyCountry: config.residencyCountry,
+        market: marketFromResidencyCountry(config.residencyCountry),
+        sessionPriceUsd: config.sessionPriceUsd,
         bio: config.bio,
         therapeuticApproach: config.therapeuticApproach,
         yearsExperience: config.yearsExperience,
@@ -158,6 +172,9 @@ async function seedCoreUsers(): Promise<SeedContext> {
       create: {
         userId: config.userId,
         visible: true,
+        residencyCountry: config.residencyCountry,
+        market: marketFromResidencyCountry(config.residencyCountry),
+        sessionPriceUsd: config.sessionPriceUsd,
         bio: config.bio,
         therapeuticApproach: config.therapeuticApproach,
         yearsExperience: config.yearsExperience,
@@ -513,22 +530,38 @@ async function seedExtraDemoPatientsWithEmma(context: SeedContext) {
     avatarUrl: DEMO_PATIENT_AVATAR_PATHS[2]
   });
 
+  const luciaResidency = "AR";
   const luciaProfile = await prisma.patientProfile.upsert({
     where: { userId: luciaUser.id },
-    update: { timezone: "America/Argentina/Buenos_Aires", status: "active" },
+    update: {
+      timezone: "America/Argentina/Buenos_Aires",
+      status: "active",
+      residencyCountry: luciaResidency,
+      market: marketFromResidencyCountry(luciaResidency)
+    },
     create: {
       userId: luciaUser.id,
       timezone: "America/Argentina/Buenos_Aires",
-      status: "active"
+      status: "active",
+      residencyCountry: luciaResidency,
+      market: marketFromResidencyCountry(luciaResidency)
     }
   });
+  const marcosResidency = "MX";
   const marcosProfile = await prisma.patientProfile.upsert({
     where: { userId: marcosUser.id },
-    update: { timezone: "America/Mexico_City", status: "active" },
+    update: {
+      timezone: "America/Mexico_City",
+      status: "active",
+      residencyCountry: marcosResidency,
+      market: marketFromResidencyCountry(marcosResidency)
+    },
     create: {
       userId: marcosUser.id,
       timezone: "America/Mexico_City",
-      status: "active"
+      status: "active",
+      residencyCountry: marcosResidency,
+      market: marketFromResidencyCountry(marcosResidency)
     }
   });
 

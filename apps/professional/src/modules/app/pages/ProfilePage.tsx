@@ -1,12 +1,12 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../onboarding/constants/latinAmericaCountries";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
 import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
-import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
+import { avatarInitialsFromNameParts, isMarket, majorCurrencyCodeForMarket, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -76,6 +76,14 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     }
     return base;
   }, [profile?.birthCountry]);
+
+  const sessionListCurrencyCode = useMemo(() => {
+    if (!profile) {
+      return "USD";
+    }
+    const m = profile.market;
+    return majorCurrencyCodeForMarket(isMarket(m) ? m : "US");
+  }, [profile]);
 
   const toggleProfileFocusArea = (area: string) => {
     setProfile((current) => {
@@ -375,10 +383,18 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             <h3>{t(props.language, { es: "Precios y descuentos", en: "Pricing and discounts", pt: "Precos e descontos" })}</h3>
             <div className="pro-grid-form">
               <label>
-                {t(props.language, { es: "Precio por sesión (USD)", en: "Session price (USD)", pt: "Preco por sessao (USD)" })}
+                {replaceTemplate(
+                  t(props.language, {
+                    es: "Precio por sesión ({currency})",
+                    en: "Session price ({currency})",
+                    pt: "Preco por sessao ({currency})"
+                  }),
+                  { currency: sessionListCurrencyCode }
+                )}
                 <input
                   type="number"
                   min={0}
+                  max={10_000_000}
                   value={profile.sessionPriceUsd ?? 0}
                   onChange={(event) => setProfile((current) => (current ? { ...current, sessionPriceUsd: Number(event.target.value || 0) } : current))}
                 />

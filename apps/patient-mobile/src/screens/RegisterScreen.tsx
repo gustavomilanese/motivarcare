@@ -110,6 +110,7 @@ export function RegisterScreen() {
   const { colors } = useThemeMode();
   const styles = useMemo(() => buildRegisterStyles(colors), [colors]);
   const [fullName, setFullName] = useState("");
+  const [residencyCountry, setResidencyCountry] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -125,13 +126,19 @@ export function RegisterScreen() {
       setError("Las contraseñas no coinciden. Escribí la misma en ambos campos.");
       return;
     }
+    const iso = residencyCountry.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(iso)) {
+      setError("Indicá tu país de residencia con 2 letras (ISO), por ejemplo AR, US o MX.");
+      return;
+    }
     setLoading(true);
     try {
       await signUp({
         fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
         password,
-        timezone: deviceTimeZone()
+        timezone: deviceTimeZone(),
+        residencyCountry: iso
       });
     } catch (registerError) {
       const message = registerError instanceof Error ? registerError.message : "No se pudo registrar";
@@ -168,6 +175,20 @@ export function RegisterScreen() {
             editable={!loading}
             placeholder="Tu nombre"
             placeholderTextColor={colors.textSubtle}
+            returnKeyType="next"
+          />
+
+          <Text style={styles.label}>País de residencia (ISO2)</Text>
+          <Text style={styles.sub}>Ej. AR, US, BR — define el mercado de precios y paquetes.</Text>
+          <TextInput
+            value={residencyCountry}
+            onChangeText={(v) => setResidencyCountry(v.toUpperCase().replace(/[^A-Za-z]/g, "").slice(0, 2))}
+            style={styles.input}
+            editable={!loading}
+            placeholder="AR"
+            placeholderTextColor={colors.textSubtle}
+            autoCapitalize="characters"
+            maxLength={2}
             returnKeyType="next"
           />
 

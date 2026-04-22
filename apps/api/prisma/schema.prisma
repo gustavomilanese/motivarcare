@@ -117,9 +117,9 @@ model GoogleCalendarConnection {
 model PatientProfile {
   id             String                   @id @default(cuid())
   userId         String                   @unique
-  /// Catálogo de paquetes y reglas de cobro asociadas (AR por defecto en lanzamiento).
+  /// Catálogo de paquetes; debe alinearse con `residencyCountry` (registro / intake / admin).
   market         Market                   @default(AR)
-  /// ISO 3166-1 alpha-2 (país de residencia habitual); define `market` vía reglas de producto.
+  /// ISO 3166-1 alpha-2 (país de residencia habitual); el mercado se deriva con `marketFromResidencyCountry`.
   residencyCountry String?               @map("residency_country") @db.VarChar(2)
   timezone       String                   @default("America/New_York")
   lastSeenTimezone String?
@@ -140,6 +140,8 @@ model PatientProfile {
 model ProfessionalProfile {
   id                    String                   @id @default(cuid())
   userId                String                   @unique
+  /// Catálogo / precio de listado; debe alinearse con `residencyCountry` vía `marketFromResidencyCountry`.
+  market                Market                   @default(US)
   /// ISO 3166-1 alpha-2 (país de residencia habitual).
   residencyCountry      String?                  @map("residency_country") @db.VarChar(2)
   timezone              String                   @default("America/New_York")

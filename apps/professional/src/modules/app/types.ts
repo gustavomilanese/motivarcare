@@ -1,4 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
+import type { Market } from "@therapy/types";
 
 export type PortalSection =
   | "/"
@@ -197,6 +198,8 @@ export interface ProfessionalProfile {
   practiceBand: string | null;
   gender: string | null;
   birthCountry: string | null;
+  residencyCountry?: string | null;
+  market?: Market;
   focusPrimary: string | null;
   /** Áreas de atención (API); preferido para edición frente a `focusPrimary` solo texto. */
   focusAreas?: string[];

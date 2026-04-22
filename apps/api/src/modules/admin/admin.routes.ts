@@ -1,11 +1,12 @@
 import { Router, type Response } from "express";
-import { ProfessionalRegistrationApproval } from "@prisma/client";
+import { ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { z } from "zod";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
-import { userNamePartsFromFullNameString } from "@therapy/types";
+import { validateProfessionalSessionListPrice } from "../../lib/professionalSessionListPrice.js";
+import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import {
@@ -62,22 +63,41 @@ const listUsersQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional()
 });
 
-const createUserSchema = z.object({
-  email: z.string().email(),
-  fullName: z.string().min(2).max(120),
-  password: z.string().min(8).max(120),
-  role: appRoleSchema,
-  isTestUser: z.boolean().optional(),
-  timezone: z.string().min(2).max(80).optional(),
-  patientStatus: patientStatusSchema.optional(),
-  professionalVisible: z.boolean().optional(),
-  professionalCancellationHours: z.number().int().min(0).max(168).optional(),
-  professionalBio: z.string().max(2000).optional(),
-  professionalTherapeuticApproach: z.string().max(500).optional(),
-  professionalYearsExperience: z.number().int().min(0).max(80).optional(),
-  professionalPhotoUrl: imageSourceSchema.nullable().optional(),
-  professionalVideoUrl: z.string().url().nullable().optional()
-});
+const patientResidencyCountryIso2Schema = z
+  .string()
+  .trim()
+  .length(2)
+  .regex(/^[A-Za-z]{2}$/)
+  .transform((value) => value.toUpperCase());
+
+const createUserSchema = z
+  .object({
+    email: z.string().email(),
+    fullName: z.string().min(2).max(120),
+    password: z.string().min(8).max(120),
+    role: appRoleSchema,
+    isTestUser: z.boolean().optional(),
+    timezone: z.string().min(2).max(80).optional(),
+    patientStatus: patientStatusSchema.optional(),
+    /** Obligatorio si role es PACIENTE: define mercado vía `marketFromResidencyCountry`. */
+    patientResidencyCountry: patientResidencyCountryIso2Schema.optional(),
+    professionalVisible: z.boolean().optional(),
+    professionalCancellationHours: z.number().int().min(0).max(168).optional(),
+    professionalBio: z.string().max(2000).optional(),
+    professionalTherapeuticApproach: z.string().max(500).optional(),
+    professionalYearsExperience: z.number().int().min(0).max(80).optional(),
+    professionalPhotoUrl: imageSourceSchema.nullable().optional(),
+    professionalVideoUrl: z.string().url().nullable().optional()
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === "PATIENT" && !data.patientResidencyCountry) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "patientResidencyCountry is required when creating a patient (ISO 3166-1 alpha-2)",
+        path: ["patientResidencyCountry"]
+      });
+    }
+  });
 
 const updateUserSchema = z
   .object({
@@ -96,7 +116,7 @@ const updateUserSchema = z
     professionalPhotoUrl: imageSourceSchema.nullable().optional(),
     professionalVideoUrl: z.string().url().nullable().optional(),
     professionalBirthCountry: z.string().trim().max(120).nullable().optional(),
-    professionalSessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
+    professionalSessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
     professionalTitle: z.string().trim().max(120).nullable().optional(),
     professionalSpecialization: z.string().trim().max(120).nullable().optional(),
     professionalFocusPrimary: z.string().trim().max(500).nullable().optional(),
@@ -256,7 +276,15 @@ const updateProfessionalSchema = z
     therapeuticApproach: z.string().trim().max(500).nullable().optional(),
     yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
     birthCountry: z.string().trim().max(120).nullable().optional(),
-    sessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
+    residencyCountry: z
+      .string()
+      .trim()
+      .length(2)
+      .regex(/^[A-Za-z]{2}$/)
+      .transform((value) => value.toUpperCase())
+      .nullable()
+      .optional(),
+    sessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
     ratingAverage: z.number().min(0).max(5).nullable().optional(),
     reviewsCount: z.number().int().min(0).max(100000).nullable().optional(),
     sessionDurationMinutes: z.number().int().min(15).max(120).nullable().optional(),
@@ -359,6 +387,8 @@ type AdminUserRecord = {
     photoUrl: string | null;
     videoUrl: string | null;
     birthCountry: string | null;
+    residencyCountry: string | null;
+    market: Market;
     sessionPriceUsd: number | null;
     professionalTitle: string | null;
     specialization: string | null;
@@ -411,6 +441,8 @@ function shapeAdminUser(
           photoUrl: user.professional.photoUrl,
           videoUrl: user.professional.videoUrl,
           birthCountry: user.professional.birthCountry,
+          residencyCountry: user.professional.residencyCountry ?? null,
+          market: user.professional.market,
           sessionPriceUsd: user.professional.sessionPriceUsd,
           professionalTitle: user.professional.professionalTitle,
           specialization: user.professional.specialization,
@@ -898,6 +930,8 @@ adminRouter.get("/users", async (req, res) => {
             photoUrl: true,
             videoUrl: true,
             birthCountry: true,
+            residencyCountry: true,
+            market: true,
             sessionPriceUsd: true,
             professionalTitle: true,
             specialization: true,
@@ -963,6 +997,8 @@ adminRouter.post("/users", async (req, res) => {
         parsed.data.role === "PATIENT"
           ? {
               create: {
+                residencyCountry: parsed.data.patientResidencyCountry,
+                market: marketFromResidencyCountry(parsed.data.patientResidencyCountry),
                 timezone: parsed.data.timezone ?? "America/New_York",
                 status: parsed.data.patientStatus ?? "active"
               }
@@ -972,6 +1008,7 @@ adminRouter.post("/users", async (req, res) => {
         parsed.data.role === "PROFESSIONAL"
           ? {
               create: {
+                market: marketFromResidencyCountry(undefined),
                 visible: parsed.data.professionalVisible ?? true,
                 cancellationHours: parsed.data.professionalCancellationHours ?? 24,
                 bio: parsed.data.professionalBio?.trim() || null,
@@ -1003,6 +1040,8 @@ adminRouter.post("/users", async (req, res) => {
           photoUrl: true,
           videoUrl: true,
           birthCountry: true,
+          residencyCountry: true,
+          market: true,
           sessionPriceUsd: true,
           professionalTitle: true,
           specialization: true,
@@ -1041,6 +1080,8 @@ const adminUserInclude = {
       photoUrl: true,
       videoUrl: true,
       birthCountry: true,
+      residencyCountry: true,
+      market: true,
       sessionPriceUsd: true,
       professionalTitle: true,
       specialization: true,
@@ -1146,6 +1187,7 @@ adminRouter.patch("/users/:userId", async (req, res) => {
           photoUrl: parsed.data.professionalPhotoUrl ?? null,
           videoUrl: parsed.data.professionalVideoUrl ?? null,
           birthCountry: parsed.data.professionalBirthCountry ?? null,
+          market: marketFromResidencyCountry(undefined),
           sessionPriceUsd: parsed.data.professionalSessionPriceUsd ?? null,
           professionalTitle: parsed.data.professionalTitle ?? null,
           specialization: parsed.data.professionalSpecialization ?? null,
@@ -1189,6 +1231,32 @@ adminRouter.patch("/users/:userId", async (req, res) => {
     );
 
   let updated: AdminUserRecord | null = null;
+
+  if (
+    existing.role === "PROFESSIONAL" &&
+    parsed.data.professionalSessionPriceUsd !== undefined &&
+    parsed.data.professionalSessionPriceUsd !== null
+  ) {
+    const proForPrice = await prisma.professionalProfile.findUnique({
+      where: { userId: existing.id },
+      select: { residencyCountry: true }
+    });
+    const effectiveMarket = marketFromResidencyCountry(proForPrice?.residencyCountry ?? undefined);
+    const financeRules = await getFinanceRules();
+    const priceError = validateProfessionalSessionListPrice({
+      market: effectiveMarket,
+      price: parsed.data.professionalSessionPriceUsd,
+      financeRules
+    });
+    if (priceError) {
+      return res.status(400).json({
+        error: priceError.message,
+        sessionPriceMin: priceError.sessionPriceMin,
+        sessionPriceMax: priceError.sessionPriceMax,
+        sessionPriceCurrency: priceError.currencyCode
+      });
+    }
+  }
 
   if (Object.keys(data).length > 0) {
     updated = await prisma.user.update({
@@ -1759,6 +1827,8 @@ adminRouter.get("/professionals", async (req, res) => {
       therapeuticApproach: item.therapeuticApproach,
       yearsExperience: item.yearsExperience,
       birthCountry: item.birthCountry,
+      residencyCountry: item.residencyCountry ?? null,
+      market: item.market,
       sessionPriceUsd: item.sessionPriceUsd,
       ratingAverage: displayOverrides[item.id]?.ratingAverage ?? null,
       reviewsCount: displayOverrides[item.id]?.reviewsCount ?? 0,
@@ -1785,6 +1855,27 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     return res.status(404).json({ error: "Professional not found" });
   }
 
+  const nextResidency =
+    parsed.data.residencyCountry !== undefined ? parsed.data.residencyCountry : existing.residencyCountry;
+  const effectiveMarket = marketFromResidencyCountry(nextResidency ?? undefined);
+
+  if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
+    const financeRules = await getFinanceRules();
+    const priceError = validateProfessionalSessionListPrice({
+      market: effectiveMarket,
+      price: parsed.data.sessionPriceUsd,
+      financeRules
+    });
+    if (priceError) {
+      return res.status(400).json({
+        error: priceError.message,
+        sessionPriceMin: priceError.sessionPriceMin,
+        sessionPriceMax: priceError.sessionPriceMax,
+        sessionPriceCurrency: priceError.currencyCode
+      });
+    }
+  }
+
   const updated = await prisma.professionalProfile.update({
     where: { id: existing.id },
     data: {
@@ -1798,6 +1889,12 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
       ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),
       ...(parsed.data.yearsExperience !== undefined ? { yearsExperience: parsed.data.yearsExperience } : {}),
       ...(parsed.data.birthCountry !== undefined ? { birthCountry: parsed.data.birthCountry } : {}),
+      ...(parsed.data.residencyCountry !== undefined
+        ? {
+            residencyCountry: parsed.data.residencyCountry,
+            market: marketFromResidencyCountry(parsed.data.residencyCountry ?? undefined)
+          }
+        : {}),
       ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
       ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
       ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})

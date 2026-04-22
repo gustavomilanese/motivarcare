@@ -1,6 +1,7 @@
-import type { SessionPackagesVisibilityPayload } from "@therapy/types";
+import type { Market, SessionPackagesVisibilityPayload } from "@therapy/types";
 
 export type { SessionPackagesVisibilityPayload };
+export type { Market };
 export type Role = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 export type PatientStatus = "active" | "pause" | "cancelled" | "trial";
 export type RiskTriageDecision = "pending" | "approved" | "cancelled";
@@ -67,6 +68,8 @@ export interface AdminUser {
     photoUrl: string | null;
     videoUrl: string | null;
     birthCountry: string | null;
+    residencyCountry: string | null;
+    market: Market;
     sessionPriceUsd: number | null;
     professionalTitle: string | null;
     specialization: string | null;
@@ -318,6 +321,8 @@ export interface AdminProfessionalOps {
   therapeuticApproach: string | null;
   yearsExperience: number | null;
   birthCountry: string | null;
+  residencyCountry: string | null;
+  market: Market;
   sessionPriceUsd: number | null;
   ratingAverage: number | null;
   reviewsCount: number;
@@ -370,6 +375,8 @@ export interface CreateUserFormState {
   password: string;
   timezone: string;
   patientStatus: PatientStatus;
+  /** ISO2; obligatorio al crear paciente — define el mercado del catálogo. */
+  patientResidencyCountry: string;
   professionalVisible: boolean;
   professionalCancellationHours: string;
   professionalBio: string;

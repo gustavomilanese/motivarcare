@@ -4,7 +4,7 @@ import { google } from "googleapis";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { joinFirstLastToFullName, userNamePartsFromFullNameString } from "@therapy/types";
+import { joinFirstLastToFullName, marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
@@ -19,16 +19,33 @@ import {
 } from "./emailVerification.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  fullName: z.string().min(2),
-  role: z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]),
-  timezone: z.string().optional(),
-  isTestUser: z.boolean().optional(),
-  /** Solo paciente: mercado por defecto AR. */
-  market: z.enum(["AR", "US", "BR", "ES"]).optional()
-});
+const residencyCountryIso2Schema = z
+  .string()
+  .trim()
+  .length(2)
+  .regex(/^[A-Za-z]{2}$/)
+  .transform((value) => value.toUpperCase());
+
+const registerSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    fullName: z.string().min(2),
+    role: z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]),
+    timezone: z.string().optional(),
+    isTestUser: z.boolean().optional(),
+    /** Obligatorio si `role === PATIENT`: país de residencia (ISO2); el mercado se deriva de acá. */
+    residencyCountry: residencyCountryIso2Schema.optional()
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === "PATIENT" && !data.residencyCountry) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "residencyCountry is required for patients (ISO 3166-1 alpha-2)",
+        path: ["residencyCountry"]
+      });
+    }
+  });
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -406,10 +423,8 @@ authRouter.post("/register", async (req, res) => {
         parsed.data.role === "PATIENT"
           ? {
               create: {
-                market:
-                  parsed.data.market === "US" || parsed.data.market === "BR" || parsed.data.market === "ES"
-                    ? parsed.data.market
-                    : "AR",
+                residencyCountry: parsed.data.residencyCountry,
+                market: marketFromResidencyCountry(parsed.data.residencyCountry),
                 timezone: parsed.data.timezone ?? "America/New_York",
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York"
               }
@@ -421,6 +436,7 @@ authRouter.post("/register", async (req, res) => {
               create: {
                 timezone: parsed.data.timezone ?? "America/New_York",
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York",
+                market: marketFromResidencyCountry(undefined),
                 visible: false,
                 registrationApproval: ProfessionalRegistrationApproval.PENDING,
                 cancellationHours: 24

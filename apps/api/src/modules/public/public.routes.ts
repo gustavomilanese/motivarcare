@@ -197,6 +197,7 @@ publicRouter.get("/session-packages", async (req, res) => {
         professional: {
           select: {
             id: true,
+            market: true,
             sessionPriceUsd: true,
             discount4: true,
             discount8: true,
@@ -213,6 +214,7 @@ publicRouter.get("/session-packages", async (req, res) => {
           where: { id: parsed.data.professionalId },
           select: {
             id: true,
+            market: true,
             sessionPriceUsd: true,
             discount4: true,
             discount8: true,
@@ -262,10 +264,16 @@ publicRouter.get("/session-packages", async (req, res) => {
         profileDiscount8: pricingProfile?.discount8,
         profileDiscount12: pricingProfile?.discount12
       });
+      const sessionListPriceMajor =
+        pricingProfile &&
+        (pricingProfile.sessionPriceUsd ?? 0) > 0 &&
+        pricingProfile.market === market
+          ? pricingProfile.sessionPriceUsd
+          : null;
       const priceCents = resolvePackagePriceCents({
         credits: item.credits,
         fallbackPriceCents: item.priceCents,
-        sessionPriceUsd: pricingProfile?.sessionPriceUsd,
+        sessionPriceUsd: sessionListPriceMajor,
         discountPercent
       });
 

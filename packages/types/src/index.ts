@@ -19,7 +19,7 @@ export {
   userNamePartsFromFullNameString
 } from "./userName.js";
 
-export { MARKETS, isMarket, type Market } from "./market.js";
+export { MARKETS, isMarket, majorCurrencyCodeForMarket, type Market } from "./market.js";
 
 export {
   RESIDENCY_COUNTRY_OPTIONS,

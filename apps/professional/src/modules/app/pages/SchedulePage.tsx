@@ -7,6 +7,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { isMarket, majorCurrencyCodeForMarket, type Market } from "@therapy/types";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalProfile } from "../types";
@@ -29,6 +30,7 @@ const TIME_OPTIONS = Array.from({ length: 16 }, (_, index) => `${String(index + 
 const SLOT_DURATION_MINUTES = 60;
 const FORWARD_WEEKS = 8;
 const MIN_BOOKING_NOTICE_HOURS = 24;
+const SESSION_LIST_PRICE_CAP = 10_000_000;
 const MAX_VACATION_RANGE_DAYS = 120;
 const VACATION_MARKER_HOUR = 6;
 const VACATION_MARKER_DURATION_MINUTES = 30;
@@ -402,6 +404,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
   const [professionalId, setProfessionalId] = useState("");
   const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
   const [sessionPriceUsd, setSessionPriceUsd] = useState<number>(0);
+  const [listingMarket, setListingMarket] = useState<Market>("US");
   const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
   const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
   const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
@@ -454,6 +457,8 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       if (profileResponse.profile?.id) {
         setProfessionalId(profileResponse.profile.id);
       }
+      const nextMarket = profileResponse.profile?.market;
+      setListingMarket(isMarket(nextMarket) ? nextMarket : "US");
       setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
       setSessionPriceUsd(Math.max(0, Number(profileResponse.profile?.sessionPriceUsd ?? 0)));
       setError("");
@@ -569,7 +574,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       return;
     }
 
-    const normalizedRate = Math.max(0, Math.min(100000, Math.round(Number(sessionPriceUsd || 0))));
+    const normalizedRate = Math.max(0, Math.min(SESSION_LIST_PRICE_CAP, Math.round(Number(sessionPriceUsd || 0))));
 
     setSavingNotice(true);
     setError("");
@@ -587,11 +592,11 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       setMessage(
         replaceTemplate(
           t(props.language, {
-            es: "Valor por sesión actualizado: USD {amount}.",
-            en: "Session rate updated: USD {amount}.",
-            pt: "Valor por sessao atualizado: USD {amount}."
+            es: "Valor por sesión actualizado: {currency} {amount}.",
+            en: "Session rate updated: {currency} {amount}.",
+            pt: "Valor por sessao atualizado: {currency} {amount}."
           }),
-          { amount: String(normalizedRate) }
+          { amount: String(normalizedRate), currency: majorCurrencyCodeForMarket(listingMarket) }
         )
       );
     } catch (requestError) {
@@ -1066,11 +1071,18 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
           </header>
 
           <label className="schedule-notice-field">
-            {t(props.language, { es: "Monto en USD", en: "Amount in USD", pt: "Valor em USD" })}
+            {replaceTemplate(
+              t(props.language, {
+                es: "Monto en {currency} (precio de lista por sesión)",
+                en: "Amount in {currency} (per-session list price)",
+                pt: "Valor em {currency} (preco de lista por sessao)"
+              }),
+              { currency: majorCurrencyCodeForMarket(listingMarket) }
+            )}
             <input
               type="number"
               min={0}
-              max={100000}
+              max={SESSION_LIST_PRICE_CAP}
               step={1}
               value={sessionPriceUsd}
               onChange={(event) => setSessionPriceUsd(Number(event.target.value || 0))}
@@ -1237,7 +1249,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
               </span>
               <div className="schedule-home-copy">
                 <strong>{t(props.language, { es: "Valor de sesión", en: "Session rate", pt: "Valor da sessao" })}</strong>
-                <span>{`USD ${sessionPriceUsd}`}</span>
+                <span>{`${majorCurrencyCodeForMarket(listingMarket)} ${sessionPriceUsd}`}</span>
               </div>
               <em aria-hidden="true">›</em>
             </button>

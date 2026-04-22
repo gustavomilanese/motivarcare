@@ -10,7 +10,13 @@ type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (params: { fullName: string; email: string; password: string; timezone?: string }) => Promise<void>;
+  signUp: (params: {
+    fullName: string;
+    email: string;
+    password: string;
+    timezone?: string;
+    residencyCountry: string;
+  }) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -71,12 +77,19 @@ export function AuthProvider(props: PropsWithChildren) {
         setToken(response.token);
         setUser(response.user);
       },
-      signUp: async (params: { fullName: string; email: string; password: string; timezone?: string }) => {
+      signUp: async (params: {
+        fullName: string;
+        email: string;
+        password: string;
+        timezone?: string;
+        residencyCountry: string;
+      }) => {
         const response = await registerPatient({
           email: params.email,
           password: params.password,
           fullName: params.fullName,
-          timezone: params.timezone
+          timezone: params.timezone,
+          residencyCountry: params.residencyCountry
         });
         await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
         setToken(response.token);

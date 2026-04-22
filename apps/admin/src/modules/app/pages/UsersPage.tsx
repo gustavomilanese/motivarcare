@@ -248,6 +248,17 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       return;
     }
 
+    if (createForm.role === "PATIENT" && createForm.patientResidencyCountry.trim().length !== 2) {
+      setCreateError(
+        t(props.language, {
+          es: "Seleccioná el país de residencia del paciente (define el mercado de catálogo).",
+          en: "Select the patient's country of residence (this sets the pricing market).",
+          pt: "Selecione o pais de residencia do paciente."
+        })
+      );
+      return;
+    }
+
     if (!createForm.firstName.trim() || !createForm.lastName.trim()) {
       setCreateError(
         t(props.language, {
@@ -276,6 +287,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       professionalYearsExperience?: number;
       professionalPhotoUrl?: string;
       professionalVideoUrl?: string;
+      patientResidencyCountry?: string;
     } = {
       email: createForm.email.trim().toLowerCase(),
       fullName: createFullName,
@@ -287,6 +299,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (createForm.role === "PATIENT") {
       payload.timezone = createForm.timezone.trim();
       payload.patientStatus = createForm.patientStatus;
+      payload.patientResidencyCountry = createForm.patientResidencyCountry.trim().toUpperCase();
     }
 
     if (createForm.role === "PROFESSIONAL") {
@@ -474,14 +487,14 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
       if (
         sessionPriceRaw.length > 0
-        && (!Number.isInteger(sessionPriceUsd) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)
+        && (!Number.isInteger(sessionPriceUsd) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 10_000_000)
       ) {
         setSaveLoading(false);
         setEditError(
           t(props.language, {
-            es: "Valor sesión (USD): entero entre 0 y 100000 o vacío.",
-            en: "Session price (USD): integer 0–100000 or blank.",
-            pt: "Preco (USD): inteiro de 0 a 100000 ou vazio."
+            es: "Valor sesión (lista): entero entre 0 y 10000000 o vacío.",
+            en: "Session list price: integer 0–10000000 or blank.",
+            pt: "Preco lista sessao: inteiro de 0 a 10000000 ou vazio."
           })
         );
         return;

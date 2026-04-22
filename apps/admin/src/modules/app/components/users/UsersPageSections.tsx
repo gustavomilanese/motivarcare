@@ -2,7 +2,7 @@ import type { FormEvent, Dispatch, SetStateAction } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { TIMEZONE_OPTIONS } from "../../constants";
-import { splitFullNameToFirstLast } from "@therapy/types";
+import { RESIDENCY_COUNTRY_OPTIONS, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminUser,
   CreateUserFormState,
@@ -131,6 +131,27 @@ export function UsersCreateSection(props: {
                   <option value="pause">{props.patientStatusLabel("pause")}</option>
                   <option value="cancelled">{props.patientStatusLabel("cancelled")}</option>
                   <option value="trial">{props.patientStatusLabel("trial")}</option>
+                </select>
+              </label>
+
+              <label>
+                {props.t({
+                  es: "País de residencia (define el mercado de precios)",
+                  en: "Country of residence (sets pricing market)",
+                  pt: "Pais de residencia (define o mercado de precos)"
+                })}
+                <select
+                  value={props.createForm.patientResidencyCountry}
+                  onChange={(event) =>
+                    props.setCreateForm((current) => ({ ...current, patientResidencyCountry: event.target.value }))
+                  }
+                >
+                  <option value="">{props.t({ es: "Seleccionar…", en: "Select…", pt: "Selecionar…" })}</option>
+                  {RESIDENCY_COUNTRY_OPTIONS.map((row) => (
+                    <option key={row.code} value={row.code}>
+                      {row.names.es} ({row.code})
+                    </option>
+                  ))}
                 </select>
               </label>
             </>

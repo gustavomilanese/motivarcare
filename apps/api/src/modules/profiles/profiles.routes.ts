@@ -10,6 +10,7 @@ import {
 } from "../../lib/professionalListingDisplayName.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { validateProfessionalSessionListPrice } from "../../lib/professionalSessionListPrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
@@ -86,7 +87,7 @@ const updatePublicProfileSchema = z.object({
   therapeuticApproach: z.string().max(500).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   graduationYear: z.number().int().min(1950).max(2035).nullable().optional(),
-  sessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
+  sessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
   discount4: z.number().int().min(0).max(5).nullable().optional(),
   discount8: z.number().int().min(0).max(10).nullable().optional(),
   discount12: z.number().int().min(0).max(15).nullable().optional(),
@@ -865,6 +866,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             gender: professional.gender,
             birthCountry: professional.birthCountry,
             residencyCountry: professional.residencyCountry ?? null,
+            market: professional.market,
             focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
             focusAreas: normalizeFocusAreas(professional.focusAreas, professional.focusPrimary),
             languages: Array.isArray(professional.languages) ? professional.languages : [],
@@ -1477,16 +1479,39 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
 
   const professionalId = actor.professionalProfileId;
 
+  const existingProfile = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: { residencyCountry: true, market: true }
+  });
+  if (!existingProfile) {
+    return res.status(404).json({ error: "Professional profile not found" });
+  }
+
+  const nextResidencyForPricing =
+    parsed.data.residencyCountry !== undefined ? parsed.data.residencyCountry : existingProfile.residencyCountry;
+  const effectiveMarketForPricing = marketFromResidencyCountry(nextResidencyForPricing ?? undefined);
+
   if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
     const financeRules = await getFinanceRules();
-    if (parsed.data.sessionPriceUsd < financeRules.sessionPriceMinUsd || parsed.data.sessionPriceUsd > financeRules.sessionPriceMaxUsd) {
+    const priceError = validateProfessionalSessionListPrice({
+      market: effectiveMarketForPricing,
+      price: parsed.data.sessionPriceUsd,
+      financeRules
+    });
+    if (priceError) {
       return res.status(400).json({
-        error: "Session price must be between USD " + financeRules.sessionPriceMinUsd + " and USD " + financeRules.sessionPriceMaxUsd + ".",
-        sessionPriceMinUsd: financeRules.sessionPriceMinUsd,
-        sessionPriceMaxUsd: financeRules.sessionPriceMaxUsd
+        error: priceError.message,
+        sessionPriceMin: priceError.sessionPriceMin,
+        sessionPriceMax: priceError.sessionPriceMax,
+        sessionPriceCurrency: priceError.currencyCode
       });
     }
   }
+
+  const marketSync =
+    parsed.data.residencyCountry !== undefined
+      ? { market: marketFromResidencyCountry(parsed.data.residencyCountry ?? undefined) }
+      : {};
   const {
     diplomas,
     languages,
@@ -1555,6 +1580,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       where: { id: professionalId },
       data: {
         ...restProfile,
+        ...marketSync,
         ...graduationPatch,
         ...visibleUpdate,
         ...focusUpdates,

@@ -11,7 +11,7 @@ import { ProfessionalPhotoUrlField } from "../components/shared/ProfessionalPhot
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
-import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
+import { joinFirstLastToFullName, majorCurrencyCodeForMarket, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminBookingOps,
   AdminBookingsResponse,
@@ -358,12 +358,15 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
     const sessionPriceRaw = draft.sessionPriceUsd.trim();
     const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
-    if (sessionPriceRaw.length > 0 && (!Number.isInteger(sessionPriceUsd ?? 0) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)) {
+    if (
+      sessionPriceRaw.length > 0 &&
+      (!Number.isInteger(sessionPriceUsd ?? 0) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 10_000_000)
+    ) {
       setError(
         t(props.language, {
-          es: "Valor sesión (USD): entero entre 0 y 100000.",
-          en: "Session price (USD): integer from 0 to 100000.",
-          pt: "Preco (USD): inteiro de 0 a 100000."
+          es: "Valor sesión (lista): entero entre 0 y 10000000.",
+          en: "Session list price: integer from 0 to 10000000.",
+          pt: "Preco lista sessao: inteiro de 0 a 10000000."
         })
       );
       return;
@@ -1068,11 +1071,15 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                       />
                     </label>
                     <label>
-                      {t(props.language, { es: "Valor sesión (USD)", en: "Session price (USD)", pt: "Preco sessao (USD)" })}
+                      {t(props.language, {
+                        es: `Precio lista / sesión (${majorCurrencyCodeForMarket(selectedProfessional.market)})`,
+                        en: `List price / session (${majorCurrencyCodeForMarket(selectedProfessional.market)})`,
+                        pt: `Preco lista / sessao (${majorCurrencyCodeForMarket(selectedProfessional.market)})`
+                      })}
                       <input
                         type="number"
                         min={0}
-                        max={100000}
+                        max={10_000_000}
                         value={selectedProfessionalDraft.sessionPriceUsd}
                         onChange={(event) =>
                           setProfessionalEditDrafts((current) => ({
