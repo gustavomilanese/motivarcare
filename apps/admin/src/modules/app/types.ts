@@ -1,3 +1,6 @@
+import type { SessionPackagesVisibilityPayload } from "@therapy/types";
+
+export type { SessionPackagesVisibilityPayload };
 export type Role = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 export type PatientStatus = "active" | "pause" | "cancelled" | "trial";
 export type RiskTriageDecision = "pending" | "approved" | "cancelled";
@@ -210,15 +213,6 @@ export interface AdminSessionPackage {
   landingPublished: boolean;
   patientPublishedAr: boolean;
   patientPublishedUs: boolean;
-}
-
-export interface SessionPackagesVisibilityPayload {
-  landing: string[];
-  patient: string[];
-  patientByMarket: { AR: string[]; US: string[] };
-  featuredLanding: string | null;
-  featuredPatient: string | null;
-  featuredPatientByMarket: { AR: string | null; US: string | null };
 }
 
 export interface SessionPackagesResponse {

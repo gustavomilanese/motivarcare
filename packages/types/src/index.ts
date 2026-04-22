@@ -20,6 +20,8 @@ export {
 
 export { MARKETS, isMarket, type Market } from "./market.js";
 
+export type { SessionPackagesVisibilityPayload } from "./sessionPackageVisibility.js";
+
 export interface CancellationPolicy {
   freeCancellationHours: number;
   lateCancellationPenalty: "none" | "partial_credit" | "full_credit";

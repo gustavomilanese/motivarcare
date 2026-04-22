@@ -1,3 +1,4 @@
+import type { SessionPackagesVisibilityPayload } from "@therapy/types";
 import { z } from "zod";
 import type { Market } from "@prisma/client";
 
@@ -24,14 +25,8 @@ const sessionPackagesVisibilityStoredSchema = z
   })
   .passthrough();
 
-export type SessionPackagesVisibilityNormalized = {
-  landing: string[];
-  patient: string[];
-  patientByMarket: { AR: string[]; US: string[] };
-  featuredLanding: string | null;
-  featuredPatient: string | null;
-  featuredPatientByMarket: { AR: string | null; US: string | null };
-};
+/** @deprecated usar `SessionPackagesVisibilityPayload` desde `@therapy/types` */
+export type SessionPackagesVisibilityNormalized = SessionPackagesVisibilityPayload;
 
 function dedupeMax(ids: string[]): string[] {
   const out: string[] = [];
@@ -49,7 +44,7 @@ function dedupeMax(ids: string[]): string[] {
 /**
  * Normaliza el JSON guardado en SystemConfig (compatibilidad con `patient` solo en AR).
  */
-export function parseSessionPackagesVisibility(value: unknown): SessionPackagesVisibilityNormalized {
+export function parseSessionPackagesVisibility(value: unknown): SessionPackagesVisibilityPayload {
   const parsed = sessionPackagesVisibilityStoredSchema.safeParse(value);
   if (!parsed.success) {
     return {
@@ -86,14 +81,14 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
 }
 
 export function patientVisibilityIdsForMarket(
-  visibility: SessionPackagesVisibilityNormalized,
+  visibility: SessionPackagesVisibilityPayload,
   market: Market
 ): string[] {
   return market === "US" ? visibility.patientByMarket.US : visibility.patientByMarket.AR;
 }
 
 export function featuredPatientIdForMarket(
-  visibility: SessionPackagesVisibilityNormalized,
+  visibility: SessionPackagesVisibilityPayload,
   market: Market
 ): string | null {
   if (market === "US") {
@@ -125,7 +120,7 @@ export const sessionPackagesVisibilityPutSchema = z.object({
 
 export function visibilityPayloadForStorage(
   parsed: z.infer<typeof sessionPackagesVisibilityPutSchema>
-): SessionPackagesVisibilityNormalized {
+): SessionPackagesVisibilityPayload {
   const patientByMarket = {
     AR: dedupeMax(parsed.patientByMarket?.AR ?? parsed.patient),
     US: dedupeMax(parsed.patientByMarket?.US ?? [])

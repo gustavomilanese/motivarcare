@@ -28,6 +28,38 @@ function computeReferencePriceCents(credits: number, discountPercent: number): n
   return Math.max(0, Math.round(listPriceCents * (1 - discountPercent / 100)));
 }
 
+/** API antigua o payload parcial puede omitir `patientByMarket` → crash al leer `.AR`. */
+function normalizeSessionPackagesVisibility(raw: unknown): SessionPackagesVisibilityPayload {
+  const empty: SessionPackagesVisibilityPayload = {
+    landing: [],
+    patient: [],
+    patientByMarket: { AR: [], US: [] },
+    featuredLanding: null,
+    featuredPatient: null,
+    featuredPatientByMarket: { AR: null, US: null }
+  };
+  if (!raw || typeof raw !== "object") {
+    return empty;
+  }
+  const v = raw as Partial<SessionPackagesVisibilityPayload>;
+  const patientLegacy = Array.isArray(v.patient) ? v.patient : [];
+  const pbm = v.patientByMarket;
+  const arList = Array.isArray(pbm?.AR) ? pbm.AR : patientLegacy;
+  const usList = Array.isArray(pbm?.US) ? pbm.US : [];
+  const fpm = v.featuredPatientByMarket;
+  return {
+    landing: Array.isArray(v.landing) ? v.landing : empty.landing,
+    patient: arList,
+    patientByMarket: { AR: arList, US: usList },
+    featuredLanding: v.featuredLanding ?? null,
+    featuredPatient: v.featuredPatient ?? null,
+    featuredPatientByMarket: {
+      AR: (fpm && typeof fpm === "object" ? fpm.AR : undefined) ?? v.featuredPatient ?? null,
+      US: (fpm && typeof fpm === "object" ? fpm.US : undefined) ?? null
+    }
+  };
+}
+
 const PACKAGE_ADMIN_SECTION_IDS = ["pkg-overview", "pkg-catalogo"] as const;
 
 export function SessionPackagesAdminPage(props: {
@@ -79,14 +111,21 @@ export function SessionPackagesAdminPage(props: {
   const [visibilityDraft, setVisibilityDraft] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
   const [savedVisibility, setSavedVisibility] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
 
+  const withSafeMarketFields = (current: SessionPackagesVisibilityPayload): SessionPackagesVisibilityPayload => ({
+    ...current,
+    patientByMarket: current.patientByMarket ?? { AR: [], US: [] },
+    featuredPatientByMarket: current.featuredPatientByMarket ?? { AR: null, US: null }
+  });
+
   const load = async () => {
     setLoading(true);
     setError("");
     try {
       const packagesResponse = await apiRequest<SessionPackagesResponse>("/api/admin/session-packages", {}, props.token);
       setPackages(packagesResponse.sessionPackages);
-      setVisibilityDraft(packagesResponse.visibility);
-      setSavedVisibility(packagesResponse.visibility);
+      const visibility = normalizeSessionPackagesVisibility(packagesResponse.visibility);
+      setVisibilityDraft(visibility);
+      setSavedVisibility(visibility);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("session-packages-load", props.language, raw));
@@ -188,49 +227,51 @@ export function SessionPackagesAdminPage(props: {
     }
 
     setVisibilityDraft((current) => {
+      const currentSafe = withSafeMarketFields(current);
       if (channel === "landing") {
-        const currentIds = current.landing;
+        const currentIds = currentSafe.landing;
         if (checked) {
           if (currentIds.includes(packageId)) {
-            return current;
+            return currentSafe;
           }
-          return { ...current, landing: [...currentIds, packageId] };
+          return { ...currentSafe, landing: [...currentIds, packageId] };
         }
         const nextIds = currentIds.filter((id) => id !== packageId);
         return {
-          ...current,
+          ...currentSafe,
           landing: nextIds,
-          featuredLanding: current.featuredLanding === packageId ? null : current.featuredLanding
+          featuredLanding: currentSafe.featuredLanding === packageId ? null : currentSafe.featuredLanding
         };
       }
 
       const market = channel === "patientAR" ? "AR" : "US";
-      const currentIds = current.patientByMarket[market];
+      const currentIds = currentSafe.patientByMarket[market];
       if (checked) {
         if (currentIds.includes(packageId)) {
-          return current;
+          return currentSafe;
         }
         const next = [...currentIds, packageId];
         return {
-          ...current,
-          patient: market === "AR" ? next : current.patient,
-          patientByMarket: { ...current.patientByMarket, [market]: next },
-          featuredPatient: market === "AR" ? current.featuredPatient : current.featuredPatient,
+          ...currentSafe,
+          patient: market === "AR" ? next : currentSafe.patient,
+          patientByMarket: { ...currentSafe.patientByMarket, [market]: next },
+          featuredPatient: market === "AR" ? currentSafe.featuredPatient : currentSafe.featuredPatient,
           featuredPatientByMarket: {
-            ...current.featuredPatientByMarket,
-            [market]: current.featuredPatientByMarket[market]
+            ...currentSafe.featuredPatientByMarket,
+            [market]: currentSafe.featuredPatientByMarket[market]
           }
         };
       }
       const nextIds = currentIds.filter((id) => id !== packageId);
       return {
-        ...current,
-        patient: market === "AR" ? nextIds : current.patient,
-        patientByMarket: { ...current.patientByMarket, [market]: nextIds },
-        featuredPatient: market === "AR" && current.featuredPatient === packageId ? null : current.featuredPatient,
+        ...currentSafe,
+        patient: market === "AR" ? nextIds : currentSafe.patient,
+        patientByMarket: { ...currentSafe.patientByMarket, [market]: nextIds },
+        featuredPatient: market === "AR" && currentSafe.featuredPatient === packageId ? null : currentSafe.featuredPatient,
         featuredPatientByMarket: {
-          ...current.featuredPatientByMarket,
-          [market]: current.featuredPatientByMarket[market] === packageId ? null : current.featuredPatientByMarket[market]
+          ...currentSafe.featuredPatientByMarket,
+          [market]:
+            currentSafe.featuredPatientByMarket[market] === packageId ? null : currentSafe.featuredPatientByMarket[market]
         }
       };
     });
@@ -238,15 +279,16 @@ export function SessionPackagesAdminPage(props: {
 
   const setFeatured = (channel: "landing" | "patientAR" | "patientUS", packageId: string | null) => {
     setVisibilityDraft((current) => {
+      const currentSafe = withSafeMarketFields(current);
       if (channel === "landing") {
-        return { ...current, featuredLanding: packageId };
+        return { ...currentSafe, featuredLanding: packageId };
       }
       const market = channel === "patientAR" ? "AR" : "US";
       return {
-        ...current,
-        featuredPatient: market === "AR" ? packageId : current.featuredPatient,
+        ...currentSafe,
+        featuredPatient: market === "AR" ? packageId : currentSafe.featuredPatient,
         featuredPatientByMarket: {
-          ...current.featuredPatientByMarket,
+          ...currentSafe.featuredPatientByMarket,
           [market]: packageId
         }
       };
@@ -255,29 +297,30 @@ export function SessionPackagesAdminPage(props: {
 
   const setPublishedOrder = (channel: "landing" | "patientAR" | "patientUS", packageId: string, nextOrder: number) => {
     setVisibilityDraft((current) => {
+      const currentSafe = withSafeMarketFields(current);
       if (channel === "landing") {
-        const currentIds = [...current.landing];
+        const currentIds = [...currentSafe.landing];
         const currentIndex = currentIds.indexOf(packageId);
         const targetIndex = nextOrder - 1;
         if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length || currentIndex === targetIndex) {
-          return current;
+          return currentSafe;
         }
         const [moved] = currentIds.splice(currentIndex, 1);
         currentIds.splice(targetIndex, 0, moved);
-        return { ...current, landing: currentIds };
+        return { ...currentSafe, landing: currentIds };
       }
       const market = channel === "patientAR" ? "AR" : "US";
-      const currentIds = [...current.patientByMarket[market]];
+      const currentIds = [...currentSafe.patientByMarket[market]];
       const currentIndex = currentIds.indexOf(packageId);
       const targetIndex = nextOrder - 1;
       if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length || currentIndex === targetIndex) {
-        return current;
+        return currentSafe;
       }
       const [moved] = currentIds.splice(currentIndex, 1);
       currentIds.splice(targetIndex, 0, moved);
       const next = {
-        ...current,
-        patientByMarket: { ...current.patientByMarket, [market]: currentIds }
+        ...currentSafe,
+        patientByMarket: { ...currentSafe.patientByMarket, [market]: currentIds }
       };
       return market === "AR" ? { ...next, patient: currentIds } : next;
     });

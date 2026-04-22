@@ -1,0 +1,28 @@
+---
+description: Cambios de contrato HTTP/JSON (API ↔ front ↔ base)
+globs:
+  - "**/routes.ts"
+  - "**/schema.prisma"
+  - "packages/types/**"
+---
+
+# Contrato API / front / base de datos
+
+**Contrato** = lo que ambas partes (cliente y servidor) **prometen intercambiar**: nombres de campos, tipos, obligatoriedad, y semántica. No es solo “documentación”: si el front asume un campo (`visibility.patientByMarket.AR`) y el servidor a veces no lo manda, **rompe en runtime** aunque TypeScript compile.
+
+## Cuando cambiés el contrato de un recurso
+
+1. **`packages/types`** — Si el JSON lo consumen varias apps, el **tipo compartido** vive acá primero (`SessionPackagesVisibilityPayload`, etc.).
+2. **Base de datos** — Si hace falta nueva columna, tabla o forma de guardar datos: **Prisma** (`schema.prisma`), migración / `db push`, **seed** si aplica.
+3. **API** — Validación con **Zod** (body/query), serialización consistente en **todas** las rutas que devuelven ese recurso, tests del parser.
+4. **Clientes** — Admin, paciente, professional, mobile: tipos importados desde `@therapy/types` cuando corresponda; pantallas que mapean listas/forms.
+5. **Datos ya guardados** — Si el JSON viejo puede quedar incompleto, script **`db:backfill-*`** en `@therapy/api` y corrida en staging/prod tras deploy de API.
+
+## Deploy
+
+Si el front **nuevo** necesita campos que solo el **servidor nuevo** envía: desplegar **primero la API**, luego los fronts (o mismo commit con deploy coordinado). Un desfase corto puede ocurrir; por eso el servidor **normaliza siempre** la respuesta y el cliente puede tener defensas, pero eso **no reemplaza** al contrato alineado.
+
+## Anti-patrón
+
+- Cambiar solo el admin y asumir que Railway “ya está igual”.
+- Duplicar el mismo interface en dos apps sin `@therapy/types` como fuente de verdad.

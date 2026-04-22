@@ -21,6 +21,7 @@
     "db:wipe-non-admin": "tsx scripts/wipe-non-admin.ts",
     "db:delete-user-email": "tsx scripts/delete-user-by-email.ts",
     "db:backfill-names": "tsx scripts/backfill-user-name-columns.ts",
+    "db:backfill-session-packages-visibility": "tsx scripts/backfill-session-packages-visibility.ts",
     "test": "vitest run"
   },
   "dependencies": {
