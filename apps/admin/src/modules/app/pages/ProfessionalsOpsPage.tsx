@@ -75,6 +75,9 @@ function buildProfessionalEditDraft(professional: AdminProfessionalOps): Profess
     firstName,
     lastName,
     email: professional.email,
+    professionalTitle: professional.professionalTitle ?? "",
+    specialization: professional.specialization ?? "",
+    focusPrimary: professional.focusPrimary ?? "",
     visible: professional.visible,
     cancellationHours: String(professional.cancellationHours),
     bio: professional.bio ?? "",
@@ -470,6 +473,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           method: "PATCH",
           body: JSON.stringify({
             visible: draft.visible,
+            professionalTitle: draft.professionalTitle.trim().length > 0 ? draft.professionalTitle.trim() : null,
+            specialization: draft.specialization.trim().length > 0 ? draft.specialization.trim() : null,
+            focusPrimary: draft.focusPrimary.trim().length > 0 ? draft.focusPrimary.trim() : null,
             cancellationHours,
             bio: draft.bio.trim().length > 0 ? draft.bio.trim() : null,
             therapeuticApproach: draft.therapeuticApproach.trim().length > 0 ? draft.therapeuticApproach.trim() : null,
@@ -489,9 +495,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
       setSuccess(
         t(props.language, {
-          es: "Perfil profesional guardado (visibilidad, textos, país, precio y cifras de tarjeta).",
-          en: "Professional profile saved (visibility, copy, country, price, and card stats).",
-          pt: "Perfil profissional salvo (visibilidade, textos, pais, preco e numeros do card)."
+          es: "Perfil profesional guardado (visibilidad, título, etiquetas, textos, país, precio y cifras de tarjeta).",
+          en: "Professional profile saved (visibility, title, tags, copy, country, price, and card stats).",
+          pt: "Perfil salvo (visibilidade, titulo, tags, textos, pais, preco e numeros do card)."
         })
       );
       await afterProfessionalPatchSuccess(professional.id);
@@ -983,6 +989,63 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                     </label>
                     <label>
                       {t(props.language, {
+                        es: "Título profesional (listado)",
+                        en: "Professional title (directory)",
+                        pt: "Titulo profissional (listagem)"
+                      })}
+                      <input
+                        value={selectedProfessionalDraft.professionalTitle}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              professionalTitle: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, {
+                        es: "Especialización (etiqueta en tarjeta)",
+                        en: "Specialization (card tag)",
+                        pt: "Especializacao (tag no card)"
+                      })}
+                      <input
+                        value={selectedProfessionalDraft.specialization}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              specialization: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, {
+                        es: "Área de enfoque / segunda etiqueta",
+                        en: "Focus area / second tag",
+                        pt: "Area de foco / segunda tag"
+                      })}
+                      <input
+                        value={selectedProfessionalDraft.focusPrimary}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              focusPrimary: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, {
                         es: "Horas de anticipación para cancelar una sesión",
                         en: "Minimum hours notice to cancel a session",
                         pt: "Horas de antecedencia para cancelar"
@@ -1220,6 +1283,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <dl className="prof-ops-read-stack">
                   <dt>{t(props.language, { es: "Visible", en: "Visible", pt: "Visivel" })}</dt>
                   <dd>{selectedProfessional.visible ? t(props.language, { es: "Sí", en: "Yes", pt: "Sim" }) : t(props.language, { es: "No", en: "No", pt: "Nao" })}</dd>
+                  <dt>{t(props.language, { es: "Título profesional", en: "Professional title", pt: "Titulo" })}</dt>
+                  <dd>{selectedProfessional.professionalTitle?.trim() || "—"}</dd>
+                  <dt>{t(props.language, { es: "Especialización", en: "Specialization", pt: "Especializacao" })}</dt>
+                  <dd>{selectedProfessional.specialization?.trim() || "—"}</dd>
+                  <dt>{t(props.language, { es: "Área de enfoque", en: "Focus area", pt: "Foco" })}</dt>
+                  <dd>{selectedProfessional.focusPrimary?.trim() || "—"}</dd>
                   <dt>{t(props.language, { es: "Horas cancelación", en: "Cancellation hours", pt: "Horas cancel." })}</dt>
                   <dd>{selectedProfessional.cancellationHours}</dd>
                   <dt>{t(props.language, { es: "USD sesión", en: "Session USD", pt: "USD" })}</dt>

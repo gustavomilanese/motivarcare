@@ -300,6 +300,7 @@ export interface AdminProfessionalOps {
   registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
   professionalTitle?: string | null;
   specialization?: string | null;
+  focusPrimary?: string | null;
   cancellationHours: number;
   bio: string | null;
   therapeuticApproach: string | null;

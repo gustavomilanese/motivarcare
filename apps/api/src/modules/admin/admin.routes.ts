@@ -237,6 +237,9 @@ const updateProfessionalSchema = z
   .object({
     visible: z.boolean().optional(),
     registrationApproval: z.nativeEnum(ProfessionalRegistrationApproval).optional(),
+    professionalTitle: z.string().trim().max(120).nullable().optional(),
+    specialization: z.string().trim().max(120).nullable().optional(),
+    focusPrimary: z.string().trim().max(500).nullable().optional(),
     cancellationHours: z.number().int().min(0).max(168).optional(),
     bio: z.string().trim().max(2000).nullable().optional(),
     therapeuticApproach: z.string().trim().max(500).nullable().optional(),
@@ -1576,6 +1579,7 @@ adminRouter.get("/professionals", async (req, res) => {
       registrationApproval: item.registrationApproval,
       professionalTitle: item.professionalTitle,
       specialization: item.specialization,
+      focusPrimary: item.focusPrimary,
       cancellationHours: item.cancellationHours,
       bio: item.bio,
       therapeuticApproach: item.therapeuticApproach,
@@ -1612,6 +1616,9 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     data: {
       ...(parsed.data.visible !== undefined ? { visible: parsed.data.visible } : {}),
       ...(parsed.data.registrationApproval !== undefined ? { registrationApproval: parsed.data.registrationApproval } : {}),
+      ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
+      ...(parsed.data.specialization !== undefined ? { specialization: parsed.data.specialization } : {}),
+      ...(parsed.data.focusPrimary !== undefined ? { focusPrimary: parsed.data.focusPrimary } : {}),
       ...(parsed.data.cancellationHours !== undefined ? { cancellationHours: parsed.data.cancellationHours } : {}),
       ...(parsed.data.bio !== undefined ? { bio: parsed.data.bio } : {}),
       ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),

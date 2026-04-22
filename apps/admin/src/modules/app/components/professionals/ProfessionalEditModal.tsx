@@ -17,6 +17,9 @@ export interface ProfessionalEditDraft {
   firstName: string;
   lastName: string;
   email: string;
+  professionalTitle: string;
+  specialization: string;
+  focusPrimary: string;
   visible: boolean;
   cancellationHours: string;
   bio: string;
