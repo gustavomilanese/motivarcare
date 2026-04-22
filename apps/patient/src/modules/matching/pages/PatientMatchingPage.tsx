@@ -146,9 +146,9 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       })
     : mode === "onboarding-final"
       ? t(props.language, {
-          es: "Perfiles ordenados según tu cuestionario. Elegí un profesional y reservá tu sesión de prueba.",
-          en: "Profiles are ordered from your questionnaire. Choose a professional and book your trial session.",
-          pt: "Perfis ordenados pelo seu questionario. Escolha um profissional e reserve sua sessao de teste."
+          es: "Elegí un profesional y reservá tu sesión de prueba.",
+          en: "Choose a professional and book your trial session.",
+          pt: "Escolha um profissional e reserve sua sessao de teste."
         })
       : t(props.language, {
           es: "Ordenamos los perfiles según tu perfil clínico y los datos reales que cada terapeuta cargó en su onboarding.",

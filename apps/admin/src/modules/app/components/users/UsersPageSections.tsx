@@ -326,8 +326,17 @@ export function UsersListSection(props: {
       </header>
 
       {props.listError ? <p className="error-text">{props.listError}</p> : null}
-      {props.editError ? <p className="error-text">{props.editError}</p> : null}
-      {props.editSuccess ? <p className="success-text">{props.editSuccess}</p> : null}
+      {props.editError || props.editSuccess ? (
+        <div
+          id="admin-users-edit-feedback"
+          className="users-admin-edit-feedback"
+          role="status"
+          aria-live="polite"
+        >
+          {props.editError ? <p className="error-text">{props.editError}</p> : null}
+          {props.editSuccess ? <p className="success-text">{props.editSuccess}</p> : null}
+        </div>
+      ) : null}
 
       {props.listLoading ? <p>{props.t({ es: "Cargando usuarios...", en: "Loading users...", pt: "Carregando usuarios..." })}</p> : null}
       {!props.listLoading && props.users.length === 0 ? (
@@ -388,6 +397,7 @@ export function UsersListSection(props: {
                       en: "User edit form",
                       pt: "Formulario de edição de usuario"
                     })}
+                    onClick={(event) => event.stopPropagation()}
                   >
                     <div className="user-edit-form__body">
                       <details className="user-edit-accordion">
@@ -867,14 +877,23 @@ export function UsersListSection(props: {
 
                     <div className="user-edit-actions" role="toolbar" aria-label={props.t({ es: "Acciones del usuario", en: "User actions", pt: "Ações do usuario" })}>
                       <div className="user-edit-actions__primary">
-                        <button className="primary" disabled={props.saveLoading} type="button" onClick={() => props.onSaveEdit(user)}>
+                        <button
+                          className="primary"
+                          disabled={props.saveLoading}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            props.onSaveEdit(user);
+                          }}
+                        >
                           {props.saveLoading
                             ? props.t({ es: "Guardando...", en: "Saving...", pt: "Salvando..." })
                             : props.t({ es: "Guardar cambios", en: "Save changes", pt: "Salvar alteracoes" })}
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation();
                             props.setEditingUserId(null);
                             props.setEditError("");
                           }}
@@ -887,7 +906,10 @@ export function UsersListSection(props: {
                           type="button"
                           className="danger"
                           disabled={props.deleteLoadingUserId === user.id}
-                          onClick={() => props.onDeleteUser(user)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            props.onDeleteUser(user);
+                          }}
                         >
                           {props.deleteLoadingUserId === user.id
                             ? props.t({ es: "Eliminando...", en: "Deleting...", pt: "Excluindo..." })

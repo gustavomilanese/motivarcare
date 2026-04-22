@@ -177,6 +177,19 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     void loadUsers(usersPage);
   }, [props.token, roleFilter, search, usersPage]);
 
+  useEffect(() => {
+    if (!editSuccess && !editError) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("admin-users-edit-feedback")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editSuccess, editError]);
+
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCreateError("");
@@ -457,6 +470,14 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         })
       );
       setEditingUserId(null);
+      setEditDrafts((current) => {
+        if (!current[user.id]) {
+          return current;
+        }
+        const next = { ...current };
+        delete next[user.id];
+        return next;
+      });
       await loadUsers(usersPage);
     } catch (requestError) {
       setEditError(

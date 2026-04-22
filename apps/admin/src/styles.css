@@ -1045,6 +1045,11 @@ label {
   border-color: #d4c4ea;
 }
 
+.users-admin-edit-feedback {
+  display: grid;
+  gap: 6px;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;
