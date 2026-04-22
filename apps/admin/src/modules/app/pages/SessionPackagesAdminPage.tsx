@@ -1,4 +1,4 @@
-import { Fragment, type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -9,6 +9,11 @@ import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
 import { StickyPageSubnav } from "../components/StickyPageSubnav";
 import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
+import {
+  normalizeSessionPackagesVisibility,
+  patientPortalChannelLabel,
+  withSafeVisibility
+} from "../lib/sessionPackagesVisibilityAdmin";
 import { apiRequest } from "../services/api";
 import type {
   AdminMarket,
@@ -19,18 +24,6 @@ import type {
 } from "../types";
 
 const ADMIN_PATIENT_MARKETS: readonly AdminMarket[] = ["AR", "US", "BR", "ES"];
-type PatientPortalPublishChannel = AdminMarket;
-type PackagePublishChannel = "landing" | PatientPortalPublishChannel;
-
-const patientPortalChannelLabel = (language: AppLanguage, market: AdminMarket): string => {
-  const labels: Record<AdminMarket, LocalizedText> = {
-    AR: { es: "portal AR", en: "AR portal", pt: "portal AR" },
-    US: { es: "portal US (USD)", en: "US portal (USD)", pt: "portal US (USD)" },
-    BR: { es: "portal BR", en: "BR portal", pt: "portal BR" },
-    ES: { es: "portal ES", en: "ES portal", pt: "portal ES" }
-  };
-  return t(language, labels[market]);
-};
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -40,42 +33,6 @@ function computeReferencePriceCents(credits: number, discountPercent: number): n
   const referenceSessionPriceUsd = 100;
   const listPriceCents = referenceSessionPriceUsd * credits * 100;
   return Math.max(0, Math.round(listPriceCents * (1 - discountPercent / 100)));
-}
-
-/** API antigua o payload parcial puede omitir mercados → normalizar a AR/US/BR/ES. */
-function normalizeSessionPackagesVisibility(raw: unknown): SessionPackagesVisibilityPayload {
-  const empty: SessionPackagesVisibilityPayload = {
-    landing: [],
-    patient: [],
-    patientByMarket: { AR: [], US: [], BR: [], ES: [] },
-    featuredLanding: null,
-    featuredPatient: null,
-    featuredPatientByMarket: { AR: null, US: null, BR: null, ES: null }
-  };
-  if (!raw || typeof raw !== "object") {
-    return empty;
-  }
-  const v = raw as Partial<SessionPackagesVisibilityPayload>;
-  const patientLegacy = Array.isArray(v.patient) ? v.patient : [];
-  const pbm = v.patientByMarket;
-  const arList = Array.isArray(pbm?.AR) ? pbm.AR : patientLegacy;
-  const usList = Array.isArray(pbm?.US) ? pbm.US : [];
-  const brList = Array.isArray(pbm?.BR) ? pbm.BR : usList;
-  const esList = Array.isArray(pbm?.ES) ? pbm.ES : usList;
-  const fpm = v.featuredPatientByMarket;
-  return {
-    landing: Array.isArray(v.landing) ? v.landing : empty.landing,
-    patient: arList,
-    patientByMarket: { AR: arList, US: usList, BR: brList, ES: esList },
-    featuredLanding: v.featuredLanding ?? null,
-    featuredPatient: v.featuredPatient ?? null,
-    featuredPatientByMarket: {
-      AR: (fpm && typeof fpm === "object" ? fpm.AR : undefined) ?? v.featuredPatient ?? null,
-      US: (fpm && typeof fpm === "object" ? fpm.US : undefined) ?? null,
-      BR: (fpm && typeof fpm === "object" ? fpm.BR : undefined) ?? null,
-      ES: (fpm && typeof fpm === "object" ? fpm.ES : undefined) ?? null
-    }
-  };
 }
 
 const PACKAGE_ADMIN_SECTION_IDS = ["pkg-overview", "pkg-catalogo"] as const;
@@ -120,20 +77,19 @@ export function SessionPackagesAdminPage(props: {
   const [form, setForm] = useState(emptyForm);
   const emptyVisibility = (): SessionPackagesVisibilityPayload => ({
     landing: [],
+    landingPatientV2: [],
+    landingProfessional: [],
     patient: [],
     patientByMarket: { AR: [], US: [], BR: [], ES: [] },
     featuredLanding: null,
+    featuredLandingPatientV2: null,
+    featuredLandingProfessional: null,
     featuredPatient: null,
     featuredPatientByMarket: { AR: null, US: null, BR: null, ES: null }
   });
   const [visibilityDraft, setVisibilityDraft] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
   const [savedVisibility, setSavedVisibility] = useState<SessionPackagesVisibilityPayload>(emptyVisibility);
-
-  const withSafeMarketFields = (current: SessionPackagesVisibilityPayload): SessionPackagesVisibilityPayload => ({
-    ...current,
-    patientByMarket: current.patientByMarket ?? { AR: [], US: [], BR: [], ES: [] },
-    featuredPatientByMarket: current.featuredPatientByMarket ?? { AR: null, US: null, BR: null, ES: null }
-  });
+  const [portalMarketView, setPortalMarketView] = useState<AdminMarket>("AR");
 
   const load = async () => {
     setLoading(true);
@@ -176,6 +132,8 @@ export function SessionPackagesAdminPage(props: {
   const packagesById = useMemo(() => new Map(packages.map((item) => [item.id, item])), [packages]);
   const hasPendingVisibilityChanges =
     JSON.stringify(visibilityDraft) !== JSON.stringify(savedVisibility);
+  const portalIdsForView = visibilityDraft.patientByMarket[portalMarketView];
+  const portalFeaturedForView = visibilityDraft.featuredPatientByMarket[portalMarketView];
   const { activeSection, scrollToSection } = useStickySectionNavigation(PACKAGE_ADMIN_SECTION_IDS, {
     loading: loading || embedded
   });
@@ -185,11 +143,12 @@ export function SessionPackagesAdminPage(props: {
     setSuccess("");
     setSavingVisibility(true);
     try {
+      const fresh = await apiRequest<SessionPackagesResponse>("/api/admin/session-packages", {}, props.token);
+      const serverVis = normalizeSessionPackagesVisibility(fresh.visibility);
       const visibilityPayload = {
-        landing: visibilityDraft.landing,
+        ...serverVis,
         patient: visibilityDraft.patientByMarket.AR,
         patientByMarket: visibilityDraft.patientByMarket,
-        featuredLanding: visibilityDraft.featuredLanding,
         featuredPatient: visibilityDraft.featuredPatientByMarket.AR ?? visibilityDraft.featuredPatient,
         featuredPatientByMarket: visibilityDraft.featuredPatientByMarket
       };
@@ -201,7 +160,13 @@ export function SessionPackagesAdminPage(props: {
         },
         props.token
       );
-      setSuccess("Publicacion actualizada");
+      setSuccess(
+        t(props.language, {
+          es: "Publicación del portal paciente actualizada (las landings se configuran en Configuración → Landing page).",
+          en: "Patient portal publishing updated (landings are configured under Settings → Landing page).",
+          pt: "Publicacao do portal paciente atualizada (landings em Configuracao → Landing page)."
+        })
+      );
       await load();
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -211,11 +176,9 @@ export function SessionPackagesAdminPage(props: {
     }
   };
 
-  const togglePublished = (channel: PackagePublishChannel, packageId: string, checked: boolean) => {
-    const channelLabel =
-      channel === "landing" ? "landing" : patientPortalChannelLabel(props.language, channel);
-    if (checked && channel !== "landing") {
-      const market = channel;
+  const togglePatientPublished = (market: AdminMarket, packageId: string, checked: boolean) => {
+    const channelLabel = patientPortalChannelLabel(props.language, market);
+    if (checked) {
       const pkg = packagesById.get(packageId);
       if (pkg && pkg.market !== market) {
         setError(
@@ -228,11 +191,8 @@ export function SessionPackagesAdminPage(props: {
         return;
       }
     }
-    const draftSafe = withSafeMarketFields(visibilityDraft);
-    const listForLimit =
-      channel === "landing"
-        ? draftSafe.landing
-        : draftSafe.patientByMarket[channel as PatientPortalPublishChannel];
+    const draftSafe = withSafeVisibility(visibilityDraft);
+    const listForLimit = draftSafe.patientByMarket[market];
     if (checked && !listForLimit.includes(packageId) && listForLimit.length >= 3) {
       setError(
         t(props.language, {
@@ -245,24 +205,7 @@ export function SessionPackagesAdminPage(props: {
     }
 
     setVisibilityDraft((current) => {
-      const currentSafe = withSafeMarketFields(current);
-      if (channel === "landing") {
-        const currentIds = currentSafe.landing;
-        if (checked) {
-          if (currentIds.includes(packageId)) {
-            return currentSafe;
-          }
-          return { ...currentSafe, landing: [...currentIds, packageId] };
-        }
-        const nextIds = currentIds.filter((id) => id !== packageId);
-        return {
-          ...currentSafe,
-          landing: nextIds,
-          featuredLanding: currentSafe.featuredLanding === packageId ? null : currentSafe.featuredLanding
-        };
-      }
-
-      const market = channel;
+      const currentSafe = withSafeVisibility(current);
       const currentIds = currentSafe.patientByMarket[market];
       if (checked) {
         if (currentIds.includes(packageId)) {
@@ -295,13 +238,9 @@ export function SessionPackagesAdminPage(props: {
     });
   };
 
-  const setFeatured = (channel: PackagePublishChannel, packageId: string | null) => {
+  const setFeaturedPatientPortal = (market: AdminMarket, packageId: string | null) => {
     setVisibilityDraft((current) => {
-      const currentSafe = withSafeMarketFields(current);
-      if (channel === "landing") {
-        return { ...currentSafe, featuredLanding: packageId };
-      }
-      const market = channel;
+      const currentSafe = withSafeVisibility(current);
       return {
         ...currentSafe,
         featuredPatient: market === "AR" ? packageId : currentSafe.featuredPatient,
@@ -313,21 +252,9 @@ export function SessionPackagesAdminPage(props: {
     });
   };
 
-  const setPublishedOrder = (channel: PackagePublishChannel, packageId: string, nextOrder: number) => {
+  const setPatientPortalOrder = (market: AdminMarket, packageId: string, nextOrder: number) => {
     setVisibilityDraft((current) => {
-      const currentSafe = withSafeMarketFields(current);
-      if (channel === "landing") {
-        const currentIds = [...currentSafe.landing];
-        const currentIndex = currentIds.indexOf(packageId);
-        const targetIndex = nextOrder - 1;
-        if (currentIndex === -1 || targetIndex < 0 || targetIndex >= currentIds.length || currentIndex === targetIndex) {
-          return currentSafe;
-        }
-        const [moved] = currentIds.splice(currentIndex, 1);
-        currentIds.splice(targetIndex, 0, moved);
-        return { ...currentSafe, landing: currentIds };
-      }
-      const market = channel;
+      const currentSafe = withSafeVisibility(current);
       const currentIds = [...currentSafe.patientByMarket[market]];
       const currentIndex = currentIds.indexOf(packageId);
       const targetIndex = nextOrder - 1;
@@ -515,9 +442,28 @@ export function SessionPackagesAdminPage(props: {
           <div className="package-admin-section-head">
             <div>
               <h3>Catalogo actual</h3>
-              <p>Marca que paquetes van a landing y cuales a patient. Maximo 3 por canal. El orden tambien se define desde este catalogo.</p>
+              <p>
+                Publicación y orden en el portal paciente por mercado (máx. 3 por mercado). Para qué aparece en cada landing
+                pública, usá Configuración → Landing page → Paquetes en la web.
+              </p>
             </div>
             <button className="package-admin-secondary-button" type="button" onClick={openCreateModal}>Nuevo paquete</button>
+          </div>
+          <div className="package-admin-catalog-filters">
+            <label className="package-admin-filter-field">
+              <span className="package-admin-filter-label">Mercado del portal a editar</span>
+              <select
+                className="package-admin-filter-select"
+                value={portalMarketView}
+                onChange={(event) => setPortalMarketView(event.target.value as AdminMarket)}
+              >
+                {ADMIN_PATIENT_MARKETS.map((m) => (
+                  <option key={`portal-view-${m}`} value={m}>
+                    {m} — {patientPortalChannelLabel(props.language, m)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <input className="package-admin-search" type="search" placeholder="Buscar por nombre, profesional o sesiones" value={search} onChange={(event) => setSearch(event.target.value)} />
 
@@ -525,17 +471,11 @@ export function SessionPackagesAdminPage(props: {
 
           {!loading ? (
             <div className="package-admin-list-scroll">
-            <div className="package-admin-list">
+            <div className="package-admin-list package-admin-list--portal-only">
               <div className="package-admin-list-head" aria-hidden="true">
                 <span>Paquete</span>
-                <span>Landing</span>
+                <span title={patientPortalChannelLabel(props.language, portalMarketView)}>{portalMarketView}</span>
                 <span>Orden</span>
-                {ADMIN_PATIENT_MARKETS.map((m) => (
-                  <Fragment key={`head-${m}`}>
-                    <span title={`Portal paciente ${m}`}>{m}</span>
-                    <span>Ord.</span>
-                  </Fragment>
-                ))}
                 <span />
               </div>
               {filteredPackages.map((item) => (
@@ -559,39 +499,57 @@ export function SessionPackagesAdminPage(props: {
                     <div className="package-admin-channel-options">
                       <button
                         type="button"
-                        className={"package-admin-publish-icon-button" + (visibilityDraft.landing.includes(item.id) ? " active" : "")}
-                        aria-label={visibilityDraft.landing.includes(item.id) ? "Quitar de landing" : "Publicar en landing"}
-                        title={visibilityDraft.landing.includes(item.id) ? "Quitar de landing" : "Publicar en landing"}
+                        className={"package-admin-publish-icon-button" + (portalIdsForView.includes(item.id) ? " active" : "")}
+                        aria-label={
+                          portalIdsForView.includes(item.id)
+                            ? `Quitar de portal ${portalMarketView}`
+                            : `Publicar en portal ${portalMarketView}`
+                        }
+                        title={`Portal ${portalMarketView}`}
                         disabled={!item.active}
-                        onClick={() => togglePublished("landing", item.id, !visibilityDraft.landing.includes(item.id))}
+                        onClick={() =>
+                          togglePatientPublished(portalMarketView, item.id, !portalIdsForView.includes(item.id))
+                        }
                       >
-                        {visibilityDraft.landing.includes(item.id) ? "✓" : ""}
+                        {portalIdsForView.includes(item.id) ? "✓" : ""}
                       </button>
                     </div>
                   </div>
 
                   <div className="package-admin-card-channel package-admin-card-order-column">
                     <div className="package-admin-channel-options">
-                      {visibilityDraft.landing.includes(item.id) ? (
+                      {portalIdsForView.includes(item.id) ? (
                         <div className="package-admin-channel-order">
                           <select
                             className="package-admin-order-select"
-                            aria-label="Orden en landing"
-                            value={String(visibilityDraft.landing.indexOf(item.id) + 1)}
-                            onChange={(event) => setPublishedOrder("landing", item.id, Number(event.target.value))}
+                            aria-label={`Orden en portal ${portalMarketView}`}
+                            value={String(portalIdsForView.indexOf(item.id) + 1)}
+                            onChange={(event) =>
+                              setPatientPortalOrder(portalMarketView, item.id, Number(event.target.value))
+                            }
                           >
-                            {visibilityDraft.landing.map((_, index) => (
-                              <option key={`landing-order-${index + 1}`} value={String(index + 1)}>
+                            {portalIdsForView.map((_, index) => (
+                              <option key={`patient-${portalMarketView}-order-${index + 1}`} value={String(index + 1)}>
                                 {index + 1}
                               </option>
                             ))}
                           </select>
                           <button
                             type="button"
-                            className={"package-admin-featured-icon-button" + (visibilityDraft.featuredLanding === item.id ? " active" : "")}
-                            aria-label={visibilityDraft.featuredLanding === item.id ? "Quitar mas elegido en landing" : "Marcar mas elegido en landing"}
-                            title={visibilityDraft.featuredLanding === item.id ? "Quitar mas elegido en landing" : "Marcar mas elegido en landing"}
-                            onClick={() => setFeatured("landing", visibilityDraft.featuredLanding === item.id ? null : item.id)}
+                            className={
+                              "package-admin-featured-icon-button" + (portalFeaturedForView === item.id ? " active" : "")
+                            }
+                            aria-label={
+                              portalFeaturedForView === item.id
+                                ? `Quitar destacado ${portalMarketView}`
+                                : `Destacado ${portalMarketView}`
+                            }
+                            onClick={() =>
+                              setFeaturedPatientPortal(
+                                portalMarketView,
+                                portalFeaturedForView === item.id ? null : item.id
+                              )
+                            }
                           >
                             ★
                           </button>
@@ -601,62 +559,6 @@ export function SessionPackagesAdminPage(props: {
                       )}
                     </div>
                   </div>
-
-                  {ADMIN_PATIENT_MARKETS.map((market) => {
-                    const ids = visibilityDraft.patientByMarket[market];
-                    const featured = visibilityDraft.featuredPatientByMarket[market];
-                    return (
-                      <Fragment key={`${item.id}-${market}`}>
-                        <div className="package-admin-card-channel">
-                          <div className="package-admin-channel-options">
-                            <button
-                              type="button"
-                              className={"package-admin-publish-icon-button" + (ids.includes(item.id) ? " active" : "")}
-                              aria-label={ids.includes(item.id) ? `Quitar de portal ${market}` : `Publicar en portal ${market}`}
-                              title={ids.includes(item.id) ? `Quitar de portal ${market}` : `Publicar en portal ${market}`}
-                              disabled={!item.active}
-                              onClick={() => togglePublished(market, item.id, !ids.includes(item.id))}
-                            >
-                              {ids.includes(item.id) ? "✓" : ""}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="package-admin-card-channel package-admin-card-order-column">
-                          <div className="package-admin-channel-options">
-                            {ids.includes(item.id) ? (
-                              <div className="package-admin-channel-order">
-                                <select
-                                  className="package-admin-order-select"
-                                  aria-label={`Orden en portal ${market}`}
-                                  value={String(ids.indexOf(item.id) + 1)}
-                                  onChange={(event) => setPublishedOrder(market, item.id, Number(event.target.value))}
-                                >
-                                  {ids.map((_, index) => (
-                                    <option key={`patient-${market}-order-${index + 1}`} value={String(index + 1)}>
-                                      {index + 1}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  className={
-                                    "package-admin-featured-icon-button" + (featured === item.id ? " active" : "")
-                                  }
-                                  aria-label={featured === item.id ? `Quitar destacado ${market}` : `Destacado ${market}`}
-                                  onClick={() => setFeatured(market, featured === item.id ? null : item.id)}
-                                >
-                                  ★
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="package-admin-order-placeholder">-</span>
-                            )}
-                          </div>
-                        </div>
-                      </Fragment>
-                    );
-                  })}
 
                   <div className="package-admin-card-actions">
                     <div className="package-admin-icon-actions">
@@ -698,7 +600,7 @@ export function SessionPackagesAdminPage(props: {
 
           <div className="toolbar-actions package-admin-toolbar">
             <div className="package-admin-toolbar-status">
-              <span className="role-pill">Landing: {visibilityDraft.landing.length}/3</span>
+              <span className="role-pill muted">{`Editando ${portalMarketView}: ${portalIdsForView.length}/3`}</span>
               {ADMIN_PATIENT_MARKETS.map((m) => (
                 <span key={`pill-${m}`} className="role-pill">{`Portal ${m}: ${visibilityDraft.patientByMarket[m].length}/3`}</span>
               ))}
@@ -709,7 +611,11 @@ export function SessionPackagesAdminPage(props: {
               onClick={() => void saveVisibility()}
               disabled={savingVisibility || !hasPendingVisibilityChanges}
             >
-              {savingVisibility ? "Guardando..." : hasPendingVisibilityChanges ? "Guardar publicacion" : "Publicacion guardada"}
+              {savingVisibility
+                ? "Guardando..."
+                : hasPendingVisibilityChanges
+                  ? "Guardar portal"
+                  : "Portal guardado"}
             </button>
           </div>
           {error ? <p className="error-text">{error}</p> : null}
@@ -772,7 +678,7 @@ export function SessionPackagesAdminPage(props: {
               <label>Descuento (%)<input type="number" min="0" max="100" step="1" value={form.discountPercent} onChange={(event) => setForm((current) => ({ ...current, discountPercent: event.target.value }))} /></label>
               <label>ID catálogo / Stripe Price<input value={form.stripePriceId} onChange={(event) => setForm((current) => ({ ...current, stripePriceId: event.target.value }))} placeholder="price_… o id interno" /></label>
               <label>Moneda (ISO)<input value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))} placeholder="ars / usd" /></label>
-              <label className="inline-toggle package-admin-toggle"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} />Activo para patient y landing</label>
+              <label className="inline-toggle package-admin-toggle"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} />Activo en el catálogo (portal y landings si los publicás)</label>
             </div>
             <div className="toolbar-actions">
               <button className="primary" type="button" onClick={() => void submit()} disabled={saving}>{saving ? "Guardando..." : editingPackageId ? "Guardar cambios" : "Crear paquete"}</button>
@@ -800,7 +706,7 @@ export function SessionPackagesAdminPage(props: {
         <div className="package-admin-hero-copy">
           <p className="admin-eyebrow">Comercial</p>
           <h2>Planes y paquetes de sesiones</h2>
-          <p>Administra el catalogo que consume el portal de pacientes y que tambien puede mostrarse en la landing.</p>
+          <p>Administra el catalogo y la publicación en el portal de pacientes. Las landings públicas se configuran en Configuración → Landing page.</p>
         </div>
         {kpiRow}
       </section>

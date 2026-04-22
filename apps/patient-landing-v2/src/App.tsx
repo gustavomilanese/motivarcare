@@ -1,3 +1,10 @@
+import { useEffect, useState } from "react";
+import {
+  fetchLandingSessionPackages,
+  formatPackageMoney,
+  publicApiBase,
+  type LandingSessionPackageRow
+} from "./fetchLandingSessionPackages";
 import { useScrollY } from "./useScrollMotion";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
@@ -31,6 +38,44 @@ const P = {
 } as const;
 
 export function App() {
+  const [catalogPackages, setCatalogPackages] = useState<LandingSessionPackageRow[]>([]);
+  const [catalogFeaturedId, setCatalogFeaturedId] = useState<string | null>(null);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+
+  useEffect(() => {
+    const base = publicApiBase();
+    if (!base) {
+      setCatalogLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await fetchLandingSessionPackages({
+          apiBase: base,
+          landingSlot: "patient_v2",
+          market: "AR"
+        });
+        if (!cancelled) {
+          setCatalogPackages(data.sessionPackages ?? []);
+          setCatalogFeaturedId(data.featuredPackageId ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCatalogPackages([]);
+          setCatalogFeaturedId(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setCatalogLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const scrollY = useScrollY();
   const heroImgY = scrollY * 0.14;
   const parallaxBandY = scrollY * 0.06;
@@ -246,64 +291,99 @@ export function App() {
               <h2 id="pl2-pricing-title">Sesiones claras, sin sorpresas</h2>
               <p className="pl2-section-sub">Cada profesional define el valor de su sesión; vos ves el precio antes de confirmar.</p>
             </header>
-            <div className="pl2-pricing-grid">
-              <article className="pl2-price-card">
-                <div className="pl2-price-top">
-                  <img src={P.beachLaptop} alt="" loading="lazy" />
-                </div>
-                <div className="pl2-price-inner">
-                  <h3>Sesión individual</h3>
-                  <p className="pl2-price-tag">
-                    Desde <strong>$40.000</strong> <span className="pl2-price-unit">ARS</span>
-                  </p>
-                  <ul>
-                    <li>50 minutos por sesión</li>
-                    <li>Precio según experiencia del profesional</li>
-                    <li>Lo ves antes de confirmar</li>
-                  </ul>
-                  <a className="pl2-btn pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                    Reservar
-                  </a>
-                </div>
-              </article>
-              <article className="pl2-price-card pl2-price-card--featured">
-                <div className="pl2-price-top">
-                  <img src={P.studioMist} alt="" loading="lazy" />
-                </div>
-                <div className="pl2-price-inner">
-                  <p className="pl2-price-badge">Popular</p>
-                  <h3>Packs de sesiones</h3>
-                  <p className="pl2-price-tag">4, 8 y 12 sesiones</p>
-                  <ul>
-                    <li>Descuentos cuando el profesional los ofrezca</li>
-                    <li>Duración estándar: 50 minutos</li>
-                    <li>Ideal para continuidad</li>
-                  </ul>
-                  <a className="pl2-btn pl2-btn--primary pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                    Ver opciones
-                  </a>
-                </div>
-              </article>
-              <article className="pl2-price-card">
-                <div className="pl2-price-top">
-                  <img src={P.podsOffice} alt="" loading="lazy" />
-                </div>
-                <div className="pl2-price-inner">
-                  <h3>Sin suscripción</h3>
-                  <p className="pl2-price-tag">
-                    Pagás <strong>lo que usás</strong>
-                  </p>
-                  <ul>
-                    <li>Sin cuota mensual obligatoria</li>
-                    <li>Reservás cuando lo necesites</li>
-                    <li>Cambiás de profesional si hace falta</li>
-                  </ul>
-                  <a className="pl2-btn pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                    Crear cuenta
-                  </a>
-                </div>
-              </article>
-            </div>
+            {catalogLoaded && catalogPackages.length > 0 ? (
+              <div className="pl2-pricing-grid">
+                {catalogPackages.map((pkg) => (
+                  <article
+                    key={pkg.id}
+                    className={"pl2-price-card" + (catalogFeaturedId === pkg.id ? " pl2-price-card--featured" : "")}
+                  >
+                    <div className="pl2-price-top">
+                      <img src={P.studioMist} alt="" loading="lazy" />
+                    </div>
+                    <div className="pl2-price-inner">
+                      {catalogFeaturedId === pkg.id ? <p className="pl2-price-badge">Destacado</p> : null}
+                      <h3>{pkg.name}</h3>
+                      <p className="pl2-price-tag">{`${pkg.credits} sesiones · ${pkg.discountPercent}% OFF`}</p>
+                      <ul>
+                        <li>{formatPackageMoney(pkg.priceCents, pkg.currency)} referencia en catálogo</li>
+                        <li>Duración estándar: 50 minutos</li>
+                        <li>Completá la compra en el portal con tu cuenta</li>
+                      </ul>
+                      <a
+                        className={
+                          "pl2-btn pl2-btn--block" + (catalogFeaturedId === pkg.id ? " pl2-btn--primary" : "")
+                        }
+                        href={PATIENT_PORTAL_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Ir al portal
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="pl2-pricing-grid">
+                <article className="pl2-price-card">
+                  <div className="pl2-price-top">
+                    <img src={P.beachLaptop} alt="" loading="lazy" />
+                  </div>
+                  <div className="pl2-price-inner">
+                    <h3>Sesión individual</h3>
+                    <p className="pl2-price-tag">
+                      Desde <strong>$40.000</strong> <span className="pl2-price-unit">ARS</span>
+                    </p>
+                    <ul>
+                      <li>50 minutos por sesión</li>
+                      <li>Precio según experiencia del profesional</li>
+                      <li>Lo ves antes de confirmar</li>
+                    </ul>
+                    <a className="pl2-btn pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                      Reservar
+                    </a>
+                  </div>
+                </article>
+                <article className="pl2-price-card pl2-price-card--featured">
+                  <div className="pl2-price-top">
+                    <img src={P.studioMist} alt="" loading="lazy" />
+                  </div>
+                  <div className="pl2-price-inner">
+                    <p className="pl2-price-badge">Popular</p>
+                    <h3>Packs de sesiones</h3>
+                    <p className="pl2-price-tag">4, 8 y 12 sesiones</p>
+                    <ul>
+                      <li>Descuentos cuando el profesional los ofrezca</li>
+                      <li>Duración estándar: 50 minutos</li>
+                      <li>Ideal para continuidad</li>
+                    </ul>
+                    <a className="pl2-btn pl2-btn--primary pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                      Ver opciones
+                    </a>
+                  </div>
+                </article>
+                <article className="pl2-price-card">
+                  <div className="pl2-price-top">
+                    <img src={P.podsOffice} alt="" loading="lazy" />
+                  </div>
+                  <div className="pl2-price-inner">
+                    <h3>Sin suscripción</h3>
+                    <p className="pl2-price-tag">
+                      Pagás <strong>lo que usás</strong>
+                    </p>
+                    <ul>
+                      <li>Sin cuota mensual obligatoria</li>
+                      <li>Reservás cuando lo necesites</li>
+                      <li>Cambiás de profesional si hace falta</li>
+                    </ul>
+                    <a className="pl2-btn pl2-btn--block" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                      Crear cuenta
+                    </a>
+                  </div>
+                </article>
+              </div>
+            )}
             <p className="pl2-pricing-footnote">
               Cada profesional define el valor de su sesión; los montos pueden variar según experiencia y orientación terapéutica.
             </p>

@@ -1,6 +1,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
+import { LandingSitePackagesSection } from "../components/LandingSitePackagesSection";
 import {
   WEB_ADMIN_SCROLL_SECTION_IDS,
   WebAdminPageSubnav,
@@ -507,6 +508,18 @@ export function WebAdminPage({
 
   const webAdminMain = (
     <>
+      <CollapsiblePageSection
+        sectionId="web-paquetes-site"
+        summary={t(language, {
+          es: "Paquetes en la web (landings)",
+          en: "Web packages (landings)",
+          pt: "Pacotes na web (landings)"
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <LandingSitePackagesSection token={token} language={language} />
+      </CollapsiblePageSection>
+
       <CollapsiblePageSection
         sectionId="web-imagenes"
         summary={t(language, { es: "Imágenes hero", en: "Hero images", pt: "Imagens hero" })}

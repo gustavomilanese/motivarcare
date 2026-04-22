@@ -211,6 +211,8 @@ export interface AdminSessionPackage {
   createdAt: string;
   purchasesCount: number;
   landingPublished: boolean;
+  landingPatientV2Published: boolean;
+  landingProfessionalPublished: boolean;
   patientPublishedAr: boolean;
   patientPublishedUs: boolean;
   patientPublishedBr: boolean;

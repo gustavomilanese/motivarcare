@@ -4829,6 +4829,39 @@ button.primary.finance-hero-search {
   width: 100%;
 }
 
+.package-admin-catalog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+
+.package-admin-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: min(280px, 100%);
+}
+
+.package-admin-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #60708d;
+}
+
+.package-admin-filter-select {
+  border: 1px solid #d9e1ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #1b2333;
+  max-width: 100%;
+}
+
 .package-admin-order-grid {
   display: none;
 }
@@ -4937,12 +4970,30 @@ button.primary.finance-hero-search {
 
 .package-admin-list-scroll .package-admin-list-head,
 .package-admin-list-scroll .package-admin-card {
-  min-width: 1180px;
+  min-width: 640px;
+}
+
+/* Solo portal paciente: Paquete + mercado + orden + acciones */
+.package-admin-list-scroll .package-admin-list--portal-only .package-admin-list-head,
+.package-admin-list-scroll .package-admin-list--portal-only .package-admin-card {
+  min-width: 520px;
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px minmax(80px, 96px);
+}
+
+/* Landings (sección Web): Paquete + visible + orden + columna vacía */
+.package-admin-list-scroll .package-admin-list--landing-site .package-admin-list-head,
+.package-admin-list-scroll .package-admin-list--landing-site .package-admin-card {
+  min-width: 480px;
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px 12px;
+}
+
+.package-admin-card-actions--placeholder {
+  min-height: 1px;
 }
 
 .package-admin-list-head {
   display: grid;
-  grid-template-columns: minmax(220px, 1.25fr) 52px 76px repeat(8, 46px 68px) minmax(80px, 96px);
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px 52px 76px minmax(80px, 96px);
   gap: 8px;
   padding: 0 16px;
   align-items: end;
@@ -4965,7 +5016,7 @@ button.primary.finance-hero-search {
   border-radius: 18px;
   padding: 18px 16px;
   display: grid;
-  grid-template-columns: minmax(220px, 1.25fr) 52px 76px repeat(8, 46px 68px) minmax(80px, 96px);
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px 52px 76px minmax(80px, 96px);
   gap: 8px;
   align-items: center;
   background: #fafcff;

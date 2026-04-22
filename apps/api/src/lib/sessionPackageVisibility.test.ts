@@ -21,4 +21,22 @@ describe("parseSessionPackagesVisibility", () => {
     expect(v.patient).toEqual(["x"]);
     expect(v.patientByMarket).toEqual({ AR: ["x"], US: [], BR: [], ES: [] });
   });
+
+  it("normaliza slots de landing adicionales", () => {
+    const v = parseSessionPackagesVisibility({
+      patient: [],
+      landing: ["a"],
+      landingPatientV2: ["b", "c"],
+      landingProfessional: [],
+      featuredLanding: "a",
+      featuredLandingPatientV2: "b",
+      featuredLandingProfessional: null
+    });
+    expect(v.landing).toEqual(["a"]);
+    expect(v.landingPatientV2).toEqual(["b", "c"]);
+    expect(v.landingProfessional).toEqual([]);
+    expect(v.featuredLanding).toBe("a");
+    expect(v.featuredLandingPatientV2).toBe("b");
+    expect(v.featuredLandingProfessional).toBeNull();
+  });
 });

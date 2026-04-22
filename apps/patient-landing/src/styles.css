@@ -1012,6 +1012,61 @@ main {
   max-width: 52ch;
 }
 
+.patient-ar-catalog-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 22px 0 8px;
+}
+
+.patient-ar-catalog-card {
+  flex: 1 1 200px;
+  max-width: 320px;
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.patient-ar-catalog-card--featured {
+  border-color: rgba(196, 181, 253, 0.85);
+  box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.35);
+}
+
+.patient-ar-catalog-badge {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(230, 220, 255, 0.95);
+}
+
+.patient-ar-catalog-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.patient-ar-catalog-meta {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.patient-ar-catalog-price {
+  margin: 12px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.patient-ar-catalog-cta {
+  margin-top: 14px;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
 .patient-ar-pricing-list {
   margin: 24px 0 0;
   padding: 0;

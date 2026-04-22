@@ -1,3 +1,10 @@
+import { useEffect, useState } from "react";
+import {
+  fetchLandingSessionPackages,
+  formatPackageMoney,
+  publicApiBase,
+  type LandingSessionPackageRow
+} from "./fetchLandingSessionPackages";
 import { useScrollY } from "./useScrollMotion";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
@@ -31,6 +38,44 @@ const P = {
 } as const;
 
 export function App() {
+  const [catalogPackages, setCatalogPackages] = useState<LandingSessionPackageRow[]>([]);
+  const [catalogFeaturedId, setCatalogFeaturedId] = useState<string | null>(null);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+
+  useEffect(() => {
+    const base = publicApiBase();
+    if (!base) {
+      setCatalogLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await fetchLandingSessionPackages({
+          apiBase: base,
+          landingSlot: "patient_main",
+          market: "AR"
+        });
+        if (!cancelled) {
+          setCatalogPackages(data.sessionPackages ?? []);
+          setCatalogFeaturedId(data.featuredPackageId ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCatalogPackages([]);
+          setCatalogFeaturedId(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setCatalogLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const scrollY = useScrollY();
   const heroShift = scrollY * 0.28;
   const stripShift = scrollY * 0.12;
@@ -246,6 +291,26 @@ export function App() {
               <p className="patient-ar-eyebrow patient-ar-eyebrow--on-dark">Precios transparentes</p>
               <h2 id="pricing-title">Sesiones claras, sin sorpresas</h2>
               <p className="patient-ar-pricing-lead">Cada profesional define el valor de su sesión; vos ves el precio antes de confirmar.</p>
+              {catalogLoaded && catalogPackages.length > 0 ? (
+                <div className="patient-ar-catalog-strip" aria-label="Planes publicados">
+                  {catalogPackages.map((pkg) => (
+                    <article
+                      key={pkg.id}
+                      className={
+                        "patient-ar-catalog-card" + (catalogFeaturedId === pkg.id ? " patient-ar-catalog-card--featured" : "")
+                      }
+                    >
+                      {catalogFeaturedId === pkg.id ? <p className="patient-ar-catalog-badge">Destacado</p> : null}
+                      <h3 className="patient-ar-catalog-name">{pkg.name}</h3>
+                      <p className="patient-ar-catalog-meta">{`${pkg.credits} sesiones · ${pkg.discountPercent}% OFF`}</p>
+                      <p className="patient-ar-catalog-price">{formatPackageMoney(pkg.priceCents, pkg.currency)}</p>
+                      <a className="patient-ar-btn patient-ar-btn--light patient-ar-catalog-cta" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                        Comprar en el portal
+                      </a>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
               <ul className="patient-ar-pricing-list">
                 <li>
                   <strong>Desde $40.000 ARS</strong> por sesión, según experiencia y orientación terapéutica.

@@ -1238,6 +1238,8 @@ adminRouter.get("/session-packages", async (req, res) => {
       createdAt: item.createdAt,
       purchasesCount: item._count.purchases,
       landingPublished: visibility.landing.includes(item.id),
+      landingPatientV2Published: visibility.landingPatientV2.includes(item.id),
+      landingProfessionalPublished: visibility.landingProfessional.includes(item.id),
       patientPublishedAr: visibility.patientByMarket.AR.includes(item.id),
       patientPublishedUs: visibility.patientByMarket.US.includes(item.id),
       patientPublishedBr: visibility.patientByMarket.BR.includes(item.id),
@@ -1256,6 +1258,8 @@ adminRouter.put("/session-packages/visibility", async (req, res) => {
   const requestedIds = Array.from(
     new Set([
       ...normalized.landing,
+      ...normalized.landingPatientV2,
+      ...normalized.landingProfessional,
       ...normalized.patientByMarket.AR,
       ...normalized.patientByMarket.US,
       ...normalized.patientByMarket.BR,

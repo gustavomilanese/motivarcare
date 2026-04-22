@@ -28,7 +28,10 @@ export {
   type ResidencyCountryOption
 } from "./residencyMarket.js";
 
-export type { SessionPackagesVisibilityPayload } from "./sessionPackageVisibility.js";
+export type {
+  LandingPackagesSlotId,
+  SessionPackagesVisibilityPayload
+} from "./sessionPackageVisibility.js";
 
 export interface CancellationPolicy {
   freeCancellationHours: number;

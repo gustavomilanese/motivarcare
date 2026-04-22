@@ -5,7 +5,9 @@ import type { Market } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import {
+  featuredLandingIdForSlot,
   featuredPatientIdForMarket,
+  landingVisibilityIdsForSlot,
   parseSessionPackagesVisibility,
   patientVisibilityIdsForMarket
 } from "../../lib/sessionPackageVisibility.js";
@@ -19,8 +21,12 @@ const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
+const landingPackagesSlotSchema = z.enum(["patient_main", "patient_v2", "professional"]);
+
 const sessionPackagesChannelSchema = z.object({
   channel: z.enum(["landing", "patient"]).optional(),
+  /** Con `channel=landing`, elige qué sitio consume la lista (default `patient_main`). */
+  landingSlot: landingPackagesSlotSchema.optional(),
   professionalId: z.string().trim().min(1).optional(),
   /** Catálogo por mercado (default AR). */
   market: z.enum(["AR", "US", "BR", "ES"]).optional()
@@ -218,9 +224,10 @@ publicRouter.get("/session-packages", async (req, res) => {
   ]);
   const visibility = parseSessionPackagesVisibility(visibilityConfig?.value);
   const patientIdsForMarket = patientVisibilityIdsForMarket(visibility, market);
+  const landingSlot = parsed.data.landingSlot ?? "patient_main";
   const requestedIds =
     parsed.data.channel === "landing"
-      ? visibility.landing
+      ? landingVisibilityIdsForSlot(visibility, landingSlot)
       : parsed.data.channel === "patient"
         ? patientIdsForMarket
         : [];
@@ -238,7 +245,7 @@ publicRouter.get("/session-packages", async (req, res) => {
   const featuredPatientForMarket = featuredPatientIdForMarket(visibility, market);
   const featuredPackageId =
     parsed.data.channel === "landing"
-      ? visibility.featuredLanding
+      ? featuredLandingIdForSlot(visibility, landingSlot)
       : parsed.data.channel === "patient"
         ? featuredPatientForMarket
         : null;

@@ -1,4 +1,4 @@
-import type { SessionPackagesVisibilityPayload } from "@therapy/types";
+import type { LandingPackagesSlotId, SessionPackagesVisibilityPayload } from "@therapy/types";
 import { z } from "zod";
 import type { Market } from "@prisma/client";
 
@@ -25,9 +25,13 @@ const marketFeaturedSchema = z
 const sessionPackagesVisibilityStoredSchema = z
   .object({
     landing: z.array(z.string().min(1)).max(MAX_VISIBLE),
+    landingPatientV2: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
+    landingProfessional: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
     patient: z.array(z.string().min(1)).max(MAX_VISIBLE),
     patientByMarket: marketPatientArraysSchema,
     featuredLanding: z.string().min(1).nullable().optional(),
+    featuredLandingPatientV2: z.string().min(1).nullable().optional(),
+    featuredLandingProfessional: z.string().min(1).nullable().optional(),
     featuredPatient: z.string().min(1).nullable().optional(),
     featuredPatientByMarket: marketFeaturedSchema
   })
@@ -65,9 +69,13 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
   if (!parsed.success) {
     return {
       landing: [],
+      landingPatientV2: [],
+      landingProfessional: [],
       patient: [],
       patientByMarket: emptyPatientByMarket(),
       featuredLanding: null,
+      featuredLandingPatientV2: null,
+      featuredLandingProfessional: null,
       featuredPatient: null,
       featuredPatientByMarket: emptyFeaturedByMarket()
     };
@@ -92,9 +100,13 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
 
   return {
     landing: dedupeMax(data.landing ?? []),
+    landingPatientV2: dedupeMax(data.landingPatientV2 ?? []),
+    landingProfessional: dedupeMax(data.landingProfessional ?? []),
     patient: patientByMarket.AR,
     patientByMarket,
     featuredLanding: data.featuredLanding ?? null,
+    featuredLandingPatientV2: data.featuredLandingPatientV2 ?? null,
+    featuredLandingProfessional: data.featuredLandingProfessional ?? null,
     featuredPatient: data.featuredPatient ?? null,
     featuredPatientByMarket: {
       AR: fpm?.AR ?? data.featuredPatient ?? null,
@@ -103,6 +115,32 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
       ES: fpm?.ES ?? null
     }
   };
+}
+
+export function landingVisibilityIdsForSlot(
+  visibility: SessionPackagesVisibilityPayload,
+  slot: LandingPackagesSlotId
+): string[] {
+  if (slot === "patient_main") {
+    return visibility.landing;
+  }
+  if (slot === "patient_v2") {
+    return visibility.landingPatientV2;
+  }
+  return visibility.landingProfessional;
+}
+
+export function featuredLandingIdForSlot(
+  visibility: SessionPackagesVisibilityPayload,
+  slot: LandingPackagesSlotId
+): string | null {
+  if (slot === "patient_main") {
+    return visibility.featuredLanding;
+  }
+  if (slot === "patient_v2") {
+    return visibility.featuredLandingPatientV2;
+  }
+  return visibility.featuredLandingProfessional;
 }
 
 export function patientVisibilityIdsForMarket(
@@ -123,6 +161,8 @@ export function featuredPatientIdForMarket(
 
 export const sessionPackagesVisibilityPutSchema = z.object({
   landing: z.array(z.string().min(1)).max(MAX_VISIBLE),
+  landingPatientV2: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
+  landingProfessional: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
   patient: z.array(z.string().min(1)).max(MAX_VISIBLE),
   patientByMarket: z
     .object({
@@ -133,6 +173,8 @@ export const sessionPackagesVisibilityPutSchema = z.object({
     })
     .optional(),
   featuredLanding: z.string().min(1).nullable().optional(),
+  featuredLandingPatientV2: z.string().min(1).nullable().optional(),
+  featuredLandingProfessional: z.string().min(1).nullable().optional(),
   featuredPatient: z.string().min(1).nullable().optional(),
   featuredPatientByMarket: z
     .object({
@@ -155,9 +197,13 @@ export function visibilityPayloadForStorage(
   };
   return {
     landing: dedupeMax(parsed.landing),
+    landingPatientV2: dedupeMax(parsed.landingPatientV2 ?? []),
+    landingProfessional: dedupeMax(parsed.landingProfessional ?? []),
     patient: patientByMarket.AR,
     patientByMarket,
     featuredLanding: parsed.featuredLanding ?? null,
+    featuredLandingPatientV2: parsed.featuredLandingPatientV2 ?? null,
+    featuredLandingProfessional: parsed.featuredLandingProfessional ?? null,
     featuredPatient: parsed.featuredPatient ?? null,
     featuredPatientByMarket: {
       AR: parsed.featuredPatientByMarket?.AR ?? parsed.featuredPatient ?? null,
