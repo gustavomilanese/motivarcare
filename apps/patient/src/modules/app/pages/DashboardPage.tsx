@@ -10,6 +10,8 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
+import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
@@ -161,7 +163,9 @@ function DashboardRnUpcomingCard(props: {
                   language: props.language
                 })}
               </span>
-              <strong className="session-rn-name">{bookingProfessional.fullName}</strong>
+              <strong className="session-rn-name">
+                <ProfessionalNameStack professional={bookingProfessional} as="span" />
+              </strong>
               <span
                 className={`session-rn-status ${isTrialBooking ? "dashboard-rn-status-pending" : "dashboard-rn-status-ok"}`}
               >
@@ -589,9 +593,9 @@ export function DashboardPage(props: {
               role="button"
               tabIndex={0}
               aria-label={t(props.language, {
-                es: `Profesional activo: ${activeProfessional.fullName}. Abrir ficha.`,
-                en: `Active professional: ${activeProfessional.fullName}. Open profile.`,
-                pt: `Profissional ativo: ${activeProfessional.fullName}. Abrir ficha.`
+                es: `Profesional activo: ${professionalAccessibleName(activeProfessional)}. Abrir ficha.`,
+                en: `Active professional: ${professionalAccessibleName(activeProfessional)}. Open profile.`,
+                pt: `Profissional ativo: ${professionalAccessibleName(activeProfessional)}. Abrir ficha.`
               })}
               onClick={() => props.onGoToProfessional(activeProfessional.id)}
               onKeyDown={(event) => {
@@ -606,11 +610,13 @@ export function DashboardPage(props: {
                 <img
                   className="active-professional-avatar"
                   src={professionalPhotoSrc(props.professionalPhotoMap[activeProfessional.id])}
-                  alt={activeProfessional.fullName}
+                  alt={professionalPhotoAlt(activeProfessional)}
                   onError={props.onImageFallback}
                 />
                 <div>
-                  <h3>{activeProfessional.fullName}</h3>
+                  <h3>
+                    <ProfessionalNameStack professional={activeProfessional} as="span" />
+                  </h3>
                   <p>{activeProfessional.title}</p>
                 </div>
               </div>
@@ -726,7 +732,9 @@ export function DashboardPage(props: {
                         </div>
                         <div className="session-management-cell session-management-meta">
                           <span className="session-management-cell-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                          <strong>{bookingProfessional.fullName}</strong>
+                          <strong>
+                            <ProfessionalNameStack professional={bookingProfessional} as="span" />
+                          </strong>
                         </div>
                         <div className="session-management-cell session-management-cell-status">
                           <span className="session-management-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
@@ -832,7 +840,9 @@ export function DashboardPage(props: {
                                   language: props.language
                                 })}
                               </span>
-                              <strong className="session-rn-name">{bookingProfessional.fullName}</strong>
+                              <strong className="session-rn-name">
+                <ProfessionalNameStack professional={bookingProfessional} as="span" />
+              </strong>
                               <span className="session-rn-status">{statusLine}</span>
                             </div>
                             {!isTrialBooking ? (
@@ -1109,7 +1119,7 @@ export function DashboardPage(props: {
                 >
                   {props.professionals.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.fullName} - {item.compatibility}%
+                      {professionalAccessibleName(item)} - {item.compatibility}%
                     </option>
                   ))}
                 </select>

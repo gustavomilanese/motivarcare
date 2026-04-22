@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
+import { marketFromResidencyCountry } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { professionalPublicListingLabel, yearsExperienceFromGraduationYear } from "../../lib/professionalListingDisplayName.js";
+import {
+  professionalPublicListingLabel,
+  resolvedFirstLastFromUserRecord,
+  yearsExperienceFromGraduationYear
+} from "../../lib/professionalListingDisplayName.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getFinanceRules } from "../finance/finance.service.js";
@@ -35,7 +40,13 @@ const professionalDisplayOverridesSchema = z.record(z.string(), professionalDisp
 const submitIntakeSchema = z.object({
   answers: z.record(z.string().min(1), z.string().trim().min(1)).refine((answers) => Object.keys(answers).length > 0, {
     message: "Intake answers are required"
-  })
+  }),
+  residencyCountry: z
+    .string()
+    .trim()
+    .length(2)
+    .regex(/^[A-Za-z]{2}$/)
+    .transform((value) => value.toUpperCase())
 });
 
 const imageSourceSchema = z
@@ -59,6 +70,14 @@ const updatePublicProfileSchema = z.object({
   practiceBand: z.string().trim().max(120).nullable().optional(),
   gender: z.string().trim().max(60).nullable().optional(),
   birthCountry: z.string().trim().max(120).nullable().optional(),
+  residencyCountry: z
+    .string()
+    .trim()
+    .length(2)
+    .regex(/^[A-Za-z]{2}$/)
+    .transform((value) => value.toUpperCase())
+    .nullable()
+    .optional(),
   focusPrimary: z.string().trim().max(500).nullable().optional(),
   focusAreas: z.array(z.string().trim().min(1).max(120)).max(25).optional(),
   languages: z.array(z.string().trim().min(1).max(40)).max(10).nullable().optional(),
@@ -104,7 +123,7 @@ const purchaseIndividualSessionsSchema = z.object({
   sessionCount: z.coerce.number().int().min(1).max(99)
 });
 const patchPatientMarketSchema = z.object({
-  market: z.enum(["AR", "US"])
+  market: z.enum(["AR", "US", "BR", "ES"])
 });
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()
@@ -285,9 +304,23 @@ async function getOrCreateGlobalIndividualSessionPackage(market: Market): Promis
     ? Math.max(100, Math.round(referenceBundle.priceCents / referenceBundle.credits))
     : market === "US"
       ? 12_000
-      : 120_000;
-  const currency = referenceBundle?.currency ?? (market === "US" ? "usd" : "ars");
-  const paymentProvider = market === "US" ? "STRIPE" : "MERCADOPAGO";
+      : market === "AR"
+        ? 120_000
+        : market === "BR"
+          ? 350_000
+          : market === "ES"
+            ? 9_900
+            : 12_000;
+  const currency =
+    referenceBundle?.currency
+    ?? (market === "AR"
+      ? "ars"
+      : market === "BR"
+        ? "brl"
+        : market === "ES"
+          ? "eur"
+          : "usd");
+  const paymentProvider = market === "AR" ? "MERCADOPAGO" : "STRIPE";
 
   return prisma.sessionPackage.upsert({
     where: { market_stripePriceId: { market, stripePriceId: AUTO_INDIVIDUAL_SESSION_STRIPE_ID } },
@@ -500,14 +533,20 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     );
   });
 
-  return professionals.map((professional) => ({
-    id: professional.id,
-    userId: professional.user.id,
-    firstName: professional.user.firstName ?? "",
-    lastName: professional.user.lastName ?? "",
-    fullName: professionalPublicListingLabel({
+  return professionals.map((professional) => {
+    const nameParts = resolvedFirstLastFromUserRecord({
       firstName: professional.user.firstName,
       lastName: professional.user.lastName,
+      fullName: professional.user.fullName
+    });
+    return {
+    id: professional.id,
+    userId: professional.user.id,
+    firstName: nameParts.firstName,
+    lastName: nameParts.lastName,
+    fullName: professionalPublicListingLabel({
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
       fullNameLegacy: professional.user.fullName
     }),
     title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
@@ -550,7 +589,8 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
         startsAt: slot.startsAt,
         endsAt: slot.endsAt
       }))
-  }));
+    };
+  });
 }
 
 async function listDirectoryProfessionals(): Promise<DirectoryProfessional[]> {
@@ -727,6 +767,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         id: patient?.id,
         avatarUrl: patient?.user?.avatarUrl ?? null,
         market: patient?.market ?? "AR",
+        residencyCountry: patient?.residencyCountry ?? null,
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
         status: patient?.status,
@@ -754,17 +795,26 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             : null
         })),
         activeProfessional: activeProfessional
-          ? {
-              id: activeProfessional.id,
-              userId: activeProfessional.user.id,
-              fullName: professionalPublicListingLabel({
+          ? (() => {
+              const apName = resolvedFirstLastFromUserRecord({
                 firstName: activeProfessional.user.firstName,
                 lastName: activeProfessional.user.lastName,
-                fullNameLegacy: activeProfessional.user.fullName
-              }),
-              email: activeProfessional.user.email,
-              photoUrl: activeProfessional.photoUrl ?? null
-            }
+                fullName: activeProfessional.user.fullName
+              });
+              return {
+                id: activeProfessional.id,
+                userId: activeProfessional.user.id,
+                firstName: apName.firstName,
+                lastName: apName.lastName,
+                fullName: professionalPublicListingLabel({
+                  firstName: apName.firstName,
+                  lastName: apName.lastName,
+                  fullNameLegacy: activeProfessional.user.fullName
+                }),
+                email: activeProfessional.user.email,
+                photoUrl: activeProfessional.photoUrl ?? null
+              };
+            })()
           : null
       }
     });
@@ -789,6 +839,14 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       }
     });
 
+    const professionalNameParts = professional
+      ? resolvedFirstLastFromUserRecord({
+          firstName: professional.user.firstName,
+          lastName: professional.user.lastName,
+          fullName: professional.user.fullName
+        })
+      : null;
+
     return res.json({
       role: actor.role,
       profile: professional
@@ -796,6 +854,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             id: professional.id,
             userId: professional.user.id,
             fullName: professional.user.fullName,
+            firstName: (professionalNameParts ?? { firstName: "", lastName: "" }).firstName,
+            lastName: (professionalNameParts ?? { firstName: "", lastName: "" }).lastName,
             email: professional.user.email,
             visible: professional.visible,
             professionalTitle: professional.professionalTitle,
@@ -804,6 +864,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             practiceBand: professional.practiceBand,
             gender: professional.gender,
             birthCountry: professional.birthCountry,
+            residencyCountry: professional.residencyCountry ?? null,
             focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
             focusAreas: normalizeFocusAreas(professional.focusAreas, professional.focusPrimary),
             languages: Array.isArray(professional.languages) ? professional.languages : [],
@@ -953,6 +1014,8 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
   let activeProfessional: {
     id: string;
     userId: string;
+    firstName: string;
+    lastName: string;
     fullName: string;
     email: string;
   } | null = null;
@@ -977,12 +1040,19 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
       return res.status(404).json({ error: "Professional not found" });
     }
 
+    const patchApName = resolvedFirstLastFromUserRecord({
+      firstName: professional.user.firstName,
+      lastName: professional.user.lastName,
+      fullName: professional.user.fullName
+    });
     activeProfessional = {
       id: professional.id,
       userId: professional.user.id,
+      firstName: patchApName.firstName,
+      lastName: patchApName.lastName,
       fullName: professionalPublicListingLabel({
-        firstName: professional.user.firstName,
-        lastName: professional.user.lastName,
+        firstName: patchApName.firstName,
+        lastName: patchApName.lastName,
         fullNameLegacy: professional.user.fullName
       }),
       email: professional.user.email
@@ -1366,12 +1436,23 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
     }
   }
 
+  const derivedMarket = marketFromResidencyCountry(parsed.data.residencyCountry);
+  await prisma.patientProfile.update({
+    where: { id: actor.patientProfileId },
+    data: {
+      residencyCountry: parsed.data.residencyCountry,
+      market: derivedMarket
+    }
+  });
+
   return res.status(201).json({
     intake: {
       id: intake.id,
       riskLevel: intake.riskLevel,
       completedAt: intake.createdAt
-    }
+    },
+    market: derivedMarket,
+    residencyCountry: parsed.data.residencyCountry
   });
 });
 

@@ -25,6 +25,7 @@ describe("onboarding defaults", () => {
       practiceBand: "1000-3000 horas",
       gender: "Hombre",
       birthCountry: "Uruguay",
+      residencyCountry: "UY",
       focusAreas: ["Ansiedad"],
       languages: ["Espanol", "Ingles"],
       graduationYear: 2016,
@@ -59,6 +60,7 @@ describe("onboarding defaults", () => {
     expect(draft.stripeVerified).toBe(true);
     expect(draft.visible).toBe(false);
     expect(draft.graduationYear).toBe(2016);
+    expect(draft.residencyCountry).toBe("UY");
     expect(draft.diplomas).toHaveLength(1);
   });
 
@@ -80,7 +82,8 @@ describe("onboarding defaults", () => {
       personalData: {
         graduationYear: "2018",
         gender: "Hombre",
-        birthCountry: "Uruguay"
+        birthCountry: "Uruguay",
+        residencyCountry: "UY"
       },
       educationData: {
         institution: "Universidad X",
@@ -97,6 +100,7 @@ describe("onboarding defaults", () => {
       Math.max(0, Math.min(80, new Date().getFullYear() - 2018))
     );
     expect(draft.discount8).toBe(8);
+    expect(draft.residencyCountry).toBe("UY");
     expect(draft.photoUrl).toBe("data:image/png;base64,AAA");
     expect(draft.visible).toBe(false);
     expect(draft.stripeVerified).toBe(false);
@@ -114,7 +118,7 @@ describe("onboarding defaults", () => {
       workLanguages: ["Espanol"],
       summaryText: "Resumen",
       priceData: { sessionPrice: "50", discount4: "10", discount8: "8", discount12: "12" },
-      personalData: { graduationYear: "2018", gender: "Hombre", birthCountry: "Uruguay" },
+      personalData: { graduationYear: "2018", gender: "Hombre", birthCountry: "Uruguay", residencyCountry: "UY" },
       educationData: { institution: "U", specialty: "Lic", startYear: "2014", graduationYear: "2018" }
     });
     expect(draft.focusAreas).toEqual(["Ansiedad", "Otro (objetivos de terapia): definir límites"]);
@@ -131,7 +135,7 @@ describe("onboarding defaults", () => {
       workLanguages: ["Espanol"],
       summaryText: "",
       priceData: { sessionPrice: "", discount4: "", discount8: "", discount12: "" },
-      personalData: { graduationYear: "", gender: "Hombre", birthCountry: "UY" },
+      personalData: { graduationYear: "", gender: "Hombre", birthCountry: "UY", residencyCountry: "AR" },
       educationData: { institution: "", specialty: "", startYear: "", graduationYear: "" }
     });
     expect(draft.photoUrl).toBeNull();

@@ -170,7 +170,8 @@ export function ProfessionalAuthFlow(props: {
     graduationYear: "",
     gender: "",
     birthYear: "",
-    birthCountry: ""
+    birthCountry: "",
+    residencyCountry: ""
   });
   const [mobilePreAuthSession, setMobilePreAuthSession] = useState<ProfessionalWebOnboardingFinishMeta | null>(null);
   const [mobileRegisterError, setMobileRegisterError] = useState("");
@@ -312,7 +313,8 @@ export function ProfessionalAuthFlow(props: {
     personalData: {
       graduationYear: personalData.graduationYear,
       gender: personalData.gender,
-      birthCountry: personalData.birthCountry
+      birthCountry: personalData.birthCountry,
+      residencyCountry: personalData.residencyCountry
     },
     educationData: {
       institution: educationData.institution,

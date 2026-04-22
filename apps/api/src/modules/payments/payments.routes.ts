@@ -129,14 +129,7 @@ paymentsRouter.post("/stripe/checkout-session", requireAuth, async (req: Authent
     where: { id: actor.patientProfileId },
     select: { market: true }
   });
-  const checkoutMarket: Market = parsed.data.currency === "USD" ? "US" : "AR";
-  if (patientRow && patientRow.market !== checkoutMarket) {
-    return res.status(409).json({
-      error: "Checkout currency does not match patient market",
-      patientMarket: patientRow.market,
-      requestedMarket: checkoutMarket
-    });
-  }
+  const checkoutMarket: Market = patientRow?.market ?? "AR";
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",

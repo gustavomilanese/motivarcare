@@ -22,6 +22,8 @@ import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availa
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
+import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
+import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import type {
   Booking,
   PackagePlan,
@@ -969,7 +971,9 @@ export function BookingPage(props: {
                         </div>
                         <div className="session-management-cell session-management-meta">
                           <span className="session-management-cell-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                          <strong>{bookingProfessional.fullName}</strong>
+                          <strong>
+                            <ProfessionalNameStack professional={bookingProfessional} as="span" />
+                          </strong>
                         </div>
                         <div className="session-management-cell session-management-cell-status">
                           <span className="session-management-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
@@ -1084,7 +1088,9 @@ export function BookingPage(props: {
                                   language: props.language
                                 })}
                               </span>
-                              <strong className="session-rn-name">{bookingProfessional.fullName}</strong>
+                              <strong className="session-rn-name">
+                                <ProfessionalNameStack professional={bookingProfessional} as="span" />
+                              </strong>
                               <span className="session-rn-status">{statusLine}</span>
                             </div>
                             {!isTrialBooking ? (
@@ -1275,7 +1281,7 @@ export function BookingPage(props: {
                   <li key={booking.id}>
                     <div>
                       <strong>{formatDateTime({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
-                      <span>{bookingProfessional.fullName}</span>
+                      <span>{professionalAccessibleName(bookingProfessional)}</span>
                     </div>
                     <span className={`session-status-pill ${booking.status}`}>{statusLabel}</span>
                   </li>

@@ -34,6 +34,7 @@ export function createDefaultOnboardingPatchDraft(): OnboardingPatchDraft {
     practiceBand: null,
     gender: null,
     birthCountry: null,
+    residencyCountry: null,
     focusPrimary: null,
     focusAreas: null,
     languages: null,
@@ -66,6 +67,10 @@ export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboarding
     practiceBand: trimOrNull(payload.practiceBand),
     gender: trimOrNull(payload.gender),
     birthCountry: trimOrNull(payload.birthCountry),
+    residencyCountry: (() => {
+      const v = payload.residencyCountry?.trim().toUpperCase();
+      return v && /^[A-Z]{2}$/.test(v) ? v : null;
+    })(),
     focusPrimary:
       payload.focusAreas.length > 0
         ? payload.focusAreas.join(", ").slice(0, 500)
@@ -106,6 +111,10 @@ export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboar
     practiceBand: trimOrNull(inputs.selectedPracticeHours),
     gender: trimOrNull(inputs.personalData.gender),
     birthCountry: trimOrNull(inputs.personalData.birthCountry),
+    residencyCountry: (() => {
+      const v = inputs.personalData.residencyCountry?.trim().toUpperCase();
+      return v && /^[A-Z]{2}$/.test(v) ? v : null;
+    })(),
     focusPrimary:
       inputs.problemFocusSelections && inputs.problemFocusSelections.length > 0
         ? inputs.problemFocusSelections.join(", ").slice(0, 500)

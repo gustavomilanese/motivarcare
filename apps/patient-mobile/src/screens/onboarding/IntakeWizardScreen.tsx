@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import {
   applyIntakeOptionSelection,
   buildTherapistPreferencesStored,
@@ -284,7 +285,8 @@ export function IntakeWizardScreen() {
   const styles = useMemo(() => buildIntakeStyles(colors), [colors]);
   const { token, signOut } = useAuth();
   const { refresh } = usePatientProfile();
-  const [index, setIndex] = useState(0);
+  const [screenIndex, setScreenIndex] = useState(0);
+  const [residencyCountry, setResidencyCountry] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -292,18 +294,39 @@ export function IntakeWizardScreen() {
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
   const [picker, setPicker] = useState<null | "gender" | "age" | "lgbt">(null);
 
-  const question = intakeQuestions[index];
-  const progress = useMemo(() => ((index + 1) / intakeQuestions.length) * 100, [index]);
+  const totalScreens = 1 + intakeQuestions.length;
+  const questionIdx = screenIndex === 0 ? -1 : screenIndex - 1;
+  const question = questionIdx >= 0 ? intakeQuestions[questionIdx] : null;
+  const progress = useMemo(() => ((screenIndex + 1) / totalScreens) * 100, [screenIndex, totalScreens]);
 
   const persistAnswer = useCallback(
     (value: string) => {
+      if (!question) {
+        return;
+      }
       setAnswers((prev) => ({ ...prev, [question.id]: value }));
     },
-    [question.id]
+    [question]
   );
 
   const goNext = useCallback(async () => {
     Keyboard.dismiss();
+
+    if (screenIndex === 0) {
+      const iso = residencyCountry.trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(iso)) {
+        setError("Elegí tu país de residencia para continuar.");
+        return;
+      }
+      setError("");
+      setScreenIndex(1);
+      return;
+    }
+
+    if (!question) {
+      return;
+    }
+
     const raw = answers[question.id] ?? "";
     const currentAnswer = raw.trim();
     if (!currentAnswer) {
@@ -330,8 +353,8 @@ export function IntakeWizardScreen() {
       return;
     }
 
-    if (index < intakeQuestions.length - 1) {
-      setIndex((i) => i + 1);
+    if (screenIndex < totalScreens - 1) {
+      setScreenIndex((i) => i + 1);
       return;
     }
 
@@ -344,9 +367,20 @@ export function IntakeWizardScreen() {
       return;
     }
 
+    const isoRes = residencyCountry.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(isoRes)) {
+      setError("Falta país de residencia.");
+      setScreenIndex(0);
+      return;
+    }
+
     setLoading(true);
     try {
-      await submitPatientIntake({ token, answers: { ...answers, [question.id]: raw } });
+      await submitPatientIntake({
+        token,
+        answers: { ...answers, [question.id]: raw },
+        residencyCountry: isoRes
+      });
       await refresh();
     } catch (submissionError) {
       const message = submissionError instanceof Error ? submissionError.message : "No se pudo guardar el intake.";
@@ -354,19 +388,20 @@ export function IntakeWizardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [answers, index, question.allowMultiple, question.id, question.otherFollowupOption, refresh, token]);
+  }, [answers, question, refresh, residencyCountry, screenIndex, token, totalScreens]);
 
   const goBack = useCallback(() => {
     Keyboard.dismiss();
     setError("");
-    setIndex((i) => Math.max(0, i - 1));
+    setScreenIndex((i) => Math.max(0, i - 1));
   }, []);
 
-  const draft = answers[question.id] ?? "";
+  const draft = question ? answers[question.id] ?? "" : "";
   const pieces = useMemo(() => intakePieces(draft), [draft]);
-  const followMark = question.otherFollowupOption;
+  const followMark = question?.otherFollowupOption;
   const showOtherFollowup =
-    Boolean(followMark) && pieces.some((p) => p === followMark || (followMark && p.startsWith(`${followMark}:`)));
+    Boolean(question && followMark)
+    && pieces.some((p) => p === followMark || (followMark && p.startsWith(`${followMark}:`)));
   const otherDetailValue = (() => {
     if (!followMark) {
       return "";
@@ -375,12 +410,13 @@ export function IntakeWizardScreen() {
     return hit ? hit.slice(followMark.length + 1) : "";
   })();
 
-  const therapistPrefParsed = question.therapistPreferenceComposite
-    ? parseTherapistPreferencesStored(answers.therapistPreferences ?? "")
-    : null;
+  const therapistPrefParsed =
+    question?.therapistPreferenceComposite
+      ? parseTherapistPreferencesStored(answers.therapistPreferences ?? "")
+      : null;
 
   useEffect(() => {
-    if (question.id !== "therapistPreferences") {
+    if (question?.id !== "therapistPreferences") {
       return;
     }
     setAnswers((prev) => {
@@ -397,7 +433,7 @@ export function IntakeWizardScreen() {
         )
       };
     });
-  }, [question.id]);
+  }, [question?.id]);
 
   const scrollPad = { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 };
 
@@ -466,7 +502,7 @@ export function IntakeWizardScreen() {
       >
         <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <Text style={styles.heroKicker}>
-            Paso {index + 1} de {intakeQuestions.length}
+            Paso {screenIndex + 1} de {totalScreens}
           </Text>
           <Text style={styles.heroTitle}>Tu bienestar empieza acá</Text>
           <Text style={styles.heroLead}>Respuestas confidenciales · Mejor matching con tu profesional</Text>
@@ -476,6 +512,32 @@ export function IntakeWizardScreen() {
         </LinearGradient>
 
         <View style={styles.card}>
+          {screenIndex === 0 ? (
+            <>
+              <Text style={styles.qTitle}>¿En qué país vivís habitualmente?</Text>
+              <Text style={styles.qHelp}>
+                Definimos precios y pagos según el mercado (AR, BR, ES, US o USD para el resto de Latinoamérica y el Caribe).
+              </Text>
+              <View style={{ gap: 10 }}>
+                {RESIDENCY_COUNTRY_OPTIONS.map((row) => {
+                  const selected = residencyCountry === row.code;
+                  return (
+                    <PrimaryButton
+                      key={row.code}
+                      label={row.names.es}
+                      variant={selected ? "primary" : "ghost"}
+                      onPress={() => {
+                        setError("");
+                        setResidencyCountry(row.code);
+                      }}
+                      style={styles.optionBtn}
+                    />
+                  );
+                })}
+              </View>
+            </>
+          ) : question ? (
+            <>
           <Text style={styles.qTitle}>{question.title}</Text>
           <Text style={styles.qHelp}>{question.help}</Text>
 
@@ -498,7 +560,7 @@ export function IntakeWizardScreen() {
                     return;
                   }
                   setAnswers((prev) => ({ ...prev, therapistPreferences: THERAPIST_PREF_EXCLUSIVE_ES }));
-                  setIndex((i) => Math.min(i + 1, intakeQuestions.length - 1));
+                  setScreenIndex((i) => Math.min(i + 1, totalScreens - 1));
                 }}
                 style={[styles.therapistNoPref, therapistPrefParsed.exclusive && styles.therapistNoPrefActive]}
               >
@@ -612,17 +674,19 @@ export function IntakeWizardScreen() {
               />
             </>
           ) : null}
+            </>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.actions}>
-            {index > 0 ? (
+            {screenIndex > 0 ? (
               <PrimaryButton label="Atrás" variant="ghost" onPress={goBack} style={styles.half} />
             ) : (
               <View style={styles.half} />
             )}
             <PrimaryButton
-              label={index >= intakeQuestions.length - 1 ? "Finalizar" : "Siguiente"}
+              label={screenIndex >= totalScreens - 1 ? "Finalizar" : "Siguiente"}
               loading={loading}
               onPress={() => {
                 void goNext();

@@ -116,6 +116,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     practiceBand: "",
     gender: "",
     birthCountry: "",
+    residencyCountry: "",
     focusAreas: [] as string[],
     languages: [] as string[],
     about: "",
@@ -374,6 +375,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       && form.practiceBand
       && form.gender
       && form.birthCountry
+      && form.residencyCountry.trim().length === 2
       && form.focusAreas.length
       && form.languages.length
     ),
@@ -721,6 +723,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       practiceBand: form.practiceBand,
       gender: form.gender,
       birthCountry: form.birthCountry,
+      residencyCountry: form.residencyCountry.trim().toUpperCase(),
       focusAreas: form.focusAreas,
       languages: form.languages,
       graduationYear: gy !== null && Number.isFinite(gy) ? gy : null,

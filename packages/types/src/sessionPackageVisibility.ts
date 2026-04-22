@@ -7,8 +7,8 @@ export interface SessionPackagesVisibilityPayload {
   landing: string[];
   /** Legacy: mismos ids que portal AR cuando no había split por mercado. */
   patient: string[];
-  patientByMarket: { AR: string[]; US: string[] };
+  patientByMarket: { AR: string[]; US: string[]; BR: string[]; ES: string[] };
   featuredLanding: string | null;
   featuredPatient: string | null;
-  featuredPatientByMarket: { AR: string | null; US: string | null };
+  featuredPatientByMarket: { AR: string | null; US: string | null; BR: string | null; ES: string | null };
 }

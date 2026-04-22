@@ -20,6 +20,22 @@ export function splitFullNameToFirstLast(fullName: string): { firstName: string;
   };
 }
 
+/**
+ * Usa `firstName`/`lastName` persistidos; si ambos vacíos, deriva desde `fullName` (compat. con cuentas viejas).
+ */
+export function resolvedFirstLastFromUserRecord(params: {
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName: string;
+}): { firstName: string; lastName: string } {
+  const fn = (params.firstName ?? "").trim();
+  const ln = (params.lastName ?? "").trim();
+  if (fn || ln) {
+    return { firstName: fn, lastName: ln };
+  }
+  return splitFullNameToFirstLast(params.fullName ?? "");
+}
+
 export function joinFirstLastToFullName(firstName: string, lastName: string): string {
   return [firstName, lastName].map((s) => s.trim()).filter(Boolean).join(" ").trim();
 }

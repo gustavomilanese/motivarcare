@@ -393,6 +393,87 @@ async function seedPackagesAndPurchase(context: SeedContext) {
     }
   });
 
+  for (const row of [
+    {
+      market: "BR" as const,
+      stripePriceId: "br-pkg-4-demo",
+      name: "Inicio - 4 sessões (BR)",
+      credits: 4,
+      priceCents: 199_000,
+      discountPercent: 30,
+      currency: "brl"
+    },
+    {
+      market: "BR" as const,
+      stripePriceId: "br-pkg-8-demo",
+      name: "Continuidade - 8 sessões (BR)",
+      credits: 8,
+      priceCents: 379_000,
+      discountPercent: 36,
+      currency: "brl"
+    },
+    {
+      market: "BR" as const,
+      stripePriceId: "br-pkg-12-demo",
+      name: "Intensivo - 12 sessões (BR)",
+      credits: 12,
+      priceCents: 529_000,
+      discountPercent: 40,
+      currency: "brl"
+    },
+    {
+      market: "ES" as const,
+      stripePriceId: "es-pkg-4-demo",
+      name: "Inicio - 4 sesiones (ES)",
+      credits: 4,
+      priceCents: 33_600,
+      discountPercent: 30,
+      currency: "eur"
+    },
+    {
+      market: "ES" as const,
+      stripePriceId: "es-pkg-8-demo",
+      name: "Continuidad - 8 sesiones (ES)",
+      credits: 8,
+      priceCents: 63_200,
+      discountPercent: 36,
+      currency: "eur"
+    },
+    {
+      market: "ES" as const,
+      stripePriceId: "es-pkg-12-demo",
+      name: "Intensivo - 12 sesiones (ES)",
+      credits: 12,
+      priceCents: 89_600,
+      discountPercent: 40,
+      currency: "eur"
+    }
+  ]) {
+    await prisma.sessionPackage.upsert({
+      where: { market_stripePriceId: { market: row.market, stripePriceId: row.stripePriceId } },
+      update: {
+        name: row.name,
+        credits: row.credits,
+        priceCents: row.priceCents,
+        discountPercent: row.discountPercent,
+        currency: row.currency,
+        active: true,
+        paymentProvider: "STRIPE"
+      },
+      create: {
+        market: row.market,
+        paymentProvider: "STRIPE",
+        stripePriceId: row.stripePriceId,
+        name: row.name,
+        credits: row.credits,
+        priceCents: row.priceCents,
+        discountPercent: row.discountPercent,
+        currency: row.currency,
+        active: true
+      }
+    });
+  }
+
   const growthPackage = await prisma.sessionPackage.findUniqueOrThrow({
     where: { market_stripePriceId: { market: "AR", stripePriceId: "pkg-8-demo" } }
   });

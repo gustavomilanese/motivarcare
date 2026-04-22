@@ -23,7 +23,7 @@ const sessionPackagesChannelSchema = z.object({
   channel: z.enum(["landing", "patient"]).optional(),
   professionalId: z.string().trim().min(1).optional(),
   /** Catálogo por mercado (default AR). */
-  market: z.enum(["AR", "US"]).optional()
+  market: z.enum(["AR", "US", "BR", "ES"]).optional()
 });
 
 const imageSourceSchema = z
@@ -179,7 +179,10 @@ publicRouter.get("/session-packages", async (req, res) => {
     return res.status(400).json({ error: "Invalid query params", details: parsed.error.flatten() });
   }
 
-  const market: Market = parsed.data.market === "US" ? "US" : "AR";
+  const market: Market =
+    parsed.data.market === "US" || parsed.data.market === "BR" || parsed.data.market === "ES"
+      ? parsed.data.market
+      : "AR";
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({

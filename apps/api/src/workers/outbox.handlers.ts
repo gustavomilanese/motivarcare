@@ -90,7 +90,11 @@ async function processStripeCheckoutCompleted(payload: unknown) {
   const currency = normalizeCurrency(checkoutSession?.currency ?? metadata?.currency);
   const marketRaw = metadata?.market;
   const market: Market | null =
-    marketRaw === "AR" || marketRaw === "US" ? marketRaw : stripePriceId ? "US" : "AR";
+    marketRaw === "AR" || marketRaw === "US" || marketRaw === "BR" || marketRaw === "ES"
+      ? marketRaw
+      : stripePriceId
+        ? "US"
+        : "AR";
   const paymentStatus = typeof checkoutSession?.payment_status === "string" ? checkoutSession.payment_status : "unknown";
 
   if (!checkoutSessionId || !patientId) {

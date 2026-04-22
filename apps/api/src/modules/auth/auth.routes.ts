@@ -4,7 +4,7 @@ import { google } from "googleapis";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { userNamePartsFromFullNameString } from "@therapy/types";
+import { joinFirstLastToFullName, userNamePartsFromFullNameString } from "@therapy/types";
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
@@ -27,7 +27,7 @@ const registerSchema = z.object({
   timezone: z.string().optional(),
   isTestUser: z.boolean().optional(),
   /** Solo paciente: mercado por defecto AR. */
-  market: z.enum(["AR", "US"]).optional()
+  market: z.enum(["AR", "US", "BR", "ES"]).optional()
 });
 
 const loginSchema = z.object({
@@ -53,10 +53,23 @@ const avatarImageSourceSchema = z
     message: "Invalid avatar image source"
   });
 
-const updateMeSchema = z.object({
-  fullName: z.string().trim().min(2).max(120).optional(),
-  avatarUrl: z.union([avatarImageSourceSchema, z.null()]).optional()
-});
+const updateMeSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(120).optional(),
+    firstName: z.string().trim().max(80).optional(),
+    lastName: z.string().trim().max(80).optional(),
+    avatarUrl: z.union([avatarImageSourceSchema, z.null()]).optional()
+  })
+  .superRefine((data, ctx) => {
+    const hasStructured = data.firstName !== undefined || data.lastName !== undefined;
+    if (data.fullName !== undefined && hasStructured) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Send either fullName or firstName/lastName, not both",
+        path: ["fullName"]
+      });
+    }
+  });
 
 const googleCalendarConnectSchema = z.object({
   returnPath: z.string().trim().min(1).max(200).optional(),
@@ -393,7 +406,10 @@ authRouter.post("/register", async (req, res) => {
         parsed.data.role === "PATIENT"
           ? {
               create: {
-                market: parsed.data.market === "US" ? "US" : "AR",
+                market:
+                  parsed.data.market === "US" || parsed.data.market === "BR" || parsed.data.market === "ES"
+                    ? parsed.data.market
+                    : "AR",
                 timezone: parsed.data.timezone ?? "America/New_York",
                 lastSeenTimezone: parsed.data.timezone ?? "America/New_York"
               }
@@ -874,19 +890,33 @@ authRouter.patch("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
   }
 
-  const namePatch =
-    parsed.data.fullName !== undefined
-      ? userNamePartsFromFullNameString(parsed.data.fullName.trim())
-      : null;
+  const hasStructuredName = parsed.data.firstName !== undefined || parsed.data.lastName !== undefined;
+  let nameFields: { fullName: string; firstName: string; lastName: string } | null = null;
+  if (hasStructuredName) {
+    const full = joinFirstLastToFullName(parsed.data.firstName ?? "", parsed.data.lastName ?? "").trim();
+    if (full.length < 2) {
+      return res.status(400).json({
+        error: "Invalid name",
+        details: "firstName and lastName together must be at least 2 characters"
+      });
+    }
+    nameFields = {
+      fullName: full,
+      firstName: (parsed.data.firstName ?? "").trim(),
+      lastName: (parsed.data.lastName ?? "").trim()
+    };
+  } else if (parsed.data.fullName !== undefined) {
+    nameFields = userNamePartsFromFullNameString(parsed.data.fullName.trim());
+  }
 
   const updated = await prisma.user.update({
     where: { id: req.auth.userId },
     data: {
-      ...(namePatch
+      ...(nameFields
         ? {
-            fullName: namePatch.fullName,
-            firstName: namePatch.firstName,
-            lastName: namePatch.lastName
+            fullName: nameFields.fullName,
+            firstName: nameFields.firstName,
+            lastName: nameFields.lastName
           }
         : {}),
       ...(parsed.data.avatarUrl !== undefined ? { avatarUrl: parsed.data.avatarUrl } : {})

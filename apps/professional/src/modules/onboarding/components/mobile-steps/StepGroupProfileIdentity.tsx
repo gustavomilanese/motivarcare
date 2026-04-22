@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -236,6 +237,7 @@ export function ProfessionalPersonalDataStep(props: {
     gender: string;
     birthYear: string;
     birthCountry: string;
+    residencyCountry: string;
   };
   onChange: (nextValue: {
     publicName: string;
@@ -246,6 +248,7 @@ export function ProfessionalPersonalDataStep(props: {
     gender: string;
     birthYear: string;
     birthCountry: string;
+    residencyCountry: string;
   }) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -253,6 +256,8 @@ export function ProfessionalPersonalDataStep(props: {
   const [genderOpen, setGenderOpen] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
+  const [residencyOpen, setResidencyOpen] = useState(false);
+  const [residencySearch, setResidencySearch] = useState("");
   const graduationYearOptions = useMemo(() => {
     const current = new Date().getFullYear();
     return Array.from({ length: current - 1969 }, (_, index) => String(current - index));
@@ -276,6 +281,23 @@ export function ProfessionalPersonalDataStep(props: {
   const filteredCountries = countries.filter((country) =>
     country.toLowerCase().includes(countrySearch.trim().toLowerCase())
   );
+  const residencyLabel = useMemo(() => {
+    const c = props.value.residencyCountry.trim().toUpperCase();
+    if (!c) {
+      return "";
+    }
+    const row = RESIDENCY_COUNTRY_OPTIONS.find((o) => o.code === c);
+    return row ? row.names[props.language] : c;
+  }, [props.language, props.value.residencyCountry]);
+  const filteredResidency = useMemo(() => {
+    const q = residencySearch.trim().toLowerCase();
+    if (!q) {
+      return RESIDENCY_COUNTRY_OPTIONS;
+    }
+    return RESIDENCY_COUNTRY_OPTIONS.filter((row) =>
+      [row.names.es, row.names.en, row.names.pt, row.code].some((s) => s.toLowerCase().includes(q))
+    );
+  }, [residencySearch]);
   const birthYears = Array.from({ length: 81 }, (_, index) => String(new Date().getFullYear() - 18 - index));
 
   const genderChoices = useMemo(
@@ -329,6 +351,7 @@ export function ProfessionalPersonalDataStep(props: {
     && props.value.gender.trim()
     && props.value.birthYear.trim()
     && props.value.birthCountry.trim()
+    && /^[A-Za-z]{2}$/.test(props.value.residencyCountry.trim())
   );
 
   return (
@@ -404,6 +427,25 @@ export function ProfessionalPersonalDataStep(props: {
             <span>{props.value.birthCountry || t(props.language, { es: "Pais de nacimiento", en: "Country of birth", pt: "Pais de nascimento" })}</span>
             <em>⌄</em>
           </button>
+
+          <button
+            type="button"
+            className="pro-personal-select"
+            onClick={() => {
+              setResidencySearch("");
+              setResidencyOpen(true);
+            }}
+          >
+            <span>
+              {residencyLabel
+                || t(props.language, {
+                  es: "Pais de residencia habitual",
+                  en: "Country of residence",
+                  pt: "Pais de residencia habitual"
+                })}
+            </span>
+            <em>⌄</em>
+          </button>
         </div>
 
         <button className="pro-primary pro-register-intro-cta" type="button" disabled={!canContinue} onClick={props.onContinue}>
@@ -459,6 +501,39 @@ export function ProfessionalPersonalDataStep(props: {
                   }}
                 >
                   {country}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {residencyOpen ? (
+          <div className="pro-country-modal" role="dialog" aria-modal="true">
+            <div className="pro-country-modal-head">
+              <label>
+                <input
+                  placeholder={t(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
+                  value={residencySearch}
+                  onChange={(event) => setResidencySearch(event.target.value)}
+                />
+              </label>
+              <button type="button" onClick={() => { setResidencyOpen(false); setResidencySearch(""); }}>
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+            </div>
+            <div className="pro-country-list">
+              {filteredResidency.map((row) => (
+                <button
+                  key={row.code}
+                  type="button"
+                  className={props.value.residencyCountry.trim().toUpperCase() === row.code ? "selected" : ""}
+                  onClick={() => {
+                    next({ residencyCountry: row.code });
+                    setResidencyOpen(false);
+                    setResidencySearch("");
+                  }}
+                >
+                  {row.names[props.language]}
                 </button>
               ))}
             </div>

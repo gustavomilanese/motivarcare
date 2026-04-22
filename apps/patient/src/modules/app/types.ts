@@ -78,6 +78,8 @@ export interface ProfileMeApiResponse {
     activeProfessional?: {
       id: string;
       userId: string;
+      firstName?: string;
+      lastName?: string;
       fullName: string;
       email: string;
       photoUrl?: string | null;
@@ -104,6 +106,8 @@ export interface SubmitIntakeApiResponse {
     riskLevel: "low" | "medium" | "high";
     completedAt: string;
   };
+  market?: Market;
+  residencyCountry?: string;
 }
 
 export interface BookingsMineApiResponse {
@@ -165,6 +169,8 @@ export interface IntakeState {
 
 export type IntakeCompletionPayload = {
   answers: Record<string, string>;
+  /** ISO 3166-1 alpha-2; define mercado comercial en API. */
+  residencyCountry: string;
 };
 
 export interface Professional {

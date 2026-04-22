@@ -14,11 +14,19 @@ export {
   joinFirstLastToFullName,
   professionalListingFromFullNameOnly,
   professionalPublicListingLabel,
+  resolvedFirstLastFromUserRecord,
   splitFullNameToFirstLast,
   userNamePartsFromFullNameString
 } from "./userName.js";
 
 export { MARKETS, isMarket, type Market } from "./market.js";
+
+export {
+  RESIDENCY_COUNTRY_OPTIONS,
+  marketFromResidencyCountry,
+  residencyCountryLabel,
+  type ResidencyCountryOption
+} from "./residencyMarket.js";
 
 export type { SessionPackagesVisibilityPayload } from "./sessionPackageVisibility.js";
 

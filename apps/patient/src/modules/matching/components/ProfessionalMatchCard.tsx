@@ -3,6 +3,7 @@ import { formatDateWithLocale, type AppLanguage, type LocalizedText, textByLangu
 import type { RankedProfessional } from "../matchingEngine";
 import type { MatchTimeSlot } from "../types";
 import { countryToFlag } from "../utils/countryFlag";
+import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
 import { professionalPhotoSrc } from "../../app/services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -178,7 +179,7 @@ export function ProfessionalMatchCard(props: {
       <img
         className="patient-therapist-avatar"
         src={photoUrl}
-        alt={professional.fullName}
+        alt={professionalPhotoAlt(professional)}
         onError={props.onImageFallback}
       />
 
@@ -186,7 +187,7 @@ export function ProfessionalMatchCard(props: {
         <header className="patient-therapist-head">
           <div className="patient-therapist-identity">
             <h3>
-              {professional.fullName}
+              <ProfessionalNameStack professional={professional} as="span" />
               {flag ? <span className="patient-therapist-flag"> {flag}</span> : null}
             </h3>
             <div className="patient-therapist-identity-meta">

@@ -6,6 +6,7 @@ import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
 import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
+import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -30,10 +31,19 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const loadProfile = async () => {
     try {
       const response = await apiRequest<{ role: string; profile: ProfessionalProfile }>("/api/profiles/me", props.token);
+      const nameParts = response.profile
+        ? resolvedFirstLastFromUserRecord({
+            firstName: response.profile.firstName,
+            lastName: response.profile.lastName,
+            fullName: response.profile.fullName ?? ""
+          })
+        : null;
       setProfile(
         response.profile
           ? {
               ...response.profile,
+              firstName: nameParts?.firstName ?? "",
+              lastName: nameParts?.lastName ?? "",
               timezone: response.profile.timezone ?? detectBrowserTimezone(),
               focusAreas:
                 Array.isArray(response.profile.focusAreas) && response.profile.focusAreas.length > 0
@@ -88,7 +98,8 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
       const authResponse = await apiRequest<{ message: string; user: AuthUser }>("/api/auth/me", props.token, {
         method: "PATCH",
         body: JSON.stringify({
-          fullName: profile.fullName
+          firstName: profile.firstName.trim(),
+          lastName: profile.lastName.trim()
         })
       });
       await apiRequest<{ message: string }>(`/api/profiles/professional/${profile.id}/public-profile`, props.token, {
@@ -198,10 +209,19 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             <h3>{t(props.language, { es: "Identidad profesional", en: "Professional identity", pt: "Identidade profissional" })}</h3>
             <div className="pro-grid-form">
               <label>
-                {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+                {t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}
                 <input
-                  value={profile.fullName}
-                  onChange={(event) => setProfile((current) => (current ? { ...current, fullName: event.target.value } : current))}
+                  value={profile.firstName}
+                  onChange={(event) => setProfile((current) => (current ? { ...current, firstName: event.target.value } : current))}
+                  autoComplete="given-name"
+                />
+              </label>
+              <label>
+                {t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}
+                <input
+                  value={profile.lastName}
+                  onChange={(event) => setProfile((current) => (current ? { ...current, lastName: event.target.value } : current))}
+                  autoComplete="family-name"
                 />
               </label>
               <label>
@@ -428,7 +448,13 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     })}
                   />
                 ) : (
-                  <strong>{props.user.fullName.slice(0, 1)}</strong>
+                  <strong>
+                    {avatarInitialsFromNameParts(
+                      profile.firstName,
+                      profile.lastName,
+                      props.user.fullName
+                    ).slice(0, 2)}
+                  </strong>
                 )}
               </div>
               <div className="pro-photo-actions">

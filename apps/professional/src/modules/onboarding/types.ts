@@ -16,6 +16,8 @@ export interface OnboardingPatchDraft {
   practiceBand: string | null;
   gender: string | null;
   birthCountry: string | null;
+  /** ISO 3166-1 alpha-2 (país de residencia habitual). */
+  residencyCountry: string | null;
   focusPrimary: string | null;
   /** Áreas de atención (preferido sobre `focusPrimary`). */
   focusAreas: string[] | null;
@@ -60,6 +62,7 @@ export interface ProfessionalWebOnboardingPayload {
   practiceBand: string;
   gender: string;
   birthCountry: string;
+  residencyCountry: string;
   focusAreas: string[];
   languages: string[];
   /** Año de egreso del título principal (onboarding). */
@@ -103,6 +106,8 @@ export interface ProfessionalMobileOnboardingInputs {
     graduationYear: string;
     gender: string;
     birthCountry: string;
+    /** ISO 3166-1 alpha-2 */
+    residencyCountry: string;
   };
   educationData: {
     institution: string;

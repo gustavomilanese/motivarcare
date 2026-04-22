@@ -38,6 +38,8 @@ enum ConsentType {
 enum Market {
   AR
   US
+  BR
+  ES
 }
 
 /// Pasarela prevista para el cobro del paquete (Stripe en USA; Mercado Pago en Argentina cuando esté cableado).
@@ -117,6 +119,8 @@ model PatientProfile {
   userId         String                   @unique
   /// Catálogo de paquetes y reglas de cobro asociadas (AR por defecto en lanzamiento).
   market         Market                   @default(AR)
+  /// ISO 3166-1 alpha-2 (país de residencia habitual); define `market` vía reglas de producto.
+  residencyCountry String?               @map("residency_country") @db.VarChar(2)
   timezone       String                   @default("America/New_York")
   lastSeenTimezone String?
   status         String                   @default("active")
@@ -136,6 +140,8 @@ model PatientProfile {
 model ProfessionalProfile {
   id                    String                   @id @default(cuid())
   userId                String                   @unique
+  /// ISO 3166-1 alpha-2 (país de residencia habitual).
+  residencyCountry      String?                  @map("residency_country") @db.VarChar(2)
   timezone              String                   @default("America/New_York")
   lastSeenTimezone      String?
   visible               Boolean                  @default(false)

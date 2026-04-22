@@ -25,6 +25,7 @@ function preIntakeIntroCopy(language: AppLanguage): {
     ] as const
   };
 }
+import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
@@ -271,6 +272,7 @@ export function IntakeScreen(props: {
   const [submitting, setSubmitting] = useState(false);
   const [crisisGate, setCrisisGate] = useState(false);
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
+  const [residencyCountry, setResidencyCountry] = useState("");
 
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
@@ -279,9 +281,9 @@ export function IntakeScreen(props: {
 
   const introCopy = useMemo(() => preIntakeIntroCopy(props.language), [props.language]);
   const questionCount = localizedQuestions.length;
-  /** Paso 0 = intro; pasos 1…N = preguntas. */
-  const totalWizardSteps = 1 + questionCount;
-  const questionStepIndex = stepIndex > 0 ? stepIndex - 1 : -1;
+  /** Paso 0 = intro; 1 = país de residencia; 2… = preguntas clínicas. */
+  const totalWizardSteps = 2 + questionCount;
+  const questionStepIndex = stepIndex >= 2 ? stepIndex - 2 : -1;
   const current = questionStepIndex >= 0 ? localizedQuestions[questionStepIndex] : null;
   const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
   const isLast = stepIndex >= totalWizardSteps - 1;
@@ -319,6 +321,21 @@ export function IntakeScreen(props: {
 
   const validateCurrent = (): boolean => {
     if (stepIndex === 0) {
+      setError("");
+      return true;
+    }
+    if (stepIndex === 1) {
+      const iso = residencyCountry.trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(iso)) {
+        setError(
+          t(props.language, {
+            es: "Elegí tu país de residencia habitual para continuar.",
+            en: "Choose your country of residence to continue.",
+            pt: "Escolha seu pais de residencia para continuar."
+          })
+        );
+        return false;
+      }
       setError("");
       return true;
     }
@@ -365,6 +382,13 @@ export function IntakeScreen(props: {
     if (stepIndex === 0) {
       setError("");
       setStepIndex(1);
+      return;
+    }
+    if (stepIndex === 1) {
+      if (!validateCurrent()) {
+        return;
+      }
+      setStepIndex(2);
       return;
     }
     if (!validateCurrent()) {
@@ -481,11 +505,24 @@ export function IntakeScreen(props: {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const rc = residencyCountry.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(rc)) {
+      setStepIndex(1);
+      setError(
+        t(props.language, {
+          es: "Falta tu país de residencia. Volvé al paso anterior y elegí una opción.",
+          en: "Your country of residence is missing. Go back one step and pick an option.",
+          pt: "Falta seu pais de residencia. Volte um passo e escolha uma opcao."
+        })
+      );
+      return;
+    }
+
     const missing = intakeQuestions.filter((question) => !question.optional && !answers[question.id]?.trim());
     if (missing.length > 0) {
       const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
       if (idx >= 0) {
-        setStepIndex(idx + 1);
+        setStepIndex(idx + 2);
       }
       setError("");
       return;
@@ -500,7 +537,7 @@ export function IntakeScreen(props: {
     setError("");
 
     try {
-      const payload: IntakeCompletionPayload = { answers };
+      const payload: IntakeCompletionPayload = { answers, residencyCountry: rc };
       await props.onComplete(payload);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -625,6 +662,53 @@ export function IntakeScreen(props: {
                   ))}
                 </div>
               </div>
+            </article>
+          ) : stepIndex === 1 ? (
+            <article className="question-card question-card--wizard" key="intake-residency">
+              <h2 className="intake-question-title">
+                {t(props.language, {
+                  es: "¿En qué país vivís habitualmente?",
+                  en: "Which country do you live in?",
+                  pt: "Em qual pais voce mora habitualmente?"
+                })}
+              </h2>
+              <p className="intake-question-help">
+                {t(props.language, {
+                  es: "Lo usamos para mostrarte precios y medios de pago del mercado correcto (Argentina, Brasil, España, EE.UU. o USD para el resto de Latinoamérica y el Caribe).",
+                  en: "We use this to show the right market pricing and payment methods (Argentina, Brazil, Spain, US, or USD for the rest of Latin America and the Caribbean).",
+                  pt: "Usamos isso para precos e pagamentos do mercado certo (Argentina, Brasil, Espanha, EUA ou USD para o resto da America Latina e Caribe)."
+                })}
+              </p>
+              <label className="intake-select-field">
+                <span className="intake-select-field-label">
+                  {t(props.language, {
+                    es: "País de residencia",
+                    en: "Country of residence",
+                    pt: "Pais de residencia"
+                  })}
+                </span>
+                <select
+                  className="intake-select-touch"
+                  value={residencyCountry}
+                  onChange={(event) => {
+                    setError("");
+                    setResidencyCountry(event.target.value);
+                  }}
+                >
+                  <option value="">
+                    {t(props.language, {
+                      es: "Seleccionar…",
+                      en: "Select…",
+                      pt: "Selecionar…"
+                    })}
+                  </option>
+                  {RESIDENCY_COUNTRY_OPTIONS.map((row) => (
+                    <option key={row.code} value={row.code}>
+                      {row.names[props.language]}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </article>
           ) : current ? (
             <article

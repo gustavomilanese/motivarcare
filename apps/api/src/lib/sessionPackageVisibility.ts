@@ -4,24 +4,32 @@ import type { Market } from "@prisma/client";
 
 const MAX_VISIBLE = 3;
 
+const marketPatientArraysSchema = z
+  .object({
+    AR: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
+    US: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
+    BR: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
+    ES: z.array(z.string().min(1)).max(MAX_VISIBLE).optional()
+  })
+  .optional();
+
+const marketFeaturedSchema = z
+  .object({
+    AR: z.string().min(1).nullable().optional(),
+    US: z.string().min(1).nullable().optional(),
+    BR: z.string().min(1).nullable().optional(),
+    ES: z.string().min(1).nullable().optional()
+  })
+  .optional();
+
 const sessionPackagesVisibilityStoredSchema = z
   .object({
     landing: z.array(z.string().min(1)).max(MAX_VISIBLE),
     patient: z.array(z.string().min(1)).max(MAX_VISIBLE),
-    patientByMarket: z
-      .object({
-        AR: z.array(z.string().min(1)).max(MAX_VISIBLE).optional(),
-        US: z.array(z.string().min(1)).max(MAX_VISIBLE).optional()
-      })
-      .optional(),
+    patientByMarket: marketPatientArraysSchema,
     featuredLanding: z.string().min(1).nullable().optional(),
     featuredPatient: z.string().min(1).nullable().optional(),
-    featuredPatientByMarket: z
-      .object({
-        AR: z.string().min(1).nullable().optional(),
-        US: z.string().min(1).nullable().optional()
-      })
-      .optional()
+    featuredPatientByMarket: marketFeaturedSchema
   })
   .passthrough();
 
@@ -41,8 +49,16 @@ function dedupeMax(ids: string[]): string[] {
   return out;
 }
 
+function emptyPatientByMarket(): SessionPackagesVisibilityPayload["patientByMarket"] {
+  return { AR: [], US: [], BR: [], ES: [] };
+}
+
+function emptyFeaturedByMarket(): SessionPackagesVisibilityPayload["featuredPatientByMarket"] {
+  return { AR: null, US: null, BR: null, ES: null };
+}
+
 /**
- * Normaliza el JSON guardado en SystemConfig (compatibilidad con `patient` solo en AR).
+ * Normaliza el JSON guardado en SystemConfig (compatibilidad con `patient` solo en AR y con solo AR/US).
  */
 export function parseSessionPackagesVisibility(value: unknown): SessionPackagesVisibilityPayload {
   const parsed = sessionPackagesVisibilityStoredSchema.safeParse(value);
@@ -50,22 +66,29 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
     return {
       landing: [],
       patient: [],
-      patientByMarket: { AR: [], US: [] },
+      patientByMarket: emptyPatientByMarket(),
       featuredLanding: null,
       featuredPatient: null,
-      featuredPatientByMarket: { AR: null, US: null }
+      featuredPatientByMarket: emptyFeaturedByMarket()
     };
   }
 
   const data = parsed.data;
   const patientLegacy = dedupeMax(data.patient ?? []);
-  const arFromSplit = data.patientByMarket?.AR ? dedupeMax(data.patientByMarket.AR) : [];
-  const usFromSplit = data.patientByMarket?.US ? dedupeMax(data.patientByMarket.US) : [];
+  const pbm = data.patientByMarket;
+  const arFromSplit = pbm?.AR ? dedupeMax(pbm.AR) : [];
+  const usFromSplit = pbm?.US ? dedupeMax(pbm.US) : [];
+  const brFromSplit = pbm?.BR ? dedupeMax(pbm.BR) : [];
+  const esFromSplit = pbm?.ES ? dedupeMax(pbm.ES) : [];
 
   const patientByMarket = {
     AR: arFromSplit.length > 0 ? arFromSplit : patientLegacy,
-    US: usFromSplit
+    US: usFromSplit,
+    BR: brFromSplit.length > 0 ? brFromSplit : usFromSplit,
+    ES: esFromSplit.length > 0 ? esFromSplit : usFromSplit
   };
+
+  const fpm = data.featuredPatientByMarket;
 
   return {
     landing: dedupeMax(data.landing ?? []),
@@ -74,8 +97,10 @@ export function parseSessionPackagesVisibility(value: unknown): SessionPackagesV
     featuredLanding: data.featuredLanding ?? null,
     featuredPatient: data.featuredPatient ?? null,
     featuredPatientByMarket: {
-      AR: data.featuredPatientByMarket?.AR ?? data.featuredPatient ?? null,
-      US: data.featuredPatientByMarket?.US ?? null
+      AR: fpm?.AR ?? data.featuredPatient ?? null,
+      US: fpm?.US ?? null,
+      BR: fpm?.BR ?? null,
+      ES: fpm?.ES ?? null
     }
   };
 }
@@ -84,19 +109,16 @@ export function patientVisibilityIdsForMarket(
   visibility: SessionPackagesVisibilityPayload,
   market: Market
 ): string[] {
-  return market === "US" ? visibility.patientByMarket.US : visibility.patientByMarket.AR;
+  return visibility.patientByMarket[market];
 }
 
 export function featuredPatientIdForMarket(
   visibility: SessionPackagesVisibilityPayload,
   market: Market
 ): string | null {
-  if (market === "US") {
-    const v = visibility.featuredPatientByMarket.US;
-    return v && visibility.patientByMarket.US.includes(v) ? v : null;
-  }
-  const v = visibility.featuredPatientByMarket.AR ?? visibility.featuredPatient;
-  return v && visibility.patientByMarket.AR.includes(v) ? v : null;
+  const v = visibility.featuredPatientByMarket[market];
+  const ids = visibility.patientByMarket[market];
+  return v && ids.includes(v) ? v : null;
 }
 
 export const sessionPackagesVisibilityPutSchema = z.object({
@@ -105,7 +127,9 @@ export const sessionPackagesVisibilityPutSchema = z.object({
   patientByMarket: z
     .object({
       AR: z.array(z.string().min(1)).max(MAX_VISIBLE),
-      US: z.array(z.string().min(1)).max(MAX_VISIBLE)
+      US: z.array(z.string().min(1)).max(MAX_VISIBLE),
+      BR: z.array(z.string().min(1)).max(MAX_VISIBLE),
+      ES: z.array(z.string().min(1)).max(MAX_VISIBLE)
     })
     .optional(),
   featuredLanding: z.string().min(1).nullable().optional(),
@@ -113,7 +137,9 @@ export const sessionPackagesVisibilityPutSchema = z.object({
   featuredPatientByMarket: z
     .object({
       AR: z.string().min(1).nullable().optional(),
-      US: z.string().min(1).nullable().optional()
+      US: z.string().min(1).nullable().optional(),
+      BR: z.string().min(1).nullable().optional(),
+      ES: z.string().min(1).nullable().optional()
     })
     .optional()
 });
@@ -123,7 +149,9 @@ export function visibilityPayloadForStorage(
 ): SessionPackagesVisibilityPayload {
   const patientByMarket = {
     AR: dedupeMax(parsed.patientByMarket?.AR ?? parsed.patient),
-    US: dedupeMax(parsed.patientByMarket?.US ?? [])
+    US: dedupeMax(parsed.patientByMarket?.US ?? []),
+    BR: dedupeMax(parsed.patientByMarket?.BR ?? []),
+    ES: dedupeMax(parsed.patientByMarket?.ES ?? [])
   };
   return {
     landing: dedupeMax(parsed.landing),
@@ -133,7 +161,9 @@ export function visibilityPayloadForStorage(
     featuredPatient: parsed.featuredPatient ?? null,
     featuredPatientByMarket: {
       AR: parsed.featuredPatientByMarket?.AR ?? parsed.featuredPatient ?? null,
-      US: parsed.featuredPatientByMarket?.US ?? null
+      US: parsed.featuredPatientByMarket?.US ?? null,
+      BR: parsed.featuredPatientByMarket?.BR ?? null,
+      ES: parsed.featuredPatientByMarket?.ES ?? null
     }
   };
 }

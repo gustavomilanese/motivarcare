@@ -168,13 +168,13 @@ const listPackagesQuerySchema = z.object({
   active: z.enum(["true", "false"]).optional(),
   professionalId: z.string().min(1).optional(),
   search: z.string().trim().min(1).max(120).optional(),
-  market: z.enum(["AR", "US"]).optional()
+  market: z.enum(["AR", "US", "BR", "ES"]).optional()
 });
 
 const createPackageSchema = z.object({
   professionalId: z.string().min(1).nullable().optional(),
   stripePriceId: z.string().trim().min(2).max(120).optional(),
-  market: z.enum(["AR", "US"]).default("AR"),
+  market: z.enum(["AR", "US", "BR", "ES"]).default("AR"),
   paymentProvider: z.enum(["STRIPE", "MERCADOPAGO"]).default("STRIPE"),
   name: z.string().trim().min(2).max(120),
   credits: z.number().int().min(1).max(200),
@@ -188,7 +188,7 @@ const updatePackageSchema = z
   .object({
     professionalId: z.string().min(1).nullable().optional(),
     stripePriceId: z.string().trim().min(2).max(120).optional(),
-    market: z.enum(["AR", "US"]).optional(),
+    market: z.enum(["AR", "US", "BR", "ES"]).optional(),
     paymentProvider: z.enum(["STRIPE", "MERCADOPAGO"]).optional(),
     name: z.string().trim().min(2).max(120).optional(),
     credits: z.number().int().min(1).max(200).optional(),
@@ -1239,7 +1239,9 @@ adminRouter.get("/session-packages", async (req, res) => {
       purchasesCount: item._count.purchases,
       landingPublished: visibility.landing.includes(item.id),
       patientPublishedAr: visibility.patientByMarket.AR.includes(item.id),
-      patientPublishedUs: visibility.patientByMarket.US.includes(item.id)
+      patientPublishedUs: visibility.patientByMarket.US.includes(item.id),
+      patientPublishedBr: visibility.patientByMarket.BR.includes(item.id),
+      patientPublishedEs: visibility.patientByMarket.ES.includes(item.id)
     }))
   });
 });
@@ -1255,7 +1257,9 @@ adminRouter.put("/session-packages/visibility", async (req, res) => {
     new Set([
       ...normalized.landing,
       ...normalized.patientByMarket.AR,
-      ...normalized.patientByMarket.US
+      ...normalized.patientByMarket.US,
+      ...normalized.patientByMarket.BR,
+      ...normalized.patientByMarket.ES
     ])
   );
   const existingPackages = requestedIds.length

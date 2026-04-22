@@ -8,6 +8,7 @@ import {
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
+import { isMarket, joinFirstLastToFullName } from "@therapy/types";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
@@ -162,7 +163,10 @@ function loadState(): PatientAppState {
       currency: (SUPPORTED_CURRENCIES as readonly string[]).includes((parsed as any).currency)
         ? (parsed as any).currency
         : "USD",
-      patientMarket: (parsed as { patientMarket?: unknown }).patientMarket === "US" ? "US" : "AR",
+      patientMarket: (() => {
+        const pm = (parsed as { patientMarket?: unknown }).patientMarket;
+        return isMarket(pm) ? pm : "AR";
+      })(),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
         ? {
@@ -284,12 +288,16 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
 function professionalStubFromActiveProfile(active: {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   photoUrl?: string | null;
 }): Professional {
   return {
     id: active.id,
     fullName: active.fullName,
+    firstName: active.firstName,
+    lastName: active.lastName,
     title: "Profesional de salud mental",
     yearsExperience: 0,
     compatibility: 50,
@@ -838,7 +846,16 @@ export function App() {
 
           const assignedProfessionalNameMerged = gateMatchingFromApiAssignment
             ? current.assignedProfessionalName
-            : remoteAssignedProfessional?.fullName ?? current.assignedProfessionalName;
+            : (() => {
+                if (!remoteAssignedProfessional) {
+                  return current.assignedProfessionalName;
+                }
+                const joined = joinFirstLastToFullName(
+                  remoteAssignedProfessional.firstName ?? "",
+                  remoteAssignedProfessional.lastName ?? ""
+                ).trim();
+                return joined || remoteAssignedProfessional.fullName;
+              })();
 
           const selectionFromApiDirectory =
             directoryListForClamp && directoryListForClamp.length > 0
@@ -868,7 +885,10 @@ export function App() {
               ?? (remoteAssignedProfessional
                 ? remoteAssignedProfessional.id
                 : current.activeChatProfessionalId),
-            patientMarket: profileResponse?.profile?.market === "US" ? "US" : "AR",
+            patientMarket: (() => {
+              const m = profileResponse?.profile?.market;
+              return isMarket(m) ? m : "AR";
+            })(),
             profile: {
               ...current.profile,
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
@@ -1347,7 +1367,7 @@ export function App() {
           setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
-        onComplete={async ({ answers }) => {
+        onComplete={async ({ answers, residencyCountry }) => {
           if (!state.authToken) {
             throw new Error("No se encontró sesión autenticada");
           }
@@ -1357,12 +1377,13 @@ export function App() {
               "/api/profiles/me/intake",
               {
                 method: "POST",
-                body: JSON.stringify({ answers })
+                body: JSON.stringify({ answers, residencyCountry })
               },
               state.authToken
             );
 
             const riskLevel = response.intake.riskLevel as RiskLevel;
+            const nextMarket = isMarket(response.market) ? response.market : undefined;
 
             const sessionUserId = state.session?.id ?? "";
             const offerGoogleCalendarStep =
@@ -1382,6 +1403,7 @@ export function App() {
                 assignedProfessionalId: null,
                 assignedProfessionalName: null,
                 session: current.session ? { ...current.session } : null,
+                ...(nextMarket ? { patientMarket: nextMarket } : {}),
                 intake: {
                   completed: true,
                   completedAt: response.intake.completedAt,

@@ -93,12 +93,16 @@ export async function syncTimezone(params: { token: string; timezone: string; pe
   });
 }
 
-export async function submitPatientIntake(params: { token: string; answers: Record<string, string> }) {
+export async function submitPatientIntake(params: {
+  token: string;
+  answers: Record<string, string>;
+  residencyCountry: string;
+}) {
   return requestJson<{ intake: { id: string; riskLevel: string; completedAt: string } }>({
     path: "/api/profiles/me/intake",
     method: "POST",
     token: params.token,
-    body: { answers: params.answers }
+    body: { answers: params.answers, residencyCountry: params.residencyCountry }
   });
 }
 

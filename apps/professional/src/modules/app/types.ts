@@ -187,6 +187,8 @@ export interface ThreadMessage {
 export interface ProfessionalProfile {
   id: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   visible: boolean;
   professionalTitle: string | null;

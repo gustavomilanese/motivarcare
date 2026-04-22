@@ -5,6 +5,7 @@ import {
   FALLBACK_SESSION_PRICE_MIN_USD
 } from "../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
+import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
 import {
@@ -441,6 +442,28 @@ export function ProfessionalWebOnboardingWizard(props: {
                       {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
                         <option key={c.value} value={c.value}>
                           {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>
+                      {t(props.language, {
+                        es: "País de residencia habitual",
+                        en: "Country of residence",
+                        pt: "Pais de residencia habitual"
+                      })}
+                    </span>
+                    <select
+                      value={form.residencyCountry}
+                      onChange={(event) => update({ residencyCountry: event.target.value })}
+                    >
+                      <option value="">
+                        {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
+                      </option>
+                      {RESIDENCY_COUNTRY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.names[props.language]}
                         </option>
                       ))}
                     </select>

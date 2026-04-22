@@ -192,7 +192,7 @@ export interface WebContentResponse {
   };
 }
 
-export type AdminMarket = "AR" | "US";
+export type AdminMarket = "AR" | "US" | "BR" | "ES";
 export type AdminPackagePaymentProvider = "STRIPE" | "MERCADOPAGO";
 
 export interface AdminSessionPackage {
@@ -213,6 +213,8 @@ export interface AdminSessionPackage {
   landingPublished: boolean;
   patientPublishedAr: boolean;
   patientPublishedUs: boolean;
+  patientPublishedBr: boolean;
+  patientPublishedEs: boolean;
 }
 
 export interface SessionPackagesResponse {

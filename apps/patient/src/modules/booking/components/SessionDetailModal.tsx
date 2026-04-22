@@ -1,5 +1,6 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
 import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking } from "../../app/types";
 
@@ -53,6 +54,8 @@ export function SessionDetailModal(props: {
   language: AppLanguage;
   professional: {
     fullName: string;
+    firstName?: string;
+    lastName?: string;
     title: string;
     approach: string;
     photoUrl?: string;
@@ -128,11 +131,13 @@ export function SessionDetailModal(props: {
           <div className="session-detail-pro">
             <img
               src={professionalPhotoSrc(props.professional.photoUrl)}
-              alt={props.professional.fullName}
+              alt={professionalPhotoAlt(props.professional)}
               onError={props.onImageFallback}
             />
             <div>
-              <h3>{props.professional.fullName}</h3>
+              <h3>
+                <ProfessionalNameStack professional={props.professional} as="span" />
+              </h3>
               <p>{props.professional.title}</p>
             </div>
           </div>

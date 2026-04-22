@@ -3,7 +3,8 @@
  */
 export {
   professionalListingFromFullNameOnly as professionalListingDisplayName,
-  professionalPublicListingLabel
+  professionalPublicListingLabel,
+  resolvedFirstLastFromUserRecord
 } from "@therapy/types";
 
 export function yearsExperienceFromGraduationYear(graduationYear: number): number {

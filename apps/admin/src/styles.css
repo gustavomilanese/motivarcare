@@ -4927,7 +4927,7 @@ button.primary.finance-hero-search {
 
 .package-admin-list-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.34fr) 64px 88px 64px 88px 120px;
+  grid-template-columns: minmax(0, 1.1fr) 54px 78px repeat(8, 50px 72px) minmax(72px, 92px);
   gap: 8px;
   padding: 0 16px;
   align-items: end;
@@ -4950,7 +4950,7 @@ button.primary.finance-hero-search {
   border-radius: 18px;
   padding: 18px 16px;
   display: grid;
-  grid-template-columns: minmax(0, 1.34fr) 64px 88px 64px 88px 120px;
+  grid-template-columns: minmax(0, 1.1fr) 54px 78px repeat(8, 50px 72px) minmax(72px, 92px);
   gap: 8px;
   align-items: center;
   background: #fafcff;

@@ -4,8 +4,8 @@ import { parseSessionPackagesVisibility } from "./sessionPackageVisibility.js";
 describe("parseSessionPackagesVisibility", () => {
   it("siempre devuelve patientByMarket completo", () => {
     const a = parseSessionPackagesVisibility(null);
-    expect(a.patientByMarket).toEqual({ AR: [], US: [] });
-    expect(a.featuredPatientByMarket).toEqual({ AR: null, US: null });
+    expect(a.patientByMarket).toEqual({ AR: [], US: [], BR: [], ES: [] });
+    expect(a.featuredPatientByMarket).toEqual({ AR: null, US: null, BR: null, ES: null });
 
     const b = parseSessionPackagesVisibility({ patient: ["pkg1"], landing: [] });
     expect(b.patientByMarket.AR).toEqual(["pkg1"]);
@@ -19,6 +19,6 @@ describe("parseSessionPackagesVisibility", () => {
       featuredPatient: null
     });
     expect(v.patient).toEqual(["x"]);
-    expect(v.patientByMarket).toEqual({ AR: ["x"], US: [] });
+    expect(v.patientByMarket).toEqual({ AR: ["x"], US: [], BR: [], ES: [] });
   });
 });
