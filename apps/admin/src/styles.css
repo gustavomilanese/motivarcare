@@ -1247,6 +1247,129 @@ label {
   color: #5e6b85;
 }
 
+/* Psicólogos (ops): detalle con 3 secciones cuenta / presentación / medios */
+.prof-ops-detail {
+  gap: 14px;
+}
+
+.prof-ops-detail-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.prof-ops-modal-lead {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.prof-ops-profile-section {
+  border: 1px solid #dce3f1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.prof-ops-profile-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prof-ops-profile-section__title {
+  margin: 0;
+  font-size: 1rem;
+  color: #243652;
+}
+
+.prof-ops-profile-section__hint {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.prof-ops-section-actions {
+  margin-top: 4px;
+}
+
+.prof-ops-read-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+  gap: 6px 14px;
+  font-size: 0.9rem;
+}
+
+.prof-ops-read-grid dt {
+  margin: 0;
+  color: #6b7894;
+  font-weight: 600;
+}
+
+.prof-ops-read-grid dd {
+  margin: 0;
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.prof-ops-read-stack {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.prof-ops-read-stack dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5c678a;
+}
+
+.prof-ops-read-stack dd {
+  margin: 0;
+  color: #243652;
+  font-size: 0.92rem;
+}
+
+.prof-ops-read-bio {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.prof-ops-bio-label textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.prof-ops-media-read {
+  display: grid;
+  gap: 14px;
+}
+
+.prof-ops-media-thumb-wrap {
+  margin-top: 8px;
+}
+
+.prof-ops-media-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e4daf0;
+}
+
+.prof-ops-media-edit {
+  display: grid;
+  gap: 12px;
+}
+
 .patient-inline-details {
   border: 1px solid #dce3f1;
   border-radius: 12px;
