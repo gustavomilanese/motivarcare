@@ -9,9 +9,12 @@ import type { AuthResponse } from "../../app/types";
 import { apiRequest } from "../../app/services/api";
 import { checkProfessionalEmailAvailable } from "../../app/services/checkProfessionalEmail";
 import {
+  FALLBACK_SESSION_PRICE_MAX_ARS,
   FALLBACK_SESSION_PRICE_MAX_USD,
+  FALLBACK_SESSION_PRICE_MIN_ARS,
   FALLBACK_SESSION_PRICE_MIN_USD,
-  fetchSessionPriceBoundsUsd
+  fetchSessionPriceBoundsDual,
+  type SessionPriceBoundsDual
 } from "../../app/services/sessionPriceBounds";
 import { WEB_SPECIALIZATION_CANONICAL } from "../constants/webSpecializationOptions";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
@@ -85,7 +88,7 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [activeInterstitialStep, setActiveInterstitialStep] = useState<number | null>(null);
   const [seenInterstitials, setSeenInterstitials] = useState<Record<number, true>>({});
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
-  const [sessionPriceBounds, setSessionPriceBounds] = useState<{ min: number; max: number } | null>(null);
+  const [sessionPriceBounds, setSessionPriceBounds] = useState<SessionPriceBoundsDual | null>(null);
   const [pricingStepError, setPricingStepError] = useState("");
   const [credentialsStepError, setCredentialsStepError] = useState("");
   const [credentialsChecking, setCredentialsChecking] = useState(false);
@@ -122,7 +125,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     about: "",
     methodology: "",
     shortDescription: "",
-    sessionPrice: "",
+    sessionPriceArs: "",
+    sessionPriceUsd: "",
     discount4: "",
     discount8: "",
     discount12: "",
@@ -260,7 +264,7 @@ export function useProfessionalWebOnboardingWizard(input: {
   };
 
   useEffect(() => {
-    void fetchSessionPriceBoundsUsd().then(setSessionPriceBounds);
+    void fetchSessionPriceBoundsDual().then(setSessionPriceBounds);
   }, []);
 
   useEffect(() => {
@@ -278,7 +282,7 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   useEffect(() => {
     setPricingStepError("");
-  }, [form.sessionPrice, step]);
+  }, [form.sessionPriceArs, form.sessionPriceUsd, step]);
 
   useEffect(() => {
     setCredentialsStepError("");
@@ -342,8 +346,21 @@ export function useProfessionalWebOnboardingWizard(input: {
     return String(Math.min(max, Math.max(0, Number(numeric))));
   };
 
-  const discountedPriceLabel = (discount: string) => {
-    const sessionPrice = Number(form.sessionPrice || "0");
+  const discountedPriceLabelArs = (discount: string) => {
+    const sessionPrice = Number(form.sessionPriceArs || "0");
+    if (!sessionPrice) {
+      return null;
+    }
+    const percent = Number(discount || "0");
+    if (!percent) {
+      return null;
+    }
+    const value = Math.max(0, Math.round(sessionPrice * (1 - percent / 100)));
+    return `${value} ARS ${t(input.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
+  };
+
+  const discountedPriceLabelUsd = (discount: string) => {
+    const sessionPrice = Number(form.sessionPriceUsd || "0");
     if (!sessionPrice) {
       return null;
     }
@@ -380,7 +397,22 @@ export function useProfessionalWebOnboardingWizard(input: {
       && form.languages.length
     ),
     Boolean(form.about.trim() && form.methodology.trim() && form.shortDescription.trim()),
-    Boolean(form.sessionPrice.trim()),
+    Boolean(
+      (() => {
+        const ars = Number(form.sessionPriceArs || "0");
+        const usd = Number(form.sessionPriceUsd || "0");
+        if (ars <= 0 && usd <= 0) {
+          return false;
+        }
+        const arMin = sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
+        const arMax = sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
+        const usdMin = sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
+        const usdMax = sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
+        const arOk = ars <= 0 || (Number.isInteger(ars) && ars >= arMin && ars <= arMax);
+        const usdOk = usd <= 0 || (Number.isInteger(usd) && usd >= usdMin && usd <= usdMax);
+        return arOk && usdOk;
+      })()
+    ),
     true,
     Boolean(
       form.diplomas.length
@@ -530,15 +562,38 @@ export function useProfessionalWebOnboardingWizard(input: {
       }
     }
     if (step === 4) {
-      const priceUsd = Number(form.sessionPrice || "0");
-      const min = sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
-      const max = sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
-      if (!Number.isInteger(priceUsd) || priceUsd < min || priceUsd > max) {
+      const ars = Number(form.sessionPriceArs || "0");
+      const usd = Number(form.sessionPriceUsd || "0");
+      const arMin = sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
+      const arMax = sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
+      const usdMin = sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
+      const usdMax = sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
+      if (ars <= 0 && usd <= 0) {
         setPricingStepError(
           t(input.language, {
-            es: `El precio debe ser un entero en USD entre ${min} y ${max} (límites de la plataforma).`,
-            en: `Price must be a whole USD amount between ${min} and ${max} (platform limits).`,
-            pt: `O preco deve ser um valor inteiro em USD entre ${min} e ${max} (limites da plataforma).`
+            es: "Indicá al menos un precio de lista: ARS (Argentina) o USD (internacional).",
+            en: "Enter at least one list price: ARS (Argentina) or USD (international).",
+            pt: "Informe pelo menos um preco de lista: ARS (Argentina) ou USD (internacional)."
+          })
+        );
+        return;
+      }
+      if (ars > 0 && (!Number.isInteger(ars) || ars < arMin || ars > arMax)) {
+        setPricingStepError(
+          t(input.language, {
+            es: `Precio ARS: entero entre ${arMin} y ${arMax}, o dejá vacío.`,
+            en: `ARS price: whole pesos between ${arMin} and ${arMax}, or leave blank.`,
+            pt: `Preco ARS: inteiro entre ${arMin} e ${arMax}, ou deixe em branco.`
+          })
+        );
+        return;
+      }
+      if (usd > 0 && (!Number.isInteger(usd) || usd < usdMin || usd > usdMax)) {
+        setPricingStepError(
+          t(input.language, {
+            es: `Precio USD: entero entre ${usdMin} y ${usdMax}, o dejá vacío.`,
+            en: `USD price: whole dollars between ${usdMin} and ${usdMax}, or leave blank.`,
+            pt: `Preco USD: inteiro entre ${usdMin} e ${usdMax}, ou deixe em branco.`
           })
         );
         return;
@@ -731,7 +786,8 @@ export function useProfessionalWebOnboardingWizard(input: {
       bio: form.about,
       shortDescription: form.shortDescription,
       therapeuticApproach: form.methodology,
-      sessionPriceUsd: form.sessionPrice.trim() ? Number(form.sessionPrice) : null,
+      sessionPriceArs: form.sessionPriceArs.trim() ? Number(form.sessionPriceArs) : null,
+      sessionPriceUsd: form.sessionPriceUsd.trim() ? Number(form.sessionPriceUsd) : null,
       discount4: form.discount4.trim() ? Number(form.discount4) : null,
       discount8: form.discount8.trim() ? Number(form.discount8) : null,
       discount12: form.discount12.trim() ? Number(form.discount12) : null,
@@ -813,7 +869,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     toggleLanguage,
     toggleFocusArea,
     clampDiscountInput,
-    discountedPriceLabel,
+    discountedPriceLabelArs,
+    discountedPriceLabelUsd,
     canContinue,
     handleContinue,
     sessionPriceBounds,

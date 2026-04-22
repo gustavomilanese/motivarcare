@@ -208,6 +208,7 @@ export interface ProfessionalProfile {
   shortDescription: string | null;
   therapeuticApproach: string | null;
   yearsExperience: number | null;
+  sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
   discount4: number | null;
   discount8: number | null;

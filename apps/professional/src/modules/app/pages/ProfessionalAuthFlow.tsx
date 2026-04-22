@@ -148,6 +148,7 @@ export function ProfessionalAuthFlow(props: {
   const [therapyDescriptionText, setTherapyDescriptionText] = useState("");
   const [summaryText, setSummaryText] = useState("");
   const [priceData, setPriceData] = useState({
+    sessionPriceArs: "",
     sessionPrice: "",
     discount4: "0",
     discount8: "0",

@@ -1342,7 +1342,7 @@ export function BookingPage(props: {
       {isCheckoutFlow && checkoutPaymentPlan ? (
         <PaymentMethodModal
           language={props.language}
-          amountUsd={checkoutPaymentPlan.priceCents / 100}
+          amountMajor={checkoutPaymentPlan.priceCents / 100}
           loading={checkoutPaymentLoading}
           error={checkoutPaymentError}
           onBack={() => {
@@ -1494,7 +1494,7 @@ export function BookingPage(props: {
       {isCheckoutFlow && individualPaymentCount !== null && individualUnitPriceUsd !== null ? (
         <PaymentMethodModal
           language={props.language}
-          amountUsd={individualUnitPriceUsd * individualPaymentCount}
+          amountMajor={individualUnitPriceUsd * individualPaymentCount}
           loading={individualPaymentLoading}
           error={individualPaymentError}
           onBack={() => {

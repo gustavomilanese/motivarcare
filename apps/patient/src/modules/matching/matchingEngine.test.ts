@@ -18,6 +18,7 @@ const candidates: MatchCardProfessional[] = professionalsCatalog.map((profession
   therapeuticApproach: professional.approach,
   languages: professional.languages,
   yearsExperience: professional.yearsExperience,
+  sessionPriceArs: null,
   sessionPriceUsd: professional.sessionPriceUsd ?? null,
   photoUrl: null,
   birthCountry: null,

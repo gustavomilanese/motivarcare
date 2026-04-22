@@ -124,7 +124,8 @@ async function seedCoreUsers(): Promise<SeedContext> {
     {
       userId: professionalUsers[0].id,
       residencyCountry: "AR" as const,
-      sessionPriceUsd: 15_000,
+      sessionPriceArs: 15_000,
+      sessionPriceUsd: 50,
       bio: "Especialista en ansiedad, estres y burnout laboral.",
       therapeuticApproach: "CBT + mindfulness",
       yearsExperience: 11,
@@ -134,6 +135,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
     {
       userId: professionalUsers[1].id,
       residencyCountry: "US" as const,
+      sessionPriceArs: null,
       sessionPriceUsd: 90,
       bio: "Trabajo en vinculos, trauma y regulacion emocional.",
       therapeuticApproach: "Integrativo psicodinamico",
@@ -144,6 +146,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
     {
       userId: professionalUsers[2].id,
       residencyCountry: "US" as const,
+      sessionPriceArs: null,
       sessionPriceUsd: 85,
       bio: "Enfoque breve para depresion y transiciones vitales.",
       therapeuticApproach: "Evidencia + plan de objetivos",
@@ -161,6 +164,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
         visible: true,
         residencyCountry: config.residencyCountry,
         market: marketFromResidencyCountry(config.residencyCountry),
+        sessionPriceArs: config.sessionPriceArs ?? null,
         sessionPriceUsd: config.sessionPriceUsd,
         bio: config.bio,
         therapeuticApproach: config.therapeuticApproach,
@@ -174,6 +178,7 @@ async function seedCoreUsers(): Promise<SeedContext> {
         visible: true,
         residencyCountry: config.residencyCountry,
         market: marketFromResidencyCountry(config.residencyCountry),
+        sessionPriceArs: config.sessionPriceArs ?? null,
         sessionPriceUsd: config.sessionPriceUsd,
         bio: config.bio,
         therapeuticApproach: config.therapeuticApproach,

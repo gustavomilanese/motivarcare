@@ -5,18 +5,34 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatAmount(value: number | null, language: AppLanguage): string {
+function formatAmount(value: number | null, language: AppLanguage, currency: "USD" | "ARS"): string {
   if (value === null) {
     return t(language, { es: "A confirmar", en: "To be confirmed", pt: "A confirmar" });
   }
-  return `$${value.toFixed(2)} USD`;
+  if (currency === "ARS") {
+    const locale = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR";
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "ARS",
+      maximumFractionDigits: 0
+    }).format(Math.round(value));
+  }
+  const locale = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR";
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 type PaymentMode = "new-card" | "one-click";
 
 export function PaymentMethodModal(props: {
   language: AppLanguage;
-  amountUsd: number | null;
+  /** Monto en unidad mayor de la moneda indicada (p. ej. USD con decimales desde centavos, ARS entero). */
+  amountMajor: number | null;
+  displayCurrency?: "USD" | "ARS";
   loading: boolean;
   error: string;
   onBack: () => void;
@@ -67,7 +83,7 @@ export function PaymentMethodModal(props: {
 
         <section className="payment-amount-card">
           <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
-          <strong>{formatAmount(props.amountUsd, props.language)}</strong>
+          <strong>{formatAmount(props.amountMajor, props.language, props.displayCurrency ?? "USD")}</strong>
         </section>
 
         <div className="payment-method-tabs" role="tablist" aria-label={t(props.language, { es: "Método de pago", en: "Payment method", pt: "Método de pagamento" })}>

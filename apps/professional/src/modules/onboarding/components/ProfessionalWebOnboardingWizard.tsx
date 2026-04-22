@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import {
+  FALLBACK_SESSION_PRICE_MAX_ARS,
   FALLBACK_SESSION_PRICE_MAX_USD,
+  FALLBACK_SESSION_PRICE_MIN_ARS,
   FALLBACK_SESSION_PRICE_MIN_USD
 } from "../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
@@ -61,7 +63,8 @@ export function ProfessionalWebOnboardingWizard(props: {
     toggleLanguage,
     toggleFocusArea,
     clampDiscountInput,
-    discountedPriceLabel,
+    discountedPriceLabelArs,
+    discountedPriceLabelUsd,
     canContinue,
     handleContinue,
     sessionPriceBounds,
@@ -531,15 +534,25 @@ export function ProfessionalWebOnboardingWizard(props: {
             <div className="pro-web-fields">
               <p className="pro-web-price-bounds-hint">
                 {t(props.language, {
-                  es: `Precio permitido por sesión: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (entero).`,
-                  en: `Allowed per-session price: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (whole dollars).`,
-                  pt: `Preco permitido por sessao: USD ${sessionPriceBounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${sessionPriceBounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (inteiro).`
+                  es: `Definí dos ofertas de lista (al menos una obligatoria): pacientes en Argentina verán ARS; en mercado USD (u otros) verán USD. ARS: ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS} enteros. USD: ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD} enteros.`,
+                  en: `Set two list prices (at least one required): patients in Argentina see ARS; in USD markets they see USD. ARS: ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS} whole pesos. USD: ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD} whole dollars.`,
+                  pt: `Dois precos de lista (pelo menos um): ARS ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS}; USD ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD}.`
                 })}
               </p>
               {pricingStepError ? <p className="pro-web-field-error">{pricingStepError}</p> : null}
               <label>
+                <span>{t(props.language, { es: "Precio por sesión (ARS)", en: "Price per session (ARS)", pt: "Preco por sessao (ARS)" })}</span>
+                <input
+                  value={form.sessionPriceArs}
+                  onChange={(event) => update({ sessionPriceArs: event.target.value.replace(/\D/g, "") })}
+                />
+              </label>
+              <label>
                 <span>{t(props.language, { es: "Precio por sesión (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
-                <input value={form.sessionPrice} onChange={(event) => update({ sessionPrice: event.target.value.replace(/\D/g, "") })} />
+                <input
+                  value={form.sessionPriceUsd}
+                  onChange={(event) => update({ sessionPriceUsd: event.target.value.replace(/\D/g, "") })}
+                />
               </label>
               <div className="pro-web-discount-packages">
                 <article className="pro-web-discount-card">
@@ -554,7 +567,10 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {discountedPriceLabel(form.discount4) ? <small>{discountedPriceLabel(form.discount4)}</small> : null}
+                  {(() => {
+                    const bits = [discountedPriceLabelArs(form.discount4), discountedPriceLabelUsd(form.discount4)].filter(Boolean);
+                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
+                  })()}
                 </article>
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "8 sesiones", en: "8 sessions", pt: "8 sessoes" })}</strong>
@@ -568,7 +584,10 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {discountedPriceLabel(form.discount8) ? <small>{discountedPriceLabel(form.discount8)}</small> : null}
+                  {(() => {
+                    const bits = [discountedPriceLabelArs(form.discount8), discountedPriceLabelUsd(form.discount8)].filter(Boolean);
+                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
+                  })()}
                 </article>
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "12 sesiones", en: "12 sessions", pt: "12 sessoes" })}</strong>
@@ -582,7 +601,10 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {discountedPriceLabel(form.discount12) ? <small>{discountedPriceLabel(form.discount12)}</small> : null}
+                  {(() => {
+                    const bits = [discountedPriceLabelArs(form.discount12), discountedPriceLabelUsd(form.discount12)].filter(Boolean);
+                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
+                  })()}
                 </article>
               </div>
             </div>

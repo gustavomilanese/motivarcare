@@ -7,7 +7,6 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { isMarket, majorCurrencyCodeForMarket, type Market } from "@therapy/types";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalProfile } from "../types";
@@ -31,6 +30,8 @@ const SLOT_DURATION_MINUTES = 60;
 const FORWARD_WEEKS = 8;
 const MIN_BOOKING_NOTICE_HOURS = 24;
 const SESSION_LIST_PRICE_CAP = 10_000_000;
+const AR_SESSION_LIST_MIN = 2_000;
+const AR_SESSION_LIST_MAX = 5_000_000;
 const MAX_VACATION_RANGE_DAYS = 120;
 const VACATION_MARKER_HOUR = 6;
 const VACATION_MARKER_DURATION_MINUTES = 30;
@@ -404,7 +405,7 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
   const [professionalId, setProfessionalId] = useState("");
   const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
   const [sessionPriceUsd, setSessionPriceUsd] = useState<number>(0);
-  const [listingMarket, setListingMarket] = useState<Market>("US");
+  const [sessionPriceArs, setSessionPriceArs] = useState<number | null>(null);
   const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
   const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
   const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
@@ -457,10 +458,10 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       if (profileResponse.profile?.id) {
         setProfessionalId(profileResponse.profile.id);
       }
-      const nextMarket = profileResponse.profile?.market;
-      setListingMarket(isMarket(nextMarket) ? nextMarket : "US");
       setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
       setSessionPriceUsd(Math.max(0, Number(profileResponse.profile?.sessionPriceUsd ?? 0)));
+      const ars = profileResponse.profile?.sessionPriceArs;
+      setSessionPriceArs(ars != null && ars > 0 ? ars : null);
       setError("");
     } catch (requestError) {
       if (showError) {
@@ -574,7 +575,27 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       return;
     }
 
-    const normalizedRate = Math.max(0, Math.min(SESSION_LIST_PRICE_CAP, Math.round(Number(sessionPriceUsd || 0))));
+    const usdRounded = Math.max(0, Math.min(SESSION_LIST_PRICE_CAP, Math.round(Number(sessionPriceUsd || 0))));
+    const nextUsd = usdRounded > 0 ? usdRounded : null;
+
+    let nextArs: number | null = null;
+    if (sessionPriceArs != null && sessionPriceArs > 0) {
+      const arsRounded = Math.round(sessionPriceArs);
+      if (arsRounded < AR_SESSION_LIST_MIN || arsRounded > AR_SESSION_LIST_MAX) {
+        setError(
+          replaceTemplate(
+            t(props.language, {
+              es: "El precio en ARS debe estar entre {min} y {max} (entero).",
+              en: "The ARS list price must be between {min} and {max} (integer).",
+              pt: "O preco em ARS deve estar entre {min} e {max} (inteiro)."
+            }),
+            { min: String(AR_SESSION_LIST_MIN), max: String(AR_SESSION_LIST_MAX) }
+          )
+        );
+        return;
+      }
+      nextArs = arsRounded;
+    }
 
     setSavingNotice(true);
     setError("");
@@ -584,19 +605,29 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
       await apiRequest<{ message: string }>(`/api/profiles/professional/${professionalId}/public-profile`, props.token, {
         method: "PATCH",
         body: JSON.stringify({
-          sessionPriceUsd: normalizedRate
+          sessionPriceArs: nextArs,
+          sessionPriceUsd: nextUsd
         })
       });
 
-      setSessionPriceUsd(normalizedRate);
+      setSessionPriceUsd(nextUsd ?? 0);
+      setSessionPriceArs(nextArs);
+      const arsPart =
+        nextArs != null
+          ? `ARS ${nextArs}`
+          : t(props.language, { es: "ARS sin definir", en: "ARS not set", pt: "ARS nao definido" });
+      const usdPart =
+        nextUsd != null
+          ? `USD ${nextUsd}`
+          : t(props.language, { es: "USD sin definir", en: "USD not set", pt: "USD nao definido" });
       setMessage(
         replaceTemplate(
           t(props.language, {
-            es: "Valor por sesión actualizado: {currency} {amount}.",
-            en: "Session rate updated: {currency} {amount}.",
-            pt: "Valor por sessao atualizado: {currency} {amount}."
+            es: "Precios de lista actualizados: {detail}.",
+            en: "List prices updated: {detail}.",
+            pt: "Precos de lista atualizados: {detail}."
           }),
-          { amount: String(normalizedRate), currency: majorCurrencyCodeForMarket(listingMarket) }
+          { detail: `${arsPart} · ${usdPart}` }
         )
       );
     } catch (requestError) {
@@ -1071,14 +1102,35 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
           </header>
 
           <label className="schedule-notice-field">
-            {replaceTemplate(
-              t(props.language, {
-                es: "Monto en {currency} (precio de lista por sesión)",
-                en: "Amount in {currency} (per-session list price)",
-                pt: "Valor em {currency} (preco de lista por sessao)"
-              }),
-              { currency: majorCurrencyCodeForMarket(listingMarket) }
-            )}
+            {t(props.language, {
+              es: "Precio de lista por sesión (ARS, catálogo Argentina)",
+              en: "Per-session list price (ARS, Argentina catalog)",
+              pt: "Preco de lista por sessao (ARS, catalogo Argentina)"
+            })}
+            <input
+              type="number"
+              min={0}
+              max={AR_SESSION_LIST_MAX}
+              step={1}
+              value={sessionPriceArs ?? ""}
+              placeholder={t(props.language, { es: "Opcional", en: "Optional", pt: "Opcional" })}
+              onChange={(event) => {
+                const raw = event.target.value;
+                if (raw.trim() === "") {
+                  setSessionPriceArs(null);
+                  return;
+                }
+                setSessionPriceArs(Math.round(Number(raw)));
+              }}
+            />
+          </label>
+
+          <label className="schedule-notice-field">
+            {t(props.language, {
+              es: "Precio de lista por sesión (USD, otros mercados)",
+              en: "Per-session list price (USD, other markets)",
+              pt: "Preco de lista por sessao (USD, outros mercados)"
+            })}
             <input
               type="number"
               min={0}
@@ -1249,7 +1301,15 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
               </span>
               <div className="schedule-home-copy">
                 <strong>{t(props.language, { es: "Valor de sesión", en: "Session rate", pt: "Valor da sessao" })}</strong>
-                <span>{`${majorCurrencyCodeForMarket(listingMarket)} ${sessionPriceUsd}`}</span>
+                <span>
+                  {[
+                    sessionPriceArs != null && sessionPriceArs > 0 ? `ARS ${sessionPriceArs}` : null,
+                    sessionPriceUsd > 0 ? `USD ${sessionPriceUsd}` : null
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") ||
+                    t(props.language, { es: "Sin definir", en: "Not set", pt: "Nao definido" })}
+                </span>
               </div>
               <em aria-hidden="true">›</em>
             </button>

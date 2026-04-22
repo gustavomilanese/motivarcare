@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import {
+  FALLBACK_SESSION_PRICE_MAX_ARS,
   FALLBACK_SESSION_PRICE_MAX_USD,
+  FALLBACK_SESSION_PRICE_MIN_ARS,
   FALLBACK_SESSION_PRICE_MIN_USD,
-  fetchSessionPriceBoundsUsd
+  fetchSessionPriceBoundsDual,
+  type SessionPriceBoundsDual
 } from "../../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
@@ -15,12 +18,14 @@ export function ProfessionalPriceStep(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
   value: {
+    sessionPriceArs: string;
     sessionPrice: string;
     discount4: string;
     discount8: string;
     discount12: string;
   };
   onChange: (value: {
+    sessionPriceArs: string;
     sessionPrice: string;
     discount4: string;
     discount8: string;
@@ -30,29 +35,54 @@ export function ProfessionalPriceStep(props: {
   onContinue: () => void;
 }) {
   const update = (patch: Partial<typeof props.value>) => props.onChange({ ...props.value, ...patch });
-  const sessionPrice = Number(props.value.sessionPrice || "0");
-  const canContinue = sessionPrice > 0;
-  const [bounds, setBounds] = useState<{ min: number; max: number } | null>(null);
+  const ars = Number(props.value.sessionPriceArs || "0");
+  const usd = Number(props.value.sessionPrice || "0");
+  const [bounds, setBounds] = useState<SessionPriceBoundsDual | null>(null);
   const [priceError, setPriceError] = useState("");
 
+  const arMin = bounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
+  const arMax = bounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
+  const usdMin = bounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
+  const usdMax = bounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
+  const arOk = ars <= 0 || (Number.isInteger(ars) && ars >= arMin && ars <= arMax);
+  const usdOk = usd <= 0 || (Number.isInteger(usd) && usd >= usdMin && usd <= usdMax);
+  const canContinue = (ars > 0 || usd > 0) && arOk && usdOk;
+
   useEffect(() => {
-    void fetchSessionPriceBoundsUsd().then(setBounds);
+    void fetchSessionPriceBoundsDual().then(setBounds);
   }, []);
 
   useEffect(() => {
     setPriceError("");
-  }, [props.value.sessionPrice]);
+  }, [props.value.sessionPriceArs, props.value.sessionPrice]);
 
   const tryContinue = () => {
-    const priceUsd = Number(props.value.sessionPrice || "0");
-    const min = bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
-    const max = bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
-    if (!Number.isInteger(priceUsd) || priceUsd < min || priceUsd > max) {
+    if (ars <= 0 && usd <= 0) {
       setPriceError(
         t(props.language, {
-          es: `El precio debe ser un entero en USD entre ${min} y ${max} (límites de la plataforma).`,
-          en: `Price must be a whole USD amount between ${min} and ${max} (platform limits).`,
-          pt: `O preco deve ser um valor inteiro em USD entre ${min} e ${max} (limites da plataforma).`
+          es: "Indicá al menos un precio: ARS o USD.",
+          en: "Enter at least one price: ARS or USD.",
+          pt: "Informe pelo menos um preco: ARS ou USD."
+        })
+      );
+      return;
+    }
+    if (ars > 0 && !arOk) {
+      setPriceError(
+        t(props.language, {
+          es: `ARS: entero entre ${arMin} y ${arMax}, o vacío.`,
+          en: `ARS: whole pesos between ${arMin} and ${arMax}, or blank.`,
+          pt: `ARS: inteiro entre ${arMin} e ${arMax}, ou vazio.`
+        })
+      );
+      return;
+    }
+    if (usd > 0 && !usdOk) {
+      setPriceError(
+        t(props.language, {
+          es: `USD: entero entre ${usdMin} y ${usdMax}, o vacío.`,
+          en: `USD: whole dollars between ${usdMin} and ${usdMax}, or blank.`,
+          pt: `USD: inteiro entre ${usdMin} e ${usdMax}, ou vazio.`
         })
       );
       return;
@@ -69,21 +99,27 @@ export function ProfessionalPriceStep(props: {
     return String(Math.min(max, Math.max(0, Number(numeric))));
   };
 
-  const discountedPrice = (discount: string) => {
-    if (!sessionPrice) {
-      return null;
-    }
+  const discountedLine = (discount: string) => {
     const percent = Number(discount || "0");
     if (!percent) {
       return null;
     }
-    const value = Math.max(0, Math.round(sessionPrice * (1 - percent / 100)));
-    return `${value} ${props.currency} ${t(props.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
+    const bits: string[] = [];
+    if (ars > 0) {
+      bits.push(`${Math.max(0, Math.round(ars * (1 - percent / 100)))} ARS`);
+    }
+    if (usd > 0) {
+      bits.push(`${Math.max(0, Math.round(usd * (1 - percent / 100)))} ${props.currency}`);
+    }
+    if (bits.length === 0) {
+      return null;
+    }
+    return `${bits.join(" · ")} ${t(props.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
   };
 
-  const discounted4 = discountedPrice(props.value.discount4);
-  const discounted8 = discountedPrice(props.value.discount8);
-  const discounted12 = discountedPrice(props.value.discount12);
+  const discounted4 = discountedLine(props.value.discount4);
+  const discounted8 = discountedLine(props.value.discount8);
+  const discounted12 = discountedLine(props.value.discount12);
 
   return (
     <div className="pro-register-intro-shell">
@@ -99,24 +135,32 @@ export function ProfessionalPriceStep(props: {
         </header>
 
         <div className="pro-price-copy">
-          <h1>{t(props.language, { es: "Precio por una sesión", en: "Price per session", pt: "Preco por sessao" })}</h1>
+          <h1>{t(props.language, { es: "Precios por sesión", en: "Session prices", pt: "Precos por sessao" })}</h1>
           <p>
             {t(props.language, {
-              es: "Puede cambiar el precio en cualquier momento en el futuro. Este es el precio que sus clientes pagarán por una sesión con usted.",
-              en: "You can change this price anytime in the future. This is what clients will pay for a session with you.",
-              pt: "Voce pode alterar esse preco no futuro. Este sera o valor que seus clientes pagarao por sessao."
+              es: "ARS para Argentina; USD para mercado internacional. Al menos uno obligatorio.",
+              en: "ARS for Argentina; USD for international market. At least one is required.",
+              pt: "ARS para Argentina; USD internacional. Pelo menos um e obrigatorio."
             })}
           </p>
         </div>
 
         <p className="pro-price-bounds-hint">
           {t(props.language, {
-            es: `Precio permitido por sesión: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (entero).`,
-            en: `Allowed per-session price: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (whole dollars).`,
-            pt: `Preco permitido por sessao: USD ${bounds?.min ?? FALLBACK_SESSION_PRICE_MIN_USD} – ${bounds?.max ?? FALLBACK_SESSION_PRICE_MAX_USD} (inteiro).`
+            es: `ARS ${arMin}–${arMax} enteros · USD ${usdMin}–${usdMax} enteros.`,
+            en: `ARS ${arMin}–${arMax} whole pesos · USD ${usdMin}–${usdMax} whole dollars.`,
+            pt: `ARS ${arMin}–${arMax} · USD ${usdMin}–${usdMax}.`
           })}
         </p>
         {priceError ? <p className="pro-form-step-error">{priceError}</p> : null}
+        <label className="pro-form-step-field">
+          <input
+            inputMode="numeric"
+            placeholder="15000 ARS"
+            value={props.value.sessionPriceArs}
+            onChange={(event) => update({ sessionPriceArs: event.target.value.replace(/\D/g, "") })}
+          />
+        </label>
         <label className="pro-form-step-field">
           <input
             inputMode="numeric"

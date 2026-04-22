@@ -1,21 +1,17 @@
 import { type SyntheticEvent } from "react";
 import { formatDateWithLocale, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import type { Market } from "@therapy/types";
 import { professionalPhotoSrc } from "../../app/services/api";
+import { effectiveSessionListMajorUnits, formatSessionListMajorPrice } from "../lib/sessionListPrice";
 import type { MatchCardProfessional, MatchTimeSlot } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatAmount(value: number | null, language: AppLanguage): string {
-  if (value === null) {
-    return t(language, { es: "A confirmar", en: "To be confirmed", pt: "A confirmar" });
-  }
-  return `$${value.toFixed(2)} USD`;
-}
-
 export function BookingSummaryModal(props: {
   language: AppLanguage;
+  patientMarket: Market;
   timezone: string;
   professional: MatchCardProfessional;
   slot: MatchTimeSlot;
@@ -24,6 +20,7 @@ export function BookingSummaryModal(props: {
   onContinue: () => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
+  const listMajor = effectiveSessionListMajorUnits(props.professional, props.patientMarket);
   const dateLabel = formatDateWithLocale({
     value: props.slot.startsAt,
     language: props.language,
@@ -90,7 +87,7 @@ export function BookingSummaryModal(props: {
 
           <div className="summary-compact-row total">
             <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
-            <strong>{formatAmount(props.professional.sessionPriceUsd, props.language)}</strong>
+            <strong>{formatSessionListMajorPrice(props.patientMarket, listMajor, props.language)}</strong>
           </div>
         </section>
 

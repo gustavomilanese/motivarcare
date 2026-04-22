@@ -5,7 +5,10 @@ import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } fro
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
-import { validateProfessionalSessionListPrice } from "../../lib/professionalSessionListPrice.js";
+import {
+  validateProfessionalSessionListArs,
+  validateProfessionalSessionListUsd
+} from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
@@ -284,6 +287,7 @@ const updateProfessionalSchema = z
       .transform((value) => value.toUpperCase())
       .nullable()
       .optional(),
+    sessionPriceArs: z.number().int().min(0).max(10_000_000).nullable().optional(),
     sessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
     ratingAverage: z.number().min(0).max(5).nullable().optional(),
     reviewsCount: z.number().int().min(0).max(100000).nullable().optional(),
@@ -1237,17 +1241,8 @@ adminRouter.patch("/users/:userId", async (req, res) => {
     parsed.data.professionalSessionPriceUsd !== undefined &&
     parsed.data.professionalSessionPriceUsd !== null
   ) {
-    const proForPrice = await prisma.professionalProfile.findUnique({
-      where: { userId: existing.id },
-      select: { residencyCountry: true }
-    });
-    const effectiveMarket = marketFromResidencyCountry(proForPrice?.residencyCountry ?? undefined);
     const financeRules = await getFinanceRules();
-    const priceError = validateProfessionalSessionListPrice({
-      market: effectiveMarket,
-      price: parsed.data.professionalSessionPriceUsd,
-      financeRules
-    });
+    const priceError = validateProfessionalSessionListUsd(parsed.data.professionalSessionPriceUsd, financeRules);
     if (priceError) {
       return res.status(400).json({
         error: priceError.message,
@@ -1829,6 +1824,7 @@ adminRouter.get("/professionals", async (req, res) => {
       birthCountry: item.birthCountry,
       residencyCountry: item.residencyCountry ?? null,
       market: item.market,
+      sessionPriceArs: item.sessionPriceArs,
       sessionPriceUsd: item.sessionPriceUsd,
       ratingAverage: displayOverrides[item.id]?.ratingAverage ?? null,
       reviewsCount: displayOverrides[item.id]?.reviewsCount ?? 0,
@@ -1855,17 +1851,20 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     return res.status(404).json({ error: "Professional not found" });
   }
 
-  const nextResidency =
-    parsed.data.residencyCountry !== undefined ? parsed.data.residencyCountry : existing.residencyCountry;
-  const effectiveMarket = marketFromResidencyCountry(nextResidency ?? undefined);
-
+  const financeRules = await getFinanceRules();
+  if (parsed.data.sessionPriceArs !== undefined && parsed.data.sessionPriceArs !== null) {
+    const priceError = validateProfessionalSessionListArs(parsed.data.sessionPriceArs);
+    if (priceError) {
+      return res.status(400).json({
+        error: priceError.message,
+        sessionPriceMin: priceError.sessionPriceMin,
+        sessionPriceMax: priceError.sessionPriceMax,
+        sessionPriceCurrency: priceError.currencyCode
+      });
+    }
+  }
   if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
-    const financeRules = await getFinanceRules();
-    const priceError = validateProfessionalSessionListPrice({
-      market: effectiveMarket,
-      price: parsed.data.sessionPriceUsd,
-      financeRules
-    });
+    const priceError = validateProfessionalSessionListUsd(parsed.data.sessionPriceUsd, financeRules);
     if (priceError) {
       return res.status(400).json({
         error: priceError.message,
@@ -1895,6 +1894,7 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
             market: marketFromResidencyCountry(parsed.data.residencyCountry ?? undefined)
           }
         : {}),
+      ...(parsed.data.sessionPriceArs !== undefined ? { sessionPriceArs: parsed.data.sessionPriceArs } : {}),
       ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
       ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
       ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})

@@ -6,7 +6,7 @@ import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
 import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
-import { avatarInitialsFromNameParts, isMarket, majorCurrencyCodeForMarket, resolvedFirstLastFromUserRecord } from "@therapy/types";
+import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -76,14 +76,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     }
     return base;
   }, [profile?.birthCountry]);
-
-  const sessionListCurrencyCode = useMemo(() => {
-    if (!profile) {
-      return "USD";
-    }
-    const m = profile.market;
-    return majorCurrencyCodeForMarket(isMarket(m) ? m : "US");
-  }, [profile]);
 
   const toggleProfileFocusArea = (area: string) => {
     setProfile((current) => {
@@ -383,14 +375,36 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             <h3>{t(props.language, { es: "Precios y descuentos", en: "Pricing and discounts", pt: "Precos e descontos" })}</h3>
             <div className="pro-grid-form">
               <label>
-                {replaceTemplate(
-                  t(props.language, {
-                    es: "Precio por sesión ({currency})",
-                    en: "Session price ({currency})",
-                    pt: "Preco por sessao ({currency})"
-                  }),
-                  { currency: sessionListCurrencyCode }
-                )}
+                {t(props.language, {
+                  es: "Precio por sesión (ARS, lista Argentina)",
+                  en: "Per-session list price (ARS, Argentina catalog)",
+                  pt: "Preco por sessao (ARS, catalogo Argentina)"
+                })}
+                <input
+                  type="number"
+                  min={0}
+                  max={10_000_000}
+                  value={profile.sessionPriceArs == null ? "" : profile.sessionPriceArs}
+                  onChange={(event) =>
+                    setProfile((current) => {
+                      if (!current) {
+                        return current;
+                      }
+                      const raw = event.target.value;
+                      if (raw.trim() === "") {
+                        return { ...current, sessionPriceArs: null };
+                      }
+                      return { ...current, sessionPriceArs: clampInt(Number(raw), 0, 10_000_000) };
+                    })
+                  }
+                />
+              </label>
+              <label>
+                {t(props.language, {
+                  es: "Precio por sesión (USD, otros mercados)",
+                  en: "Per-session list price (USD, other markets)",
+                  pt: "Preco por sessao (USD, outros mercados)"
+                })}
                 <input
                   type="number"
                   min={0}

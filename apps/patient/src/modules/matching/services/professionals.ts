@@ -37,6 +37,7 @@ async function fetchProfessionalDirectoryOnce(token?: string | null, language: "
     therapeuticApproach: safeString(item.therapeuticApproach),
     languages: Array.isArray(item.languages) ? item.languages : [],
     yearsExperience: item.yearsExperience ?? 0,
+    sessionPriceArs: item.sessionPriceArs ?? null,
     sessionPriceUsd: item.sessionPriceUsd ?? null,
     photoUrl: resolvePublicAssetUrl(safeString(item.photoUrl)),
     birthCountry: safeString(item.birthCountry),

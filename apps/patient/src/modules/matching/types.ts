@@ -1,5 +1,6 @@
 import type { AppLanguage, LocalizedText } from "@therapy/i18n-config";
 import type { SyntheticEvent } from "react";
+import type { Market } from "@therapy/types";
 
 export interface ProfessionalDirectoryApiItem {
   id: string;
@@ -58,6 +59,7 @@ export interface MatchCardProfessional {
   therapeuticApproach: string | null;
   languages: string[];
   yearsExperience: number;
+  sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
   photoUrl: string | null;
   birthCountry: string | null;
@@ -92,6 +94,8 @@ export interface MatchTimeSlot {
 
 export interface MatchingPageProps {
   language: AppLanguage;
+  /** Mercado del paciente (precio mostrado / ordenación por lista). */
+  patientMarket: Market;
   authToken?: string | null;
   mode?: "portal" | "onboarding-final";
   intakeAnswers: Record<string, string>;

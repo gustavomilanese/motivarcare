@@ -8,6 +8,7 @@ import { BookingSummaryModal } from "../components/BookingSummaryModal";
 import { PaymentMethodModal } from "../components/PaymentMethodModal";
 import { friendlyBookingFailureMessage } from "../../app/lib/friendlyPatientMessages";
 import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
+import { effectiveSessionListMajorUnits } from "../lib/sessionListPrice";
 import { fetchProfessionalAvailability, isSlotStillListedAfterFreshFetch } from "../services/availability";
 import { fetchProfessionalDirectory } from "../services/professionals";
 import type {
@@ -172,6 +173,13 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     [bookingProfessionalId, professionals]
   );
 
+  const bookingListMajor = useMemo(() => {
+    if (!bookingProfessional) {
+      return null;
+    }
+    return effectiveSessionListMajorUnits(bookingProfessional, props.patientMarket);
+  }, [bookingProfessional, props.patientMarket]);
+
   const closeBookingFlow = () => {
     setBookingStep(null);
     setBookingProfessionalId("");
@@ -302,6 +310,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
               <ProfessionalMatchCard
                 key={item.professional.id}
                 item={item}
+                patientMarket={props.patientMarket}
                 language={props.language}
                 isFavorite={favoriteIds.has(item.professional.id)}
                 selected={item.professional.id === props.selectedProfessionalId}
@@ -407,7 +416,8 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       {bookingFlowEnabled && bookingStep === "payment" && bookingProfessional && bookingSlot ? (
         <PaymentMethodModal
           language={props.language}
-          amountUsd={bookingProfessional.sessionPriceUsd}
+          amountMajor={bookingListMajor}
+          displayCurrency={props.patientMarket === "AR" ? "ARS" : "USD"}
           loading={paymentLoading}
           error={paymentError}
           onBack={() => setBookingStep("summary")}

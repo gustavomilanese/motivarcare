@@ -33,6 +33,7 @@ describe("onboarding defaults", () => {
       bio: "Bio de prueba",
       shortDescription: "Descripcion corta",
       therapeuticApproach: "Enfoque integrador",
+      sessionPriceArs: 40_000,
       sessionPriceUsd: 50,
       discount4: 10,
       discount8: 8,
@@ -56,6 +57,7 @@ describe("onboarding defaults", () => {
 
     expect(draft.bio).toBe("Bio de prueba");
     expect(draft.focusAreas).toEqual(["Ansiedad"]);
+    expect(draft.sessionPriceArs).toBe(40_000);
     expect(draft.sessionPriceUsd).toBe(50);
     expect(draft.stripeVerified).toBe(true);
     expect(draft.visible).toBe(false);
@@ -74,6 +76,7 @@ describe("onboarding defaults", () => {
       workLanguages: ["Espanol"],
       summaryText: "Resumen",
       priceData: {
+        sessionPriceArs: "",
         sessionPrice: "50",
         discount4: "10",
         discount8: "8",
@@ -117,7 +120,7 @@ describe("onboarding defaults", () => {
       problemFocusSelections: ["Ansiedad", "Otro (objetivos de terapia): definir límites"],
       workLanguages: ["Espanol"],
       summaryText: "Resumen",
-      priceData: { sessionPrice: "50", discount4: "10", discount8: "8", discount12: "12" },
+      priceData: { sessionPriceArs: "", sessionPrice: "50", discount4: "10", discount8: "8", discount12: "12" },
       personalData: { graduationYear: "2018", gender: "Hombre", birthCountry: "Uruguay", residencyCountry: "UY" },
       educationData: { institution: "U", specialty: "Lic", startYear: "2014", graduationYear: "2018" }
     });
@@ -134,7 +137,7 @@ describe("onboarding defaults", () => {
       selectedPracticeHours: "1000-3000 horas",
       workLanguages: ["Espanol"],
       summaryText: "",
-      priceData: { sessionPrice: "", discount4: "", discount8: "", discount12: "" },
+      priceData: { sessionPriceArs: "", sessionPrice: "", discount4: "", discount8: "", discount12: "" },
       personalData: { graduationYear: "", gender: "Hombre", birthCountry: "UY", residencyCountry: "AR" },
       educationData: { institution: "", specialty: "", startYear: "", graduationYear: "" }
     });

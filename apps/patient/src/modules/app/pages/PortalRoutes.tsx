@@ -32,6 +32,7 @@ function OnboardingFinalMatching(p: {
   return (
     <MatchingPage
       language={p.state.language}
+      patientMarket={p.state.patientMarket}
       authToken={p.state.authToken}
       mode="onboarding-final"
       intakeAnswers={p.state.intake?.answers ?? {}}
@@ -178,6 +179,7 @@ export function PortalRoutes(props: {
             : (
                 <MatchingPage
                   language={props.state.language}
+                  patientMarket={props.state.patientMarket}
                   authToken={props.state.authToken}
                   mode="portal"
                   intakeAnswers={props.state.intake?.answers ?? {}}
@@ -258,6 +260,7 @@ export function PortalRoutes(props: {
             : (
                 <MatchingPage
                   language={props.state.language}
+                  patientMarket={props.state.patientMarket}
                   authToken={props.state.authToken}
                   mode="portal"
                   intakeAnswers={props.state.intake?.answers ?? {}}

@@ -10,7 +10,11 @@ import {
 } from "../../lib/professionalListingDisplayName.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
-import { validateProfessionalSessionListPrice } from "../../lib/professionalSessionListPrice.js";
+import {
+  listPriceMajorUnitsForPackageMarket,
+  validateProfessionalSessionListArs,
+  validateProfessionalSessionListUsd
+} from "../../lib/professionalSessionListPrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
@@ -87,6 +91,7 @@ const updatePublicProfileSchema = z.object({
   therapeuticApproach: z.string().max(500).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   graduationYear: z.number().int().min(1950).max(2035).nullable().optional(),
+  sessionPriceArs: z.number().int().min(0).max(10_000_000).nullable().optional(),
   sessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
   discount4: z.number().int().min(0).max(5).nullable().optional(),
   discount8: z.number().int().min(0).max(10).nullable().optional(),
@@ -231,7 +236,7 @@ function resolvePackagePricing(params: {
   credits: number;
   fallbackPriceCents: number;
   fallbackDiscountPercent: number;
-  sessionPriceUsd: number | null | undefined;
+  sessionListPriceMajor: number | null | undefined;
   profileDiscount4: number | null | undefined;
   profileDiscount8: number | null | undefined;
   profileDiscount12: number | null | undefined;
@@ -244,7 +249,7 @@ function resolvePackagePricing(params: {
     profileDiscount12: params.profileDiscount12
   });
 
-  if (!params.sessionPriceUsd || params.sessionPriceUsd <= 0) {
+  if (!params.sessionListPriceMajor || params.sessionListPriceMajor <= 0) {
     return {
       discountPercent,
       listPriceCents: params.fallbackPriceCents,
@@ -252,7 +257,7 @@ function resolvePackagePricing(params: {
     };
   }
 
-  const listPriceCents = params.sessionPriceUsd * params.credits * 100;
+  const listPriceCents = params.sessionListPriceMajor * params.credits * 100;
   const priceCents = Math.max(0, Math.round(listPriceCents * (1 - discountPercent / 100)));
   return {
     discountPercent,
@@ -416,6 +421,7 @@ interface DirectoryProfessional {
   therapeuticApproach: string | null;
   languages: string[];
   yearsExperience: number | null;
+  sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
@@ -563,6 +569,7 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
       professional.graduationYear != null
         ? yearsExperienceFromGraduationYear(professional.graduationYear)
         : professional.yearsExperience,
+    sessionPriceArs: professional.sessionPriceArs,
     sessionPriceUsd: professional.sessionPriceUsd,
     photoUrl: professional.photoUrl,
     videoUrl: professional.videoUrl,
@@ -879,6 +886,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
               professional.graduationYear != null
                 ? yearsExperienceFromGraduationYear(professional.graduationYear)
                 : professional.yearsExperience,
+            sessionPriceArs: professional.sessionPriceArs,
             sessionPriceUsd: professional.sessionPriceUsd,
             discount4: professional.discount4,
             discount8: professional.discount8,
@@ -1137,7 +1145,15 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     sessionPackage.professionalId
       ? prisma.professionalProfile.findUnique({
           where: { id: sessionPackage.professionalId },
-          select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
+          select: {
+            id: true,
+            market: true,
+            sessionPriceArs: true,
+            sessionPriceUsd: true,
+            discount4: true,
+            discount8: true,
+            discount12: true
+          }
         })
       : Promise.resolve(null),
     getFinanceRules()
@@ -1148,16 +1164,28 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
   const activeProfessional = activeProfessionalId
     ? await prisma.professionalProfile.findUnique({
         where: { id: activeProfessionalId },
-        select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
+        select: {
+          id: true,
+          market: true,
+          sessionPriceArs: true,
+          sessionPriceUsd: true,
+          discount4: true,
+          discount8: true,
+          discount12: true
+        }
       })
     : null;
 
   const pricingProfessional = activeProfessional ?? packageProfessional;
+  const sessionListPriceMajor =
+    pricingProfessional != null
+      ? listPriceMajorUnitsForPackageMarket(pricingProfessional, patient.market)
+      : null;
   const pricing = resolvePackagePricing({
     credits: sessionPackage.credits,
     fallbackPriceCents: sessionPackage.priceCents,
     fallbackDiscountPercent: sessionPackage.discountPercent,
-    sessionPriceUsd: pricingProfessional?.sessionPriceUsd,
+    sessionListPriceMajor,
     profileDiscount4: pricingProfessional?.discount4,
     profileDiscount8: pricingProfessional?.discount8,
     profileDiscount12: pricingProfessional?.discount12
@@ -1276,15 +1304,27 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
   const activeProfessional = activeProfessionalId
     ? await prisma.professionalProfile.findUnique({
         where: { id: activeProfessionalId },
-        select: { id: true, sessionPriceUsd: true, discount4: true, discount8: true, discount12: true }
+        select: {
+          id: true,
+          market: true,
+          sessionPriceArs: true,
+          sessionPriceUsd: true,
+          discount4: true,
+          discount8: true,
+          discount12: true
+        }
       })
     : null;
 
+  const sessionListPriceMajor =
+    activeProfessional != null
+      ? listPriceMajorUnitsForPackageMarket(activeProfessional, patient.market)
+      : null;
   const pricing = resolvePackagePricing({
     credits: 1,
     fallbackPriceCents: unitPackage.priceCents,
     fallbackDiscountPercent: unitPackage.discountPercent,
-    sessionPriceUsd: activeProfessional?.sessionPriceUsd,
+    sessionListPriceMajor,
     profileDiscount4: activeProfessional?.discount4,
     profileDiscount8: activeProfessional?.discount8,
     profileDiscount12: activeProfessional?.discount12
@@ -1487,17 +1527,20 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
     return res.status(404).json({ error: "Professional profile not found" });
   }
 
-  const nextResidencyForPricing =
-    parsed.data.residencyCountry !== undefined ? parsed.data.residencyCountry : existingProfile.residencyCountry;
-  const effectiveMarketForPricing = marketFromResidencyCountry(nextResidencyForPricing ?? undefined);
-
+  const financeRules = await getFinanceRules();
+  if (parsed.data.sessionPriceArs !== undefined && parsed.data.sessionPriceArs !== null) {
+    const priceError = validateProfessionalSessionListArs(parsed.data.sessionPriceArs);
+    if (priceError) {
+      return res.status(400).json({
+        error: priceError.message,
+        sessionPriceMin: priceError.sessionPriceMin,
+        sessionPriceMax: priceError.sessionPriceMax,
+        sessionPriceCurrency: priceError.currencyCode
+      });
+    }
+  }
   if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
-    const financeRules = await getFinanceRules();
-    const priceError = validateProfessionalSessionListPrice({
-      market: effectiveMarketForPricing,
-      price: parsed.data.sessionPriceUsd,
-      financeRules
-    });
+    const priceError = validateProfessionalSessionListUsd(parsed.data.sessionPriceUsd, financeRules);
     if (priceError) {
       return res.status(400).json({
         error: priceError.message,

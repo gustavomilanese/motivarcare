@@ -165,6 +165,9 @@ model ProfessionalProfile {
   /// Año de egreso del título (onboarding); si existe, el matching puede derivar años de práctica.
   graduationYear        Int?                     @map("graduation_year")
   registrationApproval  ProfessionalRegistrationApproval @default(APPROVED) @map("registration_approval")
+  /// Precio de lista por sesión en ARS (pesos enteros); oferta mercado AR.
+  sessionPriceArs       Int?                     @map("session_price_ars")
+  /// Precio de lista por sesión en USD (enteros); oferta mercado US (y referencia para BR/ES en catálogo).
   sessionPriceUsd       Int?
   discount4             Int?
   discount8             Int?

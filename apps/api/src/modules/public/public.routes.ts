@@ -11,6 +11,11 @@ import {
   parseSessionPackagesVisibility,
   patientVisibilityIdsForMarket
 } from "../../lib/sessionPackageVisibility.js";
+import {
+  AR_SESSION_LIST_MAX,
+  AR_SESSION_LIST_MIN,
+  listPriceMajorUnitsForPackageMarket
+} from "../../lib/professionalSessionListPrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -113,7 +118,9 @@ publicRouter.get("/session-price-bounds", async (_req, res) => {
   const rules = await getFinanceRules();
   return res.json({
     sessionPriceMinUsd: rules.sessionPriceMinUsd,
-    sessionPriceMaxUsd: rules.sessionPriceMaxUsd
+    sessionPriceMaxUsd: rules.sessionPriceMaxUsd,
+    sessionPriceMinArs: AR_SESSION_LIST_MIN,
+    sessionPriceMaxArs: AR_SESSION_LIST_MAX
   });
 });
 
@@ -198,6 +205,7 @@ publicRouter.get("/session-packages", async (req, res) => {
           select: {
             id: true,
             market: true,
+            sessionPriceArs: true,
             sessionPriceUsd: true,
             discount4: true,
             discount8: true,
@@ -215,6 +223,7 @@ publicRouter.get("/session-packages", async (req, res) => {
           select: {
             id: true,
             market: true,
+            sessionPriceArs: true,
             sessionPriceUsd: true,
             discount4: true,
             discount8: true,
@@ -265,10 +274,8 @@ publicRouter.get("/session-packages", async (req, res) => {
         profileDiscount12: pricingProfile?.discount12
       });
       const sessionListPriceMajor =
-        pricingProfile &&
-        (pricingProfile.sessionPriceUsd ?? 0) > 0 &&
-        pricingProfile.market === market
-          ? pricingProfile.sessionPriceUsd
+        pricingProfile && pricingProfile.market === market
+          ? listPriceMajorUnitsForPackageMarket(pricingProfile, market)
           : null;
       const priceCents = resolvePackagePriceCents({
         credits: item.credits,
