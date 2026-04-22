@@ -10,7 +10,9 @@ async function checkDatabase(): Promise<"ok" | "error"> {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return "ok";
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[health] database ping failed:", message);
     return "error";
   }
 }
@@ -30,6 +32,12 @@ healthRouter.get("/ready", async (_req, res) => {
   const [database, redis] = await Promise.all([checkDatabase(), isRedisReady()]);
   const redisRequired = env.API_RATE_LIMIT_BACKEND === "redis" && env.NODE_ENV === "production";
   const ready = !runtimeState.shuttingDown && database === "ok" && (!redisRequired || redis);
+
+  if (!ready && redisRequired && !redis) {
+    console.error(
+      "[health] Redis obligatorio (API_RATE_LIMIT_BACKEND=redis) pero no responde: revisá REDIS_URL o usá memory/auto si no tenés Redis en Railway."
+    );
+  }
 
   res.status(ready ? 200 : 503).json({
     ok: ready,

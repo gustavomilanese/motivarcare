@@ -63,11 +63,11 @@ const EnvSchema = z.object({
 
 const parsedEnv = EnvSchema.parse(process.env);
 
-function resolveApiListenHost(): string | undefined {
+function resolveApiListenHost(): string {
   const explicit = parsedEnv.API_LISTEN_HOST?.trim();
   if (explicit) return explicit;
-  if (parsedEnv.NODE_ENV === "development") return "0.0.0.0";
-  return undefined;
+  // Docker / Railway / LAN: sin host explícito escuchamos en todas las interfaces (evita healthchecks que pegan mal al bind por defecto de Node).
+  return "0.0.0.0";
 }
 
 const patientMobileCalendarOriginPrefixes =

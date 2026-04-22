@@ -6,6 +6,22 @@ import { logGoogleMeetStartupHints } from "./modules/video/googleMeet.service.js
 import { markShuttingDown, runtimeState } from "./lib/operational.js";
 import { disconnectRedis } from "./lib/redis.js";
 
+function databaseUrlLooksLocalOnly(url: string): boolean {
+  try {
+    const normalized = url.trim().replace(/^mysql2:/, "mysql:");
+    const u = new URL(normalized);
+    return u.hostname === "localhost" || u.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+if (env.NODE_ENV === "production" && databaseUrlLooksLocalOnly(env.DATABASE_URL)) {
+  console.error(
+    "[startup] DATABASE_URL apunta a localhost. En Railway el contenedor no tiene MySQL local: /health/ready devolvera 503 hasta que configures la URL del plugin MySQL (Variables → referencia al servicio MySQL)."
+  );
+}
+
 const server = http.createServer(app);
 server.keepAliveTimeout = 65000;
 server.headersTimeout = 70000;
@@ -13,17 +29,18 @@ server.requestTimeout = env.API_REQUEST_TIMEOUT_MS;
 server.maxRequestsPerSocket = env.API_MAX_REQUESTS_PER_SOCKET;
 
 const listenHost = env.apiListenHost;
-if (listenHost !== undefined) {
-  server.listen(env.PORT, listenHost, () => {
-    console.log(`API listening on http://${listenHost}:${env.PORT}`);
-    logGoogleMeetStartupHints();
-  });
-} else {
-  server.listen(env.PORT, () => {
-    console.log(`API listening on http://localhost:${env.PORT}`);
-    logGoogleMeetStartupHints();
-  });
-}
+server.listen(env.PORT, listenHost, () => {
+  console.log(`API listening on http://${listenHost}:${env.PORT}`);
+  logGoogleMeetStartupHints();
+  void prisma.$connect().then(
+    () => console.log("[startup] database: prisma connected OK"),
+    (err: unknown) =>
+      console.error(
+        "[startup] database: prisma connect FAILED — revisá DATABASE_URL / MySQL en Railway. Mensaje:",
+        err instanceof Error ? err.message : err
+      )
+  );
+});
 
 let shutdownInProgress = false;
 
