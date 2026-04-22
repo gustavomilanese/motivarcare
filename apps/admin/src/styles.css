@@ -4925,9 +4925,24 @@ button.primary.finance-hero-search {
   gap: 18px;
 }
 
+/* Tabla ancha (4 mercados): sin scroll el grid comprime la 1ª columna y se superpone el texto. */
+.package-admin-list-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+  margin-top: 4px;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.package-admin-list-scroll .package-admin-list-head,
+.package-admin-list-scroll .package-admin-card {
+  min-width: 1180px;
+}
+
 .package-admin-list-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) 54px 78px repeat(8, 50px 72px) minmax(72px, 92px);
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px repeat(8, 46px 68px) minmax(80px, 96px);
   gap: 8px;
   padding: 0 16px;
   align-items: end;
@@ -4950,7 +4965,7 @@ button.primary.finance-hero-search {
   border-radius: 18px;
   padding: 18px 16px;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) 54px 78px repeat(8, 50px 72px) minmax(72px, 92px);
+  grid-template-columns: minmax(220px, 1.25fr) 52px 76px repeat(8, 46px 68px) minmax(80px, 96px);
   gap: 8px;
   align-items: center;
   background: #fafcff;
@@ -4971,8 +4986,16 @@ button.primary.finance-hero-search {
 .package-admin-card-title-row {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.package-admin-card-title-row h4 {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .package-admin-card-price {

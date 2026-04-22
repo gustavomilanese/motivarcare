@@ -524,6 +524,7 @@ export function SessionPackagesAdminPage(props: {
           {loading ? <p>Cargando paquetes...</p> : null}
 
           {!loading ? (
+            <div className="package-admin-list-scroll">
             <div className="package-admin-list">
               <div className="package-admin-list-head" aria-hidden="true">
                 <span>Paquete</span>
@@ -531,8 +532,8 @@ export function SessionPackagesAdminPage(props: {
                 <span>Orden</span>
                 {ADMIN_PATIENT_MARKETS.map((m) => (
                   <Fragment key={`head-${m}`}>
-                    <span>{`Portal ${m}`}</span>
-                    <span>Orden</span>
+                    <span title={`Portal paciente ${m}`}>{m}</span>
+                    <span>Ord.</span>
                   </Fragment>
                 ))}
                 <span />
@@ -691,6 +692,7 @@ export function SessionPackagesAdminPage(props: {
                 </article>
               ))}
               {filteredPackages.length === 0 ? <p className="web-admin-empty-list">No hay paquetes para mostrar.</p> : null}
+            </div>
             </div>
           ) : null}
 
