@@ -36,11 +36,8 @@ function looksLikeEmail(value: string): boolean {
   return v.includes("@") && v.length >= 5 && !v.startsWith("@") && !v.endsWith("@");
 }
 
-function placeholderFullNameFromEmail(email: string): string {
-  const local = email.trim().split("@")[0]?.trim() ?? "";
-  if (local.length >= 2) {
-    return local.slice(0, 120);
-  }
+/** No usar la parte local del email como nombre en User.fullName (saludos lo confunden con el mail). */
+function placeholderFullNameFromEmail(_email: string): string {
   return "Profesional";
 }
 

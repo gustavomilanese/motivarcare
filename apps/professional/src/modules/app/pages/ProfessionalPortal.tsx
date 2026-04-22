@@ -20,6 +20,7 @@ import { PatientsPage } from "./PatientsPage";
 import { ProfilePage } from "./ProfilePage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
+import { professionalPortalGreetingDisplayName } from "../lib/portalGreetingDisplayName";
 import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY } from "../services/api";
 import type { AuthUser, PortalSection } from "../types";
 
@@ -187,7 +188,11 @@ export function ProfessionalPortal(props: {
             <h1>
               {replaceTemplate(
                 t(props.language, { es: "Hola, {name}", en: "Hi, {name}", pt: "Ola, {name}" }),
-                { name: props.user.fullName }
+                {
+                  name:
+                    professionalPortalGreetingDisplayName(props.user) ||
+                    t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })
+                }
               )}
             </h1>
           </div>

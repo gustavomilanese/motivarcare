@@ -299,6 +299,8 @@ export function App() {
           user: {
             id: string;
             fullName: string;
+            firstName?: string;
+            lastName?: string;
             email: string;
             role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
             emailVerified: boolean;
@@ -320,6 +322,8 @@ export function App() {
         const nextUser: AuthUser = {
           id: response.user.id,
           fullName: response.user.fullName,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
           email: response.user.email,
           emailVerified: response.user.emailVerified,
           role: "PROFESSIONAL",

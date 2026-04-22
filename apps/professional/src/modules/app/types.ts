@@ -16,6 +16,9 @@ export type PortalSection =
 export interface AuthUser {
   id: string;
   fullName: string;
+  /** Nombre/apellido estructurados (auth/me); si faltan, el saludo usa fullName con heurística. */
+  firstName?: string;
+  lastName?: string;
   email: string;
   emailVerified: boolean;
   role: "PROFESSIONAL";
@@ -28,6 +31,8 @@ export interface AuthResponse {
   user: {
     id: string;
     fullName: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
     emailVerified: boolean;
     role: "PATIENT" | "PROFESSIONAL" | "ADMIN";

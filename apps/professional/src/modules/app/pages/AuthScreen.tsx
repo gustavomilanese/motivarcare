@@ -106,6 +106,8 @@ export function AuthScreen(props: {
       user: {
         id: response.user.id,
         fullName: response.user.fullName,
+        firstName: response.user.firstName,
+        lastName: response.user.lastName,
         email: response.user.email,
         emailVerified: response.user.emailVerified,
         role: "PROFESSIONAL",

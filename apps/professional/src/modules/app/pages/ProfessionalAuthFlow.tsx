@@ -70,11 +70,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function placeholderFullNameFromEmail(email: string): string {
-  const local = email.trim().split("@")[0]?.trim() ?? "";
-  if (local.length >= 2) {
-    return local.slice(0, 120);
-  }
+/** No usar la parte local del email como nombre: se confunde con el mail en saludos y listados. */
+function placeholderFullNameFromEmail(_email: string): string {
   return "Profesional";
 }
 
