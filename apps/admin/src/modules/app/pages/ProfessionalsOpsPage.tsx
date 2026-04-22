@@ -11,6 +11,7 @@ import { ProfessionalPhotoUrlField } from "../components/shared/ProfessionalPhot
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
+import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminBookingOps,
   AdminBookingsResponse,
@@ -69,8 +70,10 @@ function parseLocalDateAndTime(slotDate: string, slotTime: string): Date | null 
 }
 
 function buildProfessionalEditDraft(professional: AdminProfessionalOps): ProfessionalEditDraft {
+  const { firstName, lastName } = splitFullNameToFirstLast(professional.fullName);
   return {
-    fullName: professional.fullName,
+    firstName,
+    lastName,
     email: professional.email,
     visible: professional.visible,
     cancellationHours: String(professional.cancellationHours),
@@ -263,12 +266,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       return;
     }
 
-    if (draft.fullName.trim().length < 2) {
+    if (!draft.firstName.trim() || !draft.lastName.trim()) {
       setError(
         t(props.language, {
-          es: "El nombre público necesita al menos 2 caracteres.",
-          en: "Public name needs at least 2 characters.",
-          pt: "O nome publico precisa de pelo menos 2 caracteres."
+          es: "Completá nombre y apellido.",
+          en: "Enter first and last name.",
+          pt: "Preencha nome e sobrenome."
         })
       );
       return;
@@ -285,6 +288,46 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
       return;
     }
 
+
+    setError("");
+    setSuccess("");
+    setProfessionalSaveLoading(true);
+
+    try {
+      await apiRequest<{ user: AdminUser }>(
+        "/api/admin/users/" + professional.userId,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            fullName: joinFirstLastToFullName(draft.firstName.trim(), draft.lastName.trim()),
+            email: draft.email.trim().toLowerCase()
+          })
+        },
+        props.token
+      );
+
+      setSuccess(
+        t(props.language, {
+          es: "Cuenta y acceso guardados (nombre y email).",
+          en: "Account & access saved (name and email).",
+          pt: "Conta e acesso salvos (nome e e-mail)."
+        })
+      );
+      await afterProfessionalPatchSuccess(professional.id);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("prof-ops-update", props.language, raw));
+    } finally {
+      setProfessionalSaveLoading(false);
+    }
+  };
+
+  const saveProfessionalPresentationSection = async (professional: AdminProfessionalOps) => {
+    const draft = professionalEditDrafts[professional.id];
+    if (!draft) {
+      return;
+    }
+
     const cancellationHours = Number(draft.cancellationHours);
     if (!Number.isInteger(cancellationHours) || cancellationHours < 0 || cancellationHours > 168) {
       setError(
@@ -292,6 +335,19 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           es: "Las horas de cancelación: entero entre 0 y 168.",
           en: "Cancellation hours: whole number from 0 to 168.",
           pt: "Horas de cancelamento: inteiro de 0 a 168."
+        })
+      );
+      return;
+    }
+
+    const yearsExperienceRaw = draft.yearsExperience.trim();
+    const yearsExperience = yearsExperienceRaw.length > 0 ? Number(yearsExperienceRaw) : null;
+    if (yearsExperienceRaw.length > 0 && (!Number.isInteger(yearsExperience ?? 0) || (yearsExperience ?? 0) < 0 || (yearsExperience ?? 0) > 80)) {
+      setError(
+        t(props.language, {
+          es: "Años de experiencia: entero 0–80 o vacío.",
+          en: "Years of experience: integer 0–80 or blank.",
+          pt: "Anos de experiencia: inteiro 0–80 ou vazio."
         })
       );
       return;
@@ -366,7 +422,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         t(props.language, {
           es: "Pacientes activos (card): entero 0–100000.",
           en: "Active patients (card): integer 0–100000.",
-          pt: "Pacientes ativos: inteiro 0–100000."
+          pt: "Pacientes ativos: inteiro de 0 a 100000."
         })
       );
       return;
@@ -379,7 +435,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         t(props.language, {
           es: "Sesiones (card): entero 0–1000000.",
           en: "Sessions (card): integer 0–1000000.",
-          pt: "Sessoes: inteiro 0–1000000."
+          pt: "Sessoes: inteiro de 0 a 1000000."
         })
       );
       return;
@@ -397,7 +453,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         t(props.language, {
           es: "Completadas (card): entero 0–1000000.",
           en: "Completed (card): integer 0–1000000.",
-          pt: "Concluidas: inteiro 0–1000000."
+          pt: "Concluidas: inteiro de 0 a 1000000."
         })
       );
       return;
@@ -408,18 +464,6 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     setProfessionalSaveLoading(true);
 
     try {
-      await apiRequest<{ user: AdminUser }>(
-        "/api/admin/users/" + professional.userId,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            fullName: draft.fullName.trim(),
-            email: draft.email.trim().toLowerCase()
-          })
-        },
-        props.token
-      );
-
       await apiRequest<{ professional: AdminProfessionalOps }>(
         "/api/admin/professionals/" + professional.id,
         {
@@ -427,6 +471,10 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
           body: JSON.stringify({
             visible: draft.visible,
             cancellationHours,
+            bio: draft.bio.trim().length > 0 ? draft.bio.trim() : null,
+            therapeuticApproach: draft.therapeuticApproach.trim().length > 0 ? draft.therapeuticApproach.trim() : null,
+            yearsExperience,
+            birthCountry: draft.birthCountry.trim().length > 0 ? draft.birthCountry.trim() : null,
             sessionPriceUsd,
             ratingAverage,
             reviewsCount,
@@ -441,63 +489,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
       setSuccess(
         t(props.language, {
-          es: "Cuenta y datos de tarjeta guardados. Los pacientes verán estos valores al refrescar el listado.",
-          en: "Account and card fields saved. Patients will see updates after the directory reloads.",
-          pt: "Conta e dados do card salvos. Pacientes veem apos recarregar o listado."
-        })
-      );
-      await afterProfessionalPatchSuccess(professional.id);
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(adminSurfaceMessage("prof-ops-update", props.language, raw));
-    } finally {
-      setProfessionalSaveLoading(false);
-    }
-  };
-
-  const saveProfessionalPresentationSection = async (professional: AdminProfessionalOps) => {
-    const draft = professionalEditDrafts[professional.id];
-    if (!draft) {
-      return;
-    }
-
-    const yearsExperienceRaw = draft.yearsExperience.trim();
-    const yearsExperience = yearsExperienceRaw.length > 0 ? Number(yearsExperienceRaw) : null;
-    if (yearsExperienceRaw.length > 0 && (!Number.isInteger(yearsExperience ?? 0) || (yearsExperience ?? 0) < 0 || (yearsExperience ?? 0) > 80)) {
-      setError(
-        t(props.language, {
-          es: "Años de experiencia: entero 0–80 o vacío.",
-          en: "Years of experience: integer 0–80 or blank.",
-          pt: "Anos de experiencia: inteiro 0–80 ou vazio."
-        })
-      );
-      return;
-    }
-
-    setError("");
-    setSuccess("");
-    setProfessionalSaveLoading(true);
-
-    try {
-      await apiRequest<{ professional: AdminProfessionalOps }>(
-        "/api/admin/professionals/" + professional.id,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            bio: draft.bio.trim().length > 0 ? draft.bio.trim() : null,
-            therapeuticApproach: draft.therapeuticApproach.trim().length > 0 ? draft.therapeuticApproach.trim() : null,
-            yearsExperience,
-            birthCountry: draft.birthCountry.trim().length > 0 ? draft.birthCountry.trim() : null
-          })
-        },
-        props.token
-      );
-
-      setSuccess(
-        t(props.language, {
-          es: "Presentación clínica guardada (bio y textos que ve el paciente en el matching).",
-          en: "Clinical presentation saved (bio and copy shown to patients in matching).",
-          pt: "Apresentacao clinica salva (bio no matching do paciente)."
+          es: "Perfil profesional guardado (visibilidad, textos, país, precio y cifras de tarjeta).",
+          en: "Professional profile saved (visibility, copy, country, price, and card stats).",
+          pt: "Perfil profissional salvo (visibilidade, textos, pais, preco e numeros do card)."
         })
       );
       await afterProfessionalPatchSuccess(professional.id);
@@ -707,6 +701,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   const selectedBookings = selectedProfessional ? professionalBookings[selectedProfessional.id] ?? [] : [];
   const loadingSelectedBookings = selectedProfessional ? professionalBookingsLoading[selectedProfessional.id] === true : false;
   const confirmedSessionsCount = selectedBookings.filter((booking) => booking.status === "CONFIRMED").length;
+  const selectedNameParts = selectedProfessional
+    ? splitFullNameToFirstLast(selectedProfessional.fullName)
+    : { firstName: "", lastName: "" };
 
   return (
     <div className="stack-lg ops-page">
@@ -833,16 +830,16 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <div>
                   <h4 className="prof-ops-profile-section__title">
                     {t(props.language, {
-                      es: "1 · Cuenta y datos en tarjeta",
-                      en: "1 · Account & card display",
-                      pt: "1 · Conta e dados do card"
+                      es: "1 · Cuenta y acceso",
+                      en: "1 · Account & access",
+                      pt: "1 · Conta e acesso"
                     })}
                   </h4>
                   <p className="muted prof-ops-profile-section__hint">
                     {t(props.language, {
-                      es: "Nombre público, email, visibilidad, cancelación, precio y cifras opcionales del listado.",
-                      en: "Public name, email, visibility, cancellation, price, optional listing stats.",
-                      pt: "Nome publico, email, visibilidade, precos e numeros do listado."
+                      es: "Igual que en Configuración → usuarios: nombre, apellido y email de la cuenta.",
+                      en: "Same as Settings → users: first name, last name, and account email.",
+                      pt: "Igual a Configuracao → usuarios: nome, sobrenome e e-mail."
                     })}
                   </p>
                 </div>
@@ -856,15 +853,32 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <>
                   <div className="grid-form">
                     <label>
-                      {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
+                      {t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}
                       <input
-                        value={selectedProfessionalDraft.fullName}
+                        autoComplete="given-name"
+                        value={selectedProfessionalDraft.firstName}
                         onChange={(event) =>
                           setProfessionalEditDrafts((current) => ({
                             ...current,
                             [selectedProfessional.id]: {
                               ...selectedProfessionalDraft,
-                              fullName: event.target.value
+                              firstName: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}
+                      <input
+                        autoComplete="family-name"
+                        value={selectedProfessionalDraft.lastName}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              lastName: event.target.value
                             }
                           }))
                         }
@@ -887,27 +901,94 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                         }
                       />
                     </label>
-                    <label>
-                      {t(props.language, { es: "Perfil visible", en: "Profile visible", pt: "Perfil visivel" })}
-                      <select
-                        value={selectedProfessionalDraft.visible ? "true" : "false"}
+                  </div>
+                  <div className="button-row prof-ops-section-actions">
+                    <button
+                      className="primary"
+                      type="button"
+                      disabled={professionalSaveLoading}
+                      onClick={() => void saveProfessionalAccountSection(selectedProfessional)}
+                    >
+                      {professionalSaveLoading
+                        ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                        : t(props.language, { es: "Guardar sección", en: "Save section", pt: "Salvar secao" })}
+                    </button>
+                    <button type="button" onClick={() => cancelProfileSectionEdit(selectedProfessional)}>
+                      {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <dl className="prof-ops-read-grid">
+                  <dt>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</dt>
+                  <dd>{selectedNameParts.firstName || "—"}</dd>
+                  <dt>{t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}</dt>
+                  <dd>{selectedNameParts.lastName || "—"}</dd>
+                  <dt>Email</dt>
+                  <dd>{selectedProfessional.email}</dd>
+                  <dt>{t(props.language, { es: "Slots disponibles", en: "Available slots", pt: "Horarios" })}</dt>
+                  <dd>{selectedProfessional.slots.length}</dd>
+                  <dt>{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</dt>
+                  <dd>{confirmedSessionsCount}</dd>
+                </dl>
+              )}
+            </div>
+
+            <div className="prof-ops-profile-section">
+              <div className="prof-ops-profile-section__head">
+                <div>
+                  <h4 className="prof-ops-profile-section__title">
+                    {t(props.language, {
+                      es: "2 · Presentación (matching del paciente)",
+                      en: "2 · Presentation (patient matching)",
+                      pt: "2 · Apresentacao (matching)"
+                    })}
+                  </h4>
+                  <p className="muted prof-ops-profile-section__hint">
+                    {t(props.language, {
+                      es: "Mismos datos que en Configuración → usuarios (perfil profesional): visibilidad, cancelación, enfoque, país, años, precio, cifras de tarjeta y bio.",
+                      en: "Same fields as Settings → users (professional profile): visibility, cancellation, approach, country, years, price, card stats, and bio.",
+                      pt: "Mesmos campos de Configuracao → usuarios: visibilidade, cancelamento, abordagem, pais, anos, preco, numeros do card e bio."
+                    })}
+                  </p>
+                </div>
+                {editingProfileSection !== "presentation" ? (
+                  <button type="button" className="ghost" onClick={() => beginProfileSectionEdit(selectedProfessional, "presentation")}>
+                    {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                  </button>
+                ) : null}
+              </div>
+              {editingProfileSection === "presentation" ? (
+                <>
+                  <div className="grid-form">
+                    <label className="inline-toggle prof-ops-inline-toggle">
+                      <input
+                        type="checkbox"
+                        checked={selectedProfessionalDraft.visible}
                         onChange={(event) =>
                           setProfessionalEditDrafts((current) => ({
                             ...current,
                             [selectedProfessional.id]: {
                               ...selectedProfessionalDraft,
-                              visible: event.target.value === "true"
+                              visible: event.target.checked
                             }
                           }))
                         }
-                      >
-                        <option value="true">{t(props.language, { es: "Sí", en: "Yes", pt: "Sim" })}</option>
-                        <option value="false">{t(props.language, { es: "No", en: "No", pt: "Nao" })}</option>
-                      </select>
+                      />
+                      {t(props.language, {
+                        es: "Perfil visible en la plataforma",
+                        en: "Profile visible on the platform",
+                        pt: "Perfil visivel na plataforma"
+                      })}
                     </label>
                     <label>
-                      {t(props.language, { es: "Horas de cancelación", en: "Cancellation hours", pt: "Horas de cancelamento" })}
+                      {t(props.language, {
+                        es: "Horas de anticipación para cancelar una sesión",
+                        en: "Minimum hours notice to cancel a session",
+                        pt: "Horas de antecedencia para cancelar"
+                      })}
                       <input
+                        inputMode="numeric"
                         type="number"
                         min={0}
                         max={168}
@@ -941,193 +1022,6 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                         }
                       />
                     </label>
-                    <label>
-                      {t(props.language, { es: "Ranking (0–5)", en: "Rating (0–5)", pt: "Nota (0–5)" })}
-                      <input
-                        type="number"
-                        min={0}
-                        max={5}
-                        step={0.1}
-                        value={selectedProfessionalDraft.ratingAverage}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              ratingAverage: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      {t(props.language, { es: "Opiniones (card)", en: "Reviews (card)", pt: "Avaliacoes" })}
-                      <input
-                        type="number"
-                        min={0}
-                        max={100000}
-                        value={selectedProfessionalDraft.reviewsCount}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              reviewsCount: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      {t(props.language, { es: "Duración sesión (min, card)", en: "Session length (min, card)", pt: "Duracao (min)" })}
-                      <input
-                        type="number"
-                        min={15}
-                        max={120}
-                        value={selectedProfessionalDraft.sessionDurationMinutes}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              sessionDurationMinutes: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      {t(props.language, { es: "Pacientes activos (card)", en: "Active patients (card)", pt: "Pacientes ativos" })}
-                      <input
-                        type="number"
-                        min={0}
-                        max={100000}
-                        value={selectedProfessionalDraft.activePatientsCount}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              activePatientsCount: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      {t(props.language, { es: "Sesiones (card)", en: "Sessions (card)", pt: "Sessoes" })}
-                      <input
-                        type="number"
-                        min={0}
-                        max={1000000}
-                        value={selectedProfessionalDraft.sessionsCount}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              sessionsCount: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                    <label>
-                      {t(props.language, { es: "Completadas (card)", en: "Completed (card)", pt: "Concluidas" })}
-                      <input
-                        type="number"
-                        min={0}
-                        max={1000000}
-                        value={selectedProfessionalDraft.completedSessionsCount}
-                        onChange={(event) =>
-                          setProfessionalEditDrafts((current) => ({
-                            ...current,
-                            [selectedProfessional.id]: {
-                              ...selectedProfessionalDraft,
-                              completedSessionsCount: event.target.value
-                            }
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="button-row prof-ops-section-actions">
-                    <button
-                      className="primary"
-                      type="button"
-                      disabled={professionalSaveLoading}
-                      onClick={() => void saveProfessionalAccountSection(selectedProfessional)}
-                    >
-                      {professionalSaveLoading
-                        ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
-                        : t(props.language, { es: "Guardar sección", en: "Save section", pt: "Salvar secao" })}
-                    </button>
-                    <button type="button" onClick={() => cancelProfileSectionEdit(selectedProfessional)}>
-                      {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <dl className="prof-ops-read-grid">
-                  <dt>{t(props.language, { es: "Nombre", en: "Name", pt: "Nome" })}</dt>
-                  <dd>{selectedProfessional.fullName}</dd>
-                  <dt>Email</dt>
-                  <dd>{selectedProfessional.email}</dd>
-                  <dt>{t(props.language, { es: "Visible", en: "Visible", pt: "Visivel" })}</dt>
-                  <dd>{selectedProfessional.visible ? "Sí" : "No"}</dd>
-                  <dt>{t(props.language, { es: "Horas cancelación", en: "Cancellation h.", pt: "Horas cancel." })}</dt>
-                  <dd>{selectedProfessional.cancellationHours}</dd>
-                  <dt>{t(props.language, { es: "Slots", en: "Slots", pt: "Horarios" })}</dt>
-                  <dd>{selectedProfessional.slots.length}</dd>
-                  <dt>{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</dt>
-                  <dd>{confirmedSessionsCount}</dd>
-                  <dt>{t(props.language, { es: "USD sesión", en: "Session USD", pt: "USD" })}</dt>
-                  <dd>{selectedProfessional.sessionPriceUsd ?? "—"}</dd>
-                  <dt>{t(props.language, { es: "Ranking / opiniones", en: "Rating / reviews", pt: "Nota / opinioes" })}</dt>
-                  <dd>
-                    {(selectedProfessional.ratingAverage ?? "—") + " · " + (selectedProfessional.reviewsCount ?? 0)}
-                  </dd>
-                  <dt>{t(props.language, { es: "Duración (card)", en: "Duration (card)", pt: "Duracao" })}</dt>
-                  <dd>{selectedProfessional.sessionDurationMinutes ?? "—"}</dd>
-                  <dt>{t(props.language, { es: "Pacientes / sesiones / hechas", en: "Patients / sessions / done", pt: "Pacientes / sessoes" })}</dt>
-                  <dd>
-                    {(selectedProfessional.activePatientsCount ?? "—")
-                      + " · "
-                      + (selectedProfessional.sessionsCount ?? "—")
-                      + " · "
-                      + (selectedProfessional.completedSessionsCount ?? "—")}
-                  </dd>
-                </dl>
-              )}
-            </div>
-
-            <div className="prof-ops-profile-section">
-              <div className="prof-ops-profile-section__head">
-                <div>
-                  <h4 className="prof-ops-profile-section__title">
-                    {t(props.language, {
-                      es: "2 · Presentación (matching del paciente)",
-                      en: "2 · Presentation (patient matching)",
-                      pt: "2 · Apresentacao (matching)"
-                    })}
-                  </h4>
-                  <p className="muted prof-ops-profile-section__hint">
-                    {t(props.language, {
-                      es: "Bio y textos que el paciente lee al elegir profesional.",
-                      en: "Bio and copy patients read when choosing a therapist.",
-                      pt: "Bio e textos na escolha do terapeuta."
-                    })}
-                  </p>
-                </div>
-                {editingProfileSection !== "presentation" ? (
-                  <button type="button" className="ghost" onClick={() => beginProfileSectionEdit(selectedProfessional, "presentation")}>
-                    {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
-                  </button>
-                ) : null}
-              </div>
-              {editingProfileSection === "presentation" ? (
-                <>
-                  <div className="grid-form">
                     <label>
                       {t(props.language, { es: "Enfoque terapéutico", en: "Therapeutic approach", pt: "Abordagem" })}
                       <input
@@ -1176,6 +1070,119 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                         }
                       />
                     </label>
+                    <label>
+                      {t(props.language, { es: "Ranking (0–5)", en: "Rating (0–5)", pt: "Nota (0–5)" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        value={selectedProfessionalDraft.ratingAverage}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              ratingAverage: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, { es: "Opiniones (tarjeta)", en: "Reviews (card)", pt: "Avaliacoes" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={100000}
+                        value={selectedProfessionalDraft.reviewsCount}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              reviewsCount: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, {
+                        es: "Duración sesión en tarjeta (min)",
+                        en: "Card session length (min)",
+                        pt: "Duracao no card (min)"
+                      })}
+                      <input
+                        type="number"
+                        min={15}
+                        max={120}
+                        value={selectedProfessionalDraft.sessionDurationMinutes}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              sessionDurationMinutes: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, { es: "Pacientes activos (tarjeta)", en: "Active patients (card)", pt: "Pacientes ativos" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={100000}
+                        value={selectedProfessionalDraft.activePatientsCount}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              activePatientsCount: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, { es: "Sesiones (tarjeta)", en: "Sessions (card)", pt: "Sessoes" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000000}
+                        value={selectedProfessionalDraft.sessionsCount}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              sessionsCount: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t(props.language, { es: "Sesiones completadas (tarjeta)", en: "Completed sessions (card)", pt: "Sessoes concluidas" })}
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000000}
+                        value={selectedProfessionalDraft.completedSessionsCount}
+                        onChange={(event) =>
+                          setProfessionalEditDrafts((current) => ({
+                            ...current,
+                            [selectedProfessional.id]: {
+                              ...selectedProfessionalDraft,
+                              completedSessionsCount: event.target.value
+                            }
+                          }))
+                        }
+                      />
+                    </label>
                     <label className="prof-ops-bio-label">
                       Bio
                       <textarea
@@ -1211,6 +1218,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 </>
               ) : (
                 <dl className="prof-ops-read-stack">
+                  <dt>{t(props.language, { es: "Visible", en: "Visible", pt: "Visivel" })}</dt>
+                  <dd>{selectedProfessional.visible ? t(props.language, { es: "Sí", en: "Yes", pt: "Sim" }) : t(props.language, { es: "No", en: "No", pt: "Nao" })}</dd>
+                  <dt>{t(props.language, { es: "Horas cancelación", en: "Cancellation hours", pt: "Horas cancel." })}</dt>
+                  <dd>{selectedProfessional.cancellationHours}</dd>
+                  <dt>{t(props.language, { es: "USD sesión", en: "Session USD", pt: "USD" })}</dt>
+                  <dd>{selectedProfessional.sessionPriceUsd ?? "—"}</dd>
                   <dt>{t(props.language, { es: "Enfoque", en: "Approach", pt: "Abordagem" })}</dt>
                   <dd>{selectedProfessional.therapeuticApproach?.trim() || "—"}</dd>
                   <dt>{t(props.language, { es: "País", en: "Country", pt: "Pais" })}</dt>
@@ -1220,6 +1233,20 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                     {selectedProfessional.yearsExperience === null || selectedProfessional.yearsExperience === undefined
                       ? "—"
                       : String(selectedProfessional.yearsExperience)}
+                  </dd>
+                  <dt>{t(props.language, { es: "Ranking / opiniones", en: "Rating / reviews", pt: "Nota / opinioes" })}</dt>
+                  <dd>
+                    {(selectedProfessional.ratingAverage ?? "—") + " · " + (selectedProfessional.reviewsCount ?? 0)}
+                  </dd>
+                  <dt>{t(props.language, { es: "Duración tarjeta (min)", en: "Card duration (min)", pt: "Duracao (min)" })}</dt>
+                  <dd>{selectedProfessional.sessionDurationMinutes ?? "—"}</dd>
+                  <dt>{t(props.language, { es: "Pacientes / sesiones / completadas", en: "Patients / sessions / completed", pt: "Pacientes / sessoes" })}</dt>
+                  <dd>
+                    {(selectedProfessional.activePatientsCount ?? "—")
+                      + " · "
+                      + (selectedProfessional.sessionsCount ?? "—")
+                      + " · "
+                      + (selectedProfessional.completedSessionsCount ?? "—")}
                   </dd>
                   <dt>Bio</dt>
                   <dd className="prof-ops-read-bio">{selectedProfessional.bio?.trim() || "—"}</dd>

@@ -14,7 +14,8 @@ export interface ProfessionalBookingDraft {
 }
 
 export interface ProfessionalEditDraft {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   visible: boolean;
   cancellationHours: string;
