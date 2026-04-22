@@ -63,11 +63,14 @@ const EnvSchema = z.object({
 
 const parsedEnv = EnvSchema.parse(process.env);
 
-function resolveApiListenHost(): string {
+/** Host HTTP explícito o `undefined` = dejar que Node elija el bind por defecto (mejor para PaaS / dual-stack). */
+function resolveApiListenHost(): string | undefined {
   const explicit = parsedEnv.API_LISTEN_HOST?.trim();
   if (explicit) return explicit;
-  // Sin host explícito: `::` en Linux suele aceptar IPv4+IPv6; solo `0.0.0.0` puede hacer fallar probes IPv6 (p. ej. PaaS interno).
-  return "::";
+  if (parsedEnv.NODE_ENV === "development") {
+    return "0.0.0.0";
+  }
+  return undefined;
 }
 
 const patientMobileCalendarOriginPrefixes =

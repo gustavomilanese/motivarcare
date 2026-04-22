@@ -32,8 +32,11 @@ const listenHost = env.apiListenHost;
 server.on("error", (err) => {
   console.error("[startup] HTTP server listen error:", err);
 });
-server.listen(env.PORT, listenHost, () => {
-  console.log(`API listening on http://${listenHost}:${env.PORT}`);
+const onListening = () => {
+  console.log(
+    `[startup] API listening on port ${env.PORT}` +
+      (listenHost !== undefined ? ` (host ${listenHost})` : " (default Node bind)")
+  );
   logGoogleMeetStartupHints();
   void prisma.$connect().then(
     () => console.log("[startup] database: prisma connected OK"),
@@ -43,7 +46,12 @@ server.listen(env.PORT, listenHost, () => {
         err instanceof Error ? err.message : err
       )
   );
-});
+};
+if (listenHost !== undefined) {
+  server.listen(env.PORT, listenHost, onListening);
+} else {
+  server.listen(env.PORT, onListening);
+}
 
 let shutdownInProgress = false;
 

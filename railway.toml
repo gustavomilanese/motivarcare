@@ -11,8 +11,8 @@ dockerfilePath = "Dockerfile"
 # En el servicio **outbox**, definí `SKIP_RELEASE_DB_PUSH=1` para no repetir el push (opcional; dos push seguidos suelen ser inocuos).
 releaseCommand = "sh -c 'if [ \"$SKIP_RELEASE_DB_PUSH\" = \"1\" ]; then echo \"[release] omitiendo db push (SKIP_RELEASE_DB_PUSH=1)\"; exit 0; else node apps/api/scripts/prisma-with-root-env.mjs db push; fi'"
 startCommand = "npm run start -w @therapy/api"
-# Railway marca el deploy como saludable si esta URL responde 200. `/health/live` solo comprueba que el proceso HTTP está arriba (no falla si MySQL aún no conecta).
-# Para monitoreo “DB lista”, usá manualmente GET /health/ready o métricas; si tu DB está bien, podés volver a `/health/ready` aquí.
+# Healthcheck = probe HTTP de Railway hacia el contenedor. Si falla siempre, en el servicio (Settings) podés desactivar el health check como último recurso; el tráfico sigue, pero perdes señal de “listo”.
+# `/health/live` = solo “el proceso responde” (no exige MySQL).
 healthcheckPath = "/health/live"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

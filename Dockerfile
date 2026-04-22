@@ -11,8 +11,7 @@ COPY packages ./packages
 
 RUN npm ci && npm run build:api
 
-# Railway/Docker: escuchar en :: (IPv6 any) para que en Linux acepte IPv4 mapeado e IPv6; 0.0.0.0 solo IPv4 y el healthcheck interno a veces pega por IPv6.
+# No fijar API_LISTEN_HOST: en el contenedor Linux Node usa el bind por defecto (acepta probes IPv4/IPv6 según el sistema). Forzar 0.0.0.0 o :: rompió healthchecks en algunos deploys.
 ENV NODE_ENV=production
-ENV API_LISTEN_HOST=::
 EXPOSE 4000
 CMD ["npm", "run", "start", "-w", "@therapy/api"]
