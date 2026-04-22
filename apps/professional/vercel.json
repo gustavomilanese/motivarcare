@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && npm ci",
-  "buildCommand": "cd ../.. && npm run build -w @therapy/professional",
+  "buildCommand": "cd ../.. && npm run build:professional",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
