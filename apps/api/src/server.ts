@@ -29,6 +29,9 @@ server.requestTimeout = env.API_REQUEST_TIMEOUT_MS;
 server.maxRequestsPerSocket = env.API_MAX_REQUESTS_PER_SOCKET;
 
 const listenHost = env.apiListenHost;
+server.on("error", (err) => {
+  console.error("[startup] HTTP server listen error:", err);
+});
 server.listen(env.PORT, listenHost, () => {
   console.log(`API listening on http://${listenHost}:${env.PORT}`);
   logGoogleMeetStartupHints();
