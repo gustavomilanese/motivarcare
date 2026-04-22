@@ -50,6 +50,13 @@ function parseIntField(rawValue: string): number | null {
   return parsed;
 }
 
+function stringFromOptionalNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value);
+}
+
 function buildEditDraft(user: AdminUser): EditUserDraft {
   const fn = user.firstName?.trim() ?? "";
   const ln = user.lastName?.trim() ?? "";
@@ -74,7 +81,18 @@ function buildEditDraft(user: AdminUser): EditUserDraft {
         ? String(user.professionalProfile.yearsExperience)
         : "",
     professionalPhotoUrl: user.professionalProfile?.photoUrl ?? "",
-    professionalVideoUrl: user.professionalProfile?.videoUrl ?? ""
+    professionalVideoUrl: user.professionalProfile?.videoUrl ?? "",
+    professionalBirthCountry: user.professionalProfile?.birthCountry ?? "",
+    professionalSessionPriceUsd: stringFromOptionalNumber(user.professionalProfile?.sessionPriceUsd),
+    professionalTitle: user.professionalProfile?.professionalTitle ?? "",
+    professionalSpecialization: user.professionalProfile?.specialization ?? "",
+    professionalFocusPrimary: user.professionalProfile?.focusPrimary ?? "",
+    professionalRatingAverage: stringFromOptionalNumber(user.professionalProfile?.ratingAverage),
+    professionalReviewsCount: String(user.professionalProfile?.reviewsCount ?? 0),
+    professionalSessionDurationMinutes: stringFromOptionalNumber(user.professionalProfile?.sessionDurationMinutes),
+    professionalActivePatientsCount: stringFromOptionalNumber(user.professionalProfile?.activePatientsCount),
+    professionalSessionsCount: stringFromOptionalNumber(user.professionalProfile?.sessionsCount),
+    professionalCompletedSessionsCount: stringFromOptionalNumber(user.professionalProfile?.completedSessionsCount)
   };
 }
 
@@ -375,6 +393,17 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       professionalYearsExperience?: number;
       professionalPhotoUrl?: string | null;
       professionalVideoUrl?: string | null;
+      professionalBirthCountry?: string | null;
+      professionalSessionPriceUsd?: number | null;
+      professionalTitle?: string | null;
+      professionalSpecialization?: string | null;
+      professionalFocusPrimary?: string | null;
+      professionalRatingAverage?: number | null;
+      professionalReviewsCount?: number | null;
+      professionalSessionDurationMinutes?: number | null;
+      professionalActivePatientsCount?: number | null;
+      professionalSessionsCount?: number | null;
+      professionalCompletedSessionsCount?: number | null;
     } = {
       fullName: joinFirstLastToFullName(draft.firstName, draft.lastName)
     };
@@ -441,6 +470,127 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         return;
       }
 
+      const sessionPriceRaw = draft.professionalSessionPriceUsd.trim();
+      const sessionPriceUsd = sessionPriceRaw.length > 0 ? Number(sessionPriceRaw) : null;
+      if (
+        sessionPriceRaw.length > 0
+        && (!Number.isInteger(sessionPriceUsd) || (sessionPriceUsd ?? 0) < 0 || (sessionPriceUsd ?? 0) > 100000)
+      ) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Valor sesión (USD): entero entre 0 y 100000 o vacío.",
+            en: "Session price (USD): integer 0–100000 or blank.",
+            pt: "Preco (USD): inteiro de 0 a 100000 ou vazio."
+          })
+        );
+        return;
+      }
+
+      const ratingRaw = draft.professionalRatingAverage.trim();
+      const ratingAverage = ratingRaw.length > 0 ? Number(ratingRaw) : null;
+      if (ratingRaw.length > 0 && (!Number.isFinite(ratingAverage ?? 0) || (ratingAverage ?? 0) < 0 || (ratingAverage ?? 0) > 5)) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Ranking: entre 0 y 5.",
+            en: "Rating: between 0 and 5.",
+            pt: "Nota: entre 0 e 5."
+          })
+        );
+        return;
+      }
+
+      const reviewsRaw = draft.professionalReviewsCount.trim();
+      const reviewsCount = reviewsRaw.length > 0 ? Number(reviewsRaw) : 0;
+      if (!Number.isInteger(reviewsCount) || reviewsCount < 0 || reviewsCount > 100000) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Opiniones: entero entre 0 y 100000.",
+            en: "Reviews: whole number 0–100000.",
+            pt: "Avaliacoes: inteiro de 0 a 100000."
+          })
+        );
+        return;
+      }
+
+      const durationRaw = draft.professionalSessionDurationMinutes.trim();
+      const sessionDurationMinutes = durationRaw.length > 0 ? Number(durationRaw) : null;
+      if (
+        durationRaw.length > 0
+        && (!Number.isInteger(sessionDurationMinutes ?? 0)
+          || (sessionDurationMinutes ?? 0) < 15
+          || (sessionDurationMinutes ?? 0) > 120)
+      ) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Duración en tarjeta: 15–120 minutos, entero o vacío.",
+            en: "Card duration: 15–120 minutes, integer or blank.",
+            pt: "Duracao no card: 15–120 minutos."
+          })
+        );
+        return;
+      }
+
+      const activePatientsRaw = draft.professionalActivePatientsCount.trim();
+      const activePatientsCount = activePatientsRaw.length > 0 ? Number(activePatientsRaw) : null;
+      if (
+        activePatientsRaw.length > 0
+        && (!Number.isInteger(activePatientsCount ?? 0)
+          || (activePatientsCount ?? 0) < 0
+          || (activePatientsCount ?? 0) > 100000)
+      ) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Pacientes activos: entero 0–100000 o vacío.",
+            en: "Active patients: integer 0–100000 or blank.",
+            pt: "Pacientes ativos: inteiro ou vazio."
+          })
+        );
+        return;
+      }
+
+      const sessionsRaw = draft.professionalSessionsCount.trim();
+      const sessionsCount = sessionsRaw.length > 0 ? Number(sessionsRaw) : null;
+      if (
+        sessionsRaw.length > 0
+        && (!Number.isInteger(sessionsCount ?? 0)
+          || (sessionsCount ?? 0) < 0
+          || (sessionsCount ?? 0) > 1000000)
+      ) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Sesiones (tarjeta): entero 0–1000000 o vacío.",
+            en: "Sessions (card): integer 0–1000000 or blank.",
+            pt: "Sessoes: inteiro ou vazio."
+          })
+        );
+        return;
+      }
+
+      const completedRaw = draft.professionalCompletedSessionsCount.trim();
+      const completedSessionsCount = completedRaw.length > 0 ? Number(completedRaw) : null;
+      if (
+        completedRaw.length > 0
+        && (!Number.isInteger(completedSessionsCount ?? 0)
+          || (completedSessionsCount ?? 0) < 0
+          || (completedSessionsCount ?? 0) > 1000000)
+      ) {
+        setSaveLoading(false);
+        setEditError(
+          t(props.language, {
+            es: "Sesiones completadas: entero 0–1000000 o vacío.",
+            en: "Completed sessions: integer or blank.",
+            pt: "Concluidas: inteiro ou vazio."
+          })
+        );
+        return;
+      }
+
       payload.professionalVisible = draft.professionalVisible;
       payload.professionalCancellationHours = cancellationHours ?? 24;
       payload.professionalBio = draft.professionalBio;
@@ -450,6 +600,17 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       }
       payload.professionalPhotoUrl = draft.professionalPhotoUrl.trim().length > 0 ? draft.professionalPhotoUrl.trim() : null;
       payload.professionalVideoUrl = draft.professionalVideoUrl.trim().length > 0 ? draft.professionalVideoUrl.trim() : null;
+      payload.professionalBirthCountry = draft.professionalBirthCountry.trim().length > 0 ? draft.professionalBirthCountry.trim() : null;
+      payload.professionalSessionPriceUsd = sessionPriceUsd;
+      payload.professionalTitle = draft.professionalTitle.trim().length > 0 ? draft.professionalTitle.trim() : null;
+      payload.professionalSpecialization = draft.professionalSpecialization.trim().length > 0 ? draft.professionalSpecialization.trim() : null;
+      payload.professionalFocusPrimary = draft.professionalFocusPrimary.trim().length > 0 ? draft.professionalFocusPrimary.trim() : null;
+      payload.professionalRatingAverage = ratingAverage;
+      payload.professionalReviewsCount = reviewsCount;
+      payload.professionalSessionDurationMinutes = sessionDurationMinutes;
+      payload.professionalActivePatientsCount = activePatientsCount;
+      payload.professionalSessionsCount = sessionsCount;
+      payload.professionalCompletedSessionsCount = completedSessionsCount;
     }
 
     try {

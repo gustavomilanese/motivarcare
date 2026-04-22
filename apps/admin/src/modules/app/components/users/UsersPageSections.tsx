@@ -12,6 +12,13 @@ import type {
   RoleFilter
 } from "../../types";
 
+function stringFromOptionalNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value);
+}
+
 export function UsersCreateSection(props: {
   language: AppLanguage;
   createForm: CreateUserFormState;
@@ -281,7 +288,18 @@ export function UsersListSection(props: {
             ? String(user.professionalProfile.yearsExperience)
             : "",
         professionalPhotoUrl: user.professionalProfile?.photoUrl ?? "",
-        professionalVideoUrl: user.professionalProfile?.videoUrl ?? ""
+        professionalVideoUrl: user.professionalProfile?.videoUrl ?? "",
+        professionalBirthCountry: user.professionalProfile?.birthCountry ?? "",
+        professionalSessionPriceUsd: stringFromOptionalNumber(user.professionalProfile?.sessionPriceUsd),
+        professionalTitle: user.professionalProfile?.professionalTitle ?? "",
+        professionalSpecialization: user.professionalProfile?.specialization ?? "",
+        professionalFocusPrimary: user.professionalProfile?.focusPrimary ?? "",
+        professionalRatingAverage: stringFromOptionalNumber(user.professionalProfile?.ratingAverage),
+        professionalReviewsCount: String(user.professionalProfile?.reviewsCount ?? 0),
+        professionalSessionDurationMinutes: stringFromOptionalNumber(user.professionalProfile?.sessionDurationMinutes),
+        professionalActivePatientsCount: stringFromOptionalNumber(user.professionalProfile?.activePatientsCount),
+        professionalSessionsCount: stringFromOptionalNumber(user.professionalProfile?.sessionsCount),
+        professionalCompletedSessionsCount: stringFromOptionalNumber(user.professionalProfile?.completedSessionsCount)
       }
     }));
   };
@@ -689,9 +707,9 @@ export function UsersListSection(props: {
                             <span>{props.t({ es: "Perfil profesional", en: "Professional profile", pt: "Perfil profissional" })}</span>
                             <span className="user-edit-accordion__hint">
                               {props.t({
-                                es: "Visibilidad, reservas, presentación y medios",
-                                en: "Visibility, bookings, presentation & media",
-                                pt: "Visibilidade, reservas, apresentação e midia"
+                                es: "Visibilidad, tarjeta del paciente (matching), presentación y medios",
+                                en: "Visibility, patient card (matching), presentation & media",
+                                pt: "Visibilidade, card do paciente, apresentacao e midia"
                               })}
                             </span>
                           </summary>
@@ -803,6 +821,221 @@ export function UsersListSection(props: {
                                     />
                                   </label>
                                 </div>
+                              </div>
+
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({ es: "Listado y país", en: "Directory & country", pt: "Listagem e pais" })}
+                                </p>
+                                <div className="user-edit-pro-stack">
+                                  <label>
+                                    {props.t({ es: "País (bandera en tarjeta)", en: "Country (card flag)", pt: "Pais (bandeira)" })}
+                                    <input
+                                      value={draft.professionalBirthCountry}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalBirthCountry: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}
+                                    <input
+                                      value={draft.professionalTitle}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalTitle: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Especialización (etiqueta)", en: "Specialization (tag)", pt: "Especializacao" })}
+                                    <input
+                                      value={draft.professionalSpecialization}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalSpecialization: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({
+                                      es: "Área de enfoque (2.ª etiqueta)",
+                                      en: "Focus area (second tag)",
+                                      pt: "Area de foco (2a tag)"
+                                    })}
+                                    <input
+                                      value={draft.professionalFocusPrimary}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalFocusPrimary: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div className="user-edit-pro-group">
+                                <p className="user-edit-pro-group-title">
+                                  {props.t({
+                                    es: "Tarjeta del paciente (matching)",
+                                    en: "Patient card (matching)",
+                                    pt: "Card do paciente (matching)"
+                                  })}
+                                </p>
+                                <p className="muted user-edit-pro-card-hint">
+                                  {props.t({
+                                    es: "Precio, duración, ranking, opiniones y cifras que ves en el portal del paciente al elegir profesional.",
+                                    en: "Price, duration, rating, reviews and stats shown when patients pick a therapist.",
+                                    pt: "Preco, duracao, nota, avaliacoes e numeros no portal."
+                                  })}
+                                </p>
+                                <div className="user-edit-pro-pair">
+                                  <label>
+                                    {props.t({ es: "Valor sesión (USD)", en: "Session price (USD)", pt: "Preco (USD)" })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalSessionPriceUsd}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalSessionPriceUsd: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({
+                                      es: "Duración mostrada (min)",
+                                      en: "Duration shown (min)",
+                                      pt: "Duracao exibida (min)"
+                                    })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalSessionDurationMinutes}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalSessionDurationMinutes: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                                <div className="user-edit-pro-pair">
+                                  <label>
+                                    {props.t({ es: "Ranking (0–5)", en: "Rating (0–5)", pt: "Nota (0–5)" })}
+                                    <input
+                                      inputMode="decimal"
+                                      value={draft.professionalRatingAverage}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalRatingAverage: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Cantidad de opiniones", en: "Review count", pt: "N. de avaliacoes" })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalReviewsCount}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalReviewsCount: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                                <div className="user-edit-pro-pair">
+                                  <label>
+                                    {props.t({ es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalActivePatientsCount}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalActivePatientsCount: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    {props.t({ es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+                                    <input
+                                      inputMode="numeric"
+                                      value={draft.professionalSessionsCount}
+                                      onChange={(event) =>
+                                        props.setEditDrafts((current) => ({
+                                          ...current,
+                                          [user.id]: {
+                                            ...draft,
+                                            professionalSessionsCount: event.target.value
+                                          }
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                                <label>
+                                  {props.t({
+                                    es: "Sesiones completadas",
+                                    en: "Completed sessions",
+                                    pt: "Sessoes concluidas"
+                                  })}
+                                  <input
+                                    inputMode="numeric"
+                                    value={draft.professionalCompletedSessionsCount}
+                                    onChange={(event) =>
+                                      props.setEditDrafts((current) => ({
+                                        ...current,
+                                        [user.id]: {
+                                          ...draft,
+                                          professionalCompletedSessionsCount: event.target.value
+                                        }
+                                      }))
+                                    }
+                                  />
+                                </label>
                               </div>
 
                               <div className="user-edit-pro-group">

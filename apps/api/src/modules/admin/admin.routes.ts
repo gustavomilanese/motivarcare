@@ -94,7 +94,18 @@ const updateUserSchema = z
     professionalTherapeuticApproach: z.string().max(500).optional(),
     professionalYearsExperience: z.number().int().min(0).max(80).optional(),
     professionalPhotoUrl: imageSourceSchema.nullable().optional(),
-    professionalVideoUrl: z.string().url().nullable().optional()
+    professionalVideoUrl: z.string().url().nullable().optional(),
+    professionalBirthCountry: z.string().trim().max(120).nullable().optional(),
+    professionalSessionPriceUsd: z.number().int().min(0).max(100000).nullable().optional(),
+    professionalTitle: z.string().trim().max(120).nullable().optional(),
+    professionalSpecialization: z.string().trim().max(120).nullable().optional(),
+    professionalFocusPrimary: z.string().trim().max(500).nullable().optional(),
+    professionalRatingAverage: z.number().min(0).max(5).nullable().optional(),
+    professionalReviewsCount: z.number().int().min(0).max(100000).nullable().optional(),
+    professionalSessionDurationMinutes: z.number().int().min(15).max(120).nullable().optional(),
+    professionalActivePatientsCount: z.number().int().min(0).max(100000).nullable().optional(),
+    professionalSessionsCount: z.number().int().min(0).max(1000000).nullable().optional(),
+    professionalCompletedSessionsCount: z.number().int().min(0).max(1000000).nullable().optional()
   })
   .refine((payload) => Object.keys(payload).length > 0, {
     message: "At least one field is required"
@@ -347,13 +358,28 @@ type AdminUserRecord = {
     yearsExperience: number | null;
     photoUrl: string | null;
     videoUrl: string | null;
+    birthCountry: string | null;
+    sessionPriceUsd: number | null;
+    professionalTitle: string | null;
+    specialization: string | null;
+    focusPrimary: string | null;
   } | null;
   admin: {
     id: string;
   } | null;
 };
 
-function shapeAdminUser(user: AdminUserRecord) {
+function shapeAdminUser(
+  user: AdminUserRecord,
+  professionalCardDisplay?: {
+    ratingAverage?: number;
+    reviewsCount?: number;
+    sessionDurationMinutes?: number;
+    activePatientsCount?: number;
+    sessionsCount?: number;
+    completedSessionsCount?: number;
+  }
+) {
   return {
     id: user.id,
     email: user.email,
@@ -383,7 +409,18 @@ function shapeAdminUser(user: AdminUserRecord) {
           therapeuticApproach: user.professional.therapeuticApproach,
           yearsExperience: user.professional.yearsExperience,
           photoUrl: user.professional.photoUrl,
-          videoUrl: user.professional.videoUrl
+          videoUrl: user.professional.videoUrl,
+          birthCountry: user.professional.birthCountry,
+          sessionPriceUsd: user.professional.sessionPriceUsd,
+          professionalTitle: user.professional.professionalTitle,
+          specialization: user.professional.specialization,
+          focusPrimary: user.professional.focusPrimary,
+          ratingAverage: professionalCardDisplay?.ratingAverage ?? null,
+          reviewsCount: professionalCardDisplay?.reviewsCount ?? 0,
+          sessionDurationMinutes: professionalCardDisplay?.sessionDurationMinutes ?? null,
+          activePatientsCount: professionalCardDisplay?.activePatientsCount ?? null,
+          sessionsCount: professionalCardDisplay?.sessionsCount ?? null,
+          completedSessionsCount: professionalCardDisplay?.completedSessionsCount ?? null
         }
       : null,
     adminProfile: user.admin
@@ -413,6 +450,64 @@ function parseProfessionalDisplayOverrides(value: unknown): Record<string, {
 }> {
   const parsed = professionalDisplayOverridesSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
+}
+
+type ProfessionalDisplayOverrideFields = {
+  ratingAverage?: number | null;
+  reviewsCount?: number | null;
+  sessionDurationMinutes?: number | null;
+  activePatientsCount?: number | null;
+  sessionsCount?: number | null;
+  completedSessionsCount?: number | null;
+};
+
+async function applyProfessionalDisplayOverrideDelta(
+  professionalId: string,
+  patch: ProfessionalDisplayOverrideFields
+): Promise<void> {
+  const hasAny = Object.values(patch).some((value) => value !== undefined);
+  if (!hasAny) {
+    return;
+  }
+
+  const displayConfig = await prisma.systemConfig.findUnique({
+    where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY }
+  });
+  const overrides = parseProfessionalDisplayOverrides(displayConfig?.value);
+  const professionalOverrides = { ...(overrides[professionalId] ?? {}) };
+
+  const keys = [
+    "ratingAverage",
+    "reviewsCount",
+    "sessionDurationMinutes",
+    "activePatientsCount",
+    "sessionsCount",
+    "completedSessionsCount"
+  ] as const;
+
+  for (const key of keys) {
+    const value = patch[key];
+    if (value === undefined) {
+      continue;
+    }
+    if (value === null) {
+      delete professionalOverrides[key];
+    } else {
+      professionalOverrides[key] = value;
+    }
+  }
+
+  if (Object.keys(professionalOverrides).length === 0) {
+    delete overrides[professionalId];
+  } else {
+    overrides[professionalId] = professionalOverrides;
+  }
+
+  await prisma.systemConfig.upsert({
+    where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY },
+    create: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY, value: overrides },
+    update: { value: overrides }
+  });
 }
 
 function parsePatientIntakeTriage(value: unknown): Record<string, {
@@ -780,7 +875,7 @@ adminRouter.get("/users", async (req, res) => {
       : {})
   };
 
-  const [total, users] = await Promise.all([
+  const [total, users, displayOverridesConfig] = await Promise.all([
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
@@ -801,7 +896,12 @@ adminRouter.get("/users", async (req, res) => {
             therapeuticApproach: true,
             yearsExperience: true,
             photoUrl: true,
-            videoUrl: true
+            videoUrl: true,
+            birthCountry: true,
+            sessionPriceUsd: true,
+            professionalTitle: true,
+            specialization: true,
+            focusPrimary: true
           }
         },
         admin: {
@@ -813,13 +913,18 @@ adminRouter.get("/users", async (req, res) => {
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize
-    })
+    }),
+    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
   ]);
+  const displayOverridesAll = parseProfessionalDisplayOverrides(displayOverridesConfig?.value);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return res.json({
-    users: users.map((user: AdminUserRecord) => shapeAdminUser(user)),
+    users: users.map((user: AdminUserRecord) => {
+      const display = user.professional?.id ? displayOverridesAll[user.professional.id] : undefined;
+      return shapeAdminUser(user, display);
+    }),
     pagination: {
       page,
       pageSize,
@@ -896,7 +1001,12 @@ adminRouter.post("/users", async (req, res) => {
           therapeuticApproach: true,
           yearsExperience: true,
           photoUrl: true,
-          videoUrl: true
+          videoUrl: true,
+          birthCountry: true,
+          sessionPriceUsd: true,
+          professionalTitle: true,
+          specialization: true,
+          focusPrimary: true
         }
       },
       admin: {
@@ -911,6 +1021,38 @@ adminRouter.post("/users", async (req, res) => {
     user: shapeAdminUser(created)
   });
 });
+
+const adminUserInclude = {
+  patient: {
+    select: {
+      id: true,
+      timezone: true,
+      status: true
+    }
+  },
+  professional: {
+    select: {
+      id: true,
+      visible: true,
+      cancellationHours: true,
+      bio: true,
+      therapeuticApproach: true,
+      yearsExperience: true,
+      photoUrl: true,
+      videoUrl: true,
+      birthCountry: true,
+      sessionPriceUsd: true,
+      professionalTitle: true,
+      specialization: true,
+      focusPrimary: true
+    }
+  },
+  admin: {
+    select: {
+      id: true
+    }
+  }
+} as const;
 
 adminRouter.patch("/users/:userId", async (req, res) => {
   const parsed = updateUserSchema.safeParse(req.body);
@@ -975,7 +1117,7 @@ adminRouter.patch("/users/:userId", async (req, res) => {
     };
   }
 
-  if (
+  const hasProfessionalPrismaPatch =
     existing.role === "PROFESSIONAL"
     && (
       parsed.data.professionalVisible !== undefined
@@ -985,8 +1127,14 @@ adminRouter.patch("/users/:userId", async (req, res) => {
       || parsed.data.professionalYearsExperience !== undefined
       || parsed.data.professionalPhotoUrl !== undefined
       || parsed.data.professionalVideoUrl !== undefined
-    )
-  ) {
+      || parsed.data.professionalBirthCountry !== undefined
+      || parsed.data.professionalSessionPriceUsd !== undefined
+      || parsed.data.professionalTitle !== undefined
+      || parsed.data.professionalSpecialization !== undefined
+      || parsed.data.professionalFocusPrimary !== undefined
+    );
+
+  if (hasProfessionalPrismaPatch) {
     data.professional = {
       upsert: {
         create: {
@@ -996,7 +1144,12 @@ adminRouter.patch("/users/:userId", async (req, res) => {
           therapeuticApproach: parsed.data.professionalTherapeuticApproach?.trim() || null,
           yearsExperience: parsed.data.professionalYearsExperience ?? null,
           photoUrl: parsed.data.professionalPhotoUrl ?? null,
-          videoUrl: parsed.data.professionalVideoUrl ?? null
+          videoUrl: parsed.data.professionalVideoUrl ?? null,
+          birthCountry: parsed.data.professionalBirthCountry ?? null,
+          sessionPriceUsd: parsed.data.professionalSessionPriceUsd ?? null,
+          professionalTitle: parsed.data.professionalTitle ?? null,
+          specialization: parsed.data.professionalSpecialization ?? null,
+          focusPrimary: parsed.data.professionalFocusPrimary ?? null
         },
         update: {
           ...(parsed.data.professionalVisible !== undefined ? { visible: parsed.data.professionalVisible } : {}),
@@ -1011,45 +1164,66 @@ adminRouter.patch("/users/:userId", async (req, res) => {
             ? { yearsExperience: parsed.data.professionalYearsExperience }
             : {}),
           ...(parsed.data.professionalPhotoUrl !== undefined ? { photoUrl: parsed.data.professionalPhotoUrl || null } : {}),
-          ...(parsed.data.professionalVideoUrl !== undefined ? { videoUrl: parsed.data.professionalVideoUrl || null } : {})
+          ...(parsed.data.professionalVideoUrl !== undefined ? { videoUrl: parsed.data.professionalVideoUrl || null } : {}),
+          ...(parsed.data.professionalBirthCountry !== undefined ? { birthCountry: parsed.data.professionalBirthCountry } : {}),
+          ...(parsed.data.professionalSessionPriceUsd !== undefined
+            ? { sessionPriceUsd: parsed.data.professionalSessionPriceUsd }
+            : {}),
+          ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
+          ...(parsed.data.professionalSpecialization !== undefined ? { specialization: parsed.data.professionalSpecialization } : {}),
+          ...(parsed.data.professionalFocusPrimary !== undefined ? { focusPrimary: parsed.data.professionalFocusPrimary } : {})
         }
       }
     };
   }
 
-  const updated = await prisma.user.update({
-    where: { id: existing.id },
-    data: data as any,
-    include: {
-      patient: {
-        select: {
-          id: true,
-          timezone: true,
-          status: true
-        }
-      },
-      professional: {
-        select: {
-          id: true,
-          visible: true,
-          cancellationHours: true,
-          bio: true,
-          therapeuticApproach: true,
-          yearsExperience: true,
-          photoUrl: true,
-          videoUrl: true
-        }
-      },
-      admin: {
-        select: {
-          id: true
-        }
-      }
-    }
-  });
+  const hasProfessionalDisplayPatch =
+    existing.role === "PROFESSIONAL"
+    && (
+      parsed.data.professionalRatingAverage !== undefined
+      || parsed.data.professionalReviewsCount !== undefined
+      || parsed.data.professionalSessionDurationMinutes !== undefined
+      || parsed.data.professionalActivePatientsCount !== undefined
+      || parsed.data.professionalSessionsCount !== undefined
+      || parsed.data.professionalCompletedSessionsCount !== undefined
+    );
+
+  let updated: AdminUserRecord | null = null;
+
+  if (Object.keys(data).length > 0) {
+    updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: data as any,
+      include: adminUserInclude
+    });
+  } else {
+    updated = await prisma.user.findUnique({
+      where: { id: existing.id },
+      include: adminUserInclude
+    });
+  }
+
+  if (!updated) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  if (hasProfessionalDisplayPatch && updated.professional?.id) {
+    await applyProfessionalDisplayOverrideDelta(updated.professional.id, {
+      ratingAverage: parsed.data.professionalRatingAverage,
+      reviewsCount: parsed.data.professionalReviewsCount,
+      sessionDurationMinutes: parsed.data.professionalSessionDurationMinutes,
+      activePatientsCount: parsed.data.professionalActivePatientsCount,
+      sessionsCount: parsed.data.professionalSessionsCount,
+      completedSessionsCount: parsed.data.professionalCompletedSessionsCount
+    });
+  }
+
+  const displayConfigAfter = await prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } });
+  const displayOverridesAfter = parseProfessionalDisplayOverrides(displayConfigAfter?.value);
+  const professionalCardDisplay = updated.professional?.id ? displayOverridesAfter[updated.professional.id] : undefined;
 
   return res.json({
-    user: shapeAdminUser(updated)
+    user: shapeAdminUser(updated, professionalCardDisplay)
   });
 });
 
@@ -1630,80 +1804,14 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     }
   });
 
-  if (
-    parsed.data.ratingAverage !== undefined
-    || parsed.data.reviewsCount !== undefined
-    || parsed.data.sessionDurationMinutes !== undefined
-    || parsed.data.activePatientsCount !== undefined
-    || parsed.data.sessionsCount !== undefined
-    || parsed.data.completedSessionsCount !== undefined
-  ) {
-    const displayConfig = await prisma.systemConfig.findUnique({
-      where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY }
-    });
-    const overrides = parseProfessionalDisplayOverrides(displayConfig?.value);
-    const professionalOverrides = { ...(overrides[existing.id] ?? {}) };
-
-    if (parsed.data.ratingAverage !== undefined) {
-      if (parsed.data.ratingAverage === null) {
-        delete professionalOverrides.ratingAverage;
-      } else {
-        professionalOverrides.ratingAverage = parsed.data.ratingAverage;
-      }
-    }
-
-    if (parsed.data.reviewsCount !== undefined) {
-      if (parsed.data.reviewsCount === null) {
-        delete professionalOverrides.reviewsCount;
-      } else {
-        professionalOverrides.reviewsCount = parsed.data.reviewsCount;
-      }
-    }
-
-    if (parsed.data.sessionDurationMinutes !== undefined) {
-      if (parsed.data.sessionDurationMinutes === null) {
-        delete professionalOverrides.sessionDurationMinutes;
-      } else {
-        professionalOverrides.sessionDurationMinutes = parsed.data.sessionDurationMinutes;
-      }
-    }
-
-    if (parsed.data.activePatientsCount !== undefined) {
-      if (parsed.data.activePatientsCount === null) {
-        delete professionalOverrides.activePatientsCount;
-      } else {
-        professionalOverrides.activePatientsCount = parsed.data.activePatientsCount;
-      }
-    }
-
-    if (parsed.data.sessionsCount !== undefined) {
-      if (parsed.data.sessionsCount === null) {
-        delete professionalOverrides.sessionsCount;
-      } else {
-        professionalOverrides.sessionsCount = parsed.data.sessionsCount;
-      }
-    }
-
-    if (parsed.data.completedSessionsCount !== undefined) {
-      if (parsed.data.completedSessionsCount === null) {
-        delete professionalOverrides.completedSessionsCount;
-      } else {
-        professionalOverrides.completedSessionsCount = parsed.data.completedSessionsCount;
-      }
-    }
-
-    if (Object.keys(professionalOverrides).length === 0) {
-      delete overrides[existing.id];
-    } else {
-      overrides[existing.id] = professionalOverrides;
-    }
-
-    await prisma.systemConfig.upsert({
-      where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY },
-      create: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY, value: overrides },
-      update: { value: overrides }
-    });
-  }
+  await applyProfessionalDisplayOverrideDelta(existing.id, {
+    ratingAverage: parsed.data.ratingAverage,
+    reviewsCount: parsed.data.reviewsCount,
+    sessionDurationMinutes: parsed.data.sessionDurationMinutes,
+    activePatientsCount: parsed.data.activePatientsCount,
+    sessionsCount: parsed.data.sessionsCount,
+    completedSessionsCount: parsed.data.completedSessionsCount
+  });
 
   return res.json({ professional: updated });
 });

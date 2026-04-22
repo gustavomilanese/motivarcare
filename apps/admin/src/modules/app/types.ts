@@ -66,6 +66,18 @@ export interface AdminUser {
     yearsExperience: number | null;
     photoUrl: string | null;
     videoUrl: string | null;
+    birthCountry: string | null;
+    sessionPriceUsd: number | null;
+    professionalTitle: string | null;
+    specialization: string | null;
+    focusPrimary: string | null;
+    /** Cifras mostradas en la tarjeta del portal (pueden venir de overrides de admin). */
+    ratingAverage: number | null;
+    reviewsCount: number;
+    sessionDurationMinutes: number | null;
+    activePatientsCount: number | null;
+    sessionsCount: number | null;
+    completedSessionsCount: number | null;
   } | null;
   adminProfile: {
     id: string;
@@ -386,4 +398,15 @@ export interface EditUserDraft {
   professionalYearsExperience: string;
   professionalPhotoUrl: string;
   professionalVideoUrl: string;
+  professionalBirthCountry: string;
+  professionalSessionPriceUsd: string;
+  professionalTitle: string;
+  professionalSpecialization: string;
+  professionalFocusPrimary: string;
+  professionalRatingAverage: string;
+  professionalReviewsCount: string;
+  professionalSessionDurationMinutes: string;
+  professionalActivePatientsCount: string;
+  professionalSessionsCount: string;
+  professionalCompletedSessionsCount: string;
 }
