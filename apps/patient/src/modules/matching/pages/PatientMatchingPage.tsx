@@ -1,4 +1,4 @@
-import { type ReactElement, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
@@ -20,20 +20,6 @@ import type {
 
 function t(language: MatchingPageProps["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function DeferTherapistSelectionButton(props: { language: MatchingPageProps["language"]; onDefer: () => void }): ReactElement {
-  return (
-    <div className="patient-matching-defer-wrap">
-      <button type="button" className="patient-matching-defer-wide" onClick={() => void props.onDefer()}>
-        {t(props.language, {
-          es: "Elegir profesional más tarde",
-          en: "Choose a professional later",
-          pt: "Escolher profissional mais tarde"
-        })}
-      </button>
-    </div>
-  );
 }
 
 export function PatientMatchingPage(props: MatchingPageProps) {
@@ -290,6 +276,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }}
         sortOptions={sortOptions}
         t={(values) => t(props.language, values)}
+        onDeferTherapistSelection={
+          mode === "onboarding-final" && props.onDeferTherapistSelection
+            ? () => void props.onDeferTherapistSelection?.()
+            : undefined
+        }
       />
 
       {loading ? (
@@ -306,12 +297,6 @@ export function PatientMatchingPage(props: MatchingPageProps) {
 
       {!loading && !error && visibleOrdered.length > 0 ? (
         <>
-          {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
-            <DeferTherapistSelectionButton
-              language={props.language}
-              onDefer={() => void props.onDeferTherapistSelection?.()}
-            />
-          ) : null}
           <div className="patient-therapist-list">
             {visibleOrdered.map((item) => (
               <ProfessionalMatchCard
@@ -331,22 +316,21 @@ export function PatientMatchingPage(props: MatchingPageProps) {
               />
             ))}
           </div>
-          {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
-            <DeferTherapistSelectionButton
-              language={props.language}
-              onDefer={() => void props.onDeferTherapistSelection?.()}
-            />
-          ) : null}
         </>
       ) : null}
 
       {!loading && !error && visibleOrdered.length === 0 ? (
         <>
           {mode === "onboarding-final" && props.onDeferTherapistSelection ? (
-            <DeferTherapistSelectionButton
-              language={props.language}
-              onDefer={() => void props.onDeferTherapistSelection?.()}
-            />
+            <div className="patient-matching-defer-empty-wrap">
+              <button type="button" className="patient-matching-defer-link" onClick={() => void props.onDeferTherapistSelection?.()}>
+                {t(props.language, {
+                  es: "Elegir profesional más tarde",
+                  en: "Choose a professional later",
+                  pt: "Escolher profissional mais tarde"
+                })}
+              </button>
+            </div>
           ) : null}
           <section className="content-card">
             <p>

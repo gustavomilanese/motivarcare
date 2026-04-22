@@ -2797,28 +2797,6 @@ button.danger {
   gap: 14px;
 }
 
-.patient-matching-page.onboarding-focus .patient-matching-defer-wrap {
-  width: min(552px, 100%);
-  margin: 0 auto;
-}
-
-.patient-matching-defer-wide {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 18px;
-  font-size: 15px;
-  font-weight: 600;
-  border: 1px solid rgba(95, 68, 235, 0.45);
-  background: linear-gradient(180deg, #ffffff 0%, #f7f4ff 100%);
-  color: #5b21b6;
-  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.1);
-}
-
-.patient-matching-defer-wide:hover {
-  background: linear-gradient(180deg, #faf8ff 0%, #f0ecff 100%);
-  border-color: rgba(95, 68, 235, 0.6);
-}
-
 .patient-matching-page.onboarding-focus .patient-therapist-list {
   width: min(552px, 100%);
   margin: 0 auto;
@@ -9568,19 +9546,109 @@ button.sessions-balance {
 }
 
 .patient-matching-hero--onboarding h2 {
-  font-size: clamp(24px, 5vw, 32px);
+  font-size: clamp(20px, 4.2vw, 28px);
   letter-spacing: -0.03em;
 }
 
 .patient-matching-hero--onboarding .patient-matching-count {
   display: inline-flex;
-  margin-top: 8px;
-  padding: 6px 12px;
+  margin-top: 0;
+  padding: 5px 11px;
   border-radius: 999px;
   background: rgba(95, 68, 235, 0.1);
   color: #4c1d95;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.patient-matching-hero-headrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.patient-matching-hero-headrow-main {
+  flex: 1 1 min(100%, 300px);
+  min-width: 0;
+}
+
+.patient-matching-hero-headrow-main h2 {
+  margin: 0 0 6px;
+}
+
+.patient-matching-hero-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.patient-matching-hero-toolbar {
+  flex: 0 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 10px;
+  padding-top: 2px;
+}
+
+.patient-matching-sort-compact {
+  border: 1px solid rgba(95, 68, 235, 0.38);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
   font-size: 13px;
   font-weight: 600;
+  color: #4c1d95;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.patient-matching-sort-compact span[aria-hidden="true"] {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.patient-matching-sort-compact:hover {
+  border-color: rgba(95, 68, 235, 0.55);
+  background: #faf8ff;
+}
+
+.patient-matching-sort-compact.active {
+  border-color: rgba(95, 68, 235, 0.65);
+  background: #f4f1ff;
+  box-shadow: 0 1px 8px rgba(95, 68, 235, 0.12);
+}
+
+.patient-matching-defer-link {
+  border: 0;
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.patient-matching-defer-link:hover {
+  color: #4338ca;
+}
+
+.patient-matching-defer-empty-wrap {
+  width: min(552px, 100%);
+  margin: 0 auto 12px;
+  text-align: center;
 }
 
 .payment-sim-notice {
@@ -9732,15 +9800,6 @@ button.sessions-balance {
   font-size: 14px;
   line-height: 1.45;
   color: #3730a3;
-}
-
-.patient-matching-page.onboarding-focus .patient-matching-defer-wrap {
-  margin-bottom: 14px;
-}
-
-.patient-matching-page.onboarding-focus .patient-therapist-list + .patient-matching-defer-wrap {
-  margin-top: 14px;
-  margin-bottom: 0;
 }
 
 .patient-dashboard-home .hero-composite {
