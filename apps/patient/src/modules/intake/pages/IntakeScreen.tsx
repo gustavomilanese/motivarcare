@@ -329,9 +329,9 @@ export function IntakeScreen(props: {
       if (!/^[A-Z]{2}$/.test(iso)) {
         setError(
           t(props.language, {
-            es: "Elegí tu país de residencia habitual para continuar.",
-            en: "Choose your country of residence to continue.",
-            pt: "Escolha seu pais de residencia para continuar."
+            es: "Elegí un país de residencia para continuar.",
+            en: "Choose a country of residence to continue.",
+            pt: "Escolha um pais de residencia para continuar."
           })
         );
         return false;
@@ -667,28 +667,19 @@ export function IntakeScreen(props: {
             <article className="question-card question-card--wizard" key="intake-residency">
               <h2 className="intake-question-title">
                 {t(props.language, {
-                  es: "¿En qué país vivís habitualmente?",
-                  en: "Which country do you live in?",
-                  pt: "Em qual pais voce mora habitualmente?"
+                  es: "País de residencia",
+                  en: "Country of residence",
+                  pt: "Pais de residencia"
                 })}
               </h2>
-              <p className="intake-question-help">
-                {t(props.language, {
-                  es: "Lo usamos para mostrarte precios y medios de pago del mercado correcto (Argentina, Brasil, España, EE.UU. o USD para el resto de Latinoamérica y el Caribe).",
-                  en: "We use this to show the right market pricing and payment methods (Argentina, Brazil, Spain, US, or USD for the rest of Latin America and the Caribbean).",
-                  pt: "Usamos isso para precos e pagamentos do mercado certo (Argentina, Brasil, Espanha, EUA ou USD para o resto da America Latina e Caribe)."
-                })}
-              </p>
               <label className="intake-select-field">
-                <span className="intake-select-field-label">
-                  {t(props.language, {
+                <select
+                  className="intake-select-touch"
+                  aria-label={t(props.language, {
                     es: "País de residencia",
                     en: "Country of residence",
                     pt: "Pais de residencia"
                   })}
-                </span>
-                <select
-                  className="intake-select-touch"
                   value={residencyCountry}
                   onChange={(event) => {
                     setError("");

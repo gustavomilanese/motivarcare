@@ -514,10 +514,7 @@ export function IntakeWizardScreen() {
         <View style={styles.card}>
           {screenIndex === 0 ? (
             <>
-              <Text style={styles.qTitle}>¿En qué país vivís habitualmente?</Text>
-              <Text style={styles.qHelp}>
-                Definimos precios y pagos según el mercado (AR, BR, ES, US o USD para el resto de Latinoamérica y el Caribe).
-              </Text>
+              <Text style={styles.qTitle}>País de residencia</Text>
               <View style={{ gap: 10 }}>
                 {RESIDENCY_COUNTRY_OPTIONS.map((row) => {
                   const selected = residencyCountry === row.code;
