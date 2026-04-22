@@ -293,7 +293,9 @@ export interface AdminProfessionalOps {
   fullName: string;
   email: string;
   visible: boolean;
-  registrationApproval: "PENDING" | "APPROVED";
+  registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
+  professionalTitle?: string | null;
+  specialization?: string | null;
   cancellationHours: number;
   bio: string | null;
   therapeuticApproach: string | null;

@@ -46,10 +46,11 @@ enum PackagePaymentProvider {
   MERCADOPAGO
 }
 
-/// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio.
+/// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio. REJECTED = alta rechazada por admin.
 enum ProfessionalRegistrationApproval {
   PENDING
   APPROVED
+  REJECTED
 }
 
 model User {

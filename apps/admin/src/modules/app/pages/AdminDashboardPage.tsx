@@ -46,11 +46,21 @@ function StatCard(props: {
   );
 }
 
+function truncatePlain(text: string, maxLen: number): string {
+  const s = text.replace(/\s+/g, " ").trim();
+  if (s.length <= maxLen) {
+    return s;
+  }
+  return `${s.slice(0, maxLen - 1)}…`;
+}
+
 function DashboardPendingProfessionalApprovals(props: { token: string; language: AppLanguage }) {
   const [rows, setRows] = useState<AdminProfessionalOps[]>([]);
   const [loading, setLoading] = useState(true);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [actionKind, setActionKind] = useState<"approve" | "reject" | null>(null);
   const [actionError, setActionError] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,6 +73,7 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
       );
       const pending = (data.professionals ?? []).filter((p) => p.registrationApproval === "PENDING");
       setRows(pending);
+      setExpandedId((current) => (current && pending.some((p) => p.id === current) ? current : null));
     } catch {
       setRows([]);
     } finally {
@@ -74,9 +85,18 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
     void load();
   }, [load]);
 
+  const bumpSidebar = () => {
+    try {
+      window.dispatchEvent(new CustomEvent("mc-admin-pending-prof-refresh"));
+    } catch {
+      // ignore
+    }
+  };
+
   const approveOne = async (professional: AdminProfessionalOps) => {
     setActionError("");
-    setApprovingId(professional.id);
+    setActionId(professional.id);
+    setActionKind("approve");
     try {
       await apiRequest<{ professional: AdminProfessionalOps }>(
         `/api/admin/professionals/${professional.id}`,
@@ -86,17 +106,50 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
         },
         props.token
       );
+      setExpandedId((id) => (id === professional.id ? null : id));
       await load();
-      try {
-        window.dispatchEvent(new CustomEvent("mc-admin-pending-prof-refresh"));
-      } catch {
-        // ignore
-      }
+      bumpSidebar();
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setActionError(adminSurfaceMessage("prof-ops-update", props.language, raw));
     } finally {
-      setApprovingId(null);
+      setActionId(null);
+      setActionKind(null);
+    }
+  };
+
+  const rejectOne = async (professional: AdminProfessionalOps) => {
+    const ok = window.confirm(
+      t(props.language, {
+        es: "¿Rechazar esta alta? No aparecerá en el directorio ni en matching.",
+        en: "Reject this sign-up? They will not appear in the directory or matching.",
+        pt: "Rejeitar este cadastro? Nao aparecera no diretorio nem no matching."
+      })
+    );
+    if (!ok) {
+      return;
+    }
+    setActionError("");
+    setActionId(professional.id);
+    setActionKind("reject");
+    try {
+      await apiRequest<{ professional: AdminProfessionalOps }>(
+        `/api/admin/professionals/${professional.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ registrationApproval: "REJECTED", visible: false })
+        },
+        props.token
+      );
+      setExpandedId((id) => (id === professional.id ? null : id));
+      await load();
+      bumpSidebar();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setActionError(adminSurfaceMessage("prof-ops-update", props.language, raw));
+    } finally {
+      setActionId(null);
+      setActionKind(null);
     }
   };
 
@@ -117,34 +170,118 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
       <div className="dashboard-pending-approvals__head">
         <h2 className="dashboard-pending-approvals__title">
           {t(props.language, {
-            es: "Altas de profesionales pendientes",
-            en: "Pending professional sign-ups",
-            pt: "Cadastros de profissionais pendentes"
+            es: "Altas pendientes",
+            en: "Pending sign-ups",
+            pt: "Cadastros pendentes"
           })}
         </h2>
         <Link className="dashboard-pending-approvals__link" to="/professionals">
-          {t(props.language, { es: "Ir a Psicólogos", en: "Open Psychologists", pt: "Ir a Psicologos" })}
+          {t(props.language, { es: "Ficha en Psicólogos", en: "Full profile in Psychologists", pt: "Ficha em Psicologos" })}
         </Link>
       </div>
+      <p className="dashboard-pending-approvals__hint">
+        {t(props.language, {
+          es: "Desplegá el detalle, revisá y aprobá o rechazá.",
+          en: "Expand details, review, then approve or reject.",
+          pt: "Abra o detalhe, revise e aprove ou rejeite."
+        })}
+      </p>
       <ul className="dashboard-pending-approvals__list">
-        {rows.map((professional) => (
-          <li key={professional.id} className="dashboard-pending-approvals__row">
-            <div className="dashboard-pending-approvals__meta">
-              <strong>{professional.fullName}</strong>
-              <span>{professional.email}</span>
-            </div>
-            <button
-              type="button"
-              className="dashboard-pending-approvals__approve"
-              disabled={approvingId === professional.id}
-              onClick={() => void approveOne(professional)}
-            >
-              {approvingId === professional.id
-                ? t(props.language, { es: "Aprobando…", en: "Approving…", pt: "Aprovando…" })
-                : t(props.language, { es: "Aprobar", en: "Approve", pt: "Aprovar" })}
-            </button>
-          </li>
-        ))}
+        {rows.map((professional) => {
+          const open = expandedId === professional.id;
+          const busy = actionId === professional.id;
+          return (
+            <li key={professional.id} className="dashboard-pending-approvals__card">
+              <div className="dashboard-pending-approvals__row">
+                <button
+                  type="button"
+                  className="dashboard-pending-approvals__toggle"
+                  aria-expanded={open}
+                  aria-controls={`pending-prof-detail-${professional.id}`}
+                  onClick={() => setExpandedId(open ? null : professional.id)}
+                >
+                  <span className="dashboard-pending-approvals__chevron" aria-hidden>
+                    {open ? "▼" : "▶"}
+                  </span>
+                  <span className="dashboard-pending-approvals__toggle-text">
+                    <strong>{professional.fullName}</strong>
+                    <span className="dashboard-pending-approvals__email">{professional.email}</span>
+                  </span>
+                </button>
+                <div className="dashboard-pending-approvals__actions">
+                  <button
+                    type="button"
+                    className="dashboard-pending-approvals__approve"
+                    disabled={busy}
+                    onClick={() => void approveOne(professional)}
+                  >
+                    {busy && actionKind === "approve"
+                      ? t(props.language, { es: "Aprobando…", en: "Approving…", pt: "Aprovando…" })
+                      : t(props.language, { es: "Aprobar", en: "Approve", pt: "Aprovar" })}
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-pending-approvals__reject"
+                    disabled={busy}
+                    onClick={() => void rejectOne(professional)}
+                  >
+                    {busy && actionKind === "reject"
+                      ? t(props.language, { es: "Rechazando…", en: "Rejecting…", pt: "Rejeitando…" })
+                      : t(props.language, { es: "Rechazar", en: "Reject", pt: "Rejeitar" })}
+                  </button>
+                </div>
+              </div>
+              {open ? (
+                <div
+                  id={`pending-prof-detail-${professional.id}`}
+                  className="dashboard-pending-approvals__detail"
+                  role="region"
+                >
+                  <dl className="dashboard-pending-approvals__dl">
+                    <div>
+                      <dt>{t(props.language, { es: "Título", en: "Title", pt: "Titulo" })}</dt>
+                      <dd>{professional.professionalTitle?.trim() || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>{t(props.language, { es: "Especialidad", en: "Specialization", pt: "Especialidade" })}</dt>
+                      <dd>{professional.specialization?.trim() || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>{t(props.language, { es: "Sesión USD", en: "Session (USD)", pt: "Sessao USD" })}</dt>
+                      <dd>
+                        {professional.sessionPriceUsd != null ? `$${professional.sessionPriceUsd}` : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t(props.language, { es: "Experiencia (años)", en: "Experience (yrs)", pt: "Experiencia (anos)" })}</dt>
+                      <dd>{professional.yearsExperience != null ? String(professional.yearsExperience) : "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>{t(props.language, { es: "País", en: "Country", pt: "Pais" })}</dt>
+                      <dd>{professional.birthCountry?.trim() || "—"}</dd>
+                    </div>
+                  </dl>
+                  <div className="dashboard-pending-approvals__long">
+                    <span className="dashboard-pending-approvals__long-label">
+                      {t(props.language, { es: "Bio", en: "Bio", pt: "Bio" })}
+                    </span>
+                    <p>{professional.bio?.trim() ? truncatePlain(professional.bio, 560) : "—"}</p>
+                  </div>
+                  <div className="dashboard-pending-approvals__long">
+                    <span className="dashboard-pending-approvals__long-label">
+                      {t(props.language, { es: "Enfoque", en: "Approach", pt: "Abordagem" })}
+                    </span>
+                    <p>
+                      {professional.therapeuticApproach?.trim()
+                        ? truncatePlain(professional.therapeuticApproach, 320)
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       {actionError ? <p className="dashboard-pending-approvals__error">{actionError}</p> : null}
     </section>

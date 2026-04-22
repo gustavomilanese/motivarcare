@@ -84,9 +84,6 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   const [showConfirmedSessions, setShowConfirmedSessions] = useState(false);
   const [expandedConfirmedBookingId, setExpandedConfirmedBookingId] = useState<string | null>(null);
   const [professionalEditDrafts, setProfessionalEditDrafts] = useState<Record<string, ProfessionalEditDraft>>({});
-  const [registrationApprovalPendingOnly, setRegistrationApprovalPendingOnly] = useState(false);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-
   const syncProfessionalDrafts = (nextProfessionals: AdminProfessionalOps[]) => {
     setProfessionalEditDrafts((current) => {
       const next = { ...current };
@@ -158,9 +155,6 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     if (normalizedSearch !== "*") {
       params.set("search", normalizedSearch);
     }
-    if (registrationApprovalPendingOnly) {
-      params.set("registrationApproval", "PENDING");
-    }
     const qs = params.toString();
     return qs.length > 0 ? `/api/admin/professionals?${qs}` : "/api/admin/professionals";
   };
@@ -170,10 +164,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     setError("");
 
     try {
-      let normalizedSearch = (searchValue ?? professionalSearch).trim();
-      if (registrationApprovalPendingOnly && normalizedSearch.length === 0) {
-        normalizedSearch = "*";
-      }
+      const normalizedSearch = (searchValue ?? professionalSearch).trim();
       const listUrl = buildProfessionalsListUrl(normalizedSearch);
       const request =
         listUrl === null
@@ -198,36 +189,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
   useEffect(() => {
     void load();
-  }, [props.token, registrationApprovalPendingOnly]);
-
-  const approveProfessionalRegistration = async (professional: AdminProfessionalOps) => {
-    setError("");
-    setSuccess("");
-    setApprovingId(professional.id);
-    try {
-      await apiRequest<{ professional: AdminProfessionalOps }>(
-        "/api/admin/professionals/" + professional.id,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ registrationApproval: "APPROVED", visible: true })
-        },
-        props.token
-      );
-      setSuccess(
-        t(props.language, {
-          es: "Profesional aprobado y visible en el directorio.",
-          en: "Professional approved and visible in the directory.",
-          pt: "Profissional aprovado e visivel no diretorio."
-        })
-      );
-      await load(professionalSearch);
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(adminSurfaceMessage("prof-ops-update", props.language, raw));
-    } finally {
-      setApprovingId(null);
-    }
-  };
+  }, [props.token]);
 
   const loadProfessionalBookings = async (professionalId: string) => {
     setProfessionalBookingsLoading((current) => ({ ...current, [professionalId]: true }));
@@ -634,25 +596,11 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
             />
             <button type="button" className="primary" onClick={() => void applyProfessionalSearch()}>Buscar</button>
           </div>
-          <label className="patient-search-filter" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
-            <input
-              type="checkbox"
-              checked={registrationApprovalPendingOnly}
-              onChange={(event) => setRegistrationApprovalPendingOnly(event.target.checked)}
-            />
-            <span>
-              {t(props.language, {
-                es: "Solo profesionales pendientes de aprobación de alta",
-                en: "Only professionals pending registration approval",
-                pt: "Apenas profissionais pendentes de aprovacao de cadastro"
-              })}
-            </span>
-          </label>
           <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
             {t(props.language, {
-              es: "Para listar todos los perfiles usá * en el buscador. El resumen y la aprobación rápida de altas pendientes está en Dashboard, debajo de «Resumen del mes».",
-              en: "Use * in the search field to list all profiles. Pending sign-ups are summarized on the Dashboard under Month at a glance.",
-              pt: "Use * na busca para listar todos os perfis. Cadastros pendentes aparecem no Dashboard, abaixo de «Resumo do mes»."
+              es: "Para listar todos los perfiles usá * en el buscador. Las altas pendientes de aprobación se revisan en el Dashboard (debajo de «Resumen del mes»).",
+              en: "Use * in the search field to list all profiles. Pending sign-ups are reviewed on the Dashboard (under Month at a glance).",
+              pt: "Use * na busca para listar todos os perfis. Cadastros pendentes ficam no Dashboard (abaixo de «Resumo do mes»)."
             })}
           </p>
         </div>
@@ -688,25 +636,13 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                     {professional.email} · {professional.visible ? "visible" : "oculto"} ·{" "}
                     {professional.registrationApproval === "PENDING"
                       ? t(props.language, { es: "alta pendiente", en: "approval pending", pt: "cadastro pendente" })
-                      : t(props.language, { es: "alta aprobada", en: "approved", pt: "cadastro aprovado" })}{" "}
+                      : professional.registrationApproval === "REJECTED"
+                        ? t(props.language, { es: "alta rechazada", en: "registration rejected", pt: "cadastro rejeitado" })
+                        : t(props.language, { es: "alta aprobada", en: "approved", pt: "cadastro aprovado" })}{" "}
                     · slots {professional.slots.length}
                   </span>
                 </div>
                 <div className="patient-result-actions">
-                  {professional.registrationApproval === "PENDING" ? (
-                    <button
-                      type="button"
-                      disabled={approvingId === professional.id}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void approveProfessionalRegistration(professional);
-                      }}
-                    >
-                      {approvingId === professional.id
-                        ? t(props.language, { es: "Aprobando…", en: "Approving…", pt: "Aprovando…" })
-                        : t(props.language, { es: "Aprobar alta", en: "Approve registration", pt: "Aprovar cadastro" })}
-                    </button>
-                  ) : null}
                   <button
                     type="button"
                     onClick={(event) => {

@@ -229,7 +229,7 @@ const updateBookingSchema = z
 
 const listProfessionalsQuerySchema = z.object({
   visible: z.enum(["true", "false"]).optional(),
-  registrationApproval: z.enum(["PENDING", "APPROVED"]).optional(),
+  registrationApproval: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
   search: z.string().trim().min(1).max(120).optional()
 });
 
@@ -1566,6 +1566,8 @@ adminRouter.get("/professionals", async (req, res) => {
       email: item.user.email,
       visible: item.visible,
       registrationApproval: item.registrationApproval,
+      professionalTitle: item.professionalTitle,
+      specialization: item.specialization,
       cancellationHours: item.cancellationHours,
       bio: item.bio,
       therapeuticApproach: item.therapeuticApproach,
