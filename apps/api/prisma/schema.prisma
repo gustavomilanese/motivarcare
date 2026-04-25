@@ -135,6 +135,7 @@ model PatientProfile {
   chatThreads    ChatThread[]             @relation("PatientThreads")
   aiAuditJobs    AIAuditJob[]
   financeRecords FinanceSessionRecord[]
+  intakeChatSessions PatientIntakeChatSession[]
 }
 
 model ProfessionalProfile {
@@ -222,6 +223,44 @@ model PatientIntake {
   answers       Json
   createdAt     DateTime       @default(now())
   patient       PatientProfile @relation(fields: [patientId], references: [id])
+  chatSession   PatientIntakeChatSession?
+}
+
+/// Conversación de IA usada como alternativa al wizard clásico de intake.
+/// Persiste turno a turno; al `submit` se materializa en `PatientIntake`.
+model PatientIntakeChatSession {
+  id                  String         @id @default(cuid())
+  patientId           String         @map("patient_id")
+  /// active | completed | abandoned | safety_blocked | error
+  status              String         @default("active")
+  /// Conversación cruda: [{ role: "system" | "assistant" | "user", content, ts, hidden? }, ...]
+  messages            Json
+  /// Respuestas extraídas hasta el momento (mismas keys que `intakeQuestions`).
+  extractedAnswers    Json           @default("{}") @map("extracted_answers")
+  /// País de residencia capturado vía chat (ISO-3166 alpha-2).
+  residencyCountry    String?        @map("residency_country") @db.VarChar(2)
+  /// Cantidad de turnos del usuario (para cortar runaway / cap de costo).
+  turnCount           Int            @default(0) @map("turn_count")
+  /// `true` si en algún turno el clasificador detectó señal de autolesión / crisis.
+  safetyFlagged       Boolean        @default(false) @map("safety_flagged")
+  /// Notas/contexto del último flag de seguridad (motivo, severidad).
+  safetyContext       String?        @map("safety_context") @db.Text
+  /// Acumulado estimado de costo en centavos USD (observabilidad / cap por sesión).
+  estimatedCostUsdCents Int          @default(0) @map("estimated_cost_usd_cents")
+  /// Proveedor LLM usado (openai, mock, anthropic) — útil para debugging.
+  llmProvider         String?        @map("llm_provider")
+  /// Modelo LLM concreto (gpt-5-mini, etc.) — útil para auditoría.
+  llmModel            String?        @map("llm_model")
+  /// Si el chat completó y disparó submit: id del `PatientIntake` materializado.
+  intakeId            String?        @unique @map("intake_id")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  completedAt         DateTime?      @map("completed_at")
+  patient             PatientProfile @relation(fields: [patientId], references: [id])
+  intake              PatientIntake? @relation(fields: [intakeId], references: [id])
+
+  @@index([patientId, status, updatedAt])
+  @@map("patient_intake_chat_session")
 }
 
 model SessionPackage {

@@ -34,6 +34,13 @@ import {
 import { sessionUserFromAuthMe } from "./lib/sessionFromAuthMe";
 import { PostIntakePhotoScreen } from "./components/PostIntakePhotoScreen";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
+import { IntakeMethodChooserScreen } from "../intake/pages/IntakeMethodChooserScreen";
+import { IntakeChatScreen } from "../intake/pages/IntakeChatScreen";
+import {
+  fetchActiveIntakeChatSession,
+  type IntakeChatSessionDto
+} from "../intake/services/intakeChatApi";
+import { usePublicFeatures } from "./hooks/usePublicFeatures";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
@@ -358,6 +365,19 @@ export function App() {
   const [postIntakePhotoBusy, setPostIntakePhotoBusy] = useState(false);
   const calendarAfterPhotoRef = useRef(false);
   /**
+   * Modo seleccionado por el paciente para hacer el intake.
+   * - `chooser`: vemos la pantalla split (clásico vs chat IA).
+   * - `classic`: wizard tradicional paso a paso.
+   * - `chat`: conversación con asistente IA (PR2 detrás de feature flag).
+   * Solo aplica cuando el paciente todavía no completó el intake.
+   */
+  const [intakeMethod, setIntakeMethod] = useState<"chooser" | "classic" | "chat">("chooser");
+  /** Sesión activa del chat detectada al entrar; nos permite "retomar" sin pasar por el chooser. */
+  const [activeChatSession, setActiveChatSession] = useState<IntakeChatSessionDto | null>(null);
+  /** `true` cuando ya hicimos el lookup de sesión activa (evita parpadear el chooser durante el fetch). */
+  const [chatSessionLookupDone, setChatSessionLookupDone] = useState(false);
+  const { flags: publicFeatures } = usePublicFeatures();
+  /**
    * Cada incremento invalida el lote de `syncFromApi` en vuelo (p. ej. verificación de email completada).
    * Así una respuesta vieja de GET /me no pisa estado ya actualizado.
    * Solo ref (no estado): si el epoch vive en `useState`, cada bump re-dispara el efecto de sync y
@@ -544,6 +564,61 @@ export function App() {
       // ignore
     }
   }, [sessionId, state.intake?.completed, state.intake?.riskBlocked]);
+
+  /**
+   * En logout (o reset a defaultState) volvemos al chooser y descartamos cualquier
+   * sesión activa de chat detectada para el usuario anterior — así un nuevo login
+   * no hereda la elección "chat" o una sesión que no le corresponde.
+   */
+  useEffect(() => {
+    if (!state.session) {
+      setIntakeMethod("chooser");
+      setActiveChatSession(null);
+      setChatSessionLookupDone(false);
+    }
+  }, [state.session]);
+
+  /**
+   * Lookup de sesión activa del intake-chat. Se dispara solo cuando:
+   *  - el usuario está autenticado
+   *  - el intake todavía no fue completado
+   *  - el feature flag `intakeChatEnabled` está ON
+   *  - no hicimos el lookup en este montaje (`chatSessionLookupDone === false`).
+   *
+   * Si encontramos una sesión activa, ponemos `intakeMethod = "chat"` para retomar
+   * directamente la conversación, evitando re-mostrar el chooser cada vez.
+   */
+  useEffect(() => {
+    if (!state.authToken || !sessionId) return;
+    if (state.intake?.completed) return;
+    if (!publicFeatures.intakeChatEnabled) {
+      // Sin feature flag: nada para lookupear; ramificación irá siempre al wizard.
+      if (!chatSessionLookupDone) setChatSessionLookupDone(true);
+      return;
+    }
+    if (chatSessionLookupDone) return;
+
+    let cancelled = false;
+    const token = state.authToken;
+    (async () => {
+      try {
+        const active = await fetchActiveIntakeChatSession(token);
+        if (cancelled) return;
+        setActiveChatSession(active);
+        if (active) {
+          setIntakeMethod("chat");
+        }
+      } catch (err) {
+        // No bloqueamos el flujo: si falla, el chooser se muestra y el paciente decide.
+        console.warn("[intake-chat] lookup falló:", err instanceof Error ? err.message : err);
+      } finally {
+        if (!cancelled) setChatSessionLookupDone(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.authToken, sessionId, state.intake?.completed, publicFeatures.intakeChatEnabled, chatSessionLookupDone]);
 
   const shouldOfferCalendarOnboardingBeforeMatching = useMemo(
     () =>
@@ -1345,28 +1420,143 @@ export function App() {
   }
 
   if (!state.intake?.completed) {
+    /**
+     * Aplicación de la respuesta del backend (igual sea wizard clásico o chat IA).
+     * Centraliza el side-effect post-intake: market, riskLevel, foto post-intake,
+     * navegación a calendar/matching, y manejo del caso "intake ya completado".
+     */
+    const applyIntakeCompletion = (
+      response: SubmitIntakeApiResponse,
+      answers: Record<string, string>
+    ): void => {
+      const riskLevel = response.intake.riskLevel as RiskLevel;
+      const nextMarket = isMarket(response.market) ? response.market : undefined;
+
+      const sessionUserId = state.session?.id ?? "";
+      const offerGoogleCalendarStep =
+        riskLevel === "low"
+        && sessionUserId.length > 0
+        && !calendarPromptDismissedUserIds.includes(sessionUserId)
+        && state.bookings.length === 0
+        && state.subscription.purchaseHistory.length === 0;
+
+      calendarAfterPhotoRef.current = offerGoogleCalendarStep;
+
+      flushSync(() => {
+        setState((current) => ({
+          ...current,
+          onboardingFinalCompleted: false,
+          therapistSelectionCompleted: false,
+          assignedProfessionalId: null,
+          assignedProfessionalName: null,
+          session: current.session ? { ...current.session } : null,
+          ...(nextMarket ? { patientMarket: nextMarket } : {}),
+          intake: {
+            completed: true,
+            completedAt: response.intake.completedAt,
+            riskLevel,
+            riskBlocked: riskLevel !== "low",
+            triageDecision: riskLevel === "low" ? null : "pending",
+            answers
+          }
+        }));
+        if (riskLevel === "low" && sessionUserId.length > 0) {
+          markPostIntakePhotoPending(sessionUserId);
+          setShowPostIntakePhotoStep(true);
+        }
+      });
+
+      if (riskLevel !== "low") {
+        clearPostIntakePhotoPending();
+        navigate("/", { replace: true });
+        return;
+      }
+      if (sessionUserId.length === 0) {
+        clearPostIntakePhotoPending();
+        navigate("/onboarding/final/matching", { replace: true });
+      }
+    };
+
+    const cleanupAndLogout = () => {
+      setProfileSyncReady(false);
+      setProfessionalDirectory(professionalsCatalog);
+      setProfessionalPhotoMap(professionalImageMap);
+      setState(defaultState);
+    };
+
+    /**
+     * Mientras el lookup de la sesión activa del chat está en vuelo, mostramos un
+     * loading neutro: evita "parpadear" el chooser solo para saltar al chat un
+     * instante después cuando hay sesión retomable.
+     */
+    const intakeChatGateActive =
+      publicFeatures.intakeChatEnabled && Boolean(state.authToken) && !chatSessionLookupDone;
+
+    if (intakeChatGateActive) {
+      return (
+        <div className="intake-shell">
+          <section className="intake-card">
+            <p>{t(state.language, { es: "Cargando entrevista...", en: "Loading intake...", pt: "Carregando entrevista..." })}</p>
+          </section>
+        </div>
+      );
+    }
+
+    if (publicFeatures.intakeChatEnabled && intakeMethod === "chat") {
+      return (
+        <IntakeChatScreen
+          user={state.session}
+          language={state.language}
+          authToken={state.authToken!}
+          initialSession={activeChatSession}
+          onSwitchToClassic={() => {
+            setIntakeMethod("classic");
+          }}
+          onCancel={cleanupAndLogout}
+          onComplete={async (response) => {
+            try {
+              applyIntakeCompletion(response, {});
+            } catch (err) {
+              if (err instanceof Error && err.message.includes("Intake already completed")) {
+                setState((current) => ({
+                  ...current,
+                  intake: {
+                    completed: true,
+                    completedAt: new Date().toISOString(),
+                    riskLevel: current.intake?.riskLevel ?? "low",
+                    riskBlocked: (current.intake?.riskLevel ?? "low") !== "low",
+                    triageDecision: current.intake?.triageDecision ?? null,
+                    answers: current.intake?.answers ?? {}
+                  }
+                }));
+                return;
+              }
+              throw err;
+            }
+          }}
+        />
+      );
+    }
+
+    if (publicFeatures.intakeChatEnabled && intakeMethod === "chooser") {
+      return (
+        <IntakeMethodChooserScreen
+          language={state.language}
+          hasActiveChatSession={Boolean(activeChatSession)}
+          onChooseClassic={() => setIntakeMethod("classic")}
+          onChooseChat={() => setIntakeMethod("chat")}
+          onBack={cleanupAndLogout}
+        />
+      );
+    }
+
     return (
       <IntakeScreen
         user={state.session}
         language={state.language}
-        onBack={() => {
-          setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
-          setState(defaultState);
-        }}
-        onCancel={() => {
-          setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
-          setState(defaultState);
-        }}
-        onSafetyFrequentAbandon={() => {
-          setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
-          setState(defaultState);
-        }}
+        onBack={cleanupAndLogout}
+        onCancel={cleanupAndLogout}
+        onSafetyFrequentAbandon={cleanupAndLogout}
         onComplete={async ({ answers, residencyCountry }) => {
           if (!state.authToken) {
             throw new Error("No se encontró sesión autenticada");
@@ -1381,53 +1571,7 @@ export function App() {
               },
               state.authToken
             );
-
-            const riskLevel = response.intake.riskLevel as RiskLevel;
-            const nextMarket = isMarket(response.market) ? response.market : undefined;
-
-            const sessionUserId = state.session?.id ?? "";
-            const offerGoogleCalendarStep =
-              riskLevel === "low"
-              && sessionUserId.length > 0
-              && !calendarPromptDismissedUserIds.includes(sessionUserId)
-              && state.bookings.length === 0
-              && state.subscription.purchaseHistory.length === 0;
-
-            calendarAfterPhotoRef.current = offerGoogleCalendarStep;
-
-            flushSync(() => {
-              setState((current) => ({
-                ...current,
-                onboardingFinalCompleted: false,
-                therapistSelectionCompleted: false,
-                assignedProfessionalId: null,
-                assignedProfessionalName: null,
-                session: current.session ? { ...current.session } : null,
-                ...(nextMarket ? { patientMarket: nextMarket } : {}),
-                intake: {
-                  completed: true,
-                  completedAt: response.intake.completedAt,
-                  riskLevel,
-                  riskBlocked: riskLevel !== "low",
-                  triageDecision: riskLevel === "low" ? null : "pending",
-                  answers
-                }
-              }));
-              if (riskLevel === "low" && sessionUserId.length > 0) {
-                markPostIntakePhotoPending(sessionUserId);
-                setShowPostIntakePhotoStep(true);
-              }
-            });
-
-            if (riskLevel !== "low") {
-              clearPostIntakePhotoPending();
-              navigate("/", { replace: true });
-              return;
-            }
-            if (sessionUserId.length === 0) {
-              clearPostIntakePhotoPending();
-              navigate("/onboarding/final/matching", { replace: true });
-            }
+            applyIntakeCompletion(response, answers);
           } catch (requestError) {
             if (requestError instanceof Error && requestError.message.includes("Intake already completed")) {
               setState((current) => ({

@@ -15,10 +15,12 @@ import {
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
+import { getUsdArsRate, roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
+import { evaluateIntakeRiskLevel } from "./intake.shared.js";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
@@ -181,28 +183,6 @@ function resolveIntakeTriageDecision(
     return null;
   }
   return triage[patientId]?.decision ?? "pending";
-}
-
-function evaluateIntakeRiskLevel(answers: Record<string, string>): "low" | "medium" | "high" {
-  const emotional = (answers.emotionalState ?? "").toLowerCase();
-  if (
-    emotional.includes("pensamientos")
-    && (emotional.includes("daño") || emotional.includes("dano") || emotional.includes("vivir"))
-  ) {
-    return "high";
-  }
-
-  const safetyAnswer = (answers.safetyRisk ?? "").toLowerCase();
-
-  if (["frequently", "frecuentemente", "frequentemente"].includes(safetyAnswer)) {
-    return "high";
-  }
-
-  if (["sometimes", "a veces", "as vezes"].includes(safetyAnswer)) {
-    return "medium";
-  }
-
-  return "low";
 }
 
 function compatibilityScore(professionalId: string): number {
@@ -416,7 +396,13 @@ interface DirectoryProfessional {
   title: string;
   specialization: string | null;
   focusPrimary: string | null;
+  /** Áreas de práctica declaradas (alimenta matching de tópicos y LGBTIQ+). */
+  focusAreas: string[];
   birthCountry: string | null;
+  /** Género declarado por el profesional (alimenta matching de `therapistPreferences.gender`). */
+  gender: string | null;
+  /** Año de egreso del título (alimenta estimación de edad para matching). */
+  graduationYear: number | null;
   bio: string | null;
   therapeuticApproach: string | null;
   languages: string[];
@@ -559,7 +545,10 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     title: professional.professionalTitle ?? professional.specialization ?? "Profesional de salud mental",
     specialization: professional.specialization ?? null,
     focusPrimary: focusAreasDisplayLabel(normalizeFocusAreas(professional.focusAreas, professional.focusPrimary)),
+    focusAreas: normalizeFocusAreas(professional.focusAreas, professional.focusPrimary),
     birthCountry: professional.birthCountry ?? null,
+    gender: professional.gender ?? null,
+    graduationYear: professional.graduationYear ?? null,
     bio: professional.bio ?? professional.shortDescription ?? null,
     therapeuticApproach: professional.therapeuticApproach,
     languages: Array.isArray(professional.languages)
@@ -688,7 +677,10 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
           yearsExperience: professional.yearsExperience,
           ratingAverage: professional.ratingAverage,
           compatibilityBase: professional.compatibility,
-          slots: professional.slots
+          slots: professional.slots,
+          gender: professional.gender,
+          graduationYear: professional.graduationYear,
+          focusAreas: professional.focusAreas
         },
         intakeAnswers: patientIntake?.answers ?? {},
         language
@@ -1528,19 +1520,48 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
   }
 
   const financeRules = await getFinanceRules();
-  if (parsed.data.sessionPriceArs !== undefined && parsed.data.sessionPriceArs !== null) {
-    const priceError = validateProfessionalSessionListArs(parsed.data.sessionPriceArs);
-    if (priceError) {
+
+  const incomingUsd = parsed.data.sessionPriceUsd;
+  const hasPositiveUsd =
+    incomingUsd !== undefined && incomingUsd !== null && incomingUsd > 0;
+
+  let sessionPriceArsResolved: number | null | undefined = parsed.data.sessionPriceArs;
+
+  if (hasPositiveUsd) {
+    const usdErr = validateProfessionalSessionListUsd(incomingUsd, financeRules);
+    if (usdErr) {
       return res.status(400).json({
-        error: priceError.message,
-        sessionPriceMin: priceError.sessionPriceMin,
-        sessionPriceMax: priceError.sessionPriceMax,
-        sessionPriceCurrency: priceError.currencyCode
+        error: usdErr.message,
+        sessionPriceMin: usdErr.sessionPriceMin,
+        sessionPriceMax: usdErr.sessionPriceMax,
+        sessionPriceCurrency: usdErr.currencyCode
       });
     }
-  }
-  if (parsed.data.sessionPriceUsd !== undefined && parsed.data.sessionPriceUsd !== null) {
-    const priceError = validateProfessionalSessionListUsd(parsed.data.sessionPriceUsd, financeRules);
+
+    let rate: number;
+    try {
+      rate = await getUsdArsRate();
+    } catch {
+      return res.status(503).json({
+        error: "Could not load USD→ARS exchange rate. Please try again shortly."
+      });
+    }
+
+    const computedArs = roundSessionPriceArsFromUsd(incomingUsd, rate);
+    const arsErr = validateProfessionalSessionListArs(computedArs);
+    if (arsErr) {
+      return res.status(400).json({
+        error: `The ARS list price derived from your USD amount (${computedArs}) is outside the allowed range (${arsErr.sessionPriceMin}–${arsErr.sessionPriceMax}). Adjust your USD price.`,
+        sessionPriceMin: arsErr.sessionPriceMin,
+        sessionPriceMax: arsErr.sessionPriceMax,
+        sessionPriceCurrency: arsErr.currencyCode,
+        derivedSessionPriceArs: computedArs
+      });
+    }
+
+    sessionPriceArsResolved = computedArs;
+  } else if (parsed.data.sessionPriceArs !== undefined && parsed.data.sessionPriceArs !== null) {
+    const priceError = validateProfessionalSessionListArs(parsed.data.sessionPriceArs);
     if (priceError) {
       return res.status(400).json({
         error: priceError.message,
@@ -1563,6 +1584,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
     focusPrimary,
     graduationYear,
     visible,
+    sessionPriceArs: _incomingSessionPriceArsIgnored,
     ...restProfile
   } = parsed.data;
 
@@ -1623,6 +1645,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       where: { id: professionalId },
       data: {
         ...restProfile,
+        ...(sessionPriceArsResolved !== undefined ? { sessionPriceArs: sessionPriceArsResolved } : {}),
         ...marketSync,
         ...graduationPatch,
         ...visibleUpdate,

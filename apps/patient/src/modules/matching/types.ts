@@ -11,7 +11,13 @@ export interface ProfessionalDirectoryApiItem {
   title: string;
   specialization: string | null;
   focusPrimary: string | null;
+  /** (Opcional) áreas declaradas; alimenta matching de tópicos y LGBTIQ+. */
+  focusAreas?: string[];
   birthCountry: string | null;
+  /** (Opcional) género del profesional; alimenta matching de `therapistPreferences.gender`. */
+  gender?: string | null;
+  /** (Opcional) año de egreso del título; alimenta matching de `therapistPreferences.age`. */
+  graduationYear?: number | null;
   bio: string | null;
   therapeuticApproach: string | null;
   languages: string[];
@@ -55,6 +61,8 @@ export interface MatchCardProfessional {
   title: string;
   specialization: string | null;
   focusPrimary: string | null;
+  /** (Opcional) áreas declaradas; alimenta matching de tópicos y LGBTIQ+. */
+  focusAreas?: string[];
   bio: string | null;
   therapeuticApproach: string | null;
   languages: string[];
@@ -63,6 +71,10 @@ export interface MatchCardProfessional {
   sessionPriceUsd: number | null;
   photoUrl: string | null;
   birthCountry: string | null;
+  /** (Opcional) género del profesional; alimenta matching de `therapistPreferences.gender`. */
+  gender?: string | null;
+  /** (Opcional) año de egreso del título; alimenta matching de `therapistPreferences.age`. */
+  graduationYear?: number | null;
   stripeVerified: boolean;
   ratingAverage: number | null;
   reviewsCount: number;

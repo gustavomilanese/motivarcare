@@ -17,6 +17,7 @@ import { adminRouter } from "./modules/admin/admin.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { professionalRouter } from "./modules/professional/professional.routes.js";
 import { publicRouter } from "./modules/public/public.routes.js";
+import { intakeChatRouter } from "./modules/intake-chat/intakeChat.routes.js";
 
 export const app = express();
 
@@ -266,6 +267,7 @@ function mountApiRoutes(prefix: "/api" | "/api/v1") {
   app.use(`${prefix}/chat`, chatRouter);
   app.use(`${prefix}/professional`, professionalRouter);
   app.use(`${prefix}/public`, publicRouter);
+  app.use(`${prefix}/intake-chat`, intakeChatRouter);
 }
 
 mountApiRoutes("/api");

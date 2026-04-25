@@ -58,7 +58,21 @@ const EnvSchema = z.object({
   GOOGLE_REFRESH_TOKEN: z.string().optional().default(""),
   GOOGLE_CALENDAR_ID: z.string().optional().default(""),
   OPENAI_API_KEY: z.string().optional().default(""),
-  AI_AUDIT_ENABLED: z.coerce.boolean().default(false)
+  /** Modelo OpenAI usado por features de IA (intake-chat, ai-audit). gpt-5-mini es el sweet spot costo/calidad. */
+  OPENAI_MODEL: z.string().min(1).default("gpt-5-mini"),
+  AI_AUDIT_ENABLED: z.coerce.boolean().default(false),
+  /** Activa el chat conversacional como alternativa al wizard de intake del paciente. */
+  INTAKE_CHAT_ENABLED: z.coerce.boolean().default(false),
+  /** Cap duro de turnos del usuario por sesión de chat para acotar costo y evitar loops. */
+  INTAKE_CHAT_MAX_TURNS: z.coerce.number().int().positive().default(30),
+  /** Vida útil de una sesión de chat sin actividad antes de marcarla como `abandoned`. */
+  INTAKE_CHAT_SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  /** Cap duro de USD (en centavos) que una sesión puede consumir antes de cortarla. */
+  INTAKE_CHAT_MAX_COST_USD_CENTS: z.coerce.number().int().positive().default(50),
+  /** Provider del intake-chat. `mock` no llama a la API y permite tests / demos sin costo. */
+  INTAKE_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
+  /** Secreto Turnstile (registro profesional). Vacío = no se exige token en el API. */
+  TURNSTILE_SECRET_KEY: z.string().optional().default("")
 });
 
 const parsedEnv = EnvSchema.parse(process.env);

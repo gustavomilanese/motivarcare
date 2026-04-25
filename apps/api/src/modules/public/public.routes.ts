@@ -17,6 +17,8 @@ import {
   listPriceMajorUnitsForPackageMarket
 } from "../../lib/professionalSessionListPrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
+import { getUsdArsRate } from "../../lib/usdArsExchange.js";
+import { env } from "../../config/env.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -122,6 +124,26 @@ publicRouter.get("/session-price-bounds", async (_req, res) => {
     sessionPriceMinArs: AR_SESSION_LIST_MIN,
     sessionPriceMaxArs: AR_SESSION_LIST_MAX
   });
+});
+
+/**
+ * Feature flags públicos (los que el cliente puede leer sin auth).
+ * Mantener acotado: solo flags de visibilidad de UI, NUNCA secretos.
+ */
+publicRouter.get("/features", (_req, res) => {
+  return res.json({
+    intakeChatEnabled: env.INTAKE_CHAT_ENABLED
+  });
+});
+
+/** Cotización ARS por USD (oficial, cacheada en el API). Usada para derivar precio de lista en pesos. */
+publicRouter.get("/fx/usd-ars", async (_req, res) => {
+  try {
+    const rate = await getUsdArsRate();
+    return res.json({ rate });
+  } catch {
+    return res.status(503).json({ error: "FX_UNAVAILABLE" });
+  }
 });
 
 const checkEmailQuerySchema = z.object({
