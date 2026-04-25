@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import {
   FALLBACK_SESSION_PRICE_MAX_ARS,
@@ -8,6 +8,10 @@ import {
   fetchSessionPriceBoundsDual,
   type SessionPriceBoundsDual
 } from "../../../app/services/sessionPriceBounds";
+import {
+  fetchPublicUsdArsRate,
+  roundSessionPriceArsFromUsd
+} from "../../../app/services/usdArsPublicRate";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -31,58 +35,94 @@ export function ProfessionalPriceStep(props: {
     discount8: string;
     discount12: string;
   }) => void;
+  /** Notifica el tipo USD→ARS obtenido del API (para armar el draft de onboarding). */
+  onUsdArsRate?: (rate: number | null) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
   const update = (patch: Partial<typeof props.value>) => props.onChange({ ...props.value, ...patch });
-  const ars = Number(props.value.sessionPriceArs || "0");
   const usd = Number(props.value.sessionPrice || "0");
   const [bounds, setBounds] = useState<SessionPriceBoundsDual | null>(null);
+  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
+  const [usdArsRateError, setUsdArsRateError] = useState(false);
   const [priceError, setPriceError] = useState("");
 
   const arMin = bounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
   const arMax = bounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
   const usdMin = bounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
   const usdMax = bounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
-  const arOk = ars <= 0 || (Number.isInteger(ars) && ars >= arMin && ars <= arMax);
-  const usdOk = usd <= 0 || (Number.isInteger(usd) && usd >= usdMin && usd <= usdMax);
-  const canContinue = (ars > 0 || usd > 0) && arOk && usdOk;
+
+  const computedSessionPriceArs = useMemo(() => {
+    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
+      return null;
+    }
+    return roundSessionPriceArsFromUsd(usd, usdArsRate);
+  }, [usd, usdArsRate]);
+
+  const usdOk = Number.isInteger(usd) && usd >= usdMin && usd <= usdMax;
+  const arDerivedOk =
+    computedSessionPriceArs === null ||
+    (computedSessionPriceArs >= arMin && computedSessionPriceArs <= arMax);
+  const canContinue = usd > 0 && usdOk && arDerivedOk;
 
   useEffect(() => {
     void fetchSessionPriceBoundsDual().then(setBounds);
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchPublicUsdArsRate()
+      .then((rate) => {
+        if (!cancelled) {
+          setUsdArsRate(rate);
+          setUsdArsRateError(false);
+          props.onUsdArsRate?.(rate);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsdArsRate(null);
+          setUsdArsRateError(true);
+          props.onUsdArsRate?.(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; notificar padre una vez
+  }, []);
+
+  useEffect(() => {
     setPriceError("");
-  }, [props.value.sessionPriceArs, props.value.sessionPrice]);
+  }, [props.value.sessionPrice]);
 
   const tryContinue = () => {
-    if (ars <= 0 && usd <= 0) {
+    if (usd <= 0) {
       setPriceError(
         t(props.language, {
-          es: "Indicá al menos un precio: ARS o USD.",
-          en: "Enter at least one price: ARS or USD.",
-          pt: "Informe pelo menos um preco: ARS ou USD."
+          es: "Indicá el precio de referencia en USD (moneda de la plataforma).",
+          en: "Enter your reference price in USD (the platform currency).",
+          pt: "Informe o preco de referencia em USD (moeda da plataforma)."
         })
       );
       return;
     }
-    if (ars > 0 && !arOk) {
+    if (!usdOk) {
       setPriceError(
         t(props.language, {
-          es: `ARS: entero entre ${arMin} y ${arMax}, o vacío.`,
-          en: `ARS: whole pesos between ${arMin} and ${arMax}, or blank.`,
-          pt: `ARS: inteiro entre ${arMin} e ${arMax}, ou vazio.`
+          es: `USD: entero entre ${usdMin} y ${usdMax}.`,
+          en: `USD: whole dollars between ${usdMin} and ${usdMax}.`,
+          pt: `USD: inteiro entre ${usdMin} e ${usdMax}.`
         })
       );
       return;
     }
-    if (usd > 0 && !usdOk) {
+    if (computedSessionPriceArs !== null && (computedSessionPriceArs < arMin || computedSessionPriceArs > arMax)) {
       setPriceError(
         t(props.language, {
-          es: `USD: entero entre ${usdMin} y ${usdMax}, o vacío.`,
-          en: `USD: whole dollars between ${usdMin} and ${usdMax}, or blank.`,
-          pt: `USD: inteiro entre ${usdMin} e ${usdMax}, ou vazio.`
+          es: `Con el tipo de cambio actual, el precio en pesos quedaría fuera del rango (${arMin}–${arMax} ARS). Ajustá el monto en USD.`,
+          en: `At the current exchange rate, the peso price would fall outside the allowed range (${arMin}–${arMax} ARS). Adjust your USD amount.`,
+          pt: `Com a cotacao atual, o preco em pesos ficaria fora do intervalo (${arMin}–${arMax} ARS). Ajuste o valor em USD.`
         })
       );
       return;
@@ -105,8 +145,9 @@ export function ProfessionalPriceStep(props: {
       return null;
     }
     const bits: string[] = [];
-    if (ars > 0) {
-      bits.push(`${Math.max(0, Math.round(ars * (1 - percent / 100)))} ARS`);
+    const arsBasis = computedSessionPriceArs;
+    if (arsBasis != null && arsBasis > 0) {
+      bits.push(`${Math.max(0, Math.round(arsBasis * (1 - percent / 100)))} ARS`);
     }
     if (usd > 0) {
       bits.push(`${Math.max(0, Math.round(usd * (1 - percent / 100)))} ${props.currency}`);
@@ -138,37 +179,47 @@ export function ProfessionalPriceStep(props: {
           <h1>{t(props.language, { es: "Precios por sesión", en: "Session prices", pt: "Precos por sessao" })}</h1>
           <p>
             {t(props.language, {
-              es: "ARS para Argentina; USD para mercado internacional. Al menos uno obligatorio.",
-              en: "ARS for Argentina; USD for international market. At least one is required.",
-              pt: "ARS para Argentina; USD internacional. Pelo menos um e obrigatorio."
+              es: "Acá definís el valor de referencia de tu sesión en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al siguiente múltiplo de 1.000 ARS.",
+              en: "Set your reference session price in US dollars (USD). The peso price uses the official exchange rate and rounds up to the next ARS 1,000.",
+              pt: "Defina aqui o valor de referencia da sessao em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o proximo ARS 1.000."
             })}
           </p>
         </div>
 
         <p className="pro-price-bounds-hint">
           {t(props.language, {
-            es: `ARS ${arMin}–${arMax} enteros · USD ${usdMin}–${usdMax} enteros.`,
-            en: `ARS ${arMin}–${arMax} whole pesos · USD ${usdMin}–${usdMax} whole dollars.`,
-            pt: `ARS ${arMin}–${arMax} · USD ${usdMin}–${usdMax}.`
+            es: `USD ${usdMin}–${usdMax} enteros. Equivalente ARS (${arMin}–${arMax}) según cotización.`,
+            en: `USD ${usdMin}–${usdMax} whole dollars. Implied ARS range (${arMin}–${arMax}) depends on the exchange rate.`,
+            pt: `USD ${usdMin}–${usdMax} inteiros. ARS equivalente depende da cotacao (${arMin}–${arMax}).`
           })}
         </p>
+        {usdArsRateError ? (
+          <p className="pro-form-step-error" role="status">
+            {t(props.language, {
+              es: "No pudimos obtener el tipo de cambio ahora. Podés seguir; al guardar el perfil se volverá a intentar.",
+              en: "We couldn’t load the exchange rate now. You can continue; saving your profile will retry.",
+              pt: "Nao foi possivel obter a cotacao agora. Voce pode continuar; ao salvar tentaremos de novo."
+            })}
+          </p>
+        ) : null}
         {priceError ? <p className="pro-form-step-error">{priceError}</p> : null}
         <label className="pro-form-step-field">
           <input
             inputMode="numeric"
-            placeholder="15000 ARS"
-            value={props.value.sessionPriceArs}
-            onChange={(event) => update({ sessionPriceArs: event.target.value.replace(/\D/g, "") })}
-          />
-        </label>
-        <label className="pro-form-step-field">
-          <input
-            inputMode="numeric"
-            placeholder={`1,000 ${props.currency}`}
+            placeholder={t(props.language, { es: "Ej. 50", en: "e.g. 50", pt: "ex. 50" })}
             value={props.value.sessionPrice}
             onChange={(event) => update({ sessionPrice: event.target.value.replace(/\D/g, "") })}
           />
         </label>
+        {computedSessionPriceArs !== null ? (
+          <p className="pro-price-bounds-hint">
+            {t(props.language, {
+              es: `Equivalente orientativo: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS.`,
+              en: `Indicative equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS.`,
+              pt: `Equivalente indicativo: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS.`
+            })}
+          </p>
+        ) : null}
 
         <div className="pro-price-copy">
           <h2>{t(props.language, { es: "Descuento en planes de terapia", en: "Discount in therapy plans", pt: "Desconto em planos de terapia" })}</h2>

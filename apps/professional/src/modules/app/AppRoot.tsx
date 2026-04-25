@@ -14,11 +14,14 @@ import {
   type OnboardingPatchDraft
 } from "../onboarding";
 import {
+  clearPendingOnboardingDisplayFullName,
   clearPendingWebOnboardingAuth,
   clearResumeWebOnboardingStep,
   readContinueWebOnboardingAfterEmailVerify,
+  readPendingOnboardingDisplayFullName,
   readPendingWebOnboardingAuth,
   readResumeWebOnboardingStep,
+  savePendingOnboardingDisplayFullName,
   WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
 } from "../onboarding/webOnboardingResumeStorage.js";
 import { ProfessionalAuthFlow } from "./pages/ProfessionalAuthFlow";
@@ -126,6 +129,10 @@ export function App() {
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(readStoredEmailVerificationRequired);
   const [authSyncReady, setAuthSyncReady] = useState(() => !window.localStorage.getItem(TOKEN_KEY) || !readStoredUser());
   const [pendingOnboardingSync, setPendingOnboardingSync] = useState(false);
+  /** Nombre legible desde onboarding (no el placeholder de registro); se persiste con PATCH /api/auth/me. */
+  const [pendingOnboardingDisplayFullName, setPendingOnboardingDisplayFullName] = useState<string | null>(
+    () => readPendingOnboardingDisplayFullName()
+  );
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
     createDefaultOnboardingPatchDraft()
   );
@@ -217,6 +224,7 @@ export function App() {
     window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
     clearPendingWebOnboardingAuth();
     clearResumeWebOnboardingStep();
+    clearPendingOnboardingDisplayFullName();
     clearCalendarOnboardingPending();
     if (location.pathname === "/verify-email-required") {
       navigate("/", { replace: true });
@@ -228,7 +236,17 @@ export function App() {
     setShowCalendarOnboarding(false);
   };
 
-  const handlePrepareOnboardingSync = (draft: OnboardingPatchDraft) => {
+  const handlePrepareOnboardingSync = (
+    draft: OnboardingPatchDraft,
+    meta?: { displayFullName?: string }
+  ) => {
+    const trimmed = meta?.displayFullName?.trim() ?? "";
+    if (trimmed.length >= 2) {
+      setPendingOnboardingDisplayFullName(trimmed);
+      savePendingOnboardingDisplayFullName(trimmed);
+    } else {
+      setPendingOnboardingDisplayFullName(null);
+    }
     setOnboardingPatchDraft(draft);
     setPendingOnboardingSync(true);
   };
@@ -359,20 +377,74 @@ export function App() {
     let ignore = false;
 
     const syncOnboarding = async () => {
-      try {
-        await apiRequest(
-          `/api/profiles/professional/${user.professionalProfileId}/public-profile`,
-          token,
-          {
-            method: "PATCH",
-            body: JSON.stringify(onboardingPatchDraft)
-          }
-        );
-      } catch (error) {
+      const displayFullName = pendingOnboardingDisplayFullName;
+
+      const profilePromise = apiRequest(
+        `/api/profiles/professional/${user.professionalProfileId}/public-profile`,
+        token,
+        {
+          method: "PATCH",
+          body: JSON.stringify(onboardingPatchDraft)
+        }
+      ).catch((error) => {
         console.error("Could not sync onboarding profile draft", error);
-      } finally {
-        if (!ignore) {
-          setPendingOnboardingSync(false);
+        return null;
+      });
+
+      const namePromise =
+        displayFullName && displayFullName.length >= 2
+          ? apiRequest<{
+              user: {
+                id: string;
+                fullName: string;
+                firstName?: string;
+                lastName?: string;
+                email: string;
+                emailVerified: boolean;
+                role: string;
+                professionalProfileId: string | null;
+                avatarUrl?: string | null;
+              };
+            }>("/api/auth/me", token, {
+              method: "PATCH",
+              body: JSON.stringify({ fullName: displayFullName })
+            })
+              .then((patchMe) => {
+                if (
+                  !ignore
+                  && patchMe.user
+                  && patchMe.user.role === "PROFESSIONAL"
+                  && patchMe.user.professionalProfileId
+                ) {
+                  const nextUser: AuthUser = {
+                    id: patchMe.user.id,
+                    fullName: patchMe.user.fullName,
+                    firstName: patchMe.user.firstName,
+                    lastName: patchMe.user.lastName,
+                    email: patchMe.user.email,
+                    emailVerified: patchMe.user.emailVerified,
+                    role: "PROFESSIONAL",
+                    professionalProfileId: patchMe.user.professionalProfileId,
+                    avatarUrl: patchMe.user.avatarUrl ?? null
+                  };
+                  window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+                  setUser(nextUser);
+                }
+                return true;
+              })
+              .catch((nameError) => {
+                console.error("Could not sync professional display name after onboarding", nameError);
+                return false;
+              })
+          : Promise.resolve(true);
+
+      const [, nameOk] = await Promise.all([profilePromise, namePromise]);
+
+      if (!ignore) {
+        setPendingOnboardingSync(false);
+        if (nameOk) {
+          setPendingOnboardingDisplayFullName(null);
+          clearPendingOnboardingDisplayFullName();
         }
       }
     };
@@ -382,7 +454,91 @@ export function App() {
     return () => {
       ignore = true;
     };
-  }, [pendingOnboardingSync, token, user?.professionalProfileId, onboardingPatchDraft]);
+  }, [
+    pendingOnboardingSync,
+    pendingOnboardingDisplayFullName,
+    token,
+    user?.professionalProfileId,
+    onboardingPatchDraft
+  ]);
+
+  /**
+   * Recuperación: si el usuario entra al portal con `fullName` en placeholder ("Profesional")
+   * y todavía tenemos el nombre real guardado en localStorage (p. ej. porque el PATCH /me
+   * quedó a medias en un intento anterior), reintentamos el PATCH /api/auth/me solo.
+   */
+  useEffect(() => {
+    if (pendingOnboardingSync || !token || !user) {
+      return;
+    }
+    const pendingName = pendingOnboardingDisplayFullName ?? readPendingOnboardingDisplayFullName();
+    if (!pendingName || pendingName.length < 2) {
+      return;
+    }
+    const currentName = (user.fullName ?? "").trim();
+    const looksLikePlaceholder =
+      currentName === "" ||
+      currentName.toLowerCase() === "profesional" ||
+      currentName.toLowerCase() === "professional" ||
+      currentName.toLowerCase() === "profissional";
+    if (!looksLikePlaceholder || currentName === pendingName) {
+      if (currentName === pendingName) {
+        setPendingOnboardingDisplayFullName(null);
+        clearPendingOnboardingDisplayFullName();
+      }
+      return;
+    }
+
+    let cancelled = false;
+    void apiRequest<{
+      user: {
+        id: string;
+        fullName: string;
+        firstName?: string;
+        lastName?: string;
+        email: string;
+        emailVerified: boolean;
+        role: string;
+        professionalProfileId: string | null;
+        avatarUrl?: string | null;
+      };
+    }>("/api/auth/me", token, {
+      method: "PATCH",
+      body: JSON.stringify({ fullName: pendingName })
+    })
+      .then((patchMe) => {
+        if (
+          cancelled
+          || !patchMe.user
+          || patchMe.user.role !== "PROFESSIONAL"
+          || !patchMe.user.professionalProfileId
+        ) {
+          return;
+        }
+        const nextUser: AuthUser = {
+          id: patchMe.user.id,
+          fullName: patchMe.user.fullName,
+          firstName: patchMe.user.firstName,
+          lastName: patchMe.user.lastName,
+          email: patchMe.user.email,
+          emailVerified: patchMe.user.emailVerified,
+          role: "PROFESSIONAL",
+          professionalProfileId: patchMe.user.professionalProfileId,
+          avatarUrl: patchMe.user.avatarUrl ?? null
+        };
+        window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+        setUser(nextUser);
+        setPendingOnboardingDisplayFullName(null);
+        clearPendingOnboardingDisplayFullName();
+      })
+      .catch((error) => {
+        console.error("Could not recover professional display name", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingOnboardingSync, pendingOnboardingDisplayFullName, token, user]);
 
   useEffect(() => {
     if (!user?.id) {

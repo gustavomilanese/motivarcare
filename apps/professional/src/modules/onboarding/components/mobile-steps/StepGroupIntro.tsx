@@ -117,7 +117,7 @@ export function ProfessionalRegisterIntro(props: { language: AppLanguage; onCont
               <div className="pro-register-phone-pill">
                 {t(props.language, { es: "Estimado mensual", en: "Monthly estimate", pt: "Estimativa mensal" })}
               </div>
-              <strong className="pro-register-phone-amount">$5.173,75</strong>
+              <strong className="pro-register-phone-amount">USD 5.173,75</strong>
               <p className="pro-register-phone-subtitle">
                 {t(props.language, { es: "Ganancia proyectada", en: "Projected earnings", pt: "Ganhos projetados" })}
               </p>
@@ -129,7 +129,7 @@ export function ProfessionalRegisterIntro(props: { language: AppLanguage; onCont
                     <strong>Ana Martinez</strong>
                     <small>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</small>
                   </div>
-                  <em>$125</em>
+                  <em>USD 125</em>
                 </div>
                 <div className="pro-register-phone-row">
                   <span className="avatar b">L</span>
@@ -137,7 +137,7 @@ export function ProfessionalRegisterIntro(props: { language: AppLanguage; onCont
                     <strong>Lucas Garcia</strong>
                     <small>{t(props.language, { es: "3 sesiones", en: "3 sessions", pt: "3 sessoes" })}</small>
                   </div>
-                  <em>$95</em>
+                  <em>USD 95</em>
                 </div>
                 <div className="pro-register-phone-row">
                   <span className="avatar c">M</span>
@@ -145,7 +145,7 @@ export function ProfessionalRegisterIntro(props: { language: AppLanguage; onCont
                     <strong>Maria Suarez</strong>
                     <small>{t(props.language, { es: "5 sesiones", en: "5 sessions", pt: "5 sessoes" })}</small>
                   </div>
-                  <em>$160</em>
+                  <em>USD 160</em>
                 </div>
               </div>
             </div>

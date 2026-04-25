@@ -123,7 +123,7 @@ export function ProfessionalAuthFlow(props: {
   currency: SupportedCurrency;
   onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
-  onPrepareOnboardingSync: (draft: OnboardingPatchDraft) => void;
+  onPrepareOnboardingSync: (draft: OnboardingPatchDraft, meta?: { displayFullName?: string }) => void;
   /** Reanudar onboarding web tras verificar el mail (mismo navegador). */
   webOnboardingResume?: {
     initialWizardStep: number;
@@ -154,6 +154,8 @@ export function ProfessionalAuthFlow(props: {
     discount8: "0",
     discount12: "0"
   });
+  /** Cotización usada para derivar ARS desde USD (paso precio móvil); el API también recalcula al persistir. */
+  const [mobileUsdArsRate, setMobileUsdArsRate] = useState<number | null>(null);
   const [profilePhotoLoaded, setProfilePhotoLoaded] = useState(false);
   const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
   const [educationData, setEducationData] = useState({
@@ -183,7 +185,9 @@ export function ProfessionalAuthFlow(props: {
     }
     const displayName =
       joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim() || mobilePreAuthSession.user.fullName;
-    props.onPrepareOnboardingSync(buildMobileDraft());
+    const nameMeta =
+      displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : undefined;
+    props.onPrepareOnboardingSync(buildMobileDraft(), nameMeta);
     props.onAuthSuccess({
       token: mobilePreAuthSession.token,
       user: {
@@ -301,30 +305,34 @@ export function ProfessionalAuthFlow(props: {
     setAuthEntryMode("register-web");
   }, []);
 
-  const buildMobileDraft = () => buildPatchDraftFromMobileInputs({
-    aboutText,
-    therapyDescriptionText,
-    selectedSpecialization,
-    selectedExperience,
-    selectedPracticeHours,
-    problemFocusSelections: workAreasByProblem,
-    workLanguages,
-    summaryText,
-    priceData,
-    personalData: {
-      graduationYear: personalData.graduationYear,
-      gender: personalData.gender,
-      birthCountry: personalData.birthCountry,
-      residencyCountry: personalData.residencyCountry
-    },
-    educationData: {
-      institution: educationData.institution,
-      specialty: educationData.specialty,
-      startYear: educationData.startYear,
-      graduationYear: educationData.graduationYear
-    },
-    photoUrl: registerProfilePhotoDataUrl
-  });
+  const buildMobileDraft = () =>
+    buildPatchDraftFromMobileInputs(
+      {
+        aboutText,
+        therapyDescriptionText,
+        selectedSpecialization,
+        selectedExperience,
+        selectedPracticeHours,
+        problemFocusSelections: workAreasByProblem,
+        workLanguages,
+        summaryText,
+        priceData,
+        personalData: {
+          graduationYear: personalData.graduationYear,
+          gender: personalData.gender,
+          birthCountry: personalData.birthCountry,
+          residencyCountry: personalData.residencyCountry
+        },
+        educationData: {
+          institution: educationData.institution,
+          specialty: educationData.specialty,
+          startYear: educationData.startYear,
+          graduationYear: educationData.graduationYear
+        },
+        photoUrl: registerProfilePhotoDataUrl
+      },
+      { usdArsRate: mobileUsdArsRate }
+    );
 
   if (authEntryMode === "welcome") {
     return (
@@ -391,7 +399,9 @@ export function ProfessionalAuthFlow(props: {
             const parts = splitFullNameToFirstLast(payload.fullName);
             return { ...current, firstName: parts.firstName, lastName: parts.lastName };
           });
-          props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload));
+          props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload), {
+            displayFullName: payload.fullName.trim()
+          });
           setRegisterBackMode("register-web");
           const displayName = payload.fullName.trim() || meta.user.fullName;
           props.onAuthSuccess({
@@ -716,6 +726,7 @@ export function ProfessionalAuthFlow(props: {
         currency={props.currency}
         value={priceData}
         onChange={setPriceData}
+        onUsdArsRate={setMobileUsdArsRate}
         onBack={() => setAuthEntryMode("register-summary")}
         onContinue={() => setAuthEntryMode("register-photo-info")}
       />
@@ -808,7 +819,11 @@ export function ProfessionalAuthFlow(props: {
           if (mobilePreAuthSession) {
             completeMobileOnboardingWithSession();
           } else {
-            props.onPrepareOnboardingSync(buildMobileDraft());
+            const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
+            props.onPrepareOnboardingSync(
+              buildMobileDraft(),
+              mobileName.length >= 2 ? { displayFullName: mobileName } : undefined
+            );
             setAuthEntryMode("register");
           }
         }}
@@ -835,7 +850,11 @@ export function ProfessionalAuthFlow(props: {
           if (mobilePreAuthSession) {
             completeMobileOnboardingWithSession();
           } else {
-            props.onPrepareOnboardingSync(buildMobileDraft());
+            const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
+            props.onPrepareOnboardingSync(
+              buildMobileDraft(),
+              mobileName.length >= 2 ? { displayFullName: mobileName } : undefined
+            );
             setAuthEntryMode("register");
           }
         }}

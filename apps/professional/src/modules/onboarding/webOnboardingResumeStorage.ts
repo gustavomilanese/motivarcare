@@ -13,6 +13,8 @@ export const WEB_ONBOARDING_PENDING_AUTH_STORAGE_KEY = "therapy_pro_web_onboardi
 const RESUME_STEP_KEY = "therapy_pro_web_onboarding_resume_step";
 /** UI y navegación post-verify: seguir onboarding web (no solo login). */
 const POST_VERIFY_CONTINUE_WEB_ONBOARDING_KEY = "therapy_pro_post_verify_continue_web_onboarding";
+/** Nombre real del profesional capturado en onboarding; sobrevive refresh hasta que PATCH /api/auth/me confirme. */
+const PENDING_DISPLAY_FULL_NAME_KEY = "therapy_pro_onboarding_pending_display_full_name";
 
 /** Avisar a la pestaña del wizard que el mail ya fue verificado (Gmail suele abrir otra pestaña). */
 export const WEB_ONBOARDING_BROADCAST_CHANNEL = "motivarcare-pro-web-onboarding";
@@ -117,6 +119,40 @@ export function readContinueWebOnboardingAfterEmailVerify(): boolean {
     return window.localStorage.getItem(POST_VERIFY_CONTINUE_WEB_ONBOARDING_KEY) === "1";
   } catch {
     return false;
+  }
+}
+
+/** Guarda el nombre real del onboarding para reintentar PATCH /api/auth/me si el sync inicial falla. */
+export function savePendingOnboardingDisplayFullName(value: string): void {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) {
+    return;
+  }
+  try {
+    window.localStorage.setItem(PENDING_DISPLAY_FULL_NAME_KEY, trimmed);
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function readPendingOnboardingDisplayFullName(): string | null {
+  try {
+    const raw = window.localStorage.getItem(PENDING_DISPLAY_FULL_NAME_KEY);
+    if (!raw) {
+      return null;
+    }
+    const trimmed = raw.trim();
+    return trimmed.length >= 2 ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingOnboardingDisplayFullName(): void {
+  try {
+    window.localStorage.removeItem(PENDING_DISPLAY_FULL_NAME_KEY);
+  } catch {
+    // ignore
   }
 }
 

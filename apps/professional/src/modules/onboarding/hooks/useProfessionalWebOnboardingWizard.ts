@@ -16,7 +16,12 @@ import {
   fetchSessionPriceBoundsDual,
   type SessionPriceBoundsDual
 } from "../../app/services/sessionPriceBounds";
-import { WEB_SPECIALIZATION_CANONICAL } from "../constants/webSpecializationOptions";
+import {
+  fetchPublicUsdArsRate,
+  roundSessionPriceArsFromUsd
+} from "../../app/services/usdArsPublicRate";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
+import { PROFESSIONAL_THERAPY_MODALITY_EXCLUSIVE_ES } from "../constants/professionalTherapyModalityOptions";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
 import type { PendingWebOnboardingAuth } from "../webOnboardingResumeStorage.js";
 import {
@@ -25,9 +30,19 @@ import {
   WEB_ONBOARDING_STEP_AFTER_EMAIL_VERIFY
 } from "../webOnboardingResumeStorage.js";
 
-function yearsExperienceFromGraduationYearClient(graduationYear: number): number {
-  const y = new Date().getFullYear() - graduationYear;
-  return Math.max(0, Math.min(80, y));
+/** Aproximación de años de práctica para matching cuando no hay año de egreso en onboarding web. */
+function yearsExperienceApproxFromExperienceBand(band: string): number | null {
+  const map: Record<string, number> = {
+    "Menos de 1 ano": 0,
+    "1-3 anos": 2,
+    "3-6 anos": 5,
+    "6-10 anos": 8,
+    "10-15 anos": 12,
+    "15-20 anos": 18,
+    "Mas de 20 anos": 25
+  };
+  const v = map[band.trim()];
+  return v === undefined ? null : v;
 }
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -46,6 +61,16 @@ function placeholderFullNameFromEmail(_email: string): string {
 
 function joinWebOnboardingFullName(firstName: string, lastName: string): string {
   return [firstName, lastName].map((s) => s.trim()).filter(Boolean).join(" ").trim();
+}
+
+/** Fusiona checklist de modalidades con el texto «Cómo trabajo» para `ProfessionalProfile.therapeuticApproach`. */
+function combineTherapeuticApproach(modalities: string[], methodology: string): string {
+  const header = modalities.map((m) => m.trim()).filter(Boolean).join("; ");
+  const body = methodology.trim();
+  if (header && body) {
+    return `${header}\n\n${body}`;
+  }
+  return header || body;
 }
 
 export type WebOnboardingSessionState = {
@@ -89,6 +114,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [seenInterstitials, setSeenInterstitials] = useState<Record<number, true>>({});
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
   const [sessionPriceBounds, setSessionPriceBounds] = useState<SessionPriceBoundsDual | null>(null);
+  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
+  const [usdArsRateError, setUsdArsRateError] = useState(false);
   const [pricingStepError, setPricingStepError] = useState("");
   const [credentialsStepError, setCredentialsStepError] = useState("");
   const [credentialsChecking, setCredentialsChecking] = useState(false);
@@ -102,6 +129,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [devVerifyLoading, setDevVerifyLoading] = useState(false);
   const [devVerifyError, setDevVerifyError] = useState("");
 
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+
   const webPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const webVideoInputRef = useRef<HTMLInputElement | null>(null);
   const webDiplomaInputRef = useRef<HTMLInputElement | null>(null);
@@ -113,14 +142,13 @@ export function useProfessionalWebOnboardingWizard(input: {
     firstName: "",
     lastName: "",
     professionalTitle: "",
-    graduationYear: "",
-    specialization: "",
     experienceBand: "",
     practiceBand: "",
     gender: "",
     birthCountry: "",
     residencyCountry: "",
     focusAreas: [] as string[],
+    therapyModalities: [] as string[],
     languages: [] as string[],
     about: "",
     methodology: "",
@@ -148,14 +176,24 @@ export function useProfessionalWebOnboardingWizard(input: {
     stripeDocPreview: "",
     stripeVerificationStarted: false,
     email: "",
+    emailConfirm: "",
     password: "",
-    passwordConfirm: ""
+    passwordConfirm: "",
+    turnstileToken: ""
   });
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: currentYear - 1969 }, (_, index) => String(currentYear - index));
   }, []);
+
+  const computedSessionPriceArs = useMemo(() => {
+    const usd = Number(form.sessionPriceUsd || "0");
+    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
+      return null;
+    }
+    return roundSessionPriceArsFromUsd(usd, usdArsRate);
+  }, [form.sessionPriceUsd, usdArsRate]);
 
   const labels = [
     t(input.language, { es: "Correo y contraseña", en: "Email and password", pt: "E-mail e senha" }),
@@ -178,9 +216,9 @@ export function useProfessionalWebOnboardingWizard(input: {
     }),
     null,
     t(input.language, {
-      es: "Precio por sesión y descuentos por paquetes de 4, 8 y 12 sesiones (límites máximos definidos por la plataforma).",
-      en: "Per-session price and discounts for 4, 8, and 12 session bundles (platform maximums apply).",
-      pt: "Preco por sessao e descontos para pacotes de 4, 8 e 12 sessoes (limites maximos da plataforma)."
+      es: "Precio por sesión y descuentos por paquetes de 4, 8 y 12 sesiones.",
+      en: "Per-session price and discounts for 4, 8, and 12 session bundles.",
+      pt: "Preco por sessao e descontos para pacotes de 4, 8 e 12 sessoes."
     }),
     t(input.language, {
       es: "Cargue los recursos visuales que refuerzan confianza en su perfil.",
@@ -195,11 +233,6 @@ export function useProfessionalWebOnboardingWizard(input: {
     })
   ] as const;
 
-  const webSpecializationOptions = WEB_SPECIALIZATION_CANONICAL.map((item) => ({
-    value: item.value,
-    label: t(input.language, { es: item.es, en: item.en, pt: item.pt })
-  }));
-
   const interstitialByStep: Partial<Record<number, WebInterstitialContent>> = {
     2: {
       kicker: t(input.language, { es: "Proyección real", en: "Real projection", pt: "Projecao real" }),
@@ -211,12 +244,20 @@ export function useProfessionalWebOnboardingWizard(input: {
       }),
       cta: t(input.language, { es: "Vamos", en: "Let's go", pt: "Vamos" }),
       visual: "earnings",
-      metric: "$5.173,75",
+      metric: t(input.language, {
+        es: "USD 5.173,75",
+        en: "USD 5,173.75",
+        pt: "USD 5.173,75"
+      }),
       metricCaption: t(input.language, { es: "ganancia proyectada", en: "projected earnings", pt: "ganho projetado" })
     },
     3: {
       kicker: t(input.language, { es: "Primeras reservas", en: "First bookings", pt: "Primeiras reservas" }),
-      title: t(input.language, { es: "Los psicólogos reciben clientes rápido", en: "Psychologists receive clients fast", pt: "Psicologos recebem clientes rapido" }),
+      title: t(input.language, {
+        es: "Recibí tus pacientes en forma inmediata",
+        en: "Receive patients right away",
+        pt: "Receba seus pacientes na hora"
+      }),
       body: t(input.language, {
         es: "Un perfil claro acelera la confianza y mejora la conversión en las primeras horas.",
         en: "A clear profile speeds up trust and improves conversion in the first hours.",
@@ -257,6 +298,14 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   const update = (patch: Partial<typeof form>) => setForm((current) => ({ ...current, ...patch }));
 
+  /** Referencias estables para Turnstile; ver `rerenderOnCallbackChange` en @marsidev/react-turnstile. */
+  const onTurnstileSuccess = useCallback((token: string) => {
+    setForm((current) => ({ ...current, turnstileToken: token }));
+  }, []);
+  const onTurnstileExpire = useCallback(() => {
+    setForm((current) => ({ ...current, turnstileToken: "" }));
+  }, []);
+
   const resetWebOnboardingSession = () => {
     setWebOnboardingSession(null);
     setResendVerificationMessage("");
@@ -268,6 +317,26 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchPublicUsdArsRate()
+      .then((rate) => {
+        if (!cancelled) {
+          setUsdArsRate(rate);
+          setUsdArsRateError(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsdArsRate(null);
+          setUsdArsRateError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const seed = input.credentialsSeed;
     if (!seed) {
       return;
@@ -275,6 +344,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     setForm((current) => ({
       ...current,
       email: seed.email,
+      emailConfirm: seed.email,
       password: seed.password,
       passwordConfirm: seed.password
     }));
@@ -282,11 +352,17 @@ export function useProfessionalWebOnboardingWizard(input: {
 
   useEffect(() => {
     setPricingStepError("");
-  }, [form.sessionPriceArs, form.sessionPriceUsd, step]);
+  }, [form.sessionPriceUsd, step]);
 
   useEffect(() => {
     setCredentialsStepError("");
-  }, [form.email, form.password, form.passwordConfirm]);
+  }, [form.email, form.emailConfirm, form.password, form.passwordConfirm, form.turnstileToken]);
+
+  const turnstileSiteKey =
+    typeof import.meta !== "undefined" && import.meta.env?.VITE_TURNSTILE_SITE_KEY
+      ? String(import.meta.env.VITE_TURNSTILE_SITE_KEY).trim()
+      : "";
+  const requiresTurnstileWidget = turnstileSiteKey.length > 0;
 
   const updateDiploma = (
     index: number,
@@ -338,6 +414,24 @@ export function useProfessionalWebOnboardingWizard(input: {
     update({ focusAreas: next });
   };
 
+  const toggleTherapyModality = (value: string) => {
+    setForm((current) => {
+      const exclusive = PROFESSIONAL_THERAPY_MODALITY_EXCLUSIVE_ES;
+      let next = [...current.therapyModalities];
+      if (value === exclusive) {
+        const only = next.includes(exclusive) ? [] : [exclusive];
+        return { ...current, therapyModalities: only };
+      }
+      next = next.filter((item) => item !== exclusive);
+      if (next.includes(value)) {
+        next = next.filter((item) => item !== value);
+      } else {
+        next.push(value);
+      }
+      return { ...current, therapyModalities: next };
+    });
+  };
+
   const clampDiscountInput = (raw: string, max: number) => {
     const numeric = raw.replace(/\D/g, "");
     if (!numeric) {
@@ -347,7 +441,7 @@ export function useProfessionalWebOnboardingWizard(input: {
   };
 
   const discountedPriceLabelArs = (discount: string) => {
-    const sessionPrice = Number(form.sessionPriceArs || "0");
+    const sessionPrice = computedSessionPriceArs ?? 0;
     if (!sessionPrice) {
       return null;
     }
@@ -372,9 +466,12 @@ export function useProfessionalWebOnboardingWizard(input: {
     return `${value} USD ${t(input.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
   };
 
+  /** Turnstile: no exigimos token en estado para habilitar el botón; se lee con la ref al enviar (getResponse). */
   const stepValidations = [
     Boolean(
       looksLikeEmail(form.email)
+      && looksLikeEmail(form.emailConfirm)
+      && form.email.trim().toLowerCase() === form.emailConfirm.trim().toLowerCase()
       && form.password.trim().length >= 8
       && form.password === form.passwordConfirm
     ),
@@ -386,31 +483,34 @@ export function useProfessionalWebOnboardingWizard(input: {
       form.firstName.trim()
       && form.lastName.trim()
       && form.professionalTitle.trim()
-      && form.graduationYear.trim()
-      && form.specialization
       && form.experienceBand
       && form.practiceBand
       && form.gender
       && form.birthCountry
       && form.residencyCountry.trim().length === 2
       && form.focusAreas.length
+      && form.therapyModalities.length
       && form.languages.length
     ),
     Boolean(form.about.trim() && form.methodology.trim() && form.shortDescription.trim()),
     Boolean(
       (() => {
-        const ars = Number(form.sessionPriceArs || "0");
         const usd = Number(form.sessionPriceUsd || "0");
-        if (ars <= 0 && usd <= 0) {
+        if (usd <= 0) {
+          return false;
+        }
+        const usdMin = sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
+        const usdMax = sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
+        const usdOk = Number.isInteger(usd) && usd >= usdMin && usd <= usdMax;
+        if (!usdOk) {
           return false;
         }
         const arMin = sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
         const arMax = sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
-        const usdMin = sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
-        const usdMax = sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
-        const arOk = ars <= 0 || (Number.isInteger(ars) && ars >= arMin && ars <= arMax);
-        const usdOk = usd <= 0 || (Number.isInteger(usd) && usd >= usdMin && usd <= usdMax);
-        return arOk && usdOk;
+        if (computedSessionPriceArs !== null) {
+          return computedSessionPriceArs >= arMin && computedSessionPriceArs <= arMax;
+        }
+        return true;
       })()
     ),
     true,
@@ -451,6 +551,29 @@ export function useProfessionalWebOnboardingWizard(input: {
       setResendVerificationMessage("");
       setResendVerificationError("");
 
+      let resolvedTurnstileToken = "";
+      if (requiresTurnstileWidget) {
+        resolvedTurnstileToken =
+          turnstileRef.current?.getResponse()?.trim() ?? form.turnstileToken.trim();
+        if (!resolvedTurnstileToken && turnstileRef.current) {
+          try {
+            resolvedTurnstileToken = (await turnstileRef.current.getResponsePromise(8000)).trim();
+          } catch {
+            resolvedTurnstileToken = "";
+          }
+        }
+        if (!resolvedTurnstileToken) {
+          setCredentialsStepError(
+            t(input.language, {
+              es: "No pudimos leer la verificación de seguridad. Actualizá la página o intentá de nuevo.",
+              en: "We could not read the security check. Refresh the page or try again.",
+              pt: "Nao foi possivel ler a verificacao de seguranca. Atualize a pagina ou tente de novo."
+            })
+          );
+          return;
+        }
+      }
+
       setCredentialsChecking(true);
         try {
           const available = await checkProfessionalEmailAvailable(form.email);
@@ -487,7 +610,10 @@ export function useProfessionalWebOnboardingWizard(input: {
               password: form.password,
               fullName: placeholderFullNameFromEmail(email),
               role: "PROFESSIONAL",
-              timezone: detectBrowserTimezone()
+              timezone: detectBrowserTimezone(),
+              ...(requiresTurnstileWidget && resolvedTurnstileToken
+                ? { turnstileToken: resolvedTurnstileToken }
+                : {})
             })
           });
 
@@ -562,38 +688,37 @@ export function useProfessionalWebOnboardingWizard(input: {
       }
     }
     if (step === 4) {
-      const ars = Number(form.sessionPriceArs || "0");
       const usd = Number(form.sessionPriceUsd || "0");
       const arMin = sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
       const arMax = sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
       const usdMin = sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD;
       const usdMax = sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD;
-      if (ars <= 0 && usd <= 0) {
+      if (usd <= 0) {
         setPricingStepError(
           t(input.language, {
-            es: "Indicá al menos un precio de lista: ARS (Argentina) o USD (internacional).",
-            en: "Enter at least one list price: ARS (Argentina) or USD (international).",
-            pt: "Informe pelo menos um preco de lista: ARS (Argentina) ou USD (internacional)."
+            es: "Indicá el precio de referencia en USD (moneda de la plataforma).",
+            en: "Enter your reference price in USD (the platform currency).",
+            pt: "Informe o preco de referencia em USD (moeda da plataforma)."
           })
         );
         return;
       }
-      if (ars > 0 && (!Number.isInteger(ars) || ars < arMin || ars > arMax)) {
+      if (!Number.isInteger(usd) || usd < usdMin || usd > usdMax) {
         setPricingStepError(
           t(input.language, {
-            es: `Precio ARS: entero entre ${arMin} y ${arMax}, o dejá vacío.`,
-            en: `ARS price: whole pesos between ${arMin} and ${arMax}, or leave blank.`,
-            pt: `Preco ARS: inteiro entre ${arMin} e ${arMax}, ou deixe em branco.`
+            es: `Precio USD: entero entre ${usdMin} y ${usdMax}.`,
+            en: `USD price: whole dollars between ${usdMin} and ${usdMax}.`,
+            pt: `Preco USD: inteiro entre ${usdMin} e ${usdMax}.`
           })
         );
         return;
       }
-      if (usd > 0 && (!Number.isInteger(usd) || usd < usdMin || usd > usdMax)) {
+      if (computedSessionPriceArs !== null && (computedSessionPriceArs < arMin || computedSessionPriceArs > arMax)) {
         setPricingStepError(
           t(input.language, {
-            es: `Precio USD: entero entre ${usdMin} y ${usdMax}, o dejá vacío.`,
-            en: `USD price: whole dollars between ${usdMin} and ${usdMax}, or leave blank.`,
-            pt: `Preco USD: inteiro entre ${usdMin} e ${usdMax}, ou deixe em branco.`
+            es: `Con el tipo de cambio actual, el precio en pesos quedaría fuera del rango permitido (${arMin}–${arMax} ARS). Ajustá el monto en USD.`,
+            en: `At the current exchange rate, the peso price would fall outside the allowed range (${arMin}–${arMax} ARS). Adjust your USD amount.`,
+            pt: `Com a cotacao atual, o preco em pesos ficaria fora do intervalo (${arMin}–${arMax} ARS). Ajuste o valor em USD.`
           })
         );
         return;
@@ -762,9 +887,7 @@ export function useProfessionalWebOnboardingWizard(input: {
       console.error("finishWebOnboarding: missing webOnboardingSession");
       return;
     }
-    const gy = form.graduationYear.trim() ? Number(form.graduationYear) : null;
-    const yearsExperience =
-      gy !== null && Number.isFinite(gy) ? yearsExperienceFromGraduationYearClient(gy) : null;
+    const yearsExperience = yearsExperienceApproxFromExperienceBand(form.experienceBand);
     const resolvedFullName =
       joinWebOnboardingFullName(form.firstName, form.lastName) || webOnboardingSession.user.fullName;
 
@@ -773,20 +896,21 @@ export function useProfessionalWebOnboardingWizard(input: {
       email: form.email.trim().toLowerCase(),
       password: form.password,
       professionalTitle: form.professionalTitle,
-      specialization: form.specialization,
+      specialization: "",
       experienceBand: form.experienceBand,
       practiceBand: form.practiceBand,
       gender: form.gender,
       birthCountry: form.birthCountry,
       residencyCountry: form.residencyCountry.trim().toUpperCase(),
       focusAreas: form.focusAreas,
+      therapyModalities: form.therapyModalities,
       languages: form.languages,
-      graduationYear: gy !== null && Number.isFinite(gy) ? gy : null,
+      graduationYear: null,
       yearsExperience,
       bio: form.about,
       shortDescription: form.shortDescription,
-      therapeuticApproach: form.methodology,
-      sessionPriceArs: form.sessionPriceArs.trim() ? Number(form.sessionPriceArs) : null,
+      therapeuticApproach: combineTherapeuticApproach(form.therapyModalities, form.methodology),
+      sessionPriceArs: computedSessionPriceArs,
       sessionPriceUsd: form.sessionPriceUsd.trim() ? Number(form.sessionPriceUsd) : null,
       discount4: form.discount4.trim() ? Number(form.discount4) : null,
       discount8: form.discount8.trim() ? Number(form.discount8) : null,
@@ -856,7 +980,9 @@ export function useProfessionalWebOnboardingWizard(input: {
     stepSubtitles,
     form,
     years,
-    webSpecializationOptions,
+    requiresTurnstileWidget,
+    turnstileSiteKey,
+    turnstileRef,
     webPhotoInputRef,
     webVideoInputRef,
     webDiplomaInputRef,
@@ -868,9 +994,13 @@ export function useProfessionalWebOnboardingWizard(input: {
     addDiploma,
     toggleLanguage,
     toggleFocusArea,
+    toggleTherapyModality,
     clampDiscountInput,
     discountedPriceLabelArs,
     discountedPriceLabelUsd,
+    computedSessionPriceArs,
+    usdArsRate,
+    usdArsRateError,
     canContinue,
     handleContinue,
     sessionPriceBounds,
@@ -878,6 +1008,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     credentialsStepError,
     credentialsChecking,
     registerInFlight,
+    onTurnstileSuccess,
+    onTurnstileExpire,
     webOnboardingSession,
     resetWebOnboardingSession,
     resendVerificationEmail,

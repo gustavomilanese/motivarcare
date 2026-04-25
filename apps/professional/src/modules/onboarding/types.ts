@@ -65,6 +65,8 @@ export interface ProfessionalWebOnboardingPayload {
   birthCountry: string;
   residencyCountry: string;
   focusAreas: string[];
+  /** Enfoques declarados en identidad (valores ES canónicos; se fusionan en `therapeuticApproach`). */
+  therapyModalities: string[];
   languages: string[];
   /** Año de egreso del título principal (onboarding). */
   graduationYear: number | null;

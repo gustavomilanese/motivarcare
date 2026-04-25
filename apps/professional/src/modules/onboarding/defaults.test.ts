@@ -19,20 +19,22 @@ describe("onboarding defaults", () => {
       fullName: "Gustavo Milanese",
       email: "gus@example.com",
       password: "SecurePass123",
-      professionalTitle: "Psicologo",
-      specialization: "Psicologo",
+      professionalTitle: "Psicólogo",
+      specialization: "",
       experienceBand: "6-10 anos",
       practiceBand: "1000-3000 horas",
       gender: "Hombre",
       birthCountry: "Uruguay",
       residencyCountry: "UY",
       focusAreas: ["Ansiedad"],
+      therapyModalities: ["Terapia cognitivo-conductual (TCC)"],
       languages: ["Espanol", "Ingles"],
-      graduationYear: 2016,
-      yearsExperience: 10,
+      graduationYear: null,
+      yearsExperience: 8,
       bio: "Bio de prueba",
       shortDescription: "Descripcion corta",
-      therapeuticApproach: "Enfoque integrador",
+      therapeuticApproach:
+        "Terapia cognitivo-conductual (TCC)\n\nEnfoque integrador",
       sessionPriceArs: 40_000,
       sessionPriceUsd: 50,
       discount4: 10,
@@ -61,7 +63,8 @@ describe("onboarding defaults", () => {
     expect(draft.sessionPriceUsd).toBe(50);
     expect(draft.stripeVerified).toBe(true);
     expect(draft.visible).toBe(false);
-    expect(draft.graduationYear).toBe(2016);
+    expect(draft.graduationYear).toBeNull();
+    expect(draft.specialization).toBeNull();
     expect(draft.residencyCountry).toBe("UY");
     expect(draft.diplomas).toHaveLength(1);
   });
@@ -108,6 +111,44 @@ describe("onboarding defaults", () => {
     expect(draft.visible).toBe(false);
     expect(draft.stripeVerified).toBe(false);
     expect(draft.diplomas).toHaveLength(1);
+  });
+
+  it("deriva sessionPriceArs desde USD cuando se pasa cotización ARS por USD", () => {
+    const draft = buildPatchDraftFromMobileInputs(
+      {
+        aboutText: "Sobre mi",
+        therapyDescriptionText: "Descripcion terapia",
+        selectedSpecialization: "Psicologo",
+        selectedExperience: "6-10 anos",
+        selectedPracticeHours: "1000-3000 horas",
+        workLanguages: ["Espanol"],
+        summaryText: "Resumen",
+        priceData: {
+          sessionPriceArs: "",
+          sessionPrice: "50",
+          discount4: "10",
+          discount8: "8",
+          discount12: "12"
+        },
+        personalData: {
+          graduationYear: "2018",
+          gender: "Hombre",
+          birthCountry: "Uruguay",
+          residencyCountry: "UY"
+        },
+        educationData: {
+          institution: "Universidad X",
+          specialty: "Lic. Psicologia",
+          startYear: "2014",
+          graduationYear: "2018"
+        },
+        photoUrl: null
+      },
+      { usdArsRate: 1400 }
+    );
+
+    expect(draft.sessionPriceUsd).toBe(50);
+    expect(draft.sessionPriceArs).toBe(70_000);
   });
 
   it("mapea problemFocusSelections del cuestionario móvil a focusAreas", () => {

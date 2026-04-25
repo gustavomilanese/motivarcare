@@ -18,6 +18,7 @@ import {
   sendEmailVerificationEmail
 } from "./emailVerification.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
+import { verifyTurnstileResponse } from "../../lib/turnstile.js";
 
 const residencyCountryIso2Schema = z
   .string()
@@ -35,7 +36,9 @@ const registerSchema = z
     timezone: z.string().optional(),
     isTestUser: z.boolean().optional(),
     /** Obligatorio si `role === PATIENT`: país de residencia (ISO2); el mercado se deriva de acá. */
-    residencyCountry: residencyCountryIso2Schema.optional()
+    residencyCountry: residencyCountryIso2Schema.optional(),
+    /** Cloudflare Turnstile (registro profesional web cuando `TURNSTILE_SECRET_KEY` está definido). */
+    turnstileToken: z.string().trim().max(4096).optional()
   })
   .superRefine((data, ctx) => {
     if (data.role === "PATIENT" && !data.residencyCountry) {
@@ -403,6 +406,25 @@ authRouter.post("/register", async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return res.status(409).json({ error: "Email already in use" });
+  }
+
+  const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
+  if (parsed.data.role === "PROFESSIONAL" && turnstileSecret) {
+    const token = (parsed.data.turnstileToken ?? "").trim();
+    if (!token) {
+      return res.status(400).json({ error: "Security verification required" });
+    }
+    const cfConnecting = req.headers["cf-connecting-ip"];
+    const remoteip =
+      typeof cfConnecting === "string" && cfConnecting.trim()
+        ? cfConnecting.trim()
+        : typeof req.ip === "string"
+          ? req.ip
+          : undefined;
+    const turnstileOk = await verifyTurnstileResponse({ secret: turnstileSecret, token, remoteip });
+    if (!turnstileOk) {
+      return res.status(400).json({ error: "Security verification failed" });
+    }
   }
 
   const passwordHash = hashPassword(parsed.data.password);

@@ -3,6 +3,7 @@ import type {
   ProfessionalMobileOnboardingInputs,
   ProfessionalWebOnboardingPayload
 } from "./types";
+import { roundSessionPriceArsFromUsd } from "../app/services/usdArsPublicRate";
 
 function trimOrNull(value: string): string | null {
   const trimmed = value.trim();
@@ -95,12 +96,22 @@ export function buildPatchDraftFromWebPayload(payload: ProfessionalWebOnboarding
   };
 }
 
-export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboardingInputs): OnboardingPatchDraft {
+export function buildPatchDraftFromMobileInputs(
+  inputs: ProfessionalMobileOnboardingInputs,
+  options?: { usdArsRate?: number | null }
+): OnboardingPatchDraft {
   const gyPersonal = parseNumericOrNull(inputs.personalData.graduationYear);
   const gyEdu = parseNumericOrNull(inputs.educationData.graduationYear);
   const graduationYear = gyPersonal ?? gyEdu;
   const yearsExperience =
     graduationYear !== null ? yearsExperienceFromGraduationYear(graduationYear) : null;
+
+  const usdList = parseNumericOrNull(inputs.priceData.sessionPrice ?? "");
+  let sessionPriceArs = parseNumericOrNull(inputs.priceData.sessionPriceArs ?? "");
+  const fx = options?.usdArsRate;
+  if (fx != null && Number.isFinite(fx) && usdList !== null && usdList > 0) {
+    sessionPriceArs = roundSessionPriceArsFromUsd(usdList, fx);
+  }
 
   return {
     bio: trimOrNull(inputs.aboutText),
@@ -127,8 +138,8 @@ export function buildPatchDraftFromMobileInputs(inputs: ProfessionalMobileOnboar
         : null,
     languages: inputs.workLanguages.length ? inputs.workLanguages : [],
     shortDescription: trimOrNull(inputs.summaryText),
-    sessionPriceArs: parseNumericOrNull(inputs.priceData.sessionPriceArs ?? ""),
-    sessionPriceUsd: parseNumericOrNull(inputs.priceData.sessionPrice),
+    sessionPriceArs,
+    sessionPriceUsd: usdList,
     discount4: parseNumericOrNull(inputs.priceData.discount4),
     discount8: parseNumericOrNull(inputs.priceData.discount8),
     discount12: parseNumericOrNull(inputs.priceData.discount12),

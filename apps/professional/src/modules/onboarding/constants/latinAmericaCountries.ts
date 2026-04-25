@@ -1,5 +1,3 @@
-import { allQuestionnaireValueEs } from "./professionalClientProblemQuestionnaire";
-
 /** Países de Latinoamérica y el Caribe (habitual en onboarding). Valor = etiqueta en español. */
 export const LATIN_AMERICA_COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "Antigua y Barbuda", label: "Antigua y Barbuda" },
@@ -38,7 +36,11 @@ export const LATIN_AMERICA_COUNTRY_OPTIONS: { value: string; label: string }[] =
   { value: "Venezuela", label: "Venezuela" }
 ].sort((a, b) => a.label.localeCompare(b.label, "es"));
 
-const ATTENTION_AREA_BASE_ES = [
+/**
+ * Áreas de atención (onboarding web y edición de perfil). Valores canónicos en español.
+ * Alineado con motivos de consulta del paciente hasta "Crecimiento personal", con LGBTIQ+ y Psicosomáticos.
+ */
+export const ATTENTION_AREA_OPTIONS_ES: string[] = [
   "Ansiedad",
   "Autoestima",
   "Pareja",
@@ -48,20 +50,26 @@ const ATTENTION_AREA_BASE_ES = [
   "Trauma",
   "Infancia y adolescencia",
   "Estrés laboral",
-  "Identidad y diversidad",
+  "LGBTIQ+",
   "Alimentación",
   "Dolor crónico",
   "TOC",
-  "Mindfulness"
-] as const;
-
-/** Áreas de atención en perfil + opciones del cuestionario de problemáticas (onboarding profesional). */
-export const ATTENTION_AREA_OPTIONS_ES: string[] = (() => {
-  const merged: string[] = [...ATTENTION_AREA_BASE_ES];
-  for (const v of allQuestionnaireValueEs()) {
-    if (!merged.includes(v)) {
-      merged.push(v);
-    }
-  }
-  return merged;
-})();
+  "Mindfulness",
+  "Ataques de pánico",
+  "Estrés",
+  "Problemas de autoestima",
+  "Dificultad en relaciones",
+  "Rupturas amorosas o duelos",
+  "Problemas laborales o burnout",
+  "Toma de decisiones importantes",
+  "Falta de motivación o propósito",
+  "Problemas de sueño",
+  "Manejo de emociones",
+  "Consumo o conductas adictivas",
+  "Experiencias difíciles del pasado",
+  "Crisis personales",
+  "Soledad",
+  "Dificultad para controlar impulsos",
+  "Crecimiento personal",
+  "Psicosomáticos"
+];

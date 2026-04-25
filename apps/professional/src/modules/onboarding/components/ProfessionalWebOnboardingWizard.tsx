@@ -1,14 +1,11 @@
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useMemo } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import {
-  FALLBACK_SESSION_PRICE_MAX_ARS,
-  FALLBACK_SESSION_PRICE_MAX_USD,
-  FALLBACK_SESSION_PRICE_MIN_ARS,
-  FALLBACK_SESSION_PRICE_MIN_USD
-} from "../../app/services/sessionPriceBounds";
 import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
+import { PROFESSIONAL_THERAPY_MODALITY_ROWS } from "../constants/professionalTherapyModalityOptions";
+import { WEB_PROFESSIONAL_TITLE_OPTIONS_ES } from "../constants/webProfessionalTitleOptions";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
 import {
   type WebInterstitialContent,
@@ -50,7 +47,9 @@ export function ProfessionalWebOnboardingWizard(props: {
     stepSubtitles,
     form,
     years,
-    webSpecializationOptions,
+    requiresTurnstileWidget,
+    turnstileSiteKey,
+    turnstileRef,
     webPhotoInputRef,
     webVideoInputRef,
     webDiplomaInputRef,
@@ -62,16 +61,20 @@ export function ProfessionalWebOnboardingWizard(props: {
     addDiploma,
     toggleLanguage,
     toggleFocusArea,
+    toggleTherapyModality,
     clampDiscountInput,
     discountedPriceLabelArs,
     discountedPriceLabelUsd,
+    computedSessionPriceArs,
+    usdArsRateError,
     canContinue,
     handleContinue,
-    sessionPriceBounds,
     pricingStepError,
     credentialsStepError,
     credentialsChecking,
     registerInFlight,
+    onTurnstileSuccess,
+    onTurnstileExpire,
     webOnboardingSession,
     resetWebOnboardingSession,
     resendVerificationEmail,
@@ -87,11 +90,6 @@ export function ProfessionalWebOnboardingWizard(props: {
     setShowCompletionCelebration,
     finishWebOnboarding
   } = wizard;
-
-  const graduationYearOptions = useMemo(() => {
-    const current = new Date().getFullYear();
-    return Array.from({ length: current - 1969 }, (_, index) => String(current - index));
-  }, []);
 
   const genderWebOptions = useMemo(
     () =>
@@ -139,9 +137,9 @@ export function ProfessionalWebOnboardingWizard(props: {
             <strong>{content.metric}</strong>
             <small>{content.metricCaption}</small>
             <ul>
-              <li><span>Ana</span><em>$125</em></li>
-              <li><span>Lucas</span><em>$95</em></li>
-              <li><span>Maria</span><em>$160</em></li>
+              <li><span>Ana</span><em>USD 125</em></li>
+              <li><span>Lucas</span><em>USD 95</em></li>
+              <li><span>Maria</span><em>USD 160</em></li>
             </ul>
           </div>
         </div>
@@ -248,11 +246,31 @@ export function ProfessionalWebOnboardingWizard(props: {
                   type="email"
                   autoComplete="email"
                   value={form.email}
-                  onChange={(event) => update({ email: event.target.value })}
+                  onChange={(event) => update({ email: event.target.value, turnstileToken: "" })}
                   placeholder={t(props.language, {
                     es: "nombre@ejemplo.com",
                     en: "name@example.com",
                     pt: "nome@exemplo.com"
+                  })}
+                />
+              </label>
+              <label>
+                <span>
+                  {t(props.language, {
+                    es: "Repetir correo electrónico",
+                    en: "Confirm email",
+                    pt: "Confirmar e-mail"
+                  })}
+                </span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={form.emailConfirm}
+                  onChange={(event) => update({ emailConfirm: event.target.value, turnstileToken: "" })}
+                  placeholder={t(props.language, {
+                    es: "Igual que el correo anterior",
+                    en: "Same as above",
+                    pt: "Igual ao e-mail acima"
                   })}
                 />
               </label>
@@ -284,6 +302,32 @@ export function ProfessionalWebOnboardingWizard(props: {
                   })}
                 />
               </label>
+              {requiresTurnstileWidget && turnstileSiteKey ? (
+                <div className="pro-web-turnstile-wrap">
+                  <span className="pro-web-field-label-like">
+                    {t(props.language, {
+                      es: "Verificación de seguridad",
+                      en: "Security check",
+                      pt: "Verificacao de seguranca"
+                    })}
+                  </span>
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={turnstileSiteKey}
+                    rerenderOnCallbackChange
+                    onSuccess={onTurnstileSuccess}
+                    onExpire={onTurnstileExpire}
+                  />
+                </div>
+              ) : import.meta.env.DEV ? (
+                <p className="pro-web-price-bounds-hint">
+                  {t(props.language, {
+                    es: "Dev: opcional — definí VITE_TURNSTILE_SITE_KEY (front) y TURNSTILE_SECRET_KEY (API) para exigir captcha en registro.",
+                    en: "Dev: optional — set VITE_TURNSTILE_SITE_KEY and API TURNSTILE_SECRET_KEY to require captcha on signup.",
+                    pt: "Dev: opcional — defina VITE_TURNSTILE_SITE_KEY e TURNSTILE_SECRET_KEY na API para exigir captcha."
+                  })}
+                </p>
+              ) : null}
               {credentialsStepError ? <p className="pro-web-field-error">{credentialsStepError}</p> : null}
             </div>
           ) : null}
@@ -378,31 +422,30 @@ export function ProfessionalWebOnboardingWizard(props: {
                   <input value={form.lastName} onChange={(event) => update({ lastName: event.target.value })} />
                 </label>
               </div>
-              <label><span>Título profesional</span><input value={form.professionalTitle} onChange={(event) => update({ professionalTitle: event.target.value })} /></label>
               <label>
-                <span>{t(props.language, { es: "Especialización", en: "Specialization", pt: "Especializacao" })}</span>
+                <span>{t(props.language, { es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}</span>
                 <select
                   className="pro-web-select-full"
-                  value={form.specialization}
-                  onChange={(event) => update({ specialization: event.target.value })}
+                  value={form.professionalTitle}
+                  onChange={(event) => update({ professionalTitle: event.target.value })}
                 >
                   <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                  {webSpecializationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                  {WEB_PROFESSIONAL_TITLE_OPTIONS_ES.map((title) => (
+                    <option key={title} value={title}>
+                      {title === "Psicólogo"
+                        ? t(props.language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })
+                        : title === "Psiquiatra"
+                          ? t(props.language, { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" })
+                          : title === "Sexólogo"
+                            ? t(props.language, { es: "Sexólogo", en: "Sexologist", pt: "Sexologo" })
+                            : title === "Coach"
+                              ? t(props.language, { es: "Coach", en: "Coach", pt: "Coach" })
+                              : t(props.language, { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" })}
+                    </option>
                   ))}
                 </select>
               </label>
-              <label>
-                <span>{t(props.language, { es: "Año de egreso", en: "Graduation year", pt: "Ano de formatura" })}</span>
-                <select value={form.graduationYear} onChange={(event) => update({ graduationYear: event.target.value })}>
-                  <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
-                  {graduationYearOptions.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </label>
-              {form.graduationYear.trim() ? (
-                <div className="pro-web-identity-rest">
+              <div className="pro-web-identity-rest">
                   <div className="pro-web-grid-3">
                     <label>
                       <span>Experiencia (rango)</span>
@@ -481,7 +524,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                       ))}
                     </div>
                   </div>
-                  <div className="pro-web-focus-areas pro-web-focus-areas--last">
+                  <div className="pro-web-focus-areas">
                     <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
                     <div className="pro-web-checks">
                       {ATTENTION_AREA_OPTIONS_ES.map((area) => (
@@ -496,8 +539,40 @@ export function ProfessionalWebOnboardingWizard(props: {
                       ))}
                     </div>
                   </div>
-                </div>
-              ) : null}
+                  <div className="pro-web-therapy-block">
+                    <span>
+                      {t(props.language, {
+                        es: "Tipo de terapia",
+                        en: "Type of therapy",
+                        pt: "Tipo de terapia"
+                      })}
+                    </span>
+                    <p className="pro-web-therapy-hint">
+                      {t(props.language, {
+                        es: "Marcá una o varias. Coincide con los enfoques que ofrecés en tu práctica.",
+                        en: "Select one or more approaches you offer in your practice.",
+                        pt: "Marque uma ou mais abordagens que voce oferece na sua pratica."
+                      })}
+                    </p>
+                    <div className="pro-web-therapy-grid" role="group">
+                      {PROFESSIONAL_THERAPY_MODALITY_ROWS.map((row) => {
+                        const selected = form.therapyModalities.includes(row.valueEs);
+                        return (
+                          <button
+                            key={row.valueEs}
+                            type="button"
+                            className={`pro-web-therapy-card ${selected ? "active" : ""}`}
+                            aria-pressed={selected}
+                            onClick={() => toggleTherapyModality(row.valueEs)}
+                          >
+                            <span className="pro-web-therapy-card-title">{t(props.language, row.title)}</span>
+                            <span className="pro-web-therapy-card-sub">{t(props.language, row.subtext)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+              </div>
             </div>
           ) : null}
 
@@ -534,26 +609,44 @@ export function ProfessionalWebOnboardingWizard(props: {
             <div className="pro-web-fields">
               <p className="pro-web-price-bounds-hint">
                 {t(props.language, {
-                  es: `Definí dos ofertas de lista (al menos una obligatoria): pacientes en Argentina verán ARS; en mercado USD (u otros) verán USD. ARS: ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS} enteros. USD: ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD} enteros.`,
-                  en: `Set two list prices (at least one required): patients in Argentina see ARS; in USD markets they see USD. ARS: ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS} whole pesos. USD: ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD} whole dollars.`,
-                  pt: `Dois precos de lista (pelo menos um): ARS ${sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS}–${sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS}; USD ${sessionPriceBounds?.usd.min ?? FALLBACK_SESSION_PRICE_MIN_USD}–${sessionPriceBounds?.usd.max ?? FALLBACK_SESSION_PRICE_MAX_USD}.`
+                  es: "Acá deberás definir el valor de tu sesión de referencia en dólares. Será usada para mostrar tu oferta a los pacientes. Luego podrás definir descuentos por paquetes de sesiones.",
+                  en: "Here you’ll set your reference session price in US dollars. It will be used to show your offer to patients. You can then define discounts for session packages.",
+                  pt: "Aqui voce define o valor de referencia da sessao em dolares. Sera usado para mostrar sua oferta aos pacientes. Depois podera definir descontos em pacotes de sessoes."
                 })}
               </p>
+              {usdArsRateError ? (
+                <p className="pro-web-field-error" role="status">
+                  {t(props.language, {
+                    es: "No pudimos obtener el tipo de cambio en este momento. Podés seguir; al guardar el perfil volveremos a intentarlo.",
+                    en: "We couldn’t load the exchange rate right now. You can continue; we’ll try again when saving your profile.",
+                    pt: "Nao foi possivel obter a cotacao agora. Voce pode continuar; ao salvar o perfil tentaremos de novo."
+                  })}
+                </p>
+              ) : null}
               {pricingStepError ? <p className="pro-web-field-error">{pricingStepError}</p> : null}
               <label>
-                <span>{t(props.language, { es: "Precio por sesión (ARS)", en: "Price per session (ARS)", pt: "Preco por sessao (ARS)" })}</span>
+                <span>
+                  {t(props.language, {
+                    es: "Precio de referencia por sesión (USD)",
+                    en: "Reference price per session (USD)",
+                    pt: "Preco de referencia por sessao (USD)"
+                  })}
+                </span>
                 <input
-                  value={form.sessionPriceArs}
-                  onChange={(event) => update({ sessionPriceArs: event.target.value.replace(/\D/g, "") })}
-                />
-              </label>
-              <label>
-                <span>{t(props.language, { es: "Precio por sesión (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
-                <input
+                  inputMode="numeric"
                   value={form.sessionPriceUsd}
                   onChange={(event) => update({ sessionPriceUsd: event.target.value.replace(/\D/g, "") })}
                 />
               </label>
+              {computedSessionPriceArs !== null ? (
+                <p className="pro-web-price-ars-preview">
+                  {t(props.language, {
+                    es: `Equivalente orientativo en pesos: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS (tipo de cambio oficial, redondeado a 1.000 ARS).`,
+                    en: `Indicative ARS equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS (official rate, rounded up to ARS 1,000).`,
+                    pt: `Equivalente indicativo em pesos: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS (cotacao oficial, arredondado a 1.000 ARS).`
+                  })}
+                </p>
+              ) : null}
               <div className="pro-web-discount-packages">
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</strong>
@@ -567,10 +660,11 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {(() => {
-                    const bits = [discountedPriceLabelArs(form.discount4), discountedPriceLabelUsd(form.discount4)].filter(Boolean);
-                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
-                  })()}
+                  <small className="pro-web-discount-total">
+                    {[discountedPriceLabelArs(form.discount4), discountedPriceLabelUsd(form.discount4)]
+                      .filter(Boolean)
+                      .join(" · ") || "\u00A0"}
+                  </small>
                 </article>
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "8 sesiones", en: "8 sessions", pt: "8 sessoes" })}</strong>
@@ -584,10 +678,11 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {(() => {
-                    const bits = [discountedPriceLabelArs(form.discount8), discountedPriceLabelUsd(form.discount8)].filter(Boolean);
-                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
-                  })()}
+                  <small className="pro-web-discount-total">
+                    {[discountedPriceLabelArs(form.discount8), discountedPriceLabelUsd(form.discount8)]
+                      .filter(Boolean)
+                      .join(" · ") || "\u00A0"}
+                  </small>
                 </article>
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "12 sesiones", en: "12 sessions", pt: "12 sessoes" })}</strong>
@@ -601,10 +696,11 @@ export function ProfessionalWebOnboardingWizard(props: {
                     />
                     <em>%</em>
                   </label>
-                  {(() => {
-                    const bits = [discountedPriceLabelArs(form.discount12), discountedPriceLabelUsd(form.discount12)].filter(Boolean);
-                    return bits.length ? <small>{bits.join(" · ")}</small> : null;
-                  })()}
+                  <small className="pro-web-discount-total">
+                    {[discountedPriceLabelArs(form.discount12), discountedPriceLabelUsd(form.discount12)]
+                      .filter(Boolean)
+                      .join(" · ") || "\u00A0"}
+                  </small>
                 </article>
               </div>
             </div>
