@@ -86,11 +86,11 @@ export const INTAKE_CHAT_QUESTIONS: readonly IntakeChatQuestionDef[] = [
     id: "therapistPreferences",
     label: "Preferencias sobre el/la psicólogo/a (género, edad, experiencia LGBTIQ+)",
     intent:
-      "Saber si tiene preferencia de género (Sin preferencia/Hombre/Mujer), edad aproximada (Sin preferencia, 25 a 35, 35 a 45, 45 a 55, 55 a 65, 65 a 75, 75 o más) y experiencia LGBTIQ+ (Sin preferencia / Sí, prefiero experiencia o formación en temas LGBTIQ+ / No es un criterio para mí). Si dice 'sin preferencia general', usar 'No tengo preferencias'.",
+      'Preguntá las 3 sub-preferencias en TURNOS SEPARADOS, no en un solo mensaje. Antes de la primera, podés ofrecer un atajo: "¿Tenés alguna preferencia sobre el/la profesional, o te da igual? Si te da igual seguimos." — si dice que no tiene preferencias, registrá "No tengo preferencias" y avanzá a la siguiente pregunta. Si dice que sí, ahí preguntá una a una en este orden:\n  Turno 1 → Género: opciones "Sin preferencia", "Hombre", "Mujer".\n  Turno 2 → Edad aproximada: opciones "Sin preferencia", "25 a 35", "35 a 45", "45 a 55", "55 a 65", "65 a 75", "75 o más".\n  Turno 3 → Experiencia LGBTIQ+: opciones "Sin preferencia", "Sí, prefiero experiencia o formación en temas LGBTIQ+", "No es un criterio para mí".\nEn cada sub-turno, listá las opciones una por línea con guión "-".',
     type: "composite-therapist-prefs",
     required: true,
     extractionHint:
-      'Si el paciente no tiene preferencias, devolver exactamente: "No tengo preferencias". Caso contrario, devolver tres líneas separadas por "\\n" con prefijos exactos: "Género del/de la psicólogo/a: <valor>", "Edad aproximada del/de la psicólogo/a: <valor>", "Experiencia en temas LGBTIQ+: <valor>". Cada valor debe ser uno de los del enunciado.'
+      'Si el paciente no tiene preferencias, devolver exactamente: "No tengo preferencias". Caso contrario, devolver tres líneas separadas por "\\n" con prefijos exactos: "Género del/de la psicólogo/a: <valor>", "Edad aproximada del/de la psicólogo/a: <valor>", "Experiencia en temas LGBTIQ+: <valor>". Cada valor debe ser uno de los del enunciado. Podés ir actualizando este campo en sub-turnos sucesivos a medida que el paciente responde cada eje.'
   },
   {
     id: "preferredApproach",
