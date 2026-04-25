@@ -10718,11 +10718,17 @@ button.sessions-balance {
 .intake-card--chat {
   width: min(720px, 100%);
   margin-inline: auto;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto auto auto;
+  /* flex en lugar de grid: así sólo .intake-chat-messages crece, y los hijos
+   * condicionales (banner, error, quota) no descolocan filas. */
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   max-height: calc(var(--viewport-h) - max(40px, var(--safe-top)) - max(48px, var(--safe-bottom)));
   padding: 18px 18px 20px;
+}
+
+.intake-card--chat .intake-chat-messages {
+  flex: 1 1 auto;
 }
 
 .intake-chat-header {
@@ -10979,7 +10985,7 @@ button.sessions-balance {
 .intake-chat-input-actions {
   display: flex;
   justify-content: flex-end;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
