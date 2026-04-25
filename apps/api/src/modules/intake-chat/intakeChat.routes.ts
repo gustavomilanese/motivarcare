@@ -17,6 +17,17 @@ const sendMessageSchema = z.object({
   message: z.string().trim().min(1).max(4000)
 });
 
+const submitSchema = z
+  .object({
+    /**
+     * "full" (default): exige todas las preguntas required.
+     * "early": el paciente quiere ver profesionales ya — el backend rellena defaults
+     * para los campos no respondidos (mínimo: mainReason + país).
+     */
+    mode: z.enum(["full", "early"]).optional()
+  })
+  .optional();
+
 /**
  * Mapper genérico de errores del dominio del intake-chat a respuestas HTTP.
  * Centralizado para que los handlers queden cortos y consistentes.
@@ -150,8 +161,19 @@ intakeChatRouter.post("/sessions/:id/submit", requireAuth, async (req: Authentic
   if (!patientId) {
     return sendApiError({ res, status: 403, code: "FORBIDDEN", message: "Solo pacientes pueden enviar el intake" });
   }
+  const parsedBody = submitSchema.safeParse(req.body ?? {});
+  if (!parsedBody.success) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Body inválido",
+      details: parsedBody.error.flatten()
+    });
+  }
+  const mode = parsedBody.data?.mode ?? "full";
   try {
-    const result = await submitSession({ patientId, sessionId: req.params.id });
+    const result = await submitSession({ patientId, sessionId: req.params.id, mode });
     /**
      * Shape alineado con `POST /api/profiles/me/intake` (`SubmitIntakeApiResponse`)
      * para que el cliente pueda reusar el mismo handler post-intake (riskLevel,

@@ -88,6 +88,7 @@ Estimado: **2-3 días de trabajo del agente.** Plan acordado:
 - [ ] **PR-B3 (cuando arranque liquidación):** propagar el FX snapshot de `PatientPackagePurchase` a `FinanceSessionRecord` cuando se consume una sesión. Permite reportes "cuánto generó cada profesional en USD reales" sin re-cotizar.
 - [ ] **Outbox worker separado:** hoy corre embebido en el mismo proceso de la API. Cuando crezca el volumen de eventos (Stripe + MP + emails), separar a un proceso dedicado (`npm run start:outbox` ya existe, falta crear el servicio en Railway).
 - [ ] **Sociedad legal MotivarCare:** si todavía no está, abrir SAS/SRL antes de empezar a cobrar en producción. Afecta a quién factura MP, a quién pertenece la cuenta bancaria, etc.
+- [ ] **Chat IA — pregunta de síntomas explícita.** Hoy el modelo extrae síntomas vía `mainReason` (ansiedad, depresión, adicciones, soledad, etc.). Evaluar si conviene agregar una pregunta dedicada a "síntomas físicos / clínicos" como existe en algunos onboardings de salud, separada del motivo de consulta. Verificar primero un par de conversaciones reales para ver si `mainReason` ya cubre suficiente. Si se agrega, replicarla también en el wizard tradicional para mantener paridad.
 
 ---
 

@@ -10991,7 +10991,8 @@ button.sessions-balance {
 }
 
 .intake-chat-send-btn,
-.intake-chat-submit-btn {
+.intake-chat-submit-btn,
+.intake-chat-early-submit-btn {
   appearance: none;
   border: 0;
   border-radius: 12px;
@@ -11042,20 +11043,45 @@ button.sessions-balance {
 }
 
 .intake-chat-send-btn:disabled,
-.intake-chat-submit-btn:disabled {
+.intake-chat-submit-btn:disabled,
+.intake-chat-early-submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Mobile: el botón Enviar ocupa todo el ancho cuando no hay submit; con submit, ambos comparten fila full-width. */
+/* "Ver profesionales con lo que tengo" — variante outline en morado, menos peso visual
+ * que el botón verde "Finalizar" para que no compita con el flujo natural cuando todo
+ * está completo. */
+.intake-chat-early-submit-btn {
+  background: #ffffff;
+  color: #4a3acc;
+  border: 1.5px solid #4a3acc;
+  flex: 1 1 240px;
+}
+
+.intake-chat-early-submit-btn:hover {
+  background: #f3efff;
+  color: #3b2da6;
+  border-color: #3b2da6;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 58, 204, 0.18);
+}
+
+.intake-chat-early-submit-btn:active {
+  background: #ece8ff;
+  transform: translateY(0);
+}
+
+/* Mobile: los botones ocupan todo el ancho cuando hay segundo botón. */
 @media (max-width: 600px) {
   .intake-chat-input-actions {
     justify-content: stretch;
   }
   .intake-chat-send-btn,
-  .intake-chat-submit-btn {
+  .intake-chat-submit-btn,
+  .intake-chat-early-submit-btn {
     flex: 1 1 100%;
     min-height: 48px;
     padding: 14px 18px;

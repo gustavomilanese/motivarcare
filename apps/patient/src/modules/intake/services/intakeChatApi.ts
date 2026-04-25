@@ -19,6 +19,12 @@ export interface IntakeChatSessionDto {
   residencyCountry: string | null;
   isResume: boolean;
   readyToSubmit: boolean;
+  /**
+   * Atajo: el paciente puede saltar al matching aunque le falten respuestas.
+   * El backend rellena defaults conservadores. Mínimo: mainReason + país.
+   * Sólo es true cuando readyToSubmit es false (ahí se muestra el botón "full").
+   */
+  canSubmitEarly: boolean;
   safetyFlagged: boolean;
   safetyAlertMessage?: string;
   quota: {
@@ -82,17 +88,25 @@ export async function sendIntakeChatMessage(
   return result.session;
 }
 
+export type IntakeChatSubmitMode = "full" | "early";
+
 /**
  * POST /api/intake-chat/sessions/:id/submit — finaliza el chat y crea PatientIntake.
+ *
+ * - `mode = "full"` (default): exige todas las preguntas required.
+ * - `mode = "early"`: el paciente quiere ver profesionales ya con lo respondido.
+ *   El backend rellena defaults conservadores (mínimo: mainReason + país).
+ *
  * Respuesta alineada con `SubmitIntakeApiResponse` para reusar el handler post-intake del wizard.
  */
 export async function submitIntakeChatSession(
   sessionId: string,
-  token: string
+  token: string,
+  mode: IntakeChatSubmitMode = "full"
 ): Promise<SubmitIntakeApiResponse> {
   return apiRequest<SubmitIntakeApiResponse>(
     `/api/intake-chat/sessions/${encodeURIComponent(sessionId)}/submit`,
-    { method: "POST", body: JSON.stringify({}) },
+    { method: "POST", body: JSON.stringify({ mode }) },
     token
   );
 }

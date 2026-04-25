@@ -7,7 +7,8 @@ import {
   startOrResumeIntakeChat,
   submitIntakeChatSession,
   type IntakeChatMessageDto,
-  type IntakeChatSessionDto
+  type IntakeChatSessionDto,
+  type IntakeChatSubmitMode
 } from "../services/intakeChatApi";
 
 interface IntakeChatScreenProps {
@@ -132,12 +133,14 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!session || submitting || !session.readyToSubmit) return;
+  const handleSubmit = async (mode: IntakeChatSubmitMode = "full") => {
+    if (!session || submitting) return;
+    if (mode === "full" && !session.readyToSubmit) return;
+    if (mode === "early" && !session.canSubmitEarly) return;
     setSubmitting(true);
     setSendError(null);
     try {
-      const response = await submitIntakeChatSession(session.sessionId, authToken);
+      const response = await submitIntakeChatSession(session.sessionId, authToken, mode);
       await props.onComplete(response);
     } catch (err) {
       setSendError(humanizeError(err, language));
@@ -316,7 +319,7 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
               <button
                 type="button"
                 className="intake-chat-submit-btn"
-                onClick={handleSubmit}
+                onClick={() => handleSubmit("full")}
                 disabled={submitting}
               >
                 {submitting
@@ -325,6 +328,26 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
                       es: "Finalizar y buscar profesionales",
                       en: "Finish and find professionals",
                       pt: "Finalizar e buscar profissionais"
+                    })}
+              </button>
+            ) : session.canSubmitEarly ? (
+              <button
+                type="button"
+                className="intake-chat-early-submit-btn"
+                onClick={() => handleSubmit("early")}
+                disabled={submitting}
+                title={t({
+                  es: "Saltá las preguntas restantes y vé a ver profesionales con lo que ya respondiste.",
+                  en: "Skip the remaining questions and go straight to professionals.",
+                  pt: "Pule as perguntas restantes e veja profissionais com o que já respondeu."
+                })}
+              >
+                {submitting
+                  ? t({ es: "Buscando...", en: "Searching...", pt: "Buscando..." })
+                  : t({
+                      es: "Ver profesionales con lo que tengo",
+                      en: "See professionals with what I have",
+                      pt: "Ver profissionais com o que tenho"
                     })}
               </button>
             ) : null}

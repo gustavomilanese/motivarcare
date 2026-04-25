@@ -38,6 +38,13 @@ export interface IntakeChatSessionDto {
   isResume: boolean;
   /** El service cree que ya tiene todo para hacer submit. */
   readyToSubmit: boolean;
+  /**
+   * El paciente ya puede saltar a ver profesionales aunque le falten respuestas:
+   * tenemos al menos `mainReason` y `residencyCountry`. Las preguntas faltantes
+   * se completan con defaults neutros del lado del backend.
+   * No se setea cuando `readyToSubmit` ya es true (ahí mostramos el botón "full").
+   */
+  canSubmitEarly: boolean;
   /** `true` si el clasificador de seguridad disparó "high" en algún turno. */
   safetyFlagged: boolean;
   /** Mensaje extra para mostrar como banner si safetyFlagged (recursos de crisis). */
@@ -261,9 +268,20 @@ export async function sendMessage(params: { patientId: string; sessionId: string
   };
 }
 
-export async function submitSession(params: { patientId: string; sessionId: string }): Promise<SubmitSessionResult> {
+export async function submitSession(params: {
+  patientId: string;
+  sessionId: string;
+  /**
+   * `"full"` (default): exige todas las preguntas required + país.
+   * `"early"`: el paciente quiere ver profesionales ya. Sólo exigimos `mainReason`
+   * y país; el resto se completa con `EARLY_SUBMIT_DEFAULTS` neutros para que el
+   * matching funcione sin imponer respuestas inventadas.
+   */
+  mode?: "full" | "early";
+}): Promise<SubmitSessionResult> {
   ensureFeatureEnabled();
   const session = await loadOwnedSession(params.patientId, params.sessionId);
+  const mode = params.mode ?? "full";
 
   if (session.status !== "active" && session.status !== "safety_blocked") {
     throw new IntakeChatError("SESSION_NOT_ACTIVE", `Session status is ${session.status}`);
@@ -271,13 +289,27 @@ export async function submitSession(params: { patientId: string; sessionId: stri
 
   await ensurePatientHasNoIntake(params.patientId);
 
-  const answers = parseExtractedAnswers(session.extractedAnswers);
-  if (!hasAllRequired(answers)) {
-    const missing = INTAKE_CHAT_REQUIRED_QUESTION_IDS.filter((id) => !answers[id]);
-    throw new IntakeChatError("INCOMPLETE_ANSWERS", "Faltan respuestas obligatorias", { missing });
-  }
+  const rawAnswers = parseExtractedAnswers(session.extractedAnswers);
   if (!session.residencyCountry) {
     throw new IntakeChatError("MISSING_RESIDENCY", "Falta país de residencia");
+  }
+
+  let answers: ExtractedIntakeAnswers;
+  if (mode === "early") {
+    if (!rawAnswers.mainReason) {
+      throw new IntakeChatError(
+        "INCOMPLETE_ANSWERS",
+        "Necesitamos al menos saber qué te trae a buscar terapia para mostrarte profesionales",
+        { missing: ["mainReason"] }
+      );
+    }
+    answers = applyEarlySubmitDefaults(rawAnswers);
+  } else {
+    if (!hasAllRequired(rawAnswers)) {
+      const missing = INTAKE_CHAT_REQUIRED_QUESTION_IDS.filter((id) => !rawAnswers[id]);
+      throw new IntakeChatError("INCOMPLETE_ANSWERS", "Faltan respuestas obligatorias", { missing });
+    }
+    answers = rawAnswers;
   }
 
   const sanitizedAnswers = sanitizeExtractedAnswers(answers);
@@ -430,6 +462,48 @@ function hasAllRequired(answers: ExtractedIntakeAnswers): boolean {
   return INTAKE_CHAT_REQUIRED_QUESTION_IDS.every((id) => Boolean(answers[id]));
 }
 
+/**
+ * Defaults conservadores que se aplican cuando el paciente pide submit "early"
+ * para ir directo al matching sin haber respondido todas las preguntas requeridas.
+ *
+ * Criterios de elección:
+ * - Para preferencias del/de la profesional: marcamos "no tengo preferencias" para
+ *   no sesgar el matching.
+ * - Para enfoque terapéutico: "lo que recomiende el profesional".
+ * - Para experiencia previa: "No, nunca fui a terapia" (el caso más neutro / común).
+ * - Para emocionalidad y red de apoyo: rellenamos con valores intermedios para no
+ *   inflar ni desinflar el riesgo. evaluateIntakeRiskLevel se basa principalmente
+ *   en safetyRisk y emotionalState explícitos.
+ * - Para safetyRisk: "Prefiero no responder" como default conservador. Si en el chat
+ *   se disparó safety high, el sistema ya marcó la sesión como flagged (eso domina).
+ *
+ * `mainReason` y `therapyGoal` no tienen default: si no respondió mainReason,
+ * directamente no permitimos early submit. `therapyGoal` se llena con un genérico
+ * para que el matcher tenga algo, aunque idealmente venga del paciente.
+ */
+const EARLY_SUBMIT_DEFAULTS: Readonly<Record<string, string>> = {
+  therapyGoal: "Sentirme mejor emocionalmente",
+  therapistPreferences: "No tengo preferencias",
+  preferredApproach: "No estoy seguro/a; lo que recomiende el profesional",
+  previousTherapy: "No, nunca fui a terapia",
+  emotionalState: "Con altibajos",
+  supportNetwork: "Prefiero no responder",
+  safetyRisk: "Prefiero no responder"
+};
+
+function applyEarlySubmitDefaults(answers: ExtractedIntakeAnswers): ExtractedIntakeAnswers {
+  /** Lo que ya respondió el paciente pisa al default — no sobreescribimos respuestas reales. */
+  return { ...EARLY_SUBMIT_DEFAULTS, ...answers };
+}
+
+function computeCanSubmitEarly(answers: ExtractedIntakeAnswers, residencyCountry: string | null): boolean {
+  if (!residencyCountry) return false;
+  if (!answers.mainReason) return false;
+  /** Si ya tenemos todo, mostramos el botón "full" (readyToSubmit), no el early. */
+  if (hasAllRequired(answers)) return false;
+  return true;
+}
+
 function normalizeCountryCode(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const trimmed = raw.trim().toUpperCase();
@@ -463,6 +537,7 @@ function toSessionDto(
     residencyCountry: session.residencyCountry,
     isResume: opts.isResume,
     readyToSubmit: hasAllRequired(extracted) && Boolean(session.residencyCountry),
+    canSubmitEarly: computeCanSubmitEarly(extracted, session.residencyCountry),
     safetyFlagged: session.safetyFlagged,
     safetyAlertMessage: session.safetyFlagged ? INTAKE_CHAT_SAFETY_ALERT_MESSAGE : undefined,
     quota: {
