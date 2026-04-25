@@ -135,6 +135,16 @@ export async function hardDeleteUserInTransaction(
     await tx.patientPackagePurchase.deleteMany({ where: { patientId } });
     await tx.consent.deleteMany({ where: { patientId } });
     await tx.aIAuditJob.deleteMany({ where: { patientId } });
+    /**
+     * PatientIntakeChatSession (chat IA conversacional) tiene dos FKs sin cascade:
+     *   - patientId → PatientProfile.id
+     *   - intakeId  → PatientIntake.id (nullable)
+     * Hay que borrarla ANTES que PatientIntake (por la FK al intake) y ANTES que
+     * PatientProfile (por la FK al patient). Si no se hace, el delete del
+     * PatientProfile rompe con FK violation y aborta toda la transacción —
+     * generando en la UI un genérico "No pudimos eliminar el usuario".
+     */
+    await tx.patientIntakeChatSession.deleteMany({ where: { patientId } });
     await tx.patientIntake.deleteMany({ where: { patientId } });
     await tx.patientProfile.delete({ where: { id: patientId } });
   }
