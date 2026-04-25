@@ -23,6 +23,8 @@ export interface ProfessionalDirectoryApiItem {
   languages: string[];
   yearsExperience: number | null;
   sessionPriceUsd: number | null;
+  /** ARS persistido por el backend (derivado en write-time del precio USD del profesional). */
+  sessionPriceArs?: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   stripeVerified: boolean;

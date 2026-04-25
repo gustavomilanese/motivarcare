@@ -79,6 +79,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
 
   const { ordered } = useProfessionalMatching({
     professionals,
+    patientMarket: props.patientMarket,
     intakeAnswers: props.intakeAnswers,
     language: props.language,
     search: "",
@@ -403,6 +404,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       {bookingFlowEnabled && bookingStep === "summary" && bookingProfessional && bookingSlot ? (
         <BookingSummaryModal
           language={props.language}
+          patientMarket={props.patientMarket}
           timezone={viewerTimezone}
           professional={bookingProfessional}
           slot={bookingSlot}
