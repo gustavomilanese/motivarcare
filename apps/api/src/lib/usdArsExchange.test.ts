@@ -1,5 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getUsdArsRate, roundSessionPriceArsFromUsd } from "./usdArsExchange.js";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import {
+  __resetUsdArsCacheForTests,
+  getUsdArsQuote,
+  getUsdArsRate,
+  roundSessionPriceArsFromUsd
+} from "./usdArsExchange.js";
+
+type FetchSpy = MockInstance<typeof globalThis.fetch>;
 
 describe("roundSessionPriceArsFromUsd", () => {
   it("multiplica USD por la cotización", () => {
@@ -25,9 +32,10 @@ describe("roundSessionPriceArsFromUsd", () => {
 
 describe("getUsdArsRate", () => {
   const originalEnv = process.env.USD_ARS_RATE_OVERRIDE;
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: FetchSpy;
 
   beforeEach(() => {
+    __resetUsdArsCacheForTests();
     fetchSpy = vi.spyOn(globalThis, "fetch");
   });
 
@@ -55,5 +63,55 @@ describe("getUsdArsRate", () => {
     const rate = await getUsdArsRate();
     expect(rate).toBe(1400);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getUsdArsQuote", () => {
+  const originalEnv = process.env.USD_ARS_RATE_OVERRIDE;
+  let fetchSpy: FetchSpy;
+
+  beforeEach(() => {
+    __resetUsdArsCacheForTests();
+    fetchSpy = vi.spyOn(globalThis, "fetch");
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+    if (originalEnv === undefined) {
+      delete process.env.USD_ARS_RATE_OVERRIDE;
+    } else {
+      process.env.USD_ARS_RATE_OVERRIDE = originalEnv;
+    }
+  });
+
+  it("devuelve provider='override' cuando hay USD_ARS_RATE_OVERRIDE válido", async () => {
+    process.env.USD_ARS_RATE_OVERRIDE = "1500";
+    const quote = await getUsdArsQuote();
+    expect(quote.rate).toBe(1500);
+    expect(quote.provider).toBe("override");
+    expect(quote.fetchedAt).toBeInstanceOf(Date);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("devuelve provider='bluelytics' cuando es el primario", async () => {
+    delete process.env.USD_ARS_RATE_OVERRIDE;
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ oficial: { value_avg: 1400 } }), { status: 200 })
+    );
+    const quote = await getUsdArsQuote();
+    expect(quote.rate).toBe(1400);
+    expect(quote.provider).toBe("bluelytics");
+    expect(quote.fetchedAt).toBeInstanceOf(Date);
+  });
+
+  it("cae a dolarapi cuando bluelytics falla (no-200)", async () => {
+    delete process.env.USD_ARS_RATE_OVERRIDE;
+    fetchSpy
+      .mockResolvedValueOnce(new Response("oops", { status: 500 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ venta: 1410 }), { status: 200 }));
+    const quote = await getUsdArsQuote();
+    expect(quote.rate).toBe(1410);
+    expect(quote.provider).toBe("dolarapi");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });

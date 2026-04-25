@@ -300,6 +300,14 @@ model PatientPackagePurchase {
   platformCommissionPercentSnapshot Int?
   trialPlatformPercentSnapshot Int?
   professionalIdSnapshot   String?
+  // FX snapshot: foto del tipo de cambio en el momento del cobro.
+  // Necesario para liquidar al profesional al rate del momento de la transacción,
+  // independiente de cómo se mueva el dólar después. Provider-agnostic (Stripe / Mercado Pago).
+  packagePriceUsdCentsSnapshot Int?       // siempre el equivalente USD (en centavos) al momento del cobro
+  fxArsPerUsdSnapshot      Decimal?       @db.Decimal(12, 4) // ARS por 1 USD usado al cobrar
+  fxProviderSnapshot       String?        // "bluelytics" | "dolarapi" | "override" | "n/a"
+  fxFetchedAt              DateTime?
+  paymentProviderSnapshot  String?        // "stripe" | "mercadopago"
   purchasedAt              DateTime       @default(now())
   patient                  PatientProfile @relation(fields: [patientId], references: [id])
   sessionPackage           SessionPackage @relation(fields: [packageId], references: [id])

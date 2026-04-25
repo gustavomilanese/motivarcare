@@ -5,7 +5,18 @@
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
-let cache: { rate: number; fetchedAt: number } | null = null;
+export type UsdArsProvider = "bluelytics" | "dolarapi" | "override";
+
+export interface UsdArsQuote {
+  /** ARS por 1 USD. */
+  rate: number;
+  /** Origen de la cotización, para snapshot de auditoría. */
+  provider: UsdArsProvider;
+  /** Cuándo se obtuvo la cotización (no la última lectura del caché). */
+  fetchedAt: Date;
+}
+
+let cache: { quote: UsdArsQuote; cachedAtMs: number } | null = null;
 
 function parseEnvOverride(): number | null {
   const raw = process.env.USD_ARS_RATE_OVERRIDE?.trim();
@@ -50,25 +61,49 @@ async function fetchDolarApiOfficial(): Promise<number | null> {
 }
 
 /**
- * Cotización ARS por 1 USD (mayorista/oficial). Cache ~15 min.
+ * Cotización ARS por 1 USD (oficial) con metadata de provider y timestamp.
+ * Cache ~15 min. Útil para snapshot al cobrar (auditoría / liquidación).
  */
-export async function getUsdArsRate(): Promise<number> {
+export async function getUsdArsQuote(): Promise<UsdArsQuote> {
   const override = parseEnvOverride();
   if (override !== null) {
-    return override;
+    return { rate: override, provider: "override", fetchedAt: new Date() };
   }
 
   const now = Date.now();
-  if (cache && now - cache.fetchedAt < CACHE_TTL_MS) {
-    return cache.rate;
+  if (cache && now - cache.cachedAtMs < CACHE_TTL_MS) {
+    return cache.quote;
   }
 
-  const primary = await fetchBluelyticsOfficial();
-  const rate = primary ?? (await fetchDolarApiOfficial());
-  if (rate === null) {
+  const fetchedAt = new Date();
+  const fromBluelytics = await fetchBluelyticsOfficial();
+  let quote: UsdArsQuote | null = null;
+  if (fromBluelytics !== null) {
+    quote = { rate: fromBluelytics, provider: "bluelytics", fetchedAt };
+  } else {
+    const fromDolarApi = await fetchDolarApiOfficial();
+    if (fromDolarApi !== null) {
+      quote = { rate: fromDolarApi, provider: "dolarapi", fetchedAt };
+    }
+  }
+  if (quote === null) {
     throw new Error("USD_ARS_RATE_UNAVAILABLE");
   }
 
-  cache = { rate, fetchedAt: now };
-  return rate;
+  cache = { quote, cachedAtMs: now };
+  return quote;
+}
+
+/**
+ * Compatibilidad con consumidores que solo necesitan el número.
+ * Cache ~15 min.
+ */
+export async function getUsdArsRate(): Promise<number> {
+  const quote = await getUsdArsQuote();
+  return quote.rate;
+}
+
+/** Solo para tests: invalida el caché de cotización. */
+export function __resetUsdArsCacheForTests(): void {
+  cache = null;
 }

@@ -1,4 +1,5 @@
 import type { Market, Prisma } from "@prisma/client";
+import { computeFxSnapshot } from "../lib/fxSnapshot.js";
 import { prisma } from "../lib/prisma.js";
 import { getFinanceRules } from "../modules/finance/finance.service.js";
 
@@ -162,6 +163,12 @@ async function processStripeCheckoutCompleted(payload: unknown) {
         ? Math.round(sessionPackage.priceCents / (1 - discountPct / 100))
         : sessionPackage.priceCents;
 
+    const purchaseCurrency = sessionPackage.currency?.toLowerCase() ?? currency;
+    const fxSnapshot = await computeFxSnapshot({
+      priceCents: sessionPackage.priceCents,
+      currency: purchaseCurrency
+    });
+
     const purchase = await tx.patientPackagePurchase.create({
       data: {
         patientId: patient.id,
@@ -174,10 +181,15 @@ async function processStripeCheckoutCompleted(payload: unknown) {
         packageListPriceCentsSnapshot: listPriceCents,
         packagePriceCentsSnapshot: sessionPackage.priceCents,
         packageDiscountPercentSnapshot: discountPct,
-        packageCurrencySnapshot: sessionPackage.currency?.toLowerCase() ?? currency,
+        packageCurrencySnapshot: purchaseCurrency,
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
-        professionalIdSnapshot: sessionPackage.professionalId ?? null
+        professionalIdSnapshot: sessionPackage.professionalId ?? null,
+        packagePriceUsdCentsSnapshot: fxSnapshot.packagePriceUsdCentsSnapshot,
+        fxArsPerUsdSnapshot: fxSnapshot.fxArsPerUsdSnapshot,
+        fxProviderSnapshot: fxSnapshot.fxProviderSnapshot,
+        fxFetchedAt: fxSnapshot.fxFetchedAt,
+        paymentProviderSnapshot: "stripe"
       }
     });
 
