@@ -86,6 +86,17 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [session?.messages.length, optimisticMessages.length, sending]);
 
+  /**
+   * Devuelve el foco al textarea cuando termina la respuesta del asistente, así el usuario
+   * puede seguir escribiendo sin tener que volver a clickear el input. El focus() en el
+   * finally del handleSend se perdía porque corría antes del re-render que removía disabled.
+   */
+  useEffect(() => {
+    if (!sending && !submitting && !bootstrapping) {
+      inputRef.current?.focus();
+    }
+  }, [sending, submitting, bootstrapping, session?.messages.length]);
+
   const allMessages: DisplayMessage[] = useMemo(() => {
     const serverMessages = session?.messages ?? [];
     return [...serverMessages, ...optimisticMessages];
@@ -285,7 +296,10 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
             })}
             rows={2}
             maxLength={4000}
-            disabled={sending || submitting || turnsExhausted}
+            // Importante: NO deshabilitar mientras `sending` está en true. Si lo deshabilitamos,
+            // el navegador saca el foco y queda mal el UX. El botón Enviar ya bloquea el doble
+            // submit. Sólo bloqueamos cuando finaliza la entrevista o no quedan turnos.
+            disabled={submitting || turnsExhausted}
             autoFocus
           />
           <div className="intake-chat-input-actions">
