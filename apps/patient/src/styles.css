@@ -10677,9 +10677,28 @@ button.sessions-balance {
   border: 1px solid #4a3acc;
 }
 
+/* override del button:hover global, que ponía el fondo casi blanco. */
+.intake-chooser-option-cta--classic:hover {
+  background: #f3efff;
+  color: #3b2da6;
+  border-color: #3b2da6;
+}
+
 .intake-chooser-option-cta--chat {
   background: #4a3acc;
   color: #ffffff;
+  box-shadow: 0 6px 16px rgba(74, 58, 204, 0.25);
+}
+
+/* override del button:hover global, que dejaba el botón blanco e ilegible. */
+.intake-chooser-option-cta--chat:hover {
+  background: #3b2da6;
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(74, 58, 204, 0.35);
+}
+
+.intake-chooser-option-cta--chat:active {
+  background: #322792;
 }
 
 .intake-chooser-option-fineprint {
@@ -10899,6 +10918,11 @@ button.sessions-balance {
   cursor: pointer;
 }
 
+.intake-chat-secondary-btn:hover {
+  background: #f3efff;
+  border-color: #4a3acc;
+}
+
 .intake-chat-quota-blocked {
   background: #fff4e5;
   border: 1px solid #f5b070;
@@ -10915,23 +10939,29 @@ button.sessions-balance {
 
 .intake-chat-input-row {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #ece8ff;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 4px 14px rgba(74, 58, 204, 0.06);
 }
 
 .intake-chat-input {
   appearance: none;
   width: 100%;
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   border: 1px solid #d7d2ff;
-  border-radius: 12px;
-  padding: 10px 12px;
-  resize: vertical;
+  border-radius: 10px;
+  padding: 12px 14px;
+  resize: none;
   min-height: 56px;
-  max-height: 180px;
+  max-height: 140px;
   line-height: 1.45;
   color: #1a1640;
   background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .intake-chat-input:focus {
@@ -10949,7 +10979,8 @@ button.sessions-balance {
 .intake-chat-input-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  align-items: stretch;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -10958,26 +10989,50 @@ button.sessions-balance {
   appearance: none;
   border: 0;
   border-radius: 12px;
-  padding: 10px 16px;
-  font-size: 14px;
+  padding: 12px 22px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  min-height: 44px;
+  min-width: 120px;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .intake-chat-send-btn {
   background: #4a3acc;
   color: #ffffff;
+  box-shadow: 0 6px 16px rgba(74, 58, 204, 0.22);
+}
+
+.intake-chat-send-btn:hover {
+  background: #3b2da6;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(74, 58, 204, 0.32);
+}
+
+.intake-chat-send-btn:active {
+  background: #322792;
+  transform: translateY(0);
 }
 
 .intake-chat-submit-btn {
   background: #1a8f4f;
   color: #ffffff;
+  flex: 1 1 240px;
+  box-shadow: 0 6px 16px rgba(26, 143, 79, 0.22);
 }
 
-.intake-chat-send-btn:hover,
 .intake-chat-submit-btn:hover {
+  background: #157a42;
+  color: #ffffff;
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(26, 143, 79, 0.32);
+}
+
+.intake-chat-submit-btn:active {
+  background: #105f33;
+  transform: translateY(0);
 }
 
 .intake-chat-send-btn:disabled,
@@ -10985,6 +11040,21 @@ button.sessions-balance {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+/* Mobile: el botón Enviar ocupa todo el ancho cuando no hay submit; con submit, ambos comparten fila full-width. */
+@media (max-width: 600px) {
+  .intake-chat-input-actions {
+    justify-content: stretch;
+  }
+  .intake-chat-send-btn,
+  .intake-chat-submit-btn {
+    flex: 1 1 100%;
+    min-height: 48px;
+    padding: 14px 18px;
+    font-size: 16px;
+  }
 }
 
 .intake-chat-footer {
