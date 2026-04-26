@@ -10,8 +10,49 @@ import {
 import { useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
-import type { AdminBlogPost, AdminReview, WebContentResponse, WebLandingSettings } from "../types";
+import type {
+  AdminBlogPost,
+  AdminExercise,
+  AdminExerciseCategory,
+  AdminExerciseDifficulty,
+  AdminReview,
+  WebContentResponse,
+  WebLandingSettings
+} from "../types";
 import { compressImageDataUrl, fileToDataUrl, normalizeWebLandingSettings } from "../utils/media";
+
+const EXERCISE_CATEGORY_OPTIONS: Array<{ value: AdminExerciseCategory; label: string }> = [
+  { value: "respiracion", label: "Respiración" },
+  { value: "postura", label: "Postura" },
+  { value: "grounding", label: "Anclaje (grounding)" },
+  { value: "movimiento", label: "Movimiento" },
+  { value: "relajacion", label: "Relajación" },
+  { value: "mindfulness", label: "Mindfulness" }
+];
+
+const EXERCISE_DIFFICULTY_OPTIONS: Array<{ value: AdminExerciseDifficulty; label: string }> = [
+  { value: "principiante", label: "Principiante" },
+  { value: "intermedio", label: "Intermedio" },
+  { value: "avanzado", label: "Avanzado" }
+];
+
+function exerciseLinesToList(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function listToExerciseLines(items: string[]): string {
+  return Array.isArray(items) ? items.join("\n") : "";
+}
+
+function csvToList(text: string): string[] {
+  return text
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+}
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -88,6 +129,25 @@ export function WebAdminPage({
     seoDescription: "",
     body: ""
   };
+  const emptyExercise: Omit<AdminExercise, "id"> = {
+    slug: "",
+    title: "",
+    summary: "",
+    description: "",
+    category: "respiracion",
+    durationMinutes: 5,
+    difficulty: "principiante",
+    emoji: "🌬️",
+    steps: [],
+    tips: [],
+    benefits: [],
+    contraindications: "",
+    tags: [],
+    status: "published",
+    featured: false,
+    publishedAt: new Date().toISOString().slice(0, 10),
+    sortOrder: 100
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -98,14 +158,19 @@ export function WebAdminPage({
   const [settingsFeedback, setSettingsFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
+  const [exercises, setExercises] = useState<AdminExercise[]>([]);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [reviewForm, setReviewForm] = useState<Omit<AdminReview, "id">>(emptyReview);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState<Omit<AdminBlogPost, "id">>(emptyPost);
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+  const [exerciseForm, setExerciseForm] = useState<Omit<AdminExercise, "id">>(emptyExercise);
   const [reviewSearch, setReviewSearch] = useState("");
   const [postSearch, setPostSearch] = useState("");
+  const [exerciseSearch, setExerciseSearch] = useState("");
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const { activeSection: activeWebSection, scrollToSection: scrollToWebSection } = useStickySectionNavigation(
     WEB_ADMIN_SCROLL_SECTION_IDS,
     { loading: loading || embedded }
@@ -165,6 +230,40 @@ export function WebAdminPage({
               .filter((item) => item.id.length > 0)
           : []
       );
+      setExercises(
+        Array.isArray(data.exercises)
+          ? data.exercises
+              .filter((item): item is AdminExercise => Boolean(item && typeof item === "object"))
+              .map((item) => ({
+                ...item,
+                id: String(item.id ?? ""),
+                slug: String(item.slug ?? ""),
+                title: String(item.title ?? "Sin título"),
+                summary: String(item.summary ?? ""),
+                description: String(item.description ?? ""),
+                category: ((["respiracion", "postura", "grounding", "movimiento", "relajacion", "mindfulness"] as const)
+                  .includes(item.category as AdminExerciseCategory)
+                  ? item.category
+                  : "respiracion") as AdminExerciseCategory,
+                durationMinutes: Number(item.durationMinutes ?? 5),
+                difficulty: ((["principiante", "intermedio", "avanzado"] as const)
+                  .includes(item.difficulty as AdminExerciseDifficulty)
+                  ? item.difficulty
+                  : "principiante") as AdminExerciseDifficulty,
+                emoji: String(item.emoji ?? "🌟"),
+                steps: Array.isArray(item.steps) ? item.steps.map((step) => String(step)) : [],
+                tips: Array.isArray(item.tips) ? item.tips.map((tip) => String(tip)) : [],
+                benefits: Array.isArray(item.benefits) ? item.benefits.map((b) => String(b)) : [],
+                contraindications: String(item.contraindications ?? ""),
+                tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : [],
+                status: (item.status === "draft" ? "draft" : "published") as "draft" | "published",
+                featured: Boolean(item.featured),
+                publishedAt: String(item.publishedAt ?? new Date().toISOString().slice(0, 10)),
+                sortOrder: Number(item.sortOrder ?? 100)
+              }))
+              .filter((item) => item.id.length > 0)
+          : []
+      );
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("web-admin-load", language, raw));
@@ -184,6 +283,7 @@ export function WebAdminPage({
       }
       setIsReviewModalOpen(false);
       setIsPostModalOpen(false);
+      setIsExerciseModalOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -419,6 +519,104 @@ export function WebAdminPage({
     }
   }
 
+  async function saveExercise(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (exerciseForm.title.trim().length < 3) {
+      setError(
+        t(language, {
+          es: "El título del ejercicio es muy corto (mínimo 3 caracteres).",
+          en: "The exercise title is too short (minimum 3 characters).",
+          pt: "O título do exercício é muito curto (mínimo 3 caracteres)."
+        })
+      );
+      return;
+    }
+    if (exerciseForm.slug.trim().length < 2) {
+      setError(
+        t(language, {
+          es: "El slug es muy corto. Usá un identificador como 'respiracion-4-7-8'.",
+          en: "Slug too short. Use an identifier like 'breathing-4-7-8'.",
+          pt: "Slug muito curto. Use um identificador como 'respiracao-4-7-8'."
+        })
+      );
+      return;
+    }
+    if (exerciseForm.summary.trim().length < 10) {
+      setError(
+        t(language, {
+          es: "Agregá un resumen un poco más descriptivo (mínimo 10 caracteres).",
+          en: "Add a slightly longer summary (at least 10 characters).",
+          pt: "Acrescente um resumo um pouco mais descritivo (mínimo 10 caracteres)."
+        })
+      );
+      return;
+    }
+    if (exerciseForm.description.trim().length < 20) {
+      setError(
+        t(language, {
+          es: "La descripción es muy corta (mínimo 20 caracteres).",
+          en: "Description is too short (at least 20 characters).",
+          pt: "A descrição é muito curta (mínimo 20 caracteres)."
+        })
+      );
+      return;
+    }
+    if (exerciseForm.steps.length === 0) {
+      setError(
+        t(language, {
+          es: "Agregá al menos un paso al ejercicio.",
+          en: "Add at least one step to the exercise.",
+          pt: "Adicione pelo menos um passo ao exercício."
+        })
+      );
+      return;
+    }
+
+    const payload = {
+      ...exerciseForm,
+      tags: exerciseForm.tags.filter((tag) => tag.trim().length > 0),
+      steps: exerciseForm.steps.filter((step) => step.trim().length > 0),
+      tips: exerciseForm.tips.filter((tip) => tip.trim().length > 0),
+      benefits: exerciseForm.benefits.filter((benefit) => benefit.trim().length > 0)
+    };
+
+    try {
+      if (editingExerciseId) {
+        await apiRequest(
+          `/api/admin/web-content/exercises/${editingExerciseId}`,
+          { method: "PUT", body: JSON.stringify(payload) },
+          token
+        );
+      } else {
+        await apiRequest("/api/admin/web-content/exercises", { method: "POST", body: JSON.stringify(payload) }, token);
+      }
+      setExerciseForm(emptyExercise);
+      setEditingExerciseId(null);
+      setIsExerciseModalOpen(false);
+      setSuccess(t(language, { es: "Ejercicio guardado.", en: "Exercise saved.", pt: "Exercício salvo." }));
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-exercise-save", language, raw));
+    }
+  }
+
+  async function removeExercise(exerciseId: string) {
+    setError("");
+    setSuccess("");
+    try {
+      await apiRequest(`/api/admin/web-content/exercises/${exerciseId}`, { method: "DELETE" }, token);
+      setSuccess(t(language, { es: "Ejercicio eliminado.", en: "Exercise deleted.", pt: "Exercício removido." }));
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-exercise-delete", language, raw));
+    }
+  }
+
   const filteredReviews = useMemo(() => {
     const search = reviewSearch.trim().toLowerCase();
     if (!search) {
@@ -441,6 +639,29 @@ export function WebAdminPage({
       return values.some((value) => value.includes(search));
     });
   }, [postSearch, posts]);
+
+  const filteredExercises = useMemo(() => {
+    const search = exerciseSearch.trim().toLowerCase();
+    const sorted = [...exercises].sort((a, b) => {
+      if (a.featured !== b.featured) {
+        return Number(b.featured) - Number(a.featured);
+      }
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+      return a.title.localeCompare(b.title);
+    });
+    if (!search) {
+      return sorted;
+    }
+    return sorted.filter((exercise) => {
+      const tagText = Array.isArray(exercise.tags) ? exercise.tags.join(" ") : "";
+      const values = [exercise.title, exercise.slug, exercise.summary, exercise.description, exercise.category, tagText].map((value) =>
+        String(value ?? "").toLowerCase()
+      );
+      return values.some((value) => value.includes(search));
+    });
+  }, [exerciseSearch, exercises]);
 
   const hasPendingSettingsChanges = JSON.stringify(normalizeWebLandingSettings(settings)) !== JSON.stringify(savedSettings);
 
@@ -482,6 +703,22 @@ export function WebAdminPage({
     setEditingPostId(post.id);
     setPostForm({ ...post });
     setIsPostModalOpen(true);
+  }
+
+  function openCreateExerciseModal() {
+    setEditingExerciseId(null);
+    setExerciseForm({
+      ...emptyExercise,
+      publishedAt: new Date().toISOString().slice(0, 10),
+      sortOrder: exercises.length > 0 ? Math.max(...exercises.map((e) => e.sortOrder)) + 10 : 100
+    });
+    setIsExerciseModalOpen(true);
+  }
+
+  function openEditExerciseModal(exercise: AdminExercise) {
+    setEditingExerciseId(exercise.id);
+    setExerciseForm({ ...exercise });
+    setIsExerciseModalOpen(true);
   }
 
   if (loading) {
@@ -702,6 +939,98 @@ export function WebAdminPage({
           </div>
       </CollapsiblePageSection>
 
+      <CollapsiblePageSection
+        sectionId="web-ejercicios"
+        summary={t(language, {
+          es: `Ejercicios (${exercises.length})`,
+          en: `Exercises (${exercises.length})`,
+          pt: `Exercícios (${exercises.length})`
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Catálogo de ejercicios para el portal del paciente: respiración, postura, mindfulness y más.",
+            en: "Exercise catalog for the patient portal: breathing, posture, mindfulness and more.",
+            pt: "Catálogo de exercícios para o portal do paciente: respiração, postura, mindfulness e mais."
+          })}
+        </p>
+        <p className="web-admin-helper-note">
+          {t(language, {
+            es: "Si no cargás ninguno, el portal muestra una selección por defecto de 10 ejercicios. En cuanto guardes uno propio, esa selección por defecto deja de aplicarse.",
+            en: "If none are loaded, the portal shows a default selection of 10 exercises. As soon as you save your own, the default selection stops applying.",
+            pt: "Se nenhum for carregado, o portal exibe uma seleção padrão de 10 exercícios. Assim que você salvar um, a seleção padrão deixa de ser aplicada."
+          })}
+        </p>
+        <div className="web-admin-list-toolbar">
+          <input
+            type="search"
+            placeholder={t(language, {
+              es: "Buscar por título, slug, categoría o tags",
+              en: "Search by title, slug, category or tags",
+              pt: "Buscar por título, slug, categoria ou tags"
+            })}
+            value={exerciseSearch}
+            onChange={(event) => setExerciseSearch(event.target.value)}
+          />
+          <button className="primary" type="button" onClick={openCreateExerciseModal}>
+            {t(language, { es: "Nuevo ejercicio", en: "New exercise", pt: "Novo exercício" })}
+          </button>
+        </div>
+        <div className="stack web-admin-scroll-list">
+          {filteredExercises.length === 0 ? (
+            <p className="web-admin-empty-list">
+              {t(language, {
+                es: "Todavía no hay ejercicios cargados. Creá uno con el botón de arriba.",
+                en: "No exercises loaded yet. Create one using the button above.",
+                pt: "Ainda não há exercícios carregados. Crie um com o botão acima."
+              })}
+            </p>
+          ) : (
+            filteredExercises.map((exercise) => (
+              <article className="user-card web-admin-row-card" key={exercise.id}>
+                <header>
+                  <h3>
+                    <span aria-hidden style={{ marginRight: 8 }}>{exercise.emoji}</span>
+                    {exercise.title}
+                  </h3>
+                  <span className="role-pill">{exercise.status}</span>
+                </header>
+                <p>{exercise.summary}</p>
+                <div className="user-card-footer">
+                  <small>
+                    {EXERCISE_CATEGORY_OPTIONS.find((opt) => opt.value === exercise.category)?.label ?? exercise.category} ·{" "}
+                    {exercise.durationMinutes} min ·{" "}
+                    {EXERCISE_DIFFICULTY_OPTIONS.find((opt) => opt.value === exercise.difficulty)?.label ?? exercise.difficulty}
+                    {exercise.featured ? " · ★" : ""}
+                  </small>
+                  <div className="package-admin-icon-actions">
+                    <button
+                      className="package-admin-icon-button"
+                      type="button"
+                      title={t(language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                      aria-label={t(language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                      onClick={() => openEditExerciseModal(exercise)}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="package-admin-icon-button danger"
+                      type="button"
+                      title={t(language, { es: "Eliminar", en: "Delete", pt: "Excluir" })}
+                      aria-label={t(language, { es: "Eliminar", en: "Delete", pt: "Excluir" })}
+                      onClick={() => void removeExercise(exercise.id)}
+                    >
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </CollapsiblePageSection>
+
       {isReviewModalOpen ? (
         <div className="patient-modal-backdrop" onClick={() => setIsReviewModalOpen(false)}>
           <section className="patient-modal patient-create-modal web-admin-form-modal" onClick={(event) => event.stopPropagation()}>
@@ -818,6 +1147,236 @@ export function WebAdminPage({
               <div className="toolbar-actions">
                 <button className="primary" type="submit">{editingPostId ? "Actualizar articulo" : "Crear articulo"}</button>
                 <button type="button" onClick={() => { setEditingPostId(null); setPostForm(emptyPost); }}>Limpiar</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {isExerciseModalOpen ? (
+        <div className="patient-modal-backdrop" onClick={() => setIsExerciseModalOpen(false)}>
+          <section className="patient-modal web-admin-form-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="patient-modal-head">
+              <h2>
+                {editingExerciseId
+                  ? t(language, { es: "Editar ejercicio", en: "Edit exercise", pt: "Editar exercício" })
+                  : t(language, { es: "Nuevo ejercicio", en: "New exercise", pt: "Novo exercício" })}
+              </h2>
+              <button type="button" onClick={() => setIsExerciseModalOpen(false)}>
+                {t(language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+              </button>
+            </header>
+            <form className="stack" onSubmit={(event) => void saveExercise(event)}>
+              <div className="grid-form">
+                <label>
+                  {t(language, { es: "Título", en: "Title", pt: "Título" })}
+                  <input
+                    value={exerciseForm.title}
+                    onChange={(event) => setExerciseForm((current) => ({ ...current, title: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Slug (URL)", en: "Slug (URL)", pt: "Slug (URL)" })}
+                  <input
+                    value={exerciseForm.slug}
+                    onChange={(event) => setExerciseForm((current) => ({ ...current, slug: event.target.value }))}
+                    placeholder="respiracion-4-7-8"
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Emoji", en: "Emoji", pt: "Emoji" })}
+                  <input
+                    value={exerciseForm.emoji}
+                    onChange={(event) => setExerciseForm((current) => ({ ...current, emoji: event.target.value }))}
+                    placeholder="🌬️"
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Categoría", en: "Category", pt: "Categoria" })}
+                  <select
+                    value={exerciseForm.category}
+                    onChange={(event) =>
+                      setExerciseForm((current) => ({ ...current, category: event.target.value as AdminExerciseCategory }))
+                    }
+                  >
+                    {EXERCISE_CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t(language, { es: "Dificultad", en: "Difficulty", pt: "Dificuldade" })}
+                  <select
+                    value={exerciseForm.difficulty}
+                    onChange={(event) =>
+                      setExerciseForm((current) => ({ ...current, difficulty: event.target.value as AdminExerciseDifficulty }))
+                    }
+                  >
+                    {EXERCISE_DIFFICULTY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t(language, { es: "Duración (min)", en: "Duration (min)", pt: "Duração (min)" })}
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={exerciseForm.durationMinutes}
+                    onChange={(event) =>
+                      setExerciseForm((current) => ({ ...current, durationMinutes: Number(event.target.value) || 1 }))
+                    }
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Orden", en: "Order", pt: "Ordem" })}
+                  <input
+                    type="number"
+                    min={0}
+                    value={exerciseForm.sortOrder}
+                    onChange={(event) =>
+                      setExerciseForm((current) => ({ ...current, sortOrder: Number(event.target.value) || 0 }))
+                    }
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Fecha (YYYY-MM-DD)", en: "Date (YYYY-MM-DD)", pt: "Data (YYYY-MM-DD)" })}
+                  <input
+                    type="date"
+                    value={exerciseForm.publishedAt}
+                    onChange={(event) => setExerciseForm((current) => ({ ...current, publishedAt: event.target.value }))}
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Estado", en: "Status", pt: "Status" })}
+                  <select
+                    value={exerciseForm.status}
+                    onChange={(event) =>
+                      setExerciseForm((current) => ({
+                        ...current,
+                        status: event.target.value as "draft" | "published"
+                      }))
+                    }
+                  >
+                    <option value="published">published</option>
+                    <option value="draft">draft</option>
+                  </select>
+                </label>
+                <label className="inline-toggle">
+                  <input
+                    type="checkbox"
+                    checked={exerciseForm.featured}
+                    onChange={(event) => setExerciseForm((current) => ({ ...current, featured: event.target.checked }))}
+                  />
+                  {t(language, { es: "Destacado", en: "Featured", pt: "Destacado" })}
+                </label>
+              </div>
+              <label>
+                {t(language, { es: "Resumen (en tarjeta)", en: "Summary (on card)", pt: "Resumo (no card)" })}
+                <textarea
+                  rows={2}
+                  value={exerciseForm.summary}
+                  onChange={(event) => setExerciseForm((current) => ({ ...current, summary: event.target.value }))}
+                />
+              </label>
+              <label>
+                {t(language, { es: "Descripción larga", en: "Long description", pt: "Descrição longa" })}
+                <textarea
+                  rows={4}
+                  value={exerciseForm.description}
+                  onChange={(event) => setExerciseForm((current) => ({ ...current, description: event.target.value }))}
+                />
+              </label>
+              <label>
+                {t(language, {
+                  es: "Pasos (uno por línea, en orden)",
+                  en: "Steps (one per line, in order)",
+                  pt: "Passos (um por linha, em ordem)"
+                })}
+                <textarea
+                  rows={6}
+                  value={listToExerciseLines(exerciseForm.steps)}
+                  onChange={(event) =>
+                    setExerciseForm((current) => ({ ...current, steps: exerciseLinesToList(event.target.value) }))
+                  }
+                  placeholder={t(language, {
+                    es: "Sentate cómoda/o…\nApoyá la lengua detrás de los dientes…\nInhalá 4 segundos…",
+                    en: "Sit comfortably…\nPlace tongue behind teeth…\nInhale for 4 seconds…",
+                    pt: "Sente-se confortavelmente…\nPosicione a língua atrás dos dentes…\nInspire por 4 segundos…"
+                  })}
+                />
+              </label>
+              <label>
+                {t(language, {
+                  es: "Tips opcionales (uno por línea)",
+                  en: "Optional tips (one per line)",
+                  pt: "Dicas opcionais (uma por linha)"
+                })}
+                <textarea
+                  rows={3}
+                  value={listToExerciseLines(exerciseForm.tips)}
+                  onChange={(event) =>
+                    setExerciseForm((current) => ({ ...current, tips: exerciseLinesToList(event.target.value) }))
+                  }
+                />
+              </label>
+              <label>
+                {t(language, {
+                  es: "Beneficios (uno por línea)",
+                  en: "Benefits (one per line)",
+                  pt: "Benefícios (um por linha)"
+                })}
+                <textarea
+                  rows={3}
+                  value={listToExerciseLines(exerciseForm.benefits)}
+                  onChange={(event) =>
+                    setExerciseForm((current) => ({ ...current, benefits: exerciseLinesToList(event.target.value) }))
+                  }
+                />
+              </label>
+              <label>
+                {t(language, {
+                  es: "Contraindicaciones (opcional)",
+                  en: "Contraindications (optional)",
+                  pt: "Contraindicações (opcional)"
+                })}
+                <textarea
+                  rows={2}
+                  value={exerciseForm.contraindications}
+                  onChange={(event) =>
+                    setExerciseForm((current) => ({ ...current, contraindications: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                {t(language, { es: "Tags (separadas por coma)", en: "Tags (comma separated)", pt: "Tags (separadas por vírgula)" })}
+                <input
+                  value={exerciseForm.tags.join(", ")}
+                  onChange={(event) => setExerciseForm((current) => ({ ...current, tags: csvToList(event.target.value) }))}
+                />
+              </label>
+              <div className="toolbar-actions">
+                <button className="primary" type="submit">
+                  {editingExerciseId
+                    ? t(language, { es: "Actualizar ejercicio", en: "Update exercise", pt: "Atualizar exercício" })
+                    : t(language, { es: "Crear ejercicio", en: "Create exercise", pt: "Criar exercício" })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingExerciseId(null);
+                    setExerciseForm(emptyExercise);
+                  }}
+                >
+                  {t(language, { es: "Limpiar", en: "Clear", pt: "Limpar" })}
+                </button>
               </div>
             </form>
           </section>

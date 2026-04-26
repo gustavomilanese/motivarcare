@@ -10,6 +10,8 @@ import { ProfilePage } from "./ProfilePage";
 import { ProfessionalsShowcasePage } from "../../professionals-showcase/pages/ProfessionalsShowcasePage";
 import { ArticlesListPage } from "../../articles/pages/ArticlesListPage";
 import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
+import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
+import { ExerciseDetailPage } from "../../exercises/pages/ExerciseDetailPage";
 import { API_BASE } from "../services/api";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
@@ -349,6 +351,22 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <ArticleReaderPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/ejercicios"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <ExercisesListPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/ejercicios/:slug"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <ExerciseDetailPage language={props.state.language} />
         }
       />
       <Route

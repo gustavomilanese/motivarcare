@@ -137,11 +137,22 @@ const updateUserSchema = z
 const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
+const WEB_EXERCISES_KEY = "patient-web-exercises";
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
+const exerciseStatusSchema = z.enum(["draft", "published"]);
+const exerciseDifficultySchema = z.enum(["principiante", "intermedio", "avanzado"]);
+const exerciseCategorySchema = z.enum([
+  "respiracion",
+  "postura",
+  "grounding",
+  "movimiento",
+  "relajacion",
+  "mindfulness"
+]);
 
 const landingSettingsSchema = z.object({
   patientHeroImageUrl: imageSourceSchema.nullable(),
@@ -196,6 +207,33 @@ const blogPostUpdateSchema = blogPostCreateSchema.partial().refine((payload) => 
   message: "At least one field is required"
 });
 const blogPostsCollectionSchema = z.array(blogPostSchema);
+
+const exerciseSchema = z.object({
+  id: z.string().min(2).max(120),
+  slug: z.string().min(2).max(160),
+  title: z.string().min(3).max(160),
+  summary: z.string().min(10).max(500),
+  description: z.string().min(20).max(2_000),
+  category: exerciseCategorySchema,
+  durationMinutes: z.number().int().min(1).max(120),
+  difficulty: exerciseDifficultySchema,
+  emoji: z.string().min(1).max(8),
+  steps: z.array(z.string().min(2).max(600)).min(1).max(20),
+  tips: z.array(z.string().min(2).max(400)).max(12),
+  benefits: z.array(z.string().min(2).max(200)).max(10),
+  contraindications: z.string().max(800),
+  tags: z.array(z.string().min(1).max(40)).max(12),
+  status: exerciseStatusSchema,
+  featured: z.boolean(),
+  publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  sortOrder: z.number().int().min(0).max(100_000)
+});
+
+const exerciseCreateSchema = exerciseSchema.omit({ id: true });
+const exerciseUpdateSchema = exerciseCreateSchema.partial().refine((payload) => Object.keys(payload).length > 0, {
+  message: "At least one field is required"
+});
+const exercisesCollectionSchema = z.array(exerciseSchema);
 const bookingStatusSchema = z.enum(["REQUESTED", "CONFIRMED", "CANCELLED", "COMPLETED", "NO_SHOW"]);
 
 const listPackagesQuerySchema = z.object({
@@ -2608,23 +2646,27 @@ adminRouter.put("/landing-settings", async (req, res) => {
 });
 
 adminRouter.get("/web-content", async (_req, res) => {
-  const [settingsConfig, reviewsConfig, blogConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
-    prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } })
   ]);
 
   const reviewsParsed = reviewsCollectionSchema.safeParse(reviewsConfig?.value);
   const postsParsed = blogPostsCollectionSchema.safeParse(blogConfig?.value);
+  const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
 
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),
     reviews: reviewsParsed.success ? reviewsParsed.data : [],
     blogPosts: postsParsed.success ? postsParsed.data : [],
+    exercises: exercisesParsed.success ? exercisesParsed.data : [],
     updatedAt: {
       settings: settingsConfig?.updatedAt ?? null,
       reviews: reviewsConfig?.updatedAt ?? null,
-      blogPosts: blogConfig?.updatedAt ?? null
+      blogPosts: blogConfig?.updatedAt ?? null,
+      exercises: exercisesConfig?.updatedAt ?? null
     }
   });
 });
@@ -2778,6 +2820,83 @@ adminRouter.delete("/web-content/blog-posts/:postId", async (req, res) => {
     where: { key: WEB_BLOG_POSTS_KEY },
     update: { value: next },
     create: { key: WEB_BLOG_POSTS_KEY, value: next }
+  });
+
+  return res.json({ success: true, updatedAt: saved.updatedAt });
+});
+
+adminRouter.get("/web-content/exercises", async (_req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const parsed = exercisesCollectionSchema.safeParse(config?.value);
+  return res.json({
+    exercises: parsed.success ? parsed.data : [],
+    updatedAt: config?.updatedAt ?? null
+  });
+});
+
+adminRouter.post("/web-content/exercises", async (req, res) => {
+  const parsed = exerciseCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const current = exercisesCollectionSchema.safeParse(config?.value);
+  const exercises = current.success ? current.data : [];
+  const createdExercise = { id: buildId("exercise"), ...parsed.data };
+
+  const next = [createdExercise, ...exercises];
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISES_KEY, value: next }
+  });
+
+  return res.status(201).json({ exercise: createdExercise, updatedAt: saved.updatedAt });
+});
+
+adminRouter.put("/web-content/exercises/:exerciseId", async (req, res) => {
+  const parsed = exerciseUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const current = exercisesCollectionSchema.safeParse(config?.value);
+  const exercises = current.success ? current.data : [];
+  const targetIndex = exercises.findIndex((exercise) => exercise.id === req.params.exerciseId);
+
+  if (targetIndex < 0) {
+    return res.status(404).json({ error: "Exercise not found" });
+  }
+
+  const updatedExercise = { ...exercises[targetIndex], ...parsed.data };
+  const next = [...exercises];
+  next[targetIndex] = updatedExercise;
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISES_KEY, value: next }
+  });
+
+  return res.json({ exercise: updatedExercise, updatedAt: saved.updatedAt });
+});
+
+adminRouter.delete("/web-content/exercises/:exerciseId", async (req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const current = exercisesCollectionSchema.safeParse(config?.value);
+  const exercises = current.success ? current.data : [];
+  const next = exercises.filter((exercise) => exercise.id !== req.params.exerciseId);
+
+  if (next.length === exercises.length) {
+    return res.status(404).json({ error: "Exercise not found" });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISES_KEY, value: next }
   });
 
   return res.json({ success: true, updatedAt: saved.updatedAt });

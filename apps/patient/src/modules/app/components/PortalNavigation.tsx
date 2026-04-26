@@ -83,6 +83,16 @@ function IconNotes(props: { className?: string }) {
   );
 }
 
+function IconExercises(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 21a9 9 0 1 0-9-9" />
+      <path d="M12 8v4l2.5 2.5" />
+      <path d="M3 12h2.5" />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
@@ -152,6 +162,9 @@ export function PortalNavigation(props: {
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/notas">
               {t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/ejercicios">
+              {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="nav-link-with-badge">
@@ -344,6 +357,10 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/notas">
               <IconNotes className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}</span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios">
+              <IconExercises className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="mobile-nav-link-inner">

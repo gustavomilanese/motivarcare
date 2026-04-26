@@ -196,14 +196,47 @@ export interface AdminBlogPost {
   body: string;
 }
 
+export type AdminExerciseCategory =
+  | "respiracion"
+  | "postura"
+  | "grounding"
+  | "movimiento"
+  | "relajacion"
+  | "mindfulness";
+
+export type AdminExerciseDifficulty = "principiante" | "intermedio" | "avanzado";
+
+export interface AdminExercise {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  category: AdminExerciseCategory;
+  durationMinutes: number;
+  difficulty: AdminExerciseDifficulty;
+  emoji: string;
+  steps: string[];
+  tips: string[];
+  benefits: string[];
+  contraindications: string;
+  tags: string[];
+  status: "draft" | "published";
+  featured: boolean;
+  publishedAt: string;
+  sortOrder: number;
+}
+
 export interface WebContentResponse {
   settings: WebLandingSettings;
   reviews: AdminReview[];
   blogPosts: AdminBlogPost[];
+  exercises: AdminExercise[];
   updatedAt: {
     settings: string | null;
     reviews: string | null;
     blogPosts: string | null;
+    exercises: string | null;
   };
 }
 

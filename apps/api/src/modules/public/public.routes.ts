@@ -19,6 +19,7 @@ import {
 import { getFinanceRules } from "../finance/finance.service.js";
 import { getUsdArsRate } from "../../lib/usdArsExchange.js";
 import { env } from "../../config/env.js";
+import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -26,8 +27,19 @@ const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars"
 const LANDING_SETTINGS_KEY = "landing-settings";
 const WEB_REVIEWS_KEY = "landing-web-reviews";
 const WEB_BLOG_POSTS_KEY = "landing-web-blog-posts";
+const WEB_EXERCISES_KEY = "patient-web-exercises";
 const SESSION_PACKAGES_VISIBILITY_KEY = "session-packages-visibility";
 const blogStatusSchema = z.enum(["draft", "published"]);
+const exerciseStatusSchema = z.enum(["draft", "published"]);
+const exerciseDifficultySchema = z.enum(["principiante", "intermedio", "avanzado"]);
+const exerciseCategorySchema = z.enum([
+  "respiracion",
+  "postura",
+  "grounding",
+  "movimiento",
+  "relajacion",
+  "mindfulness"
+]);
 const landingPackagesSlotSchema = z.enum(["patient_main", "patient_v2", "professional"]);
 
 const sessionPackagesChannelSchema = z.object({
@@ -87,6 +99,27 @@ const blogPostSchema = z.object({
   seoTitle: z.string().min(10).max(220),
   seoDescription: z.string().min(20).max(320),
   body: z.string().min(80).max(100_000)
+});
+
+const exerciseSchema = z.object({
+  id: z.string().min(2).max(120),
+  slug: z.string().min(2).max(160),
+  title: z.string().min(3).max(160),
+  summary: z.string().min(10).max(500),
+  description: z.string().min(20).max(2_000),
+  category: exerciseCategorySchema,
+  durationMinutes: z.number().int().min(1).max(120),
+  difficulty: exerciseDifficultySchema,
+  emoji: z.string().min(1).max(8),
+  steps: z.array(z.string().min(2).max(600)).min(1).max(20),
+  tips: z.array(z.string().min(2).max(400)).max(12),
+  benefits: z.array(z.string().min(2).max(200)).max(10),
+  contraindications: z.string().max(800),
+  tags: z.array(z.string().min(1).max(40)).max(12),
+  status: exerciseStatusSchema,
+  featured: z.boolean(),
+  publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  sortOrder: z.number().int().min(0).max(100_000)
 });
 
 function parseLandingSettings(value: unknown) {
@@ -347,14 +380,16 @@ publicRouter.get("/landing-settings", async (_req, res) => {
 });
 
 publicRouter.get("/web-content", async (_req, res) => {
-  const [settingsConfig, reviewsConfig, blogConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
-    prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } })
   ]);
 
   const reviewsParsed = z.array(reviewSchema).safeParse(reviewsConfig?.value);
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
+  const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
 
   const allPosts = postsParsed.success ? postsParsed.data : [];
   const publishedPosts = allPosts
@@ -366,14 +401,32 @@ publicRouter.get("/web-content", async (_req, res) => {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
+  // Si admin todavía no cargó ninguno, devolvemos los 10 ejercicios de fallback (publicados).
+  // En cuanto el admin guarde aunque sea uno, solo se usan los suyos.
+  const storedExercises = exercisesParsed.success ? exercisesParsed.data : [];
+  const exercisesSource: ExercisePost[] = storedExercises.length > 0 ? storedExercises : DEFAULT_EXERCISES;
+  const publishedExercises = exercisesSource
+    .filter((exercise) => exercise.status === "published")
+    .sort((a, b) => {
+      if (a.featured !== b.featured) {
+        return Number(b.featured) - Number(a.featured);
+      }
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
+
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),
     reviews: reviewsParsed.success ? reviewsParsed.data : [],
     blogPosts: publishedPosts,
+    exercises: publishedExercises,
     updatedAt: {
       settings: settingsConfig?.updatedAt ?? null,
       reviews: reviewsConfig?.updatedAt ?? null,
-      blogPosts: blogConfig?.updatedAt ?? null
+      blogPosts: blogConfig?.updatedAt ?? null,
+      exercises: exercisesConfig?.updatedAt ?? null
     }
   });
 });

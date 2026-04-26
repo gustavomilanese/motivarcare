@@ -2690,6 +2690,17 @@ label {
   padding: 12px;
 }
 
+.web-admin-helper-note {
+  margin: 0 0 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(95, 68, 235, 0.06);
+  border: 1px solid rgba(95, 68, 235, 0.18);
+  color: #3d3a78;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .web-admin-pagination {
   margin-top: 2px;
 }

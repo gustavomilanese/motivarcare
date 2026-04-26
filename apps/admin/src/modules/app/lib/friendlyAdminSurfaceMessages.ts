@@ -88,6 +88,8 @@ export type AdminSurfaceContext =
   | "web-admin-blog-image-load"
   | "web-admin-blog-save"
   | "web-admin-blog-delete"
+  | "web-admin-exercise-save"
+  | "web-admin-exercise-delete"
   | "prof-ops-list"
   | "prof-ops-bookings"
   | "prof-ops-update"
@@ -218,6 +220,16 @@ const SURFACE: Record<AdminSurfaceContext, LocalizedText> = {
     es: "No pudimos borrar el artículo. Refrescá y reintentá.",
     en: "We couldn’t delete the article. Refresh and retry.",
     pt: "Nao foi possivel excluir o artigo. Atualize e tente."
+  },
+  "web-admin-exercise-save": {
+    es: "No guardamos el ejercicio. Revisá título, slug, descripción y pasos y reintentá.",
+    en: "Exercise didn’t save. Check title, slug, description and steps and retry.",
+    pt: "O exercício não foi salvo. Confira título, slug, descrição e passos."
+  },
+  "web-admin-exercise-delete": {
+    es: "No pudimos borrar el ejercicio. Refrescá y reintentá.",
+    en: "We couldn’t delete the exercise. Refresh and retry.",
+    pt: "Não foi possível excluir o exercício. Atualize e tente."
   },
   "prof-ops-list": {
     es: "No cargó el listado de profesionales. Reintentá.",
