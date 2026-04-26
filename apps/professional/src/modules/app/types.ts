@@ -9,6 +9,7 @@ export type PortalSection =
   | "/agenda/ajustes"
   | "/pacientes"
   | "/chat"
+  | "/reportes"
   | "/ingresos"
   | "/admin"
   | "/perfil"

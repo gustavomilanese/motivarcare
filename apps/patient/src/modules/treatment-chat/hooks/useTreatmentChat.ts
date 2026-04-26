@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchTreatmentChatConversation,
   sendTreatmentChatMessage,
+  setTreatmentChatConsent,
   type TreatmentChatDto,
   type TreatmentChatMessageDto
 } from "../services/treatmentChatApi";
@@ -31,6 +32,10 @@ interface UseTreatmentChatResult {
   /** Forzar recarga del backend (por ejemplo al reabrir el panel después de mucho rato). */
   reload: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
+  /** Toggle del consentimiento del paciente para compartir resumen con su profesional. */
+  setShareConsent: (consent: boolean) => Promise<void>;
+  /** True mientras se actualiza el toggle (PR-T4). */
+  consentSaving: boolean;
 }
 
 export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentChatResult {
@@ -40,6 +45,7 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
   const [conversation, setConversation] = useState<TreatmentChatDto | null>(null);
   const [sending, setSending] = useState(false);
   const [safetyAlert, setSafetyAlert] = useState<string | null>(null);
+  const [consentSaving, setConsentSaving] = useState(false);
   /**
    * `loadedKey` evita refetchear infinito si auth/enabled rebotan a su valor original.
    * Usamos el token como clave: si el paciente cambió de cuenta (logout + login),
@@ -146,6 +152,38 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
     [authToken]
   );
 
+  /**
+   * Optimistic toggle del consent para que el switch reaccione instantáneo.
+   * Si la API falla revertimos al valor anterior y dejamos un errorMessage
+   * para que la UI lo muestre en el inline alert estándar.
+   */
+  const setShareConsent = useCallback(
+    async (next: boolean): Promise<void> => {
+      if (!authToken) return;
+      setConsentSaving(true);
+      setErrorMessage(null);
+      const previous = conversation?.professionalShareConsent ?? false;
+      setConversation((prev) =>
+        prev ? { ...prev, professionalShareConsent: next } : prev
+      );
+      try {
+        const result = await setTreatmentChatConsent(next, authToken);
+        setConversation((prev) =>
+          prev ? { ...prev, professionalShareConsent: result.consent } : prev
+        );
+      } catch (err) {
+        setConversation((prev) =>
+          prev ? { ...prev, professionalShareConsent: previous } : prev
+        );
+        const msg = err instanceof Error ? err.message : "No pudimos actualizar el consentimiento.";
+        setErrorMessage(msg);
+      } finally {
+        setConsentSaving(false);
+      }
+    },
+    [authToken, conversation?.professionalShareConsent]
+  );
+
   return {
     loadState,
     errorMessage,
@@ -155,6 +193,8 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
     messages: conversation?.messages ?? [],
     safetyAlert,
     reload,
-    sendMessage
+    sendMessage,
+    setShareConsent,
+    consentSaving
   };
 }

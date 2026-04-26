@@ -10582,3 +10582,177 @@ button:disabled {
     min-height: var(--touch-min);
   }
 }
+
+/* ========================================================================== */
+/* Pestaña Reportes (PR-T4): resumen IA del chat de tratamiento.              */
+/* ========================================================================== */
+
+.pro-treatment-reports-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pro-treatment-reports-header h2 {
+  margin: 0 0 6px;
+}
+
+.pro-treatment-reports-subtitle {
+  margin: 0;
+  color: #5f5970;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pro-treatment-reports-empty {
+  margin: 0;
+  padding: 12px 14px;
+  background: #f6f4fb;
+  border-radius: 10px;
+  color: #5f5970;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.pro-treatment-reports-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pro-treatment-reports-item {
+  border: 1px solid #e7e2f0;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+}
+
+.pro-treatment-reports-item--flagged {
+  border-color: #f4b9b9;
+  background: #fff7f6;
+}
+
+.pro-treatment-reports-item--active {
+  border-color: #6e5cc1;
+  box-shadow: 0 4px 14px rgba(110, 92, 193, 0.12);
+}
+
+.pro-treatment-reports-item-button {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 12px;
+}
+
+.pro-treatment-reports-item-button:hover {
+  background: #f9f7fd;
+}
+
+.pro-treatment-reports-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pro-treatment-reports-item-text strong {
+  font-size: 15px;
+  color: #2d2747;
+}
+
+.pro-treatment-reports-item-text span {
+  font-size: 12.5px;
+  color: #5f5970;
+  line-height: 1.4;
+}
+
+.pro-treatment-reports-flag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #ffe5e3;
+  color: #b43c3c !important;
+  font-weight: 600;
+  font-size: 12px !important;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.pro-treatment-reports-detail {
+  border-top: 1px solid #ece7f5;
+  padding-top: 16px;
+}
+
+.pro-treatment-reports-detail-card header h3 {
+  margin: 0 0 4px;
+  color: #2d2747;
+}
+
+.pro-treatment-reports-meta {
+  margin: 0 0 14px;
+  color: #6b6580;
+  font-size: 12px;
+}
+
+.pro-treatment-reports-section {
+  margin: 0 0 18px;
+  padding: 14px;
+  background: #f9f7fd;
+  border-radius: 12px;
+}
+
+.pro-treatment-reports-section--weekly {
+  background: #f1ecff;
+  border: 1px solid #d8cdf3;
+}
+
+.pro-treatment-reports-section h4 {
+  margin: 0 0 10px;
+  color: #463b76;
+  font-size: 14px;
+}
+
+.pro-treatment-reports-summary-block p,
+.pro-treatment-reports-summary-block ul {
+  margin: 0 0 8px;
+  color: #2d2747;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.pro-treatment-reports-summary-block ul {
+  padding-left: 18px;
+}
+
+.pro-treatment-reports-signals strong {
+  color: #b43c3c;
+}
+
+.pro-treatment-reports-signals ul {
+  color: #b43c3c;
+}
+
+.pro-treatment-reports-narrative {
+  font-style: italic;
+  color: #3a3358;
+}
+
+.pro-treatment-reports-disclaimer {
+  margin: 0;
+  padding: 10px 12px;
+  background: #fff8e6;
+  border-left: 3px solid #d6a73a;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #7a5e0d;
+  line-height: 1.45;
+}

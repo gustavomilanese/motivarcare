@@ -3,6 +3,10 @@ import { z } from "zod";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prisma } from "../../lib/prisma.js";
+import {
+  ProfessionalReportError,
+  getOrGenerateProfessionalReport
+} from "../treatment-chat/professionalReports.service.js";
 
 const adminPayloadSchema = z.object({
   taxId: z.string().max(60).optional(),
@@ -598,4 +602,136 @@ professionalRouter.put("/admin", async (req: AuthenticatedRequest, res) => {
   });
 
   return res.json({ message: "Admin data saved", data: config.value });
+});
+
+/* ========================================================================== */
+/* Reportes del chat IA de tratamiento (PR-T4)                                  */
+/* ========================================================================== */
+
+/**
+ * GET /api/professional/treatment-reports
+ *
+ * Lista los pacientes asignados al profesional autenticado que tienen un chat
+ * de tratamiento activo y que dieron consent. Pensado para alimentar la
+ * pestaña "Reportes": cards con un eyebrow del estado y posibilidad de drill
+ * down al resumen.
+ *
+ * No genera resúmenes acá (sería 1 LLM call por paciente). El listado solo
+ * indica qué pacientes tienen reporte disponible y si hay banderitas urgentes.
+ */
+professionalRouter.get("/treatment-reports", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access reports" });
+  }
+
+  /**
+   * Pacientes "del profesional" = pacientes con al menos un booking con este pro.
+   * Es la misma definición que /patients usa: cualquier estado.
+   */
+  const bookings = await prisma.booking.findMany({
+    where: { professionalId: actor.professionalProfileId },
+    select: { patientId: true },
+    distinct: ["patientId"]
+  });
+  const patientIds = bookings.map((b) => b.patientId);
+  if (patientIds.length === 0) {
+    return res.json({ items: [] });
+  }
+
+  const chats = await prisma.patientTreatmentChat.findMany({
+    where: {
+      patientId: { in: patientIds },
+      professionalShareConsent: true
+    },
+    include: {
+      patient: {
+        include: {
+          user: { select: { fullName: true, avatarUrl: true } }
+        }
+      }
+    },
+    orderBy: { lastUserMessageAt: "desc" }
+  });
+
+  return res.json({
+    items: chats.map((chat) => ({
+      patientId: chat.patientId,
+      patientName: chat.patient.user.fullName,
+      patientAvatarUrl: chat.patient.user.avatarUrl ?? null,
+      messageCount: chat.messageCount,
+      lastUserMessageAt: chat.lastUserMessageAt?.toISOString() ?? null,
+      safetyFlagged: chat.highestSafetySeverity === "high",
+      lastSafetyEventAt: chat.lastSafetyEventAt?.toISOString() ?? null,
+      summaryAvailableAt: chat.professionalSummaryAt?.toISOString() ?? null
+    }))
+  });
+});
+
+/**
+ * GET /api/professional/treatment-reports/:patientId
+ *
+ * Detalle: regenera (o sirve cache) el resumen IA del chat de tratamiento del
+ * paciente. Verifica que (a) el profesional tiene relación de booking con el
+ * paciente y (b) el paciente dio consent.
+ */
+professionalRouter.get("/treatment-reports/:patientId", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access reports" });
+  }
+
+  const patientId = req.params.patientId;
+  if (!patientId) {
+    return res.status(400).json({ error: "patientId is required" });
+  }
+
+  /**
+   * Verificación de relación: pedimos un booking entre este pro y este paciente.
+   * Cualquier estado vale; alcanza con que hayan tenido (o tengan) actividad.
+   */
+  const relation = await prisma.booking.findFirst({
+    where: {
+      professionalId: actor.professionalProfileId,
+      patientId
+    },
+    select: { id: true }
+  });
+  if (!relation) {
+    return res.status(403).json({ error: "Patient is not under your care" });
+  }
+
+  try {
+    const result = await getOrGenerateProfessionalReport(patientId);
+    if (result.kind === "no-chat") {
+      return res.status(404).json({ error: "NO_CHAT", message: "El paciente no tiene chat de acompañamiento todavía." });
+    }
+    if (result.kind === "no-consent") {
+      return res.status(403).json({ error: "NO_CONSENT", message: "El paciente no autorizó compartir el resumen." });
+    }
+    if (result.kind === "no-data") {
+      return res.status(404).json({ error: "NO_DATA", message: "El chat existe pero todavía no hay mensajes." });
+    }
+    return res.json({
+      patientId,
+      chatId: result.chatId,
+      summary: result.summary,
+      safetyFlagged: result.safetyFlagged,
+      lastSafetyEventAt: result.lastSafetyEventAt,
+      lastUserMessageAt: result.lastUserMessageAt,
+      messageCount: result.messageCount
+    });
+  } catch (err) {
+    if (err instanceof ProfessionalReportError) {
+      return res.status(503).json({ error: err.code, message: err.message });
+    }
+    console.error("[professional/treatment-reports] unexpected", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
+  }
 });

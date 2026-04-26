@@ -46,6 +46,11 @@ export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
     group: "patients"
   },
   { to: "/chat", label: { es: "Chat", en: "Chat", pt: "Chat" }, group: "patients" },
+  {
+    to: "/reportes",
+    label: { es: "Reportes", en: "Reports", pt: "Relatórios" },
+    group: "patients"
+  },
   { to: "/ingresos", label: { es: "Ingresos", en: "Earnings", pt: "Receitas" }, group: "business" },
   {
     to: "/agenda/ajustes",

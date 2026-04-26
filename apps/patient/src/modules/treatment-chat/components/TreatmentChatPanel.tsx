@@ -17,9 +17,15 @@ interface TreatmentChatPanelProps {
   isAssistantTyping: boolean;
   safetyAlert: string | null;
   dailyTurnsRemaining: number | null;
+  /** Consent del paciente para compartir resumen IA con su profesional. */
+  shareConsent: boolean;
+  /** True mientras se está actualizando el toggle. */
+  consentSaving: boolean;
   onClose: () => void;
   onSendMessage: (text: string) => void;
   onRetryLoad: () => void;
+  /** Toggle del consent. Optimistic en el hook. */
+  onShareConsentChange: (next: boolean) => void;
 }
 
 export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
@@ -31,9 +37,12 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
     isAssistantTyping,
     safetyAlert,
     dailyTurnsRemaining,
+    shareConsent,
+    consentSaving,
     onClose,
     onSendMessage,
-    onRetryLoad
+    onRetryLoad,
+    onShareConsentChange
   } = props;
 
   const [draft, setDraft] = useState("");
@@ -197,6 +206,26 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
           pt: "Não substitui sua terapia. Em emergência, contate seu profissional ou serviços de emergência."
         })}
       </p>
+
+      {/**
+       * Toggle de consentimiento para que el profesional pueda ver un resumen IA
+       * del chat. Off por default. PR-T4.
+       */}
+      <label className="treatment-chat-panel__consent">
+        <input
+          type="checkbox"
+          checked={shareConsent}
+          disabled={consentSaving || loadState !== "ready"}
+          onChange={(event) => onShareConsentChange(event.target.checked)}
+        />
+        <span>
+          {t(language, {
+            es: "Compartir un resumen IA con mi profesional para que pueda acompañarme mejor.",
+            en: "Share an AI summary with my therapist so they can support me better.",
+            pt: "Compartilhar um resumo IA com meu profissional para que possa me acompanhar melhor."
+          })}
+        </span>
+      </label>
     </aside>
   );
 }

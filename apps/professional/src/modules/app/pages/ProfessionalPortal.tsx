@@ -20,6 +20,7 @@ import { PatientsPage } from "./PatientsPage";
 import { ProfilePage } from "./ProfilePage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
+import { TreatmentReportsPage } from "./TreatmentReportsPage";
 import { professionalPortalGreetingDisplayName } from "../lib/portalGreetingDisplayName";
 import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY } from "../services/api";
 import type { AuthUser, PortalSection } from "../types";
@@ -311,6 +312,7 @@ export function ProfessionalPortal(props: {
             <Route path="/agenda/ajustes" element={<SchedulePage token={props.token} language={props.language} mode="settings" />} />
             <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route path="/pacientes" element={<PatientsPage token={props.token} language={props.language} />} />
+            <Route path="/reportes" element={<TreatmentReportsPage token={props.token} language={props.language} />} />
             <Route
               path="/chat"
               element={

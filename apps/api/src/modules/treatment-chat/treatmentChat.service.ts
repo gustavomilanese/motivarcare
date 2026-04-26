@@ -37,6 +37,8 @@ export interface TreatmentChatDto {
     dailyTurnsRemaining: number;
     estimatedCostUsdCents: number;
   };
+  /** Consent del paciente para compartir resumen con el profesional. */
+  professionalShareConsent: boolean;
 }
 
 export interface SendMessageResult extends TreatmentChatDto {
@@ -383,6 +385,7 @@ function chatToDto(chat: PatientTreatmentChat, messages: PatientTreatmentChatMes
       dailyTurnsUsed: dailyUsed,
       dailyTurnsRemaining: remaining,
       estimatedCostUsdCents: chat.estimatedCostUsdCents
-    }
+    },
+    professionalShareConsent: chat.professionalShareConsent
   };
 }

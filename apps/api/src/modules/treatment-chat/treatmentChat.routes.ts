@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
+import { setProfessionalShareConsent } from "./professionalReports.service.js";
 import {
   TreatmentChatError,
   getOrCreateChat,
@@ -13,6 +14,10 @@ export const treatmentChatRouter = Router();
 
 const sendMessageSchema = z.object({
   message: z.string().trim().min(1).max(4000)
+});
+
+const consentSchema = z.object({
+  consent: z.boolean()
 });
 
 function handleTreatmentChatError(res: Parameters<typeof sendApiError>[0]["res"], error: unknown): void {
@@ -84,6 +89,34 @@ treatmentChatRouter.get("/conversation", requireAuth, async (req: AuthenticatedR
     return res.status(200).json({ chat: dto });
   } catch (error) {
     return handleTreatmentChatError(res, error);
+  }
+});
+
+/**
+ * POST /api/treatment-chat/consent — toggle de consentimiento del paciente
+ * para compartir el resumen del chat con su profesional. Idempotente.
+ */
+treatmentChatRouter.post("/consent", requireAuth, async (req: AuthenticatedRequest, res) => {
+  const patientId = await resolvePatientId(req);
+  if (!patientId) {
+    return sendApiError({ res, status: 403, code: "FORBIDDEN", message: "Solo pacientes pueden manejar el consentimiento" });
+  }
+  const parsed = consentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Payload inválido",
+      details: parsed.error.flatten()
+    });
+  }
+  try {
+    const result = await setProfessionalShareConsent(patientId, parsed.data.consent);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("[treatment-chat] consent toggle failed", error);
+    return sendApiError({ res, status: 500, code: "INTERNAL_ERROR", message: "No pudimos actualizar el consentimiento." });
   }
 });
 

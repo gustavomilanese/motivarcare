@@ -94,6 +94,112 @@ export function buildTreatmentChatGreeting(_context?: TreatmentChatPatientContex
   return TREATMENT_CHAT_INITIAL_GREETING;
 }
 
+/* ========================================================================== */
+/* Summarization para el panel del profesional (PR-T4)                          */
+/* ========================================================================== */
+
+/**
+ * El JSON que esperamos que el LLM produzca al resumir el chat para el profesional.
+ * Lo dejamos chico y predecible — el frontend lo renderiza en cards.
+ */
+export interface TreatmentChatSummaryJson {
+  /**
+   * Estado emocional dominante percibido en el período. 1-3 palabras.
+   * Ej: "ansiedad alta", "estable", "tristeza", "irritable".
+   */
+  moodSummary: string;
+  /** 2-5 temas/eventos más relevantes que aparecieron, en frases cortas. */
+  topics: string[];
+  /**
+   * Banderitas a las que el profesional debería prestar atención. Vacío si nada.
+   * El LLM las marca por palabras del paciente, no por "diagnóstico".
+   * Ej: "menciona problemas de sueño hace 3 días".
+   */
+  signalsToWatch: string[];
+  /** Resumen narrativo en 2-5 oraciones. Sin diagnóstico. Tercera persona. */
+  narrative: string;
+}
+
+/**
+ * Resumen completo (weekly + overall) que devolvemos al frontend del profesional.
+ * `weekly` es lo de los últimos 7 días, `overall` es histórico desde el inicio.
+ */
+export interface TreatmentChatProfessionalSummary {
+  generatedAt: string;
+  /** Modelo concreto que generó el resumen (auditoría). */
+  model: string;
+  /** Cantidad de mensajes considerados al momento de generar (cache key). */
+  messageCountAtGeneration: number;
+  weekly: TreatmentChatSummaryJson | null;
+  overall: TreatmentChatSummaryJson;
+}
+
+/**
+ * System prompt para que el LLM genere el resumen JSON. Es DIFERENTE al prompt
+ * conversacional: aquí el LLM no le habla al paciente, sino que produce un
+ * artefacto estructurado para el profesional.
+ *
+ * Reglas duras:
+ * - Sin diagnóstico clínico.
+ * - Sin invención: si no hay datos suficientes, devolver `null` para weekly o
+ *   campos vacíos para topics/signals.
+ * - Tono profesional, neutro, en español rioplatense.
+ * - El profesional ya conoce al paciente; no hace falta describirlo.
+ */
+export const TREATMENT_CHAT_SUMMARY_SYSTEM_PROMPT = `Sos un asistente que prepara resúmenes para psicoterapeutas, en base al chat de acompañamiento entre sesiones de uno de sus pacientes.
+
+OBJETIVO
+- Producir un JSON con dos partes: "weekly" (últimos 7 días, opcional si no hay actividad reciente) y "overall" (histórico).
+- Cada parte tiene: moodSummary (1-3 palabras), topics (2-5 frases cortas), signalsToWatch (banderitas, vacío si nada), narrative (2-5 oraciones, tercera persona).
+
+REGLAS
+- NO diagnósticos clínicos (depresión, ansiedad generalizada, TOC, etc.). Usar lenguaje descriptivo del paciente: "refiere ánimo bajo", "menciona insomnio", "se siente abrumada por trabajo".
+- NO inventes información que no esté en los mensajes. Si no hay datos para weekly, devolvé "weekly": null.
+- NO citar mensajes textuales del paciente (privacidad).
+- Tercera persona ("la paciente refiere", "comparte que", "menciona"). Sin emojis. Sin markdown.
+- moodSummary en una a tres palabras. Ej: "ansiedad alta", "estable", "tristeza marcada".
+- signalsToWatch: solo banderitas claras y específicas. Ej: "problemas de sueño hace 3 días", "menciona conflicto en pareja", "expresó cansancio sostenido". Si no hay nada que merezca atención, dejar la lista vacía.
+- narrative: continuo, sin viñetas. 2-5 oraciones máximo.
+
+FORMATO DE SALIDA (JSON único, sin texto adicional ni code fences):
+{
+  "weekly": {
+    "moodSummary": "string",
+    "topics": ["string"],
+    "signalsToWatch": ["string"],
+    "narrative": "string"
+  } | null,
+  "overall": {
+    "moodSummary": "string",
+    "topics": ["string"],
+    "signalsToWatch": ["string"],
+    "narrative": "string"
+  }
+}`;
+
+/**
+ * Construye el user-message con la conversación a resumir. Lo separamos del
+ * system prompt para poder reusarlo con providers que tienen JSON mode.
+ */
+export function buildSummarizationUserMessage(
+  conversation: Array<{ role: "user" | "assistant"; content: string; createdAt: Date }>,
+  weeklyCutoff: Date
+): string {
+  const formatTs = (d: Date): string => d.toISOString();
+  const lines = conversation.map(
+    (m) => `[${formatTs(m.createdAt)}] ${m.role === "user" ? "PACIENTE" : "ASISTENTE"}: ${m.content}`
+  );
+  return [
+    `Fecha actual: ${new Date().toISOString()}`,
+    `Corte semanal (>= esta fecha pertenece a "weekly"): ${weeklyCutoff.toISOString()}`,
+    "",
+    "Mensajes del chat (ordenados cronológicamente, más viejo primero):",
+    ...lines,
+    "",
+    "Devolvé únicamente el JSON especificado, sin nada antes ni después."
+  ].join("\n");
+}
+
 function renderContextBlock(ctx: TreatmentChatPatientContext): string {
   const lines: string[] = [];
   if (ctx.patientFirstName) {

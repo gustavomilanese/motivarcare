@@ -5,7 +5,9 @@ import type {
 import type {
   TreatmentChatCallInput,
   TreatmentChatCallResult,
-  TreatmentChatProvider
+  TreatmentChatProvider,
+  TreatmentChatSummarizationInput,
+  TreatmentChatSummarizationResult
 } from "./TreatmentChatProvider.js";
 
 /**
@@ -37,6 +39,31 @@ export class MockTreatmentChatProvider implements TreatmentChatProvider {
 
   async classifySafety(_input: SafetyClassifierInput): Promise<SafetyClassifierResult> {
     return { triggered: false, severity: "none", reasoning: "mock" };
+  }
+
+  async summarizeChat(_input: TreatmentChatSummarizationInput): Promise<TreatmentChatSummarizationResult> {
+    /**
+     * Resumen determinístico para tests/dev. Es un JSON válido con la misma forma
+     * que el real para que el parser del service no se queje y la UI muestre algo.
+     */
+    const json = {
+      weekly: {
+        moodSummary: "estable",
+        topics: ["mock topic 1", "mock topic 2"],
+        signalsToWatch: [],
+        narrative: "Resumen mock generado sin LLM real. Útil para tests y demos."
+      },
+      overall: {
+        moodSummary: "estable",
+        topics: ["mock topic 1"],
+        signalsToWatch: [],
+        narrative: "Histórico mock. La conversación no se procesó por un LLM."
+      }
+    };
+    return {
+      rawJson: JSON.stringify(json),
+      usage: { promptTokens: 0, completionTokens: 0, costUsdCents: 0 }
+    };
   }
 }
 

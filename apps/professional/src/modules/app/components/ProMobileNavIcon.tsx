@@ -51,6 +51,14 @@ export function ProMobileNavIcon(props: { section: PortalSection }) {
           <path d="M21 12a7 7 0 0 1-7 7H8l-5 3v-3a7 7 0 1 1 18-7Z" />
         </svg>
       );
+    case "/reportes":
+      return (
+        <svg {...iconProps}>
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+          <path d="M14 3v5h5" />
+          <path d="M9 13h6M9 17h6" />
+        </svg>
+      );
     case "/ingresos":
       return (
         <svg {...iconProps}>

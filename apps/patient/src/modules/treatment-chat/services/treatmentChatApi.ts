@@ -25,6 +25,13 @@ export interface TreatmentChatDto {
     dailyTurnsRemaining: number;
     estimatedCostUsdCents: number;
   };
+  /** Consent del paciente para compartir resumen IA con su profesional. */
+  professionalShareConsent: boolean;
+}
+
+export interface TreatmentChatConsentResponse {
+  consent: boolean;
+  consentAt: string | null;
 }
 
 export interface SendMessageResultDto extends TreatmentChatDto {
@@ -65,4 +72,19 @@ export async function sendTreatmentChatMessage(
     token
   );
   return result.chat;
+}
+
+/**
+ * POST /api/treatment-chat/consent — toggle del consentimiento del paciente para
+ * que su profesional vea el resumen IA del chat (PR-T4).
+ */
+export async function setTreatmentChatConsent(
+  consent: boolean,
+  token: string
+): Promise<TreatmentChatConsentResponse> {
+  return apiRequest<TreatmentChatConsentResponse>(
+    "/api/treatment-chat/consent",
+    { method: "POST", body: JSON.stringify({ consent }) },
+    token
+  );
 }

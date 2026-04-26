@@ -86,9 +86,12 @@ export function TreatmentChatFAB(props: TreatmentChatFABProps) {
             isAssistantTyping={chat.isAssistantTyping}
             safetyAlert={chat.safetyAlert}
             dailyTurnsRemaining={chat.conversation?.quota.dailyTurnsRemaining ?? null}
+            shareConsent={chat.conversation?.professionalShareConsent ?? false}
+            consentSaving={chat.consentSaving}
             onClose={handleClose}
             onSendMessage={(text) => void chat.sendMessage(text)}
             onRetryLoad={() => void chat.reload()}
+            onShareConsentChange={(next) => void chat.setShareConsent(next)}
           />
         </div>
       ) : null}

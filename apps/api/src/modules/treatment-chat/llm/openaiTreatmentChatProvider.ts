@@ -8,7 +8,9 @@ import type {
 import type {
   TreatmentChatCallInput,
   TreatmentChatCallResult,
-  TreatmentChatProvider
+  TreatmentChatProvider,
+  TreatmentChatSummarizationInput,
+  TreatmentChatSummarizationResult
 } from "./TreatmentChatProvider.js";
 
 /**
@@ -106,6 +108,29 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       severity,
       reasoning,
       usage: computeUsage(this.safetyModelName, completion.usage)
+    };
+  }
+
+  async summarizeChat(input: TreatmentChatSummarizationInput): Promise<TreatmentChatSummarizationResult> {
+    const completion = await this.client.chat.completions.create({
+      model: this.modelName,
+      messages: [
+        { role: "system", content: input.systemPrompt },
+        { role: "user", content: input.userMessage }
+      ],
+      response_format: { type: "json_object" },
+      /**
+       * Reasoning bajo: el resumen no necesita razonamiento profundo, sino
+       * extracción y síntesis. `low` mantiene latencia y costo previsibles.
+       */
+      reasoning_effort: "low",
+      max_completion_tokens: input.maxOutputTokens ?? 800
+    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming & { reasoning_effort?: string });
+
+    const rawJson = completion.choices[0]?.message?.content?.trim() ?? "";
+    return {
+      rawJson,
+      usage: computeUsage(this.modelName, completion.usage)
     };
   }
 }
