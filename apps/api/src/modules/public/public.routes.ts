@@ -99,8 +99,13 @@ const blogPostSchema = z.object({
   featured: z.boolean(),
   seoTitle: z.string().min(10).max(220),
   seoDescription: z.string().min(20).max(320),
-  body: z.string().min(80).max(100_000)
+  body: z.string().min(80).max(100_000),
+  /** Si una nota no especifica audiencias, se asume visible en ambos lugares (legacy compat). */
+  showOnPatientPortal: z.boolean().optional().default(true),
+  showOnLanding: z.boolean().optional().default(true)
 });
+
+const blogAudienceSchema = z.enum(["patient", "landing"]);
 
 const exerciseSchema = z.object({
   id: z.string().min(2).max(120),
@@ -411,7 +416,10 @@ publicRouter.get("/landing-settings", async (_req, res) => {
   });
 });
 
-publicRouter.get("/web-content", async (_req, res) => {
+publicRouter.get("/web-content", async (req, res) => {
+  const audienceParsed = blogAudienceSchema.safeParse(req.query.audience);
+  const audience = audienceParsed.success ? audienceParsed.data : null;
+
   const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
@@ -429,6 +437,16 @@ publicRouter.get("/web-content", async (_req, res) => {
   const postsSource: BlogPostDefault[] = storedPosts.length > 0 ? storedPosts : DEFAULT_BLOG_POSTS;
   const publishedPosts = postsSource
     .filter((post) => post.status === "published")
+    .filter((post) => {
+      if (audience === "patient") {
+        return post.showOnPatientPortal !== false;
+      }
+      if (audience === "landing") {
+        return post.showOnLanding !== false;
+      }
+      // Sin audiencia explícita: incluir si está visible en al menos un canal.
+      return post.showOnPatientPortal !== false || post.showOnLanding !== false;
+    })
     .sort((a, b) => {
       if (a.featured !== b.featured) {
         return Number(b.featured) - Number(a.featured);

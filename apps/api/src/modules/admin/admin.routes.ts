@@ -200,7 +200,10 @@ const blogPostSchema = z.object({
   featured: z.boolean(),
   seoTitle: z.string().min(10).max(220),
   seoDescription: z.string().min(20).max(320),
-  body: z.string().min(80).max(100_000)
+  body: z.string().min(80).max(100_000),
+  /** Audiencias. Si no se manda, se asume visible en ambos canales (legacy compat). */
+  showOnPatientPortal: z.boolean().optional().default(true),
+  showOnLanding: z.boolean().optional().default(true)
 });
 
 const blogPostCreateSchema = blogPostSchema.omit({ id: true });

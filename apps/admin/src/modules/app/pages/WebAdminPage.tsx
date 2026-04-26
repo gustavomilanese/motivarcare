@@ -127,7 +127,9 @@ export function WebAdminPage({
     featured: false,
     seoTitle: "",
     seoDescription: "",
-    body: ""
+    body: "",
+    showOnPatientPortal: true,
+    showOnLanding: true
   };
   const emptyExercise: Omit<AdminExercise, "id"> = {
     slug: "",
@@ -225,7 +227,9 @@ export function WebAdminPage({
                 featured: Boolean(item.featured),
                 seoTitle: String(item.seoTitle ?? ""),
                 seoDescription: String(item.seoDescription ?? ""),
-                body: String(item.body ?? "")
+                body: String(item.body ?? ""),
+                showOnPatientPortal: item.showOnPatientPortal !== false,
+                showOnLanding: item.showOnLanding !== false
               }))
               .filter((item) => item.id.length > 0)
           : []
@@ -516,6 +520,37 @@ export function WebAdminPage({
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("web-admin-blog-delete", language, raw));
+    }
+  }
+
+  async function togglePostAudience(post: AdminBlogPost, audience: "patient" | "landing") {
+    setError("");
+    setSuccess("");
+    const field = audience === "patient" ? "showOnPatientPortal" : "showOnLanding";
+    const nextValue = !post[field];
+    try {
+      await apiRequest(
+        `/api/admin/web-content/blog-posts/${post.id}`,
+        { method: "PUT", body: JSON.stringify({ [field]: nextValue }) },
+        token
+      );
+      setPosts((current) => current.map((item) => (item.id === post.id ? { ...item, [field]: nextValue } : item)));
+      setSuccess(
+        nextValue
+          ? t(language, {
+              es: audience === "patient" ? "Nota visible para pacientes." : "Nota visible en la landing.",
+              en: audience === "patient" ? "Article visible to patients." : "Article visible on the landing.",
+              pt: audience === "patient" ? "Nota visível para pacientes." : "Nota visível na landing."
+            })
+          : t(language, {
+              es: audience === "patient" ? "Nota oculta para pacientes." : "Nota oculta en la landing.",
+              en: audience === "patient" ? "Article hidden from patients." : "Article hidden from the landing.",
+              pt: audience === "patient" ? "Nota oculta para pacientes." : "Nota oculta na landing."
+            })
+      );
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-blog-save", language, raw));
     }
   }
 
@@ -970,6 +1005,32 @@ export function WebAdminPage({
                 <article className="user-card web-admin-row-card" key={post.id}>
                   <header><h3>{post.title}</h3><span className="role-pill">{post.status}</span></header>
                   <p>{post.excerpt}</p>
+                  <div className="web-admin-audience-row">
+                    <button
+                      type="button"
+                      className={`web-admin-audience-chip${post.showOnPatientPortal ? " is-on" : ""}`}
+                      onClick={() => void togglePostAudience(post, "patient")}
+                      aria-pressed={post.showOnPatientPortal}
+                      title={post.showOnPatientPortal
+                        ? "Visible en el portal del paciente. Tocá para ocultar."
+                        : "Oculto para pacientes. Tocá para mostrar."}
+                    >
+                      <span aria-hidden="true">{post.showOnPatientPortal ? "✓" : "✗"}</span>
+                      Pacientes
+                    </button>
+                    <button
+                      type="button"
+                      className={`web-admin-audience-chip${post.showOnLanding ? " is-on" : ""}`}
+                      onClick={() => void togglePostAudience(post, "landing")}
+                      aria-pressed={post.showOnLanding}
+                      title={post.showOnLanding
+                        ? "Visible en la landing. Tocá para ocultar."
+                        : "Oculto en la landing. Tocá para mostrar."}
+                    >
+                      <span aria-hidden="true">{post.showOnLanding ? "✓" : "✗"}</span>
+                      Landing
+                    </button>
+                  </div>
                   <div className="user-card-footer">
                     <small>{post.publishedAt} · {post.likes} likes</small>
                     <div className="package-admin-icon-actions">
@@ -1181,6 +1242,8 @@ export function WebAdminPage({
                 <label>Avatar autor URL<input value={postForm.authorAvatar} onChange={(event) => setPostForm((current) => ({ ...current, authorAvatar: event.target.value }))} /></label>
                 <label>Status<select value={postForm.status} onChange={(event) => setPostForm((current) => ({ ...current, status: event.target.value as "draft" | "published" }))}><option value="published">published</option><option value="draft">draft</option></select></label>
                 <label className="inline-toggle"><input type="checkbox" checked={postForm.featured} onChange={(event) => setPostForm((current) => ({ ...current, featured: event.target.checked }))} />Featured</label>
+                <label className="inline-toggle"><input type="checkbox" checked={postForm.showOnPatientPortal} onChange={(event) => setPostForm((current) => ({ ...current, showOnPatientPortal: event.target.checked }))} />Mostrar a pacientes</label>
+                <label className="inline-toggle"><input type="checkbox" checked={postForm.showOnLanding} onChange={(event) => setPostForm((current) => ({ ...current, showOnLanding: event.target.checked }))} />Mostrar en la landing</label>
               </div>
               {(postForm.coverImage || postForm.authorAvatar) ? (
                 <div className="post-image-preview-row">

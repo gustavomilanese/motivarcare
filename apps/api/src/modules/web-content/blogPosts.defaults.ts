@@ -28,6 +28,9 @@ export interface BlogPostDefault {
   seoTitle: string;
   seoDescription: string;
   body: string;
+  /** Si no se especifica, se asume visible en ambos canales (legacy compat). */
+  showOnPatientPortal?: boolean;
+  showOnLanding?: boolean;
 }
 
 export const DEFAULT_BLOG_POSTS: BlogPostDefault[] = [

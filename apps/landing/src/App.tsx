@@ -1642,7 +1642,7 @@ export function App() {
 
     async function loadLandingSettings() {
       try {
-        const contentResponse = await fetch(API_BASE + "/api/public/web-content");
+        const contentResponse = await fetch(API_BASE + "/api/public/web-content?audience=landing");
         if (!contentResponse.ok) {
           return;
         }

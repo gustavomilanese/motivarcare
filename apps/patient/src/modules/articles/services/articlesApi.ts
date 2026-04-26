@@ -39,7 +39,7 @@ export async function fetchPublishedArticles(): Promise<ArticlePost[]> {
     return inflight;
   }
   const pending = (async (): Promise<ArticlePost[]> => {
-    const response = await apiRequest<WebContentResponse>("/api/public/web-content", {});
+    const response = await apiRequest<WebContentResponse>("/api/public/web-content?audience=patient", {});
     return Array.isArray(response.blogPosts) ? response.blogPosts : [];
   })().finally(() => {
     inflight = null;

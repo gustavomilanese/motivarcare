@@ -194,6 +194,8 @@ export interface AdminBlogPost {
   seoTitle: string;
   seoDescription: string;
   body: string;
+  showOnPatientPortal: boolean;
+  showOnLanding: boolean;
 }
 
 export type AdminExerciseCategory =
