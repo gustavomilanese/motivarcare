@@ -41,8 +41,8 @@ export function clearPostTrialCalendarPending(): void {
   }
 }
 
-/** Misma que `onHeroFallback`: fallback local si falla la URL remota del hero. */
-export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.svg";
+/** Fallback local si falla la URL remota del hero (configurada desde Admin → Web → Imágenes hero). */
+export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.jpg";
 
 /** Separador de opciones en `mainReason` cuando hay multiselección (alineado con patient-mobile). */
 export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";

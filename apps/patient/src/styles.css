@@ -9846,9 +9846,12 @@ button.sessions-balance {
 }
 
 .patient-dashboard-home .hero-photo-tile {
+  /* Mitad del alto previo (240–320px) para no desperdiciar verticalmente.
+   * El texto del hero queda al lado, así que con menos alto el bloque entero
+   * queda más compacto y se ve más arriba el resto del dashboard. */
   height: 100%;
-  min-height: 240px;
-  max-height: 320px;
+  min-height: 132px;
+  max-height: 168px;
   border-radius: 14px;
 }
 
@@ -11213,7 +11216,10 @@ button.sessions-balance {
   position: fixed;
   right: 16px;
   bottom: 16px;
-  top: 16px;
+  /* En desktop arrancamos debajo del topbar (favoritos, notificaciones, menú).
+   * El header del portal mide ~64px; dejamos un margen extra para que los íconos
+   * queden 100% visibles y clickeables aunque el chat esté abierto. */
+  top: 84px;
   width: 380px;
   background: #ffffff;
   border: 1px solid #ece8ff;
