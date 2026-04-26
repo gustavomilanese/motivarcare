@@ -16,7 +16,7 @@ import {
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
-import { getUsdArsRate, roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
+import { roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
@@ -1584,10 +1584,20 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       });
     }
 
+    /**
+     * Para derivar `sessionPriceArs` desde el USD usamos el wrapper resiliente:
+     * si los proveedores externos (Bluelytics / DolarApi) están caídos en este
+     * momento, igual obtenemos un rate operativo (último éxito en memoria,
+     * snapshot DB, env o hardcoded). Bloquear el guardado del perfil completo
+     * por un FX externo intermitente era frustrante para el profesional y le
+     * impedía actualizar bio, focus, etc. Si el rate está stale, el endpoint
+     * público re-deriva con el rate vigente al momento de mostrar precios.
+     */
     let rate: number;
     try {
-      rate = await getUsdArsRate();
-    } catch {
+      rate = await getResilientUsdArsRate();
+    } catch (error) {
+      console.warn("[professional/save] resilient FX failed unexpectedly", error);
       return res.status(503).json({
         error: "Could not load USD→ARS exchange rate. Please try again shortly."
       });
