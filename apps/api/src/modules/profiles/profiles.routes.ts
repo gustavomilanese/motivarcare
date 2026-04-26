@@ -17,6 +17,7 @@ import {
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
 import { getUsdArsRate, roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
+import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
@@ -463,15 +464,19 @@ async function loadProfessionalProfilesForDirectory(where: Prisma.ProfessionalPr
 }
 
 /**
- * Cotización USD/ARS vigente, con fallback silencioso si la API externa cae.
- * Se usa para derivar `sessionPriceArs` cuando el profesional sólo tiene precio en USD,
- * de modo que el paciente AR siempre vea pesos.
+ * Cotización USD/ARS para derivar `sessionPriceArs` cuando el profesional sólo
+ * tiene precio en USD, de modo que el paciente AR siempre vea pesos.
+ *
+ * Usa el wrapper resiliente: aún si los proveedores externos fallan, devuelve
+ * un valor operativo (último éxito en memoria → snapshot DB → env → hardcoded).
+ * Sólo retorna `null` si la propia query a DB del wrapper resiliente falla,
+ * lo que es muy improbable.
  */
 async function loadUsdArsRateOrNull(): Promise<number | null> {
   try {
-    return await getUsdArsRate();
+    return await getResilientUsdArsRate();
   } catch (error) {
-    console.warn("USD/ARS rate unavailable for directory listing", error);
+    console.warn("USD/ARS resilient rate unavailable", error);
     return null;
   }
 }

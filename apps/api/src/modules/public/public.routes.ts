@@ -18,6 +18,7 @@ import {
 } from "../../lib/professionalSessionListPrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { getUsdArsRate } from "../../lib/usdArsExchange.js";
+import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { env } from "../../config/env.js";
 import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
 import { DEFAULT_BLOG_POSTS, type BlogPostDefault } from "../web-content/blogPosts.defaults.js";
@@ -203,6 +204,13 @@ publicRouter.get("/check-email", async (req, res) => {
   return res.json({ available: existing === null });
 });
 
+const CURRENCY_FOR_MARKET: Record<Market, string> = {
+  AR: "ars",
+  US: "usd",
+  BR: "brl",
+  ES: "eur"
+};
+
 function resolvePackageDiscountPercent(params: {
   credits: number;
   fallbackDiscountPercent: number;
@@ -225,17 +233,57 @@ function resolvePackageDiscountPercent(params: {
   return params.fallbackDiscountPercent;
 }
 
+/**
+ * Calcula `priceCents` final para devolver al cliente, ya en la moneda canónica
+ * del `market`. Cubre tres caminos en orden de preferencia:
+ *
+ *   1. Hay precio de sesión derivado del profesional (`sessionListPriceMajor`,
+ *      ya en la moneda del market) → multiplicar por créditos y aplicar descuento.
+ *
+ *   2. No hay precio de profesional (paquete global del catálogo): usar el
+ *      `priceCents` seedeado en la row, **convirtiendo de USD a ARS** cuando
+ *      hace falta. Sin esta conversión, packages seedeados con currency=usd
+ *      terminan servidos como ARS y el paciente argentino ve "$ 380" en vez
+ *      de "$ 380.000".
+ *
+ *   3. Como último recurso, si nada se puede normalizar, devolver el priceCents
+ *      tal cual (mejor que romper la UI; el guard de moneda de arriba evita el
+ *      caso patológico AR).
+ */
 function resolvePackagePriceCents(params: {
   credits: number;
   fallbackPriceCents: number;
-  sessionPriceUsd: number | null | undefined;
+  fallbackCurrency: string;
+  sessionListPriceMajor: number | null | undefined;
   discountPercent: number;
+  market: Market;
+  arsPerUsd: number | null;
 }): number {
-  if (!params.sessionPriceUsd || params.sessionPriceUsd <= 0) {
+  if (params.sessionListPriceMajor && params.sessionListPriceMajor > 0) {
+    const listPriceCents = params.sessionListPriceMajor * params.credits * 100;
+    return Math.max(0, Math.round(listPriceCents * (1 - params.discountPercent / 100)));
+  }
+
+  const sourceCurrency = params.fallbackCurrency.toLowerCase();
+  const targetCurrency = CURRENCY_FOR_MARKET[params.market];
+
+  if (sourceCurrency === targetCurrency) {
     return params.fallbackPriceCents;
   }
-  const listPriceCents = params.sessionPriceUsd * params.credits * 100;
-  return Math.max(0, Math.round(listPriceCents * (1 - params.discountPercent / 100)));
+
+  if (
+    params.market === "AR"
+    && sourceCurrency === "usd"
+    && params.arsPerUsd
+    && params.arsPerUsd > 0
+  ) {
+    const usdMajor = params.fallbackPriceCents / 100;
+    const arsMajor = usdMajor * params.arsPerUsd;
+    const roundedArsMajor = Math.ceil(arsMajor / 1000) * 1000;
+    return Math.max(0, Math.round(roundedArsMajor * 100));
+  }
+
+  return params.fallbackPriceCents;
 }
 
 function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Continuidad" | "Intensivo" {
@@ -247,13 +295,6 @@ function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Conti
   }
   return "Intensivo";
 }
-
-const CURRENCY_FOR_MARKET: Record<Market, string> = {
-  AR: "ars",
-  US: "usd",
-  BR: "brl",
-  ES: "eur"
-};
 
 publicRouter.get("/session-packages", async (req, res) => {
   const parsed = sessionPackagesChannelSchema.safeParse(req.query);
@@ -267,19 +308,14 @@ publicRouter.get("/session-packages", async (req, res) => {
       : "AR";
 
   /**
-   * Para market=AR, intentamos obtener cotización USD/ARS para derivar precio si el
-   * profesional sólo tiene `sessionPriceUsd`. Si la cotización no está disponible,
-   * caemos al precio guardado en el package (que ya viene en pesos por seed/ABM).
+   * Para market=AR, obtenemos cotización USD/ARS para derivar precio cuando el
+   * profesional sólo tiene `sessionPriceUsd`. Usamos el wrapper resiliente para
+   * que aunque los proveedores externos fallen (timeouts en Railway, etc.) no
+   * caigamos al `sessionPackage.priceCents` que históricamente vino seedeado en
+   * USD-cents y serviríamos USD disfrazado de ARS. El wrapper *siempre* devuelve
+   * un rate operativo (live → memory → DB snapshot → env → hardcoded).
    */
-  let arsPerUsd: number | null = null;
-  if (market === "AR") {
-    try {
-      arsPerUsd = await getUsdArsRate();
-    } catch (error) {
-      console.warn("USD/ARS rate unavailable for /session-packages — usando fallback DB", error);
-      arsPerUsd = null;
-    }
-  }
+  const arsPerUsd: number | null = market === "AR" ? await getResilientUsdArsRate() : null;
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
@@ -368,8 +404,11 @@ publicRouter.get("/session-packages", async (req, res) => {
       const priceCents = resolvePackagePriceCents({
         credits: item.credits,
         fallbackPriceCents: item.priceCents,
-        sessionPriceUsd: sessionListPriceMajor,
-        discountPercent
+        fallbackCurrency: item.currency,
+        sessionListPriceMajor,
+        discountPercent,
+        market,
+        arsPerUsd: market === "AR" ? arsPerUsd : null
       });
       /**
        * Forzamos `currency` por market para evitar incoherencias con seeds antiguos:
