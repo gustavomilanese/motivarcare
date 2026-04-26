@@ -121,56 +121,62 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
           </div>
         </header>
 
-        <p className="exercise-reader-description">{exercise.description}</p>
+        <div className="exercise-reader-grid">
+          <div className="exercise-reader-main">
+            <p className="exercise-reader-description">{exercise.description}</p>
 
-        {exercise.benefits.length > 0 ? (
-          <section className="exercise-reader-section" aria-labelledby="exercise-benefits-title">
-            <h3 id="exercise-benefits-title">
-              {t(props.language, { es: "Beneficios", en: "Benefits", pt: "Benefícios" })}
-            </h3>
-            <ul className="exercise-reader-benefits">
-              {exercise.benefits.map((benefit, index) => (
-                <li key={`benefit-${index}`}>{benefit}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+            <section className="exercise-reader-section" aria-labelledby="exercise-steps-title">
+              <h3 id="exercise-steps-title">
+                {t(props.language, { es: "Cómo hacerlo", en: "How to do it", pt: "Como fazer" })}
+              </h3>
+              <ol className="exercise-reader-steps">
+                {exercise.steps.map((step, index) => (
+                  <li key={`step-${index}`}>
+                    <span className="exercise-reader-step-index" aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
 
-        <section className="exercise-reader-section" aria-labelledby="exercise-steps-title">
-          <h3 id="exercise-steps-title">
-            {t(props.language, { es: "Cómo hacerlo", en: "How to do it", pt: "Como fazer" })}
-          </h3>
-          <ol className="exercise-reader-steps">
-            {exercise.steps.map((step, index) => (
-              <li key={`step-${index}`}>
-                <span className="exercise-reader-step-index" aria-hidden="true">
-                  {index + 1}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+          <aside className="exercise-reader-side" aria-label={t(props.language, { es: "Información adicional", en: "Additional info", pt: "Informação adicional" })}>
+            {exercise.benefits.length > 0 ? (
+              <section className="exercise-reader-section exercise-reader-side-card" aria-labelledby="exercise-benefits-title">
+                <h3 id="exercise-benefits-title">
+                  {t(props.language, { es: "Beneficios", en: "Benefits", pt: "Benefícios" })}
+                </h3>
+                <ul className="exercise-reader-benefits">
+                  {exercise.benefits.map((benefit, index) => (
+                    <li key={`benefit-${index}`}>{benefit}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-        {exercise.tips.length > 0 ? (
-          <section className="exercise-reader-section" aria-labelledby="exercise-tips-title">
-            <h3 id="exercise-tips-title">{t(props.language, { es: "Tips", en: "Tips", pt: "Dicas" })}</h3>
-            <ul className="exercise-reader-tips">
-              {exercise.tips.map((tip, index) => (
-                <li key={`tip-${index}`}>{tip}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+            {exercise.tips.length > 0 ? (
+              <section className="exercise-reader-section exercise-reader-side-card" aria-labelledby="exercise-tips-title">
+                <h3 id="exercise-tips-title">{t(props.language, { es: "Tips", en: "Tips", pt: "Dicas" })}</h3>
+                <ul className="exercise-reader-tips">
+                  {exercise.tips.map((tip, index) => (
+                    <li key={`tip-${index}`}>{tip}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-        {exercise.contraindications.trim().length > 0 ? (
-          <aside className="exercise-reader-warning" role="note">
-            <strong>
-              {t(props.language, { es: "Atención", en: "Heads up", pt: "Atenção" })}
-            </strong>
-            <span>{exercise.contraindications}</span>
+            {exercise.contraindications.trim().length > 0 ? (
+              <aside className="exercise-reader-warning" role="note">
+                <strong>
+                  {t(props.language, { es: "Atención", en: "Heads up", pt: "Atenção" })}
+                </strong>
+                <span>{exercise.contraindications}</span>
+              </aside>
+            ) : null}
           </aside>
-        ) : null}
+        </div>
       </article>
 
       {related.length > 0 ? (

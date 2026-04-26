@@ -12909,9 +12909,10 @@ button.sessions-balance {
   --exercise-accent: #5f44eb;
   --exercise-accent-soft: rgba(95, 68, 235, 0.12);
   display: grid;
-  gap: 18px;
+  gap: 22px;
   align-content: start;
-  max-width: 820px;
+  max-width: 1200px;
+  width: 100%;
 }
 
 .exercise-reader-back {
@@ -12936,12 +12937,54 @@ button.sessions-balance {
   background: var(--portal-surface-solid);
   border: 1px solid var(--portal-border);
   border-radius: var(--portal-radius);
-  padding: clamp(20px, 4vw, 32px);
+  padding: clamp(22px, 3.6vw, 40px);
   box-shadow: var(--portal-elev);
   display: grid;
-  gap: 18px;
+  gap: 24px;
   position: relative;
   overflow: hidden;
+}
+
+/**
+ * Layout magazine: pasos en columna principal (más ancha), beneficios+tips+aviso
+ * en sidebar sticky a la derecha. Por debajo de 980px colapsa a una sola columna.
+ */
+.exercise-reader-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 28px;
+  align-items: start;
+}
+
+.exercise-reader-main {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.exercise-reader-side {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 96px;
+  align-self: start;
+}
+
+.exercise-reader-side-card {
+  background: #fafbff;
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+@media (max-width: 980px) {
+  .exercise-reader-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .exercise-reader-side {
+    position: static;
+  }
 }
 
 .exercise-reader::before {
