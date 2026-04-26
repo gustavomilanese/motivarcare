@@ -20,6 +20,7 @@ import { getFinanceRules } from "../finance/finance.service.js";
 import { getUsdArsRate } from "../../lib/usdArsExchange.js";
 import { env } from "../../config/env.js";
 import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
+import { DEFAULT_BLOG_POSTS, type BlogPostDefault } from "../web-content/blogPosts.defaults.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -422,8 +423,11 @@ publicRouter.get("/web-content", async (_req, res) => {
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
   const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
 
-  const allPosts = postsParsed.success ? postsParsed.data : [];
-  const publishedPosts = allPosts
+  // Si admin todavía no cargó ninguna nota, devolvemos el catálogo de cortesía (publicadas).
+  // En cuanto el admin guarde aunque sea una, solo se sirven las suyas.
+  const storedPosts = postsParsed.success ? postsParsed.data : [];
+  const postsSource: BlogPostDefault[] = storedPosts.length > 0 ? storedPosts : DEFAULT_BLOG_POSTS;
+  const publishedPosts = postsSource
     .filter((post) => post.status === "published")
     .sort((a, b) => {
       if (a.featured !== b.featured) {
