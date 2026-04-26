@@ -81,6 +81,12 @@ const EnvSchema = z.object({
   TREATMENT_CHAT_CONTEXT_WINDOW: z.coerce.number().int().positive().default(20),
   /** Provider del treatment-chat. Mock no llama a la API y permite tests / demos sin costo. */
   TREATMENT_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
+  /** Ventana de rate-limit para POST /messages del treatment chat (PR-T5). */
+  TREATMENT_CHAT_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  /** Tope de mensajes por minuto, por IP, en el treatment chat (PR-T5). */
+  TREATMENT_CHAT_RATE_LIMIT_MAX_PER_IP: z.coerce.number().int().positive().default(8),
+  /** Tope de mensajes por minuto, por usuario autenticado, en el treatment chat (PR-T5). */
+  TREATMENT_CHAT_RATE_LIMIT_MAX_PER_USER: z.coerce.number().int().positive().default(6),
   /** Secreto Turnstile (registro profesional). Vacío = no se exige token en el API. */
   TURNSTILE_SECRET_KEY: z.string().optional().default("")
 });

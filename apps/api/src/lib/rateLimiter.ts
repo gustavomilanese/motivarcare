@@ -155,3 +155,26 @@ export const authLoginRateLimiter = createRateLimiter({
   windowMs: env.API_AUTH_LOGIN_WINDOW_MS,
   maxRequests: env.API_AUTH_LOGIN_MAX_ATTEMPTS
 });
+
+/**
+ * Limita los mensajes que cada IP puede enviar al treatment-chat por minuto
+ * (PR-T5). Sirve para frenar abuso desde una única origen aunque distintos
+ * usuarios estén implicados — el cap por usuario lo cubre el counter diario
+ * y el limiter `treatmentChatPerUserLimiter`.
+ */
+export const treatmentChatPerIpLimiter = createRateLimiter({
+  keyPrefix: "tchat_ip",
+  windowMs: env.TREATMENT_CHAT_RATE_LIMIT_WINDOW_MS,
+  maxRequests: env.TREATMENT_CHAT_RATE_LIMIT_MAX_PER_IP
+});
+
+/**
+ * Limita los mensajes que un mismo `userId` puede enviar al treatment-chat por
+ * minuto. Es complementario al cap diario que ya tracking el chat: corta
+ * "ráfagas" de spam aunque el cap diario todavía no se haya alcanzado.
+ */
+export const treatmentChatPerUserLimiter = createRateLimiter({
+  keyPrefix: "tchat_user",
+  windowMs: env.TREATMENT_CHAT_RATE_LIMIT_WINDOW_MS,
+  maxRequests: env.TREATMENT_CHAT_RATE_LIMIT_MAX_PER_USER
+});

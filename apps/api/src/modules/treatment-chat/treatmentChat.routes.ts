@@ -1,8 +1,12 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { z } from "zod";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
+import {
+  treatmentChatPerIpLimiter,
+  treatmentChatPerUserLimiter
+} from "../../lib/rateLimiter.js";
 import { setProfessionalShareConsent } from "./professionalReports.service.js";
 import {
   TreatmentChatError,
@@ -78,6 +82,11 @@ async function resolvePatientId(req: AuthenticatedRequest): Promise<string | nul
   return actor.patientProfileId;
 }
 
+/** IP del cliente con fallback razonable; misma forma que en `app.ts` y `auth.routes.ts`. */
+function getClientIp(req: Request): string {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
 /** GET /api/treatment-chat/conversation — devuelve (o crea) el chat del paciente. */
 treatmentChatRouter.get("/conversation", requireAuth, async (req: AuthenticatedRequest, res) => {
   const patientId = await resolvePatientId(req);
@@ -136,6 +145,30 @@ treatmentChatRouter.post("/messages", requireAuth, async (req: AuthenticatedRequ
       details: parsed.error.flatten()
     });
   }
+
+  /**
+   * Rate-limit ANTES de tocar la DB / el LLM. Aplicamos dos limiters en paralelo:
+   * uno por IP (para frenar abuso desde una origen) y otro por userId (para evitar
+   * que un mismo paciente nos haga ráfagas, aunque su quota diaria todavía permita).
+   * Si cualquiera bloquea, devolvemos 429 con Retry-After. Esta es la red de seguridad
+   * "operacional" complementaria al cap diario que vive en el chat.
+   */
+  const clientIp = getClientIp(req);
+  const [ipLimit, userLimit] = await Promise.all([
+    treatmentChatPerIpLimiter.consume(`ip:${clientIp}`),
+    treatmentChatPerUserLimiter.consume(`pid:${patientId}`)
+  ]);
+  if (!ipLimit.allowed || !userLimit.allowed) {
+    const retryAfter = Math.max(ipLimit.retryAfterSeconds, userLimit.retryAfterSeconds);
+    res.setHeader("Retry-After", String(retryAfter));
+    return sendApiError({
+      res,
+      status: 429,
+      code: "TOO_MANY_REQUESTS",
+      message: "Estás escribiendo muy rápido. Probá de nuevo en unos segundos."
+    });
+  }
+
   try {
     const result = await sendMessage({
       patientId,

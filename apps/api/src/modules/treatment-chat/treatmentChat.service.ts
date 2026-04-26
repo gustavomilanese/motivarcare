@@ -2,6 +2,7 @@ import type { PatientTreatmentChat, PatientTreatmentChatMessage } from "@prisma/
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { evaluateSafety } from "../intake-chat/llm/safetyClassifier.js";
+import { getEmergencyResources, renderEmergencyResourcesText } from "./emergencyResources.js";
 import { getTreatmentChatProvider } from "./llm/providerFactory.js";
 import { loadPatientContext } from "./patientContext.js";
 import {
@@ -188,6 +189,7 @@ export async function sendMessage(params: {
   });
 
   let assistantText: string;
+  let safetyAlertMessageThisTurn: string | null = null;
   let promptTokens = 0;
   let completionTokens = 0;
   let costUsdCents = 0;
@@ -198,9 +200,16 @@ export async function sendMessage(params: {
      * En crisis: NO llamamos al provider conversacional para evitar que el modelo
      * intente "ayudar" con interpretaciones o consejos riesgosos. Forzamos un
      * mensaje fijo de derivación + mantenemos el flag a nivel chat.
+     *
+     * Anexamos recursos de emergencia del país del paciente cuando los conocemos.
      */
     safetyTriggeredThisTurn = true;
-    assistantText = TREATMENT_CHAT_SAFETY_ALERT_MESSAGE;
+    const emergencyContext = await loadPatientContext(params.patientId).catch(() => null);
+    const emergencyResources = getEmergencyResources(emergencyContext?.residencyCountry);
+    assistantText = emergencyResources
+      ? `${TREATMENT_CHAT_SAFETY_ALERT_MESSAGE}\n\n${renderEmergencyResourcesText(emergencyResources)}`
+      : TREATMENT_CHAT_SAFETY_ALERT_MESSAGE;
+    safetyAlertMessageThisTurn = assistantText;
 
     /** Marcamos el mensaje del paciente con severidad alta (auditoría / panel del profesional). */
     await prisma.patientTreatmentChatMessage.update({
@@ -295,7 +304,11 @@ export async function sendMessage(params: {
     ...dto,
     lastAssistantMessage: assistantText,
     safetyTriggeredThisTurn,
-    safetyAlertMessage: safetyTriggeredThisTurn ? TREATMENT_CHAT_SAFETY_ALERT_MESSAGE : dto.safetyAlertMessage
+    /**
+     * El mensaje de banner ya viene con los recursos de emergencia incorporados
+     * cuando el país del paciente está soportado (ver bloque crisis arriba).
+     */
+    safetyAlertMessage: safetyAlertMessageThisTurn ?? dto.safetyAlertMessage
   };
 }
 
