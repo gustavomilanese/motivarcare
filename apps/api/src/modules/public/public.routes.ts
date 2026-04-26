@@ -242,6 +242,13 @@ function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Conti
   return "Intensivo";
 }
 
+const CURRENCY_FOR_MARKET: Record<Market, string> = {
+  AR: "ars",
+  US: "usd",
+  BR: "brl",
+  ES: "eur"
+};
+
 publicRouter.get("/session-packages", async (req, res) => {
   const parsed = sessionPackagesChannelSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -252,6 +259,21 @@ publicRouter.get("/session-packages", async (req, res) => {
     parsed.data.market === "US" || parsed.data.market === "BR" || parsed.data.market === "ES"
       ? parsed.data.market
       : "AR";
+
+  /**
+   * Para market=AR, intentamos obtener cotización USD/ARS para derivar precio si el
+   * profesional sólo tiene `sessionPriceUsd`. Si la cotización no está disponible,
+   * caemos al precio guardado en el package (que ya viene en pesos por seed/ABM).
+   */
+  let arsPerUsd: number | null = null;
+  if (market === "AR") {
+    try {
+      arsPerUsd = await getUsdArsRate();
+    } catch (error) {
+      console.warn("USD/ARS rate unavailable for /session-packages — usando fallback DB", error);
+      arsPerUsd = null;
+    }
+  }
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
@@ -330,8 +352,12 @@ publicRouter.get("/session-packages", async (req, res) => {
         profileDiscount12: pricingProfile?.discount12
       });
       const sessionListPriceMajor =
-        pricingProfile && pricingProfile.market === market
-          ? listPriceMajorUnitsForPackageMarket(pricingProfile, market)
+        pricingProfile
+          ? listPriceMajorUnitsForPackageMarket(
+              pricingProfile,
+              market,
+              market === "AR" ? arsPerUsd : null
+            )
           : null;
       const priceCents = resolvePackagePriceCents({
         credits: item.credits,
@@ -339,6 +365,11 @@ publicRouter.get("/session-packages", async (req, res) => {
         sessionPriceUsd: sessionListPriceMajor,
         discountPercent
       });
+      /**
+       * Forzamos `currency` por market para evitar incoherencias con seeds antiguos:
+       * lo que el paciente ve siempre debe coincidir con la moneda real del mercado.
+       */
+      const normalizedCurrency = CURRENCY_FOR_MARKET[market];
 
       return {
         id: item.id,
@@ -352,7 +383,7 @@ publicRouter.get("/session-packages", async (req, res) => {
         priceCents,
         discountPercent,
         marketingLabel: resolveSessionPackageMarketingLabel(item.credits),
-        currency: item.currency,
+        currency: normalizedCurrency,
         active: item.active,
         createdAt: item.createdAt
       };

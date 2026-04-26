@@ -58,6 +58,11 @@ export function convertUsdCents(centsInUsd: number, currency: SupportedCurrency)
   return Math.round(convertUsdAmount(centsInUsd / 100, currency) * 100);
 }
 
+/**
+ * @deprecated Convierte un monto en USD a la moneda destino con tasa hardcodeada.
+ * Usar `formatCurrencyMajor` cuando el monto ya esté expresado en la moneda final
+ * (p. ej. precios devueltos por el API en `currency` nativa del market).
+ */
 export function formatCurrencyAmount(params: {
   amountInUsd: number;
   currency: SupportedCurrency;
@@ -73,6 +78,7 @@ export function formatCurrencyAmount(params: {
   }).format(converted);
 }
 
+/** @deprecated Igual que `formatCurrencyAmount` pero recibe centavos. */
 export function formatCurrencyCents(params: {
   centsInUsd: number;
   currency: SupportedCurrency;
@@ -85,6 +91,76 @@ export function formatCurrencyCents(params: {
     language: params.language,
     maximumFractionDigits: params.maximumFractionDigits
   });
+}
+
+function normalizeCurrencyCode(currency: string | null | undefined, fallback: SupportedCurrency): SupportedCurrency {
+  if (!currency) {
+    return fallback;
+  }
+  const upper = currency.trim().toUpperCase();
+  return (SUPPORTED_CURRENCIES as readonly string[]).includes(upper) ? (upper as SupportedCurrency) : fallback;
+}
+
+/**
+ * Formatea un monto que YA está expresado en la moneda final (no convierte).
+ * Para precios que vienen del API en su moneda nativa (p. ej. ARS para market AR).
+ */
+export function formatCurrencyMajor(params: {
+  /** Monto en unidades mayores (no centavos). */
+  amountMajor: number;
+  /** Código ISO de la moneda — case-insensitive. */
+  currency: string;
+  language: AppLanguage;
+  maximumFractionDigits?: number;
+  fallbackCurrency?: SupportedCurrency;
+}): string {
+  const code = normalizeCurrencyCode(params.currency, params.fallbackCurrency ?? "USD");
+  const locale = localeFromLanguage(params.language);
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: code,
+    maximumFractionDigits: params.maximumFractionDigits ?? 0
+  }).format(params.amountMajor);
+}
+
+/**
+ * Formatea un monto en centavos que YA está expresado en la moneda final (no convierte).
+ * Útil para `priceCents` devuelto por el API junto con `currency`.
+ */
+export function formatCurrencyMinor(params: {
+  /** Monto en centavos / unidades menores. */
+  amountMinor: number;
+  /** Código ISO de la moneda — case-insensitive. */
+  currency: string;
+  language: AppLanguage;
+  maximumFractionDigits?: number;
+  fallbackCurrency?: SupportedCurrency;
+}): string {
+  return formatCurrencyMajor({
+    amountMajor: params.amountMinor / 100,
+    currency: params.currency,
+    language: params.language,
+    maximumFractionDigits: params.maximumFractionDigits,
+    fallbackCurrency: params.fallbackCurrency
+  });
+}
+
+/**
+ * Devuelve la moneda mostrada por defecto para un mercado dado
+ * (residencia del paciente). Mantiene la regla "residencia marca el mercado".
+ */
+export function defaultDisplayCurrencyForMarket(market: string | null | undefined): SupportedCurrency {
+  switch ((market ?? "").toUpperCase()) {
+    case "AR":
+      return "ARS";
+    case "BR":
+      return "BRL";
+    case "ES":
+      return "EUR";
+    case "US":
+    default:
+      return "USD";
+  }
 }
 
 export function formatDateWithLocale(params: {

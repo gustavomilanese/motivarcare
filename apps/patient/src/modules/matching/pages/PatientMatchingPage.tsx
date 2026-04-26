@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { defaultDisplayCurrencyForMarket, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
 import { MatchingStickyAction } from "../components/MatchingStickyAction";
@@ -419,7 +419,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         <PaymentMethodModal
           language={props.language}
           amountMajor={bookingListMajor}
-          displayCurrency={props.patientMarket === "AR" ? "ARS" : "USD"}
+          displayCurrency={defaultDisplayCurrencyForMarket(props.patientMarket)}
           loading={paymentLoading}
           error={paymentError}
           onBack={() => setBookingStep("summary")}

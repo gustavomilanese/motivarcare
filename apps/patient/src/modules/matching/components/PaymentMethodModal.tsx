@@ -1,29 +1,27 @@
 import { useEffect, useState } from "react";
-import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { formatCurrencyMajor, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatAmount(value: number | null, language: AppLanguage, currency: "USD" | "ARS"): string {
+/**
+ * Formatea el monto en la moneda en la que se cobrará (no convierte). Acepta cualquier
+ * código ISO; si no es soportado, cae a USD para no romper el render.
+ */
+function formatAmount(value: number | null, language: AppLanguage, currency: string): string {
   if (value === null) {
     return t(language, { es: "A confirmar", en: "To be confirmed", pt: "A confirmar" });
   }
-  if (currency === "ARS") {
-    const locale = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR";
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "ARS",
-      maximumFractionDigits: 0
-    }).format(Math.round(value));
-  }
-  const locale = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(value);
+  const upper = currency.toUpperCase();
+  const isWholeUnitsCurrency = upper === "ARS";
+  return formatCurrencyMajor({
+    amountMajor: isWholeUnitsCurrency ? Math.round(value) : value,
+    currency: upper,
+    language,
+    maximumFractionDigits: isWholeUnitsCurrency ? 0 : 2,
+    fallbackCurrency: "USD"
+  });
 }
 
 type PaymentMode = "new-card" | "one-click";
@@ -32,7 +30,8 @@ export function PaymentMethodModal(props: {
   language: AppLanguage;
   /** Monto en unidad mayor de la moneda indicada (p. ej. USD con decimales desde centavos, ARS entero). */
   amountMajor: number | null;
-  displayCurrency?: "USD" | "ARS";
+  /** Código ISO de la moneda (USD/ARS/BRL/EUR…); default USD por compat. */
+  displayCurrency?: string;
   loading: boolean;
   error: string;
   onBack: () => void;

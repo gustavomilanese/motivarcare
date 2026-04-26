@@ -3,7 +3,7 @@ import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyAmount,
+  formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
   textByLanguage
@@ -103,16 +103,21 @@ function formatSessionCardDateLine(params: { isoDate: string; timezone: string; 
   });
 }
 
-function formatMoney(amountInUsd: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyAmount({
-    amountInUsd,
-    currency,
+/**
+ * El monto ya está en la moneda del paquete (no convertimos en cliente).
+ * `fallbackCurrency` se usa sólo si el plan no trae código de moneda.
+ */
+function formatMoney(amountMajor: number, language: AppLanguage, planCurrency: string, fallbackCurrency: SupportedCurrency): string {
+  return formatCurrencyMajor({
+    amountMajor,
+    currency: planCurrency,
     language,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
+    fallbackCurrency
   });
 }
 
-function packageUnitPriceUsd(plan: PackagePlan): number {
+function packageUnitPriceMajor(plan: PackagePlan): number {
   return plan.priceCents / 100 / Math.max(1, plan.credits);
 }
 
@@ -946,7 +951,8 @@ export function DashboardPage(props: {
                 const amountLabel = formatSubscriptionPurchasePrice({
                   priceCents: item.priceCents,
                   language: props.language,
-                  displayCurrency: props.currency
+                  displayCurrency: props.currency,
+                  purchaseCurrency: item.currency ?? null
                 });
                 return (
                   <li key={item.id}>
@@ -1035,17 +1041,17 @@ export function DashboardPage(props: {
                             en: "You save {amount}",
                             pt: "Voce economiza {amount}"
                           }),
-                          { amount: formatMoney(savingAmount, props.language, props.currency) }
+                          { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
                         )}
                       </span>
                     </div>
                     <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
                     <p className="sessions-package-card-description">{localizedPackageDescription(plan.id, plan.description)}</p>
                     <div className="deal-pricing-top">
-                      <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency)}</span>
+                      <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
                       <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                     </div>
-                    <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency)}</p>
+                    <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)}</p>
                     <p className="sessions-package-card-unit">
                       {replaceTemplate(
                         t(props.language, {
@@ -1053,7 +1059,7 @@ export function DashboardPage(props: {
                           en: "Equivalent to {amount} per session",
                           pt: "Equivale a {amount} por sessao"
                         }),
-                        { amount: formatMoney(pricePerSession, props.language, props.currency) }
+                        { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
                       )}
                     </p>
                     <ul className="sessions-package-benefits">
@@ -1316,7 +1322,7 @@ export function DashboardPage(props: {
               <div className="dashboard-rn-mcare-stack">
                 {rnPackagePlansSorted.map((plan) => {
                   const selected = rnMcarePlanId === plan.id;
-                  const unitLabel = formatMoney(packageUnitPriceUsd(plan), props.language, props.currency);
+                  const unitLabel = formatMoney(packageUnitPriceMajor(plan), props.language, plan.currency, props.currency);
                   const marketingLabel = packageRhythmLabel(plan.credits, (values) => t(props.language, values));
                   return (
                     <button
@@ -1387,7 +1393,7 @@ export function DashboardPage(props: {
                   pt: "Continuar — {total} total"
                 }),
                 {
-                  total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, props.currency)
+                  total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, rnSelectedPlan.currency, props.currency)
                 }
               )}
             </button>

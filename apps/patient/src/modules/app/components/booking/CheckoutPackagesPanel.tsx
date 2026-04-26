@@ -1,5 +1,5 @@
 import {
-  formatCurrencyAmount,
+  formatCurrencyMajor,
   replaceTemplate,
   textByLanguage,
   type AppLanguage,
@@ -13,12 +13,17 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatMoney(amountInUsd: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyAmount({
-    amountInUsd,
-    currency,
+/**
+ * Formatea un monto que YA está expresado en la moneda del paquete (no convierte).
+ * El backend devuelve `priceCents` en la moneda nativa del market del paciente.
+ */
+function formatMoney(amountMajor: number, language: AppLanguage, planCurrency: string, fallbackCurrency: SupportedCurrency): string {
+  return formatCurrencyMajor({
+    amountMajor,
+    currency: planCurrency,
     language,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
+    fallbackCurrency
   });
 }
 
@@ -29,8 +34,8 @@ export function CheckoutPackagesPanel(props: {
   packagePlans: PackagePlan[];
   featuredPackageId: string | null;
   selectedCheckoutPlanId: string | null;
-  /** Precio unitario estimado (paquete 1 crédito o proporcional del primer bundle). */
-  unitPriceUsd: number | null;
+  /** Precio unitario estimado en la moneda del catálogo (1 crédito o proporcional del primer bundle). */
+  unitPriceMajor: number | null;
   onClose: () => void;
   onSelectCard: (planId: string) => void;
   onSelectPlan: (plan: PackagePlan) => void;
@@ -38,7 +43,7 @@ export function CheckoutPackagesPanel(props: {
 }) {
   const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
-  const canIndividualCta = !props.packagesLoading && props.unitPriceUsd !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
+  const canIndividualCta = !props.packagesLoading && props.unitPriceMajor !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
 
   const individualLinkLabel = t(props.language, {
     es: "Comprar sesiones individuales",
@@ -150,17 +155,17 @@ export function CheckoutPackagesPanel(props: {
                             en: "You save {amount}",
                             pt: "Voce economiza {amount}"
                           }),
-                          { amount: formatMoney(savingAmount, props.language, props.currency) }
+                          { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
                         )}
                       </span>
                     </div>
                     <h3>{plan.name}</h3>
                     <p className="sessions-package-card-description">{plan.description}</p>
                     <div className="deal-pricing-top">
-                      <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency)}</span>
+                      <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
                       <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                     </div>
-                    <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency)}</p>
+                    <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)}</p>
                     <p className="sessions-package-card-unit">
                       {replaceTemplate(
                         t(props.language, {
@@ -168,7 +173,7 @@ export function CheckoutPackagesPanel(props: {
                           en: "Equivalent to {amount} per session",
                           pt: "Equivale a {amount} por sessao"
                         }),
-                        { amount: formatMoney(pricePerSession, props.language, props.currency) }
+                        { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
                       )}
                     </p>
                     <ul className="sessions-package-benefits">

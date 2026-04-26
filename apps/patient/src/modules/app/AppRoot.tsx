@@ -4,11 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
+  defaultDisplayCurrencyForMarket,
   type AppLanguage,
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
-import { isMarket, joinFirstLastToFullName } from "@therapy/types";
+import { isMarket, joinFirstLastToFullName, type Market } from "@therapy/types";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
@@ -110,7 +111,8 @@ const defaultState: PatientAppState = {
   googleCalendarConnected: false,
   emailVerificationRequired: false,
   language: "es",
-  currency: "USD",
+  /** Por defecto se asume mercado AR; la moneda se sincroniza con `patientMarket`. */
+  currency: defaultDisplayCurrencyForMarket("AR"),
   patientMarket: "AR",
   intake: null,
   onboardingFinalCompleted: false,
@@ -168,12 +170,18 @@ function loadState(): PatientAppState {
       language: (SUPPORTED_LANGUAGES as readonly string[]).includes((parsed as any).language)
         ? (parsed as any).language
         : "es",
-      currency: (SUPPORTED_CURRENCIES as readonly string[]).includes((parsed as any).currency)
-        ? (parsed as any).currency
-        : "USD",
       patientMarket: (() => {
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
         return isMarket(pm) ? pm : "AR";
+      })(),
+      currency: (() => {
+        const storedCurrency = (parsed as { currency?: unknown }).currency;
+        if (typeof storedCurrency === "string" && (SUPPORTED_CURRENCIES as readonly string[]).includes(storedCurrency)) {
+          return storedCurrency as PatientAppState["currency"];
+        }
+        const pm = (parsed as { patientMarket?: unknown }).patientMarket;
+        const market: Market = isMarket(pm) ? pm : "AR";
+        return defaultDisplayCurrencyForMarket(market);
       })(),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
@@ -965,6 +973,11 @@ export function App() {
               const m = profileResponse?.profile?.market;
               return isMarket(m) ? m : "AR";
             })(),
+            currency: (() => {
+              const m = profileResponse?.profile?.market;
+              const resolvedMarket: Market = isMarket(m) ? m : current.patientMarket;
+              return defaultDisplayCurrencyForMarket(resolvedMarket);
+            })(),
             profile: {
               ...current.profile,
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
@@ -1451,7 +1464,12 @@ export function App() {
           assignedProfessionalId: null,
           assignedProfessionalName: null,
           session: current.session ? { ...current.session } : null,
-          ...(nextMarket ? { patientMarket: nextMarket } : {}),
+          ...(nextMarket
+            ? {
+                patientMarket: nextMarket,
+                currency: defaultDisplayCurrencyForMarket(nextMarket)
+              }
+            : {}),
           intake: {
             completed: true,
             completedAt: response.intake.completedAt,

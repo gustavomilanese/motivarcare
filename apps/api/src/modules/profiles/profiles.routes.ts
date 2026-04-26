@@ -11,6 +11,7 @@ import {
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import {
+  effectiveSessionPriceArs,
   listPriceMajorUnitsForPackageMarket,
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
@@ -461,11 +462,42 @@ async function loadProfessionalProfilesForDirectory(where: Prisma.ProfessionalPr
   });
 }
 
+/**
+ * Cotización USD/ARS vigente, con fallback silencioso si la API externa cae.
+ * Se usa para derivar `sessionPriceArs` cuando el profesional sólo tiene precio en USD,
+ * de modo que el paciente AR siempre vea pesos.
+ */
+async function loadUsdArsRateOrNull(): Promise<number | null> {
+  try {
+    return await getUsdArsRate();
+  } catch (error) {
+    console.warn("USD/ARS rate unavailable for directory listing", error);
+    return null;
+  }
+}
+
+/** Moneda canónica que se debe registrar/mostrar para un mercado. */
+function currencyForMarket(market: Market): string {
+  switch (market) {
+    case "AR":
+      return "ars";
+    case "BR":
+      return "brl";
+    case "ES":
+      return "eur";
+    case "US":
+    default:
+      return "usd";
+  }
+}
+
 async function materializeDirectoryProfessionals(professionals: ProfessionalProfileDirectoryRow[]): Promise<DirectoryProfessional[]> {
   const professionalIds = professionals.map((professional) => professional.id);
   if (professionalIds.length === 0) {
     return [];
   }
+
+  const arsPerUsd = await loadUsdArsRateOrNull();
 
   const now = new Date();
   let vacationRangeEnd = new Date(now);
@@ -558,7 +590,14 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
       professional.graduationYear != null
         ? yearsExperienceFromGraduationYear(professional.graduationYear)
         : professional.yearsExperience,
-    sessionPriceArs: professional.sessionPriceArs,
+    sessionPriceArs: effectiveSessionPriceArs(
+      {
+        market: professional.market,
+        sessionPriceArs: professional.sessionPriceArs,
+        sessionPriceUsd: professional.sessionPriceUsd
+      },
+      arsPerUsd
+    ),
     sessionPriceUsd: professional.sessionPriceUsd,
     photoUrl: professional.photoUrl,
     videoUrl: professional.videoUrl,
@@ -1169,9 +1208,10 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     : null;
 
   const pricingProfessional = activeProfessional ?? packageProfessional;
+  const arsPerUsdForPurchase = patient.market === "AR" ? await loadUsdArsRateOrNull() : null;
   const sessionListPriceMajor =
     pricingProfessional != null
-      ? listPriceMajorUnitsForPackageMarket(pricingProfessional, patient.market)
+      ? listPriceMajorUnitsForPackageMarket(pricingProfessional, patient.market, arsPerUsdForPurchase)
       : null;
   const pricing = resolvePackagePricing({
     credits: sessionPackage.credits,
@@ -1224,7 +1264,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
         packageListPriceCentsSnapshot: pricing.listPriceCents,
         packagePriceCentsSnapshot: pricing.priceCents,
         packageDiscountPercentSnapshot: pricing.discountPercent,
-        packageCurrencySnapshot: sessionPackage.currency?.toLowerCase() ?? "usd",
+        packageCurrencySnapshot: currencyForMarket(patient.market),
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
         professionalIdSnapshot: pricingProfessional?.id ?? null
@@ -1308,9 +1348,10 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
       })
     : null;
 
+  const arsPerUsdForIndividual = patient.market === "AR" ? await loadUsdArsRateOrNull() : null;
   const sessionListPriceMajor =
     activeProfessional != null
-      ? listPriceMajorUnitsForPackageMarket(activeProfessional, patient.market)
+      ? listPriceMajorUnitsForPackageMarket(activeProfessional, patient.market, arsPerUsdForIndividual)
       : null;
   const pricing = resolvePackagePricing({
     credits: 1,
@@ -1367,7 +1408,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
         packageListPriceCentsSnapshot: totalListPriceCents,
         packagePriceCentsSnapshot: totalPriceCents,
         packageDiscountPercentSnapshot: pricing.discountPercent,
-        packageCurrencySnapshot: unitPackage.currency?.toLowerCase() ?? "usd",
+        packageCurrencySnapshot: currencyForMarket(patient.market),
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
         professionalIdSnapshot: activeProfessional?.id ?? null

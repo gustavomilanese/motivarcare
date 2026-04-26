@@ -4,7 +4,7 @@ import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyAmount,
+  formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
   textByLanguage
@@ -256,17 +256,25 @@ export function BookingPage(props: {
     ? packagePlans.find((plan) => plan.id === checkoutPaymentPlanId) ?? null
     : null;
 
-  const individualUnitPriceUsd = useMemo(() => {
+  /**
+   * Precio por sesión individual y su moneda nativa. Para pacientes AR el catálogo
+   * devuelve pesos; para US/BR/ES el código de moneda viene del package.
+   */
+  const individualUnitPrice = useMemo<{ amount: number; currency: string } | null>(() => {
     const oneCredit = packagePlans.find((plan) => plan.credits === 1);
     if (oneCredit) {
-      return oneCredit.priceCents / 100;
+      return { amount: oneCredit.priceCents / 100, currency: oneCredit.currency || props.currency };
     }
     const bundle = packagePlans.find((plan) => plan.credits > 1);
     if (!bundle) {
       return null;
     }
-    return bundle.priceCents / 100 / bundle.credits;
-  }, [packagePlans]);
+    return {
+      amount: bundle.priceCents / 100 / bundle.credits,
+      currency: bundle.currency || props.currency
+    };
+  }, [packagePlans, props.currency]);
+  const individualUnitPriceMajor = individualUnitPrice?.amount ?? null;
 
   const resetIndividualPurchaseUi = () => {
     setIndividualQtyOpen(false);
@@ -392,7 +400,7 @@ export function BookingPage(props: {
       individualPurchaseDeepLinkConsumed.current = false;
       return;
     }
-    if (packagesLoading || individualUnitPriceUsd === null) {
+    if (packagesLoading || individualUnitPriceMajor === null) {
       return;
     }
     if (individualPurchaseDeepLinkConsumed.current) {
@@ -403,7 +411,7 @@ export function BookingPage(props: {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("purchase");
     setSearchParams(nextParams, { replace: true });
-  }, [isCheckoutFlow, individualUnitPriceUsd, openIndividualPurchase, packagesLoading, searchParams, setSearchParams]);
+  }, [isCheckoutFlow, individualUnitPriceMajor, openIndividualPurchase, packagesLoading, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (panelMode === "new") {
@@ -695,7 +703,7 @@ export function BookingPage(props: {
 
   const proceedIndividualToPayment = () => {
     const n = Number.parseInt(individualQtyDraft.trim(), 10);
-    if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceUsd === null) {
+    if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceMajor === null) {
       return;
     }
     setIndividualQtyOpen(false);
@@ -1188,7 +1196,7 @@ export function BookingPage(props: {
             packagePlans={packagePlans}
             featuredPackageId={featuredPackageId}
             selectedCheckoutPlanId={selectedCheckoutPlanId}
-            unitPriceUsd={individualUnitPriceUsd}
+            unitPriceMajor={individualUnitPriceMajor}
             onClose={() => {
               setCheckoutPaymentLoading(false);
               setCheckoutPaymentPlanId(null);
@@ -1225,7 +1233,8 @@ export function BookingPage(props: {
                 const amountLabel = formatSubscriptionPurchasePrice({
                   priceCents: item.priceCents,
                   language: props.language,
-                  displayCurrency: props.currency
+                  displayCurrency: props.currency,
+                  purchaseCurrency: item.currency ?? null
                 });
                 return (
                   <li key={item.id}>
@@ -1343,6 +1352,7 @@ export function BookingPage(props: {
         <PaymentMethodModal
           language={props.language}
           amountMajor={checkoutPaymentPlan.priceCents / 100}
+          displayCurrency={checkoutPaymentPlan.currency || props.currency}
           loading={checkoutPaymentLoading}
           error={checkoutPaymentError}
           onBack={() => {
@@ -1358,7 +1368,7 @@ export function BookingPage(props: {
         />
       ) : null}
 
-      {isCheckoutFlow && individualQtyOpen && individualUnitPriceUsd !== null ? (
+      {isCheckoutFlow && individualQtyOpen && individualUnitPrice !== null ? (
         <div
           className="matching-flow-backdrop"
           role="presentation"
@@ -1432,11 +1442,11 @@ export function BookingPage(props: {
             </label>
             {(() => {
               const n = Number.parseInt(individualQtyDraft.trim(), 10);
-              const ok = Number.isFinite(n) && n >= 1 && n <= 99;
-              const totalUsd = ok ? individualUnitPriceUsd * n : null;
+              const ok = Number.isFinite(n) && n >= 1 && n <= 99 && individualUnitPrice !== null;
+              const totalMajor = ok && individualUnitPrice ? individualUnitPrice.amount * n : null;
               return (
                 <p className="checkout-individual-qty-total">
-                  {ok && totalUsd !== null
+                  {ok && totalMajor !== null && individualUnitPrice
                     ? replaceTemplate(
                         t(props.language, {
                           es: "Total estimado: {amount}",
@@ -1444,11 +1454,12 @@ export function BookingPage(props: {
                           pt: "Total estimado: {amount}"
                         }),
                         {
-                          amount: formatCurrencyAmount({
-                            amountInUsd: totalUsd,
-                            currency: props.currency,
+                          amount: formatCurrencyMajor({
+                            amountMajor: totalMajor,
+                            currency: individualUnitPrice.currency,
                             language: props.language,
-                            maximumFractionDigits: 0
+                            maximumFractionDigits: 0,
+                            fallbackCurrency: props.currency
                           })
                         }
                       )
@@ -1491,10 +1502,11 @@ export function BookingPage(props: {
         </div>
       ) : null}
 
-      {isCheckoutFlow && individualPaymentCount !== null && individualUnitPriceUsd !== null ? (
+      {isCheckoutFlow && individualPaymentCount !== null && individualUnitPrice !== null ? (
         <PaymentMethodModal
           language={props.language}
-          amountMajor={individualUnitPriceUsd * individualPaymentCount}
+          amountMajor={individualUnitPrice.amount * individualPaymentCount}
+          displayCurrency={individualUnitPrice.currency || props.currency}
           loading={individualPaymentLoading}
           error={individualPaymentError}
           onBack={() => {
