@@ -378,16 +378,79 @@ const SURFACE: Record<AdminSurfaceContext, LocalizedText> = {
   }
 };
 
+/**
+ * Heurística defensiva: ¿el `raw` del API es un mensaje útil para el admin?
+ * Usa criterios conservadores (longitud razonable, contenido alfabético, no es
+ * un dump técnico) en vez de una whitelist por palabras (clave/idioma).
+ */
+function rawLooksUserFacing(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (trimmed.length < 6 || trimmed.length > 280) {
+    return false;
+  }
+  if (/^HTTP\s/i.test(trimmed)) {
+    return false;
+  }
+  if (/^Cannot reach API at/i.test(trimmed)) {
+    return false;
+  }
+  if (/[{}\[\]<>]/.test(trimmed)) {
+    return false;
+  }
+  return /[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(trimmed);
+}
+
+/** Contextos de "guardar" donde el detalle del backend (rangos, campos
+ * inválidos, foto > límite) suele ser indispensable para que el admin sepa
+ * qué corregir. */
+const SAVE_CONTEXTS_SHOWING_RAW_DETAIL: ReadonlySet<AdminSurfaceContext> = new Set([
+  "users-update",
+  "users-create",
+  "session-packages-save",
+  "portal-hero-asset-save",
+  "web-admin-save",
+  "web-admin-review-save",
+  "web-admin-blog-save",
+  "web-admin-exercise-save",
+  "prof-ops-update",
+  "prof-ops-slot-create",
+  "prof-ops-session-update",
+  "patients-create",
+  "patients-package-create",
+  "patients-package-update",
+  "patients-update",
+  "patients-booking-update",
+  "patients-triage",
+  "finance-rules-save"
+]);
+
 export function adminSurfaceMessage(context: AdminSurfaceContext, language: AppLanguage, raw?: string): string {
-  if (raw?.trim()) {
-    const net = softNetworkOrHttp(language, raw);
+  const friendly = t(language, SURFACE[context]);
+  const trimmed = raw?.trim() ?? "";
+
+  if (trimmed.length > 0) {
+    const net = softNetworkOrHttp(language, trimmed);
     if (net) {
       return net;
     }
     /** En desarrollo, el mensaje genérico ocultaba el error real del API (KPIs / Prisma / 503). */
     if (context === "admin-kpis-load" && import.meta.env.DEV) {
-      return `${t(language, SURFACE[context])}\n\n${raw.trim()}`;
+      return `${friendly}\n\n${trimmed}`;
+    }
+    /**
+     * En contextos de "guardar", si el backend devolvió un detalle legible
+     * (e.g. "sessionPriceUsd: Session list price must be between 30 and 1000 USD."
+     * o "photoUrl: Invalid image source"), lo agregamos como "Detalle:" para
+     * que el admin sepa qué corregir sin tener que abrir la consola del navegador.
+     */
+    if (SAVE_CONTEXTS_SHOWING_RAW_DETAIL.has(context) && rawLooksUserFacing(trimmed)) {
+      const detailLabel = t(language, {
+        es: "Detalle",
+        en: "Details",
+        pt: "Detalhe"
+      });
+      return `${friendly}\n\n${detailLabel}: ${trimmed}`;
     }
   }
-  return t(language, SURFACE[context]);
+  return friendly;
 }

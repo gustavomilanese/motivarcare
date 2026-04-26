@@ -1885,7 +1885,22 @@ adminRouter.get("/professionals", async (req, res) => {
 adminRouter.patch("/professionals/:professionalId", async (req, res) => {
   const parsed = updateProfessionalSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+    /**
+     * Antes devolvíamos sólo "Invalid payload" + `details` crudos de Zod, lo
+     * que en el admin terminaba mostrando el mensaje genérico
+     * "No guardamos los datos del profesional. Revisá rangos numéricos…"
+     * sin pista de cuál campo había fallado. Ahora exponemos el primer
+     * issue de forma legible para que el admin sepa qué corregir
+     * (típicamente: foto que no es URL/data:image válida, o un número fuera
+     * de rango). Mantenemos `details` para uso programático.
+     */
+    const firstIssue = parsed.error.issues[0];
+    const fieldPath =
+      firstIssue && firstIssue.path.length > 0 ? firstIssue.path.join(".") : "payload";
+    const errorMessage = firstIssue ? `${fieldPath}: ${firstIssue.message}` : "Invalid payload";
+    return res
+      .status(400)
+      .json({ error: errorMessage, field: fieldPath, details: parsed.error.flatten() });
   }
 
   const existing = await prisma.professionalProfile.findUnique({ where: { id: req.params.professionalId } });
@@ -1917,31 +1932,48 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     }
   }
 
-  const updated = await prisma.professionalProfile.update({
-    where: { id: existing.id },
-    data: {
-      ...(parsed.data.visible !== undefined ? { visible: parsed.data.visible } : {}),
-      ...(parsed.data.registrationApproval !== undefined ? { registrationApproval: parsed.data.registrationApproval } : {}),
-      ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
-      ...(parsed.data.specialization !== undefined ? { specialization: parsed.data.specialization } : {}),
-      ...(parsed.data.focusPrimary !== undefined ? { focusPrimary: parsed.data.focusPrimary } : {}),
-      ...(parsed.data.cancellationHours !== undefined ? { cancellationHours: parsed.data.cancellationHours } : {}),
-      ...(parsed.data.bio !== undefined ? { bio: parsed.data.bio } : {}),
-      ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),
-      ...(parsed.data.yearsExperience !== undefined ? { yearsExperience: parsed.data.yearsExperience } : {}),
-      ...(parsed.data.birthCountry !== undefined ? { birthCountry: parsed.data.birthCountry } : {}),
-      ...(parsed.data.residencyCountry !== undefined
-        ? {
-            residencyCountry: parsed.data.residencyCountry,
-            market: marketFromResidencyCountry(parsed.data.residencyCountry ?? undefined)
-          }
-        : {}),
-      ...(parsed.data.sessionPriceArs !== undefined ? { sessionPriceArs: parsed.data.sessionPriceArs } : {}),
-      ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
-      ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
-      ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})
-    }
-  });
+  let updated;
+  try {
+    updated = await prisma.professionalProfile.update({
+      where: { id: existing.id },
+      data: {
+        ...(parsed.data.visible !== undefined ? { visible: parsed.data.visible } : {}),
+        ...(parsed.data.registrationApproval !== undefined ? { registrationApproval: parsed.data.registrationApproval } : {}),
+        ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
+        ...(parsed.data.specialization !== undefined ? { specialization: parsed.data.specialization } : {}),
+        ...(parsed.data.focusPrimary !== undefined ? { focusPrimary: parsed.data.focusPrimary } : {}),
+        ...(parsed.data.cancellationHours !== undefined ? { cancellationHours: parsed.data.cancellationHours } : {}),
+        ...(parsed.data.bio !== undefined ? { bio: parsed.data.bio } : {}),
+        ...(parsed.data.therapeuticApproach !== undefined ? { therapeuticApproach: parsed.data.therapeuticApproach } : {}),
+        ...(parsed.data.yearsExperience !== undefined ? { yearsExperience: parsed.data.yearsExperience } : {}),
+        ...(parsed.data.birthCountry !== undefined ? { birthCountry: parsed.data.birthCountry } : {}),
+        ...(parsed.data.residencyCountry !== undefined
+          ? {
+              residencyCountry: parsed.data.residencyCountry,
+              market: marketFromResidencyCountry(parsed.data.residencyCountry ?? undefined)
+            }
+          : {}),
+        ...(parsed.data.sessionPriceArs !== undefined ? { sessionPriceArs: parsed.data.sessionPriceArs } : {}),
+        ...(parsed.data.sessionPriceUsd !== undefined ? { sessionPriceUsd: parsed.data.sessionPriceUsd } : {}),
+        ...(parsed.data.photoUrl !== undefined ? { photoUrl: parsed.data.photoUrl } : {}),
+        ...(parsed.data.videoUrl !== undefined ? { videoUrl: parsed.data.videoUrl } : {})
+      }
+    });
+  } catch (error) {
+    /**
+     * Sin try/catch, un fallo de Prisma (por ejemplo `photoUrl` que pisa un
+     * límite de columna en MySQL, o un timeout) caía en el handler global
+     * como 500 sin info útil para el admin. Ahora devolvemos el mensaje
+     * traducido de Prisma para que se vea en la consola.
+     */
+    console.error("[admin/professionals/PATCH] update failed", {
+      professionalId: existing.id,
+      payloadKeys: Object.keys(parsed.data),
+      photoUrlLength: typeof parsed.data.photoUrl === "string" ? parsed.data.photoUrl.length : null,
+      error
+    });
+    return res.status(500).json({ error: prismaErrorUserMessage(error) });
+  }
 
   await applyProfessionalDisplayOverrideDelta(existing.id, {
     ratingAverage: parsed.data.ratingAverage,
