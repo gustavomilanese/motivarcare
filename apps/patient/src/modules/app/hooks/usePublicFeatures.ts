@@ -7,10 +7,13 @@ import { apiRequest } from "../services/api";
  */
 export interface PublicFeaturesFlags {
   intakeChatEnabled: boolean;
+  /** Chat IA flotante de acompañamiento durante el tratamiento. */
+  treatmentChatEnabled: boolean;
 }
 
 const DEFAULT_FLAGS: PublicFeaturesFlags = {
-  intakeChatEnabled: false
+  intakeChatEnabled: false,
+  treatmentChatEnabled: false
 };
 
 /**
@@ -26,7 +29,8 @@ function loadFeatures(): Promise<PublicFeaturesFlags> {
   if (cachedFlagsPromise) return cachedFlagsPromise;
   cachedFlagsPromise = apiRequest<Partial<PublicFeaturesFlags>>("/api/public/features", { method: "GET" })
     .then((raw) => ({
-      intakeChatEnabled: Boolean(raw?.intakeChatEnabled)
+      intakeChatEnabled: Boolean(raw?.intakeChatEnabled),
+      treatmentChatEnabled: Boolean(raw?.treatmentChatEnabled)
     }))
     .catch((err) => {
       console.warn("[usePublicFeatures] no pude leer /api/public/features:", err instanceof Error ? err.message : err);

@@ -40,6 +40,7 @@ import {
   fetchActiveIntakeChatSession,
   type IntakeChatSessionDto
 } from "../intake/services/intakeChatApi";
+import { TreatmentChatFAB } from "../treatment-chat/components/TreatmentChatFAB";
 import { usePublicFeatures } from "./hooks/usePublicFeatures";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
@@ -1596,22 +1597,33 @@ export function App() {
   }
 
   return (
-    <MainPortal
-      state={state}
-      professionalDirectory={professionalDirectory}
-      professionalPhotoMap={professionalPhotoMap}
-      sessionTimezone={sessionTimezone}
-      onStateChange={updateState}
-      onLogout={() => {
-        clearPostIntakePhotoPending();
-        clearPostTrialCalendarPending();
-        clearCalendarOfferContext();
-        setShowPostIntakePhotoStep(false);
-        setProfileSyncReady(false);
-        setProfessionalDirectory(professionalsCatalog);
-        setProfessionalPhotoMap(professionalImageMap);
-        setState(defaultState);
-      }}
-    />
+    <>
+      <MainPortal
+        state={state}
+        professionalDirectory={professionalDirectory}
+        professionalPhotoMap={professionalPhotoMap}
+        sessionTimezone={sessionTimezone}
+        onStateChange={updateState}
+        onLogout={() => {
+          clearPostIntakePhotoPending();
+          clearPostTrialCalendarPending();
+          clearCalendarOfferContext();
+          setShowPostIntakePhotoStep(false);
+          setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
+          setState(defaultState);
+        }}
+      />
+      {/**
+       * Chat IA flotante de acompañamiento del tratamiento. Solo se monta en el
+       * portal "post-intake" del paciente (no durante el wizard ni la pantalla
+       * de email-required) y detrás del feature flag público. El propio FAB es
+       * lazy: no llama al backend hasta que el paciente abre el panel.
+       */}
+      {publicFeatures.treatmentChatEnabled && state.authToken ? (
+        <TreatmentChatFAB authToken={state.authToken} language={state.language} />
+      ) : null}
+    </>
   );
 }

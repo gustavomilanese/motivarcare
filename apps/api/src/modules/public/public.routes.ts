@@ -132,7 +132,8 @@ publicRouter.get("/session-price-bounds", async (_req, res) => {
  */
 publicRouter.get("/features", (_req, res) => {
   return res.json({
-    intakeChatEnabled: env.INTAKE_CHAT_ENABLED
+    intakeChatEnabled: env.INTAKE_CHAT_ENABLED,
+    treatmentChatEnabled: env.TREATMENT_CHAT_ENABLED
   });
 });
 
