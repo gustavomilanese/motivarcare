@@ -71,6 +71,16 @@ const EnvSchema = z.object({
   INTAKE_CHAT_MAX_COST_USD_CENTS: z.coerce.number().int().positive().default(50),
   /** Provider del intake-chat. `mock` no llama a la API y permite tests / demos sin costo. */
   INTAKE_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
+  /** Activa el chat IA flotante de acompañamiento del tratamiento (post-intake, durante terapia). */
+  TREATMENT_CHAT_ENABLED: z.coerce.boolean().default(false),
+  /** Cap diario de turnos del usuario para acotar costo y evitar abuso. */
+  TREATMENT_CHAT_DAILY_TURN_LIMIT: z.coerce.number().int().positive().default(30),
+  /** Cap por respuesta del LLM (tokens de output) para limitar costo y forzar concisión. */
+  TREATMENT_CHAT_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(400),
+  /** Cantidad de mensajes recientes que pasamos al LLM como contexto en cada turno. */
+  TREATMENT_CHAT_CONTEXT_WINDOW: z.coerce.number().int().positive().default(20),
+  /** Provider del treatment-chat. Mock no llama a la API y permite tests / demos sin costo. */
+  TREATMENT_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
   /** Secreto Turnstile (registro profesional). Vacío = no se exige token en el API. */
   TURNSTILE_SECRET_KEY: z.string().optional().default("")
 });

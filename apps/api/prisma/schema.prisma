@@ -136,6 +136,7 @@ model PatientProfile {
   aiAuditJobs    AIAuditJob[]
   financeRecords FinanceSessionRecord[]
   intakeChatSessions PatientIntakeChatSession[]
+  treatmentChat  PatientTreatmentChat?
 }
 
 model ProfessionalProfile {
@@ -261,6 +262,68 @@ model PatientIntakeChatSession {
 
   @@index([patientId, status, updatedAt])
   @@map("patient_intake_chat_session")
+}
+
+/// Chat IA de acompañamiento del tratamiento (1:1 con PatientProfile).
+/// Distinto del intake-chat: es continuo, persiste indefinidamente y se usa para
+/// soporte emocional ligero + atajos operativos (consultas sobre próxima sesión, créditos, etc.).
+/// El profesional puede ver un resumen agregado (PR-T4) si el paciente lo consintió.
+model PatientTreatmentChat {
+  id                        String   @id @default(cuid())
+  patientId                 String   @unique @map("patient_id")
+  /// active | archived
+  status                    String   @default("active")
+  messageCount              Int      @default(0) @map("message_count")
+  estimatedCostUsdCents     Int      @default(0) @map("estimated_cost_usd_cents")
+  lastUserMessageAt         DateTime? @map("last_user_message_at")
+  /// Cap diario de turnos del usuario; se resetea cuando cambia la fecha.
+  dailyCounterDate          DateTime? @map("daily_counter_date") @db.Date
+  dailyCounterValue         Int      @default(0) @map("daily_counter_value")
+  /// Severidad de seguridad más alta detectada en cualquier turno (none | low | high).
+  highestSafetySeverity     String?  @map("highest_safety_severity")
+  /// Última vez que se disparó un turno con safety triggered (para priorizar el panel del profesional).
+  lastSafetyEventAt         DateTime? @map("last_safety_event_at")
+  llmProvider               String?  @map("llm_provider")
+  llmModel                  String?  @map("llm_model")
+  /// Resumen cacheado para el profesional (JSON con { weekly, overall, generatedAt, ... }).
+  professionalSummaryJson   Json?    @map("professional_summary_json")
+  professionalSummaryAt     DateTime? @map("professional_summary_at")
+  /// Cuenta de mensajes al momento de generar el resumen — si crece, regeneramos.
+  professionalSummaryMessageCount Int? @map("professional_summary_message_count")
+  /// Consentimiento explícito del paciente para que su profesional vea el resumen agregado.
+  professionalShareConsent  Boolean  @default(false) @map("professional_share_consent")
+  professionalShareConsentAt DateTime? @map("professional_share_consent_at")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  patient                   PatientProfile                @relation(fields: [patientId], references: [id])
+  messages                  PatientTreatmentChatMessage[]
+
+  @@map("patient_treatment_chat")
+}
+
+/// Mensaje individual del chat de tratamiento.
+/// Tabla aparte (en vez de JSON inline como intake) porque el chat crece sin límite
+/// y se necesita query con ventanas temporales (ej. "últimos 7 días" para el panel del profesional).
+model PatientTreatmentChatMessage {
+  id              String               @id @default(cuid())
+  chatId          String               @map("chat_id")
+  /// system | assistant | user
+  role            String
+  content         String               @db.Text
+  /// Solo en role=user: severidad detectada por el clasificador (none | low | high).
+  safetySeverity  String?              @map("safety_severity")
+  /// Razonamiento del clasificador (solo auditoría interna; no se muestra al paciente).
+  safetyReasoning String?              @map("safety_reasoning") @db.Text
+  promptTokens    Int?                 @map("prompt_tokens")
+  completionTokens Int?                @map("completion_tokens")
+  costUsdCents    Int?                 @map("cost_usd_cents")
+  /// Si fue ocultado por moderación / safety; no se muestra ni se reusa como contexto.
+  hidden          Boolean              @default(false)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  chat            PatientTreatmentChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+  @@map("patient_treatment_chat_message")
 }
 
 model SessionPackage {

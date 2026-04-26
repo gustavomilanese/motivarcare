@@ -145,6 +145,12 @@ export async function hardDeleteUserInTransaction(
      * generando en la UI un genérico "No pudimos eliminar el usuario".
      */
     await tx.patientIntakeChatSession.deleteMany({ where: { patientId } });
+    /**
+     * PatientTreatmentChat (chat IA de acompañamiento) tiene FK patientId → PatientProfile.id
+     * sin cascade. Sus mensajes (PatientTreatmentChatMessage) sí tienen onDelete: Cascade
+     * sobre el chat, así que basta con borrar el chat para limpiar todo.
+     */
+    await tx.patientTreatmentChat.deleteMany({ where: { patientId } });
     await tx.patientIntake.deleteMany({ where: { patientId } });
     await tx.patientProfile.delete({ where: { id: patientId } });
   }

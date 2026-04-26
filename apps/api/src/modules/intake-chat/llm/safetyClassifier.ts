@@ -1,4 +1,16 @@
-import type { IntakeChatProvider, SafetyClassifierResult } from "./IntakeChatProvider.js";
+import type {
+  SafetyClassifierInput,
+  SafetyClassifierResult
+} from "./IntakeChatProvider.js";
+
+/**
+ * Cualquier provider que sepa clasificar mensajes por riesgo. `IntakeChatProvider`
+ * lo cumple, igual que `TreatmentChatProvider`. Lo definimos por estructura para
+ * que `evaluateSafety` se pueda reutilizar entre features sin acoplar al intake.
+ */
+export interface SafetyCapableProvider {
+  classifySafety(input: SafetyClassifierInput): Promise<SafetyClassifierResult>;
+}
 
 /**
  * Heurísticas de seguridad determinísticas: si matchean, devolvemos `high` SIN
@@ -72,7 +84,7 @@ export interface SafetyEvalInput {
  * - Sino, delega en el provider para una evaluación más matizada.
  */
 export async function evaluateSafety(
-  provider: IntakeChatProvider,
+  provider: SafetyCapableProvider,
   input: SafetyEvalInput
 ): Promise<SafetyClassifierResult & { source: "heuristic" | "llm" }> {
   const lower = input.userMessage.toLowerCase();
