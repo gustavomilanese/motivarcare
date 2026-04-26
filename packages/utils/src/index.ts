@@ -104,6 +104,12 @@ function normalizeCurrencyCode(currency: string | null | undefined, fallback: Su
 /**
  * Formatea un monto que YA está expresado en la moneda final (no convierte).
  * Para precios que vienen del API en su moneda nativa (p. ej. ARS para market AR).
+ *
+ * Por defecto usa `currencyDisplay: "code"` (p. ej. "ARS 380.000", "USD 95").
+ * El símbolo "$" es ambiguo en LATAM (lo comparten ARS, USD, MXN, CLP, etc.) y
+ * un paciente argentino mirando "$ 380" no puede saber si son pesos o dólares.
+ * Mostrar el código ISO disipa cualquier duda y es práctica estándar en
+ * plataformas multimercado.
  */
 export function formatCurrencyMajor(params: {
   /** Monto en unidades mayores (no centavos). */
@@ -113,12 +119,19 @@ export function formatCurrencyMajor(params: {
   language: AppLanguage;
   maximumFractionDigits?: number;
   fallbackCurrency?: SupportedCurrency;
+  /**
+   * Cómo mostrar la moneda. Por defecto `"code"` (ARS, USD, EUR, BRL).
+   * Pasar `"symbol"` para mostrar "$ / US$ / € / R$" (sólo si el contexto
+   * deja inequívocamente claro de qué moneda se trata).
+   */
+  currencyDisplay?: "code" | "symbol" | "narrowSymbol" | "name";
 }): string {
   const code = normalizeCurrencyCode(params.currency, params.fallbackCurrency ?? "USD");
   const locale = localeFromLanguage(params.language);
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: code,
+    currencyDisplay: params.currencyDisplay ?? "code",
     maximumFractionDigits: params.maximumFractionDigits ?? 0
   }).format(params.amountMajor);
 }
@@ -135,13 +148,15 @@ export function formatCurrencyMinor(params: {
   language: AppLanguage;
   maximumFractionDigits?: number;
   fallbackCurrency?: SupportedCurrency;
+  currencyDisplay?: "code" | "symbol" | "narrowSymbol" | "name";
 }): string {
   return formatCurrencyMajor({
     amountMajor: params.amountMinor / 100,
     currency: params.currency,
     language: params.language,
     maximumFractionDigits: params.maximumFractionDigits,
-    fallbackCurrency: params.fallbackCurrency
+    fallbackCurrency: params.fallbackCurrency,
+    currencyDisplay: params.currencyDisplay
   });
 }
 
