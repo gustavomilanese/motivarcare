@@ -10,6 +10,7 @@ import {
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
+import { DEFAULT_BLOG_POSTS } from "../web-content/blogPosts.defaults.js";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import {
@@ -2776,6 +2777,41 @@ adminRouter.post("/web-content/blog-posts", async (req, res) => {
   });
 
   return res.status(201).json({ blogPost: createdPost, updatedAt: saved.updatedAt });
+});
+
+/**
+ * Importa el catálogo por defecto (las 18 notas de la landing) al SystemConfig.
+ * Solo lo permite cuando todavía no hay notas cargadas, para evitar pisar trabajo del admin.
+ * Una vez aplicado, las notas se pueden editar/borrar como cualquier otra desde el panel.
+ */
+adminRouter.post("/web-content/blog-posts/seed-defaults", async (_req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } });
+  const current = blogPostsCollectionSchema.safeParse(config?.value);
+  const existing = current.success ? current.data : [];
+
+  if (existing.length > 0) {
+    return res.status(409).json({
+      error: "Ya hay notas cargadas. Eliminá las existentes antes de importar el catálogo inicial."
+    });
+  }
+
+  const seeded = DEFAULT_BLOG_POSTS.map((post) => ({ ...post }));
+  const validated = blogPostsCollectionSchema.safeParse(seeded);
+  if (!validated.success) {
+    return res.status(500).json({ error: "Default catalog failed validation", details: validated.error.flatten() });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_BLOG_POSTS_KEY },
+    update: { value: validated.data },
+    create: { key: WEB_BLOG_POSTS_KEY, value: validated.data }
+  });
+
+  return res.status(201).json({
+    blogPosts: validated.data,
+    imported: validated.data.length,
+    updatedAt: saved.updatedAt
+  });
 });
 
 adminRouter.put("/web-content/blog-posts/:postId", async (req, res) => {

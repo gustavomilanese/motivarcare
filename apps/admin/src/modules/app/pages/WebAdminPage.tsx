@@ -519,6 +519,39 @@ export function WebAdminPage({
     }
   }
 
+  async function seedDefaultBlogPosts() {
+    setError("");
+    setSuccess("");
+    const confirmed = window.confirm(
+      t(language, {
+        es: "Vas a importar las 18 notas iniciales del catálogo MotivarCare. Después podés editarlas o borrarlas como cualquier otra. ¿Continuar?",
+        en: "You will import the 18 initial articles from the MotivarCare catalog. You can edit or delete them afterwards. Continue?",
+        pt: "Vai importar as 18 notas iniciais do catálogo MotivarCare. Depois pode editá-las ou removê-las normalmente. Continuar?"
+      })
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      const response = await apiRequest<{ imported: number }>(
+        "/api/admin/web-content/blog-posts/seed-defaults",
+        { method: "POST", body: JSON.stringify({}) },
+        token
+      );
+      setSuccess(
+        t(language, {
+          es: `Catálogo inicial cargado: ${response.imported} notas.`,
+          en: `Initial catalog imported: ${response.imported} articles.`,
+          pt: `Catálogo inicial carregado: ${response.imported} notas.`
+        })
+      );
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-blog-save", language, raw));
+    }
+  }
+
   async function saveExercise(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -900,8 +933,35 @@ export function WebAdminPage({
               value={postSearch}
               onChange={(event) => setPostSearch(event.target.value)}
             />
+            {posts.length === 0 ? (
+              <button
+                className="ghost"
+                type="button"
+                onClick={() => void seedDefaultBlogPosts()}
+                title={t(language, {
+                  es: "Importa las 18 notas del catálogo de la landing como punto de partida.",
+                  en: "Import the 18 articles from the landing catalog as a starting point.",
+                  pt: "Importa as 18 notas do catálogo da landing como ponto de partida."
+                })}
+              >
+                {t(language, {
+                  es: "Importar 18 notas iniciales",
+                  en: "Import 18 starter articles",
+                  pt: "Importar 18 notas iniciais"
+                })}
+              </button>
+            ) : null}
             <button className="primary" type="button" onClick={openCreatePostModal}>Nuevo articulo</button>
           </div>
+          {posts.length === 0 ? (
+            <p className="web-admin-helper-note">
+              {t(language, {
+                es: "Aún no hay notas cargadas. Mientras tanto, los pacientes y la landing ven el catálogo de cortesía (las 18 notas de MotivarCare). Hacé clic en \"Importar 18 notas iniciales\" para tomarlas como propias y poder editarlas o borrarlas.",
+                en: "No articles loaded yet. In the meantime, patients and the landing show the courtesy catalog (the 18 MotivarCare articles). Click \"Import 18 starter articles\" to take ownership and edit or delete them.",
+                pt: "Ainda não há notas carregadas. Enquanto isso, pacientes e a landing veem o catálogo de cortesia (as 18 notas MotivarCare). Clique em \"Importar 18 notas iniciais\" para assumi-las e editá-las ou removê-las."
+              })}
+            </p>
+          ) : null}
           <div className="stack web-admin-scroll-list">
             {filteredPosts.length === 0 ? (
               <p className="web-admin-empty-list">No hay articulos para mostrar con ese filtro.</p>
