@@ -63,6 +63,26 @@ function IconAccount(props: { className?: string }) {
   );
 }
 
+function IconProfessionals(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0 1 12 0" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M14.5 20a4.5 4.5 0 0 1 6.5-4" />
+    </svg>
+  );
+}
+
+function IconNotes(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V20l-3-2-3 2-3-2-3 2V4.5Z" />
+      <path d="M9 8h6M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
@@ -126,6 +146,12 @@ export function PortalNavigation(props: {
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profesionales">
+              {t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/notas">
+              {t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="nav-link-with-badge">
@@ -310,6 +336,14 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
               <IconSessions className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profesionales">
+              <IconProfessionals className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Equipo", en: "Team", pt: "Equipe" })}</span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/notas">
+              <IconNotes className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="mobile-nav-link-inner">

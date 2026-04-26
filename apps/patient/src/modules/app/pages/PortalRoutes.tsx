@@ -7,6 +7,9 @@ import { BookingPage } from "./BookingPage";
 import { ChatPage } from "./ChatPage";
 import { MatchingPage } from "./MatchingPage";
 import { ProfilePage } from "./ProfilePage";
+import { ProfessionalsShowcasePage } from "../../professionals-showcase/pages/ProfessionalsShowcasePage";
+import { ArticlesListPage } from "../../articles/pages/ArticlesListPage";
+import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { API_BASE } from "../services/api";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
@@ -315,6 +318,37 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <Navigate replace to="/sessions" />
+        }
+      />
+      <Route
+        path="/profesionales"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : (
+                <ProfessionalsShowcasePage
+                  language={props.state.language}
+                  professionals={props.professionalDirectory}
+                  professionalPhotoMap={props.professionalPhotoMap}
+                  onImageFallback={props.onImageFallback}
+                />
+              )
+        }
+      />
+      <Route
+        path="/notas"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <ArticlesListPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/notas/:slug"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <ArticleReaderPage language={props.state.language} />
         }
       />
       <Route
