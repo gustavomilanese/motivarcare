@@ -3,9 +3,10 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { evaluateSafety } from "../intake-chat/llm/safetyClassifier.js";
 import { getTreatmentChatProvider } from "./llm/providerFactory.js";
+import { loadPatientContext } from "./patientContext.js";
 import {
-  TREATMENT_CHAT_INITIAL_GREETING,
   TREATMENT_CHAT_SAFETY_ALERT_MESSAGE,
+  buildTreatmentChatGreeting,
   buildTreatmentChatSystemPrompt
 } from "./treatmentChat.prompts.js";
 
@@ -91,6 +92,15 @@ export async function getOrCreateChat(patientId: string): Promise<TreatmentChatD
   }
 
   const provider = getTreatmentChatProvider();
+  /**
+   * Cargamos contexto solo para personalizar el greeting inicial. No bloquea
+   * la creación del chat si falla: en ese caso usamos el greeting genérico.
+   */
+  const initialContext = await loadPatientContext(patientId).catch((err) => {
+    console.warn("[treatment-chat] no pude cargar contexto para greeting:", err);
+    return null;
+  });
+  const greeting = buildTreatmentChatGreeting(initialContext);
   const created = await prisma.patientTreatmentChat.create({
     data: {
       patientId,
@@ -101,7 +111,7 @@ export async function getOrCreateChat(patientId: string): Promise<TreatmentChatD
       messages: {
         create: {
           role: "assistant",
-          content: TREATMENT_CHAT_INITIAL_GREETING
+          content: greeting
         }
       }
     }
@@ -206,8 +216,16 @@ export async function sendMessage(params: {
     ];
 
     try {
+      /**
+       * Cargamos contexto fresh por turno: si falla, seguimos sin él (el LLM
+       * va a derivar al usuario a la app cuando le pregunten algo operativo).
+       */
+      const context = await loadPatientContext(params.patientId).catch((err) => {
+        console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
+        return null;
+      });
       const result = await provider.generateAssistantResponse({
-        systemPrompt: buildTreatmentChatSystemPrompt(),
+        systemPrompt: buildTreatmentChatSystemPrompt(context),
         conversationHistory: conversationForLlm,
         maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
       });

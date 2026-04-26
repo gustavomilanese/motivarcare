@@ -1,3 +1,5 @@
+import type { TreatmentChatPatientContext } from "./patientContext.js";
+
 /**
  * System prompts del chat IA de acompañamiento del tratamiento.
  *
@@ -5,22 +7,21 @@
  * 1. Compañero emocional ligero entre sesiones (psicoeducación, validación, técnicas de respiración,
  *    journaling). NO interpreta, NO diagnostica, NO recomienda fármacos.
  * 2. Asistente operativo de la plataforma (responde sobre próxima sesión, créditos, profesional
- *    asignado). En PR-T1 estos datos NO están todavía inyectados — se agregan en PR-T3 vía
- *    `treatmentChat.context.ts`. Por eso, mientras tanto, el assistant deriva a la app/profe.
+ *    asignado) usando los datos REALES inyectados via `loadPatientContext`.
  *
  * Reglas no-negociables:
  * - Si el paciente está en crisis → respuesta empática + recursos de emergencia + sugerir
  *   contactar al profesional. (El service además bloquea el flujo normal vía safety classifier.)
  * - Mensajes cortos. Sin markdown. Sin diagnóstico clínico.
- * - Idioma del paciente (es por default; PR-T3 lo parametriza).
+ * - Datos operativos: solo los que vienen en el bloque CONTEXTO. Si el dato no está, no inventar.
  */
 
-const TREATMENT_CHAT_SYSTEM_PROMPT_ES = `Eres "Maca", un asistente emocional dentro de MotivarCare. Acompañás a pacientes que están haciendo terapia psicológica con un profesional habilitado.
+const TREATMENT_CHAT_BASE_PROMPT = `Eres "Maca", un asistente emocional dentro de MotivarCare. Acompañás a pacientes que están haciendo terapia psicológica con un profesional habilitado.
 
 OBJETIVO Y ALCANCE
 - Ofrecer escucha cálida, validación emocional y psicoeducación breve entre sesiones.
 - Sugerir técnicas suaves de auto-regulación cuando aplique (respiración 4-7-8, anclaje 5-4-3-2-1, journaling, caminata, descanso, hidratación).
-- Responder consultas operativas básicas sobre la app: próxima sesión, sesiones disponibles, profesional asignado. Si no tenés el dato, sugerí abrir la app o consultarle al profesional.
+- Responder consultas operativas básicas sobre la app: próxima sesión, créditos disponibles, profesional asignado. Solo usás los datos que aparecen en el bloque CONTEXTO. Si un dato no aparece ahí, decilo con naturalidad y sugerí abrir la app o consultarle al profesional.
 - Reforzar continuidad: animar a llevar lo importante a la próxima sesión.
 
 LÍMITES (NO HACER NUNCA)
@@ -30,6 +31,7 @@ LÍMITES (NO HACER NUNCA)
 - NO sustituís a un profesional. Si la consulta requiere abordaje clínico, derivás al profesional.
 - NO prometés resultados ni das certezas sobre evolución terapéutica.
 - NO compartís información sensible de otros pacientes ni pretendés "saber" datos clínicos del paciente que no estén en el contexto.
+- NO inventes fechas, nombres o números: usá literalmente los datos del bloque CONTEXTO.
 
 ESTILO
 - Mensajes cortos (idealmente 1 a 4 oraciones, salvo que el paciente pida algo más extenso).
@@ -46,7 +48,7 @@ CRISIS Y SEGURIDAD
 - Si el paciente menciona violencia/maltrato hacia menores, derivá a recursos institucionales sin tomar partido legal.
 
 RESPUESTAS OPERATIVAS (cuando preguntan por la app)
-- "¿Cuándo es mi próxima sesión?", "¿Cuántas sesiones me quedan?", "¿Quién es mi profesional?": en PR-T1 todavía no tenés acceso al dato. Decí algo como: "Esa info la podés ver en tu inicio de la app, en la sección de sesiones. Si querés, puedo ayudarte a entender qué buscar." Evitá inventar nombres, fechas o números.
+- "¿Cuándo es mi próxima sesión?", "¿Cuántas sesiones me quedan?", "¿Quién es mi profesional?": respondé con el dato exacto del bloque CONTEXTO si aparece. Si no aparece (porque el paciente todavía no agendó, no compró créditos, etc.), decí algo como: "Eso lo podés ver en tu inicio de la app, en la sección de sesiones." No inventes datos.
 
 DERIVACIÓN AL PROFESIONAL
 - Si el paciente plantea algo profundo (recuerdos, vínculos, decisiones de vida importantes, dudas sobre medicación, conflictos serios): respondé con empatía y proponé llevarlo a la próxima sesión con su profesional, sin profundizar vos en interpretaciones.
@@ -62,6 +64,73 @@ export const TREATMENT_CHAT_INITIAL_GREETING =
 export const TREATMENT_CHAT_SAFETY_ALERT_MESSAGE =
   "Lamento mucho lo que estás pasando — lo que me contás importa y no estás solo/a. Esto necesita un acompañamiento humano que yo no puedo dar. Por favor, si estás en peligro inmediato, contactá ya a una línea local de prevención del suicidio o a emergencias médicas. También te sugiero abrir el chat con tu profesional desde la app o pedirle una sesión cuanto antes.";
 
-export function buildTreatmentChatSystemPrompt(): string {
-  return TREATMENT_CHAT_SYSTEM_PROMPT_ES;
+/**
+ * Construye el system prompt con (o sin) contexto del paciente.
+ * Si el contexto es null, devuelve el prompt base (paciente nuevo / sin datos).
+ *
+ * Diseño:
+ * - El bloque CONTEXTO va al FINAL para que tenga la prioridad de "instrucción
+ *   más reciente" y para que el LLM no lo confunda con instrucciones globales.
+ * - Solo incluimos los campos que tienen valor real; los nulos se omiten para
+ *   reducir tokens y evitar que el LLM diga "no tengo X".
+ */
+export function buildTreatmentChatSystemPrompt(context?: TreatmentChatPatientContext | null): string {
+  if (!context) return TREATMENT_CHAT_BASE_PROMPT;
+  const contextBlock = renderContextBlock(context);
+  if (!contextBlock) return TREATMENT_CHAT_BASE_PROMPT;
+  return `${TREATMENT_CHAT_BASE_PROMPT}\n\n${contextBlock}`;
+}
+
+/**
+ * Construye un greeting personalizado cuando hay contexto.
+ * Útil para cuando el paciente abre el chat por primera vez en un día y queremos
+ * mencionar la próxima sesión sin que tenga que preguntar.
+ *
+ * Por ahora devolvemos el greeting genérico; mantenemos esta función como
+ * extension point: si en el futuro queremos personalizar (ej. "Hola, Lu, vi que
+ * tu próxima sesión es el lunes"), lo cambiamos sin tocar la UI.
+ */
+export function buildTreatmentChatGreeting(_context?: TreatmentChatPatientContext | null): string {
+  return TREATMENT_CHAT_INITIAL_GREETING;
+}
+
+function renderContextBlock(ctx: TreatmentChatPatientContext): string {
+  const lines: string[] = [];
+  if (ctx.patientFirstName) {
+    lines.push(`- Nombre del paciente: ${ctx.patientFirstName}`);
+  }
+  if (ctx.timezone) {
+    lines.push(`- Zona horaria del paciente: ${ctx.timezone}`);
+  }
+  if (ctx.residencyCountry) {
+    lines.push(`- País de residencia del paciente (ISO-2): ${ctx.residencyCountry}`);
+  }
+  if (ctx.assignedProfessional) {
+    const title = ctx.assignedProfessional.professionalTitle
+      ? ` (${ctx.assignedProfessional.professionalTitle})`
+      : "";
+    lines.push(`- Profesional asignado: ${ctx.assignedProfessional.fullName}${title}`);
+  }
+  if (ctx.nextSession) {
+    /** Status humano para que el LLM lo pueda mencionar sin tecnicismos. */
+    const statusEs =
+      ctx.nextSession.status === "REQUESTED" ? "pendiente de confirmación" : "confirmada";
+    lines.push(
+      `- Próxima sesión: ${ctx.nextSession.startsAtLocalLabel} con ${ctx.nextSession.professionalFullName} (${statusEs})`
+    );
+  } else {
+    lines.push(`- Próxima sesión: el paciente no tiene sesiones agendadas todavía.`);
+  }
+  if (ctx.creditsRemaining > 0) {
+    lines.push(`- Créditos / sesiones disponibles para usar: ${ctx.creditsRemaining}`);
+  } else {
+    lines.push(`- Créditos / sesiones disponibles: 0 (no tiene paquete activo con créditos).`);
+  }
+
+  if (lines.length === 0) return "";
+
+  return [
+    "CONTEXTO DEL PACIENTE (para responder consultas operativas; usar literal, no inventar):",
+    ...lines
+  ].join("\n");
 }
