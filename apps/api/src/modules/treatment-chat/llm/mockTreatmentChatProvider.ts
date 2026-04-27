@@ -25,6 +25,11 @@ export class MockTreatmentChatProvider implements TreatmentChatProvider {
   readonly modelName = "mock-treatment";
 
   async generateAssistantResponse(input: TreatmentChatCallInput): Promise<TreatmentChatCallResult> {
+    if (input.abortSignal?.aborted) {
+      const err = new Error("Aborted");
+      err.name = "AbortError";
+      throw err;
+    }
     const { assistantMessage, usage } = this.buildMockReply(input);
     return { assistantMessage, usage };
   }
@@ -35,6 +40,9 @@ export class MockTreatmentChatProvider implements TreatmentChatProvider {
     const { assistantMessage, usage } = this.buildMockReply(input);
     const chunk = Math.max(1, Math.ceil(assistantMessage.length / 6));
     for (let i = 0; i < assistantMessage.length; i += chunk) {
+      if (input.abortSignal?.aborted) {
+        return usage;
+      }
       yield assistantMessage.slice(i, i + chunk);
     }
     return usage;

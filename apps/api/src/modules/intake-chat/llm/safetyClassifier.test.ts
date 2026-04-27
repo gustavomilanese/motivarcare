@@ -60,6 +60,24 @@ describe("evaluateSafety", () => {
     expect(result.source).toBe("llm");
   });
 
+  it("omite el LLM de safety en chitchat trivial (allowlist)", async () => {
+    let llmCalled = false;
+    const provider: IntakeChatProvider = {
+      ...baseProvider,
+      async classifySafety() {
+        llmCalled = true;
+        return { triggered: false, severity: "none" };
+      }
+    };
+    const result = await evaluateSafety(provider, {
+      userMessage: "gracias",
+      recentMessages: []
+    });
+    expect(result.severity).toBe("none");
+    expect(result.source).toBe("heuristic");
+    expect(llmCalled).toBe(false);
+  });
+
   it("devuelve none si LLM falla (fail-safe sin heurística)", async () => {
     const failingProvider: IntakeChatProvider = {
       ...baseProvider,

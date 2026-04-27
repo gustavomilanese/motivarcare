@@ -76,6 +76,9 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       messages,
       max_completion_tokens: input.maxOutputTokens ?? 400
     };
+    if (input.abortSignal) {
+      body.signal = input.abortSignal;
+    }
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";
     }
@@ -114,6 +117,9 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       max_completion_tokens: input.maxOutputTokens ?? 400,
       stream_options: { include_usage: true }
     };
+    if (input.abortSignal) {
+      body.signal = input.abortSignal;
+    }
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";
     }
@@ -125,6 +131,7 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
     let full = "";
     let usage: ProviderUsage = { promptTokens: 0, completionTokens: 0, costUsdCents: 0 };
 
+    try {
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
       const piece = choice?.delta?.content ?? "";
@@ -135,6 +142,16 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       if (chunk.usage) {
         usage = computeUsage(this.modelName, chunk.usage);
       }
+    }
+    } catch (err) {
+      if (input.abortSignal?.aborted) {
+        return {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          costUsdCents: usage.costUsdCents
+        };
+      }
+      throw err;
     }
 
     const outText = full.trim();
@@ -165,7 +182,7 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
         }
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 200
+      max_completion_tokens: 80
     };
     if (modelSupportsReasoningEffort(this.safetyModelName)) {
       body.reasoning_effort = "minimal";

@@ -263,16 +263,35 @@ export async function sendMessage(params: {
     params.userMessage
   );
 
-  const [patientContext, safetyResult] = await Promise.all([
-    loadPatientContext(params.patientId).catch((err) => {
-      console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
-      return null;
-    }),
-    evaluateSafety(provider, {
-      userMessage: trimmed,
-      recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
-    })
-  ]);
+  const patientContext = await loadPatientContext(params.patientId).catch((err) => {
+    console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
+    return null;
+  });
+
+  const conversationForLlm = [
+    ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
+    { role: "user" as const, content: trimmed }
+  ];
+  const systemPrompt = buildTreatmentChatSystemPrompt(patientContext);
+
+  /**
+   * Mientras se evalúa el safety, el modelo principal **ya** corre en OpenAI: el
+   * tiempo de respuesta pasa a ser aprox. max(safety, LLM) en vez de la suma.
+   * En crisis, abortamos la petición (no forzamos a terminar un texto que no
+   * vamos a mostrar).
+   */
+  const ac = new AbortController();
+  const mainP = provider.generateAssistantResponse({
+    systemPrompt,
+    conversationHistory: conversationForLlm,
+    maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS,
+    abortSignal: ac.signal
+  });
+
+  const safetyResult = await evaluateSafety(provider, {
+    userMessage: trimmed,
+    recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
+  });
 
   let assistantText: string;
   let safetyAlertMessageThisTurn: string | null = null;
@@ -282,6 +301,12 @@ export async function sendMessage(params: {
   let safetyTriggeredThisTurn = false;
 
   if (safetyResult.triggered && safetyResult.severity === "high") {
+    ac.abort();
+    try {
+      await mainP;
+    } catch {
+      /* expect AbortError o cancelación al abortar */
+    }
     safetyTriggeredThisTurn = true;
     const emergencyResources = getEmergencyResources(patientContext?.residencyCountry ?? null);
     assistantText = emergencyResources
@@ -297,17 +322,8 @@ export async function sendMessage(params: {
       }
     });
   } else {
-    const conversationForLlm = [
-      ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
-      { role: "user" as const, content: trimmed }
-    ];
-
     try {
-      const result = await provider.generateAssistantResponse({
-        systemPrompt: buildTreatmentChatSystemPrompt(patientContext),
-        conversationHistory: conversationForLlm,
-        maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
-      });
+      const result = await mainP;
       assistantText = result.assistantMessage;
       promptTokens = result.usage.promptTokens;
       completionTokens = result.usage.completionTokens;
@@ -367,16 +383,44 @@ export async function writeTreatmentChatMessageStream(params: {
     params.userMessage
   );
 
-  const [patientContext, safetyResult] = await Promise.all([
-    loadPatientContext(params.patientId).catch((err) => {
-      console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
-      return null;
-    }),
-    evaluateSafety(provider, {
-      userMessage: trimmed,
-      recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
-    })
-  ]);
+  const patientContext = await loadPatientContext(params.patientId).catch((err) => {
+    console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
+    return null;
+  });
+
+  const conversationForLlm = [
+    ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
+    { role: "user" as const, content: trimmed }
+  ];
+  const systemPrompt = buildTreatmentChatSystemPrompt(patientContext);
+
+  const ac = new AbortController();
+  const streamP = (async () => {
+    const gen = provider.streamAssistantResponse({
+      systemPrompt,
+      conversationHistory: conversationForLlm,
+      maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS,
+      abortSignal: ac.signal
+    });
+    const chunks: string[] = [];
+    let acc = "";
+    let result = await gen.next();
+    while (!result.done) {
+      const piece = typeof result.value === "string" ? result.value : "";
+      if (piece.length > 0) {
+        chunks.push(piece);
+        acc += piece;
+      }
+      result = await gen.next();
+    }
+    const usage = result.value as { promptTokens: number; completionTokens: number; costUsdCents: number };
+    return { full: acc, chunks, usage };
+  })();
+
+  const safetyResult = await evaluateSafety(provider, {
+    userMessage: trimmed,
+    recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
+  });
 
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -394,6 +438,12 @@ export async function writeTreatmentChatMessageStream(params: {
   let safetyTriggeredThisTurn = false;
 
   if (safetyResult.triggered && safetyResult.severity === "high") {
+    ac.abort();
+    try {
+      await streamP;
+    } catch {
+      /* stream cancelada */
+    }
     safetyTriggeredThisTurn = true;
     const emergencyResources = getEmergencyResources(patientContext?.residencyCountry ?? null);
     assistantText = emergencyResources
@@ -408,36 +458,11 @@ export async function writeTreatmentChatMessageStream(params: {
         safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
       }
     });
-    /** Un único “delta” mantiene el contrato con el panel (misma forma que un stream de texto). */
     sse({ type: "token", text: assistantText });
   } else {
-    const conversationForLlm = [
-      ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
-      { role: "user" as const, content: trimmed }
-    ];
-
-    let accumulated = "";
+    let out: { full: string; chunks: string[]; usage: { promptTokens: number; completionTokens: number; costUsdCents: number } };
     try {
-      const gen = provider.streamAssistantResponse({
-        systemPrompt: buildTreatmentChatSystemPrompt(patientContext),
-        conversationHistory: conversationForLlm,
-        maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
-      });
-      let result = await gen.next();
-      while (!result.done) {
-        const piece = typeof result.value === "string" ? result.value : "";
-        if (piece.length > 0) {
-          accumulated += piece;
-          sse({ type: "token", text: piece });
-        }
-        result = await gen.next();
-      }
-      const usage = result.value;
-      if (usage && typeof usage === "object" && "promptTokens" in usage) {
-        promptTokens = (usage as { promptTokens: number }).promptTokens;
-        completionTokens = (usage as { completionTokens: number }).completionTokens;
-        costUsdCents = (usage as { costUsdCents: number }).costUsdCents;
-      }
+      out = await streamP;
     } catch (err) {
       console.error("[treatment-chat] provider error (stream):", err instanceof Error ? err.message : err);
       sse({
@@ -449,7 +474,15 @@ export async function writeTreatmentChatMessageStream(params: {
       }
       return;
     }
-    assistantText = accumulated;
+    for (const t of out.chunks) {
+      if (t.length > 0) {
+        sse({ type: "token", text: t });
+      }
+    }
+    assistantText = out.full;
+    promptTokens = out.usage.promptTokens;
+    completionTokens = out.usage.completionTokens;
+    costUsdCents = out.usage.costUsdCents;
     if (safetyResult.severity !== "none") {
       await prisma.patientTreatmentChatMessage.update({
         where: { id: userMsg.id },

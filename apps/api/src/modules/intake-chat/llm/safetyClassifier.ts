@@ -79,6 +79,85 @@ export interface SafetyEvalInput {
 }
 
 /**
+ * Normaliza frases cortas para matchear un allowlist (evita LLM de safety en turnos triviales).
+ * Muy restrictivo: si no matchea, el flujo sigue con el clasificador LLM.
+ */
+function isLikelyBenignChitchatForFastPath(raw: string): boolean {
+  const t = raw.trim();
+  if (t.length < 1 || t.length > 48) {
+    return false;
+  }
+  if (/https?:\/\/|www\.|@|#/.test(t) || t.includes("?") || t.includes("!!")) {
+    return false;
+  }
+  const k = t
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[¡!.,;]+$/g, "")
+    .replace(/[\u2019'`]+/g, "'")
+    .trim();
+
+  const BENIGN_EXACT = new Set(
+    [
+      "ok",
+      "oki",
+      "okey",
+      "dale",
+      "bueno",
+      "bien",
+      "hola",
+      "chau",
+      "hola buenos dias",
+      "hola buenas tardes",
+      "hola buenas noches",
+      "buen dia",
+      "buenos dias",
+      "gracias",
+      "gracias maca",
+      "muchas gracias",
+      "ok gracias",
+      "bien gracias",
+      "todo bien",
+      "todo ok",
+      "todo bueno",
+      "mas o menos",
+      "más o menos",
+      "jaja",
+      "jajaja",
+      "jajaj",
+      "jeje",
+      "sisi",
+      "si",
+      "sí",
+      "sip",
+      "nope",
+      "no",
+      "yep",
+      "thanks",
+      "thx",
+      "chau gracias",
+      "hasta luego",
+      "nos vemos",
+      "a darle",
+      "fino",
+      "joya",
+      "listo",
+      "dale gracias",
+      "impecable",
+      "maso menos",
+      "masomenos"
+    ]
+  );
+  if (BENIGN_EXACT.has(k)) {
+    return true;
+  }
+  if ((k === "hola" || k === "chau" || k === "gracias") && t.length <= 12) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Resultado combinado de heurística + LLM.
  * - Si la heurística dispara, devuelve `high` directamente sin llamar al LLM.
  * - Sino, delega en el provider para una evaluación más matizada.
@@ -106,6 +185,21 @@ export async function evaluateSafety(
         source: "heuristic"
       };
     }
+  }
+
+  /**
+   * Mensajes MUY acotados que, por patrones, no justifican una segunda vuelta al
+   * clasificador LLM (3–5s y costo en casi todo turno de chat). Súper conservador:
+   * solo entradas normalizadas que entran en un allowlist, sin "?", sin URLs, etc.
+   * Si dudáramos, caemos al flujo con LLM como siempre.
+   */
+  if (isLikelyBenignChitchatForFastPath(input.userMessage)) {
+    return {
+      triggered: false,
+      severity: "none",
+      reasoning: "heuristic: benign small-talk, skipped safety LLM",
+      source: "heuristic"
+    };
   }
 
   /** Sino delegamos al LLM, que puede captar matices más sutiles. */

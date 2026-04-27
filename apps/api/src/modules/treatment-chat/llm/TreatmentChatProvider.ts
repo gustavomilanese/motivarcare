@@ -30,6 +30,8 @@ export interface TreatmentChatCallInput {
   conversationHistory: TreatmentChatMessage[];
   /** Cap de tokens de salida (default lo decide el provider). */
   maxOutputTokens?: number;
+  /** Si se aborta (p. ej. crisis en safety en paralelo), deja de consumir el stream. */
+  abortSignal?: AbortSignal;
 }
 
 export interface TreatmentChatCallResult {
