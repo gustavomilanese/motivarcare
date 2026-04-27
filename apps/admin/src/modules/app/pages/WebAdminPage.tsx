@@ -15,6 +15,7 @@ import type {
   AdminExercise,
   AdminExerciseCategory,
   AdminExerciseDifficulty,
+  AdminRelaxationPlaylist,
   AdminReview,
   WebContentResponse,
   WebLandingSettings
@@ -170,6 +171,9 @@ export function WebAdminPage({
   const [reviewSearch, setReviewSearch] = useState("");
   const [postSearch, setPostSearch] = useState("");
   const [exerciseSearch, setExerciseSearch] = useState("");
+  const [relaxationJson, setRelaxationJson] = useState("[]");
+  const [relaxationSaving, setRelaxationSaving] = useState(false);
+  const [relaxationFeedback, setRelaxationFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
@@ -268,11 +272,118 @@ export function WebAdminPage({
               .filter((item) => item.id.length > 0)
           : []
       );
+      const normalizeRelaxation = (raw: unknown): AdminRelaxationPlaylist[] => {
+        if (!Array.isArray(raw)) {
+          return [];
+        }
+        return raw
+          .filter((item): item is AdminRelaxationPlaylist => Boolean(item && typeof item === "object"))
+          .map((item) => ({
+            id: String(item.id ?? ""),
+            title: {
+              es: String((item.title as { es?: string })?.es ?? ""),
+              en: String((item.title as { en?: string })?.en ?? ""),
+              pt: String((item.title as { pt?: string })?.pt ?? "")
+            },
+            blurb: {
+              es: String((item.blurb as { es?: string })?.es ?? ""),
+              en: String((item.blurb as { en?: string })?.en ?? ""),
+              pt: String((item.blurb as { pt?: string })?.pt ?? "")
+            },
+            embedType: (item.embedType === "youtube" ? "youtube" : "spotify") as AdminRelaxationPlaylist["embedType"],
+            embedSrc: String(item.embedSrc ?? ""),
+            openUrl: String(item.openUrl ?? "")
+          }))
+          .filter((item) => item.id.length > 0 && item.embedSrc.length > 0);
+      };
+      const storedRelax = normalizeRelaxation(data.relaxationPlaylists);
+      const bundledRelax = normalizeRelaxation(data.relaxationPlaylistsBundledDefaults);
+      const editorRelax = storedRelax.length > 0 ? storedRelax : bundledRelax;
+      setRelaxationJson(JSON.stringify(editorRelax.length > 0 ? editorRelax : [], null, 2));
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("web-admin-load", language, raw));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveRelaxationPlaylistsFromEditor() {
+    setRelaxationFeedback(null);
+    setError("");
+    setRelaxationSaving(true);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(relaxationJson);
+    } catch {
+      setRelaxationFeedback({
+        type: "error",
+        message: t(language, { es: "El JSON no es válido.", en: "JSON is not valid.", pt: "O JSON não é válido." })
+      });
+      setRelaxationSaving(false);
+      return;
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      setRelaxationFeedback({
+        type: "error",
+        message: t(language, {
+          es: "El editor debe contener un arreglo JSON con al menos una playlist.",
+          en: "The editor must contain a JSON array with at least one playlist.",
+          pt: "O editor deve conter um array JSON com pelo menos uma playlist."
+        })
+      });
+      setRelaxationSaving(false);
+      return;
+    }
+    try {
+      await apiRequest(
+        "/api/admin/web-content/relaxation-playlists",
+        { method: "PUT", body: JSON.stringify({ playlists: parsed }) },
+        token
+      );
+      setRelaxationFeedback({
+        type: "ok",
+        message: t(language, {
+          es: "Listas de música guardadas.",
+          en: "Relaxation playlists saved.",
+          pt: "Playlists de relaxamento salvas."
+        })
+      });
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setRelaxationFeedback({
+        type: "error",
+        message: adminSurfaceMessage("web-admin-save", language, raw)
+      });
+    } finally {
+      setRelaxationSaving(false);
+    }
+  }
+
+  async function deleteRelaxationPlaylistsConfig() {
+    setRelaxationFeedback(null);
+    setError("");
+    setRelaxationSaving(true);
+    try {
+      await apiRequest("/api/admin/web-content/relaxation-playlists", { method: "DELETE" }, token);
+      setRelaxationFeedback({
+        type: "ok",
+        message: t(language, {
+          es: "Se quitó la configuración guardada; el portal vuelve a la plantilla del servidor.",
+          en: "Saved config removed; the portal uses the server default template again.",
+          pt: "Configuração salva removida; o portal volta ao modelo do servidor."
+        })
+      });
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setRelaxationFeedback({
+        type: "error",
+        message: adminSurfaceMessage("web-admin-save", language, raw)
+      });
+    } finally {
+      setRelaxationSaving(false);
     }
   }
 
@@ -1149,6 +1260,70 @@ export function WebAdminPage({
               </article>
             ))
           )}
+        </div>
+      </CollapsiblePageSection>
+
+      <CollapsiblePageSection
+        sectionId="web-musica-relax"
+        summary={t(language, {
+          es: "Música relajante (portal paciente)",
+          en: "Relaxation music (patient portal)",
+          pt: "Música relaxante (portal do paciente)"
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(language, {
+            es: "Playlists y streams embebidos en /bienestar/musica. Editá el JSON y guardá; el API valida la forma antes de publicar.",
+            en: "Embedded playlists for /wellbeing/music. Edit the JSON and save; the API validates the shape before publishing.",
+            pt: "Playlists embutidas em /bienestar/musica. Edite o JSON e salve; a API valida antes de publicar."
+          })}
+        </p>
+        <p className="web-admin-helper-note">
+          {t(language, {
+            es: "Si borrás la configuración guardada, el portal vuelve a mostrar la plantilla que viene con el servidor hasta que guardes otra vez.",
+            en: "If you clear saved config, the portal shows the bundled server template until you save again.",
+            pt: "Se você limpar a config salva, o portal mostra o modelo embutido no servidor até salvar de novo."
+          })}
+        </p>
+        {relaxationFeedback ? (
+          <p className={relaxationFeedback.type === "ok" ? "success-text" : "error-text"} role="status">
+            {relaxationFeedback.message}
+          </p>
+        ) : null}
+        <label className="stack" style={{ gap: 8 }}>
+          <strong>
+            {t(language, { es: "Arreglo JSON de playlists", en: "Playlists JSON array", pt: "Array JSON de playlists" })}
+          </strong>
+          <textarea
+            rows={18}
+            spellCheck={false}
+            style={{ width: "100%", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13 }}
+            value={relaxationJson}
+            onChange={(event) => setRelaxationJson(event.target.value)}
+            aria-label={t(language, {
+              es: "Editor JSON de playlists de relajación",
+              en: "Relaxation playlists JSON editor",
+              pt: "Editor JSON das playlists"
+            })}
+          />
+        </label>
+        <div className="web-admin-list-toolbar" style={{ marginTop: 12 }}>
+          <button
+            className="primary"
+            type="button"
+            disabled={relaxationSaving}
+            onClick={() => void saveRelaxationPlaylistsFromEditor()}
+          >
+            {t(language, { es: "Guardar playlists", en: "Save playlists", pt: "Salvar playlists" })}
+          </button>
+          <button type="button" disabled={relaxationSaving} onClick={() => void deleteRelaxationPlaylistsConfig()}>
+            {t(language, {
+              es: "Quitar guardado (volver a plantilla servidor)",
+              en: "Clear saved (revert to server template)",
+              pt: "Limpar salvo (voltar ao modelo do servidor)"
+            })}
+          </button>
         </div>
       </CollapsiblePageSection>
 

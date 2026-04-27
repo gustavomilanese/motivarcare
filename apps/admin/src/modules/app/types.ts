@@ -229,16 +229,28 @@ export interface AdminExercise {
   sortOrder: number;
 }
 
+export interface AdminRelaxationPlaylist {
+  id: string;
+  title: { es: string; en: string; pt: string };
+  blurb: { es: string; en: string; pt: string };
+  embedType: "spotify" | "youtube";
+  embedSrc: string;
+  openUrl: string;
+}
+
 export interface WebContentResponse {
   settings: WebLandingSettings;
   reviews: AdminReview[];
   blogPosts: AdminBlogPost[];
   exercises: AdminExercise[];
+  relaxationPlaylists?: AdminRelaxationPlaylist[];
+  relaxationPlaylistsBundledDefaults?: AdminRelaxationPlaylist[];
   updatedAt: {
     settings: string | null;
     reviews: string | null;
     blogPosts: string | null;
     exercises: string | null;
+    relaxationPlaylists?: string | null;
   };
 }
 

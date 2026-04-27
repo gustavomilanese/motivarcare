@@ -11,6 +11,12 @@ import {
 } from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { DEFAULT_BLOG_POSTS } from "../web-content/blogPosts.defaults.js";
+import {
+  DEFAULT_RELAXATION_PLAYLISTS,
+  WEB_RELAXATION_PLAYLISTS_KEY,
+  relaxationPlaylistsCollectionSchema,
+  relaxationPlaylistsPutSchema
+} from "../web-content/relaxationPlaylists.defaults.js";
 import { financeRouter } from "../finance/finance.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import {
@@ -2682,27 +2688,32 @@ adminRouter.put("/landing-settings", async (req, res) => {
 });
 
 adminRouter.get("/web-content", async (_req, res) => {
-  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, relaxationConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
-    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } })
   ]);
 
   const reviewsParsed = reviewsCollectionSchema.safeParse(reviewsConfig?.value);
   const postsParsed = blogPostsCollectionSchema.safeParse(blogConfig?.value);
   const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
+  const relaxationParsed = relaxationPlaylistsCollectionSchema.safeParse(relaxationConfig?.value);
 
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),
     reviews: reviewsParsed.success ? reviewsParsed.data : [],
     blogPosts: postsParsed.success ? postsParsed.data : [],
     exercises: exercisesParsed.success ? exercisesParsed.data : [],
+    relaxationPlaylists: relaxationParsed.success ? relaxationParsed.data : [],
+    relaxationPlaylistsBundledDefaults: DEFAULT_RELAXATION_PLAYLISTS,
     updatedAt: {
       settings: settingsConfig?.updatedAt ?? null,
       reviews: reviewsConfig?.updatedAt ?? null,
       blogPosts: blogConfig?.updatedAt ?? null,
-      exercises: exercisesConfig?.updatedAt ?? null
+      exercises: exercisesConfig?.updatedAt ?? null,
+      relaxationPlaylists: relaxationConfig?.updatedAt ?? null
     }
   });
 });
@@ -2952,6 +2963,29 @@ adminRouter.put("/web-content/exercises/:exerciseId", async (req, res) => {
   });
 
   return res.json({ exercise: updatedExercise, updatedAt: saved.updatedAt });
+});
+
+adminRouter.put("/web-content/relaxation-playlists", async (req, res) => {
+  const parsed = relaxationPlaylistsPutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_RELAXATION_PLAYLISTS_KEY },
+    update: { value: parsed.data.playlists },
+    create: { key: WEB_RELAXATION_PLAYLISTS_KEY, value: parsed.data.playlists }
+  });
+
+  return res.json({ success: true, playlists: parsed.data.playlists, updatedAt: saved.updatedAt });
+});
+
+/**
+ * Quita la lista guardada: el portal vuelve a servir la plantilla embebida en el API (`DEFAULT_RELAXATION_PLAYLISTS`).
+ */
+adminRouter.delete("/web-content/relaxation-playlists", async (_req, res) => {
+  await prisma.systemConfig.deleteMany({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } });
+  return res.json({ success: true });
 });
 
 adminRouter.delete("/web-content/exercises/:exerciseId", async (req, res) => {

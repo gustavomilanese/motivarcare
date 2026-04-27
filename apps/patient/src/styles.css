@@ -10198,6 +10198,15 @@ button.sessions-balance {
 }
 
 /* Inicio móvil alineado con patient-mobile `HomeScreen` (≤680px) */
+.patient-dashboard-home .dashboard-home-intro-lead {
+  margin: 0 0 16px;
+  padding: 0 4px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(15, 23, 42, 0.78);
+  max-width: 52rem;
+}
+
 .patient-dashboard-home .dashboard-rn-home {
   display: none;
 }
@@ -10216,6 +10225,11 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-rn-scroll {
     padding: 6px 20px 12px;
     padding-bottom: 16px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-lead {
+    margin-bottom: 12px;
+    padding: 0 2px;
   }
 
   .patient-dashboard-home .dashboard-rn-scroll--cta {

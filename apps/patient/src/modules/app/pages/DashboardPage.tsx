@@ -423,9 +423,16 @@ export function DashboardPage(props: {
   const availableSessions = props.state.subscription.creditsRemaining;
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
 
+  const dashboardIntroLead = t(props.language, {
+    es: "Gestioná desde este panel tu bienestar: reservas y sesiones, música relajante, ejercicios guiados y hablar con Maca cuando la necesites (botón flotante del asistente).",
+    en: "Manage your wellbeing from this dashboard: bookings and sessions, relaxing music, guided exercises, and talking to Maca when you need her (floating assistant button).",
+    pt: "Gerencie seu bem-estar neste painel: reservas e sessões, música relaxante, exercícios guiados e falar com a Maca quando precisar (botão flutuante da assistente)."
+  });
+
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
       <div className="dashboard-legacy-home">
+      <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
       <section className="hero-composite hero-composite--media-only">
         <div className="hero-media">
           <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
@@ -1173,6 +1180,7 @@ export function DashboardPage(props: {
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}>
+          <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
           <div className="dashboard-rn-toolbar" aria-label={t(props.language, { es: "Saldo y agendar", en: "Balance and book", pt: "Saldo e agendar" })}>
             <div className="dashboard-rn-toolbar-inner">
               <div className="dashboard-rn-pill-block" aria-live="polite">

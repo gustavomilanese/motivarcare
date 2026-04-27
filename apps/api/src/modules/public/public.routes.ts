@@ -22,6 +22,11 @@ import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { env } from "../../config/env.js";
 import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
 import { DEFAULT_BLOG_POSTS, type BlogPostDefault } from "../web-content/blogPosts.defaults.js";
+import {
+  DEFAULT_RELAXATION_PLAYLISTS,
+  WEB_RELAXATION_PLAYLISTS_KEY,
+  relaxationPlaylistsCollectionSchema
+} from "../web-content/relaxationPlaylists.defaults.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -459,16 +464,18 @@ publicRouter.get("/web-content", async (req, res) => {
   const audienceParsed = blogAudienceSchema.safeParse(req.query.audience);
   const audience = audienceParsed.success ? audienceParsed.data : null;
 
-  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, relaxationConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
-    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } })
   ]);
 
   const reviewsParsed = z.array(reviewSchema).safeParse(reviewsConfig?.value);
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
   const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
+  const relaxationParsed = relaxationPlaylistsCollectionSchema.safeParse(relaxationConfig?.value);
 
   // Si admin todavía no cargó ninguna nota, devolvemos el catálogo de cortesía (publicadas).
   // En cuanto el admin guarde aunque sea una, solo se sirven las suyas.
@@ -509,16 +516,22 @@ publicRouter.get("/web-content", async (req, res) => {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
+  const storedRelaxation = relaxationParsed.success ? relaxationParsed.data : [];
+  const relaxationPlaylists =
+    storedRelaxation.length > 0 ? storedRelaxation : DEFAULT_RELAXATION_PLAYLISTS;
+
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),
     reviews: reviewsParsed.success ? reviewsParsed.data : [],
     blogPosts: publishedPosts,
     exercises: publishedExercises,
+    relaxationPlaylists,
     updatedAt: {
       settings: settingsConfig?.updatedAt ?? null,
       reviews: reviewsConfig?.updatedAt ?? null,
       blogPosts: blogConfig?.updatedAt ?? null,
-      exercises: exercisesConfig?.updatedAt ?? null
+      exercises: exercisesConfig?.updatedAt ?? null,
+      relaxationPlaylists: relaxationConfig?.updatedAt ?? null
     }
   });
 });
