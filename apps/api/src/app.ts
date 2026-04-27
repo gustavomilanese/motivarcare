@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import { DEFAULT_TRUSTED_BROWSER_ORIGINS } from "./config/defaultBrowserOrigins.js";
 import { env } from "./config/env.js";
 import { sendApiError } from "./lib/http.js";
 import { metricsContentType, metricsSnapshot, observeHttpRequest } from "./lib/metrics.js";
@@ -22,19 +23,7 @@ import { treatmentChatRouter } from "./modules/treatment-chat/treatmentChat.rout
 
 export const app = express();
 
-/**
- * Orígenes de navegador permitidos por defecto (local + previews + dominios MotivarCare).
- * En Railway/Vercel podés seguir sumando URLs con `CORS_ORIGINS` y alinear `PATIENT_APP_URL` /
- * `PROFESSIONAL_APP_URL` / `ADMIN_APP_URL` (también se fusionan como orígenes).
- */
-const DEFAULT_ALLOWED_BROWSER_ORIGINS: ReadonlyArray<string> = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://motivarcare-patient.vercel.app",
-  "https://app.motivarcare.com",
-  "https://pro.motivarcare.com"
-];
-
+/** En Railway/Vercel podés seguir sumando URLs con `CORS_ORIGINS` y `*_APP_URL`. */
 const allowedOriginsFromEnv = env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
 const allowedLocalHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -50,7 +39,7 @@ function browserOriginFromAppUrl(raw: string): string | null {
   }
 }
 
-const allowedOriginSet = new Set<string>([...DEFAULT_ALLOWED_BROWSER_ORIGINS, ...allowedOriginsFromEnv]);
+const allowedOriginSet = new Set<string>([...DEFAULT_TRUSTED_BROWSER_ORIGINS, ...allowedOriginsFromEnv]);
 for (const candidate of [env.PATIENT_APP_URL, env.PROFESSIONAL_APP_URL, env.ADMIN_APP_URL]) {
   const origin = browserOriginFromAppUrl(candidate);
   if (origin) {

@@ -8,6 +8,7 @@ import { joinFirstLastToFullName, marketFromResidencyCountry, userNamePartsFromF
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
+import { DEFAULT_TRUSTED_BROWSER_ORIGINS } from "../../config/defaultBrowserOrigins.js";
 import { env } from "../../config/env.js";
 import {
   consumeEmailVerificationToken,
@@ -99,6 +100,10 @@ const googleCalendarConnectSchema = z.object({
 
 function getTrustedBrowserOrigins(): Set<string> {
   const out = new Set<string>();
+  /** Misma base que CORS (`app.ts`): si no fusionamos esto, OAuth Calendar ignora app.motivarcare.com cuando `PATIENT_APP_URL` sigue apuntando al preview de Vercel. */
+  for (const origin of DEFAULT_TRUSTED_BROWSER_ORIGINS) {
+    out.add(origin);
+  }
   for (const raw of env.CORS_ORIGINS.split(",")) {
     const piece = raw.trim().replace(/\/+$/, "");
     if (piece.length > 0) {

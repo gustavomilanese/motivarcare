@@ -461,17 +461,28 @@ export function App() {
     setState((current) => updater(current));
   }, []);
 
-  const handlePatientSessionEmailVerified = useCallback(() => {
-    setState((current) =>
-      current.session
-        ? {
+  /**
+   * Tras abrir el link del mail: si hay sesión en esta pestaña, marcamos verificado y vamos a /.
+   * Si no hay sesión (p. ej. visor del mail aislado), el servidor ya verificó el email; mandamos a /?email_verified=1
+   * para mostrar en login un aviso claro en lugar de una pantalla “vacía” de error.
+   */
+  const handleEmailLinkVerificationComplete = useCallback(() => {
+    const hadSessionRef = { current: false };
+    flushSync(() => {
+      setState((current) => {
+        if (current.session) {
+          hadSessionRef.current = true;
+          return {
             ...current,
             session: { ...current.session, emailVerified: true }
-          }
-        : current
-    );
+          };
+        }
+        return current;
+      });
+    });
     requestPortalResync();
-  }, [requestPortalResync]);
+    navigate(hadSessionRef.current ? "/" : "/?email_verified=1", { replace: true });
+  }, [navigate, requestPortalResync]);
 
   /** Otra pestaña guardó estado verificado en localStorage: alinear UI y pedir un sync fresco al servidor. */
   useEffect(() => {
@@ -1275,7 +1286,7 @@ export function App() {
   }, [location.pathname, navigate, state.emailVerificationRequired, state.session?.emailVerified, state.session?.id]);
 
   if (isVerifyEmailRoute) {
-    return <VerifyEmailTokenScreen language={state.language} onSessionEmailVerified={handlePatientSessionEmailVerified} />;
+    return <VerifyEmailTokenScreen language={state.language} onVerificationComplete={handleEmailLinkVerificationComplete} />;
   }
 
   if (!state.session && isForgotPasswordRoute) {

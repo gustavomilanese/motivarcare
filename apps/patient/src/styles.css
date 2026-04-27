@@ -521,6 +521,22 @@ ul {
   text-align: left;
 }
 
+.auth-email-verified-banner {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #14532d;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.28);
+}
+
+.auth-email-verified-banner strong {
+  font-weight: 600;
+}
+
 .auth-form {
   gap: 14px;
   width: 100%;

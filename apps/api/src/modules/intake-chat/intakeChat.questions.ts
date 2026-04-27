@@ -190,6 +190,48 @@ export function getQuestionById(id: string): IntakeChatQuestionDef | undefined {
   return INTAKE_CHAT_QUESTIONS.find((q) => q.id === id);
 }
 
+/** Mismas etiquetas que el wizard y el matcher (ES canónico). */
+export const THERAPIST_PREF_GENDER_QUICK_REPLIES = ["Sin preferencia", "Hombre", "Mujer"] as const;
+
+export const THERAPIST_PREF_AGE_QUICK_REPLIES = [
+  "Sin preferencia",
+  "25 a 35",
+  "35 a 45",
+  "45 a 55",
+  "55 a 65",
+  "65 a 75",
+  "75 o más"
+] as const;
+
+export const THERAPIST_PREF_LGBT_QUICK_REPLIES = [
+  "Sin preferencia",
+  "Sí, prefiero experiencia o formación en temas LGBTIQ+",
+  "No es un criterio para mí"
+] as const;
+
+/**
+ * Si el modelo listó opciones en texto pero olvidó `quick_replies` en el JSON,
+ * inferimos el turno de preferencias del/la psicólogo/a y devolvemos chips clicables.
+ */
+export function inferTherapistPreferenceQuickRepliesFromAssistantMessage(content: string): string[] | undefined {
+  const c = content.trim();
+  if (c.length === 0) return undefined;
+
+  if (/(lgbtiq|lgbtiq\+)/i.test(c) && /experiencia|formaci/i.test(c)) {
+    return [...THERAPIST_PREF_LGBT_QUICK_REPLIES];
+  }
+
+  if (/edad\s+aproximada/i.test(c) || (/qu[eé]\s+edad/i.test(c) && /psicólogo/i.test(c))) {
+    return [...THERAPIST_PREF_AGE_QUICK_REPLIES];
+  }
+
+  if (/psicólogo/i.test(c) && /hombre/i.test(c) && /mujer/i.test(c)) {
+    return [...THERAPIST_PREF_GENDER_QUICK_REPLIES];
+  }
+
+  return undefined;
+}
+
 /**
  * Texto canónico (ES) de la opción de crisis en `emotionalState`.
  * Espejado de `PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES` en el cliente.

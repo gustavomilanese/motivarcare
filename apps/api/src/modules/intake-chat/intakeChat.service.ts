@@ -12,7 +12,8 @@ import {
 import {
   INTAKE_CHAT_QUESTIONS,
   INTAKE_CHAT_REQUIRED_QUESTION_IDS,
-  INTAKE_CHAT_CRISIS_EMOTIONAL_OPTION
+  INTAKE_CHAT_CRISIS_EMOTIONAL_OPTION,
+  inferTherapistPreferenceQuickRepliesFromAssistantMessage
 } from "./intakeChat.questions.js";
 import { evaluateSafety } from "./llm/safetyClassifier.js";
 import { getIntakeChatProvider } from "./llm/providerFactory.js";
@@ -245,6 +246,10 @@ export async function sendMessage(params: { patientId: string; sessionId: string
       const interviewerResult = await interviewerP;
       assistantMessage = interviewerResult.assistantMessage;
       quickReplies = interviewerResult.quickReplies;
+      const inferredTherapistQr = inferTherapistPreferenceQuickRepliesFromAssistantMessage(assistantMessage);
+      if (inferredTherapistQr?.length) {
+        quickReplies = inferredTherapistQr;
+      }
       newExtracted = interviewerResult.extractedAnswers ?? {};
       detectedCountry = normalizeCountryCode(interviewerResult.residencyCountry);
       isCompleteFromLLM = interviewerResult.isComplete;

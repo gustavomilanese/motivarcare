@@ -1,5 +1,5 @@
 import { FormEvent, SyntheticEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const PATIENT_AUTH_REMEMBER_KEY = "motivarcare_patient_auth_remember";
 const PATIENT_AUTH_EMAIL_KEY = "motivarcare_patient_auth_email";
@@ -63,6 +63,8 @@ export function AuthScreen(props: {
   }) => void;
 }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const emailVerifiedFromEmailLink = searchParams.get("email_verified") === "1";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -221,6 +223,24 @@ export function AuthScreen(props: {
             </div>
             <h1>{t(props.language, { es: "Tu sesión online empieza acá", en: "Your online session starts here", pt: "Sua sessao online comeca aqui" })}</h1>
           </div>
+
+          {emailVerifiedFromEmailLink ? (
+            <div className="auth-email-verified-banner" role="status">
+              <strong>
+                {t(props.language, {
+                  es: "Tu correo ya está verificado.",
+                  en: "Your email is verified.",
+                  pt: "Seu e-mail foi verificado."
+                })}
+              </strong>
+              {" "}
+              {t(props.language, {
+                es: "Iniciá sesión con la misma cuenta para entrar al portal.",
+                en: "Sign in with the same account to enter the portal.",
+                pt: "Entre com a mesma conta para acessar o portal."
+              })}
+            </div>
+          ) : null}
 
           <div className="auth-divider" aria-hidden="true">
             <span />

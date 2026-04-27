@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
@@ -19,10 +18,9 @@ type VerificationState = "loading" | "error";
 
 export function VerifyEmailTokenScreen(props: {
   language: AppLanguage;
-  /** Misma pestaña con sesión: evita que, al salir de /verify-email, el guard te mande otra vez a «confirmar correo». */
-  onSessionEmailVerified?: () => void;
+  /** Marca correo verificado si hay sesión y navega a / o a login con aviso (la navegación la define AppRoot). */
+  onVerificationComplete?: () => void;
 }) {
-  const navigate = useNavigate();
   const [state, setState] = useState<VerificationState>("loading");
   const [message, setMessage] = useState("");
 
@@ -40,8 +38,7 @@ export function VerifyEmailTokenScreen(props: {
 
     const storageKey = emailVerifySuccessStorageKey(token);
     if (sessionStorage.getItem(storageKey) === "1") {
-      props.onSessionEmailVerified?.();
-      navigate("/", { replace: true });
+      props.onVerificationComplete?.();
       return;
     }
 
@@ -62,8 +59,7 @@ export function VerifyEmailTokenScreen(props: {
         await request;
         sessionStorage.setItem(storageKey, "1");
         if (!cancelled) {
-          props.onSessionEmailVerified?.();
-          navigate("/", { replace: true });
+          props.onVerificationComplete?.();
         }
       } catch (requestError) {
         if (cancelled) {
@@ -84,7 +80,7 @@ export function VerifyEmailTokenScreen(props: {
     return () => {
       cancelled = true;
     };
-  }, [props.language, props.onSessionEmailVerified, token, navigate]);
+  }, [props.language, props.onVerificationComplete, token]);
 
   return (
     <div className="auth-shell">

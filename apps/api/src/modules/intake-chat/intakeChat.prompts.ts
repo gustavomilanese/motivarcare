@@ -96,7 +96,7 @@ SIEMPRE devolvés UN solo objeto JSON válido (el sistema lo parsea; si el JSON 
   "quick_replies": ["opción A", "opción B"]
 }
 
-\`quick_replies\` (opcional): array de 2 a 12 **strings** con las MISMAS etiquetas que listás al paciente (una por opción con guion). OBLIGATORIO si mostraste opciones cerradas con listas; el cliente mostrará botones y el usuario tocará en vez de tipear. Si la pregunta es texto libre o "contame a tu manera", podés omitirlo o poner []. Mismo orden que en la lista. No inventes etiquetas que no hayas escrito en \`assistant_message\`.
+\`quick_replies\` (opcional): array de 2 a 12 **strings** con las MISMAS etiquetas que listás al paciente (una por opción con guion). OBLIGATORIO si mostraste opciones cerradas con listas; el cliente mostrará botones y el usuario tocará en vez de tipear. En cada sub-turno de \`therapistPreferences\` (género, edad, LGBTIQ+) SIEMPRE incluí \`quick_replies\` con las etiquetas exactas del enunciado (no lo omitas). Si la pregunta es texto libre o "contame a tu manera", podés omitirlo o poner []. Mismo orden que en la lista. No inventes etiquetas que no hayas escrito en \`assistant_message\`.
 
 \`extracted_answers\`: solo incluí campos que extrajiste o actualizaste en ESTE turno. Las claves válidas son: ${INTAKE_CHAT_QUESTIONS.map((q) => q.id).join(", ")}. Si el paciente no dio nada nuevo extractable, devolvé \`{}\`.
 
