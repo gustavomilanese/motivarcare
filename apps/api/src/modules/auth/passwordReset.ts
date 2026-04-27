@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Role } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
+import { sendResendEmail } from "../../lib/resendSend.js";
 
 export const PASSWORD_RESET_TOKEN_TYPE = "password_reset";
 
@@ -97,25 +98,12 @@ export async function sendPasswordResetEmail(params: { fullName: string; email: 
     const subject = "Recuperá tu contraseña — MotivarCare";
     const text = [`Hola ${params.fullName},`, "", "Para elegir una nueva contraseña:", link, "", `Vence en ${ttlMinutes} minutos.`].join("\n");
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${resendKey}`
-      },
-      body: JSON.stringify({
-        from: env.EMAIL_FROM,
-        to: params.email,
-        subject,
-        html: buildResetEmailHtml({ fullName: params.fullName, link, ttlMinutes }),
-        text
-      })
+    await sendResendEmail({
+      to: params.email,
+      subject,
+      text,
+      html: buildResetEmailHtml({ fullName: params.fullName, link, ttlMinutes })
     });
-
-    if (!response.ok) {
-      const details = await response.text();
-      throw new Error(`Could not deliver password reset email: ${details}`);
-    }
 
     return { delivered: true as const, link };
   }

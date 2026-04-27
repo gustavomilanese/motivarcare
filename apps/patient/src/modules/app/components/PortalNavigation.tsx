@@ -93,6 +93,16 @@ function IconExercises(props: { className?: string }) {
   );
 }
 
+function IconMusic(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
@@ -165,6 +175,9 @@ export function PortalNavigation(props: {
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/ejercicios">
               {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/bienestar/musica">
+              {t(props.language, { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" })}
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="nav-link-with-badge">
@@ -361,6 +374,10 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios">
               <IconExercises className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}</span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/bienestar/musica">
+              <IconMusic className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Música", en: "Music", pt: "Música" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
               <span className="mobile-nav-link-inner">

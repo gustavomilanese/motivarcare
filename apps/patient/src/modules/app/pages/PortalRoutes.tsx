@@ -12,6 +12,7 @@ import { ArticlesListPage } from "../../articles/pages/ArticlesListPage";
 import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
 import { ExerciseDetailPage } from "../../exercises/pages/ExerciseDetailPage";
+import { RelaxationMusicPage } from "../../wellbeing/pages/RelaxationMusicPage";
 import { API_BASE } from "../services/api";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
@@ -367,6 +368,14 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <ExerciseDetailPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/bienestar/musica"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <RelaxationMusicPage language={props.state.language} />
         }
       />
       <Route

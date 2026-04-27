@@ -9873,6 +9873,20 @@ button.sessions-balance {
   align-items: stretch;
 }
 
+.patient-dashboard-home .hero-composite.hero-composite--media-only {
+  grid-template-columns: 1fr;
+  grid-template-areas: "media";
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.patient-dashboard-home .dashboard-hero-purchase-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
 .patient-dashboard-home .hero-title-wrap {
   grid-area: text;
 }
@@ -10091,6 +10105,10 @@ button.sessions-balance {
       "media"
       "text";
     align-items: start;
+  }
+
+  .patient-dashboard-home .hero-composite.hero-composite--media-only {
+    grid-template-areas: "media";
   }
 
   .patient-dashboard-home .hero-media {
@@ -13216,5 +13234,245 @@ button.sessions-balance {
     font-size: 32px;
     border-radius: 18px;
   }
+}
+
+/* Ejercicio: modo guiado (checkboxes + temporizador) */
+.exercise-interactive {
+  margin-top: 8px;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--exercise-accent) 28%, #e2e8f0);
+  background: linear-gradient(165deg, #ffffff 0%, color-mix(in srgb, var(--exercise-accent-soft) 85%, #ffffff) 100%);
+}
+
+.exercise-interactive-head h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.exercise-interactive-lead {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.exercise-interactive-timers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 14px;
+}
+
+.exercise-timer-btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--exercise-accent) 35%, #cbd5e1);
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.exercise-timer-btn:hover:not(:disabled) {
+  border-color: var(--exercise-accent);
+  color: var(--exercise-accent);
+}
+
+.exercise-timer-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.exercise-timer-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  color: var(--exercise-accent);
+  min-width: 3ch;
+}
+
+.exercise-timer-done {
+  font-size: 14px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.exercise-timer-cancel {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.exercise-interactive-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.exercise-interactive-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--exercise-accent), color-mix(in srgb, var(--exercise-accent) 70%, white));
+  transition: width 0.25s ease;
+}
+
+.exercise-interactive-progress-label {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.exercise-interactive-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.exercise-interactive-step-label {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 10px;
+  align-items: start;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.exercise-interactive-step-label:has(input:checked) {
+  border-color: color-mix(in srgb, var(--exercise-accent) 45%, #e2e8f0);
+  background: color-mix(in srgb, var(--exercise-accent-soft) 40%, #fff);
+}
+
+.exercise-interactive-step-label input {
+  margin-top: 4px;
+  accent-color: var(--exercise-accent);
+}
+
+.exercise-interactive-step-index {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--exercise-accent);
+  min-width: 1.5rem;
+}
+
+.exercise-interactive-step-text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #1e293b;
+}
+
+.exercise-interactive-celebrate {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+  font-size: 14px;
+}
+
+/* Bienestar: música relajante */
+.wellbeing-relax-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 4px 32px;
+}
+
+.wellbeing-relax-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 32px);
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.wellbeing-relax-lead {
+  margin: 0 0 22px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #475569;
+  max-width: 720px;
+}
+
+.wellbeing-relax-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+}
+
+.wellbeing-relax-card {
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: #fafbff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.wellbeing-relax-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.wellbeing-relax-card > p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.wellbeing-relax-embed-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #0f172a;
+  aspect-ratio: 16 / 10;
+  max-height: 360px;
+}
+
+.wellbeing-relax-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.wellbeing-relax-external {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5f44eb;
+}
+
+.wellbeing-relax-external:hover {
+  text-decoration: underline;
+}
+
+.wellbeing-relax-footnote {
+  margin: 28px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+  max-width: 640px;
 }
 

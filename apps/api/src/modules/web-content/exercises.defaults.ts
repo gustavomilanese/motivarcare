@@ -58,7 +58,8 @@ export const DEFAULT_EXERCISES: ExercisePost[] = [
       "Cerrá la boca e inhalá por la nariz contando mentalmente hasta 4.",
       "Mantené el aire reteniendo 7 segundos sin esfuerzo.",
       "Exhalá por la boca durante 8 segundos haciendo el mismo sonido suave.",
-      "Repetí el ciclo 4 veces. Si te marea, cortá antes y respirá normal."
+      "Repetí el ciclo 4 veces. Si te marea, cortá antes y respirá normal.",
+      "Para cerrar: unas respiraciones naturales por la nariz y estirá suavemente cuello y hombros."
     ],
     tips: [
       "Practicalo dos veces al día durante una semana antes de usarlo en momentos de crisis.",
@@ -315,7 +316,8 @@ export const DEFAULT_EXERCISES: ExercisePost[] = [
       "Llevá la atención a los pies. Notá cómo están: peso, temperatura, contacto.",
       "Subí lentamente: piernas, cadera, abdomen, pecho, espalda.",
       "Continuá por brazos, manos, cuello, cara y coronilla.",
-      "Termina sintiendo el cuerpo entero como una unidad y abrí los ojos despacio."
+      "Termina sintiendo el cuerpo entero como una unidad y abrí los ojos despacio.",
+      "Opcional: anotá en una palabra cómo te sentís al terminar (sin juzgar)."
     ],
     tips: [
       "Si te distraés, no te juzgues: volvé al cuerpo amablemente.",

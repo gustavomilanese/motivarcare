@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { sendResendEmail } from "../../lib/resendSend.js";
 
 type BookingEmailEvent = "professional_rescheduled" | "professional_cancelled";
 
@@ -92,25 +93,13 @@ export async function sendPatientBookingLifecycleEmail(params: {
 
   const content = buildEmailContent(params);
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.RESEND_API_KEY}`
-    },
-    body: JSON.stringify({
-      from: env.EMAIL_FROM,
-      to: params.patientEmail,
-      subject: content.subject,
-      html: content.html,
-      text: content.text
-    })
+  await sendResendEmail({
+    to: params.patientEmail,
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
+    tags: [{ name: "event", value: params.event }]
   });
-
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(`Could not send booking lifecycle email: ${details}`);
-  }
 
   return { delivered: true };
 }

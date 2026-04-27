@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Role } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
+import { sendResendEmail } from "../../lib/resendSend.js";
 
 export const EMAIL_VERIFICATION_TOKEN_TYPE = "email_verification";
 
@@ -137,29 +138,16 @@ export async function sendEmailVerificationEmail(params: {
       `Este enlace vence en ${env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS} horas.`
     ].join("\n");
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${resendKey}`
-      },
-      body: JSON.stringify({
-        from: env.EMAIL_FROM,
-        to: params.email,
-        subject,
-        html: buildVerificationEmailHtml({
-          fullName: params.fullName,
-          link,
-          ttlHours: env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS
-        }),
-        text
+    await sendResendEmail({
+      to: params.email,
+      subject,
+      text,
+      html: buildVerificationEmailHtml({
+        fullName: params.fullName,
+        link,
+        ttlHours: env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS
       })
     });
-
-    if (!response.ok) {
-      const details = await response.text();
-      throw new Error(`Could not deliver verification email: ${details}`);
-    }
 
     return {
       delivered: true,

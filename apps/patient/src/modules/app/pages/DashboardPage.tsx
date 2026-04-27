@@ -426,7 +426,7 @@ export function DashboardPage(props: {
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
       <div className="dashboard-legacy-home">
-      <section className="hero-composite">
+      <section className="hero-composite hero-composite--media-only">
         <div className="hero-media">
           <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
             {landingPatientHeroImage === null ? (
@@ -455,34 +455,18 @@ export function DashboardPage(props: {
             </figcaption>
           </figure>
         </div>
-        <div className="hero-title-wrap">
-          <div className="hero-title-actions">
-            <h3>
-              {t(props.language, {
-                es: "Gestiona tus sesiones de psicología en un solo lugar",
-                en: "Manage your psychology sessions in one place",
-                pt: "Gerencie suas sessoes de psicologia em um so lugar"
-              })}
-            </h3>
-          </div>
-          <p>
-            {t(props.language, {
-              es: "Desde aquí puedes ver tu agenda, reservar nuevas sesiones y mantener continuidad terapéutica.",
-              en: "From here you can view your schedule, book new sessions, and keep therapeutic continuity.",
-              pt: "Daqui voce pode ver sua agenda, reservar novas sessoes e manter continuidade terapeutica."
-            })}
-          </p>
-          {hasAssignedProfessional && defaultPackagePlan ? (
-            <button
-              className="sessions-hero-buy-button dashboard-hero-buy-button"
-              type="button"
-              onClick={() => setAcquireSessionsModalOpen(true)}
-            >
-              {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
-            </button>
-          ) : null}
-        </div>
       </section>
+      {hasAssignedProfessional && defaultPackagePlan ? (
+        <div className="dashboard-hero-purchase-row">
+          <button
+            className="sessions-hero-buy-button dashboard-hero-buy-button"
+            type="button"
+            onClick={() => setAcquireSessionsModalOpen(true)}
+          >
+            {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
+          </button>
+        </div>
+      ) : null}
 
       <section className="content-card trial-priority-banner trial-priority-inline">
         <h2>
