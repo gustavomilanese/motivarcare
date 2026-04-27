@@ -26,6 +26,11 @@ export class MockIntakeChatProvider implements IntakeChatProvider {
   readonly modelName = "mock-deterministic-1";
 
   async generateInterviewerResponse(input: InterviewerCallInput): Promise<InterviewerCallResult> {
+    if (input.abortSignal?.aborted) {
+      const err = new Error("Aborted");
+      err.name = "AbortError";
+      throw err;
+    }
     const lastUserMessage = [...input.conversationHistory].reverse().find((m) => m.role === "user");
     const newlyExtracted: Record<string, string> = {};
     let detectedCountry: string | null = null;

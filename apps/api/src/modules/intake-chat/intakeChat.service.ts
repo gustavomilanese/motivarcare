@@ -179,6 +179,24 @@ export async function sendMessage(params: { patientId: string; sessionId: string
 
   const provider = getIntakeChatProvider();
 
+  const conversationForInterviewer = updatedMessages
+    .filter((m) => !m.hidden && (m.role === "user" || m.role === "assistant"))
+    .map((m) => ({ role: m.role, content: m.content }) as { role: "user" | "assistant"; content: string });
+
+  /**
+   * Mientras se evalúa el safety, el entrevistador (JSON) **ya** corre: el tiempo
+   * pasa a ser aprox. max(safety, LLM) en vez de la suma. En crisis abortamos la
+   * petición al modelo principal.
+   */
+  const ac = new AbortController();
+  const interviewerP = provider.generateInterviewerResponse({
+    systemPrompt: buildInterviewerSystemPrompt(),
+    conversationHistory: conversationForInterviewer,
+    alreadyExtracted: parseExtractedAnswers(session.extractedAnswers),
+    residencyCountryAlreadyCaptured: session.residencyCountry,
+    abortSignal: ac.signal
+  });
+
   const safetyResult = await evaluateSafety(provider, {
     userMessage: trimmed,
     recentMessages: updatedMessages
@@ -192,12 +210,17 @@ export async function sendMessage(params: { patientId: string; sessionId: string
   let costFromTurnCents = 0;
 
   if (safetyResult.triggered && safetyResult.severity === "high") {
+    ac.abort();
+    try {
+      await interviewerP;
+    } catch {
+      /* abort esperado al cancelar el entrevistador */
+    }
     safetyTriggeredThisTurn = true;
     /**
-     * En crisis aguda: NO llamamos al entrevistador (evita cualquier deriva risky).
+     * En crisis aguda: NO usamos el resultado del entrevistador.
      * Forzamos el assistant message empático + recursos, marcamos las respuestas
-     * críticas, y cortamos el flujo normal. La sesión queda `active` pero se
-     * recomienda submit inmediato; el clasificador real (servidor) marcará risk=high.
+     * críticas, y cortamos el flujo normal.
      */
     assistantMessage = INTAKE_CHAT_SAFETY_ALERT_MESSAGE;
     newExtracted = {
@@ -206,14 +229,7 @@ export async function sendMessage(params: { patientId: string; sessionId: string
     };
   } else {
     try {
-      const interviewerResult = await provider.generateInterviewerResponse({
-        systemPrompt: buildInterviewerSystemPrompt(),
-        conversationHistory: updatedMessages
-          .filter((m) => !m.hidden && (m.role === "user" || m.role === "assistant"))
-          .map((m) => ({ role: m.role, content: m.content })),
-        alreadyExtracted: parseExtractedAnswers(session.extractedAnswers),
-        residencyCountryAlreadyCaptured: session.residencyCountry
-      });
+      const interviewerResult = await interviewerP;
       assistantMessage = interviewerResult.assistantMessage;
       newExtracted = interviewerResult.extractedAnswers ?? {};
       detectedCountry = normalizeCountryCode(interviewerResult.residencyCountry);

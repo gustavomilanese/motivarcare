@@ -27,6 +27,11 @@ const PRICING_PER_MILLION_TOKENS_USD: Record<string, { prompt: number; completio
 
 const DEFAULT_PRICING = { prompt: 1.0, completion: 5.0 };
 
+function modelSupportsReasoningEffort(model: string): boolean {
+  const m = model.toLowerCase();
+  return m.startsWith("gpt-5") || m.startsWith("o1") || m.startsWith("o3");
+}
+
 /**
  * Implementación de IntakeChatProvider usando OpenAI Chat Completions API.
  *
@@ -41,14 +46,13 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
   private readonly client: OpenAI;
   private readonly safetyModelName: string;
 
-  constructor(params: { apiKey: string; modelName: string; safetyModelName?: string }) {
+  constructor(params: { apiKey: string; modelName: string; safetyModelName: string }) {
     if (!params.apiKey) {
       throw new Error("OpenAIIntakeChatProvider requires an apiKey");
     }
     this.client = new OpenAI({ apiKey: params.apiKey });
     this.modelName = params.modelName;
-    /** Para safety usamos siempre el modelo principal salvo override; gpt-5-mini ya es barato/rápido. */
-    this.safetyModelName = params.safetyModelName ?? params.modelName;
+    this.safetyModelName = params.safetyModelName;
   }
 
   async generateInterviewerResponse(input: InterviewerCallInput): Promise<InterviewerCallResult> {
@@ -61,13 +65,22 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
       ...input.conversationHistory.map((m) => ({ role: m.role, content: m.content }) as OpenAI.Chat.ChatCompletionMessageParam)
     ];
 
-    const completion = await this.client.chat.completions.create({
+    const body: Record<string, unknown> = {
       model: this.modelName,
       messages,
       response_format: { type: "json_object" },
-      reasoning_effort: "low",
       max_completion_tokens: input.maxOutputTokens ?? 1500
-    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming & { reasoning_effort?: string });
+    };
+    if (input.abortSignal) {
+      body.signal = input.abortSignal;
+    }
+    if (modelSupportsReasoningEffort(this.modelName)) {
+      body.reasoning_effort = "low";
+    }
+
+    const completion = await this.client.chat.completions.create(
+      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+    );
 
     const choice = completion.choices[0];
     const rawContent = choice?.message?.content ?? "";
@@ -85,7 +98,7 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
   }
 
   async classifySafety(input: SafetyClassifierInput): Promise<SafetyClassifierResult> {
-    const completion = await this.client.chat.completions.create({
+    const body: Record<string, unknown> = {
       model: this.safetyModelName,
       messages: [
         { role: "system", content: buildSafetyClassifierSystemPrompt() },
@@ -95,9 +108,14 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
         }
       ],
       response_format: { type: "json_object" },
-      reasoning_effort: "minimal",
-      max_completion_tokens: 200
-    } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming & { reasoning_effort?: string });
+      max_completion_tokens: 80
+    };
+    if (modelSupportsReasoningEffort(this.safetyModelName)) {
+      body.reasoning_effort = "minimal";
+    }
+    const completion = await this.client.chat.completions.create(
+      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+    );
 
     const raw = completion.choices[0]?.message?.content ?? "";
     let severity: "none" | "low" | "high" = "none";

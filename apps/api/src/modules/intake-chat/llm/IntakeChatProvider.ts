@@ -34,6 +34,11 @@ export interface InterviewerCallInput {
   residencyCountryAlreadyCaptured: string | null;
   /** Cap por seguridad de tokens de salida. */
   maxOutputTokens?: number;
+  /**
+   * Si se aborta (p. ej. crisis en `evaluateSafety` mientras el LLM corre en paralelo),
+   * no consumimos el resto de la respuesta.
+   */
+  abortSignal?: AbortSignal;
 }
 
 export interface InterviewerCallResult {
