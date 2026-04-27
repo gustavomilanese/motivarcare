@@ -69,7 +69,7 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
       model: this.modelName,
       messages,
       response_format: { type: "json_object" },
-      max_completion_tokens: input.maxOutputTokens ?? 1500
+      max_completion_tokens: input.maxOutputTokens ?? 800
     };
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";

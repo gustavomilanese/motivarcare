@@ -33,7 +33,7 @@ export function getIntakeChatProvider(): IntakeChatProvider {
 
   cachedProvider = new OpenAIIntakeChatProvider({
     apiKey: env.OPENAI_API_KEY,
-    modelName: env.OPENAI_MODEL,
+    modelName: env.INTAKE_CHAT_OPENAI_MODEL,
     /** Mismo criterio que treatment-chat: clasificador de crisis rápido. */
     safetyModelName: env.OPENAI_SAFETY_MODEL
   });

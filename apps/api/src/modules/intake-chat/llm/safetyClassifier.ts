@@ -145,7 +145,22 @@ function isLikelyBenignChitchatForFastPath(raw: string): boolean {
       "dale gracias",
       "impecable",
       "maso menos",
-      "masomenos"
+      "masomenos",
+      "entendido",
+      "perfecto",
+      "claro",
+      "va bien",
+      "todo joya",
+      "genial",
+      "re bien",
+      "bárbaro",
+      "barbaro",
+      "súper",
+      "super",
+      "dale dale",
+      "ok ok",
+      "yes",
+      "yeah"
     ]
   );
   if (BENIGN_EXACT.has(k)) {
@@ -202,10 +217,11 @@ export async function evaluateSafety(
     };
   }
 
-  /** Sino delegamos al LLM, que puede captar matices más sutiles. */
+  /** Sino delegamos al LLM, que puede captar matices más sutiles. Pocos turnos y texto
+   *  corto bajan prompt tokens = algo menos de latencia. */
   const conversationContext = input.recentMessages
-    .slice(-6)
-    .map((m) => `[${m.role}] ${m.content.slice(0, 200)}`)
+    .slice(-4)
+    .map((m) => `[${m.role}] ${m.content.slice(0, 150)}`)
     .join("\n");
 
   try {

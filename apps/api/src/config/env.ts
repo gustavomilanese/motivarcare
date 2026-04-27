@@ -81,6 +81,17 @@ const EnvSchema = z.object({
   AI_AUDIT_ENABLED: z.coerce.boolean().default(false),
   /** Activa el chat conversacional como alternativa al wizard de intake del paciente. */
   INTAKE_CHAT_ENABLED: z.coerce.boolean().default(false),
+  /**
+   * Modelo del entrevistador (JSON + mensaje al paciente). Independiente de `OPENAI_MODEL`
+   * para poder usar un modelo **rápido** en onboarding (p. ej. gpt-4o-mini) sin bajar
+   * la calidad de otras features que usen `gpt-5-mini`.
+   */
+  INTAKE_CHAT_OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  /**
+   * Tope de tokens de salida por turno del entrevistador: menos = menos latencia y costo
+   * (el JSON de intake rara vez necesita >~800).
+   */
+  INTAKE_CHAT_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(800),
   /** Cap duro de turnos del usuario por sesión de chat para acotar costo y evitar loops. */
   INTAKE_CHAT_MAX_TURNS: z.coerce.number().int().positive().default(30),
   /** Vida útil de una sesión de chat sin actividad antes de marcarla como `abandoned`. */

@@ -194,6 +194,7 @@ export async function sendMessage(params: { patientId: string; sessionId: string
     conversationHistory: conversationForInterviewer,
     alreadyExtracted: parseExtractedAnswers(session.extractedAnswers),
     residencyCountryAlreadyCaptured: session.residencyCountry,
+    maxOutputTokens: env.INTAKE_CHAT_MAX_OUTPUT_TOKENS,
     abortSignal: ac.signal
   });
 
