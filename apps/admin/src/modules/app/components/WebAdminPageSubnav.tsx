@@ -32,7 +32,7 @@ export function WebAdminPageSubnav(props: {
       activeId={props.activeId}
       onSectionClick={props.onSectionClick}
       items={SECTION_LINKS}
-      ariaLabel={{ es: "Secciones de la landing", en: "Landing sections", pt: "Seções da landing" }}
+      ariaLabel={{ es: "Secciones de contenido", en: "Content sections", pt: "Seções de conteúdo" }}
     />
   );
 }

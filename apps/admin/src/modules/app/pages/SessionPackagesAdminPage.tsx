@@ -162,9 +162,9 @@ export function SessionPackagesAdminPage(props: {
       );
       setSuccess(
         t(props.language, {
-          es: "Publicación del portal paciente actualizada (las landings se configuran en Configuración → Landing page).",
-          en: "Patient portal publishing updated (landings are configured under Settings → Landing page).",
-          pt: "Publicacao do portal paciente atualizada (landings em Configuracao → Landing page)."
+          es: "Publicación del portal paciente actualizada (las landings se configuran en Configuración → Administración de contenido).",
+          en: "Patient portal publishing updated (landings are configured under Settings → Content management).",
+          pt: "Publicacao do portal paciente atualizada (landings em Configuracao → Administração de conteúdo)."
         })
       );
       await load();
@@ -444,7 +444,7 @@ export function SessionPackagesAdminPage(props: {
               <h3>Catalogo actual</h3>
               <p>
                 Publicación y orden en el portal paciente por mercado (máx. 3 por mercado). Para qué aparece en cada landing
-                pública, usá Configuración → Landing page → Paquetes en la web.
+                pública, usá Configuración → Administración de contenido → Paquetes en la web.
               </p>
             </div>
             <button className="package-admin-secondary-button" type="button" onClick={openCreateModal}>Nuevo paquete</button>
@@ -706,7 +706,7 @@ export function SessionPackagesAdminPage(props: {
         <div className="package-admin-hero-copy">
           <p className="admin-eyebrow">Comercial</p>
           <h2>Planes y paquetes de sesiones</h2>
-          <p>Administra el catalogo y la publicación en el portal de pacientes. Las landings públicas se configuran en Configuración → Landing page.</p>
+          <p>Administra el catalogo y la publicación en el portal de pacientes. Las landings públicas se configuran en Configuración → Administración de contenido.</p>
         </div>
         {kpiRow}
       </section>

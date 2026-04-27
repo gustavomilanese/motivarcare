@@ -365,9 +365,9 @@ export function SettingsPage(props: {
       <CollapsiblePageSection
         sectionId="cfg-landing"
         summary={t(props.language, {
-          es: "Landing page",
-          en: "Landing page",
-          pt: "Landing page"
+          es: "Administración de contenido",
+          en: "Content management",
+          pt: "Administração de conteúdo"
         })}
         bodyExtraClass="finance-collapsible-body--stack"
       >

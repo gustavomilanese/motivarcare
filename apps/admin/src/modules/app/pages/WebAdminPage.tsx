@@ -912,7 +912,7 @@ export function WebAdminPage({
       <div className="ops-page finance-page web-admin-page">
         <section className="card stack finance-kpi-card finance-page-hero">
           <header className="toolbar">
-            <h2>{t(language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" })}</h2>
+            <h2>{t(language, { es: "Administración de contenido", en: "Content management", pt: "Administração de conteúdo" })}</h2>
           </header>
           <p className="settings-section-lead">
             {t(language, { es: "Cargando contenido web…", en: "Loading web content…", pt: "Carregando conteudo web…" })}
@@ -1691,7 +1691,7 @@ export function WebAdminPage({
     <div className="ops-page finance-page web-admin-page">
       <section className="card stack finance-kpi-card finance-page-hero">
         <header className="toolbar">
-          <h2>{t(language, { es: "Gestion Landing Page", en: "Landing Page Management", pt: "Gestao Landing Page" })}</h2>
+          <h2>{t(language, { es: "Administración de contenido", en: "Content management", pt: "Administração de conteúdo" })}</h2>
         </header>
         <p className="settings-section-lead">
           {t(language, {

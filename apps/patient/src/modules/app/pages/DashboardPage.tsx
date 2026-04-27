@@ -432,7 +432,6 @@ export function DashboardPage(props: {
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
       <div className="dashboard-legacy-home">
-      <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
       <section className="hero-composite hero-composite--media-only">
         <div className="hero-media">
           <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
@@ -461,6 +460,9 @@ export function DashboardPage(props: {
               </p>
             </figcaption>
           </figure>
+        </div>
+        <div className="hero-title-wrap dashboard-home-hero-intro-aside">
+          <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
         </div>
       </section>
       {hasAssignedProfessional && defaultPackagePlan ? (
