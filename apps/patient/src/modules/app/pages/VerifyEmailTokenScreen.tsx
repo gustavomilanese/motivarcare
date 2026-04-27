@@ -8,17 +8,17 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Strict Mode (dev) runs the effect twice; the first /verify-email call already consumes the one-time token. */
+/** Respuesta GET /verify-email tras el cambio que devuelve JWT igual que login. */
+type VerifyEmailApiBody = AuthApiResponse & { message: string };
+
+/** Strict Mode (dev) runs the effect twice; el primer GET ya consume el token un solo uso. */
 function emailVerifySuccessStorageKey(token: string): string {
   return `motivarcare:email-verified:${token}`;
 }
 
-const verifyEmailRequestByToken = new Map<string, Promise<unknown>>();
+const verifyEmailRequestByToken = new Map<string, Promise<VerifyEmailApiBody>>();
 
 type VerificationState = "loading" | "error";
-
-/** Respuesta GET /verify-email tras el cambio que devuelve JWT igual que login. */
-type VerifyEmailApiBody = AuthApiResponse & { message: string };
 
 export type PatientVerifyEmailCompletePayload = {
   token: string;
