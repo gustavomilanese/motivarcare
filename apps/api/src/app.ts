@@ -22,9 +22,20 @@ import { treatmentChatRouter } from "./modules/treatment-chat/treatmentChat.rout
 
 export const app = express();
 
-const allowedOrigins = env.CORS_ORIGINS.split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+/**
+ * Orígenes de navegador permitidos por defecto (local + previews + dominios MotivarCare).
+ * En Railway/Vercel podés seguir sumando URLs con `CORS_ORIGINS` y alinear `PATIENT_APP_URL` /
+ * `PROFESSIONAL_APP_URL` / `ADMIN_APP_URL` (también se fusionan como orígenes).
+ */
+const DEFAULT_ALLOWED_BROWSER_ORIGINS: ReadonlyArray<string> = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://motivarcare-patient.vercel.app",
+  "https://app.motivarcare.com",
+  "https://pro.motivarcare.com"
+];
+
+const allowedOriginsFromEnv = env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
 const allowedLocalHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
 function browserOriginFromAppUrl(raw: string): string | null {
@@ -39,7 +50,7 @@ function browserOriginFromAppUrl(raw: string): string | null {
   }
 }
 
-const allowedOriginSet = new Set<string>(allowedOrigins);
+const allowedOriginSet = new Set<string>([...DEFAULT_ALLOWED_BROWSER_ORIGINS, ...allowedOriginsFromEnv]);
 for (const candidate of [env.PATIENT_APP_URL, env.PROFESSIONAL_APP_URL, env.ADMIN_APP_URL]) {
   const origin = browserOriginFromAppUrl(candidate);
   if (origin) {
@@ -89,17 +100,20 @@ app.use("/health", healthRouter);
 app.use(
   cors({
     origin(origin, callback) {
+      // Sin header Origin (curl, Postman, algunos healthchecks): permitir.
       if (!origin) {
         callback(null, true);
         return;
       }
-
+      // Reflejar solo orígenes permitidos; si no, el navegador bloquea (callback(false), sin tirar el servidor).
       callback(null, isAllowedOrigin(origin));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Idempotency-Key", "X-Client-Version"],
-    maxAge: 86400
+    /** Preflight cache (Access-Control-Max-Age), reduce OPTIONS repetidos en el navegador. */
+    maxAge: 86400,
+    optionsSuccessStatus: 204
   })
 );
 const jsonParser = express.json({ limit: "35mb" });
