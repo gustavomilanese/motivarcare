@@ -35,25 +35,25 @@ Idioma: respondé en el mismo idioma/dialecto que el paciente (default: español
 
 ESTILO Y FORMATO DEL MENSAJE (muy importante para el UX):
 - Mensajes cortos. Idealmente 1 a 3 oraciones de introducción/empatía + la pregunta + (si aplica) la lista de opciones.
-- Cuando una pregunta tenga opciones cerradas, NUNCA las pongas inline en un párrafo. Listalas SIEMPRE una por línea con un guión "-" adelante.
+- Pregunta \`mainReason\` (motivos de consulta): NUNCA muestres al paciente la lista completa de opciones canónicas (son muchas). En pantalla: como máximo **6 u 7** viñetas, agrupando temas afines en una sola línea (ej. "Ansiedad, estrés o ataques de pánico", "Depresión o bajón de ánimo", "Relaciones, pareja o duelos", "Trabajo, agotamiento o decisiones", "Sueño, emociones o hábitos", "Crecimiento u otro motivo"). Siempre dejá **Otro** o invitá a contarlo libremente. El bloque largo de opciones del catálogo es solo para que vos mapees al extraer, no para copiarlo al mensaje.
+- Otras preguntas con opciones cerradas: NUNCA las pongas inline en un párrafo. Listalas una por línea con un guión "-" adelante (si la lista es razonablemente breve; si es muy larga, resumí como en mainReason).
 - NO uses markdown (sin asteriscos, sin numerales, sin negritas). Solo texto plano y guiones para las listas.
 - Usá saltos de línea reales ("\\n") para separar la intro, la pregunta y la lista de opciones.
 - Si una pregunta es COMPOSITE (varios sub-campos, como therapistPreferences) hacela en TURNOS SEPARADOS: una sub-pregunta a la vez. Nunca las juntes en un solo mensaje.
 - Aclará brevemente al final que pueden elegir una/varias opciones o contarlo con sus palabras, según corresponda.
 
-Ejemplo de un buen mensaje (mainReason):
+Ejemplo de un buen mensaje (mainReason) — listas cortas, nunca 15+ viñetas:
 ---
-Gracias por compartirlo. Para arrancar, contame qué te trae a buscar terapia. Algunos motivos frecuentes son:
+Para arrancar: ¿qué te trae a buscar terapia? Algunos motivos frecuentes:
 
-- Ansiedad o ataques de pánico
-- Estrés o burnout laboral
-- Depresión o tristeza profunda
-- Dificultad en relaciones
-- Problemas de autoestima
-- Crisis personales o duelos
-- Otro motivo que quieras contar
+- Ansiedad, estrés o situaciones de pánico
+- Estado de ánimo (depresión, bajón, vacío)
+- Relaciones, pareja, familia o duelos
+- Trabajo, agotamiento o decisiones importantes
+- Sueño, emociones fuertes o hábitos que te preocupan
+- Crecimiento personal u otro motivo
 
-Podés elegir una o varias, o contarlo con tus palabras.
+Podés marcar lo que resuene o contarlo a tu manera.
 ---
 
 Ejemplo de un mensaje MAL formado (NO hacer):
@@ -108,6 +108,12 @@ function formatQuestionForPrompt(q: IntakeChatQuestionDef, ordinal: number): str
   const lines: string[] = [`${ordinal}. id=\`${q.id}\` — ${q.label}`];
   lines.push(`   Intención: ${q.intent}`);
 
+  if (q.id === "mainReason") {
+    lines.push(
+      `   Presentación al paciente: lista MUY breve (máx. 6–7 viñetas agrupadas). Las opciones de abajo son el catálogo para extraer; no las repitas todas en el chat.`
+    );
+  }
+
   if (q.type === "single" || q.type === "multi") {
     lines.push(`   Tipo: ${q.type === "single" ? "una opción" : "una o varias opciones"}`);
     if (q.options) {
@@ -156,7 +162,7 @@ Devolvé SOLO el JSON, sin markdown.`;
 
 /** Mensaje inicial del entrevistador cuando arrancamos una sesión nueva (fallback si el LLM no lo genera). */
 export const INTAKE_CHAT_FALLBACK_GREETING =
-  "Hola, soy el asistente de MotivarCare. Voy a hacerte algunas preguntas breves para entender qué estás buscando y matchearte con el/la profesional que mejor pueda acompañarte. Tomate el tiempo que necesites. ¿Querés contarme qué te trae a buscar terapia?";
+  "Hola, soy el asistente de MotivarCare. Te hago unas preguntas cortas para conectarte con un/a profesional. ¿Qué te trae a buscar terapia?";
 
 /** Mensaje cuando un paciente vuelve a una sesión previa todavía activa. */
 export function buildResumeGreeting(extractedAnswerCount: number): string {
