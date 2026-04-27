@@ -74,7 +74,7 @@ export const DEFAULT_RELAXATION_PLAYLISTS: RelaxationPlaylistItem[] = [
       pt: "Stream relaxado de fundo — ritmo constante e suave."
     },
     embedType: "youtube",
-    embedSrc: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?rel=0",
+    embedSrc: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?rel=0&autoplay=0",
     openUrl: "https://www.youtube.com/watch?v=jfKfPfyJRdk"
   },
   {
@@ -90,7 +90,7 @@ export const DEFAULT_RELAXATION_PLAYLISTS: RelaxationPlaylistItem[] = [
       pt: "Som de chuva continuo para dormir ou desligar alguns minutos."
     },
     embedType: "youtube",
-    embedSrc: "https://www.youtube-nocookie.com/embed/DWgepKAleTs?rel=0",
+    embedSrc: "https://www.youtube-nocookie.com/embed/DWgepKAleTs?rel=0&autoplay=0",
     openUrl: "https://www.youtube.com/watch?v=DWgepKAleTs"
   }
 ];

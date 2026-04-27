@@ -4,6 +4,7 @@ import {
   type RelaxationPlaylistItem,
   fetchRelaxationPlaylists
 } from "../services/relaxationPlaylistsApi";
+import { normalizeRelaxationEmbedSrc } from "../utils/normalizeRelaxationEmbedSrc";
 
 export interface RelaxationMusicPageProps {
   language: AppLanguage;
@@ -57,9 +58,9 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
               <div className="wellbeing-relax-embed-wrap">
                 <iframe
                   title={t(language, item.title)}
-                  src={item.embedSrc}
+                  src={normalizeRelaxationEmbedSrc(item.embedSrc)}
                   loading="lazy"
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
                   className="wellbeing-relax-iframe"
                 />
