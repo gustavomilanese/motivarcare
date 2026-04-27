@@ -25,7 +25,10 @@ import { AuthScreen } from "./pages/AuthScreen";
 import { PatientForgotPasswordScreen } from "./pages/PatientForgotPasswordScreen";
 import { PatientResetPasswordScreen } from "./pages/PatientResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
-import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
+import {
+  VerifyEmailTokenScreen,
+  type PatientVerifyEmailCompletePayload
+} from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
 import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
 import {
@@ -462,27 +465,67 @@ export function App() {
   }, []);
 
   /**
-   * Tras abrir el link del mail: si hay sesión en esta pestaña, marcamos verificado y vamos a /.
-   * Si no hay sesión (p. ej. visor del mail aislado), el servidor ya verificó el email; mandamos a /?email_verified=1
-   * para mostrar en login un aviso claro en lugar de una pantalla “vacía” de error.
+   * Tras GET /verify-email: el servidor devuelve JWT (igual que login). Si llega acá con token,
+   * abrimos sesión en esta pestaña y vamos a / → el portal envía al onboarding si corresponde.
+   * Si solo había sesión ya cargada: actualizamos emailVerified; si no hay sesión ni token (caso raro): login con aviso.
    */
-  const handleEmailLinkVerificationComplete = useCallback(() => {
-    const hadSessionRef = { current: false };
-    flushSync(() => {
-      setState((current) => {
-        if (current.session) {
-          hadSessionRef.current = true;
-          return {
-            ...current,
-            session: { ...current.session, emailVerified: true }
-          };
-        }
-        return current;
+  const handleEmailLinkVerificationComplete = useCallback(
+    (payload?: PatientVerifyEmailCompletePayload) => {
+      if (payload?.token && payload.user.role === "PATIENT") {
+        clearPostIntakePhotoPending();
+        setShowPostIntakePhotoStep(false);
+        setProfileSyncReady(false);
+        setProfessionalDirectory(professionalsCatalog);
+        setProfessionalPhotoMap(professionalImageMap);
+        setShowCalendarOnboarding(false);
+        setCalendarOnboardingLoading(false);
+        setCalendarPromptDismissedUserIds(readDismissedCalendarPromptUsers());
+        flushSync(() => {
+          setState((current) => ({
+            ...defaultState,
+            language: current.language,
+            currency: current.currency,
+            patientMarket: current.patientMarket,
+            profile: {
+              ...defaultProfile,
+              timezone: sessionTimezone
+            },
+            session: {
+              id: payload.user.id,
+              fullName: payload.user.fullName,
+              firstName: payload.user.firstName,
+              lastName: payload.user.lastName,
+              email: payload.user.email,
+              emailVerified: payload.user.emailVerified,
+              avatarUrl: payload.user.avatarUrl ?? null
+            },
+            authToken: payload.token,
+            emailVerificationRequired: payload.emailVerificationRequired
+          }));
+        });
+        requestPortalResync();
+        navigate("/", { replace: true });
+        return;
+      }
+
+      const hadSessionRef = { current: false };
+      flushSync(() => {
+        setState((current) => {
+          if (current.session) {
+            hadSessionRef.current = true;
+            return {
+              ...current,
+              session: { ...current.session, emailVerified: true }
+            };
+          }
+          return current;
+        });
       });
-    });
-    requestPortalResync();
-    navigate(hadSessionRef.current ? "/" : "/?email_verified=1", { replace: true });
-  }, [navigate, requestPortalResync]);
+      requestPortalResync();
+      navigate(hadSessionRef.current ? "/" : "/?email_verified=1", { replace: true });
+    },
+    [navigate, requestPortalResync, sessionTimezone]
+  );
 
   /** Otra pestaña guardó estado verificado en localStorage: alinear UI y pedir un sync fresco al servidor. */
   useEffect(() => {

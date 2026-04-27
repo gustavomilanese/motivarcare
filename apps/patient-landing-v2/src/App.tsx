@@ -18,7 +18,7 @@ function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: st
 const PATIENT_PORTAL_URL = portalUrl(
   viteEnv.VITE_PATIENT_PORTAL_URL,
   "http://localhost:5173",
-  "https://motivarcare-patient.vercel.app"
+  "https://app.motivarcare.com"
 );
 
 /** 14 = hero apaisado; 13 = banda editorial (y parallax v1 si copiás assets). */

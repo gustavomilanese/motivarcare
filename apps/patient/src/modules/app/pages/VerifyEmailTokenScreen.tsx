@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { friendlyVerifyEmailTokenFailedMessage, friendlyVerifyEmailTokenMissingMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
+import type { AuthApiResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -16,10 +17,19 @@ const verifyEmailRequestByToken = new Map<string, Promise<unknown>>();
 
 type VerificationState = "loading" | "error";
 
+/** Respuesta GET /verify-email tras el cambio que devuelve JWT igual que login. */
+type VerifyEmailApiBody = AuthApiResponse & { message: string };
+
+export type PatientVerifyEmailCompletePayload = {
+  token: string;
+  user: AuthApiResponse["user"];
+  emailVerificationRequired: boolean;
+};
+
 export function VerifyEmailTokenScreen(props: {
   language: AppLanguage;
-  /** Marca correo verificado si hay sesión y navega a / o a login con aviso (la navegación la define AppRoot). */
-  onVerificationComplete?: () => void;
+  /** Con sesión nueva desde el servidor si el GET devolvió token (pestaña del mail sin localStorage previo). */
+  onVerificationComplete?: (payload?: PatientVerifyEmailCompletePayload) => void;
 }) {
   const [state, setState] = useState<VerificationState>("loading");
   const [message, setMessage] = useState("");
@@ -48,7 +58,7 @@ export function VerifyEmailTokenScreen(props: {
       try {
         let request = verifyEmailRequestByToken.get(token);
         if (!request) {
-          const pending = apiRequest<{ message: string }>(
+          const pending = apiRequest<VerifyEmailApiBody>(
             `/api/auth/verify-email?token=${encodeURIComponent(token)}`
           );
           request = pending.finally(() => {
@@ -56,10 +66,22 @@ export function VerifyEmailTokenScreen(props: {
           });
           verifyEmailRequestByToken.set(token, request);
         }
-        await request;
+        const data = await request;
         sessionStorage.setItem(storageKey, "1");
         if (!cancelled) {
-          props.onVerificationComplete?.();
+          if (
+            typeof data.token === "string"
+            && data.token.length > 0
+            && data.user?.role === "PATIENT"
+          ) {
+            props.onVerificationComplete?.({
+              token: data.token,
+              user: data.user,
+              emailVerificationRequired: Boolean(data.emailVerificationRequired)
+            });
+          } else {
+            props.onVerificationComplete?.();
+          }
         }
       } catch (requestError) {
         if (cancelled) {

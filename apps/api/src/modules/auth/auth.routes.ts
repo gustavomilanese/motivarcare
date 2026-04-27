@@ -1036,11 +1036,47 @@ authRouter.get("/verify-email", async (req, res) => {
     });
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: result.userId },
+    include: {
+      patient: { select: { id: true } },
+      professional: { select: { id: true } }
+    }
+  });
+
+  if (!user) {
+    return sendApiError({
+      res,
+      status: 404,
+      code: "NOT_FOUND",
+      message: "User not found"
+    });
+  }
+
+  if (!user.isActive) {
+    return sendApiError({
+      res,
+      status: 403,
+      code: "FORBIDDEN",
+      message: "Account disabled"
+    });
+  }
+
+  /** Igual que login: token de sesión tras consumir el enlace de un solo uso (seguro en ese turno). */
+  const token = createAuthToken({
+    userId: user.id,
+    role: user.role,
+    email: user.email
+  });
+
   return res.json({
     message: "Email verified",
-    userId: result.userId,
-    email: result.email,
-    role: result.role
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    token,
+    user: shapeUserResponse(user),
+    ...authResponseMeta(user.role)
   });
 });
 

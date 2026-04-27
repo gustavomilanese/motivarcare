@@ -162,7 +162,9 @@ según cómo configures **Vite `base`** y rutas. Si usás React Router en modo *
 
 Sin esto, el bundle intenta hablar con `http://localhost:4000` y el navegador muestra errores tipo “Failed to fetch” al subir foto o guardar perfil.
 
-En el **backend**, asegurate de que `PATIENT_APP_URL` sea `https://motivarcare-patient.vercel.app` (o tu dominio). Ese origen se admite automáticamente para CORS aunque falte en `CORS_ORIGINS`, pero conviene listarlo igual en `CORS_ORIGINS` por claridad.
+En el **backend**, definí `PATIENT_APP_URL=https://app.motivarcare.com` (tu dominio canonical del paciente). Ese origen se fusiona también para CORS junto con `DEFAULT_TRUSTED_BROWSER_ORIGINS`; conviene listarlo en `CORS_ORIGINS` si sumás otros orígenes.
+
+Opcional en el proyecto **paciente** de Vercel (si todavía tenés tráfico al hostname `motivarcare-patient.vercel.app`): `VITE_CANONICAL_PATIENT_ORIGIN=https://app.motivarcare.com` — fuerza redirect al dominio nuevo antes de montar la SPA (no afecta localhost).
 
 ### B3. API en VPS Hostinger (si no usás Railway)
 
