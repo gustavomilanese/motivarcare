@@ -9879,19 +9879,40 @@ button.sessions-balance {
   max-width: 100%;
   margin-inline: 0;
   align-items: start;
+  /* Sin “tarjeta”: el recuadro lo da solo la foto */
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  gap: 20px 28px;
+  border-radius: 0;
+  overflow: visible;
 }
 
 .patient-dashboard-home .dashboard-home-hero-intro-aside {
   grid-area: text;
   align-self: start;
   min-width: 0;
-  padding-top: 2px;
+  padding-top: 4px;
+}
+
+.patient-dashboard-home .dashboard-home-intro-heading {
+  margin: 0 0 10px;
+  padding: 0 0 0 2px;
+  font-size: clamp(22px, 2.35vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.14;
+  color: #121a2a;
 }
 
 .patient-dashboard-home .dashboard-home-hero-intro-aside .dashboard-home-intro-lead {
   max-width: none;
   margin: 0;
-  padding: 0 0 0 4px;
+  padding: 0 0 0 2px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(15, 23, 42, 0.76);
 }
 
 .patient-dashboard-home .dashboard-hero-purchase-row {
@@ -10127,6 +10148,11 @@ button.sessions-balance {
       "media"
       "text";
     align-items: start;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
   }
 
   .patient-dashboard-home .hero-media {
@@ -10246,6 +10272,12 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-lead {
     margin-bottom: 12px;
     padding: 0 2px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-heading {
+    margin: 0 0 8px;
+    padding: 0 2px;
+    font-size: clamp(18px, 5.2vw, 24px);
   }
 
   .patient-dashboard-home .dashboard-rn-scroll--cta {

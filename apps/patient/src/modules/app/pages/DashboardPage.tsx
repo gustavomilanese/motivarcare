@@ -423,10 +423,15 @@ export function DashboardPage(props: {
   const availableSessions = props.state.subscription.creditsRemaining;
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
 
-  const dashboardIntroLead = t(props.language, {
-    es: "Gestioná desde este panel tu bienestar: reservas y sesiones, música relajante, ejercicios guiados y hablar con Maca cuando la necesites (botón flotante del asistente).",
-    en: "Manage your wellbeing from this dashboard: bookings and sessions, relaxing music, guided exercises, and talking to Maca when you need her (floating assistant button).",
-    pt: "Gerencie seu bem-estar neste painel: reservas e sessões, música relaxante, exercícios guiados e falar com a Maca quando precisar (botão flutuante da assistente)."
+  const dashboardIntroTitle = t(props.language, {
+    es: "Gestioná tu bienestar desde acá",
+    en: "Manage your wellbeing here",
+    pt: "Gerencie seu bem-estar aqui"
+  });
+  const dashboardIntroBody = t(props.language, {
+    es: "Reservas y sesiones, música relajante, ejercicios guiados y hablar con Maca cuando la necesites (botón flotante del asistente).",
+    en: "Bookings and sessions, relaxing music, guided exercises, and talking to Maca when you need her (floating assistant button).",
+    pt: "Reservas e sessões, música relaxante, exercícios guiados e falar com a Maca quando precisar (botão flutuante da assistente)."
   });
 
   return (
@@ -462,7 +467,8 @@ export function DashboardPage(props: {
           </figure>
         </div>
         <div className="hero-title-wrap dashboard-home-hero-intro-aside">
-          <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
+          <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
+          <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
         </div>
       </section>
       {hasAssignedProfessional && defaultPackagePlan ? (
@@ -1182,7 +1188,8 @@ export function DashboardPage(props: {
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}>
-          <p className="dashboard-home-intro-lead">{dashboardIntroLead}</p>
+          <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
+          <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
           <div className="dashboard-rn-toolbar" aria-label={t(props.language, { es: "Saldo y agendar", en: "Balance and book", pt: "Saldo e agendar" })}>
             <div className="dashboard-rn-toolbar-inner">
               <div className="dashboard-rn-pill-block" aria-live="polite">
