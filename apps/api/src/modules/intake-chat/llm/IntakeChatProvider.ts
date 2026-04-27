@@ -50,6 +50,11 @@ export interface InterviewerCallResult {
   residencyCountry?: string | null;
   /** El LLM cree que ya tiene todo lo necesario y propone enviar el intake. */
   isComplete: boolean;
+  /**
+   * Etiquetas para botones de respuesta rápida (mismas opciones que en el mensaje, sin inventar).
+   * El cliente las muestra como chips; al hacer clic se envía el string.
+   */
+  quickReplies?: string[];
   /** Observabilidad: tokens usados y costo estimado. */
   usage: ProviderUsage;
 }

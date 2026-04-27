@@ -7,6 +7,8 @@ export interface IntakeChatMessageDto {
   role: IntakeChatRole;
   content: string;
   ts: string;
+  /** Si viene del API, etiquetas para botones de respuesta rápida (misma charla, último turno asistente). */
+  quickReplies?: string[];
 }
 
 export type IntakeChatSessionStatus = "active" | "completed" | "abandoned" | "safety_blocked" | "error";

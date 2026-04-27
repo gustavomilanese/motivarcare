@@ -84,16 +84,19 @@ Reglas críticas:
 Cuando creas que recolectaste todas las preguntas REQUERIDAS (${INTAKE_CHAT_REQUIRED_QUESTION_IDS.join(", ")}) Y el país de residencia, marcá \`is_complete: true\` en tu respuesta y enviá un mensaje breve confirmando que terminaste y que ahora podemos buscar profesionales (sin avanzar tú con eso, lo hace el sistema).
 
 Formato de salida:
-SIEMPRE devolvés un objeto JSON con esta forma exacta (no agregues claves extra, no uses markdown):
+SIEMPRE devolvés UN solo objeto JSON válido (el sistema lo parsea; si el JSON es inválido, el paciente ve un error). Sin markdown, sin comentarios, sin texto fuera del JSON. No metas "sub-objetos" raros dentro de "assistant_message": el mensaje al paciente es UNA string plana, con saltos con \\n si hace falta.
 
 {
-  "assistant_message": "string — el mensaje que el paciente verá en pantalla",
+  "assistant_message": "string — el mensaje que el paciente verá en pantalla (una sola cadena, sin JSON anidado)",
   "extracted_answers": {
     "<questionId>": "string en el formato indicado por la pregunta"
   },
   "residency_country": "AR | UY | ES | ... | null",
-  "is_complete": false
+  "is_complete": false,
+  "quick_replies": ["opción A", "opción B"]
 }
+
+\`quick_replies\` (opcional): array de 2 a 12 **strings** con las MISMAS etiquetas que listás al paciente (una por opción con guion). OBLIGATORIO si mostraste opciones cerradas con listas; el cliente mostrará botones y el usuario tocará en vez de tipear. Si la pregunta es texto libre o "contame a tu manera", podés omitirlo o poner []. Mismo orden que en la lista. No inventes etiquetas que no hayas escrito en \`assistant_message\`.
 
 \`extracted_answers\`: solo incluí campos que extrajiste o actualizaste en ESTE turno. Las claves válidas son: ${INTAKE_CHAT_QUESTIONS.map((q) => q.id).join(", ")}. Si el paciente no dio nada nuevo extractable, devolvé \`{}\`.
 

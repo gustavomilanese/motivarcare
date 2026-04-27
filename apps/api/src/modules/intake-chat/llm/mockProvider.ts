@@ -60,9 +60,17 @@ export class MockIntakeChatProvider implements IntakeChatProvider {
     const residencyCaptured = input.residencyCountryAlreadyCaptured ?? detectedCountry;
 
     let assistantMessage: string;
+    let quickReplies: string[] | undefined;
     let isComplete = false;
     if (nextUnanswered) {
       assistantMessage = `[mock] Pregunta: ${nextUnanswered.label}. ${nextUnanswered.intent}`;
+      if (
+        (nextUnanswered.type === "single" || nextUnanswered.type === "multi")
+        && nextUnanswered.options
+        && nextUnanswered.options.length > 0
+      ) {
+        quickReplies = [...nextUnanswered.options].slice(0, 12);
+      }
     } else if (!residencyCaptured) {
       assistantMessage = "[mock] ¿En qué país vivís?";
     } else {
@@ -75,6 +83,7 @@ export class MockIntakeChatProvider implements IntakeChatProvider {
       extractedAnswers: newlyExtracted,
       residencyCountry: detectedCountry,
       isComplete,
+      quickReplies,
       usage: { promptTokens: 0, completionTokens: 0, costUsdCents: 0 }
     };
   }

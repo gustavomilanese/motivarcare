@@ -82,6 +82,9 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
 
     const choice = completion.choices[0];
     const rawContent = choice?.message?.content ?? "";
+    if (choice?.finish_reason === "length") {
+      console.warn("[intake-chat] interviewer response truncated (max_completion_tokens); may be invalid JSON");
+    }
     const parsed = parseInterviewerJson(rawContent);
 
     const usage = computeUsage(this.modelName, completion.usage);
@@ -91,6 +94,7 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
       extractedAnswers: parsed.extracted_answers ?? {},
       residencyCountry: parsed.residency_country ?? null,
       isComplete: Boolean(parsed.is_complete),
+      quickReplies: parsed.quick_replies,
       usage
     };
   }
@@ -149,54 +153,149 @@ function computeUsage(modelName: string, openaiUsage: OpenAI.CompletionUsage | u
   return { promptTokens, completionTokens, costUsdCents };
 }
 
+const INTERVIEWER_FALLBACK =
+  "Disculpá, tuve un problema formateando la respuesta. ¿Podés repetir lo último?";
+
 interface InterviewerJsonResponse {
   assistant_message: string;
   extracted_answers?: ExtractedIntakeAnswers;
   residency_country?: string | null;
   is_complete?: boolean;
+  quick_replies?: string[];
+}
+
+const MAX_QUICK_REPLIES = 12;
+
+function normalizeQuickRepliesField(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: string[] = [];
+  for (const x of raw) {
+    if (typeof x !== "string") continue;
+    const t = x.trim();
+    if (t.length === 0) continue;
+    if (t.length > 200) continue;
+    out.push(t);
+    if (out.length >= MAX_QUICK_REPLIES) break;
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 /**
- * Parser tolerante: si el LLM devuelve algo que no sea JSON válido, intentamos
- * recortar a la primera "{...}" que matchee. Si falla totalmente, devolvemos un
- * mensaje genérico para no romper la conversación.
+ * Lee el valor string de "assistant_message" aunque el cierre del JSON falle más adelante.
+ */
+function extractAssistantMessageString(s: string): string | null {
+  const m = s.match(/"assistant_message"\s*:\s*"/);
+  if (!m || m.index === undefined) return null;
+  let j = m.index + m[0].length;
+  let out = "";
+  for (; j < s.length; j++) {
+    const c = s[j]!;
+    if (c === "\\" && j + 1 < s.length) {
+      const n = s[j + 1]!;
+      if (n === "n") {
+        out += "\n";
+        j++;
+        continue;
+      }
+      if (n === "r") {
+        out += "\r";
+        j++;
+        continue;
+      }
+      if (n === "t") {
+        out += "\t";
+        j++;
+        continue;
+      }
+      if (n === "\\" || n === '"') {
+        out += n;
+        j++;
+        continue;
+      }
+      if (n === "u" && j + 5 < s.length) {
+        const hex = s.slice(j + 2, j + 6);
+        if (/^[0-9a-fA-F]{4}$/.test(hex)) {
+          out += String.fromCharCode(parseInt(hex, 16));
+          j += 5;
+          continue;
+        }
+      }
+      out += c + n;
+      j++;
+      continue;
+    }
+    if (c === '"') {
+      const t = out.trim();
+      return t.length > 0 ? t : null;
+    }
+    out += c;
+  }
+  return null;
+}
+
+/**
+ * Parser tolerante: JSON válido → full; si el modelo rompe el JSON, extraemos
+ * `assistant_message` por regex. **Nunca** devolvemos el blob crudo al paciente
+ * (eso se veía como "JSON" en el chat).
  */
 function parseInterviewerJson(raw: string): InterviewerJsonResponse {
   const trimmed = raw.trim();
   if (!trimmed) {
     return {
-      assistant_message: "Disculpá, tuve un problema procesando tu mensaje. ¿Podés repetir lo último?",
+      assistant_message: INTERVIEWER_FALLBACK,
       extracted_answers: {},
       residency_country: null,
       is_complete: false
     };
   }
 
-  try {
-    const parsed = JSON.parse(trimmed) as InterviewerJsonResponse;
-    if (typeof parsed.assistant_message !== "string" || parsed.assistant_message.trim().length === 0) {
-      throw new Error("missing assistant_message");
+  const emptyBody = {
+    assistant_message: INTERVIEWER_FALLBACK,
+    extracted_answers: {} as ExtractedIntakeAnswers,
+    residency_country: null as string | null,
+    is_complete: false,
+    quick_replies: undefined as string[] | undefined
+  };
+
+  const fromParsed = (p: InterviewerJsonResponse): InterviewerJsonResponse => {
+    if (typeof p.assistant_message !== "string" || p.assistant_message.trim().length === 0) {
+      return emptyBody;
     }
-    return parsed;
+    return {
+      ...p,
+      assistant_message: p.assistant_message.trim(),
+      quick_replies: normalizeQuickRepliesField(p.quick_replies)
+    };
+  };
+
+  try {
+    return fromParsed(JSON.parse(trimmed) as InterviewerJsonResponse);
   } catch {
     const match = trimmed.match(/\{[\s\S]*\}/);
     if (match) {
       try {
-        const parsed = JSON.parse(match[0]) as InterviewerJsonResponse;
-        if (typeof parsed.assistant_message === "string" && parsed.assistant_message.trim().length > 0) {
-          return parsed;
-        }
+        return fromParsed(JSON.parse(match[0]) as InterviewerJsonResponse);
       } catch {
-        /** continúa al fallback */
+        /** seguir */
       }
     }
+  }
+
+  const extracted = extractAssistantMessageString(trimmed);
+  if (extracted) {
+    return { ...emptyBody, assistant_message: extracted };
+  }
+
+  if (trimmed.startsWith("{") && (trimmed.includes("assistant_message") || trimmed.length > 5)) {
+    return emptyBody;
+  }
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
     return {
-      assistant_message: trimmed.slice(0, 400),
-      extracted_answers: {},
-      residency_country: null,
-      is_complete: false
+      ...emptyBody,
+      assistant_message: trimmed.slice(0, 2000)
     };
   }
+  return emptyBody;
 }
 
 /**

@@ -103,9 +103,8 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
     return [...serverMessages, ...optimisticMessages];
   }, [session, optimisticMessages]);
 
-  const handleSend = async (event?: FormEvent) => {
-    event?.preventDefault();
-    const trimmed = input.trim();
+  const sendText = async (raw: string) => {
+    const trimmed = raw.trim();
     if (!trimmed || !session || sending || submitting) return;
 
     setSendError(null);
@@ -131,6 +130,11 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
       setSending(false);
       inputRef.current?.focus();
     }
+  };
+
+  const handleSend = async (event?: FormEvent) => {
+    event?.preventDefault();
+    await sendText(input);
   };
 
   const handleSubmit = async (mode: IntakeChatSubmitMode = "full") => {
@@ -258,9 +262,23 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
         ) : null}
 
         <div className="intake-chat-messages" aria-live="polite">
-          {allMessages.map((message, index) => (
-            <MessageBubble key={`${message.ts}-${index}`} message={message} language={language} />
-          ))}
+          {allMessages.map((message, index) => {
+            const isLast = index === allMessages.length - 1;
+            const qr = message.role === "assistant" ? message.quickReplies : undefined;
+            const showQuick =
+              Boolean(qr && qr.length > 0)
+              && isLast
+              && !sending;
+            return (
+              <MessageBubble
+                key={`${message.ts}-${index}`}
+                message={message}
+                language={language}
+                showQuickReplies={showQuick}
+                onQuickReply={showQuick ? (label) => void sendText(label) : undefined}
+              />
+            );
+          })}
           {sending ? (
             <div className="intake-chat-typing" aria-label={t({ es: "Escribiendo", en: "Typing", pt: "Digitando" })}>
               <span className="intake-chat-typing-dot" />
@@ -384,8 +402,19 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
   );
 }
 
-function MessageBubble({ message, language }: { message: DisplayMessage; language: AppLanguage }) {
+function MessageBubble({
+  message,
+  language,
+  showQuickReplies,
+  onQuickReply
+}: {
+  message: DisplayMessage;
+  language: AppLanguage;
+  showQuickReplies?: boolean;
+  onQuickReply?: (label: string) => void;
+}) {
   const isAssistant = message.role === "assistant";
+  const quickReplies = isAssistant && message.quickReplies?.length ? message.quickReplies : null;
   return (
     <div
       className={`intake-chat-bubble intake-chat-bubble--${isAssistant ? "assistant" : "user"}${
@@ -398,6 +427,24 @@ function MessageBubble({ message, language }: { message: DisplayMessage; languag
           : textByLanguage(language, { es: "Vos", en: "You", pt: "Você" })}
       </div>
       <div className="intake-chat-bubble-content">{message.content}</div>
+      {showQuickReplies && quickReplies && onQuickReply ? (
+        <div className="intake-chat-quick-replies" role="group" aria-label={textByLanguage(language, {
+          es: "Respuestas sugeridas",
+          en: "Suggested replies",
+          pt: "Respostas sugeridas"
+        })}>
+          {quickReplies.map((label, idx) => (
+            <button
+              key={`${idx}-${label.slice(0, 64)}`}
+              type="button"
+              className="intake-chat-quick-reply-btn"
+              onClick={() => onQuickReply(label)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -26,13 +26,23 @@ export interface IntakeChatStoredMessage {
   ts: string;
   /** Si true, no se manda al LLM ni se renderiza al paciente. Útil para notas internas. */
   hidden?: boolean;
+  /**
+   * Solo en mensajes `assistant` del último turno: opciones para toques rápidos en el cliente.
+   * Al guardar un turno nuevo, se quitan de mensajes anteriores para no dejar chips viejos.
+   */
+  quickReplies?: string[];
 }
 
 export interface IntakeChatSessionDto {
   sessionId: string;
   status: IntakeChatSessionStatus;
   /** Mensajes visibles al paciente (sin los `hidden`). */
-  messages: Array<{ role: "assistant" | "user"; content: string; ts: string }>;
+  messages: Array<{
+    role: "assistant" | "user";
+    content: string;
+    ts: string;
+    quickReplies?: string[];
+  }>;
   extractedAnswers: ExtractedIntakeAnswers;
   residencyCountry: string | null;
   isResume: boolean;
@@ -172,8 +182,9 @@ export async function sendMessage(params: { patientId: string; sessionId: string
   ensureWithinQuotas(session);
 
   const messagesBefore = parseStoredMessages(session.messages);
+  const withoutStaleQuickReplies = stripAssistantQuickReplies(messagesBefore);
   const updatedMessages: IntakeChatStoredMessage[] = [
-    ...messagesBefore,
+    ...withoutStaleQuickReplies,
     { role: "user", content: trimmed, ts: new Date().toISOString() }
   ];
 
@@ -205,6 +216,7 @@ export async function sendMessage(params: { patientId: string; sessionId: string
 
   let safetyTriggeredThisTurn = false;
   let assistantMessage: string;
+  let quickReplies: string[] | undefined;
   let newExtracted: ExtractedIntakeAnswers = {};
   let detectedCountry: string | null = null;
   let isCompleteFromLLM = false;
@@ -232,6 +244,7 @@ export async function sendMessage(params: { patientId: string; sessionId: string
     try {
       const interviewerResult = await interviewerP;
       assistantMessage = interviewerResult.assistantMessage;
+      quickReplies = interviewerResult.quickReplies;
       newExtracted = interviewerResult.extractedAnswers ?? {};
       detectedCountry = normalizeCountryCode(interviewerResult.residencyCountry);
       isCompleteFromLLM = interviewerResult.isComplete;
@@ -246,10 +259,13 @@ export async function sendMessage(params: { patientId: string; sessionId: string
     }
   }
 
-  const messagesAfter: IntakeChatStoredMessage[] = [
-    ...updatedMessages,
-    { role: "assistant", content: assistantMessage, ts: new Date().toISOString() }
-  ];
+  const lastAssistant: IntakeChatStoredMessage = {
+    role: "assistant",
+    content: assistantMessage,
+    ts: new Date().toISOString(),
+    ...(quickReplies && quickReplies.length > 0 ? { quickReplies } : {})
+  };
+  const messagesAfter: IntakeChatStoredMessage[] = [...updatedMessages, lastAssistant];
 
   const mergedAnswers: ExtractedIntakeAnswers = sanitizeExtractedAnswers({
     ...parseExtractedAnswers(session.extractedAnswers),
@@ -440,9 +456,26 @@ function parseStoredMessages(raw: Prisma.JsonValue): IntakeChatStoredMessage[] {
     if (typeof obj.hidden === "boolean") {
       stored.hidden = obj.hidden;
     }
+    if (Array.isArray(obj.quickReplies) && role === "assistant") {
+      const qr = obj.quickReplies.filter((x) => typeof x === "string" && x.trim().length > 0) as string[];
+      if (qr.length > 0) {
+        stored.quickReplies = qr.slice(0, 12);
+      }
+    }
     result.push(stored);
   }
   return result;
+}
+
+/** Al nuevo turno del usuario, las chips de turnos viejos ya no aplican. */
+function stripAssistantQuickReplies(msgs: IntakeChatStoredMessage[]): IntakeChatStoredMessage[] {
+  return msgs.map((m) => {
+    if (m.role === "assistant" && m.quickReplies && m.quickReplies.length > 0) {
+      const { quickReplies: _q, ...rest } = m;
+      return rest;
+    }
+    return m;
+  });
 }
 
 function parseExtractedAnswers(raw: Prisma.JsonValue): ExtractedIntakeAnswers {
@@ -535,7 +568,17 @@ function toSessionDto(
   const allMessages = parseStoredMessages(session.messages);
   const visibleMessages = allMessages
     .filter((m) => !m.hidden && (m.role === "assistant" || m.role === "user"))
-    .map((m) => ({ role: m.role as "assistant" | "user", content: m.content, ts: m.ts }));
+    .map((m) => {
+      const row: { role: "assistant" | "user"; content: string; ts: string; quickReplies?: string[] } = {
+        role: m.role as "assistant" | "user",
+        content: m.content,
+        ts: m.ts
+      };
+      if (m.role === "assistant" && m.quickReplies && m.quickReplies.length > 0) {
+        row.quickReplies = m.quickReplies;
+      }
+      return row;
+    });
 
   const extracted = parseExtractedAnswers(session.extractedAnswers);
 
