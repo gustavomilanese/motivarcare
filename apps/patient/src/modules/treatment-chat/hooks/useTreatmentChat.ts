@@ -118,6 +118,8 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
         createdAt: new Date().toISOString(),
         safetySeverity: null
       };
+      const streamAssistantId = `stream-assistant-${Date.now()}`;
+      let acc = "";
       setConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, optimisticUserMsg] } : prev
       );
@@ -126,21 +128,38 @@ export function useTreatmentChat(params: UseTreatmentChatParams): UseTreatmentCh
       setSafetyAlert(null);
       setErrorMessage(null);
       try {
-        const result = await sendTreatmentChatMessage(trimmed, authToken);
+        const result = await sendTreatmentChatMessage(trimmed, authToken, (text) => {
+          acc += text;
+          setConversation((prev) => {
+            if (!prev) return prev;
+            const messages = [...prev.messages];
+            const i = messages.findIndex((m) => m.id === streamAssistantId);
+            if (i < 0) {
+              messages.push({
+                id: streamAssistantId,
+                role: "assistant",
+                content: acc,
+                createdAt: new Date().toISOString(),
+                safetySeverity: null
+              });
+            } else {
+              messages[i] = { ...messages[i], content: acc };
+            }
+            return { ...prev, messages };
+          });
+        });
         setConversation(result);
         if (result.safetyTriggeredThisTurn && result.safetyAlertMessage) {
           setSafetyAlert(result.safetyAlertMessage);
         }
       } catch (err) {
-        /**
-         * Rollback del optimistic: volvemos al estado previo y dejamos que el usuario
-         * reintente. Mensajes amigables ya vienen del backend (ver handleTreatmentChatError).
-         */
         setConversation((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            messages: prev.messages.filter((m) => m.id !== optimisticUserMsg.id)
+            messages: prev.messages.filter(
+              (m) => m.id !== optimisticUserMsg.id && m.id !== streamAssistantId
+            )
           };
         });
         const msg = err instanceof Error ? err.message : "No pudimos enviar tu mensaje.";

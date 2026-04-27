@@ -60,6 +60,24 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional().default(""),
   /** Modelo OpenAI usado por features de IA (intake-chat, ai-audit). gpt-5-mini es el sweet spot costo/calidad. */
   OPENAI_MODEL: z.string().min(1).default("gpt-5-mini"),
+  /**
+   * Modelo barato y rápido para el clasificador de crisis del treatment-chat
+   * (misma forma que el intake, pero aislado para bajar latencia; no hace razonamiento).
+   */
+  OPENAI_SAFETY_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  /**
+   * Modelo de conversación del treatment-chat: priorizar baja latencia.
+   * El resumen profesional puede ir por `TREATMENT_CHAT_SUMMARY_OPENAI_MODEL` (si no, `OPENAI_MODEL`).
+   */
+  TREATMENT_CHAT_OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  /**
+   * Resumen estructurado (reportes pro): puede ser un modelo más “fuerte” que el chat en vivo.
+   * Vacío o valor sentinela = usar `OPENAI_MODEL` (p. ej. gpt-5-mini).
+   */
+  /** Si vacío, se usa `OPENAI_MODEL` (p. ej. gpt-5-mini). */
+  TREATMENT_CHAT_SUMMARY_OPENAI_MODEL: z.string().optional().default(""),
+  /** Caché en memoria de `loadPatientContext` (ms) para no repetir 4 lecturas a DB entre mensajes seguidos. */
+  TREATMENT_CHAT_PATIENT_CONTEXT_TTL_MS: z.coerce.number().int().min(0).default(45_000),
   AI_AUDIT_ENABLED: z.coerce.boolean().default(false),
   /** Activa el chat conversacional como alternativa al wizard de intake del paciente. */
   INTAKE_CHAT_ENABLED: z.coerce.boolean().default(false),
@@ -78,7 +96,7 @@ const EnvSchema = z.object({
   /** Cap por respuesta del LLM (tokens de output) para limitar costo y forzar concisión. */
   TREATMENT_CHAT_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(400),
   /** Cantidad de mensajes recientes que pasamos al LLM como contexto en cada turno. */
-  TREATMENT_CHAT_CONTEXT_WINDOW: z.coerce.number().int().positive().default(20),
+  TREATMENT_CHAT_CONTEXT_WINDOW: z.coerce.number().int().positive().default(12),
   /** Provider del treatment-chat. Mock no llama a la API y permite tests / demos sin costo. */
   TREATMENT_CHAT_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
   /** Ventana de rate-limit para POST /messages del treatment chat (PR-T5). */

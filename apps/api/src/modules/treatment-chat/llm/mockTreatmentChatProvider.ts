@@ -1,4 +1,5 @@
 import type {
+  ProviderUsage,
   SafetyClassifierInput,
   SafetyClassifierResult
 } from "../../intake-chat/llm/IntakeChatProvider.js";
@@ -24,6 +25,22 @@ export class MockTreatmentChatProvider implements TreatmentChatProvider {
   readonly modelName = "mock-treatment";
 
   async generateAssistantResponse(input: TreatmentChatCallInput): Promise<TreatmentChatCallResult> {
+    const { assistantMessage, usage } = this.buildMockReply(input);
+    return { assistantMessage, usage };
+  }
+
+  async *streamAssistantResponse(
+    input: TreatmentChatCallInput
+  ): AsyncGenerator<string, ProviderUsage, void> {
+    const { assistantMessage, usage } = this.buildMockReply(input);
+    const chunk = Math.max(1, Math.ceil(assistantMessage.length / 6));
+    for (let i = 0; i < assistantMessage.length; i += chunk) {
+      yield assistantMessage.slice(i, i + chunk);
+    }
+    return usage;
+  }
+
+  private buildMockReply(input: TreatmentChatCallInput): TreatmentChatCallResult {
     const lastUserMessage = [...input.conversationHistory].reverse().find((m) => m.role === "user");
     const userText = lastUserMessage?.content?.trim() ?? "";
     const reply =

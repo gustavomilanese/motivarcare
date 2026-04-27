@@ -61,6 +61,11 @@ export interface TreatmentChatProvider {
 
   generateAssistantResponse(input: TreatmentChatCallInput): Promise<TreatmentChatCallResult>;
 
+  /**
+   * Respuesta token a token (SSE en el route). El valor final del iterador es `ProviderUsage`.
+   */
+  streamAssistantResponse(input: TreatmentChatCallInput): AsyncGenerator<string, ProviderUsage, void>;
+
   classifySafety(input: SafetyClassifierInput): Promise<SafetyClassifierResult>;
 
   /**

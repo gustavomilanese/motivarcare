@@ -31,9 +31,16 @@ export function getTreatmentChatProvider(): TreatmentChatProvider {
     return cachedProvider;
   }
 
+  const summaryModel =
+    env.TREATMENT_CHAT_SUMMARY_OPENAI_MODEL?.trim().length > 0
+      ? env.TREATMENT_CHAT_SUMMARY_OPENAI_MODEL.trim()
+      : env.OPENAI_MODEL;
+
   cachedProvider = new OpenAITreatmentChatProvider({
     apiKey: env.OPENAI_API_KEY,
-    modelName: env.OPENAI_MODEL
+    modelName: env.TREATMENT_CHAT_OPENAI_MODEL,
+    safetyModelName: env.OPENAI_SAFETY_MODEL,
+    summaryModelName: summaryModel
   });
   return cachedProvider;
 }

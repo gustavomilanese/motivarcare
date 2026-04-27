@@ -1,4 +1,4 @@
-import { apiRequest } from "../../app/services/api";
+import { API_BASE, apiRequest } from "../../app/services/api";
 
 export type TreatmentChatRole = "assistant" | "user";
 
@@ -61,17 +61,94 @@ export async function fetchTreatmentChatConversation(token: string): Promise<Tre
   return result.chat;
 }
 
-/** POST /api/treatment-chat/messages — manda un mensaje del paciente al asistente. */
+type StreamSseData =
+  | { type: "token"; text: string }
+  | { type: "done"; chat: SendMessageResultDto }
+  | { type: "error"; message: string };
+
+/**
+ * POST /api/treatment-chat/messages con `stream: true` (SSE: deltas y evento `done` con el chat
+ * persistido, mismo contrato final que el JSON 200 de antes).
+ */
 export async function sendTreatmentChatMessage(
   message: string,
-  token: string
+  token: string,
+  onToken: (text: string) => void
 ): Promise<SendMessageResultDto> {
-  const result = await apiRequest<SendEnvelope>(
-    "/api/treatment-chat/messages",
-    { method: "POST", body: JSON.stringify({ message }) },
-    token
+  const res = await fetch(
+    `${API_BASE.replace(/\/+$/, "")}/api/treatment-chat/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      credentials: "omit",
+      body: JSON.stringify({ message, stream: true })
+    }
   );
-  return result.chat;
+
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let errMsg = `HTTP ${res.status}`;
+    try {
+      const asJson = JSON.parse(raw) as { message?: string; error?: string };
+      errMsg = (asJson.message || asJson.error || errMsg) as string;
+    } catch {
+      if (raw.trim().length > 0) {
+        errMsg = raw;
+      }
+    }
+    throw new Error(errMsg);
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/event-stream") || !res.body) {
+    const recovered = (await res.json().catch(() => null)) as SendEnvelope | null;
+    if (recovered?.chat) {
+      return recovered.chat;
+    }
+    throw new Error("Respuesta inesperada del servidor (no es SSE).");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: SendMessageResultDto | null = null;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    for (;;) {
+      const sep = buffer.indexOf("\n\n");
+      if (sep < 0) break;
+      const rawLine = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      const dataLine = rawLine.startsWith("data: ") ? rawLine.slice(6) : rawLine;
+      if (dataLine.trim().length === 0) {
+        break;
+      }
+      let data: StreamSseData;
+      try {
+        data = JSON.parse(dataLine) as StreamSseData;
+      } catch {
+        continue;
+      }
+      if (data.type === "token" && data.text) {
+        onToken(data.text);
+      } else if (data.type === "error") {
+        throw new Error(data.message || "Error del asistente.");
+      } else if (data.type === "done" && data.chat) {
+        result = data.chat;
+      }
+    }
+  }
+
+  if (!result) {
+    throw new Error("No recibimos la respuesta completa del asistente. Probá de nuevo.");
+  }
+  return result;
 }
 
 /**

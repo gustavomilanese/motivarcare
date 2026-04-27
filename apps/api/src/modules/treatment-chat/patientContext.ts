@@ -1,3 +1,4 @@
+import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 
 /**
@@ -8,9 +9,9 @@ import { prisma } from "../../lib/prisma.js";
  *
  * Diseño:
  * - Se calcula a partir de fuentes ya existentes en DB. Sin tablas nuevas.
- * - Es DATA-ONLY: no se persiste, se lee fresh en cada request del chat
- *   (dos lecturas por turno: una para el LLM y otra eventual para safety).
- *   Los costos de DB son chicos (todas las queries usan índices existentes).
+ * - Es DATA-ONLY: no se persiste en DB propia; opcionalmente se cachea en memoria
+ *   por `TREATMENT_CHAT_PATIENT_CONTEXT_TTL_MS` para no repetir 4 lecturas entre
+ *   mensajes seguidos del mismo paciente.
  * - Si un dato falta, se omite del prompt en lugar de inventar valores.
  */
 export interface TreatmentChatPatientContext {
@@ -37,12 +38,38 @@ export interface TreatmentChatPatientContext {
   creditsRemaining: number;
 }
 
+const patientContextCache = new Map<string, { fetchedAt: number; data: TreatmentChatPatientContext }>();
+
+/** Solo tests o invalidación manual; no usar en producción salvo debugging. */
+export function clearPatientContextCache(patientId?: string): void {
+  if (patientId) {
+    patientContextCache.delete(patientId);
+    return;
+  }
+  patientContextCache.clear();
+}
+
 /**
- * Carga el contexto operativo del paciente. Pensado para llamarse antes de
- * cada request al LLM. No cachea: privilegiamos consistencia (que el chat
- * refleje un booking que se acaba de mover, por ejemplo) sobre throughput.
+ * Carga el contexto operativo del paciente (con caché en memoria acotada por TTL).
  */
 export async function loadPatientContext(patientId: string): Promise<TreatmentChatPatientContext> {
+  const ttl = env.TREATMENT_CHAT_PATIENT_CONTEXT_TTL_MS;
+  if (ttl > 0) {
+    const hit = patientContextCache.get(patientId);
+    const nowMs = Date.now();
+    if (hit && nowMs - hit.fetchedAt < ttl) {
+      return hit.data;
+    }
+  }
+
+  const data = await loadPatientContextFromDatabase(patientId);
+  if (ttl > 0) {
+    patientContextCache.set(patientId, { fetchedAt: Date.now(), data });
+  }
+  return data;
+}
+
+async function loadPatientContextFromDatabase(patientId: string): Promise<TreatmentChatPatientContext> {
   const now = new Date();
 
   const [patient, nextBooking, creditsAgg, mostRecentBookingProfessional] = await Promise.all([

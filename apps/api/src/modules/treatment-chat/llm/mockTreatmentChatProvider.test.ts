@@ -32,4 +32,24 @@ describe("MockTreatmentChatProvider", () => {
     expect(result.severity).toBe("none");
     expect(result.triggered).toBe(false);
   });
+
+  it("streamAssistantResponse reconstruye el mismo texto y devuelve usage cero al completar", async () => {
+    const gen = provider.streamAssistantResponse({
+      systemPrompt: "test",
+      conversationHistory: [{ role: "user", content: "Hola" }]
+    });
+    let full = "";
+    let result = await gen.next();
+    while (!result.done) {
+      full += result.value;
+      result = await gen.next();
+    }
+    const usage = result.value;
+    const ref = await provider.generateAssistantResponse({
+      systemPrompt: "test",
+      conversationHistory: [{ role: "user", content: "Hola" }]
+    });
+    expect(full).toBe(ref.assistantMessage);
+    expect(usage.costUsdCents).toBe(0);
+  });
 });

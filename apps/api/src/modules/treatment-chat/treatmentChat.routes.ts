@@ -11,13 +11,16 @@ import { setProfessionalShareConsent } from "./professionalReports.service.js";
 import {
   TreatmentChatError,
   getOrCreateChat,
-  sendMessage
+  sendMessage,
+  writeTreatmentChatMessageStream
 } from "./treatmentChat.service.js";
 
 export const treatmentChatRouter = Router();
 
 const sendMessageSchema = z.object({
-  message: z.string().trim().min(1).max(4000)
+  message: z.string().trim().min(1).max(4000),
+  /** `true` = respuesta por Server-Sent Events (deltas + `done` con el chat completo). */
+  stream: z.coerce.boolean().optional().default(false)
 });
 
 const consentSchema = z.object({
@@ -170,6 +173,14 @@ treatmentChatRouter.post("/messages", requireAuth, async (req: AuthenticatedRequ
   }
 
   try {
+    if (parsed.data.stream) {
+      await writeTreatmentChatMessageStream({
+        patientId,
+        userMessage: parsed.data.message,
+        res
+      });
+      return;
+    }
     const result = await sendMessage({
       patientId,
       userMessage: parsed.data.message

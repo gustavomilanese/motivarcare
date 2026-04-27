@@ -1,4 +1,5 @@
 import type { PatientTreatmentChat, PatientTreatmentChatMessage } from "@prisma/client";
+import type { Response } from "express";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { evaluateSafety } from "../intake-chat/llm/safetyClassifier.js";
@@ -123,147 +124,32 @@ export async function getOrCreateChat(patientId: string): Promise<TreatmentChatD
   return chatToDto(created, messages);
 }
 
-/**
- * El paciente envía un mensaje. Flujo:
- * 1. Valida cuotas (cap diario).
- * 2. Persiste el mensaje del paciente.
- * 3. Corre safety classifier; si dispara crisis, NO llama al provider conversacional
- *    y devuelve un assistant fijo de derivación.
- * 4. Si no hay crisis, llama al provider con la ventana de contexto reciente.
- * 5. Persiste la respuesta del assistant + actualiza contadores.
- */
-export async function sendMessage(params: {
-  patientId: string;
-  userMessage: string;
+type SafetyEvalResult = Awaited<ReturnType<typeof evaluateSafety>>;
+
+async function persistAndReturnSendResult(params: {
+  chat: PatientTreatmentChat;
+  assistantText: string;
+  safetyResult: SafetyEvalResult;
+  safetyTriggeredThisTurn: boolean;
+  safetyAlertMessageThisTurn: string | null;
+  today: Date;
+  dailyUsed: number;
+  promptTokens: number;
+  completionTokens: number;
+  costUsdCents: number;
 }): Promise<SendMessageResult> {
-  ensureFeatureEnabled();
-  const trimmed = params.userMessage.trim();
-  if (trimmed.length === 0) {
-    throw new TreatmentChatError("MESSAGE_INVALID", "El mensaje no puede estar vacío");
-  }
-  if (trimmed.length > USER_MESSAGE_MAX_LENGTH) {
-    throw new TreatmentChatError(
-      "MESSAGE_INVALID",
-      `El mensaje supera el largo máximo (${USER_MESSAGE_MAX_LENGTH} caracteres)`
-    );
-  }
-
-  const chat = await prisma.patientTreatmentChat.findUnique({
-    where: { patientId: params.patientId }
-  });
-  if (!chat) {
-    throw new TreatmentChatError("CHAT_NOT_FOUND", "El chat no fue inicializado todavía");
-  }
-  if (chat.status === "archived") {
-    throw new TreatmentChatError("CHAT_ARCHIVED", "El chat está archivado");
-  }
-
-  const today = startOfUtcDay(new Date());
-  const dailyUsed = computeDailyUsed(chat, today);
-  if (dailyUsed >= env.TREATMENT_CHAT_DAILY_TURN_LIMIT) {
-    throw new TreatmentChatError(
-      "DAILY_LIMIT_REACHED",
-      `Llegaste al límite diario de mensajes (${env.TREATMENT_CHAT_DAILY_TURN_LIMIT}). Probá mañana o agendá una sesión con tu profesional.`
-    );
-  }
-
-  /**
-   * Persistimos el mensaje del paciente ANTES del LLM. Si el LLM falla, el
-   * mensaje queda guardado y el paciente puede reintentar.
-   */
-  const userMsg = await prisma.patientTreatmentChatMessage.create({
-    data: {
-      chatId: chat.id,
-      role: "user",
-      content: trimmed
-    }
-  });
-
-  const recent = await loadRecentMessagesForContext(chat.id);
-
-  const provider = getTreatmentChatProvider();
-
-  const safetyResult = await evaluateSafety(provider, {
-    userMessage: trimmed,
-    recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
-  });
-
-  let assistantText: string;
-  let safetyAlertMessageThisTurn: string | null = null;
-  let promptTokens = 0;
-  let completionTokens = 0;
-  let costUsdCents = 0;
-  let safetyTriggeredThisTurn = false;
-
-  if (safetyResult.triggered && safetyResult.severity === "high") {
-    /**
-     * En crisis: NO llamamos al provider conversacional para evitar que el modelo
-     * intente "ayudar" con interpretaciones o consejos riesgosos. Forzamos un
-     * mensaje fijo de derivación + mantenemos el flag a nivel chat.
-     *
-     * Anexamos recursos de emergencia del país del paciente cuando los conocemos.
-     */
-    safetyTriggeredThisTurn = true;
-    const emergencyContext = await loadPatientContext(params.patientId).catch(() => null);
-    const emergencyResources = getEmergencyResources(emergencyContext?.residencyCountry);
-    assistantText = emergencyResources
-      ? `${TREATMENT_CHAT_SAFETY_ALERT_MESSAGE}\n\n${renderEmergencyResourcesText(emergencyResources)}`
-      : TREATMENT_CHAT_SAFETY_ALERT_MESSAGE;
-    safetyAlertMessageThisTurn = assistantText;
-
-    /** Marcamos el mensaje del paciente con severidad alta (auditoría / panel del profesional). */
-    await prisma.patientTreatmentChatMessage.update({
-      where: { id: userMsg.id },
-      data: {
-        safetySeverity: "high",
-        safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
-      }
-    });
-  } else {
-    /** Reusamos el contexto que cargamos antes + sumamos el mensaje recién persistido. */
-    const conversationForLlm = [
-      ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
-      { role: "user" as const, content: trimmed }
-    ];
-
-    try {
-      /**
-       * Cargamos contexto fresh por turno: si falla, seguimos sin él (el LLM
-       * va a derivar al usuario a la app cuando le pregunten algo operativo).
-       */
-      const context = await loadPatientContext(params.patientId).catch((err) => {
-        console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
-        return null;
-      });
-      const result = await provider.generateAssistantResponse({
-        systemPrompt: buildTreatmentChatSystemPrompt(context),
-        conversationHistory: conversationForLlm,
-        maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
-      });
-      assistantText = result.assistantMessage;
-      promptTokens = result.usage.promptTokens;
-      completionTokens = result.usage.completionTokens;
-      costUsdCents = result.usage.costUsdCents;
-
-      /** Persistimos también la severidad ligera detectada por LLM (informativa). */
-      if (safetyResult.severity !== "none") {
-        await prisma.patientTreatmentChatMessage.update({
-          where: { id: userMsg.id },
-          data: {
-            safetySeverity: safetyResult.severity,
-            safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
-          }
-        });
-      }
-    } catch (err) {
-      console.error("[treatment-chat] provider error:", err instanceof Error ? err.message : err);
-      throw new TreatmentChatError(
-        "PROVIDER_ERROR",
-        "El asistente tuvo un problema. Probá de nuevo en un momento.",
-        { cause: err instanceof Error ? err.message : String(err) }
-      );
-    }
-  }
+  const {
+    chat,
+    assistantText,
+    safetyResult,
+    safetyTriggeredThisTurn,
+    safetyAlertMessageThisTurn,
+    today,
+    dailyUsed,
+    promptTokens,
+    completionTokens,
+    costUsdCents
+  } = params;
 
   await prisma.patientTreatmentChatMessage.create({
     data: {
@@ -276,10 +162,6 @@ export async function sendMessage(params: {
     }
   });
 
-  /**
-   * Actualizamos el chat (contadores, último timestamp del usuario, daily counter,
-   * highest safety, costo). Hacemos un update único para no introducir race conditions.
-   */
   const newHighestSeverity = pickHigherSeverity(
     chat.highestSafetySeverity as TreatmentChatSafetySeverity | null,
     safetyTriggeredThisTurn ? "high" : safetyResult.severity
@@ -304,12 +186,298 @@ export async function sendMessage(params: {
     ...dto,
     lastAssistantMessage: assistantText,
     safetyTriggeredThisTurn,
-    /**
-     * El mensaje de banner ya viene con los recursos de emergencia incorporados
-     * cuando el país del paciente está soportado (ver bloque crisis arriba).
-     */
     safetyAlertMessage: safetyAlertMessageThisTurn ?? dto.safetyAlertMessage
   };
+}
+
+/**
+ * Valida, persiste el mensaje del paciente, carga ventana y provider.
+ * Lanza `TreatmentChatError` con el mismo criterio que el envío de mensaje.
+ */
+async function prepareUserTurn(
+  patientId: string,
+  userMessage: string
+): Promise<{
+  chat: PatientTreatmentChat;
+  userMsg: PatientTreatmentChatMessage;
+  recent: Awaited<ReturnType<typeof loadRecentMessagesForContext>>;
+  today: Date;
+  dailyUsed: number;
+  provider: ReturnType<typeof getTreatmentChatProvider>;
+  trimmed: string;
+}> {
+  const trimmed = userMessage.trim();
+  if (trimmed.length === 0) {
+    throw new TreatmentChatError("MESSAGE_INVALID", "El mensaje no puede estar vacío");
+  }
+  if (trimmed.length > USER_MESSAGE_MAX_LENGTH) {
+    throw new TreatmentChatError(
+      "MESSAGE_INVALID",
+      `El mensaje supera el largo máximo (${USER_MESSAGE_MAX_LENGTH} caracteres)`
+    );
+  }
+
+  const chat = await prisma.patientTreatmentChat.findUnique({ where: { patientId } });
+  if (!chat) {
+    throw new TreatmentChatError("CHAT_NOT_FOUND", "El chat no fue inicializado todavía");
+  }
+  if (chat.status === "archived") {
+    throw new TreatmentChatError("CHAT_ARCHIVED", "El chat está archivado");
+  }
+
+  const today = startOfUtcDay(new Date());
+  const dailyUsed = computeDailyUsed(chat, today);
+  if (dailyUsed >= env.TREATMENT_CHAT_DAILY_TURN_LIMIT) {
+    throw new TreatmentChatError(
+      "DAILY_LIMIT_REACHED",
+      `Llegaste al límite diario de mensajes (${env.TREATMENT_CHAT_DAILY_TURN_LIMIT}). Probá mañana o agendá una sesión con tu profesional.`
+    );
+  }
+
+  const userMsg = await prisma.patientTreatmentChatMessage.create({
+    data: { chatId: chat.id, role: "user", content: trimmed }
+  });
+
+  const recent = await loadRecentMessagesForContext(chat.id);
+  const provider = getTreatmentChatProvider();
+
+  return { chat, userMsg, recent, today, dailyUsed, provider, trimmed };
+}
+
+/**
+ * El paciente envía un mensaje. Flujo:
+ * 1. Valida cuotas (cap diario).
+ * 2. Persiste el mensaje del paciente.
+ * 3. Carga `context` + `safety` en paralelo (baja latencia; contexto con caché TTL).
+ * 4. Si dispara crisis, responde sin conversación; si no, el LLM (completo, sin stream).
+ * 5. Persiste la respuesta del assistant + actualiza contadores.
+ */
+export async function sendMessage(params: {
+  patientId: string;
+  userMessage: string;
+}): Promise<SendMessageResult> {
+  ensureFeatureEnabled();
+
+  const { chat, userMsg, recent, today, dailyUsed, provider, trimmed } = await prepareUserTurn(
+    params.patientId,
+    params.userMessage
+  );
+
+  const [patientContext, safetyResult] = await Promise.all([
+    loadPatientContext(params.patientId).catch((err) => {
+      console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
+      return null;
+    }),
+    evaluateSafety(provider, {
+      userMessage: trimmed,
+      recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
+    })
+  ]);
+
+  let assistantText: string;
+  let safetyAlertMessageThisTurn: string | null = null;
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let costUsdCents = 0;
+  let safetyTriggeredThisTurn = false;
+
+  if (safetyResult.triggered && safetyResult.severity === "high") {
+    safetyTriggeredThisTurn = true;
+    const emergencyResources = getEmergencyResources(patientContext?.residencyCountry ?? null);
+    assistantText = emergencyResources
+      ? `${TREATMENT_CHAT_SAFETY_ALERT_MESSAGE}\n\n${renderEmergencyResourcesText(emergencyResources)}`
+      : TREATMENT_CHAT_SAFETY_ALERT_MESSAGE;
+    safetyAlertMessageThisTurn = assistantText;
+
+    await prisma.patientTreatmentChatMessage.update({
+      where: { id: userMsg.id },
+      data: {
+        safetySeverity: "high",
+        safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
+      }
+    });
+  } else {
+    const conversationForLlm = [
+      ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
+      { role: "user" as const, content: trimmed }
+    ];
+
+    try {
+      const result = await provider.generateAssistantResponse({
+        systemPrompt: buildTreatmentChatSystemPrompt(patientContext),
+        conversationHistory: conversationForLlm,
+        maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
+      });
+      assistantText = result.assistantMessage;
+      promptTokens = result.usage.promptTokens;
+      completionTokens = result.usage.completionTokens;
+      costUsdCents = result.usage.costUsdCents;
+
+      if (safetyResult.severity !== "none") {
+        await prisma.patientTreatmentChatMessage.update({
+          where: { id: userMsg.id },
+          data: {
+            safetySeverity: safetyResult.severity,
+            safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
+          }
+        });
+      }
+    } catch (err) {
+      console.error("[treatment-chat] provider error:", err instanceof Error ? err.message : err);
+      throw new TreatmentChatError(
+        "PROVIDER_ERROR",
+        "El asistente tuvo un problema. Probá de nuevo en un momento.",
+        { cause: err instanceof Error ? err.message : String(err) }
+      );
+    }
+  }
+
+  return persistAndReturnSendResult({
+    chat,
+    assistantText,
+    safetyResult,
+    safetyTriggeredThisTurn,
+    safetyAlertMessageThisTurn,
+    today,
+    dailyUsed,
+    promptTokens,
+    completionTokens,
+    costUsdCents
+  });
+}
+
+/**
+ * Igual que `sendMessage` pero:
+ * 1) la respuesta no conversacional (crisis) o los deltas del asistente van por **SSE**;
+ * 2) al cierre, un evento `done` incluye el mismo cuerpo que hoy el JSON 200.
+ */
+export async function writeTreatmentChatMessageStream(params: {
+  patientId: string;
+  userMessage: string;
+  res: Response;
+}): Promise<void> {
+  ensureFeatureEnabled();
+  const { res } = params;
+  const sse = (data: object) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const { chat, userMsg, recent, today, dailyUsed, provider, trimmed } = await prepareUserTurn(
+    params.patientId,
+    params.userMessage
+  );
+
+  const [patientContext, safetyResult] = await Promise.all([
+    loadPatientContext(params.patientId).catch((err) => {
+      console.warn("[treatment-chat] no pude cargar contexto del paciente:", err);
+      return null;
+    }),
+    evaluateSafety(provider, {
+      userMessage: trimmed,
+      recentMessages: recent.map((m) => ({ role: m.role, content: m.content }))
+    })
+  ]);
+
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  if (typeof (res as { flushHeaders?: () => void }).flushHeaders === "function") {
+    (res as { flushHeaders: () => void }).flushHeaders();
+  }
+
+  let assistantText: string;
+  let safetyAlertMessageThisTurn: string | null = null;
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let costUsdCents = 0;
+  let safetyTriggeredThisTurn = false;
+
+  if (safetyResult.triggered && safetyResult.severity === "high") {
+    safetyTriggeredThisTurn = true;
+    const emergencyResources = getEmergencyResources(patientContext?.residencyCountry ?? null);
+    assistantText = emergencyResources
+      ? `${TREATMENT_CHAT_SAFETY_ALERT_MESSAGE}\n\n${renderEmergencyResourcesText(emergencyResources)}`
+      : TREATMENT_CHAT_SAFETY_ALERT_MESSAGE;
+    safetyAlertMessageThisTurn = assistantText;
+
+    await prisma.patientTreatmentChatMessage.update({
+      where: { id: userMsg.id },
+      data: {
+        safetySeverity: "high",
+        safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
+      }
+    });
+    /** Un único “delta” mantiene el contrato con el panel (misma forma que un stream de texto). */
+    sse({ type: "token", text: assistantText });
+  } else {
+    const conversationForLlm = [
+      ...recent.map((m) => ({ role: m.role as "system" | "assistant" | "user", content: m.content })),
+      { role: "user" as const, content: trimmed }
+    ];
+
+    let accumulated = "";
+    try {
+      const gen = provider.streamAssistantResponse({
+        systemPrompt: buildTreatmentChatSystemPrompt(patientContext),
+        conversationHistory: conversationForLlm,
+        maxOutputTokens: env.TREATMENT_CHAT_MAX_OUTPUT_TOKENS
+      });
+      let result = await gen.next();
+      while (!result.done) {
+        const piece = typeof result.value === "string" ? result.value : "";
+        if (piece.length > 0) {
+          accumulated += piece;
+          sse({ type: "token", text: piece });
+        }
+        result = await gen.next();
+      }
+      const usage = result.value;
+      if (usage && typeof usage === "object" && "promptTokens" in usage) {
+        promptTokens = (usage as { promptTokens: number }).promptTokens;
+        completionTokens = (usage as { completionTokens: number }).completionTokens;
+        costUsdCents = (usage as { costUsdCents: number }).costUsdCents;
+      }
+    } catch (err) {
+      console.error("[treatment-chat] provider error (stream):", err instanceof Error ? err.message : err);
+      sse({
+        type: "error",
+        message: "El asistente tuvo un problema. Probá de nuevo en un momento."
+      });
+      if (!res.writableEnded) {
+        res.end();
+      }
+      return;
+    }
+    assistantText = accumulated;
+    if (safetyResult.severity !== "none") {
+      await prisma.patientTreatmentChatMessage.update({
+        where: { id: userMsg.id },
+        data: {
+          safetySeverity: safetyResult.severity,
+          safetyReasoning: safetyResult.reasoning?.slice(0, 1000)
+        }
+      });
+    }
+  }
+
+  const done = await persistAndReturnSendResult({
+    chat,
+    assistantText,
+    safetyResult,
+    safetyTriggeredThisTurn,
+    safetyAlertMessageThisTurn,
+    today,
+    dailyUsed,
+    promptTokens,
+    completionTokens,
+    costUsdCents
+  });
+
+  sse({ type: "done", chat: done });
+  if (!res.writableEnded) {
+    res.end();
+  }
 }
 
 /* ========================================================================== */
