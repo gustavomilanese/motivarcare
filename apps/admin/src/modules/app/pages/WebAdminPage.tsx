@@ -84,6 +84,44 @@ function inferReviewDate(relativeDate: string): string {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeRelaxationPlaylists(raw: unknown): AdminRelaxationPlaylist[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => {
+      const title = item.title as { es?: string; en?: string; pt?: string } | undefined;
+      const blurb = item.blurb as { es?: string; en?: string; pt?: string } | undefined;
+      return {
+        id: String(item.id ?? ""),
+        title: {
+          es: String(title?.es ?? ""),
+          en: String(title?.en ?? ""),
+          pt: String(title?.pt ?? "")
+        },
+        blurb: {
+          es: String(blurb?.es ?? ""),
+          en: String(blurb?.en ?? ""),
+          pt: String(blurb?.pt ?? "")
+        },
+        embedType: (String(item.embedType) === "youtube" ? "youtube" : "spotify") as AdminRelaxationPlaylist["embedType"],
+        embedSrc: String(item.embedSrc ?? ""),
+        openUrl: String(item.openUrl ?? "")
+      };
+    })
+    .filter((playlist) => playlist.id.length > 0 && playlist.embedSrc.length > 0);
+}
+
+const EMPTY_RELAXATION_PLAYLIST: AdminRelaxationPlaylist = {
+  id: "",
+  title: { es: "", en: "", pt: "" },
+  blurb: { es: "", en: "", pt: "" },
+  embedType: "spotify",
+  embedSrc: "",
+  openUrl: ""
+};
+
 export function WebAdminPage({
   token,
   language,
@@ -171,9 +209,13 @@ export function WebAdminPage({
   const [reviewSearch, setReviewSearch] = useState("");
   const [postSearch, setPostSearch] = useState("");
   const [exerciseSearch, setExerciseSearch] = useState("");
-  const [relaxationJson, setRelaxationJson] = useState("[]");
+  const [relaxationDraft, setRelaxationDraft] = useState<AdminRelaxationPlaylist[]>([]);
   const [relaxationSaving, setRelaxationSaving] = useState(false);
   const [relaxationFeedback, setRelaxationFeedback] = useState<{ type: "ok" | "error"; message: string } | null>(null);
+  const [isRelaxationModalOpen, setIsRelaxationModalOpen] = useState(false);
+  const [editingRelaxationIndex, setEditingRelaxationIndex] = useState<number | null>(null);
+  const [relaxationForm, setRelaxationForm] = useState<AdminRelaxationPlaylist>(EMPTY_RELAXATION_PLAYLIST);
+  const [relaxationModalError, setRelaxationModalError] = useState<string | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
@@ -272,34 +314,10 @@ export function WebAdminPage({
               .filter((item) => item.id.length > 0)
           : []
       );
-      const normalizeRelaxation = (raw: unknown): AdminRelaxationPlaylist[] => {
-        if (!Array.isArray(raw)) {
-          return [];
-        }
-        return raw
-          .filter((item): item is AdminRelaxationPlaylist => Boolean(item && typeof item === "object"))
-          .map((item) => ({
-            id: String(item.id ?? ""),
-            title: {
-              es: String((item.title as { es?: string })?.es ?? ""),
-              en: String((item.title as { en?: string })?.en ?? ""),
-              pt: String((item.title as { pt?: string })?.pt ?? "")
-            },
-            blurb: {
-              es: String((item.blurb as { es?: string })?.es ?? ""),
-              en: String((item.blurb as { en?: string })?.en ?? ""),
-              pt: String((item.blurb as { pt?: string })?.pt ?? "")
-            },
-            embedType: (item.embedType === "youtube" ? "youtube" : "spotify") as AdminRelaxationPlaylist["embedType"],
-            embedSrc: String(item.embedSrc ?? ""),
-            openUrl: String(item.openUrl ?? "")
-          }))
-          .filter((item) => item.id.length > 0 && item.embedSrc.length > 0);
-      };
-      const storedRelax = normalizeRelaxation(data.relaxationPlaylists);
-      const bundledRelax = normalizeRelaxation(data.relaxationPlaylistsBundledDefaults);
+      const storedRelax = normalizeRelaxationPlaylists(data.relaxationPlaylists);
+      const bundledRelax = normalizeRelaxationPlaylists(data.relaxationPlaylistsBundledDefaults);
       const editorRelax = storedRelax.length > 0 ? storedRelax : bundledRelax;
-      setRelaxationJson(JSON.stringify(editorRelax.length > 0 ? editorRelax : [], null, 2));
+      setRelaxationDraft(editorRelax.length > 0 ? editorRelax : []);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("web-admin-load", language, raw));
@@ -308,28 +326,133 @@ export function WebAdminPage({
     }
   }
 
-  async function saveRelaxationPlaylistsFromEditor() {
+  function openCreateRelaxationModal() {
+    setEditingRelaxationIndex(null);
+    setRelaxationForm({ ...EMPTY_RELAXATION_PLAYLIST });
+    setRelaxationFeedback(null);
+    setRelaxationModalError(null);
+    setIsRelaxationModalOpen(true);
+  }
+
+  function openEditRelaxationModal(index: number) {
+    const item = relaxationDraft[index];
+    if (!item) {
+      return;
+    }
+    setEditingRelaxationIndex(index);
+    setRelaxationForm({ ...item });
+    setRelaxationFeedback(null);
+    setRelaxationModalError(null);
+    setIsRelaxationModalOpen(true);
+  }
+
+  function removeRelaxationAt(index: number) {
+    setRelaxationDraft((current) => current.filter((_, i) => i !== index));
+    setRelaxationFeedback(null);
+  }
+
+  function saveRelaxationModal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRelaxationModalError(null);
+
+    const idRaw = relaxationForm.id.trim().toLowerCase().replace(/\s+/g, "-");
+    const payload: AdminRelaxationPlaylist = {
+      id: idRaw,
+      title: {
+        es: relaxationForm.title.es.trim(),
+        en: relaxationForm.title.en.trim(),
+        pt: relaxationForm.title.pt.trim()
+      },
+      blurb: {
+        es: relaxationForm.blurb.es.trim(),
+        en: relaxationForm.blurb.en.trim(),
+        pt: relaxationForm.blurb.pt.trim()
+      },
+      embedType: relaxationForm.embedType,
+      embedSrc: relaxationForm.embedSrc.trim(),
+      openUrl: relaxationForm.openUrl.trim()
+    };
+
+    if (payload.id.length < 2 || payload.id.length > 120) {
+      setRelaxationModalError(
+        t(language, {
+          es: "El identificador debe tener entre 2 y 120 caracteres (letras, números y guiones).",
+          en: "The ID must be 2–120 characters (letters, numbers, hyphens).",
+          pt: "O identificador deve ter de 2 a 120 caracteres (letras, números e hífens)."
+        })
+      );
+      return;
+    }
+    if (!/^[\w-]+$/.test(payload.id)) {
+      setRelaxationModalError(
+        t(language, {
+          es: "El identificador solo puede usar letras, números y guiones.",
+          en: "The ID may only contain letters, numbers, and hyphens.",
+          pt: "O identificador só pode usar letras, números e hífens."
+        })
+      );
+      return;
+    }
+    const langs = ["es", "en", "pt"] as const;
+    for (const langKey of langs) {
+      if (payload.title[langKey].length < 1 || payload.blurb[langKey].length < 1) {
+        setRelaxationModalError(
+          t(language, {
+            es: "Completá título y descripción en español, inglés y portugués (al menos un carácter en cada uno).",
+            en: "Fill title and short description in Spanish, English, and Portuguese (at least one character each).",
+            pt: "Preencha título e descrição em espanhol, inglês e português (ao menos um caractere em cada)."
+          })
+        );
+        return;
+      }
+    }
+    if (payload.embedSrc.length < 10 || payload.openUrl.length < 10) {
+      setRelaxationModalError(
+        t(language, {
+          es: "Las URLs de embed y de enlace externo son obligatorias y deben ser válidas.",
+          en: "Embed URL and external link are required and must look valid.",
+          pt: "As URLs de embed e de link externo são obrigatórias."
+        })
+      );
+      return;
+    }
+
+    const duplicateIx = relaxationDraft.findIndex((p, i) => p.id === payload.id && i !== editingRelaxationIndex);
+    if (duplicateIx >= 0) {
+      setRelaxationModalError(
+        t(language, {
+          es: "Ya existe otra playlist con ese identificador.",
+          en: "Another playlist already uses that ID.",
+          pt: "Ja existe outra playlist com esse identificador."
+        })
+      );
+      return;
+    }
+
+    if (editingRelaxationIndex === null) {
+      setRelaxationDraft((current) => [...current, payload]);
+    } else {
+      setRelaxationDraft((current) =>
+        current.map((item, i) => (i === editingRelaxationIndex ? payload : item))
+      );
+    }
+    setRelaxationModalError(null);
+    setIsRelaxationModalOpen(false);
+    setEditingRelaxationIndex(null);
+    setRelaxationForm({ ...EMPTY_RELAXATION_PLAYLIST });
+  }
+
+  async function saveRelaxationPlaylistsToServer() {
     setRelaxationFeedback(null);
     setError("");
     setRelaxationSaving(true);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(relaxationJson);
-    } catch {
-      setRelaxationFeedback({
-        type: "error",
-        message: t(language, { es: "El JSON no es válido.", en: "JSON is not valid.", pt: "O JSON não é válido." })
-      });
-      setRelaxationSaving(false);
-      return;
-    }
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+    if (relaxationDraft.length === 0) {
       setRelaxationFeedback({
         type: "error",
         message: t(language, {
-          es: "El editor debe contener un arreglo JSON con al menos una playlist.",
-          en: "The editor must contain a JSON array with at least one playlist.",
-          pt: "O editor deve conter um array JSON com pelo menos uma playlist."
+          es: "Agregá al menos una playlist antes de guardar.",
+          en: "Add at least one playlist before saving.",
+          pt: "Adicione pelo menos uma playlist antes de salvar."
         })
       });
       setRelaxationSaving(false);
@@ -338,7 +461,7 @@ export function WebAdminPage({
     try {
       await apiRequest(
         "/api/admin/web-content/relaxation-playlists",
-        { method: "PUT", body: JSON.stringify({ playlists: parsed }) },
+        { method: "PUT", body: JSON.stringify({ playlists: relaxationDraft }) },
         token
       );
       setRelaxationFeedback({
@@ -399,6 +522,7 @@ export function WebAdminPage({
       setIsReviewModalOpen(false);
       setIsPostModalOpen(false);
       setIsExerciseModalOpen(false);
+      setIsRelaxationModalOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -1274,16 +1398,16 @@ export function WebAdminPage({
       >
         <p className="settings-section-lead">
           {t(language, {
-            es: "Playlists y streams embebidos en /bienestar/musica. Editá el JSON y guardá; el API valida la forma antes de publicar.",
-            en: "Embedded playlists for /wellbeing/music. Edit the JSON and save; the API validates the shape before publishing.",
-            pt: "Playlists embutidas em /bienestar/musica. Edite o JSON e salve; a API valida antes de publicar."
+            es: "Playlists y videos embebidos que ve el paciente en /bienestar/musica (Spotify o YouTube). Editá las entradas abajo y tocá Guardar para publicar.",
+            en: "Embedded playlists and videos patients see at /wellbeing/music (Spotify or YouTube). Edit entries below and Save to publish.",
+            pt: "Playlists e vídeos embutidos que o paciente vê em /bienestar/musica (Spotify ou YouTube). Edite abaixo e Salvar para publicar."
           })}
         </p>
         <p className="web-admin-helper-note">
           {t(language, {
-            es: "Si borrás la configuración guardada, el portal vuelve a mostrar la plantilla que viene con el servidor hasta que guardes otra vez.",
-            en: "If you clear saved config, the portal shows the bundled server template until you save again.",
-            pt: "Se você limpar a config salva, o portal mostra o modelo embutido no servidor até salvar de novo."
+            es: "Los cambios en la lista no se publican hasta que pulses «Guardar playlists». Si quitás la configuración guardada, el portal vuelve a la plantilla del servidor.",
+            en: "Changes are not live until you click «Save playlists». Clearing saved config restores the server template.",
+            pt: "As alterações na lista só vão ao ar ao clicar em «Salvar playlists». Limpar a config restaura o modelo do servidor."
           })}
         </p>
         {relaxationFeedback ? (
@@ -1291,29 +1415,63 @@ export function WebAdminPage({
             {relaxationFeedback.message}
           </p>
         ) : null}
-        <label className="stack" style={{ gap: 8 }}>
-          <strong>
-            {t(language, { es: "Arreglo JSON de playlists", en: "Playlists JSON array", pt: "Array JSON de playlists" })}
-          </strong>
-          <textarea
-            rows={18}
-            spellCheck={false}
-            style={{ width: "100%", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13 }}
-            value={relaxationJson}
-            onChange={(event) => setRelaxationJson(event.target.value)}
-            aria-label={t(language, {
-              es: "Editor JSON de playlists de relajación",
-              en: "Relaxation playlists JSON editor",
-              pt: "Editor JSON das playlists"
-            })}
-          />
-        </label>
+        <div className="web-admin-list-toolbar">
+          <button className="primary" type="button" onClick={openCreateRelaxationModal}>
+            {t(language, { es: "Nueva playlist o video", en: "New playlist or video", pt: "Nova playlist ou vídeo" })}
+          </button>
+        </div>
+        <div className="stack web-admin-scroll-list">
+          {relaxationDraft.length === 0 ? (
+            <p className="web-admin-empty-list">
+              {t(language, {
+                es: "Todavía no hay playlists en la lista. Usá «Nueva playlist o video» o pedí que restauren la plantilla del servidor.",
+                en: "No playlists in the list yet. Use «New playlist or video» or ask to restore the server template.",
+                pt: "Ainda não há playlists na lista. Use «Nova playlist ou vídeo» ou restaure o modelo do servidor."
+              })}
+            </p>
+          ) : (
+            relaxationDraft.map((item, index) => (
+              <article className="user-card web-admin-row-card" key={`${item.id}-${index}`}>
+                <header>
+                  <h3>{t(language, item.title)}</h3>
+                  <span className="role-pill">{item.embedType === "youtube" ? "YouTube" : "Spotify"}</span>
+                </header>
+                <p className="web-admin-relax-preview-url">
+                  <small>{item.embedSrc}</small>
+                </p>
+                <div className="user-card-footer">
+                  <small>{item.id}</small>
+                  <div className="package-admin-icon-actions">
+                    <button
+                      className="package-admin-icon-button"
+                      type="button"
+                      title={t(language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                      aria-label={t(language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                      onClick={() => openEditRelaxationModal(index)}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="package-admin-icon-button danger"
+                      type="button"
+                      title={t(language, { es: "Quitar de la lista", en: "Remove from list", pt: "Remover da lista" })}
+                      aria-label={t(language, { es: "Quitar de la lista", en: "Remove from list", pt: "Remover da lista" })}
+                      onClick={() => removeRelaxationAt(index)}
+                    >
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
         <div className="web-admin-list-toolbar" style={{ marginTop: 12 }}>
           <button
             className="primary"
             type="button"
             disabled={relaxationSaving}
-            onClick={() => void saveRelaxationPlaylistsFromEditor()}
+            onClick={() => void saveRelaxationPlaylistsToServer()}
           >
             {t(language, { es: "Guardar playlists", en: "Save playlists", pt: "Salvar playlists" })}
           </button>
@@ -1326,6 +1484,187 @@ export function WebAdminPage({
           </button>
         </div>
       </CollapsiblePageSection>
+
+      {isRelaxationModalOpen ? (
+        <div
+          className="patient-modal-backdrop"
+          onClick={() => {
+            setRelaxationModalError(null);
+            setIsRelaxationModalOpen(false);
+          }}
+        >
+          <section className="patient-modal web-admin-form-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="patient-modal-head">
+              <h2>
+                {editingRelaxationIndex === null
+                  ? t(language, { es: "Nueva playlist o video", en: "New playlist or video", pt: "Nova playlist ou vídeo" })
+                  : t(language, { es: "Editar playlist o video", en: "Edit playlist or video", pt: "Editar playlist ou vídeo" })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setRelaxationModalError(null);
+                  setIsRelaxationModalOpen(false);
+                }}
+              >
+                {t(language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+              </button>
+            </header>
+            <form className="stack" onSubmit={saveRelaxationModal}>
+              {relaxationModalError ? <p className="error-text">{relaxationModalError}</p> : null}
+              <p className="web-admin-helper-note">
+                {t(language, {
+                  es: "Identificador: solo letras minúsculas, números y guiones. Pegá la URL del embed (iframe) y el enlace para abrir en otra pestaña.",
+                  en: "ID: lowercase, numbers, hyphens. Paste the embed (iframe) URL and the open-in-new-tab link.",
+                  pt: "Identificador: minúsculas, números, hífens. Cole a URL do embed e o link em nova aba."
+                })}
+              </p>
+              <div className="grid-form">
+                <label>
+                  {t(language, { es: "Identificador interno", en: "Internal ID", pt: "Identificador interno" })}
+                  <input
+                    value={relaxationForm.id}
+                    onChange={(event) => setRelaxationForm((current) => ({ ...current, id: event.target.value }))}
+                    placeholder="mi-playlist-lofi"
+                    required
+                    autoComplete="off"
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Tipo de embed", en: "Embed type", pt: "Tipo de embed" })}
+                  <select
+                    value={relaxationForm.embedType}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        embedType: event.target.value as AdminRelaxationPlaylist["embedType"]
+                      }))
+                    }
+                  >
+                    <option value="spotify">Spotify</option>
+                    <option value="youtube">YouTube</option>
+                  </select>
+                </label>
+                <label className="grid-form-span-2">
+                  {t(language, { es: "URL del reproductor embebido (iframe src)", en: "Embed player URL (iframe src)", pt: "URL do iframe" })}
+                  <input
+                    value={relaxationForm.embedSrc}
+                    onChange={(event) => setRelaxationForm((current) => ({ ...current, embedSrc: event.target.value }))}
+                    placeholder="https://..."
+                    required
+                  />
+                </label>
+                <label className="grid-form-span-2">
+                  {t(language, { es: "Enlace para nueva pestaña", en: "Open in new tab URL", pt: "Link nova aba" })}
+                  <input
+                    value={relaxationForm.openUrl}
+                    onChange={(event) => setRelaxationForm((current) => ({ ...current, openUrl: event.target.value }))}
+                    placeholder="https://..."
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Título (ES)", en: "Title (ES)", pt: "Título (ES)" })}
+                  <input
+                    value={relaxationForm.title.es}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        title: { ...current.title, es: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Título (EN)", en: "Title (EN)", pt: "Título (EN)" })}
+                  <input
+                    value={relaxationForm.title.en}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        title: { ...current.title, en: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Título (PT)", en: "Title (PT)", pt: "Título (PT)" })}
+                  <input
+                    value={relaxationForm.title.pt}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        title: { ...current.title, pt: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Descripción corta (ES)", en: "Short blurb (ES)", pt: "Descrição (ES)" })}
+                  <textarea
+                    rows={2}
+                    value={relaxationForm.blurb.es}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        blurb: { ...current.blurb, es: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Descripción corta (EN)", en: "Short blurb (EN)", pt: "Descrição (EN)" })}
+                  <textarea
+                    rows={2}
+                    value={relaxationForm.blurb.en}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        blurb: { ...current.blurb, en: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  {t(language, { es: "Descripción corta (PT)", en: "Short blurb (PT)", pt: "Descrição (PT)" })}
+                  <textarea
+                    rows={2}
+                    value={relaxationForm.blurb.pt}
+                    onChange={(event) =>
+                      setRelaxationForm((current) => ({
+                        ...current,
+                        blurb: { ...current.blurb, pt: event.target.value }
+                      }))
+                    }
+                    required
+                  />
+                </label>
+              </div>
+              <div className="toolbar-actions">
+                <button className="primary" type="submit">
+                  {editingRelaxationIndex === null
+                    ? t(language, { es: "Agregar a la lista", en: "Add to list", pt: "Adicionar à lista" })
+                    : t(language, { es: "Guardar cambios", en: "Save changes", pt: "Salvar alterações" })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRelaxationModalError(null);
+                    setIsRelaxationModalOpen(false);
+                  }}
+                >
+                  {t(language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
 
       {isReviewModalOpen ? (
         <div className="patient-modal-backdrop" onClick={() => setIsReviewModalOpen(false)}>

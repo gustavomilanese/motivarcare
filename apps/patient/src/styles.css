@@ -9887,6 +9887,8 @@ button.sessions-balance {
   gap: 20px 28px;
   border-radius: 0;
   overflow: visible;
+  /* Aire respecto al banner de sesión de prueba (o a la fila de compra) */
+  margin-bottom: 22px;
 }
 
 .patient-dashboard-home .dashboard-home-hero-intro-aside {
