@@ -76,15 +76,13 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       messages,
       max_completion_tokens: input.maxOutputTokens ?? 400
     };
-    if (input.abortSignal) {
-      body.signal = input.abortSignal;
-    }
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";
     }
 
     const completion = await this.client.chat.completions.create(
-      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+      input.abortSignal ? { signal: input.abortSignal } : undefined
     );
 
     const choice = completion.choices[0];
@@ -117,15 +115,13 @@ export class OpenAITreatmentChatProvider implements TreatmentChatProvider {
       max_completion_tokens: input.maxOutputTokens ?? 400,
       stream_options: { include_usage: true }
     };
-    if (input.abortSignal) {
-      body.signal = input.abortSignal;
-    }
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";
     }
 
     const stream = (await this.client.chat.completions.create(
-      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsStreaming
+      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
+      input.abortSignal ? { signal: input.abortSignal } : undefined
     )) as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
 
     let full = "";

@@ -71,15 +71,13 @@ export class OpenAIIntakeChatProvider implements IntakeChatProvider {
       response_format: { type: "json_object" },
       max_completion_tokens: input.maxOutputTokens ?? 1500
     };
-    if (input.abortSignal) {
-      body.signal = input.abortSignal;
-    }
     if (modelSupportsReasoningEffort(this.modelName)) {
       body.reasoning_effort = "low";
     }
 
     const completion = await this.client.chat.completions.create(
-      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+      body as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+      input.abortSignal ? { signal: input.abortSignal } : undefined
     );
 
     const choice = completion.choices[0];
