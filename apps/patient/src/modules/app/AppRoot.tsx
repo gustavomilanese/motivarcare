@@ -36,7 +36,6 @@ import {
   friendlyCalendarOnboardingMessage
 } from "./lib/friendlyPatientMessages";
 import { sessionUserFromAuthMe } from "./lib/sessionFromAuthMe";
-import { PostIntakePhotoScreen } from "./components/PostIntakePhotoScreen";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
 import { IntakeMethodChooserScreen } from "../intake/pages/IntakeMethodChooserScreen";
 import { IntakeChatScreen } from "../intake/pages/IntakeChatScreen";
@@ -64,24 +63,6 @@ const initialMessages: Message[] = [];
 const CALENDAR_PROMPT_DISMISSED_USERS_KEY = "patient_calendar_prompt_dismissed_users";
 /** Survives full-page Google OAuth redirect if localStorage is briefly empty (same origin). */
 const CALENDAR_OAUTH_LOCAL_STORAGE_BACKUP_KEY = "mc_calendar_oauth_ls_backup";
-const POST_INTAKE_PHOTO_SESSION_KEY = "mc_patient_post_intake_photo";
-
-function markPostIntakePhotoPending(userId: string) {
-  try {
-    window.sessionStorage.setItem(POST_INTAKE_PHOTO_SESSION_KEY, userId);
-  } catch {
-    // ignore
-  }
-}
-
-function clearPostIntakePhotoPending() {
-  try {
-    window.sessionStorage.removeItem(POST_INTAKE_PHOTO_SESSION_KEY);
-  } catch {
-    // ignore
-  }
-}
-
 function restorePatientPortalAfterCalendarOAuth(): void {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -116,6 +97,7 @@ const defaultState: PatientAppState = {
   language: "es",
   /** Por defecto se asume mercado AR; la moneda se sincroniza con `patientMarket`. */
   currency: defaultDisplayCurrencyForMarket("AR"),
+  profileResidencyCountry: null,
   patientMarket: "AR",
   intake: null,
   onboardingFinalCompleted: false,
@@ -185,6 +167,12 @@ function loadState(): PatientAppState {
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
         const market: Market = isMarket(pm) ? pm : "AR";
         return defaultDisplayCurrencyForMarket(market);
+      })(),
+      profileResidencyCountry: (() => {
+        const raw = (parsed as { profileResidencyCountry?: unknown }).profileResidencyCountry;
+        if (typeof raw !== "string") return null;
+        const u = raw.trim().toUpperCase();
+        return /^[A-Z]{2}$/.test(u) ? u : null;
       })(),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
@@ -373,9 +361,6 @@ export function App() {
   const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => professionalsCatalog);
   const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => professionalImageMap);
   const [profileSyncReady, setProfileSyncReady] = useState(false);
-  const [showPostIntakePhotoStep, setShowPostIntakePhotoStep] = useState(false);
-  const [postIntakePhotoBusy, setPostIntakePhotoBusy] = useState(false);
-  const calendarAfterPhotoRef = useRef(false);
   /**
    * Modo seleccionado por el paciente para hacer el intake.
    * - `chooser`: vemos la pantalla split (clásico vs chat IA).
@@ -433,10 +418,8 @@ export function App() {
 
   useEffect(() => {
     setPatientApiUnauthorizedHandler(() => {
-      clearPostIntakePhotoPending();
       clearPostTrialCalendarPending();
       clearCalendarOfferContext();
-      setShowPostIntakePhotoStep(false);
       setProfileSyncReady(false);
       setProfessionalDirectory(professionalsCatalog);
       setProfessionalPhotoMap(professionalImageMap);
@@ -472,8 +455,6 @@ export function App() {
   const handleEmailLinkVerificationComplete = useCallback(
     (payload?: PatientVerifyEmailCompletePayload) => {
       if (payload?.token && payload.user.role === "PATIENT") {
-        clearPostIntakePhotoPending();
-        setShowPostIntakePhotoStep(false);
         setProfileSyncReady(false);
         setProfessionalDirectory(professionalsCatalog);
         setProfessionalPhotoMap(professionalImageMap);
@@ -486,6 +467,7 @@ export function App() {
             language: current.language,
             currency: current.currency,
             patientMarket: current.patientMarket,
+            profileResidencyCountry: current.profileResidencyCountry,
             profile: {
               ...defaultProfile,
               timezone: sessionTimezone
@@ -614,20 +596,6 @@ export function App() {
   /** Evita GET /matching duplicado al montar; solo refetch de directorio cuando el usuario cambia idioma. */
   const portalLanguageBootstrapRef = useRef(false);
 
-  /** Calendar opcional tras intake y antes del matching; deja de aplicar al elegir terapeuta / reservar. */
-  useEffect(() => {
-    if (!sessionId || !state.intake?.completed || state.intake.riskBlocked) {
-      return;
-    }
-    try {
-      if (window.sessionStorage.getItem(POST_INTAKE_PHOTO_SESSION_KEY) === sessionId) {
-        setShowPostIntakePhotoStep(true);
-      }
-    } catch {
-      // ignore
-    }
-  }, [sessionId, state.intake?.completed, state.intake?.riskBlocked]);
-
   /**
    * En logout (o reset a defaultState) volvemos al chooser y descartamos cualquier
    * sesión activa de chat detectada para el usuario anterior — así un nuevo login
@@ -717,16 +685,6 @@ export function App() {
     if (showCalendarOnboarding) {
       return;
     }
-    if (showPostIntakePhotoStep) {
-      return;
-    }
-    try {
-      if (window.sessionStorage.getItem(POST_INTAKE_PHOTO_SESSION_KEY) === sessionId) {
-        return;
-      }
-    } catch {
-      // ignore
-    }
     setCalendarOfferContext("pre-matching");
     setShowCalendarOnboarding(true);
   }, [
@@ -734,8 +692,7 @@ export function App() {
     state.authToken,
     shouldOfferCalendarOnboardingBeforeMatching,
     calendarPromptDismissedUserIds,
-    showCalendarOnboarding,
-    showPostIntakePhotoStep
+    showCalendarOnboarding
   ]);
 
   /** Tras confirmar sesión de prueba: ofrecer Google Calendar si aún no está conectado (flag en GET /me, sin polling extra). */
@@ -743,7 +700,7 @@ export function App() {
     if (!sessionId || !state.authToken || !profileSyncReady) {
       return;
     }
-    if (showPostIntakePhotoStep || showCalendarOnboarding) {
+    if (showCalendarOnboarding) {
       return;
     }
     if (calendarPromptDismissedUserIds.includes(sessionId)) {
@@ -772,7 +729,6 @@ export function App() {
     sessionId,
     state.authToken,
     profileSyncReady,
-    showPostIntakePhotoStep,
     showCalendarOnboarding,
     calendarPromptDismissedUserIds,
     state.googleCalendarConnected
@@ -817,45 +773,6 @@ export function App() {
       );
     } finally {
       setCalendarOnboardingLoading(false);
-    }
-  };
-
-  const finishPostIntakePhoto = async (avatarDataUrl: string | null) => {
-    if (!state.authToken) {
-      return;
-    }
-    setPostIntakePhotoBusy(true);
-    try {
-      let avatarUrl: string | null = state.session?.avatarUrl ?? null;
-      if (avatarDataUrl?.startsWith("data:image")) {
-        try {
-          const mePatch = await apiRequest<{ user: { avatarUrl?: string | null } }>(
-            "/api/auth/me",
-            { method: "PATCH", body: JSON.stringify({ avatarUrl: avatarDataUrl }) },
-            state.authToken
-          );
-          avatarUrl = mePatch.user?.avatarUrl ?? avatarDataUrl;
-        } catch {
-          // Intake listo; la foto se puede reintentar desde Mi cuenta.
-        }
-      }
-      setState((c) => ({
-        ...c,
-        session: c.session ? { ...c.session, avatarUrl } : null
-      }));
-      clearPostIntakePhotoPending();
-      setShowPostIntakePhotoStep(false);
-      if (calendarAfterPhotoRef.current) {
-        flushSync(() => {
-          setCalendarOfferContext("pre-matching");
-          setShowCalendarOnboarding(true);
-        });
-      } else {
-        navigate("/onboarding/final/matching", { replace: true });
-      }
-      calendarAfterPhotoRef.current = false;
-    } finally {
-      setPostIntakePhotoBusy(false);
     }
   };
 
@@ -1026,6 +943,17 @@ export function App() {
             patientMarket: (() => {
               const m = profileResponse?.profile?.market;
               return isMarket(m) ? m : "AR";
+            })(),
+            profileResidencyCountry: (() => {
+              const rc = profileResponse?.profile?.residencyCountry;
+              if (rc === null || rc === undefined) {
+                return current.profileResidencyCountry;
+              }
+              if (typeof rc !== "string") {
+                return current.profileResidencyCountry;
+              }
+              const u = rc.trim().toUpperCase();
+              return /^[A-Z]{2}$/.test(u) ? u : current.profileResidencyCountry;
             })(),
             currency: (() => {
               const m = profileResponse?.profile?.market;
@@ -1347,8 +1275,6 @@ export function App() {
         heroImage={heroImage}
         onHeroFallback={handleHeroFallback}
         onLogin={({ user, token, emailVerificationRequired }) => {
-          clearPostIntakePhotoPending();
-          setShowPostIntakePhotoStep(false);
           setProfileSyncReady(false);
           setProfessionalDirectory(professionalsCatalog);
           setProfessionalPhotoMap(professionalImageMap);
@@ -1360,6 +1286,7 @@ export function App() {
             language: current.language,
             currency: current.currency,
             patientMarket: current.patientMarket,
+            profileResidencyCountry: current.profileResidencyCountry,
             profile: {
               ...defaultProfile,
               timezone: sessionTimezone
@@ -1383,24 +1310,11 @@ export function App() {
           if (location.pathname === "/verify-email-required") {
             navigate("/", { replace: true });
           }
-          clearPostIntakePhotoPending();
-          setShowPostIntakePhotoStep(false);
           setProfileSyncReady(false);
           setProfessionalDirectory(professionalsCatalog);
           setProfessionalPhotoMap(professionalImageMap);
           setState(defaultState);
         }}
-      />
-    );
-  }
-
-  if (showPostIntakePhotoStep && state.session && state.intake?.completed) {
-    return (
-      <PostIntakePhotoScreen
-        user={state.session}
-        language={state.language}
-        busy={postIntakePhotoBusy}
-        onContinue={finishPostIntakePhoto}
       />
     );
   }
@@ -1477,7 +1391,7 @@ export function App() {
     );
   }
 
-  if (!profileSyncReady && !showPostIntakePhotoStep) {
+  if (!profileSyncReady) {
     return (
       <div className="intake-shell">
         <section className="intake-card">
@@ -1490,7 +1404,7 @@ export function App() {
   if (!state.intake?.completed) {
     /**
      * Aplicación de la respuesta del backend (igual sea wizard clásico o chat IA).
-     * Centraliza el side-effect post-intake: market, riskLevel, foto post-intake,
+     * Centraliza el side-effect post-intake: market, riskLevel,
      * navegación a calendar/matching, y manejo del caso "intake ya completado".
      */
     const applyIntakeCompletion = (
@@ -1507,8 +1421,6 @@ export function App() {
         && !calendarPromptDismissedUserIds.includes(sessionUserId)
         && state.bookings.length === 0
         && state.subscription.purchaseHistory.length === 0;
-
-      calendarAfterPhotoRef.current = offerGoogleCalendarStep;
 
       flushSync(() => {
         setState((current) => ({
@@ -1533,19 +1445,23 @@ export function App() {
             answers
           }
         }));
-        if (riskLevel === "low" && sessionUserId.length > 0) {
-          markPostIntakePhotoPending(sessionUserId);
-          setShowPostIntakePhotoStep(true);
-        }
       });
 
       if (riskLevel !== "low") {
-        clearPostIntakePhotoPending();
         navigate("/", { replace: true });
         return;
       }
       if (sessionUserId.length === 0) {
-        clearPostIntakePhotoPending();
+        navigate("/onboarding/final/matching", { replace: true });
+        return;
+      }
+
+      if (offerGoogleCalendarStep) {
+        flushSync(() => {
+          setCalendarOfferContext("pre-matching");
+          setShowCalendarOnboarding(true);
+        });
+      } else {
         navigate("/onboarding/final/matching", { replace: true });
       }
     };
@@ -1627,6 +1543,7 @@ export function App() {
       <IntakeScreen
         user={state.session}
         language={state.language}
+        profileResidencyCountryIso={state.profileResidencyCountry}
         onBack={cleanupAndLogout}
         onCancel={cleanupAndLogout}
         onSafetyFrequentAbandon={cleanupAndLogout}
@@ -1677,10 +1594,8 @@ export function App() {
         sessionTimezone={sessionTimezone}
         onStateChange={updateState}
         onLogout={() => {
-          clearPostIntakePhotoPending();
           clearPostTrialCalendarPending();
           clearCalendarOfferContext();
-          setShowPostIntakePhotoStep(false);
           setProfileSyncReady(false);
           setProfessionalDirectory(professionalsCatalog);
           setProfessionalPhotoMap(professionalImageMap);

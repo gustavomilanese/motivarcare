@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, type SyntheticEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
@@ -7,6 +7,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
+import { friendlyProfileAvatarErrorMessage } from "../lib/friendlyPatientMessages";
 import { PortalNavigation } from "../components/PortalNavigation";
 import { type LanguageChoice, PortalPreferencesModal } from "../components/PortalPreferencesModal";
 import { usePortalNotifications } from "../hooks/usePortalNotifications";
@@ -15,7 +16,8 @@ import { usePortalUiState } from "../hooks/usePortalUiState";
 import { usePortalNavigation } from "../hooks/usePortalNavigation";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
-import { resolvePublicAssetUrl } from "../services/api";
+import { apiRequest, resolvePublicAssetUrl } from "../services/api";
+import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
   Booking,
   Message,
@@ -91,6 +93,63 @@ export function MainPortal(props: {
     ? (remoteUnreadMessagesCount ?? localUnreadMessagesCount)
     : localUnreadMessagesCount;
   const favoriteCount = props.state.favoriteProfessionalIds.length;
+  const [headerAvatarBusy, setHeaderAvatarBusy] = useState(false);
+  const [headerAvatarError, setHeaderAvatarError] = useState("");
+
+  const handlePatientHeaderAvatarFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      setHeaderAvatarError("");
+      if (!file || !props.state.authToken) {
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        setHeaderAvatarError(
+          t(props.state.language, {
+            es: "Elegí una imagen (JPG, PNG o WEBP).",
+            en: "Choose an image (JPG, PNG, or WEBP).",
+            pt: "Escolha uma imagem (JPG, PNG ou WEBP)."
+          })
+        );
+        return;
+      }
+      if (file.size > 4 * 1024 * 1024) {
+        setHeaderAvatarError(
+          t(props.state.language, {
+            es: "La imagen supera 4 MB.",
+            en: "Image exceeds 4 MB.",
+            pt: "A imagem supera 4 MB."
+          })
+        );
+        return;
+      }
+      setHeaderAvatarBusy(true);
+      try {
+        const raw = await fileToDataUrl(file);
+        const compressed = await compressPatientAvatarDataUrl(raw);
+        const mePatch = await apiRequest<{ user: { avatarUrl?: string | null } }>(
+          "/api/auth/me",
+          {
+            method: "PATCH",
+            body: JSON.stringify({ avatarUrl: compressed })
+          },
+          props.state.authToken
+        );
+        const nextUrl = mePatch.user?.avatarUrl ?? compressed;
+        props.onStateChange((c) => ({
+          ...c,
+          session: c.session ? { ...c.session, avatarUrl: nextUrl } : null
+        }));
+      } catch (requestError) {
+        setHeaderAvatarError(friendlyProfileAvatarErrorMessage(requestError, props.state.language));
+      } finally {
+        setHeaderAvatarBusy(false);
+      }
+    },
+    [props.onStateChange, props.state.authToken, props.state.language]
+  );
+
   const patientHeaderAvatarSrc = useMemo(() => {
     const fromSession = resolvePublicAssetUrl(props.state.session?.avatarUrl);
     if (fromSession) {
@@ -217,6 +276,10 @@ export function MainPortal(props: {
         hideSidebar={hideSidebar}
         patientHeaderAvatarSrc={patientHeaderAvatarSrc}
         onPatientAvatarError={handleImageFallback}
+        authToken={props.state.authToken}
+        patientHeaderAvatarUploadBusy={headerAvatarBusy}
+        patientHeaderAvatarError={headerAvatarError || null}
+        onPatientHeaderAvatarFileChange={handlePatientHeaderAvatarFileChange}
       >
         {props.state.intake?.riskBlocked ? (
           <section className="content-card danger">

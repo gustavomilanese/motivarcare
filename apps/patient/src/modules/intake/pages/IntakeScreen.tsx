@@ -25,7 +25,17 @@ function preIntakeIntroCopy(language: AppLanguage): {
     ] as const
   };
 }
-import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
+import {
+  PATIENT_PORTAL_RESIDENCY_CODES,
+  RESIDENCY_COUNTRY_OPTIONS,
+  filterResidencyOptionsForPatientPortal
+} from "@therapy/types";
+
+function isPatientPortalPresetCountry(isoUpper: string): boolean {
+  return /^[A-Z]{2}$/.test(isoUpper) && (PATIENT_PORTAL_RESIDENCY_CODES as readonly string[]).includes(isoUpper);
+}
+
+const PATIENT_PORTAL_RESIDENCY_OPTIONS = filterResidencyOptionsForPatientPortal(RESIDENCY_COUNTRY_OPTIONS);
 import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/constants";
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
@@ -253,6 +263,8 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
 export function IntakeScreen(props: {
   user: SessionUser;
   language: AppLanguage;
+  /** ISO2 desde perfil (registro/login): si ya es uno de los países habilitados en portal, no repetimos el paso país. */
+  profileResidencyCountryIso?: string | null;
   onComplete: (payload: IntakeCompletionPayload) => Promise<void>;
   onBack?: () => void;
   onCancel?: () => void;
@@ -274,6 +286,19 @@ export function IntakeScreen(props: {
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
   const [residencyCountry, setResidencyCountry] = useState("");
 
+  const presetIso = useMemo(
+    () => props.profileResidencyCountryIso?.trim().toUpperCase() ?? "",
+    [props.profileResidencyCountryIso]
+  );
+
+  const countryStepEnabled = useMemo(() => !isPatientPortalPresetCountry(presetIso), [presetIso]);
+
+  useEffect(() => {
+    if (isPatientPortalPresetCountry(presetIso)) {
+      setResidencyCountry(presetIso);
+    }
+  }, [presetIso]);
+
   const localizedQuestions = useMemo(
     () => intakeQuestions.map((question) => localizeIntakeQuestion(question, props.language)),
     [props.language]
@@ -281,9 +306,10 @@ export function IntakeScreen(props: {
 
   const introCopy = useMemo(() => preIntakeIntroCopy(props.language), [props.language]);
   const questionCount = localizedQuestions.length;
-  /** Paso 0 = intro; 1 = país de residencia; 2… = preguntas clínicas. */
-  const totalWizardSteps = 2 + questionCount;
-  const questionStepIndex = stepIndex >= 2 ? stepIndex - 2 : -1;
+  /** Paso 0 = intro; si hace falta país = 1; siguientes = preguntas clínicas. */
+  const questionStepOffset = countryStepEnabled ? 2 : 1;
+  const totalWizardSteps = (countryStepEnabled ? 2 : 1) + questionCount;
+  const questionStepIndex = stepIndex >= questionStepOffset ? stepIndex - questionStepOffset : -1;
   const current = questionStepIndex >= 0 ? localizedQuestions[questionStepIndex] : null;
   const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
   const isLast = stepIndex >= totalWizardSteps - 1;
@@ -324,7 +350,7 @@ export function IntakeScreen(props: {
       setError("");
       return true;
     }
-    if (stepIndex === 1) {
+    if (countryStepEnabled && stepIndex === 1) {
       const iso = residencyCountry.trim().toUpperCase();
       if (!/^[A-Z]{2}$/.test(iso)) {
         setError(
@@ -384,7 +410,7 @@ export function IntakeScreen(props: {
       setStepIndex(1);
       return;
     }
-    if (stepIndex === 1) {
+    if (countryStepEnabled && stepIndex === 1) {
       if (!validateCurrent()) {
         return;
       }
@@ -507,7 +533,7 @@ export function IntakeScreen(props: {
 
     const rc = residencyCountry.trim().toUpperCase();
     if (!/^[A-Z]{2}$/.test(rc)) {
-      setStepIndex(1);
+      setStepIndex(countryStepEnabled ? 1 : 0);
       setError(
         t(props.language, {
           es: "Falta tu país de residencia. Volvé al paso anterior y elegí una opción.",
@@ -522,7 +548,7 @@ export function IntakeScreen(props: {
     if (missing.length > 0) {
       const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
       if (idx >= 0) {
-        setStepIndex(idx + 2);
+        setStepIndex(idx + questionStepOffset);
       }
       setError("");
       return;
@@ -663,7 +689,7 @@ export function IntakeScreen(props: {
                 </div>
               </div>
             </article>
-          ) : stepIndex === 1 ? (
+          ) : stepIndex === 1 && countryStepEnabled ? (
             <article className="question-card question-card--wizard" key="intake-residency">
               <h2 className="intake-question-title">
                 {t(props.language, {
@@ -693,7 +719,7 @@ export function IntakeScreen(props: {
                       pt: "Selecionar…"
                     })}
                   </option>
-                  {RESIDENCY_COUNTRY_OPTIONS.map((row) => (
+                  {PATIENT_PORTAL_RESIDENCY_OPTIONS.map((row) => (
                     <option key={row.code} value={row.code}>
                       {row.names[props.language]}
                     </option>

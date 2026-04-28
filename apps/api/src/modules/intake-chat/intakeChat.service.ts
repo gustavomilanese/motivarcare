@@ -131,9 +131,16 @@ export async function startOrResumeChat(patientId: string): Promise<IntakeChatSe
         data: { status: "abandoned" }
       });
     } else {
-      return toSessionDto(existing, { isResume: true });
+      const filled = await backfillSessionResidencyFromProfile(existing);
+      return toSessionDto(filled, { isResume: true });
     }
   }
+
+  const profileForSeed = await prisma.patientProfile.findUnique({
+    where: { id: patientId },
+    select: { residencyCountry: true }
+  });
+  const seedResidency = normalizeCountryCode(profileForSeed?.residencyCountry ?? undefined);
 
   const provider = getIntakeChatProvider();
   const greeting = INTAKE_CHAT_FALLBACK_GREETING;
@@ -152,6 +159,7 @@ export async function startOrResumeChat(patientId: string): Promise<IntakeChatSe
       status: "active",
       messages: messages as unknown as Prisma.InputJsonValue,
       extractedAnswers: {},
+      residencyCountry: seedResidency,
       llmProvider: provider.providerName,
       llmModel: provider.modelName
     }
@@ -165,7 +173,8 @@ export async function getActiveSession(patientId: string): Promise<IntakeChatSes
   const existing = await findResumableSession(patientId);
   if (!existing) return null;
   if (isExpired(existing)) return null;
-  return toSessionDto(existing, { isResume: true });
+  const filled = await backfillSessionResidencyFromProfile(existing);
+  return toSessionDto(filled, { isResume: true });
 }
 
 export async function sendMessage(params: { patientId: string; sessionId: string; userMessage: string }): Promise<SendMessageResult> {
@@ -412,6 +421,27 @@ async function findResumableSession(patientProfileId: string): Promise<PatientIn
   return prisma.patientIntakeChatSession.findFirst({
     where: { patientId: patientProfileId, status: "active" },
     orderBy: { updatedAt: "desc" }
+  });
+}
+
+/** Si el perfil ya tiene país (registro/login) y la sesión legacy no, lo copiamos una vez. */
+async function backfillSessionResidencyFromProfile(
+  session: PatientIntakeChatSession
+): Promise<PatientIntakeChatSession> {
+  if (session.residencyCountry) {
+    return session;
+  }
+  const profile = await prisma.patientProfile.findUnique({
+    where: { id: session.patientId },
+    select: { residencyCountry: true }
+  });
+  const iso = normalizeCountryCode(profile?.residencyCountry ?? undefined);
+  if (!iso) {
+    return session;
+  }
+  return prisma.patientIntakeChatSession.update({
+    where: { id: session.id },
+    data: { residencyCountry: iso }
   });
 }
 

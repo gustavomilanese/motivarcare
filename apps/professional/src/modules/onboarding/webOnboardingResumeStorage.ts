@@ -1,9 +1,15 @@
-import type { AuthUser } from "../app/types";
+import type { AuthResponse, AuthUser } from "../app/types";
 import {
   EMAIL_VERIFICATION_REQUIRED_KEY,
   TOKEN_KEY,
   USER_KEY
 } from "../app/services/api";
+
+/** Respuesta GET `/api/auth/verify-email` (JWT + usuario como login). */
+export type VerifyEmailApiResponse = AuthResponse & {
+  message: string;
+  userId?: string;
+};
 
 /**
  * Reanudar onboarding web tras verificar el mail en otra pestaña.
@@ -154,6 +160,39 @@ export function clearPendingOnboardingDisplayFullName(): void {
   } catch {
     // ignore
   }
+}
+
+/**
+ * Cuando no hay `pending` web (enlace abierto sin registro en curso en este navegador): igual que login.
+ * Sin esto el usuario vuelve al login tras verificar aunque el backend devolvió sesión.
+ */
+export function persistProfessionalSessionFromVerifyEmailApi(data: VerifyEmailApiResponse): AuthUser | null {
+  if (!data.token || data.user.role !== "PROFESSIONAL" || !data.user.professionalProfileId) {
+    return null;
+  }
+  const authUser: AuthUser = {
+    id: data.user.id,
+    fullName: data.user.fullName,
+    firstName: data.user.firstName,
+    lastName: data.user.lastName,
+    email: data.user.email,
+    emailVerified: true,
+    role: "PROFESSIONAL",
+    professionalProfileId: data.user.professionalProfileId,
+    avatarUrl: data.user.avatarUrl ?? null
+  };
+  try {
+    window.localStorage.setItem(TOKEN_KEY, data.token);
+    window.localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    if (data.emailVerificationRequired) {
+      window.localStorage.setItem(EMAIL_VERIFICATION_REQUIRED_KEY, "1");
+    } else {
+      window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    }
+  } catch {
+    return null;
+  }
+  return authUser;
 }
 
 function persistProfessionalSessionToLocalStorage(pending: PendingWebOnboardingAuth): void {

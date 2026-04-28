@@ -23,6 +23,8 @@ export { MARKETS, isMarket, majorCurrencyCodeForMarket, type Market } from "./ma
 
 export {
   RESIDENCY_COUNTRY_OPTIONS,
+  PATIENT_PORTAL_RESIDENCY_CODES,
+  filterResidencyOptionsForPatientPortal,
   marketFromResidencyCountry,
   residencyCountryLabel,
   type ResidencyCountryOption

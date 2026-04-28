@@ -41,6 +41,8 @@ import {
   TOKEN_KEY,
   USER_KEY,
   apiRequest,
+  backupProfessionalLocalStorageForCalendarOAuth,
+  restoreProfessionalPortalAfterCalendarOAuth,
   setProfessionalApiUnauthorizedHandler
 } from "./services/api";
 import type { AuthUser } from "./types";
@@ -122,6 +124,8 @@ function clearCalendarOnboardingPending(): void {
 }
 
 export function App() {
+  restoreProfessionalPortalAfterCalendarOAuth();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [token, setToken] = useState<string>(() => window.localStorage.getItem(TOKEN_KEY) ?? "");
@@ -271,6 +275,7 @@ export function App() {
       } catch {
         // ignore
       }
+      backupProfessionalLocalStorageForCalendarOAuth();
       window.location.href = response.authUrl;
     } catch (error) {
       console.error("Could not start calendar onboarding OAuth", error);

@@ -42,7 +42,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
-import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
+import { RESIDENCY_COUNTRY_OPTIONS, filterResidencyOptionsForPatientPortal } from "@therapy/types";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, SessionUser } from "../types";
@@ -92,6 +92,18 @@ export function AuthScreen(props: {
       return;
     }
 
+    const residencyIso = residencyCountry.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(residencyIso)) {
+      setError(
+        t(props.language, {
+          es: "Elegí tu país de residencia (define moneda y catálogo de paquetes).",
+          en: "Choose your country of residence (this sets currency and package catalog).",
+          pt: "Escolha seu pais de residencia."
+        })
+      );
+      return;
+    }
+
     if (mode === "register") {
       const given = firstName.trim();
       const family = lastName.trim();
@@ -115,17 +127,6 @@ export function AuthScreen(props: {
         );
         return;
       }
-      const iso = residencyCountry.trim().toUpperCase();
-      if (!/^[A-Z]{2}$/.test(iso)) {
-        setError(
-          t(props.language, {
-            es: "Elegí tu país de residencia (define moneda y catálogo de paquetes).",
-            en: "Choose your country of residence (this sets currency and package catalog).",
-            pt: "Escolha seu pais de residencia."
-          })
-        );
-        return;
-      }
     }
 
     setError("");
@@ -142,11 +143,12 @@ export function AuthScreen(props: {
               password,
               role: "PATIENT",
               timezone: detectBrowserTimezone(),
-              residencyCountry: residencyCountry.trim().toUpperCase()
+              residencyCountry: residencyIso
             }
           : {
               email: email.trim().toLowerCase(),
-              password
+              password,
+              residencyCountry: residencyIso
             };
 
       const response = await apiRequest<AuthApiResponse>(endpoint, {
@@ -280,41 +282,39 @@ export function AuthScreen(props: {
               </div>
             ) : null}
 
-            {mode === "register" ? (
-              <div className="auth-field-stack">
-                <span className="auth-field-label">
-                  {t(props.language, {
-                    es: "País de residencia",
-                    en: "Country of residence",
-                    pt: "Pais de residencia"
-                  })}
-                </span>
-                <span className="auth-field-hint muted">
-                  {t(props.language, {
-                    es: "Define en qué mercado ves precios y paquetes (no depende del profesional que elijas).",
-                    en: "Sets which market, prices, and packages you see (not tied to which therapist you pick).",
-                    pt: "Define o mercado e precos que voce ve."
-                  })}
-                </span>
-                <div className="auth-input-shell">
-                  <select
-                    className="auth-input-inset auth-select-full"
-                    value={residencyCountry}
-                    onChange={(event) => setResidencyCountry(event.target.value)}
-                    autoComplete="country"
-                  >
-                    <option value="">
-                      {t(props.language, { es: "Seleccionar…", en: "Select…", pt: "Selecionar…" })}
+            <div className="auth-field-stack">
+              <span className="auth-field-label">
+                {t(props.language, {
+                  es: "País de residencia",
+                  en: "Country of residence",
+                  pt: "Pais de residencia"
+                })}
+              </span>
+              <span className="auth-field-hint muted">
+                {t(props.language, {
+                  es: "Define en qué mercado ves precios y paquetes (no depende del profesional que elijas).",
+                  en: "Sets which market, prices, and packages you see (not tied to which therapist you pick).",
+                  pt: "Define o mercado e precos que voce ve."
+                })}
+              </span>
+              <div className="auth-input-shell">
+                <select
+                  className="auth-input-inset auth-select-full"
+                  value={residencyCountry}
+                  onChange={(event) => setResidencyCountry(event.target.value)}
+                  autoComplete="country"
+                >
+                  <option value="">
+                    {t(props.language, { es: "Seleccionar…", en: "Select…", pt: "Selecionar…" })}
+                  </option>
+                  {filterResidencyOptionsForPatientPortal(RESIDENCY_COUNTRY_OPTIONS).map((row) => (
+                    <option key={row.code} value={row.code}>
+                      {row.names.es} ({row.code})
                     </option>
-                    {RESIDENCY_COUNTRY_OPTIONS.map((row) => (
-                      <option key={row.code} value={row.code}>
-                        {row.names.es} ({row.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  ))}
+                </select>
               </div>
-            ) : null}
+            </div>
 
             <div className="auth-field-stack">
               <span className="auth-field-label">{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>

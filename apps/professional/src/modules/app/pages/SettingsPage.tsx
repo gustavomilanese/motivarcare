@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
-import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY, apiRequest } from "../services/api";
+import {
+  PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY,
+  apiRequest,
+  backupProfessionalLocalStorageForCalendarOAuth
+} from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -101,6 +105,7 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
       } catch {
         // ignore
       }
+      backupProfessionalLocalStorageForCalendarOAuth();
       window.location.href = response.authUrl;
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";

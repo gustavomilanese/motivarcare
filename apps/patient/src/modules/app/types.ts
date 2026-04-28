@@ -51,6 +51,8 @@ export interface ProfileMeApiResponse {
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   profile: {
     id?: string;
+    /** ISO-3166 alpha-2 del perfil (registro / intake); null si aún no se guardó. */
+    residencyCountry?: string | null;
     /** Mercado comercial del paciente (catálogo de paquetes). */
     market?: Market;
     timezone?: string;
@@ -264,6 +266,8 @@ export interface PatientAppState {
   emailVerificationRequired: boolean;
   language: AppLanguage;
   currency: SupportedCurrency;
+  /** País ISO2 desde GET /profiles/me (registro); evita repetir país en onboarding. */
+  profileResidencyCountry: string | null;
   /** Mercado (AR por defecto); alineado con `PatientProfile.market` en API. */
   patientMarket: Market;
   intake: IntakeState | null;

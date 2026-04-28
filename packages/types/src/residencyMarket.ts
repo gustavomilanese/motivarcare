@@ -60,6 +60,19 @@ export type ResidencyCountryOption = {
   names: { es: string; en: string; pt: string };
 };
 
+/**
+ * Subconjunto para registro/intake web del paciente (producto acotado).
+ * El resto de países queda fuera del combo hasta habilitarlos de nuevo.
+ */
+export const PATIENT_PORTAL_RESIDENCY_CODES = ["AR", "BR", "CO", "US"] as const;
+
+export function filterResidencyOptionsForPatientPortal(
+  options: readonly ResidencyCountryOption[]
+): ResidencyCountryOption[] {
+  const allow = new Set<string>([...PATIENT_PORTAL_RESIDENCY_CODES]);
+  return options.filter((o) => allow.has(o.code));
+}
+
 /** Opciones para selects de residencia (valor = ISO2). Incluye LatAm, US, ES y otros frecuentes. */
 export const RESIDENCY_COUNTRY_OPTIONS: ResidencyCountryOption[] = [
   { code: "AR", names: { es: "Argentina", en: "Argentina", pt: "Argentina" } },

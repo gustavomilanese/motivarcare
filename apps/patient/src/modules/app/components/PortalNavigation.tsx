@@ -5,7 +5,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { avatarInitialsFromNameParts } from "@therapy/types";
-import type { ReactNode, SyntheticEvent } from "react";
+import { type ChangeEvent, type ReactNode, type SyntheticEvent, useId } from "react";
 import { NavLink } from "react-router-dom";
 import type { ProfileTab } from "../types";
 
@@ -48,7 +48,7 @@ function IconChat(props: { className?: string }) {
 
 function IconMenu(props: { className?: string }) {
   return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   );
@@ -103,6 +103,20 @@ function IconMusic(props: { className?: string }) {
   );
 }
 
+function IconPencilTiny() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"
+        stroke="#475569"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function PortalNavigation(props: {
   language: AppLanguage;
   sessionEmail?: string;
@@ -134,6 +148,10 @@ export function PortalNavigation(props: {
   hideSidebar?: boolean;
   patientHeaderAvatarSrc: string | null;
   onPatientAvatarError: (event: SyntheticEvent<HTMLImageElement>) => void;
+  authToken: string | null;
+  patientHeaderAvatarUploadBusy: boolean;
+  patientHeaderAvatarError?: string | null;
+  onPatientHeaderAvatarFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   children: ReactNode;
 }) {
   const mobileFirstName = firstNameOnly(props.sessionFullName);
@@ -142,6 +160,33 @@ export function PortalNavigation(props: {
     props.sessionLastName ?? "",
     props.sessionFullName ?? ""
   );
+  const avatarInputId = useId();
+
+  const avatarVisual = (
+    <span className="portal-header-avatar-edit-visual">
+      {props.patientHeaderAvatarSrc ? (
+        <img
+          className="portal-header-patient-avatar"
+          src={props.patientHeaderAvatarSrc}
+          alt=""
+          onError={props.onPatientAvatarError}
+        />
+      ) : (
+        <span className="portal-header-patient-avatar portal-header-patient-avatar--fallback" aria-hidden>
+          {mobileAvatarInitials || "?"}
+        </span>
+      )}
+      <span className="portal-header-avatar-edit-badge" aria-hidden>
+        <IconPencilTiny />
+      </span>
+    </span>
+  );
+
+  const avatarSrLabel = t(props.language, {
+    es: "Cambiar foto de perfil",
+    en: "Change profile photo",
+    pt: "Alterar foto do perfil"
+  });
 
   return (
     <>
@@ -199,32 +244,49 @@ export function PortalNavigation(props: {
 
       <div className="portal-main">
         <header className="portal-header">
-          <div className="portal-header-greeting">
-            <h1 className="portal-header-greeting-desktop">
-              {replaceTemplate(
-                t(props.language, {
-                  es: "Hola, {name}",
-                  en: "Hi, {name}",
-                  pt: "Ola, {name}"
-                }),
-                { name: props.sessionFullName ?? "" }
-              )}
-            </h1>
+          <div
+            className={`portal-header-greeting${props.patientHeaderAvatarUploadBusy ? " portal-header-greeting--avatar-busy" : ""}`}
+            aria-busy={props.patientHeaderAvatarUploadBusy || undefined}
+          >
+            <input
+              id={avatarInputId}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={!props.authToken || props.patientHeaderAvatarUploadBusy}
+              onChange={props.onPatientHeaderAvatarFileChange}
+            />
+
+            <div className="portal-header-desktop-greet">
+              <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--desktop">
+                {avatarVisual}
+                <span className="sr-only">{avatarSrLabel}</span>
+              </label>
+              <h1 className="portal-header-greeting-desktop">
+                {replaceTemplate(
+                  t(props.language, {
+                    es: "Hola, {name}",
+                    en: "Hi, {name}",
+                    pt: "Ola, {name}"
+                  }),
+                  { name: props.sessionFullName ?? "" }
+                )}
+              </h1>
+            </div>
+
             <div className="portal-header-greeting-mobile" aria-label={mobileFirstName}>
-              {props.patientHeaderAvatarSrc ? (
-                <img
-                  className="portal-header-patient-avatar"
-                  src={props.patientHeaderAvatarSrc}
-                  alt=""
-                  onError={props.onPatientAvatarError}
-                />
-              ) : (
-                <span className="portal-header-patient-avatar portal-header-patient-avatar--fallback" aria-hidden>
-                  {mobileAvatarInitials || "?"}
-                </span>
-              )}
+              <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--mobile">
+                {avatarVisual}
+                <span className="sr-only">{avatarSrLabel}</span>
+              </label>
               <span className="portal-header-patient-name">{mobileFirstName}</span>
             </div>
+
+            {props.patientHeaderAvatarError ? (
+              <p className="portal-header-avatar-error" role="status">
+                {props.patientHeaderAvatarError}
+              </p>
+            ) : null}
           </div>
 
           {!props.hideSidebar ? (

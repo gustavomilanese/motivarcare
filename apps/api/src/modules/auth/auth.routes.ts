@@ -53,7 +53,9 @@ const registerSchema = z
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
+  /** Opcional: si el paciente elige país en el login, actualizamos `PatientProfile`. */
+  residencyCountry: residencyCountryIso2Schema.optional()
 });
 
 const forgotPasswordSchema = z.object({
@@ -883,6 +885,16 @@ authRouter.post("/login", async (req, res) => {
     role: user.role,
     email: user.email
   });
+
+  if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
+    await prisma.patientProfile.update({
+      where: { id: user.patient.id },
+      data: {
+        residencyCountry: parsed.data.residencyCountry,
+        market: marketFromResidencyCountry(parsed.data.residencyCountry)
+      }
+    });
+  }
 
   return res.json({
     token,

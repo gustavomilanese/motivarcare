@@ -1,46 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
-import { apiRequest } from "../services/api";
 import {
   finalizeWebOnboardingAfterEmailLink,
+  persistProfessionalSessionFromVerifyEmailApi,
   readContinueWebOnboardingAfterEmailVerify,
-  readPendingWebOnboardingAuth
+  readPendingWebOnboardingAuth,
+  type VerifyEmailApiResponse
 } from "../../onboarding/webOnboardingResumeStorage.js";
-
-type VerificationState = "loading" | "success" | "error";
+import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/** Strict Mode (dev) runs the effect twice; the first /verify-email call already consumes the one-time token. */
+/** Strict Mode (dev) runs the effect twice; el primer GET ya consume el token un solo uso. */
 function emailVerifySuccessStorageKey(token: string): string {
   return `motivarcare:email-verified:${token}`;
 }
 
-type VerifyEmailApiResponse = {
-  message: string;
-  userId?: string;
-  email?: string;
-  role?: string;
-};
-
 const verifyEmailRequestByToken = new Map<string, Promise<VerifyEmailApiResponse>>();
 
-function goHomeAfterProfessionalEmailVerify(): void {
-  if (readContinueWebOnboardingAfterEmailVerify()) {
-    window.location.assign(`${window.location.origin}/?resumeWebOnboarding=1`);
-    return;
-  }
-  window.location.assign(`${window.location.origin}/`);
+function redirectAfterProfessionalVerifyEmail(): void {
+  const origin = window.location.origin.replace(/\/+$/, "");
+  const resume = readContinueWebOnboardingAfterEmailVerify();
+  window.location.replace(resume ? `${origin}/?resumeWebOnboarding=1` : `${origin}/`);
 }
 
 export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
-  const [state, setState] = useState<VerificationState>("loading");
+  const [state, setState] = useState<"loading" | "error">("loading");
   const [message, setMessage] = useState("");
-  /** Tras verificar: flujo web de registro (localStorage), no releer en cada render. */
-  const [resumeWebOnboardingAfterSuccess, setResumeWebOnboardingAfterSuccess] = useState(false);
 
   const token = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,8 +45,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
 
     const storageKey = emailVerifySuccessStorageKey(token);
     if (sessionStorage.getItem(storageKey) === "1") {
-      setResumeWebOnboardingAfterSuccess(readContinueWebOnboardingAfterEmailVerify());
-      setState("success");
+      redirectAfterProfessionalVerifyEmail();
       return;
     }
 
@@ -76,21 +64,43 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
           verifyEmailRequestByToken.set(token, request);
         }
         const data = await request;
+
         const pendingAuth = readPendingWebOnboardingAuth();
-        if (pendingAuth) {
-          const uidMatch = Boolean(data.userId && pendingAuth.user.id === data.userId);
+        let finalized = false;
+        if (pendingAuth && data.token && data.user?.role === "PROFESSIONAL") {
+          const uidMatch = Boolean(
+            pendingAuth.user.id === data.user.id || (data.userId ? pendingAuth.user.id === data.userId : false)
+          );
           const emailMatch = Boolean(
-            data.email
-            && pendingAuth.user.email.toLowerCase() === String(data.email).trim().toLowerCase()
+            data.user.email
+            && pendingAuth.user.email.toLowerCase() === String(data.user.email).trim().toLowerCase()
           );
           if (uidMatch || emailMatch) {
-            finalizeWebOnboardingAfterEmailLink(pendingAuth);
+            finalizeWebOnboardingAfterEmailLink({
+              ...pendingAuth,
+              token: data.token,
+              emailVerificationRequired: data.emailVerificationRequired,
+              user: {
+                ...pendingAuth.user,
+                id: data.user.id,
+                email: data.user.email,
+                fullName: data.user.fullName,
+                emailVerified: true,
+                avatarUrl: data.user.avatarUrl ?? pendingAuth.user.avatarUrl ?? null,
+                professionalProfileId: data.user.professionalProfileId ?? pendingAuth.user.professionalProfileId
+              }
+            });
+            finalized = true;
           }
         }
+
+        if (!finalized) {
+          persistProfessionalSessionFromVerifyEmailApi(data);
+        }
+
         sessionStorage.setItem(storageKey, "1");
         if (!cancelled) {
-          setResumeWebOnboardingAfterSuccess(readContinueWebOnboardingAfterEmailVerify());
-          setState("success");
+          redirectAfterProfessionalVerifyEmail();
         }
       } catch (requestError) {
         if (cancelled) {
@@ -147,52 +157,6 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
             </>
           ) : null}
 
-          {state === "success" ? (
-            <>
-              <div className="pro-verify-email-icon pro-verify-email-icon--success" aria-hidden="true">
-                <svg viewBox="0 0 48 48" width="52" height="52" fill="none">
-                  <circle cx="24" cy="24" r="22" fill="rgba(22, 163, 74, 0.12)" />
-                  <path
-                    d="M16 24.5 21.2 30 32 18"
-                    stroke="#16a34a"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <span className="pro-chip pro-chip--success">
-                {t(props.language, { es: "Email", en: "Email", pt: "E-mail" })}
-              </span>
-              <p className="pro-verify-email-success-kicker">
-                {t(props.language, { es: "Cuenta confirmada", en: "Account confirmed", pt: "Conta confirmada" })}
-              </p>
-              <h1 id="pro-verify-token-title">
-                {t(props.language, { es: "Email verificado", en: "Email verified", pt: "E-mail verificado" })}
-              </h1>
-              {resumeWebOnboardingAfterSuccess ? null : (
-                <p className="pro-verify-email-lead">
-                  {t(props.language, {
-                    es: "Tu correo quedó confirmado. Volvé al inicio para entrar con tu cuenta.",
-                    en: "Your email is confirmed. Go to home to sign in with your account.",
-                    pt: "Seu e-mail foi confirmado. Volte ao inicio para entrar com sua conta."
-                  })}
-                </p>
-              )}
-              <div className="pro-stack pro-verify-email-actions">
-                <button className="pro-primary" type="button" onClick={goHomeAfterProfessionalEmailVerify}>
-                  {resumeWebOnboardingAfterSuccess
-                    ? t(props.language, {
-                        es: "Continuar registro",
-                        en: "Continue signup",
-                        pt: "Continuar cadastro"
-                      })
-                    : t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
-                </button>
-              </div>
-            </>
-          ) : null}
-
           {state === "error" ? (
             <>
               <div className="pro-verify-email-icon pro-verify-email-icon--error" aria-hidden="true">
@@ -220,7 +184,7 @@ export function VerifyEmailTokenScreen(props: { language: AppLanguage }) {
                 })}
               </p>
               <div className="pro-stack pro-verify-email-actions">
-                <button className="pro-primary" type="button" onClick={goHomeAfterProfessionalEmailVerify}>
+                <button className="pro-primary" type="button" onClick={() => window.location.assign("/")}>
                   {t(props.language, { es: "Ir al inicio", en: "Go to home", pt: "Ir ao inicio" })}
                 </button>
               </div>

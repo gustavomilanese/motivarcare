@@ -71,6 +71,62 @@ export const EMAIL_VERIFICATION_REQUIRED_KEY = "therapy_pro_email_verification_r
 export const CALENDAR_ONBOARDING_PENDING_USER_ID_KEY = "therapy_pro_calendar_onboarding_user_id";
 /** Antes de OAuth: destino al volver (sessionStorage) si el callback cae en la ruta equivocada. */
 export const PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY = "therapy_pro_gcal_oauth_return_path";
+/** Backup de sesión antes del redirect OAuth (Google puede dejar localStorage vacío al volver). */
+export const PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY = "therapy_pro_calendar_oauth_ls_backup";
+
+export function backupProfessionalLocalStorageForCalendarOAuth(): void {
+  try {
+    const tok = window.localStorage.getItem(TOKEN_KEY);
+    const usr = window.localStorage.getItem(USER_KEY);
+    const ev = window.localStorage.getItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    if (!tok || !usr) {
+      return;
+    }
+    window.sessionStorage.setItem(
+      PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY,
+      JSON.stringify({ token: tok, user: usr, emailVerificationRequired: ev })
+    );
+  } catch {
+    // ignore
+  }
+}
+
+/** Si volvemos con `?calendar_sync=` y el SPA perdió el token, restauramos desde el backup (paridad paciente). */
+export function restoreProfessionalPortalAfterCalendarOAuth(): void {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("calendar_sync")) {
+      return;
+    }
+    if (window.localStorage.getItem(TOKEN_KEY)) {
+      window.sessionStorage.removeItem(PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY);
+      return;
+    }
+    const raw = window.sessionStorage.getItem(PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY);
+    if (!raw) {
+      return;
+    }
+    window.sessionStorage.removeItem(PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY);
+    const parsed = JSON.parse(raw) as {
+      token?: string;
+      user?: string;
+      emailVerificationRequired?: string | null;
+    };
+    if (parsed.token) {
+      window.localStorage.setItem(TOKEN_KEY, parsed.token);
+    }
+    if (parsed.user) {
+      window.localStorage.setItem(USER_KEY, parsed.user);
+    }
+    if (parsed.emailVerificationRequired === "1") {
+      window.localStorage.setItem(EMAIL_VERIFICATION_REQUIRED_KEY, "1");
+    } else {
+      window.localStorage.removeItem(EMAIL_VERIFICATION_REQUIRED_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
 export const LANGUAGE_KEY = "therapy_pro_language";
 export const CURRENCY_KEY = "therapy_pro_currency";
 
