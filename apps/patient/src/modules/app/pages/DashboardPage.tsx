@@ -469,19 +469,19 @@ export function DashboardPage(props: {
         <div className="hero-title-wrap dashboard-home-hero-intro-aside">
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
           <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
+          {hasAssignedProfessional && defaultPackagePlan ? (
+            <div className="dashboard-hero-purchase-row">
+              <button
+                className="sessions-hero-buy-button dashboard-hero-buy-button"
+                type="button"
+                onClick={() => setAcquireSessionsModalOpen(true)}
+              >
+                {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
-      {hasAssignedProfessional && defaultPackagePlan ? (
-        <div className="dashboard-hero-purchase-row">
-          <button
-            className="sessions-hero-buy-button dashboard-hero-buy-button"
-            type="button"
-            onClick={() => setAcquireSessionsModalOpen(true)}
-          >
-            {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
-          </button>
-        </div>
-      ) : null}
 
       <section className="content-card trial-priority-banner trial-priority-inline">
         <h2>

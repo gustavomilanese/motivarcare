@@ -509,7 +509,11 @@ export function App() {
     [navigate, requestPortalResync, sessionTimezone]
   );
 
-  /** Otra pestaña guardó estado verificado en localStorage: alinear UI y pedir un sync fresco al servidor. */
+  /**
+   * Otra pestaña guardó estado en localStorage (p. ej. verificación de email con JWT nuevo).
+   * Además de marcar emailVerified, hay que **tomar el mismo token/sesión** que guardó la otra pestaña;
+   * si no, esta pestaña sigue con JWT viejo o sin token y el portal nunca deja «Cargando…» / no llega al onboarding.
+   */
   useEffect(() => {
     function handleStorageEvent(event: StorageEvent) {
       if (event.key !== STORAGE_KEY || typeof event.newValue !== "string") {
@@ -525,14 +529,32 @@ export function App() {
       if (!remote?.id || remote.emailVerified !== true) {
         return;
       }
-      setState((current) => {
-        if (!current.session || current.session.id !== remote.id || current.session.emailVerified) {
-          return current;
-        }
-        return {
-          ...current,
-          session: { ...current.session, emailVerified: true }
-        };
+      flushSync(() => {
+        setState((current) => {
+          if (!current.session || String(current.session.id) !== String(remote.id)) {
+            return current;
+          }
+          if (current.session.emailVerified) {
+            return current;
+          }
+          const remoteToken =
+            typeof parsed.authToken === "string" && parsed.authToken.trim().length > 0
+              ? parsed.authToken
+              : null;
+          const mergedSession =
+            parsed.session && String(parsed.session.id) === String(remote.id)
+              ? { ...current.session, ...parsed.session, emailVerified: true }
+              : { ...current.session, emailVerified: true };
+          return {
+            ...current,
+            authToken: remoteToken ?? current.authToken,
+            session: mergedSession,
+            emailVerificationRequired:
+              typeof parsed.emailVerificationRequired === "boolean"
+                ? parsed.emailVerificationRequired
+                : current.emailVerificationRequired
+          };
+        });
       });
       requestPortalResync();
     }
@@ -799,10 +821,13 @@ export function App() {
       const batchEpoch = portalSyncEpochRef.current;
       const { sessionId: sid, authToken: tokenFromRef, language: languageSnapshot } = portalSyncDepsRef.current;
       const tokenSnapshot = tokenFromRef ?? undefined;
-      if (!sid || !tokenSnapshot) {
-        return;
-      }
+      let attemptedSync = false;
       try {
+        if (!sid || !tokenSnapshot) {
+          return;
+        }
+        attemptedSync = true;
+        try {
         const { profileResult, bookingsResult, authResult, professionalDirectoryResult } =
           await fetchPatientPortalSyncBatchShared({
             token: tokenSnapshot,
@@ -1018,14 +1043,24 @@ export function App() {
         if (professionalDirectoryResult.status === "rejected") {
           console.error("Could not sync professional directory from API", professionalDirectoryResult.reason);
         }
-      } catch (error) {
-        console.error("Could not sync patient portal from API", error);
+        } catch (error) {
+          console.error("Could not sync patient portal from API", error);
+        }
       } finally {
         const deps = portalSyncDepsRef.current;
+        const hasAuth =
+          Boolean(String(deps.sessionId ?? "").trim()) && Boolean(deps.authToken);
+        const sameLoginAsBatch =
+          attemptedSync
+          && Boolean(sid && tokenSnapshot)
+          && String(deps.sessionId ?? "") === String(sid)
+          && deps.authToken === tokenSnapshot;
         if (
-          batchEpoch === portalSyncEpochRef.current
-          && Boolean(String(deps.sessionId ?? "").trim())
-          && Boolean(deps.authToken)
+          hasAuth
+          && (
+            batchEpoch === portalSyncEpochRef.current
+            || sameLoginAsBatch
+          )
         ) {
           setProfileSyncReady(true);
         }

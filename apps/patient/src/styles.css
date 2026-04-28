@@ -9986,7 +9986,8 @@ button.sessions-balance {
   grid-template-areas: "media text";
   max-width: 100%;
   margin-inline: 0;
-  align-items: start;
+  /* stretch: la columna de texto iguala la altura de la foto; el CTA usa margin-top:auto y alinea bases */
+  align-items: stretch;
   /* Sin “tarjeta”: el recuadro lo da solo la foto */
   border: none;
   box-shadow: none;
@@ -10001,8 +10002,11 @@ button.sessions-balance {
 
 .patient-dashboard-home .dashboard-home-hero-intro-aside {
   grid-area: text;
-  align-self: start;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding-top: 4px;
 }
 
@@ -10027,9 +10031,10 @@ button.sessions-balance {
 
 .patient-dashboard-home .dashboard-hero-purchase-row {
   display: flex;
-  justify-content: center;
-  margin-top: 12px;
-  margin-bottom: 4px;
+  justify-content: flex-start;
+  margin-top: auto;
+  margin-bottom: 0;
+  padding-top: 14px;
 }
 
 .patient-dashboard-home .hero-title-wrap {
@@ -10040,6 +10045,9 @@ button.sessions-balance {
   grid-area: media;
   max-width: none;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .patient-dashboard-home .hero-photo-tile {
@@ -10078,7 +10086,8 @@ button.sessions-balance {
 }
 
 .patient-dashboard-home .dashboard-hero-buy-button {
-  margin-top: 6px;
+  margin-top: 0;
+  align-self: flex-start;
 }
 
 /* KPI del inicio: ~20% menos alto (menos padding, tipografía y avatar más chicos) */
