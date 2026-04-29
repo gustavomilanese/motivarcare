@@ -10819,14 +10819,6 @@ button.sessions-balance {
   font-weight: 700;
 }
 
-.intake-chooser-subtitle {
-  margin: 0 auto;
-  max-width: 600px;
-  color: var(--text-soft);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
 .intake-chooser-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -10840,9 +10832,9 @@ button.sessions-balance {
 }
 
 .intake-chooser-option {
-  display: grid;
-  grid-template-rows: auto auto auto 1fr auto auto;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 22px;
   border-radius: 16px;
   border: 1px solid #e3dfff;
@@ -10880,38 +10872,12 @@ button.sessions-balance {
   color: #ffffff;
 }
 
-.intake-chooser-option-title {
-  margin: 0;
-  font-size: 19px;
-  color: #1a1640;
-  font-weight: 700;
-}
-
-.intake-chooser-option-desc {
-  margin: 0;
-  color: #2a2657;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.intake-chooser-option-bullets {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--text-soft);
-  font-size: 13px;
-  display: grid;
-  gap: 6px;
-}
-
-.intake-chooser-option-bullets li {
-  line-height: 1.4;
-}
-
 .intake-chooser-option-cta {
+  width: 100%;
   appearance: none;
   border: 0;
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -10954,13 +10920,6 @@ button.sessions-balance {
 
 .intake-chooser-option-cta--chat:active {
   background: #322792;
-}
-
-.intake-chooser-option-fineprint {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-soft);
-  line-height: 1.4;
 }
 
 /* === Intake chat screen === */
