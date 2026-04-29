@@ -10,6 +10,7 @@ import {
   type IntakeChatSessionDto,
   type IntakeChatSubmitMode
 } from "../services/intakeChatApi";
+import { stripDuplicateQuickReplyLines } from "../utils/stripDuplicateQuickReplyLines";
 
 interface IntakeChatScreenProps {
   user: SessionUser;
@@ -400,36 +401,6 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
       </section>
     </div>
   );
-}
-
-/**
- * Cuando el backend incluye la misma lista de opciones en `content` y en `quickReplies`,
- * el usuario ve viñetas duplicadas respecto a los botones. Quitamos líneas que coinciden
- * con cada etiqueta de quick reply (con o sin guion/número/bullet).
- */
-function stripDuplicateQuickReplyLines(content: string, quickReplies: string[]): string {
-  if (!quickReplies.length) {
-    return content;
-  }
-
-  const matchesReplyLine = (line: string): boolean => {
-    const raw = line.trim();
-    if (!raw) {
-      return false;
-    }
-    const withoutBullet = raw
-      .replace(/^[\s\u2022\u2023•\-\*]+/u, "")
-      .replace(/^\d{1,2}[\.\)]\s*/, "")
-      .trim();
-    return quickReplies.some((qr) => {
-      const q = qr.trim();
-      return raw === q || withoutBullet === q;
-    });
-  };
-
-  const lines = content.split(/\r?\n/);
-  const kept = lines.filter((line) => !matchesReplyLine(line));
-  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function MessageBubble({

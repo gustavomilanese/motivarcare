@@ -10963,6 +10963,15 @@ button.sessions-balance {
   line-height: 1.4;
 }
 
+/* Blindaje: algunos estilos globales o overlays pueden dejar estos nodos ilegibles; forzamos visibilidad. */
+.intake-card--chooser .intake-chooser-subtitle,
+.intake-card--chooser .intake-chooser-option-desc,
+.intake-card--chooser .intake-chooser-option-bullets,
+.intake-card--chooser .intake-chooser-option-fineprint {
+  visibility: visible;
+  opacity: 1;
+}
+
 /* === Intake chat screen === */
 
 .intake-shell--chat {
