@@ -10,6 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { DashboardGuidedTour } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
@@ -437,7 +438,7 @@ export function DashboardPage(props: {
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
       <div className="dashboard-legacy-home">
-      <section className="hero-composite hero-composite--media-only">
+      <section className="hero-composite hero-composite--media-only" data-tour="patient-tour-hero">
         <div className="hero-media">
           <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
             {landingPatientHeroImage === null ? (
@@ -483,7 +484,7 @@ export function DashboardPage(props: {
         </div>
       </section>
 
-      <section className="content-card trial-priority-banner trial-priority-inline">
+      <section className="content-card trial-priority-banner trial-priority-inline" data-tour="patient-tour-trial">
         <h2>
           <span className="trial-inline-icon" aria-hidden="true" />
           {trialStatus === "pending"
@@ -526,7 +527,7 @@ export function DashboardPage(props: {
         ) : null}
       </section>
 
-      <section className="hero-grid">
+      <section className="hero-grid" data-tour="patient-tour-kpis">
         <article className="hero-card sessions-combined-card">
           <button
             className="sessions-combined-section sessions-combined-action"
@@ -675,7 +676,7 @@ export function DashboardPage(props: {
         )}
       </section>
 
-      <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel">
+      <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel" data-tour="patient-tour-bookings">
         <div className="sessions-panel-head">
           <div>
             <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
@@ -1187,10 +1188,17 @@ export function DashboardPage(props: {
       </div>
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
-        <div className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}>
+        <div
+          className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}
+          data-tour="patient-tour-hero-rn"
+        >
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
           <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
-          <div className="dashboard-rn-toolbar" aria-label={t(props.language, { es: "Saldo y agendar", en: "Balance and book", pt: "Saldo e agendar" })}>
+          <div
+            className="dashboard-rn-toolbar"
+            data-tour="patient-tour-rn-toolbar"
+            aria-label={t(props.language, { es: "Saldo y agendar", en: "Balance and book", pt: "Saldo e agendar" })}
+          >
             <div className="dashboard-rn-toolbar-inner">
               <div className="dashboard-rn-pill-block" aria-live="polite">
                 <div
@@ -1257,7 +1265,7 @@ export function DashboardPage(props: {
             </div>
           </div>
 
-          <section className="dashboard-rn-section">
+          <section className="dashboard-rn-section" data-tour="patient-tour-bookings-rn">
             <div className="dashboard-rn-section-head">
               <h2 className="dashboard-rn-section-title">
                 {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}
@@ -1474,6 +1482,8 @@ export function DashboardPage(props: {
           onChooseIndividual={props.onNavigateToIndividualSessions}
         />
       ) : null}
+
+      <DashboardGuidedTour language={props.language} sessionUserId={props.state.session?.id ?? null} />
     </div>
   );
 }

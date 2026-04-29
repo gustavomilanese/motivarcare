@@ -205,7 +205,7 @@ export function PortalNavigation(props: {
             </span>
           </div>
 
-          <nav className="portal-sidebar-nav">
+          <nav className="portal-sidebar-nav" data-tour="patient-tour-sidebar">
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
               {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
             </NavLink>

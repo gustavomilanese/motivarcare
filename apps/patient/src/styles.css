@@ -13657,3 +13657,98 @@ button.sessions-balance {
   max-width: 640px;
 }
 
+/* Tour guiado (primer ingreso al dashboard) — driver.js + clase popoverClass */
+.patient-guided-tour-popover.driver-popover {
+  max-width: min(420px, calc(100vw - 28px));
+  min-width: 280px;
+  padding: 18px 20px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  background: linear-gradient(165deg, #ffffff 0%, #faf8ff 48%, #f3effc 100%);
+  box-shadow:
+    0 28px 64px rgba(15, 23, 42, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  color: #1e293b;
+}
+
+.patient-guided-tour-popover .driver-popover-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.patient-guided-tour-popover .driver-popover-description {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: rgba(15, 23, 42, 0.78);
+  margin-top: 8px;
+}
+
+.patient-guided-tour-popover .driver-popover-footer {
+  margin-top: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.patient-guided-tour-popover .driver-popover-progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7c6bb8;
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns {
+  gap: 8px;
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns button {
+  padding: 9px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 11px !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #334155 !important;
+  text-shadow: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns button:hover {
+  background: #f8fafc !important;
+  border-color: rgba(95, 68, 235, 0.35) !important;
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns .driver-popover-next-btn {
+  border: 0 !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%) !important;
+  box-shadow: 0 8px 22px rgba(95, 68, 235, 0.28);
+}
+
+.patient-guided-tour-popover .driver-popover-navigation-btns .driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%) !important;
+  box-shadow: 0 10px 26px rgba(95, 68, 235, 0.35);
+}
+
+.patient-guided-tour-popover .driver-popover-close-btn {
+  top: 10px !important;
+  right: 10px !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  color: #94a3b8 !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.patient-guided-tour-popover .driver-popover-close-btn:hover,
+.patient-guided-tour-popover .driver-popover-close-btn:focus {
+  color: #475569 !important;
+  background: rgba(148, 163, 184, 0.15) !important;
+}
+

@@ -57,6 +57,7 @@ export function TreatmentChatFAB(props: TreatmentChatFABProps) {
         <button
           type="button"
           className="treatment-chat-fab"
+          data-tour="patient-tour-maca"
           onClick={handleOpen}
           aria-label={t(language, {
             es: "Abrir chat de acompañamiento",
