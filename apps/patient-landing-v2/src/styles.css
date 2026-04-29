@@ -113,18 +113,37 @@ a {
   padding: 1rem 0;
 }
 
-.pl2-logo img {
+.pl2-logo-text-mark {
+  display: none;
+  font-family: var(--pl2-display);
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #fffcf7;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.45);
+  line-height: 1;
+}
+
+.pl2-logo-img {
   height: clamp(30px, 3vw, 36px);
   width: auto;
 }
 
-/* Sobre el hero oscuro el PNG del wordmark (tinta oscura) no se ve: lo pasamos a blanco. Al hacer scroll, header claro → logo original. */
-.pl2-header--airy .pl2-logo img {
-  filter: brightness(0) invert(1) drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35));
+/* Hero oscuro: texto blanco legible (evita bloque blanco si el PNG+filtro falla en algún navegador). */
+.pl2-header--airy .pl2-logo-img {
+  display: none;
 }
 
-.pl2-header--solid .pl2-logo img {
-  filter: none;
+.pl2-header--airy .pl2-logo-text-mark {
+  display: block;
+}
+
+.pl2-header--solid .pl2-logo-img {
+  display: block;
+}
+
+.pl2-header--solid .pl2-logo-text-mark {
+  display: none;
 }
 
 .pl2-nav {
@@ -176,6 +195,8 @@ a {
   border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .pl2-btn:active {
@@ -199,7 +220,7 @@ a {
 }
 
 .pl2-btn--primary:hover {
-  filter: brightness(1.05);
+  background: linear-gradient(135deg, #7267dc 0%, #5045c4 100%);
   transform: translateY(-1px);
 }
 

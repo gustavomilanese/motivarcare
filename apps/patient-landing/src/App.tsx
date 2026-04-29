@@ -21,9 +21,15 @@ const PATIENT_PORTAL_URL = portalUrl(
   "https://app.motivarcare.com"
 );
 
-/** Fotos en public/photos: 14 = hero apaisado; 13 = banda editorial/parallax (v1). */
+const PROFESSIONAL_PORTAL_URL = portalUrl(
+  viteEnv.VITE_PROFESSIONAL_PORTAL_URL,
+  "http://localhost:5174",
+  "https://pro.motivarcare.com"
+);
+
+/** Fotos en public/photos: 15 = hero; 13 = banda editorial/parallax (v1). */
 const P = {
-  hero: "/photos/14-banner-panoramico.jpg",
+  hero: "/photos/15-hero-trabajo-remoto-playa.jpg",
   parallaxStrip: "/photos/13-hero-panoramico.jpg",
   deskPanel: "/photos/03-escritorio-atardecer.jpg",
   studioMist: "/photos/04-estudio-montanas-niebla.jpg",
@@ -86,7 +92,15 @@ export function App() {
       <header className={`patient-ar-header ${headerSolid ? "patient-ar-header--solid" : "patient-ar-header--hero"}`}>
         <div className="patient-ar-container patient-ar-header-inner">
           <a className="patient-ar-logo" href="/" aria-label="MotivarCare">
-            <img src="/brand/motivarcare-wordmark.png" alt="" width={220} height={40} />
+            {/* En hero oscuro el PNG+filtro falla en algunos navegadores (bloque blanco); el texto siempre lee bien. */}
+            <span className="patient-ar-logo-text-mark">MotivarCare</span>
+            <img
+              className="patient-ar-logo-img"
+              src="/brand/motivarcare-wordmark.png"
+              alt=""
+              width={220}
+              height={40}
+            />
           </a>
           <nav className="patient-ar-nav" aria-label="Secciones">
             <a href="#beneficios">Por qué MotivarCare</a>
@@ -107,7 +121,7 @@ export function App() {
             style={{ transform: `translate3d(0, ${heroShift}px, 0) scale(1.06)` }}
             aria-hidden="true"
           >
-            <img src={P.hero} alt="" className="patient-ar-hero-img patient-ar-hero-img--panorama" width={2000} height={900} fetchPriority="high" />
+            <img src={P.hero} alt="" className="patient-ar-hero-img patient-ar-hero-img--panorama" width={736} height={420} fetchPriority="high" />
             <div className="patient-ar-hero-scrim" />
             <div className="patient-ar-hero-grain" aria-hidden="true" />
           </div>
@@ -329,6 +343,35 @@ export function App() {
               <a className="patient-ar-btn patient-ar-btn--light" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
                 Reservar mi primera sesión
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="patient-ar-pro-banner-wrap" id="portal-profesionales" aria-labelledby="patient-ar-pro-cta-title">
+          <div className="patient-ar-container">
+            <div className="patient-ar-pro-banner">
+              <div className="patient-ar-pro-banner__main">
+                <span className="patient-ar-pro-banner__icon" aria-hidden="true">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="11" y="6" width="26" height="34" rx="3.5" stroke="currentColor" strokeWidth="2.2" />
+                    <path d="M17 15h14M17 22h14M17 29h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    <circle cx="34" cy="34" r="9" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M34 30v5M31 32.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <div className="patient-ar-pro-banner__copy">
+                  <p className="patient-ar-pro-banner__kicker">¿Sos parte del equipo?</p>
+                  <h2 id="patient-ar-pro-cta-title">Si sos psicólogo/a, entrá acá</h2>
+                  <p className="patient-ar-pro-banner__lead">
+                    Gestioná agenda, videollamadas y pacientes en un solo lugar. Sumate al portal de profesionales MotivarCare.
+                  </p>
+                </div>
+              </div>
+              <div className="patient-ar-pro-banner__action">
+                <a className="patient-ar-btn patient-ar-btn--pro-banner" href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
+                  Ir al portal de profesionales <span aria-hidden="true">→</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>

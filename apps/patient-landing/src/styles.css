@@ -103,10 +103,6 @@ a {
   border-bottom-color: rgba(255, 255, 255, 0.5);
 }
 
-.patient-ar-header--hero .patient-ar-logo img {
-  filter: brightness(0) invert(1) drop-shadow(0 2px 16px rgba(0, 0, 0, 0.35));
-}
-
 .patient-ar-header--solid {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(14px);
@@ -124,8 +120,23 @@ a {
   border-bottom-color: rgba(109, 86, 255, 0.35);
 }
 
-.patient-ar-header--solid .patient-ar-logo img {
-  filter: none;
+.patient-ar-logo-text-mark {
+  display: none;
+  font-family: "Sora", system-ui, sans-serif;
+  font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+  line-height: 1;
+}
+
+.patient-ar-header--hero .patient-ar-logo-img {
+  display: none;
+}
+
+.patient-ar-header--hero .patient-ar-logo-text-mark {
+  display: block;
 }
 
 .patient-ar-header-inner {
@@ -137,12 +148,20 @@ a {
   flex-wrap: wrap;
 }
 
-.patient-ar-logo img {
+.patient-ar-logo-img {
   height: clamp(30px, 3.5vw, 38px);
   width: auto;
   max-width: min(220px, 48vw);
   object-fit: contain;
   display: block;
+}
+
+.patient-ar-header--solid .patient-ar-logo-img {
+  display: block;
+}
+
+.patient-ar-header--solid .patient-ar-logo-text-mark {
+  display: none;
 }
 
 .patient-ar-nav {
@@ -230,7 +249,7 @@ a {
   display: block;
 }
 
-/* Hero con foto apaisada (14): menos recorte, más sombra donde va el texto */
+/* Hero con foto apaisada (15): menos recorte, más sombra donde va el texto */
 .patient-ar-hero-img--panorama {
   object-position: center center;
 }
@@ -502,9 +521,12 @@ a {
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   border: 2px solid transparent;
   cursor: pointer;
+  /* Evita “rectángulos” en los arcos al componer gradiente + sombra (Chrome). */
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .patient-ar-btn--primary {
@@ -514,7 +536,8 @@ a {
 }
 
 .patient-ar-btn--primary:hover {
-  filter: brightness(1.05);
+  /* Sin filter: el filter + transform suele destapar bordes rectos detrás del radio. */
+  background: linear-gradient(135deg, #aa96ff 0%, #7a66ff 45%, #6c58ef 100%);
   transform: translateY(-2px);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
 }
@@ -550,7 +573,7 @@ a {
 }
 
 .patient-ar-btn--light:hover {
-  filter: brightness(1.03);
+  background: #faf9ff;
   transform: translateY(-2px);
 }
 
@@ -1135,6 +1158,147 @@ main {
   font-size: 0.98rem;
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.6;
+}
+
+/* ——— CTA profesionales (después de precios) ——— */
+.patient-ar-pro-banner-wrap {
+  position: relative;
+  padding: clamp(2.25rem, 5vw, 3.25rem) 0;
+  scroll-margin-top: 72px;
+  background: linear-gradient(125deg, #2c2468 0%, var(--violet-900) 38%, var(--violet-700) 100%);
+  overflow: hidden;
+}
+
+.patient-ar-pro-banner-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 100% -10%, rgba(255, 252, 247, 0.2), transparent 52%),
+    radial-gradient(ellipse 50% 45% at 0% 100%, rgba(167, 243, 208, 0.1), transparent 48%);
+  pointer-events: none;
+}
+
+.patient-ar-pro-banner-wrap::after {
+  content: "";
+  position: absolute;
+  width: min(420px, 90vw);
+  height: min(420px, 90vw);
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.patient-ar-pro-banner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+@media (min-width: 840px) {
+  .patient-ar-pro-banner {
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+  }
+}
+
+.patient-ar-pro-banner__main {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.patient-ar-pro-banner__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.14);
+  border: 1px solid rgba(255, 252, 247, 0.28);
+  color: rgba(255, 252, 247, 0.95);
+}
+
+@media (min-width: 520px) {
+  .patient-ar-pro-banner__icon {
+    width: 3.75rem;
+    height: 3.75rem;
+    border-radius: 16px;
+  }
+
+  .patient-ar-pro-banner__icon svg {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+.patient-ar-pro-banner__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 252, 247, 0.72);
+}
+
+.patient-ar-pro-banner__copy h2 {
+  margin: 0 0 0.65rem;
+  font-family: "Sora", sans-serif;
+  font-size: clamp(1.35rem, 2vw + 0.85rem, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fffcf7;
+}
+
+.patient-ar-pro-banner__lead {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: rgba(255, 252, 247, 0.88);
+}
+
+.patient-ar-pro-banner__action {
+  justify-self: stretch;
+}
+
+@media (min-width: 840px) {
+  .patient-ar-pro-banner__action {
+    justify-self: end;
+  }
+}
+
+.patient-ar-btn--pro-banner {
+  width: 100%;
+  justify-content: center;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: #fffcf7;
+  color: var(--violet-900);
+  border: 2px solid rgba(255, 252, 247, 0.95);
+  box-shadow: 0 14px 44px rgba(26, 22, 40, 0.35);
+}
+
+.patient-ar-btn--pro-banner:hover {
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 52px rgba(26, 22, 40, 0.42);
+}
+
+@media (min-width: 840px) {
+  .patient-ar-btn--pro-banner {
+    width: auto;
+    min-width: 260px;
+  }
 }
 
 /* ——— Quotes ——— */

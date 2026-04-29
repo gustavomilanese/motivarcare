@@ -94,7 +94,14 @@ export function App() {
       <header className={`pl2-header ${headerSolid ? "pl2-header--solid" : "pl2-header--airy"}`}>
         <div className="pl2-container pl2-header-inner">
           <a className="pl2-logo" href="/" aria-label="MotivarCare">
-            <img src="/brand/motivarcare-wordmark.png" alt="MotivarCare" width={200} height={36} />
+            <span className="pl2-logo-text-mark">MotivarCare</span>
+            <img
+              className="pl2-logo-img"
+              src="/brand/motivarcare-wordmark.png"
+              alt=""
+              width={200}
+              height={36}
+            />
           </a>
           <nav className="pl2-nav" aria-label="Secciones">
             <a href="#beneficios">Por qué MotivarCare</a>
