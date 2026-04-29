@@ -1483,7 +1483,11 @@ export function DashboardPage(props: {
         />
       ) : null}
 
-      <DashboardGuidedTour language={props.language} sessionUserId={props.state.session?.id ?? null} />
+      <DashboardGuidedTour
+        language={props.language}
+        sessionUserId={props.state.session?.id ?? null}
+        suppressTour={assignProModalOpen || acquireSessionsModalOpen || trialModalOpen}
+      />
     </div>
   );
 }

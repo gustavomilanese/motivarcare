@@ -13666,6 +13666,21 @@ button.sessions-balance {
   max-width: 640px;
 }
 
+/*
+ * Tour guiado (driver.js): overlay interno ~10000; modales del portal usan 30–120.
+ * Si algo los sube de stacking context, forzamos que queden por debajo del tour y se vean apagados.
+ */
+body.driver-active .session-modal-backdrop,
+body.driver-active .matching-flow-backdrop {
+  z-index: 9000 !important;
+  filter: saturate(0.88) brightness(0.93);
+  opacity: 0.94;
+}
+
+body.driver-active .driver-overlay {
+  z-index: 10000 !important;
+}
+
 /* Tour guiado (primer ingreso al dashboard) — driver.js + Maca */
 .patient-guided-tour-popover.driver-popover {
   max-width: min(440px, calc(100vw - 28px));

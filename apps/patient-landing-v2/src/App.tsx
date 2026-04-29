@@ -6,6 +6,7 @@ import {
   type LandingSessionPackageRow
 } from "./fetchLandingSessionPackages";
 import { useScrollY } from "./useScrollMotion";
+import { useRevealOnScroll } from "./useRevealOnScroll";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 
@@ -19,6 +20,12 @@ const PATIENT_PORTAL_URL = portalUrl(
   viteEnv.VITE_PATIENT_PORTAL_URL,
   "http://localhost:5173",
   "https://app.motivarcare.com"
+);
+
+const PROFESSIONAL_PORTAL_URL = portalUrl(
+  viteEnv.VITE_PROFESSIONAL_PORTAL_URL,
+  "http://localhost:5174",
+  "https://pro.motivarcare.com"
 );
 
 /** 14 = hero apaisado; 13 = banda editorial (y parallax v1 si copiás assets). */
@@ -80,13 +87,14 @@ export function App() {
   const heroImgY = scrollY * 0.14;
   const parallaxBandY = scrollY * 0.06;
   const headerSolid = scrollY > 48;
+  useRevealOnScroll();
 
   return (
     <div className="pl2-page">
       <header className={`pl2-header ${headerSolid ? "pl2-header--solid" : "pl2-header--airy"}`}>
         <div className="pl2-container pl2-header-inner">
           <a className="pl2-logo" href="/" aria-label="MotivarCare">
-            <img src="/brand/motivarcare-wordmark.png" alt="" width={200} height={36} />
+            <img src="/brand/motivarcare-wordmark.png" alt="MotivarCare" width={200} height={36} />
           </a>
           <nav className="pl2-nav" aria-label="Secciones">
             <a href="#beneficios">Por qué MotivarCare</a>
@@ -140,7 +148,12 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-section pl2-section--cream" id="beneficios" aria-labelledby="pl2-benefits-title">
+        <section
+          className="pl2-section pl2-section--cream"
+          id="beneficios"
+          data-pl2-reveal
+          aria-labelledby="pl2-benefits-title"
+        >
           <div className="pl2-container">
             <header className="pl2-section-head">
               <p className="pl2-eyebrow">Todo en un solo lugar</p>
@@ -182,7 +195,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-editorial" aria-labelledby="pl2-about-title">
+        <section className="pl2-editorial" data-pl2-reveal aria-labelledby="pl2-about-title">
           <div className="pl2-editorial-bg" style={{ transform: `translate3d(0, ${parallaxBandY}px, 0)` }}>
             <img src={P.parallaxStrip} alt="" width={2000} height={1125} />
             <div className="pl2-editorial-scrim" />
@@ -208,7 +221,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-section" id="como-funciona" aria-labelledby="pl2-how-title">
+        <section className="pl2-section" id="como-funciona" data-pl2-reveal aria-labelledby="pl2-how-title">
           <div className="pl2-container">
             <header className="pl2-section-head pl2-section-head--center">
               <p className="pl2-eyebrow">Cuatro pasos</p>
@@ -257,7 +270,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-zigzag" aria-labelledby="pl2-features-title">
+        <section className="pl2-zigzag" data-pl2-reveal aria-labelledby="pl2-features-title">
           <div className="pl2-container">
             <header className="pl2-section-head pl2-section-head--center">
               <p className="pl2-eyebrow">Por qué elegirnos</p>
@@ -284,7 +297,12 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-section pl2-section--pricing" id="precios" aria-labelledby="pl2-pricing-title">
+        <section
+          className="pl2-section pl2-section--pricing"
+          id="precios"
+          data-pl2-reveal
+          aria-labelledby="pl2-pricing-title"
+        >
           <div className="pl2-container">
             <header className="pl2-section-head pl2-section-head--center">
               <p className="pl2-eyebrow">Precios transparentes</p>
@@ -390,7 +408,42 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-section pl2-section--testimonials" aria-labelledby="pl2-testimonials-title">
+        <section className="pl2-pro-banner-wrap" id="portal-profesionales" data-pl2-reveal aria-labelledby="pl2-pro-cta-title">
+          <div className="pl2-container">
+            <div className="pl2-pro-banner">
+              <div className="pl2-pro-banner__main">
+                <span className="pl2-pro-banner__icon" aria-hidden="true">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="11" y="6" width="26" height="34" rx="3.5" stroke="currentColor" strokeWidth="2.2" />
+                    <path d="M17 15h14M17 22h14M17 29h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    <circle cx="34" cy="34" r="9" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.6" />
+                    <path
+                      d="M34 30v5M31 32.5h6"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                <div className="pl2-pro-banner__copy">
+                  <p className="pl2-pro-banner__kicker">¿Sos parte del equipo?</p>
+                  <h2 id="pl2-pro-cta-title">Si sos psicólogo/a, entrá acá</h2>
+                  <p className="pl2-pro-banner__lead">
+                    Gestioná agenda, videollamadas y pacientes en un solo lugar. Sumate al portal de profesionales MotivarCare.
+                  </p>
+                </div>
+              </div>
+              <div className="pl2-pro-banner__action">
+                <a className="pl2-btn pl2-btn--pro-banner" href={PROFESSIONAL_PORTAL_URL} target="_blank" rel="noreferrer">
+                  Ir al portal de profesionales
+                  <span aria-hidden="true"> →</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="pl2-section pl2-section--testimonials" data-pl2-reveal aria-labelledby="pl2-testimonials-title">
           <div className="pl2-container">
             <header className="pl2-section-head pl2-section-head--center">
               <p className="pl2-eyebrow">Experiencias</p>
@@ -427,7 +480,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-cta-final" aria-labelledby="pl2-final-cta-title">
+        <section className="pl2-cta-final" data-pl2-reveal aria-labelledby="pl2-final-cta-title">
           <div className="pl2-cta-bg" style={{ transform: `translate3d(0, ${scrollY * 0.1}px, 0) scale(1.05)` }}>
             <img src={P.mediterranean} alt="" width={2000} height={1125} />
             <div className="pl2-cta-scrim" />
@@ -441,7 +494,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pl2-section" id="faq" aria-labelledby="pl2-faq-title">
+        <section className="pl2-section" id="faq" data-pl2-reveal aria-labelledby="pl2-faq-title">
           <div className="pl2-container">
             <header className="pl2-section-head pl2-section-head--center">
               <p className="pl2-eyebrow">Dudas comunes</p>

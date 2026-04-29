@@ -386,11 +386,24 @@ function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
   };
 }
 
-export function DashboardGuidedTour(props: { language: AppLanguage; sessionUserId: string | null }) {
+export function DashboardGuidedTour(props: {
+  language: AppLanguage;
+  sessionUserId: string | null;
+  /**
+   * Mientras hay modales que deben resolverse primero (p. ej. elegir profesional),
+   * no arrancamos el tour: evita dos capas dialog superpuestas con driver.js.
+   */
+  suppressTour?: boolean;
+}) {
   const driverInstanceRef = useRef<ReturnType<typeof driver> | null>(null);
 
   useEffect(() => {
     if (!props.sessionUserId) {
+      return;
+    }
+    if (props.suppressTour) {
+      driverInstanceRef.current?.destroy();
+      driverInstanceRef.current = null;
       return;
     }
     const storageKey = tourStorageKey(props.sessionUserId);
@@ -426,7 +439,7 @@ export function DashboardGuidedTour(props: { language: AppLanguage; sessionUserI
       driverInstanceRef.current?.destroy();
       driverInstanceRef.current = null;
     };
-  }, [props.language, props.sessionUserId]);
+  }, [props.language, props.sessionUserId, props.suppressTour]);
 
   return null;
 }

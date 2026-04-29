@@ -4,7 +4,7 @@ const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).en
 
 const API_BASE = viteEnv.VITE_API_URL?.trim() || "http://localhost:4000";
 
-/** Sin barra final. En prod default: subdominios Vercel alineados a DEPLOY.md; sobreescribí con VITE_* en build. */
+/** Sin barra final. En prod default: dominios canónicos; sobreescribí con VITE_* en build si hace falta. */
 function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: string): string {
   const trimmed = explicit?.trim();
   const raw = trimmed && trimmed.length > 0 ? trimmed : import.meta.env.DEV ? devUrl : prodDefault;
@@ -14,7 +14,7 @@ function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: st
 const PROFESSIONAL_PORTAL_URL = portalUrl(
   viteEnv.VITE_PROFESSIONAL_PORTAL_URL,
   "http://localhost:5174",
-  "https://motivarcare-professional.vercel.app"
+  "https://pro.motivarcare.com"
 );
 
 const localProfessionalHeroImage = "/images/professional-hero.jpg";

@@ -26,6 +26,12 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--pl2-font);
@@ -47,6 +53,31 @@ a {
 
 .pl2-page {
   min-height: 100vh;
+}
+
+/*
+ * Scroll storytelling ligero: bloques revelados al entrar en vista (ver useRevealOnScroll).
+ * El hero queda fijo arriba sin reveal para no tocar LCP.
+ */
+[data-pl2-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 36px, 0);
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-pl2-reveal].pl2-reveal--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pl2-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .pl2-container {
@@ -87,6 +118,15 @@ a {
   width: auto;
 }
 
+/* Sobre el hero oscuro el PNG del wordmark (tinta oscura) no se ve: lo pasamos a blanco. Al hacer scroll, header claro → logo original. */
+.pl2-header--airy .pl2-logo img {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35));
+}
+
+.pl2-header--solid .pl2-logo img {
+  filter: none;
+}
+
 .pl2-nav {
   display: none;
   gap: 1.75rem;
@@ -95,13 +135,27 @@ a {
   color: var(--pl2-muted);
 }
 
+.pl2-header--airy .pl2-nav {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+
 .pl2-nav a {
   text-decoration: none;
   transition: color 0.15s;
 }
 
+.pl2-header--airy .pl2-nav a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .pl2-nav a:hover {
   color: var(--pl2-violet);
+}
+
+/* Más específico que .pl2-nav a:hover: enlaces claros sobre el hero. */
+.pl2-header--airy .pl2-nav a:hover {
+  color: #fff;
 }
 
 @media (min-width: 880px) {
@@ -355,6 +409,148 @@ a {
 
 .pl2-section--testimonials {
   background: var(--pl2-paper);
+}
+
+/* CTA profesionales (después de precios) */
+.pl2-pro-banner-wrap {
+  position: relative;
+  padding: clamp(2.25rem, 5vw, 3.25rem) 0;
+  scroll-margin-top: 80px;
+  background: linear-gradient(125deg, #2c2468 0%, var(--pl2-violet-2) 38%, var(--pl2-violet) 100%);
+  overflow: hidden;
+}
+
+.pl2-pro-banner-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 100% -10%, rgba(255, 252, 247, 0.22), transparent 52%),
+    radial-gradient(ellipse 50% 45% at 0% 100%, rgba(94, 234, 212, 0.12), transparent 48%);
+  pointer-events: none;
+}
+
+.pl2-pro-banner-wrap::after {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.pl2-pro-banner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+@media (min-width: 840px) {
+  .pl2-pro-banner {
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+  }
+}
+
+.pl2-pro-banner__main {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.pl2-pro-banner__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.14);
+  border: 1px solid rgba(255, 252, 247, 0.28);
+  color: rgba(255, 252, 247, 0.95);
+}
+
+@media (min-width: 520px) {
+  .pl2-pro-banner__icon {
+    width: 3.75rem;
+    height: 3.75rem;
+    border-radius: 16px;
+  }
+
+  .pl2-pro-banner__icon svg {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+.pl2-pro-banner__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 252, 247, 0.72);
+}
+
+.pl2-pro-banner__copy h2 {
+  margin: 0 0 0.65rem;
+  font-family: var(--pl2-display);
+  font-size: clamp(1.45rem, 2vw + 1rem, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fffcf7;
+}
+
+.pl2-pro-banner__lead {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: rgba(255, 252, 247, 0.88);
+}
+
+.pl2-pro-banner__action {
+  justify-self: stretch;
+}
+
+@media (min-width: 840px) {
+  .pl2-pro-banner__action {
+    justify-self: end;
+  }
+}
+
+.pl2-btn--pro-banner {
+  width: 100%;
+  justify-content: center;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+  background: #fffcf7;
+  color: var(--pl2-violet-2);
+  border: 2px solid rgba(255, 252, 247, 0.95);
+  box-shadow: 0 14px 44px rgba(26, 22, 40, 0.35);
+}
+
+.pl2-btn--pro-banner:hover {
+  background: #fff;
+  color: var(--pl2-violet-2);
+  filter: brightness(1.02);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 52px rgba(26, 22, 40, 0.42);
+}
+
+@media (min-width: 840px) {
+  .pl2-btn--pro-banner {
+    width: auto;
+    min-width: 260px;
+  }
 }
 
 .pl2-eyebrow {
