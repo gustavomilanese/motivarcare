@@ -155,7 +155,6 @@ export function App() {
                 </div>
                 <div className="patient-ar-hero-panel-inner">
                   <p className="patient-ar-hero-panel-label">Tu próximo paso</p>
-                  <p className="patient-ar-hero-panel-title">Reservá hoy</p>
                   <p className="patient-ar-hero-panel-text">
                     Perfiles reales, disponibilidad visible y sesiones por videollamada en la plataforma.
                   </p>
