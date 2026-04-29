@@ -402,6 +402,36 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
   );
 }
 
+/**
+ * Cuando el backend incluye la misma lista de opciones en `content` y en `quickReplies`,
+ * el usuario ve viñetas duplicadas respecto a los botones. Quitamos líneas que coinciden
+ * con cada etiqueta de quick reply (con o sin guion/número/bullet).
+ */
+function stripDuplicateQuickReplyLines(content: string, quickReplies: string[]): string {
+  if (!quickReplies.length) {
+    return content;
+  }
+
+  const matchesReplyLine = (line: string): boolean => {
+    const raw = line.trim();
+    if (!raw) {
+      return false;
+    }
+    const withoutBullet = raw
+      .replace(/^[\s\u2022\u2023•\-\*]+/u, "")
+      .replace(/^\d{1,2}[\.\)]\s*/, "")
+      .trim();
+    return quickReplies.some((qr) => {
+      const q = qr.trim();
+      return raw === q || withoutBullet === q;
+    });
+  };
+
+  const lines = content.split(/\r?\n/);
+  const kept = lines.filter((line) => !matchesReplyLine(line));
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function MessageBubble({
   message,
   language,
@@ -415,6 +445,12 @@ function MessageBubble({
 }) {
   const isAssistant = message.role === "assistant";
   const quickReplies = isAssistant && message.quickReplies?.length ? message.quickReplies : null;
+  const stripped =
+    showQuickReplies && quickReplies?.length
+      ? stripDuplicateQuickReplyLines(message.content, quickReplies)
+      : message.content;
+  const displayContent = stripped.length > 0 ? stripped : message.content;
+
   return (
     <div
       className={`intake-chat-bubble intake-chat-bubble--${isAssistant ? "assistant" : "user"}${
@@ -426,7 +462,7 @@ function MessageBubble({
           ? textByLanguage(language, { es: "Asistente", en: "Assistant", pt: "Assistente" })
           : textByLanguage(language, { es: "Vos", en: "You", pt: "Você" })}
       </div>
-      <div className="intake-chat-bubble-content">{message.content}</div>
+      <div className="intake-chat-bubble-content">{displayContent}</div>
       {showQuickReplies && quickReplies && onQuickReply ? (
         <div className="intake-chat-quick-replies" role="group" aria-label={textByLanguage(language, {
           es: "Respuestas sugeridas",
