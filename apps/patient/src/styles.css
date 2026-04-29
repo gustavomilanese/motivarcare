@@ -13657,18 +13657,35 @@ button.sessions-balance {
   max-width: 640px;
 }
 
-/* Tour guiado (primer ingreso al dashboard) — driver.js + clase popoverClass */
+/* Tour guiado (primer ingreso al dashboard) — driver.js + Maca */
 .patient-guided-tour-popover.driver-popover {
-  max-width: min(420px, calc(100vw - 28px));
+  max-width: min(440px, calc(100vw - 28px));
   min-width: 280px;
-  padding: 18px 20px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  background: linear-gradient(165deg, #ffffff 0%, #faf8ff 48%, #f3effc 100%);
+  padding: 20px 22px 17px;
+  border-radius: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(167, 139, 250, 0.14) 0%, transparent 55%),
+    radial-gradient(90% 60% at 0% 100%, rgba(94, 234, 212, 0.09) 0%, transparent 50%),
+    linear-gradient(168deg, #ffffff 0%, #faf8ff 42%, #f4f0ff 100%);
   box-shadow:
-    0 28px 64px rgba(15, 23, 42, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+    0 28px 64px rgba(30, 27, 75, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.88) inset,
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
   color: #1e293b;
+}
+
+.patient-guided-tour-popover--maca.driver-popover::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(90deg, #5f44eb, #a78bfa, #34d399);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .patient-guided-tour-popover .driver-popover-title {
@@ -13750,5 +13767,141 @@ button.sessions-balance {
 .patient-guided-tour-popover .driver-popover-close-btn:focus {
   color: #475569 !important;
   background: rgba(148, 163, 184, 0.15) !important;
+}
+
+/* Contenido enriquecido del tour (Maca + listas) */
+.patient-tour-welcome-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.patient-tour-eyebrow {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f44eb;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.22), rgba(94, 234, 212, 0.14));
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.patient-tour-maca-hero {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.patient-tour-maca-hero__avatar {
+  flex-shrink: 0;
+  filter: drop-shadow(0 10px 22px rgba(95, 68, 235, 0.28));
+}
+
+.patient-tour-maca-svg--large {
+  display: block;
+}
+
+.patient-tour-welcome-h {
+  margin: 0 0 8px;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.patient-tour-maca-hero__hi {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.patient-tour-maca-hero__hi strong {
+  color: #5f44eb;
+  font-weight: 700;
+}
+
+.patient-tour-maca-hero__lead {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(15, 23, 42, 0.78);
+}
+
+.patient-tour-maca-hero__fine {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.patient-tour-sidebar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.patient-tour-maca-mini {
+  align-self: flex-start;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.1);
+}
+
+.patient-tour-maca-svg--small {
+  display: block;
+}
+
+.patient-tour-sidebar-intro {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.patient-tour-menu-hints {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(30, 41, 59, 0.88);
+}
+
+.patient-tour-menu-hints li {
+  padding-left: 2px;
+}
+
+.patient-tour-menu-hints li::marker {
+  color: #a78bfa;
+}
+
+.patient-tour-menu-hints strong {
+  color: #5f44eb;
+  font-weight: 700;
+}
+
+@media (max-width: 420px) {
+  .patient-tour-maca-hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .patient-tour-eyebrow {
+    align-self: center;
+  }
+
+  .patient-tour-maca-mini {
+    align-self: center;
+  }
 }
 

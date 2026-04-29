@@ -7,6 +7,121 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+/** SVG compacto de Maca (asistente); gradiente violeta, sin asset externo. */
+function macaAvatarSvg(size: "large" | "small"): string {
+  const dim = size === "large" ? 72 : 44;
+  const uid = `maca-${size}-${Math.random().toString(36).slice(2, 9)}`;
+  return `
+<svg class="patient-tour-maca-svg patient-tour-maca-svg--${size}" width="${dim}" height="${dim}" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="${uid}-g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5f44eb"/>
+    </linearGradient>
+    <filter id="${uid}-s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <circle cx="32" cy="34" r="26" fill="url(#${uid}-g)" filter="url(#${uid}-s)"/>
+  <ellipse cx="32" cy="30" rx="18" ry="16" fill="rgba(255,255,255,0.22)"/>
+  <ellipse cx="24" cy="28" rx="4.5" ry="5.5" fill="#fff"/>
+  <ellipse cx="40" cy="28" rx="4.5" ry="5.5" fill="#fff"/>
+  <ellipse cx="24" cy="29" rx="2" ry="2.5" fill="#3730a3"/>
+  <ellipse cx="40" cy="29" rx="2" ry="2.5" fill="#3730a3"/>
+  <path d="M26 38 Q32 44 38 38" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+  <ellipse cx="32" cy="48" rx="6" ry="3" fill="rgba(255,255,255,0.35)"/>
+</svg>`.trim();
+}
+
+function welcomeInjectHtml(language: AppLanguage): string {
+  return `
+<div class="patient-tour-welcome-shell">
+  <span class="patient-tour-eyebrow">${t(language, {
+    es: "Tour guiado",
+    en: "Guided tour",
+    pt: "Tour guiado"
+  })}</span>
+  <div class="patient-tour-maca-hero">
+    <div class="patient-tour-maca-hero__avatar" aria-hidden="true">${macaAvatarSvg("large")}</div>
+    <div class="patient-tour-maca-hero__copy">
+      <h2 class="patient-tour-welcome-h">${t(language, {
+        es: "Un tour con Maca",
+        en: "A tour with Maca",
+        pt: "Um tour com a Maca"
+      })}</h2>
+      <p class="patient-tour-maca-hero__hi">${t(language, {
+        es: "¡Hola! Yo soy <strong>Maca</strong> y te acompaño en esto.",
+        en: "Hi! I'm <strong>Maca</strong> and I'll walk you through this.",
+        pt: "Ola! Eu sou a <strong>Maca</strong> e vou te acompanhar."
+      })}</p>
+      <p class="patient-tour-maca-hero__lead">${t(language, {
+        es: "Te voy a ayudar a conocer la funcionalidad del portal: en pocos pasos te mostramos el menú, el resumen, tus reservas y dónde encontrarme. Sin prisa, con buena onda.",
+        en: "I'll help you get to know the portal: a few quick steps for the menu, your overview, bookings, and where to find me. No rush, just good vibes.",
+        pt: "Vou te ajudar a conhecer o portal: em poucos passos mostramos o menu, o resumo, as reservas e onde me achar. Sem pressa."
+      })}</p>
+      <p class="patient-tour-maca-hero__fine">${t(language, {
+        es: "Podés saltear cuando quieras con la × arriba a la derecha.",
+        en: "You can skip anytime with the × at the top right.",
+        pt: "Voce pode pular quando quiser com o × no canto superior direito."
+      })}</p>
+    </div>
+  </div>
+</div>`.trim();
+}
+
+function sidebarMenuHtml(language: AppLanguage): string {
+  const items: LocalizedText[] = [
+    {
+      es: "<strong>Inicio</strong> — tu panel y resumen",
+      en: "<strong>Home</strong> — your dashboard snapshot",
+      pt: "<strong>Inicio</strong> — seu painel e resumo"
+    },
+    {
+      es: "<strong>Sesiones</strong> — reservar y ver turnos",
+      en: "<strong>Sessions</strong> — book and manage slots",
+      pt: "<strong>Sessoes</strong> — agendar e ver horarios"
+    },
+    {
+      es: "<strong>Profesionales</strong> — explorar el equipo",
+      en: "<strong>Professionals</strong> — browse the team",
+      pt: "<strong>Profissionais</strong> — conhecer a equipe"
+    },
+    {
+      es: "<strong>Notas</strong> — lecturas útiles",
+      en: "<strong>Articles</strong> — helpful reads",
+      pt: "<strong>Notas</strong> — leituras uteis"
+    },
+    {
+      es: "<strong>Ejercicios</strong> — recursos entre sesión y sesión",
+      en: "<strong>Exercises</strong> — resources between sessions",
+      pt: "<strong>Exercicios</strong> — recursos entre sessoes"
+    },
+    {
+      es: "<strong>Música relajante</strong> — sonidos para acompañarte",
+      en: "<strong>Relaxing music</strong> — sounds to unwind",
+      pt: "<strong>Musica relaxante</strong> — sons para relaxar"
+    },
+    {
+      es: "<strong>Chat</strong> — mensajes con tu equipo",
+      en: "<strong>Chat</strong> — message your team",
+      pt: "<strong>Chat</strong> — mensagens com a equipe"
+    }
+  ];
+  const intro = t(language, {
+    es: "Cada ítem te lleva a un lugar distinto. En una línea:",
+    en: "Each item takes you somewhere new. In one line each:",
+    pt: "Cada item leva a um lugar. Em uma linha:"
+  });
+  const lis = items.map((text) => `<li>${t(language, text)}</li>`).join("");
+  return `
+<div class="patient-tour-sidebar-wrap">
+  <div class="patient-tour-maca-mini" aria-hidden="true">${macaAvatarSvg("small")}</div>
+  <p class="patient-tour-sidebar-intro">${intro}</p>
+  <ul class="patient-tour-menu-hints">${lis}</ul>
+</div>`.trim();
+}
+
 function isVisible(el: Element | null): el is HTMLElement {
   if (!el || !(el instanceof HTMLElement)) {
     return false;
@@ -38,16 +153,8 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
 
   steps.push({
     popover: {
-      title: t(language, {
-        es: "Te damos la bienvenida",
-        en: "Welcome",
-        pt: "Boas-vindas"
-      }),
-      description: t(language, {
-        es: "En menos de un minuto te mostramos las funciones clave del portal: navegación, resumen, reservas y Maca, tu asistente. Podés cerrar el tour cuando quieras con la X.",
-        en: "In under a minute we will show you the main areas of the portal: navigation, overview, bookings, and Maca, your assistant. You can close the tour anytime with the X.",
-        pt: "Em menos de um minuto mostramos as areas principais do portal: navegacao, resumo, reservas e Maca, sua assistente. Voce pode fechar o tour a qualquer momento com o X."
-      }),
+      title: "",
+      description: welcomeInjectHtml(language),
       side: "over",
       align: "center"
     }
@@ -58,15 +165,11 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
       element: '[data-tour="patient-tour-sidebar"]',
       popover: {
         title: t(language, {
-          es: "Tu menú principal",
-          en: "Main menu",
-          pt: "Menu principal"
+          es: "Tu menú lateral",
+          en: "Side menu",
+          pt: "Menu lateral"
         }),
-        description: t(language, {
-          es: "Desde acá accedés a Inicio, Sesiones, Profesionales, notas útiles, ejercicios, música relajante y el chat con tu equipo.",
-          en: "From here you can open Home, Sessions, Professionals, articles, exercises, relaxing music, and chat with your care team.",
-          pt: "Daqui voce acessa Inicio, Sessoes, Profissionais, notas, exercicios, musica relaxante e o chat com sua equipe."
-        }),
+        description: sidebarMenuHtml(language),
         side: "right",
         align: "start"
       }
@@ -87,9 +190,9 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
           pt: "Seu espaco inicial"
         }),
         description: t(language, {
-          es: "Acá encontrás el resumen del portal y, si ya tenés un plan activo, el acceso para adquirir nuevas sesiones.",
-          en: "Here you see a summary of the portal and, if you already have an active plan, a shortcut to buy more sessions.",
-          pt: "Aqui voce ve um resumo do portal e, se ja tiver um plano ativo, o atalho para comprar novas sessoes."
+          es: "Acá está el corazón del panel: mensaje de bienvenida y, si ya tenés plan activo, el atajo para sumar sesiones. Como ves, todo queda cerca.",
+          en: "This is the heart of the dashboard: welcome copy and, if you already have an active plan, a shortcut to add sessions — everything stays close at hand.",
+          pt: "Aqui esta o coracao do painel: mensagem de boas-vindas e, se ja tiver plano ativo, o atalho para mais sessoes."
         }),
         side: "left",
         align: "start"
@@ -107,9 +210,9 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
           pt: "Sessao de teste"
         }),
         description: t(language, {
-          es: "Cuando corresponda, este bloque te ayuda a reservar o modificar tu primera sesión de prueba con un profesional.",
-          en: "When relevant, this block helps you book or change your first trial session with a professional.",
-          pt: "Quando aplicavel, este bloco ajuda a agendar ou alterar sua primeira sessao de teste."
+          es: "Cuando toca, este bloque te avisa y te ayuda a reservar o cambiar tu primera sesión. Sin estrés: lo ves cuando aplica.",
+          en: "When it matters, this block nudges you to book or tweak your first session. No stress — it shows up when it applies.",
+          pt: "Quando for o caso, este bloco lembra de agendar ou ajustar sua primeira sessao."
         }),
         side: "bottom",
         align: "center"
@@ -124,14 +227,14 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
       element: '[data-tour="patient-tour-kpis"]',
       popover: {
         title: t(language, {
-          es: "Resumen en un vistazo",
-          en: "At-a-glance summary",
-          pt: "Resumo rapido"
+          es: "Tres miradas rápidas",
+          en: "Three quick views",
+          pt: "Tres visoes rapidas"
         }),
         description: t(language, {
-          es: "Sesiones confirmadas, créditos disponibles y tu profesional activo. Podés tocar cada tarjeta para ir a reservar o ver la ficha.",
-          en: "Confirmed sessions, available credits, and your active professional. Tap each card to book or open their profile.",
-          pt: "Sessoes confirmadas, creditos disponiveis e seu profissional ativo. Toque cada cartao para reservar ou ver a ficha."
+          es: "Confirmadas, créditos y profesional activo: tocás y saltás directo a lo que necesitás.",
+          en: "Confirmed sessions, credits, and your active pro — tap and jump straight to what you need.",
+          pt: "Confirmadas, creditos e profissional ativo: toque e va direto ao que precisa."
         }),
         side: "bottom",
         align: "center"
@@ -142,14 +245,14 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
       element: '[data-tour="patient-tour-rn-toolbar"]',
       popover: {
         title: t(language, {
-          es: "Saldo y agenda rápida",
-          en: "Balance and quick booking",
-          pt: "Saldo e agenda rapida"
+          es: "Saldo y un toque para agendar",
+          en: "Balance & quick book",
+          pt: "Saldo e agendar rapido"
         }),
         description: t(language, {
-          es: "Acá ves cuántas sesiones tenés disponibles y el botón para elegir fecha con tu profesional.",
-          en: "Here you see how many sessions you have left and the button to pick a time with your professional.",
-          pt: "Aqui voce ve quantas sessoes tem disponiveis e o botao para escolher horario com seu profissional."
+          es: "Tu saldo de sesiones bien visible y el botón + para elegir fecha con tu profesional. Simple.",
+          en: "Your session balance front and center, plus the + button to pick a time with your professional. Simple.",
+          pt: "Seu saldo em destaque e o botao + para escolher horario. Simples."
         }),
         side: "bottom",
         align: "center"
@@ -172,9 +275,9 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
           pt: "Proximas reservas"
         }),
         description: t(language, {
-          es: "Listado de tus sesiones confirmadas. Podés abrir cada una para ver detalle, reprogramar cuando aplique o prepararte para la videollamada.",
-          en: "Your confirmed sessions. Open any row for details, reschedule when allowed, or get ready for the video call.",
-          pt: "Suas sessoes confirmadas. Abra cada uma para detalhes, reagendar quando possivel ou se preparar para a videochamada."
+          es: "Tu agenda confirmada en limpio: abrís una fila y ves detalle o reprogramás si el horario lo permite.",
+          en: "Your confirmed sessions at a glance — open a row for details or reschedule when allowed.",
+          pt: "Sua agenda confirmada: abra uma linha para detalhes ou reagendar quando der."
         }),
         side: "top",
         align: "center"
@@ -187,14 +290,14 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
       element: '[data-tour="patient-tour-maca"]',
       popover: {
         title: t(language, {
-          es: "Maca, tu asistente",
-          en: "Maca, your assistant",
-          pt: "Maca, sua assistente"
+          es: "¡Acá estoy yo!",
+          en: "Here I am!",
+          pt: "Aqui estou eu!"
         }),
         description: t(language, {
-          es: "En cualquier momento podés abrir este botón para conversar con Maca: apoyo entre sesiones, recordatorios y buenas prácticas. Siempre está a mano.",
-          en: "Anytime you can open this button to chat with Maca: support between sessions, reminders, and helpful tips. It is always one tap away.",
-          pt: "A qualquer momento abra este botao para conversar com Maca: apoio entre sessoes, lembretes e dicas. Sempre a mao."
+          es: "Este soy yo en modo botón: tocás y charlamos cuando quieras — entre sesión y sesión, un recordatorio o una duda. Siempre cerca.",
+          en: "That's me as a button — tap anytime to chat between sessions: reminders, doubts, or a little support. Always nearby.",
+          pt: "Sou eu em modo botao: toque quando quiser entre sessoes — lembretes, duvidas. Sempre por perto."
         }),
         side: "top",
         align: "end"
@@ -213,28 +316,48 @@ function persistTourDone(storageKey: string): void {
   }
 }
 
+/** driver.js asigna texto plano; volvemos a aplicar HTML donde corresponde. */
+function applyStepRichContent(popover: {
+  title: HTMLElement;
+  description: HTMLElement;
+}, step: { popover?: { title?: string; description?: string } } | undefined): void {
+  const rawTitle = step?.popover?.title ?? "";
+  const rawDesc = step?.popover?.description ?? "";
+  if (!rawTitle.trim()) {
+    popover.title.style.display = "none";
+  } else {
+    popover.title.style.display = "";
+    if (rawTitle.includes("<")) {
+      popover.title.innerHTML = rawTitle;
+    }
+  }
+  if (rawDesc.includes("<")) {
+    popover.description.innerHTML = rawDesc;
+  }
+}
+
 function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
   return {
     animate: true,
     smoothScroll: true,
     allowClose: true,
-    overlayOpacity: 0.55,
-    overlayColor: "#0f172a",
+    overlayOpacity: 0.48,
+    overlayColor: "#1e1b4b",
     stagePadding: 10,
-    stageRadius: 14,
+    stageRadius: 16,
     disableActiveInteraction: true,
     allowKeyboardControl: true,
-    popoverClass: "patient-guided-tour-popover",
+    popoverClass: "patient-guided-tour-popover patient-guided-tour-popover--maca",
     showProgress: true,
     progressText: t(language, {
-      es: "{{current}} de {{total}}",
-      en: "{{current}} of {{total}}",
-      pt: "{{current}} de {{total}}"
+      es: "{{current}} / {{total}} pasos",
+      en: "{{current}} / {{total}} steps",
+      pt: "{{current}} / {{total}} passos"
     }),
     nextBtnText: t(language, {
-      es: "Siguiente",
+      es: "Dale",
       en: "Next",
-      pt: "Proximo"
+      pt: "Seguir"
     }),
     prevBtnText: t(language, {
       es: "Atrás",
@@ -242,11 +365,21 @@ function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
       pt: "Voltar"
     }),
     doneBtnText: t(language, {
-      es: "Listo",
-      en: "Done",
-      pt: "Pronto"
+      es: "¡Listo!",
+      en: "Done!",
+      pt: "Pronto!"
     }),
     showButtons: ["next", "previous", "close"],
+    onPopoverRender: (popover, opts) => {
+      const step = opts.driver.getActiveStep();
+      applyStepRichContent(popover, step);
+    },
+    onHighlighted: (_element, step, opts) => {
+      const popover = opts.state.popover;
+      if (popover) {
+        applyStepRichContent(popover, step);
+      }
+    },
     onDestroyed: () => {
       persistTourDone(storageKey);
     }
