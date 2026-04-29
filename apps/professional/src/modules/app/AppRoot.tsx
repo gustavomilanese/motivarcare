@@ -123,6 +123,14 @@ function clearCalendarOnboardingPending(): void {
   }
 }
 
+const PRO_AUTH_ME_SYNC_TIMEOUT_MS = 45_000;
+
+function rejectAfterMs(ms: number, message: string): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(message)), ms);
+  });
+}
+
 export function App() {
   restoreProfessionalPortalAfterCalendarOAuth();
 
@@ -318,20 +326,23 @@ export function App() {
 
     const syncAuthState = async () => {
       try {
-        const response = await apiRequest<{
-          user: {
-            id: string;
-            fullName: string;
-            firstName?: string;
-            lastName?: string;
-            email: string;
-            role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
-            emailVerified: boolean;
-            professionalProfileId: string | null;
-            avatarUrl?: string | null;
-          };
-          emailVerificationRequired: boolean;
-        }>("/api/auth/me", token);
+        const response = await Promise.race([
+          apiRequest<{
+            user: {
+              id: string;
+              fullName: string;
+              firstName?: string;
+              lastName?: string;
+              email: string;
+              role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+              emailVerified: boolean;
+              professionalProfileId: string | null;
+              avatarUrl?: string | null;
+            };
+            emailVerificationRequired: boolean;
+          }>("/api/auth/me", token),
+          rejectAfterMs(PRO_AUTH_ME_SYNC_TIMEOUT_MS, "Professional auth sync timed out waiting for API")
+        ]);
 
         if (cancelled) {
           return;
@@ -372,7 +383,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   useEffect(() => {
     if (!pendingOnboardingSync || !token || !user?.professionalProfileId) {

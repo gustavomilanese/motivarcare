@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchLandingSessionPackages,
   formatPackageMoney,
   publicApiBase,
   type LandingSessionPackageRow
 } from "./fetchLandingSessionPackages";
+import {
+  fetchLandingWebContent,
+  resolveReviewAvatarUrl,
+  type LandingWebReview
+} from "./fetchLandingWebContent";
 import { useScrollY } from "./useScrollMotion";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
@@ -27,11 +32,9 @@ const PROFESSIONAL_PORTAL_URL = portalUrl(
   "https://pro.motivarcare.com"
 );
 
-/** Fotos en public/photos: 15 = hero; 13 = banda editorial/parallax (v1). */
+/** Fotos en public/photos: 15 = hero (v1). */
 const P = {
   hero: "/photos/15-hero-trabajo-remoto-playa.jpg",
-  parallaxStrip: "/photos/13-hero-panoramico.jpg",
-  deskPanel: "/photos/03-escritorio-atardecer.jpg",
   studioMist: "/photos/04-estudio-montanas-niebla.jpg",
   mediterranean: "/photos/05-panorama-mediterraneo.jpg",
   podsOffice: "/photos/06-pods-oficina-premium.jpg",
@@ -43,10 +46,36 @@ const P = {
   mountainBalcony: "/photos/12-montanas-balcon-trabajo.jpg"
 } as const;
 
+/** Respaldo si el API no responde o Admin no cargó reseñas (misma forma que `/api/public/web-content`). */
+const FALLBACK_LANDING_REVIEWS: LandingWebReview[] = [
+  {
+    id: "fallback-ba",
+    name: "María",
+    role: "Paciente",
+    relativeDate: "hace 2 semanas",
+    text: "Pude comparar perfiles y reservar sin vueltas. La primera sesión me dio mucha claridad.",
+    rating: 5,
+    avatar: P.videoHome,
+    accent: "#6d56ff"
+  },
+  {
+    id: "fallback-cba",
+    name: "Lucas",
+    role: "Paciente",
+    relativeDate: "hace 1 mes",
+    text: "Ver precio y horarios antes de confirmar me dio confianza. Todo muy ordenado.",
+    rating: 5,
+    avatar: P.poolLaptop,
+    accent: "#6d56ff"
+  }
+];
+
 export function App() {
   const [catalogPackages, setCatalogPackages] = useState<LandingSessionPackageRow[]>([]);
   const [catalogFeaturedId, setCatalogFeaturedId] = useState<string | null>(null);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [landingReviews, setLandingReviews] = useState<LandingWebReview[]>(() => FALLBACK_LANDING_REVIEWS);
+  const quotesScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const base = publicApiBase();
@@ -82,10 +111,46 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const base = publicApiBase();
+    if (!base) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await fetchLandingWebContent(base);
+        if (!cancelled && Array.isArray(data.reviews) && data.reviews.length > 0) {
+          setLandingReviews(data.reviews);
+        }
+      } catch {
+        // Mantener FALLBACK_LANDING_REVIEWS
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const scrollLandingQuotes = useCallback((direction: "left" | "right") => {
+    const viewport = quotesScrollRef.current;
+    if (!viewport) {
+      return;
+    }
+    const card = viewport.querySelector(".patient-ar-quote-card");
+    const gap = 18;
+    const step =
+      card instanceof HTMLElement ? card.getBoundingClientRect().width + gap : Math.min(360, window.innerWidth * 0.88);
+    viewport.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth"
+    });
+  }, []);
+
   const scrollY = useScrollY();
   const heroShift = scrollY * 0.28;
-  const stripShift = scrollY * 0.12;
   const headerSolid = scrollY > 56;
+  const reviewApiBase = publicApiBase();
 
   return (
     <div className="patient-ar-page">
@@ -148,29 +213,6 @@ export function App() {
                 <li>Desde cualquier lugar</li>
               </ul>
             </div>
-            <div className="patient-ar-hero-panel-wrap">
-              <div className="patient-ar-hero-panel" aria-hidden="true">
-                <div className="patient-ar-hero-panel-visual">
-                  <img src={P.deskPanel} alt="" width={800} height={533} />
-                </div>
-                <div className="patient-ar-hero-panel-inner">
-                  <p className="patient-ar-hero-panel-label">Tu próximo paso</p>
-                  <p className="patient-ar-hero-panel-text">
-                    Perfiles reales, disponibilidad visible y sesiones por videollamada en la plataforma.
-                  </p>
-                  <div className="patient-ar-hero-stats">
-                    <div>
-                      <span className="patient-ar-stat-num">50′</span>
-                      <span className="patient-ar-stat-label">sesión</span>
-                    </div>
-                    <div>
-                      <span className="patient-ar-stat-num">100%</span>
-                      <span className="patient-ar-stat-label">online</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
           <a className="patient-ar-scroll-hint" href="#beneficios" aria-label="Seguir leyendo">
             <span className="patient-ar-scroll-hint-line" />
@@ -213,40 +255,38 @@ export function App() {
           </div>
         </section>
 
-        <section className="patient-ar-section patient-ar-section--muted" id="quienes-somos" aria-labelledby="about-title">
-          <div className="patient-ar-container patient-ar-about">
-            <figure className="patient-ar-about-figure">
-              <img src={P.terracesNomad} alt="Trabajo remoto con vista a terrazas y naturaleza" loading="lazy" width={900} height={600} />
-              <figcaption className="patient-ar-about-caption">Terapia que se adapta a tu día, no al revés.</figcaption>
-            </figure>
-            <div className="patient-ar-about-copy">
-              <p className="patient-ar-eyebrow">MotivarCare</p>
-              <h2 id="about-title">¿Quiénes somos?</h2>
-              <div className="patient-ar-prose">
-                <p>
-                  Nacimos para acercarte a un acompañamiento psicológico de calidad, sin barreras innecesarias: accesible, cercano
-                  y pensado para la vida real.
-                </p>
-                <p>
-                  Nuestro objetivo es que encuentres rápido a un profesional con el que te sientas cómodo/a y puedas empezar tu
-                  proceso sin vueltas. Apostamos a un enfoque humano y profesional, adaptado a lo que vos necesitás.
-                </p>
+        <section className="patient-ar-about-band" id="quienes-somos" aria-labelledby="about-title">
+          <div className="patient-ar-about-band__shell">
+            <img
+              className="patient-ar-about-band__img"
+              src={P.terracesNomad}
+              alt="Trabajo remoto con vista a terrazas y naturaleza"
+              loading="lazy"
+              width={900}
+              height={600}
+            />
+            <div className="patient-ar-about-band__scrim" aria-hidden="true" />
+            <div className="patient-ar-container patient-ar-about-band__inner">
+              <div className="patient-ar-about-band__copy">
+                <p className="patient-ar-eyebrow patient-ar-eyebrow--on-dark">MotivarCare</p>
+                <h2 id="about-title">¿Quiénes somos?</h2>
+                <p className="patient-ar-about-band__tagline">Terapia que se adapta a tu día, no al revés.</p>
+                <div className="patient-ar-prose patient-ar-prose--on-dark">
+                  <p>
+                    Nacimos para acercarte a un acompañamiento psicológico de calidad, sin barreras innecesarias: accesible, cercano
+                    y pensado para la vida real.
+                  </p>
+                  <p>
+                    Nuestro objetivo es que encuentres rápido a un profesional con el que te sientas cómodo/a y puedas empezar tu
+                    proceso sin vueltas. Apostamos a un enfoque humano y profesional, adaptado a lo que vos necesitás.
+                  </p>
+                </div>
+                <a className="patient-ar-btn patient-ar-btn--primary patient-ar-btn--inline" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                  Empezar en el portal
+                </a>
               </div>
-              <a className="patient-ar-btn patient-ar-btn--secondary patient-ar-btn--inline" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-                Empezar en el portal
-              </a>
             </div>
           </div>
-        </section>
-
-        <section className="patient-ar-parallax-strip" aria-hidden="true">
-          <div
-            className="patient-ar-parallax-strip-inner"
-            style={{ transform: `translate3d(0, ${stripShift * 0.4}px, 0) scale(1.08)` }}
-          >
-            <img src={P.parallaxStrip} alt="" width={2000} height={1125} />
-          </div>
-          <div className="patient-ar-parallax-strip-overlay" />
         </section>
 
         <section className="patient-ar-section" id="como-funciona" aria-labelledby="how-title">
@@ -377,34 +417,71 @@ export function App() {
 
         <section className="patient-ar-section patient-ar-section--quotes" aria-labelledby="quotes-title">
           <div className="patient-ar-container">
-            <h2 id="quotes-title" className="patient-ar-visually-hidden">
-              Voces de quienes usan terapia online
-            </h2>
-            <div className="patient-ar-quote-row">
-              <figure className="patient-ar-quote-card">
-                <blockquote>
-                  <p>“Pude comparar perfiles y reservar sin vueltas. La primera sesión me dio mucha claridad.”</p>
-                </blockquote>
-                <figcaption>
-                  <span className="patient-ar-quote-avatar" style={{ backgroundImage: `url(${P.videoHome})` }} aria-hidden="true" />
-                  <span>
-                    <strong>Paciente</strong>
-                    <span className="patient-ar-quote-meta">Buenos Aires</span>
-                  </span>
-                </figcaption>
-              </figure>
-              <figure className="patient-ar-quote-card">
-                <blockquote>
-                  <p>“Ver precio y horarios antes de confirmar me dio confianza. Todo muy ordenado.”</p>
-                </blockquote>
-                <figcaption>
-                  <span className="patient-ar-quote-avatar" style={{ backgroundImage: `url(${P.poolLaptop})` }} aria-hidden="true" />
-                  <span>
-                    <strong>Paciente</strong>
-                    <span className="patient-ar-quote-meta">Córdoba</span>
-                  </span>
-                </figcaption>
-              </figure>
+            <div className="patient-ar-quotes-head">
+              <div className="patient-ar-quotes-head-copy">
+                <p className="patient-ar-eyebrow">Experiencias</p>
+                <h2 id="quotes-title">Voces de quienes usan terapia online</h2>
+              </div>
+              {landingReviews.length > 1 ? (
+                <div className="patient-ar-quotes-nav" aria-label="Navegar opiniones">
+                  <button
+                    type="button"
+                    className="patient-ar-quote-nav-btn"
+                    onClick={() => scrollLandingQuotes("left")}
+                    aria-label="Opiniones anteriores"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    className="patient-ar-quote-nav-btn"
+                    onClick={() => scrollLandingQuotes("right")}
+                    aria-label="Opiniones siguientes"
+                  >
+                    →
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <div className="patient-ar-quotes-viewport" ref={quotesScrollRef}>
+              <div className="patient-ar-quote-track">
+                {landingReviews.map((review) => {
+                  const avatarSrc =
+                    reviewApiBase.length > 0
+                      ? resolveReviewAvatarUrl(review.avatar, reviewApiBase) || review.avatar
+                      : review.avatar;
+                  const borderAccent = (review.accent ?? "#6d56ff").trim();
+                  return (
+                    <figure
+                      key={review.id}
+                      className="patient-ar-quote-card"
+                      style={{ borderColor: `${borderAccent}33` }}
+                    >
+                      <div className="patient-ar-quote-rating" aria-label={`${review.rating} de 5 estrellas`}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <span key={i} className={i < review.rating ? "patient-ar-quote-star is-on" : "patient-ar-quote-star"}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <blockquote>
+                        <p>“{review.text}”</p>
+                      </blockquote>
+                      <figcaption>
+                        <span className="patient-ar-quote-avatar-wrap">
+                          <img className="patient-ar-quote-avatar-img" src={avatarSrc} alt="" loading="lazy" />
+                        </span>
+                        <span>
+                          <strong>{review.name}</strong>
+                          <span className="patient-ar-quote-meta">
+                            {review.role} · {review.relativeDate}
+                          </span>
+                        </span>
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>

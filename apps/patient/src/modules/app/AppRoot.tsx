@@ -1050,18 +1050,13 @@ export function App() {
         const deps = portalSyncDepsRef.current;
         const hasAuth =
           Boolean(String(deps.sessionId ?? "").trim()) && Boolean(deps.authToken);
-        const sameLoginAsBatch =
+        /** Misma sesión que el batch (evita desbloquear con respuesta vieja tras logout rápido). Sin comparar epoch: evita quedar colgados si Strict Mode / resync mueve el epoch pero el login es el mismo. */
+        const stillSameSession =
           attemptedSync
           && Boolean(sid && tokenSnapshot)
           && String(deps.sessionId ?? "") === String(sid)
           && deps.authToken === tokenSnapshot;
-        if (
-          hasAuth
-          && (
-            batchEpoch === portalSyncEpochRef.current
-            || sameLoginAsBatch
-          )
-        ) {
+        if (hasAuth && stillSameSession) {
           setProfileSyncReady(true);
         }
       }
