@@ -46,6 +46,8 @@ export interface AuthResponse {
   verificationEmailSent?: boolean;
 }
 
+export type PracticeHealthVariant = "strong" | "balanced" | "growth";
+
 export interface DashboardResponse {
   kpis: {
     activePatients: number;
@@ -55,6 +57,17 @@ export interface DashboardResponse {
     hoursAvailable: number;
     weeklySessions: number;
     pendingPayoutCents: number;
+  };
+  /** Presente desde API extendida; si falta, el dashboard oculta el bloque. */
+  patientStatusCounts?: {
+    active: number;
+    pause: number;
+    cancelled: number;
+    trial: number;
+  };
+  practiceHealth?: {
+    variant: PracticeHealthVariant;
+    items: Array<{ id: string; ok: boolean }>;
   };
   /** Sesiones COMPLETED con filas en finance: precios efectivos por paquete / lista. */
   revenueStats: {
@@ -67,6 +80,14 @@ export interface DashboardResponse {
       to: string;
       allTime: boolean;
     };
+    /** Desglose por moneda de registro (centavos en cada moneda; no sumar entre filas). */
+    byCurrency?: Array<{
+      currency: string;
+      grossCents: number;
+      platformFeeCents: number;
+      professionalNetCents: number;
+      completedSessions: number;
+    }>;
   };
   trialSession: {
     id: string;
@@ -127,6 +148,35 @@ export interface PatientsResponse {
   }>;
 }
 
+export interface PatientDetailResponse {
+  patient: {
+    patientId: string;
+    patientName: string;
+    patientEmail: string;
+    avatarUrl?: string | null;
+    totalSessions: number;
+    completedSessions: number;
+    cancelledSessions: number;
+    daysSinceLastSession: number;
+    status: "active" | "pause" | "cancelled" | "trial";
+    firstSessionAt: string | null;
+    lastCompletedSessionAt: string | null;
+    /** Neto y sesiones liquidadas por moneda (sin mezclar centavos entre monedas). */
+    lifetimeTotals?: Array<{ currency: string; netCents: number; sessions: number }>;
+  };
+  paymentMovements: Array<{
+    bookingId: string;
+    patientName: string;
+    startsAt: string;
+    completedAt: string | null;
+    grossCents: number;
+    platformFeeCents: number;
+    amountCents: number;
+    status: string;
+    currency: string;
+  }>;
+}
+
 export interface EarningsResponse {
   summary: {
     grossCents: number;
@@ -143,6 +193,21 @@ export interface EarningsResponse {
     currentPeriodSessions: number;
     sessionFeeCents: number;
   };
+  /** Período actual: totales por moneda de registro. */
+  summaryByCurrency?: Array<{
+    currency: string;
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    sessions: number;
+    averageNetPerSessionCents: number;
+  }>;
+  /** Histórico completo por moneda. */
+  lifetimeByCurrency?: Array<{
+    currency: string;
+    professionalNetCents: number;
+    sessions: number;
+  }>;
   range: {
     from: string | null;
     to: string;
@@ -156,6 +221,7 @@ export interface EarningsResponse {
     platformFeeCents: number;
     amountCents: number;
     status: string;
+    currency: string;
   }>;
 }
 

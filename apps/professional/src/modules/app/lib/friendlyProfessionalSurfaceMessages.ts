@@ -120,6 +120,7 @@ export type ProfessionalSurfaceContext =
   | "profile-image-size"
   | "profile-image-read"
   | "patients-load"
+  | "patient-detail-load"
   | "income-load"
   | "dashboard-load"
   | "dashboard-reschedule-availability"
@@ -248,6 +249,11 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     es: "La lista de pacientes no cargó. Actualizá la pantalla o probá de nuevo cuando tengas mejor señal.",
     en: "Patients list didn’t load. Refresh or try again with a better connection.",
     pt: "A lista de pacientes nao carregou. Atualize ou tente com melhor sinal."
+  },
+  "patient-detail-load": {
+    es: "No pudimos cargar la ficha de este paciente. Volvé a la lista o intentá de nuevo.",
+    en: "We couldn’t load this patient’s details. Go back to the list or try again.",
+    pt: "Nao foi possivel carregar a ficha deste paciente. Volte a lista ou tente de novo."
   },
   "income-load": {
     es: "No pudimos mostrar tus ingresos aún. Reintentá más tarde o revisá filtros de fechas.",

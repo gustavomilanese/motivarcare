@@ -10756,3 +10756,283 @@ button:disabled {
   color: #7a5e0d;
   line-height: 1.45;
 }
+
+/* ——— Practice health + patient list / detail (fases A–B) ——— */
+.pro-practice-health {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.pro-practice-health-head h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.pro-practice-health-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.pro-practice-health-dots {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.pro-practice-health-dot-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(100%, 220px);
+  font-size: 13px;
+  color: #334155;
+}
+
+.pro-practice-health-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pro-practice-health-dot--ok {
+  background: #16a34a;
+  color: #fff;
+}
+
+.pro-practice-health-dot--warn {
+  background: #e2e8f0;
+  color: #c2410c;
+  border: 1px solid #cbd5e1;
+}
+
+.pro-patient-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pro-patient-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.pro-patient-status-pill strong {
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.pro-patient-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.pro-patient-filter-chip {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pro-patient-filter-chip--active {
+  background: #0b57d0;
+  color: #fff;
+  border-color: #0b57d0;
+}
+
+.pro-list--patients li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.pro-patient-row-hit {
+  flex: 1;
+  min-width: min(100%, 260px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.pro-patient-chat-btn {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.pro-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.pro-status-pill--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pro-status-pill--trial {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.pro-status-pill--pause {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.pro-status-pill--cancelled {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.pro-link-back {
+  border: none;
+  background: none;
+  color: #0b57d0;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 0 12px;
+  font-size: 14px;
+}
+
+.pro-patient-detail-page .pro-patient-detail-header {
+  margin-bottom: 8px;
+}
+
+.pro-patient-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pro-patient-avatar--large {
+  width: 72px;
+  height: 72px;
+}
+
+.pro-patient-detail-hero h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.pro-patient-detail-email {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--text-soft, #64748b);
+}
+
+.pro-patient-metrics-dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.pro-patient-metrics-dl dt {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 4px;
+}
+
+.pro-patient-metrics-dl dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-patient-action-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pro-patient-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  text-decoration: none;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.pro-patient-action-row:hover {
+  background: #f1f5f9;
+}
+
+.pro-patient-roadmap {
+  border-style: dashed;
+}
+
+.pro-list--compact li {
+  padding: 10px;
+}
+
+.pro-income-patient-filter-banner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-size: 14px;
+  color: #1e3a8a;
+}
+
+.pro-income-patient-filter-banner a {
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+@media (max-width: 640px) {
+  .pro-practice-health-dots {
+    flex-direction: column;
+  }
+
+  .pro-patient-status-summary {
+    justify-content: flex-start;
+  }
+}

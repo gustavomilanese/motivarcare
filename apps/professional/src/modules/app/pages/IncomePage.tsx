@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -7,6 +8,7 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
+import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import {
   buildProfessionalStatsQuery,
   type RevenuePreset,
@@ -44,6 +46,8 @@ function formatMoneyCents(cents: number, language: AppLanguage, currency: Suppor
 }
 
 export function IncomePage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
+  const [searchParams] = useSearchParams();
+  const filterPatientId = searchParams.get("patientId")?.trim() || "";
   const [data, setData] = useState<EarningsResponse | null>(null);
   const [error, setError] = useState("");
   const [revenuePreset, setRevenuePreset] = useState<RevenuePreset>("month");
@@ -51,7 +55,14 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
 
-  const statsQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
+  const statsQuery = useMemo(() => {
+    const base = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
+    if (!filterPatientId) {
+      return base;
+    }
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}patientId=${encodeURIComponent(filterPatientId)}`;
+  }, [revenuePreset, revenueDay, revenueMonth, revenueYear, filterPatientId]);
 
   useEffect(() => {
     let active = true;
@@ -78,8 +89,22 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
     };
   }, [props.token, statsQuery, props.language]);
 
+  const earningsSummaryBlocks = data?.summaryByCurrency ?? [];
+
   return (
     <div className="pro-grid-stack">
+      {filterPatientId ? (
+        <div className="pro-income-patient-filter-banner" role="status">
+          <p>
+            {t(props.language, {
+              es: "Mostrando solo movimientos de un paciente.",
+              en: "Showing movements for one patient only.",
+              pt: "Mostrando apenas movimentos de um paciente."
+            })}{" "}
+            <Link to="/ingresos">{t(props.language, { es: "Ver todos", en: "View all", pt: "Ver todos" })}</Link>
+          </p>
+        </div>
+      ) : null}
       <section className="pro-card pro-dashboard-revenue" aria-labelledby="pro-income-heading">
         <div className="pro-dashboard-revenue-top-row pro-dashboard-revenue-top-row--with-lead">
           <div className="pro-dashboard-revenue-head">
@@ -142,39 +167,99 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
           <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p>
         ) : (
           <>
-            <div className="pro-kpi-grid pro-kpi-grid--revenue">
-              <article className="pro-kpi-card">
-                <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
-                <strong>{formatMoneyCents(data.summary.grossCents, props.language, props.currency)}</strong>
-                <small className="pro-kpi-card-hint">
-                  {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
-                </small>
-              </article>
-              <article className="pro-kpi-card">
-                <span>{t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
-                <strong>{formatMoneyCents(data.summary.platformFeeCents, props.language, props.currency)}</strong>
-                <small className="pro-kpi-card-hint">
-                  {t(props.language, { es: "Retenida por MotivarCare.", en: "Retained by MotivarCare.", pt: "Retida pelo MotivarCare." })}
-                </small>
-              </article>
-              <article className="pro-kpi-card">
-                <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
-                <strong>{formatMoneyCents(data.summary.professionalNetCents, props.language, props.currency)}</strong>
-                <small className="pro-kpi-card-hint">
-                  {t(props.language, {
-                    es: `${data.summary.completedSessions} sesiones · promedio ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`,
-                    en: `${data.summary.completedSessions} sessions · avg ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`,
-                    pt: `${data.summary.completedSessions} sessoes · media ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`
-                  })}
-                </small>
-              </article>
-            </div>
+            {earningsSummaryBlocks.length > 0 ? (
+              earningsSummaryBlocks.map((block) => (
+                <div key={block.currency}>
+                  {earningsSummaryBlocks.length > 1 ? (
+                    <p className="pro-muted" style={{ marginBottom: "0.5rem" }}>
+                      {block.currency.toUpperCase()}
+                    </p>
+                  ) : null}
+                  <div className="pro-kpi-grid pro-kpi-grid--revenue">
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
+                      <strong>{formatRecordedFinanceMinor(block.grossCents, block.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
+                      </small>
+                    </article>
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
+                      <strong>{formatRecordedFinanceMinor(block.platformFeeCents, block.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {t(props.language, { es: "Retenida por MotivarCare.", en: "Retained by MotivarCare.", pt: "Retida pelo MotivarCare." })}
+                      </small>
+                    </article>
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+                      <strong>{formatRecordedFinanceMinor(block.professionalNetCents, block.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {t(props.language, {
+                          es: `${block.sessions} sesiones · promedio ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`,
+                          en: `${block.sessions} sessions · avg ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`,
+                          pt: `${block.sessions} sessoes · media ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`
+                        })}
+                      </small>
+                    </article>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="pro-kpi-grid pro-kpi-grid--revenue">
+                <article className="pro-kpi-card">
+                  <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
+                  <strong>{formatMoneyCents(data.summary.grossCents, props.language, props.currency)}</strong>
+                  <small className="pro-kpi-card-hint">
+                    {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
+                  </small>
+                </article>
+                <article className="pro-kpi-card">
+                  <span>{t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
+                  <strong>{formatMoneyCents(data.summary.platformFeeCents, props.language, props.currency)}</strong>
+                  <small className="pro-kpi-card-hint">
+                    {t(props.language, { es: "Retenida por MotivarCare.", en: "Retained by MotivarCare.", pt: "Retida pelo MotivarCare." })}
+                  </small>
+                </article>
+                <article className="pro-kpi-card">
+                  <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+                  <strong>{formatMoneyCents(data.summary.professionalNetCents, props.language, props.currency)}</strong>
+                  <small className="pro-kpi-card-hint">
+                    {t(props.language, {
+                      es: `${data.summary.completedSessions} sesiones · promedio ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`,
+                      en: `${data.summary.completedSessions} sessions · avg ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`,
+                      pt: `${data.summary.completedSessions} sessoes · media ${formatMoneyCents(data.summary.averageNetPerSessionCents, props.language, props.currency)}`
+                    })}
+                  </small>
+                </article>
+              </div>
+            )}
             <p className="pro-income-lifetime-hint">
-              {t(props.language, {
-                es: `Historial completo (neto acumulado): ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sesiones.`,
-                en: `All-time net total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessions.`,
-                pt: `Historico liquido total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessoes.`
-              })}
+              {data.lifetimeByCurrency && data.lifetimeByCurrency.length > 0
+                ? t(props.language, {
+                    es: `Historial completo (neto): ${data.lifetimeByCurrency
+                      .map(
+                        (row) =>
+                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} ses.`
+                      )
+                      .join(" · ")}`,
+                    en: `All-time net: ${data.lifetimeByCurrency
+                      .map(
+                        (row) =>
+                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} sess.`
+                      )
+                      .join(" · ")}`,
+                    pt: `Historico liquido: ${data.lifetimeByCurrency
+                      .map(
+                        (row) =>
+                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} sess.`
+                      )
+                      .join(" · ")}`
+                  })
+                : t(props.language, {
+                    es: `Historial completo (neto acumulado): ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sesiones.`,
+                    en: `All-time net total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessions.`,
+                    pt: `Historico liquido total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessoes.`
+                  })}
             </p>
           </>
         )}
@@ -195,15 +280,15 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
                 <div className="pro-income-movement-amounts">
                   <span>
                     {t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}{" "}
-                    {formatMoneyCents(movement.grossCents, props.language, props.currency)}
+                    {formatRecordedFinanceMinor(movement.grossCents, movement.currency, props.language)}
                   </span>
                   <span>
                     {t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}{" "}
-                    {formatMoneyCents(movement.platformFeeCents, props.language, props.currency)}
+                    {formatRecordedFinanceMinor(movement.platformFeeCents, movement.currency, props.language)}
                   </span>
                   <span className="pro-income-movement-net">
                     {t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}{" "}
-                    <strong>{formatMoneyCents(movement.amountCents, props.language, props.currency)}</strong>
+                    <strong>{formatRecordedFinanceMinor(movement.amountCents, movement.currency, props.language)}</strong>
                   </span>
                 </div>
               </li>

@@ -206,7 +206,17 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     ...financeCompletedReferenceWhere(statsFrom, statsTo)
   };
 
-  const [upcomingBookings, upcomingBookingsCount, weeklySessionsCount, allBookings, futureSlots, pendingPayoutSummary, revenueStats] = await Promise.all([
+  const [
+    upcomingBookings,
+    upcomingBookingsCount,
+    weeklySessionsCount,
+    allBookings,
+    futureSlots,
+    pendingPayoutSummary,
+    revenueStats,
+    revenueStatsByCurrency,
+    professionalProfileSnippet
+  ] = await Promise.all([
     prisma.booking.findMany({
       where: {
         professionalId: actor.professionalProfileId,
@@ -279,6 +289,26 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         professionalNetCents: true
       },
       _count: true
+    }),
+    prisma.financeSessionRecord.groupBy({
+      by: ["currency"],
+      where: revenueWhere,
+      _sum: {
+        sessionPriceCents: true,
+        platformFeeCents: true,
+        professionalNetCents: true
+      },
+      _count: true
+    }),
+    prisma.professionalProfile.findUnique({
+      where: { id: actor.professionalProfileId },
+      select: {
+        visible: true,
+        professionalTitle: true,
+        sessionPriceUsd: true,
+        sessionPriceArs: true,
+        photoUrl: true
+      }
     })
   ]);
 
@@ -323,6 +353,38 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     .filter((booking) => booking.startsAt >= startOfToday)
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
+  const patientStatusCounts = {
+    active: 0,
+    pause: 0,
+    cancelled: 0,
+    trial: 0
+  };
+  for (const p of patientRollup) {
+    patientStatusCounts[p.status] += 1;
+  }
+
+  const weekAheadMs = now.getTime() + 7 * 24 * 60 * 60 * 1000;
+  const hasAvailabilityThisWeek = futureSlots.some((slot: { startsAt: Date }) => slot.startsAt.getTime() <= weekAheadMs);
+  const listingLive =
+    Boolean(professionalProfileSnippet?.visible) &&
+    (Boolean(professionalProfileSnippet?.professionalTitle?.trim()) ||
+      professionalProfileSnippet?.sessionPriceUsd != null ||
+      professionalProfileSnippet?.sessionPriceArs != null);
+
+  const practiceHealthItems: Array<{ id: string; ok: boolean }> = [
+    { id: "listing_live", ok: listingLive },
+    { id: "availability_week", ok: hasAvailabilityThisWeek },
+    { id: "agenda_active", ok: weeklySessionsCount > 0 || upcomingBookingsCount > 0 },
+    {
+      id: "conversion_sound",
+      ok: conversionBase < 4 ? true : conversionRate >= 32
+    },
+    { id: "active_caseload", ok: activePatients >= 1 }
+  ];
+  const practiceHealthOkCount = practiceHealthItems.filter((item) => item.ok).length;
+  const practiceHealthVariant =
+    practiceHealthOkCount >= 5 ? "strong" : practiceHealthOkCount >= 3 ? "balanced" : "growth";
+
   return res.json({
     kpis: {
       activePatients,
@@ -333,6 +395,11 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       weeklySessions,
       pendingPayoutCents
     },
+    patientStatusCounts,
+    practiceHealth: {
+      variant: practiceHealthVariant,
+      items: practiceHealthItems
+    },
     revenueStats: {
       grossCents: revenueStats._sum.sessionPriceCents ?? 0,
       platformFeeCents: revenueStats._sum.platformFeeCents ?? 0,
@@ -342,7 +409,14 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         from: statsFrom ? statsFrom.toISOString() : null,
         to: statsTo.toISOString(),
         allTime: statsAll || statsFrom === null
-      }
+      },
+      byCurrency: revenueStatsByCurrency.map((row) => ({
+        currency: row.currency,
+        grossCents: row._sum.sessionPriceCents ?? 0,
+        platformFeeCents: row._sum.platformFeeCents ?? 0,
+        professionalNetCents: row._sum.professionalNetCents ?? 0,
+        completedSessions: row._count
+      }))
     },
     trialSession: trialBooking
       ? {
@@ -447,6 +521,160 @@ professionalRouter.get("/patients", async (req: AuthenticatedRequest, res) => {
   });
 });
 
+professionalRouter.get("/patients/:patientId", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access patients" });
+  }
+
+  const patientId = req.params.patientId;
+  if (!patientId) {
+    return res.status(400).json({ error: "patientId is required" });
+  }
+
+  const profId = actor.professionalProfileId;
+
+  const [bookings, threadOnly] = await Promise.all([
+    prisma.booking.findMany({
+      where: { professionalId: profId, patientId },
+      include: {
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, avatarUrl: true } }
+          }
+        }
+      },
+      orderBy: { startsAt: "asc" }
+    }),
+    prisma.chatThread.findFirst({
+      where: { professionalId: profId, patientId },
+      include: {
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, avatarUrl: true } }
+          }
+        }
+      }
+    })
+  ]);
+
+  if (bookings.length === 0 && !threadOnly) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const nowMs = Date.now();
+  let rollup: ReturnType<typeof buildPatientRollup>[number];
+
+  if (bookings.length > 0) {
+    const rolled = buildPatientRollup(
+      bookings.map((booking) => ({
+        patientId: booking.patientId,
+        startsAt: booking.startsAt,
+        status: booking.status,
+        patient: booking.patient
+      }))
+    );
+    rollup = rolled[0]!;
+  } else if (threadOnly) {
+    rollup = {
+      patientId,
+      patientName: threadOnly.patient.user.fullName ?? "Paciente",
+      patientEmail: threadOnly.patient.user.email ?? "",
+      avatarUrl: threadOnly.patient.user.avatarUrl ?? null,
+      totalSessions: 0,
+      lastSessionAt: threadOnly.createdAt,
+      cancelledSessions: 0,
+      completedSessions: 0,
+      status: "trial",
+      daysSinceLastSession: Math.floor((nowMs - threadOnly.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+    };
+  } else {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const firstSessionAt =
+    bookings.length === 0
+      ? null
+      : new Date(Math.min(...bookings.map((b) => b.startsAt.getTime())));
+
+  const completedBookings = bookings.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
+  const lastCompletedSessionAt =
+    completedBookings.length === 0
+      ? null
+      : new Date(
+          Math.max(
+            ...completedBookings.map((b) => (b.completedAt ?? b.startsAt).getTime())
+          )
+        );
+
+  const [paymentMovements, lifetimeTotalsRows] = await Promise.all([
+    prisma.financeSessionRecord.findMany({
+      where: {
+        professionalId: profId,
+        patientId,
+        bookingStatus: BOOKING_STATUS.COMPLETED
+      },
+      orderBy: [{ bookingCompletedAt: "desc" }, { bookingStartsAt: "desc" }],
+      take: 50,
+      include: {
+        patient: {
+          include: {
+            user: { select: { fullName: true } }
+          }
+        }
+      }
+    }),
+    prisma.financeSessionRecord.groupBy({
+      by: ["currency"],
+      where: {
+        professionalId: profId,
+        patientId,
+        bookingStatus: BOOKING_STATUS.COMPLETED
+      },
+      _sum: { professionalNetCents: true },
+      _count: true
+    })
+  ]);
+
+  const lifetimeTotals = lifetimeTotalsRows.map((row) => ({
+    currency: row.currency,
+    netCents: row._sum.professionalNetCents ?? 0,
+    sessions: row._count
+  }));
+
+  return res.json({
+    patient: {
+      patientId: rollup.patientId,
+      patientName: rollup.patientName,
+      patientEmail: rollup.patientEmail,
+      avatarUrl: rollup.avatarUrl,
+      totalSessions: rollup.totalSessions,
+      completedSessions: rollup.completedSessions,
+      cancelledSessions: rollup.cancelledSessions,
+      daysSinceLastSession: rollup.daysSinceLastSession,
+      status: rollup.status,
+      firstSessionAt: firstSessionAt?.toISOString() ?? null,
+      lastCompletedSessionAt: lastCompletedSessionAt?.toISOString() ?? null,
+      lifetimeTotals
+    },
+    paymentMovements: paymentMovements.map((record) => ({
+      bookingId: record.bookingId,
+      patientName: record.patient.user.fullName,
+      startsAt: record.bookingStartsAt.toISOString(),
+      completedAt: record.bookingCompletedAt?.toISOString() ?? null,
+      grossCents: record.sessionPriceCents,
+      platformFeeCents: record.platformFeeCents,
+      amountCents: record.professionalNetCents,
+      status: record.bookingStatus.toLowerCase(),
+      currency: record.currency
+    }))
+  });
+});
+
 professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -458,10 +686,12 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
   }
 
   const { statsFrom, statsTo, statsAll } = parseProfessionalStatsRange(req.query as Record<string, unknown>);
+  const earningsPatientId = firstQueryString(req.query.patientId);
 
   const baseCompleted = {
     professionalId: actor.professionalProfileId,
-    bookingStatus: BOOKING_STATUS.COMPLETED
+    bookingStatus: BOOKING_STATUS.COMPLETED,
+    ...(earningsPatientId ? { patientId: earningsPatientId } : {})
   };
 
   const rangeWhere = {
@@ -469,7 +699,7 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
     ...financeCompletedReferenceWhere(statsFrom, statsTo)
   };
 
-  const [rangeAgg, movementRows, lifetimeAgg] = await Promise.all([
+  const [rangeAgg, movementRows, lifetimeAgg, rangeByCurrency, lifetimeByCurrencyGroup] = await Promise.all([
     prisma.financeSessionRecord.aggregate({
       where: rangeWhere,
       _sum: {
@@ -495,6 +725,22 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       where: baseCompleted,
       _sum: { professionalNetCents: true },
       _count: true
+    }),
+    prisma.financeSessionRecord.groupBy({
+      by: ["currency"],
+      where: rangeWhere,
+      _sum: {
+        sessionPriceCents: true,
+        platformFeeCents: true,
+        professionalNetCents: true
+      },
+      _count: true
+    }),
+    prisma.financeSessionRecord.groupBy({
+      by: ["currency"],
+      where: baseCompleted,
+      _sum: { professionalNetCents: true },
+      _count: true
     })
   ]);
 
@@ -507,6 +753,22 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
 
   const lifetimeProfessionalNetCents = lifetimeAgg._sum.professionalNetCents ?? 0;
   const lifetimeCompletedSessions = lifetimeAgg._count;
+
+  const summaryByCurrency = rangeByCurrency.map((row) => ({
+    currency: row.currency,
+    grossCents: row._sum.sessionPriceCents ?? 0,
+    platformFeeCents: row._sum.platformFeeCents ?? 0,
+    professionalNetCents: row._sum.professionalNetCents ?? 0,
+    sessions: row._count,
+    averageNetPerSessionCents:
+      row._count > 0 ? Math.round((row._sum.professionalNetCents ?? 0) / row._count) : 0
+  }));
+
+  const lifetimeByCurrency = lifetimeByCurrencyGroup.map((row) => ({
+    currency: row.currency,
+    professionalNetCents: row._sum.professionalNetCents ?? 0,
+    sessions: row._count
+  }));
 
   return res.json({
     summary: {
@@ -523,6 +785,8 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       currentPeriodSessions: completedSessions,
       sessionFeeCents: averageNetPerSessionCents
     },
+    summaryByCurrency,
+    lifetimeByCurrency,
     range: {
       from: statsFrom ? statsFrom.toISOString() : null,
       to: statsTo.toISOString(),
@@ -535,7 +799,8 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       grossCents: record.sessionPriceCents,
       platformFeeCents: record.platformFeeCents,
       amountCents: record.professionalNetCents,
-      status: record.bookingStatus.toLowerCase()
+      status: record.bookingStatus.toLowerCase(),
+      currency: record.currency
     }))
   });
 });
