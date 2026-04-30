@@ -21,7 +21,8 @@ const localProfessionalHeroImage = "/images/professional-hero.jpg";
 const fallbackProfessionalHeroImage = "/images/professional-hero.svg";
 const heroWidths = [480, 768, 1280, 1600] as const;
 
-const sessionImage = localProfessionalHeroImage;
+/** Imagen por defecto del bloque de profesionales (reemplazable vía API web-content). */
+const sessionImage = "/images/psicologos-verificados.png";
 
 function handleImageFallback(event: SyntheticEvent<HTMLImageElement>, fallback: string) {
   const image = event.currentTarget;
@@ -182,6 +183,7 @@ const UI_TEXT: Record<
     patientHeadline: string;
     patients: string;
     psychologists: string;
+    professionalHeroAlt: string;
     professionalHeadline: string;
     patientCopy: string;
     professionalCopy: string;
@@ -240,7 +242,9 @@ const UI_TEXT: Record<
     heroTitle: "MotivarCare para profesionales: tu consulta online, sin fricción",
     patientHeadline: "Terapia online desde tu teléfono o notebook…",
     patients: "Pacientes",
-    psychologists: "Psicólogos",
+    psychologists: "Psicólogos certificados",
+    professionalHeroAlt:
+      "Equipo de psicólogos certificados de distintos países en un entorno de consulta profesional",
     professionalHeadline: "Conectá con nuevos pacientes y administrá tu práctica con claridad",
     patientCopy: "Una experiencia simple para reservar, entrar a sesión y comenzar tu proceso terapéutico.",
     professionalCopy:
@@ -300,7 +304,8 @@ const UI_TEXT: Record<
     heroTitle: "MotivarCare for professionals: your online practice, streamlined",
     patientHeadline: "Online therapy from your phone or laptop.",
     patients: "Patients",
-    psychologists: "Psychologists",
+    psychologists: "Certified psychologists",
+    professionalHeroAlt: "Team of certified psychologists from several countries in a professional practice setting",
     professionalHeadline: "Reach new patients and run your practice with clarity",
     patientCopy: "A simple experience to book, join your session, and keep your process moving.",
     professionalCopy:
@@ -360,7 +365,9 @@ const UI_TEXT: Record<
     heroTitle: "MotivarCare para profissionais: sua consulta online, sem atrito",
     patientHeadline: "Terapia online pelo celular ou notebook.",
     patients: "Pacientes",
-    psychologists: "Psicólogos",
+    psychologists: "Psicólogos certificados",
+    professionalHeroAlt:
+      "Equipe de psicólogos certificados de vários países em ambiente de consulta profissional",
     professionalHeadline: "Conecte-se a novos pacientes e organize sua prática com clareza",
     patientCopy: "Uma experiência simples para agendar, entrar na sessão e continuar o processo.",
     professionalCopy:
@@ -2058,7 +2065,7 @@ export function App() {
                 <div className="macbook-screen">
                   <HeroShowcaseImage
                     src={professionalHeroDesktopImage}
-                    alt="Sesión remota desde MacBook Air"
+                    alt={t.professionalHeroAlt}
                     fallback={fallbackProfessionalHeroImage}
                     originalPath={localProfessionalHeroImage}
                     optimizedBaseName="professional-hero"
@@ -2075,7 +2082,7 @@ export function App() {
                 <span className="phone-notch" aria-hidden="true" />
                 <HeroShowcaseImage
                   src={professionalHeroMobileImage}
-                  alt="Sesión remota desde celular"
+                  alt={t.professionalHeroAlt}
                   fallback={fallbackProfessionalHeroImage}
                   originalPath={localProfessionalHeroImage}
                   optimizedBaseName="professional-hero"
