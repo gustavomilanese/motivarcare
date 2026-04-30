@@ -28,10 +28,9 @@ const PROFESSIONAL_PORTAL_URL = portalUrl(
   "https://pro.motivarcare.com"
 );
 
-/** Fotos en public/photos: 15 = hero apaisado completo (contain + fondo oscuro). 16 = bento profesionales. */
+/** Foto hero en public/photos: videollamada con profesional, tono luminoso/clínico. */
 const P = {
-  heroWebp: "/photos/15-hero-balcon-valle.webp",
-  heroJpg: "/photos/15-hero-balcon-valle.jpg",
+  heroImg: "/photos/hero-portada-landing.png",
   /** Bento “Profesionales verificados” (#beneficios). */
   bentoProfesionales: "/photos/psicologos-verificados.png",
   /** Quiénes somos: asset visual (playa, laptop y café), exportado 2400×1371. */
@@ -146,56 +145,111 @@ export function App() {
             style={{ transform: `translate3d(0, ${heroShift * 0.16}px, 0)` }}
             aria-hidden="true"
           >
-            <picture className="patient-ar-hero-picture">
-              <source srcSet={P.heroWebp} type="image/webp" />
-              <img
-                src={P.heroJpg}
-                alt=""
-                className="patient-ar-hero-img patient-ar-hero-img--fullimg patient-ar-photo-grade"
-                width={2560}
-                height={1462}
-                fetchPriority="high"
-                decoding="async"
-              />
-            </picture>
+            <img
+              src={P.heroImg}
+              alt=""
+              className="patient-ar-hero-img patient-ar-hero-img--fullimg patient-ar-photo-grade"
+              width={1024}
+              height={682}
+              fetchPriority="high"
+              decoding="async"
+            />
             <div className="patient-ar-hero-scrim patient-ar-hero-scrim--fullimg" />
             <div className="patient-ar-hero-grain" aria-hidden="true" />
           </div>
           <div className="patient-ar-container patient-ar-hero-grid">
             <div className="patient-ar-hero-copy">
               <p className="patient-ar-kicker">Argentina · Terapia 100% online</p>
-              <h1 id="hero-title">Encontrá tu psicólogo online con la claridad y el cuidado que buscás</h1>
+              <h1 id="hero-title">
+                Encontrá tu psicólogo online
+                <br />
+                con la claridad y el cuidado que buscás
+              </h1>
               <p className="patient-ar-lead">
                 Elegí al profesional que mejor encaje con vos, reservá en minutos y empezá tu proceso sin listas de espera. Todo
                 desde un solo lugar, seguro y confidencial.
               </p>
               <div className="patient-ar-hero-actions">
-                <a className="patient-ar-btn patient-ar-btn--primary" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+                <a className="patient-ar-btn patient-ar-btn--hero-violet" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
                   Encontrar mi psicólogo
                 </a>
-                <a
-                  className="patient-ar-btn patient-ar-btn--hero-violet patient-ar-hero-actions__secondary"
-                  href="#como-funciona"
-                >
-                  Ver cómo funciona
-                </a>
               </div>
-              <ul className="patient-ar-checks patient-ar-checks--premium" aria-label="Ventajas">
+              <ul
+                className="patient-ar-checks patient-ar-checks--premium patient-ar-checks--surface-editorial"
+                aria-label="Ventajas"
+              >
                 <li>
-                  <span className="patient-ar-check-title">Psicólogos colegiados</span>
-                  <span className="patient-ar-check-desc">Matrícula al día y trayectoria en cada perfil.</span>
+                  <div className="patient-ar-check-inner">
+                    <span className="patient-ar-bento-surface-icon" aria-hidden="true">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 22s8-4.5 8-12V5l-8-3-8 3v5c0 7.5 8 12 8 12z"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M9 12l2 2 4-4"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <div className="patient-ar-check-body">
+                      <span className="patient-ar-check-title">Psicólogos colegiados</span>
+                      <span className="patient-ar-check-desc">Matrícula al día y trayectoria en cada perfil.</span>
+                    </div>
+                  </div>
                 </li>
                 <li>
-                  <span className="patient-ar-check-title">Sesiones privadas online</span>
-                  <span className="patient-ar-check-desc">Videollamada en un entorno protegido de la plataforma.</span>
+                  <div className="patient-ar-check-inner">
+                    <span className="patient-ar-bento-surface-icon" aria-hidden="true">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="5" width="20" height="13" rx="2" stroke="currentColor" strokeWidth="1.75" />
+                        <path d="M10 18h4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                        <path d="M11 10l4 2.5-4 2.5v-5z" fill="currentColor" />
+                      </svg>
+                    </span>
+                    <div className="patient-ar-check-body">
+                      <span className="patient-ar-check-title">Sesiones privadas online</span>
+                      <span className="patient-ar-check-desc">Videollamada en un entorno protegido de la plataforma.</span>
+                    </div>
+                  </div>
                 </li>
                 <li>
-                  <span className="patient-ar-check-title">Tu agenda, tu ritmo</span>
-                  <span className="patient-ar-check-desc">Reservás día y hora según la disponibilidad publicada.</span>
+                  <div className="patient-ar-check-inner">
+                    <span className="patient-ar-bento-surface-icon" aria-hidden="true">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.75" />
+                        <path d="M4 9h16M9 3v4M15 3v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                    <div className="patient-ar-check-body">
+                      <span className="patient-ar-check-title">Tu agenda, tu ritmo</span>
+                      <span className="patient-ar-check-desc">Reservás día y hora según la disponibilidad publicada.</span>
+                    </div>
+                  </div>
                 </li>
                 <li>
-                  <span className="patient-ar-check-title">Donde estés</span>
-                  <span className="patient-ar-check-desc">Solo necesitás buena conexión y un lugar tranquilo.</span>
+                  <div className="patient-ar-check-inner">
+                    <span className="patient-ar-bento-surface-icon" aria-hidden="true">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinejoin="round"
+                        />
+                        <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.75" />
+                      </svg>
+                    </span>
+                    <div className="patient-ar-check-body">
+                      <span className="patient-ar-check-title">Donde estés</span>
+                      <span className="patient-ar-check-desc">Solo necesitás buena conexión y un lugar tranquilo.</span>
+                    </div>
+                  </div>
                 </li>
               </ul>
             </div>
@@ -220,14 +274,9 @@ export function App() {
                 <img
                   className="patient-ar-photo-grade"
                   src={P.bentoProfesionales}
-                  alt="Equipo de psicólogos certificados de distintos países en consultorio profesional"
+                  alt="Psicólogos certificados: formación verificada, experiencia comprobada y compromiso con tu bienestar"
                   loading="lazy"
                 />
-                <div className="patient-ar-bento-scrim" />
-                <div className="patient-ar-bento-copy">
-                  <h3>Profesionales verificados</h3>
-                  <p>Psicólogos y psicólogas matriculados, con experiencia en ansiedad, estrés, vínculos y más.</p>
-                </div>
               </article>
               <article className="patient-ar-bento-card patient-ar-bento-card--rstack patient-ar-bento-card--r1 patient-ar-bento-card--surface patient-ar-bento-card--surface-a">
                 <div className="patient-ar-bento-surface-inner">

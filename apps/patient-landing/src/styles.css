@@ -245,7 +245,7 @@ a {
 .patient-ar-hero-media--fullimg {
   inset: 0;
   background:
-    radial-gradient(ellipse 110% 95% at 50% 48%, #161422 0%, #090812 55%, #06060c 100%);
+    radial-gradient(ellipse 110% 95% at 50% 48%, #1c1830 0%, #12101c 55%, #0e0d14 100%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -275,6 +275,22 @@ a {
   object-position: center center;
 }
 
+.patient-ar-hero-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+}
+
+.patient-ar-hero-video--fullimg {
+  object-fit: contain;
+  object-position: center center;
+}
+
 .patient-ar-hero-scrim {
   position: absolute;
   inset: 0;
@@ -286,21 +302,21 @@ a {
   background:
     linear-gradient(
       108deg,
-      rgba(11, 9, 26, 0.93) 0%,
-      rgba(16, 12, 36, 0.78) 24%,
-      rgba(22, 16, 44, 0.32) 50%,
-      rgba(10, 8, 22, 0.18) 72%,
-      rgba(6, 5, 14, 0.35) 100%
+      rgba(11, 9, 26, 0.68) 0%,
+      rgba(16, 12, 36, 0.52) 24%,
+      rgba(22, 16, 44, 0.2) 50%,
+      rgba(10, 8, 22, 0.1) 72%,
+      rgba(6, 5, 14, 0.22) 100%
     ),
-    radial-gradient(85% 75% at 16% 36%, rgba(109, 86, 255, 0.18) 0%, transparent 58%),
-    linear-gradient(180deg, rgba(6, 4, 14, 0.4) 0%, transparent 38%, rgba(5, 4, 12, 0.45) 100%);
+    radial-gradient(85% 75% at 16% 36%, rgba(109, 86, 255, 0.1) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(6, 4, 14, 0.26) 0%, transparent 38%, rgba(5, 4, 12, 0.28) 100%);
 }
 
 @media (max-width: 699px) {
   .patient-ar-hero-scrim--fullimg {
     background:
-      linear-gradient(168deg, rgba(10, 8, 22, 0.9) 0%, rgba(12, 9, 26, 0.52) 42%, rgba(10, 8, 22, 0.28) 72%, rgba(6, 5, 14, 0.55) 100%),
-      radial-gradient(92% 50% at 50% 8%, rgba(109, 86, 255, 0.14) 0%, transparent 52%);
+      linear-gradient(168deg, rgba(10, 8, 22, 0.64) 0%, rgba(12, 9, 26, 0.36) 42%, rgba(10, 8, 22, 0.16) 72%, rgba(6, 5, 14, 0.34) 100%),
+      radial-gradient(92% 50% at 50% 8%, rgba(109, 86, 255, 0.09) 0%, transparent 52%);
   }
 }
 
@@ -415,9 +431,13 @@ a {
 .patient-ar-lead {
   margin: 18px 0 0;
   font-size: clamp(1rem, 0.6vw + 0.95rem, 1.2rem);
-  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.94);
   line-height: 1.65;
   max-width: 52ch;
+  text-shadow:
+    0 1px 22px rgba(0, 0, 0, 0.32),
+    0 1px 2px rgba(0, 0, 0, 0.22);
 }
 
 .patient-ar-hero-actions {
@@ -428,34 +448,12 @@ a {
   align-items: center;
 }
 
-/* Móvil: una CTA primaria clara; secundario como enlace de texto */
+/* Móvil: CTA a ancho completo */
 @media (max-width: 639px) {
   .patient-ar-hero-actions {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
-  }
-
-  .patient-ar-hero-actions__secondary.patient-ar-btn--hero-violet {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    padding: 10px 12px;
-    font-weight: 600;
-    font-size: 0.92rem;
-    color: rgba(255, 255, 255, 0.92) !important;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 5px;
-    text-align: center;
-    justify-content: center;
-  }
-
-  .patient-ar-hero-actions__secondary.patient-ar-btn--hero-violet:hover {
-    color: #fff !important;
-    transform: none;
-    background: transparent !important;
   }
 }
 
@@ -507,7 +505,7 @@ a {
   transform: rotate(-45deg);
 }
 
-/* Chips hero: título + subtítulo (sin checkbox) */
+/* Chips hero: título + subtítulo; sin checkbox ni puntito interior */
 .patient-ar-checks--premium {
   gap: 12px;
 }
@@ -518,41 +516,147 @@ a {
   }
 }
 
-.patient-ar-checks--premium li {
+.patient-ar-checks--premium > li::before,
+.patient-ar-checks--premium > li::after {
+  content: none;
+  display: none;
+}
+
+.patient-ar-checks--premium > li {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 5px;
-  padding: 13px 14px 14px 22px;
+  gap: 6px;
+  padding: 14px 16px 15px;
   border-radius: 14px;
-  background:
-    radial-gradient(120% 80% at 100% 0%, rgba(139, 123, 255, 0.14) 0%, transparent 55%),
-    rgba(255, 255, 255, 0.11);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow:
-    0 10px 36px rgba(8, 6, 24, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 3px 0 0 0 rgba(196, 181, 253, 0.65);
-  backdrop-filter: blur(12px);
   position: relative;
 }
 
-.patient-ar-checks--premium li::before {
-  display: block;
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 50%;
-  margin-top: -3px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #fff 0%, rgba(255, 255, 255, 0.4) 45%, transparent 70%);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 12px rgba(167, 139, 255, 0.65);
+/* Opción premium A — Slate minimal: alta legibilidad, sombra contenida */
+.patient-ar-checks--premium-tone-minimal > li {
+  background: linear-gradient(180deg, rgba(18, 15, 36, 0.94) 0%, rgba(12, 10, 26, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(2, 0, 14, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.patient-ar-checks--premium li::after {
+/* Opción premium B — Glass violet: atmósfera editorial sobre la foto */
+.patient-ar-checks--premium-tone-glass > li {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 12px 42px rgba(4, 0, 26, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 72px rgba(109, 86, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(1.06);
+  background:
+    radial-gradient(120% 85% at 100% -10%, rgba(109, 86, 255, 0.16) 0%, transparent 50%),
+    rgba(14, 10, 34, 0.42);
+}
+
+/* Opción premium C — Accent ribbon: marca con barrita vertical degradada */
+.patient-ar-checks--premium-tone-ribbon > li {
+  padding-left: 15px;
+  background: rgba(14, 12, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 28px rgba(4, 0, 22, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.patient-ar-checks--premium-tone-ribbon > li::before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d4cbff 0%, #8670ff 45%, #5b44e8 100%);
+  box-shadow: 0 0 14px rgba(109, 86, 255, 0.35);
+}
+
+.patient-ar-checks--premium-tone-ribbon > li::after {
+  content: none;
   display: none;
+}
+
+/* Hero: mismas superficies que bento #beneficios (lavanda + icono + ink/muted) */
+.patient-ar-checks--premium.patient-ar-checks--surface-editorial > li {
+  display: block;
+  padding: 0;
+  gap: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(109, 86, 255, 0.14);
+  box-shadow:
+    0 12px 40px rgba(45, 36, 102, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.patient-ar-checks--premium.patient-ar-checks--surface-editorial > li:nth-child(1) {
+  background: linear-gradient(152deg, #faf9ff 0%, #efebff 52%, #ffffff 100%);
+}
+
+.patient-ar-checks--premium.patient-ar-checks--surface-editorial > li:nth-child(2) {
+  background: linear-gradient(148deg, #ffffff 0%, #f5f2ff 48%, #faf8ff 100%);
+}
+
+.patient-ar-checks--premium.patient-ar-checks--surface-editorial > li:nth-child(3) {
+  background: linear-gradient(158deg, #f8f6ff 0%, #e8e2ff 42%, #fffefb 100%);
+}
+
+.patient-ar-checks--premium.patient-ar-checks--surface-editorial > li:nth-child(4) {
+  background: linear-gradient(155deg, #ffffff 0%, #f0ecff 50%, #faf9ff 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .patient-ar-checks--premium.patient-ar-checks--surface-editorial > li:hover {
+    transform: translateY(-3px);
+    border-color: rgba(109, 86, 255, 0.28);
+    box-shadow:
+      0 22px 56px rgba(45, 36, 102, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+}
+
+.patient-ar-check-inner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px 18px 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.patient-ar-check-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.patient-ar-checks--surface-editorial .patient-ar-check-title {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.15vw, 1.06rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1.22;
+  text-shadow: none;
+}
+
+.patient-ar-checks--surface-editorial .patient-ar-check-desc {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--muted);
 }
 
 .patient-ar-check-title {
@@ -561,15 +665,17 @@ a {
   font-size: 0.92rem;
   letter-spacing: -0.02em;
   color: #fff;
-  line-height: 1.25;
-  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.28);
+  line-height: 1.28;
+  text-shadow:
+    0 1px 16px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .patient-ar-check-desc {
   font-size: 0.78rem;
   font-weight: 500;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.48;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 /* ——— Buttons ——— */
@@ -815,9 +921,9 @@ main {
 
 @media (min-width: 900px) {
   .patient-ar-bento {
-    grid-template-columns: 1.35fr 1fr;
+    grid-template-columns: minmax(0, 1.95fr) minmax(260px, 1fr);
     grid-template-rows: repeat(3, minmax(0, 1fr));
-    min-height: clamp(520px, 58vh, 680px);
+    min-height: clamp(560px, 62vh, 760px);
     align-items: stretch;
   }
 
@@ -865,6 +971,21 @@ main {
 
 .patient-ar-bento-card:hover img {
   transform: scale(1.04);
+}
+
+/* Banner con texto incluido en la imagen: sin overlay, sin zoom hover, foto completa */
+.patient-ar-bento-card--img-pros {
+  background: #eef1f8;
+}
+
+.patient-ar-bento-card--img-pros img {
+  object-fit: contain;
+  object-position: center center;
+  transition: none;
+}
+
+.patient-ar-bento-card--img-pros:hover img {
+  transform: none;
 }
 
 .patient-ar-bento-scrim {
@@ -2150,16 +2271,42 @@ main {
   }
 }
 
-/* ——— Footer ——— */
+/* ——— Footer (mismo fondo que banner “¿Sos psicólogo?” / portal profesionales) ——— */
 .patient-ar-footer {
+  position: relative;
   width: 100%;
   margin-top: auto;
-  background: #0f1117;
-  color: rgba(255, 255, 255, 0.65);
-  padding: 32px 0 36px;
+  overflow: hidden;
+  background: linear-gradient(125deg, #2c2468 0%, var(--violet-900) 38%, var(--violet-700) 100%);
+  color: rgba(255, 252, 247, 0.72);
+  padding: clamp(32px, 5vw, 44px) 0 36px;
+}
+
+.patient-ar-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 100% -10%, rgba(255, 252, 247, 0.2), transparent 52%),
+    radial-gradient(ellipse 50% 45% at 0% 100%, rgba(167, 243, 208, 0.1), transparent 48%);
+  pointer-events: none;
+}
+
+.patient-ar-footer::after {
+  content: "";
+  position: absolute;
+  width: min(420px, 90vw);
+  height: min(420px, 90vw);
+  right: -120px;
+  bottom: -80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
 }
 
 .patient-ar-footer-inner {
+  position: relative;
+  z-index: 1;
   text-align: center;
 }
 
@@ -2188,15 +2335,16 @@ main {
 }
 
 .patient-ar-footer-portal--patient {
-  background: linear-gradient(135deg, rgba(109, 86, 255, 0.95), rgba(77, 56, 217, 1));
-  color: #fff;
-  box-shadow: 0 6px 22px rgba(77, 56, 217, 0.35);
+  background: #fffcf7;
+  color: var(--violet-900);
+  border: 2px solid rgba(255, 252, 247, 0.95);
+  box-shadow: 0 10px 36px rgba(26, 22, 40, 0.32);
 }
 
 .patient-ar-footer-portal--patient:hover {
-  color: #fff;
+  color: var(--violet-900);
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(77, 56, 217, 0.45);
+  box-shadow: 0 14px 44px rgba(26, 22, 40, 0.38);
 }
 
 .patient-ar-footer-portal--pro {
@@ -2222,7 +2370,7 @@ main {
 }
 
 .patient-ar-footer-legal a {
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 252, 247, 0.92);
   font-weight: 600;
   text-decoration: none;
 }
@@ -2238,7 +2386,7 @@ main {
 }
 
 .patient-ar-footer-copy a {
-  color: var(--violet-400);
+  color: rgba(255, 252, 247, 0.95);
   font-weight: 600;
   text-decoration: none;
 }
