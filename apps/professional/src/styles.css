@@ -10825,6 +10825,14 @@ button:disabled {
   margin-bottom: 4px;
 }
 
+.pro-patient-status-summary--panel {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafd;
+  margin-bottom: 14px;
+}
+
 .pro-patient-status-pill {
   display: inline-flex;
   align-items: center;
@@ -10855,15 +10863,27 @@ button:disabled {
   color: #334155;
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 7px 12px;
   border-radius: 999px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pro-patient-filter-chip strong {
+  font-size: 12px;
+  color: #0f172a;
 }
 
 .pro-patient-filter-chip--active {
   background: #0b57d0;
   color: #fff;
   border-color: #0b57d0;
+}
+
+.pro-patient-filter-chip--active strong {
+  color: #fff;
 }
 
 .pro-list--patients li {
@@ -10889,9 +10909,37 @@ button:disabled {
   color: inherit;
 }
 
+.pro-patient-card-row {
+  align-items: center;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(95, 68, 235, 0.05), transparent 46%),
+    #f9fbff;
+}
+
+.pro-patient-row-texts {
+  display: grid;
+  gap: 2px;
+}
+
+.pro-patient-row-stats {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pro-patient-row-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
 .pro-patient-chat-btn {
   align-self: center;
   flex-shrink: 0;
+  min-width: 82px;
 }
 
 .pro-status-pill {
@@ -10934,6 +10982,11 @@ button:disabled {
 
 .pro-patient-detail-page .pro-patient-detail-header {
   margin-bottom: 8px;
+}
+
+.pro-patients-header {
+  display: grid;
+  gap: 4px;
 }
 
 .pro-patient-detail-hero {
@@ -11038,6 +11091,74 @@ button:disabled {
 
 .pro-dashboard-revenue--floating .pro-dashboard-revenue-microhint {
   margin-top: 0;
+}
+
+.pro-executed-revenue {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e8ecf6;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(95, 68, 235, 0.06), transparent 46%),
+    linear-gradient(180deg, #fcfdff 0%, #f7f9fe 100%);
+}
+
+.pro-executed-revenue-main {
+  display: grid;
+  gap: 3px;
+}
+
+.pro-executed-revenue-label {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.pro-executed-revenue-main strong {
+  font-size: clamp(32px, 4.6vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-executed-revenue-main small {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pro-executed-revenue-side {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  align-self: center;
+}
+
+.pro-executed-revenue-side-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pro-executed-revenue-side-row span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-executed-revenue-side-row strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
 }
 
 .pro-finance-stack {
@@ -11193,6 +11314,16 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  .pro-executed-revenue {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pro-executed-revenue-side {
+    justify-items: start;
+    width: 100%;
+  }
+
   .pro-kpi-grid--revenue {
     grid-template-columns: 1fr;
   }

@@ -88,6 +88,11 @@ export interface DashboardResponse {
       professionalNetCents: number;
       completedSessions: number;
     }>;
+    /** Visual ejecutivo: bruto ARS y su equivalente en moneda dura USD. */
+    executedDisplay?: {
+      arsGrossCents: number;
+      usdHardCents: number;
+    };
   };
   trialSession: {
     id: string;

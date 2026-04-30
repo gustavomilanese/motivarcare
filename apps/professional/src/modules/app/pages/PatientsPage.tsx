@@ -62,10 +62,32 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
   }, [data, statusFilter]);
 
   const filterOptions: StatusFilter[] = ["all", "active", "trial", "pause", "cancelled"];
+  const statusCountMap = useMemo(() => {
+    const base: Record<StatusFilter, number> = {
+      all: data?.patients.length ?? 0,
+      active: 0,
+      trial: 0,
+      pause: 0,
+      cancelled: 0
+    };
+    for (const patient of data?.patients ?? []) {
+      base[patient.status] += 1;
+    }
+    return base;
+  }, [data]);
 
   return (
     <section className="pro-card pro-patients-card">
-      <h2>{t(props.language, { es: "Clientes / Pacientes", en: "Clients / Patients", pt: "Clientes / Pacientes" })}</h2>
+      <header className="pro-patients-header">
+        <h2>{t(props.language, { es: "Pacientes", en: "Patients", pt: "Pacientes" })}</h2>
+        <p className="pro-muted">
+          {t(props.language, {
+            es: "Vista agrupada para seguimiento diario y acceso rápido al detalle.",
+            en: "Grouped view for daily follow-up and quick detail access.",
+            pt: "Visao agrupada para acompanhamento diario e acesso rapido."
+          })}
+        </p>
+      </header>
       {error ? <p className="pro-error">{error}</p> : null}
       {!data ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
       {data && data.patients.length === 0 ? (
@@ -73,7 +95,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
       ) : null}
       {data && data.patients.length > 0 ? (
         <>
-          <div className="pro-patient-filter-bar" role="group" aria-label={t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por estado" })}>
+          <div className="pro-patient-status-summary pro-patient-status-summary--panel">
             {filterOptions.map((option) => (
               <button
                 key={option}
@@ -81,7 +103,8 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
                 className={`pro-patient-filter-chip ${statusFilter === option ? "pro-patient-filter-chip--active" : ""}`}
                 onClick={() => setStatusFilter(option)}
               >
-                {filterLabel(props.language, option)}
+                <span>{filterLabel(props.language, option)}</span>
+                <strong>{statusCountMap[option]}</strong>
               </button>
             ))}
           </div>
@@ -98,7 +121,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
               {filteredPatients.map((patient) => {
                 const avatarSrc = resolveApiAssetUrl(patient.avatarUrl ?? null);
                 return (
-                  <li key={patient.patientId}>
+                  <li key={patient.patientId} className="pro-patient-card-row">
                     <button
                       type="button"
                       className="pro-patient-row-hit"
@@ -112,39 +135,59 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
                           imgClassName="pro-patient-avatar"
                           emptyClassName="pro-patient-avatar pro-patient-avatar--empty"
                         />
-                        <div>
+                        <div className="pro-patient-row-texts">
                           <strong>{patient.patientName}</strong>
                           <span>{patient.patientEmail}</span>
-                          <span>
-                            {replaceTemplate(
-                              t(props.language, {
-                                es: "Estado: {status} · Sesiones: {sessions} · Última hace {days} días",
-                                en: "Status: {status} · Sessions: {sessions} · Last seen {days} days ago",
-                                pt: "Status: {status} · Sessoes: {sessions} · Última há {days} dias"
-                              }),
-                              {
-                                status: patientStatusLabel(patient.status, props.language),
-                                sessions: String(patient.totalSessions),
-                                days: String(patient.daysSinceLastSession)
-                              }
-                            )}
-                          </span>
+                          <div className="pro-patient-row-stats">
+                            <span>
+                              {replaceTemplate(
+                                t(props.language, {
+                                  es: "{sessions} sesiones",
+                                  en: "{sessions} sessions",
+                                  pt: "{sessions} sessoes"
+                                }),
+                                { sessions: String(patient.totalSessions) }
+                              )}
+                            </span>
+                            <span>
+                              {replaceTemplate(
+                                t(props.language, {
+                                  es: "Última hace {days} días",
+                                  en: "Last seen {days} days ago",
+                                  pt: "Ultima ha {days} dias"
+                                }),
+                                { days: String(patient.daysSinceLastSession) }
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <span className={`pro-status-pill pro-status-pill--${patient.status}`} aria-hidden="true">
                         {patientStatusLabel(patient.status, props.language)}
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      className="pro-patient-chat-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/chat?patientId=${encodeURIComponent(patient.patientId)}`);
-                      }}
-                    >
-                      {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-                    </button>
+                    <div className="pro-patient-row-actions">
+                      <button
+                        type="button"
+                        className="pro-patient-chat-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/chat?patientId=${encodeURIComponent(patient.patientId)}`);
+                        }}
+                      >
+                        {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                      </button>
+                      <button
+                        type="button"
+                        className="pro-patient-chat-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/pacientes/${encodeURIComponent(patient.patientId)}`);
+                        }}
+                      >
+                        {t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
+                      </button>
+                    </div>
                   </li>
                 );
               })}

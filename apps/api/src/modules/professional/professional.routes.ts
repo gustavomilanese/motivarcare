@@ -215,6 +215,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     pendingPayoutSummary,
     revenueStats,
     revenueStatsByCurrency,
+    revenueFxRows,
     professionalProfileSnippet
   ] = await Promise.all([
     prisma.booking.findMany({
@@ -300,6 +301,18 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       },
       _count: true
     }),
+    prisma.financeSessionRecord.findMany({
+      where: revenueWhere,
+      select: {
+        currency: true,
+        sessionPriceCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
     prisma.professionalProfile.findUnique({
       where: { id: actor.professionalProfileId },
       select: {
@@ -339,6 +352,22 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   const weeklySessions = weeklySessionsCount;
 
   const pendingPayoutCents = pendingPayoutSummary._sum.professionalNetCents ?? 0;
+  let usdHardCents = 0;
+  for (const row of revenueFxRows) {
+    const currency = (row.currency ?? "usd").toLowerCase();
+    if (currency === "usd") {
+      usdHardCents += row.sessionPriceCents;
+      continue;
+    }
+    if (currency === "ars") {
+      const fx = Number(row.purchase?.fxArsPerUsdSnapshot ?? 0);
+      if (Number.isFinite(fx) && fx > 0) {
+        usdHardCents += Math.round(row.sessionPriceCents / fx);
+      }
+    }
+  }
+  const arsGrossCents =
+    revenueStatsByCurrency.find((row) => row.currency.toLowerCase() === "ars")?._sum.sessionPriceCents ?? 0;
   const activeBookingsByPatient = new Map<string, number>();
 
   for (const booking of allBookings) {
@@ -416,7 +445,11 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         platformFeeCents: row._sum.platformFeeCents ?? 0,
         professionalNetCents: row._sum.professionalNetCents ?? 0,
         completedSessions: row._count
-      }))
+      })),
+      executedDisplay: {
+        arsGrossCents,
+        usdHardCents
+      }
     },
     trialSession: trialBooking
       ? {
