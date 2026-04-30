@@ -11016,15 +11016,297 @@ button:disabled {
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: rgba(248, 250, 255, 0.95);
+  border: 1px solid #dbe4f5;
   font-size: 14px;
-  color: #1e3a8a;
+  color: #1e293b;
 }
 
 .pro-income-patient-filter-banner a {
   font-weight: 700;
   color: #1d4ed8;
+}
+
+/* Finance: multi-currency blocks, chips, movements */
+.pro-dashboard-revenue-microhint {
+  margin: -4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+  max-width: 56ch;
+}
+
+.pro-dashboard-revenue--floating .pro-dashboard-revenue-microhint {
+  margin-top: 0;
+}
+
+.pro-finance-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.pro-finance-region {
+  display: grid;
+  gap: 10px;
+}
+
+.pro-finance-region + .pro-finance-region {
+  padding-top: 14px;
+  border-top: 1px solid #e9ecf6;
+}
+
+.pro-finance-region__badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e8ecf4;
+  border-radius: 999px;
+  padding: 5px 10px;
+  width: fit-content;
+}
+
+.pro-currency-chip {
+  display: inline-flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px 6px;
+  border: 1px solid #e8ecf4;
+}
+
+.pro-finance-footnote {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid #e9ecf6;
+  display: grid;
+  gap: 8px;
+}
+
+.pro-finance-footnote__title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.pro-finance-lifetime-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pro-finance-lifetime-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #475569;
+}
+
+.pro-finance-lifetime-list strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-finance-lifetime-sessions {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.pro-finance-lifetime-legacy {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.pro-finance-lifetime-legacy strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pro-income-movements-heading h2 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.pro-income-movement-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pro-income-movement-dateline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.pro-income-movement-hero-net {
+  font-weight: 600;
+  font-size: 15px;
+  color: #0f172a;
+  text-align: right;
+}
+
+.pro-income-movement-hero-net strong {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.pro-income-movement-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.pro-income-movement-split span:nth-child(even):not(.pro-income-movement-split-sep) {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #475569;
+}
+
+@media (max-width: 720px) {
+  .pro-kpi-grid--revenue {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-income-movement-amounts {
+    width: 100%;
+    text-align: left;
+  }
+
+  .pro-income-movement-hero-net,
+  .pro-income-movement-split {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+/* Patient detail section titles + cobros strip */
+.pro-card h2.pro-section-kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-patient-finance-strip {
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecf6;
+  display: grid;
+  gap: 8px;
+}
+
+.pro-patient-finance-strip__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-patient-finance-strip__hint {
+  margin: -2px 0 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.pro-patient-finance-rows {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.pro-patient-finance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e8ecf4;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(95, 68, 235, 0.04), transparent 45%),
+    linear-gradient(180deg, #fcfcff 0%, #f6f8fc 100%);
+}
+
+.pro-patient-finance-row__main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pro-patient-finance-row__amount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+
+.pro-patient-finance-row__meta {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Practice health polish */
+.pro-practice-health-dot-inner {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.pro-practice-health-dot--warn .pro-practice-health-dot-inner {
+  font-weight: 650;
+  font-size: 12px;
+}
+
+.pro-practice-health {
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.045);
+}
+
+.pro-practice-health-dots {
+  margin-top: 14px;
+  gap: 10px 12px;
+}
+
+.pro-practice-health-dot-item {
+  min-width: min(100%, 200px);
 }
 
 @media (max-width: 640px) {

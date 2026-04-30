@@ -18,6 +18,7 @@ import {
   ymLocal,
   ymdLocal
 } from "../lib/professionalStatsRangeQuery";
+import { FinanceCurrencySection } from "../components/FinanceCurrencySection";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
@@ -430,58 +431,78 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           ) : null}
           </div>
         </div>
+        <p className="pro-dashboard-revenue-microhint">
+          {t(props.language, {
+            es: "Importes en la moneda de cada sesión liquidada.",
+            en: "Totals use each session’s recorded currency.",
+            pt: "Na moeda de cada sessao liquidada."
+          })}
+        </p>
         {revenueByCurrencyRows.length > 0 ? (
-          revenueByCurrencyRows.map((row) => (
-            <div key={row.currency}>
-              {revenueByCurrencyRows.length > 1 ? (
-                <p className="pro-muted" style={{ marginBottom: "0.5rem" }}>
-                  {row.currency.toUpperCase()}
-                </p>
-              ) : null}
-              <div className="pro-kpi-grid pro-kpi-grid--revenue">
-                <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
-                  <strong>{formatRecordedFinanceMinor(row.grossCents, row.currency, props.language)}</strong>
-                  <small className="pro-kpi-card-hint">
-                    {replaceTemplate(
-                      t(props.language, {
-                        es: "{n} sesiones en el período",
-                        en: "{n} sessions in period",
-                        pt: "{n} sessoes no periodo"
-                      }),
-                      { n: String(row.completedSessions) }
-                    )}
-                  </small>
-                </article>
-                <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Comision plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
-                  <strong>{formatRecordedFinanceMinor(row.platformFeeCents, row.currency, props.language)}</strong>
-                  <small className="pro-kpi-card-hint">
-                    {t(props.language, {
-                      es: "Retenida por MotivarCare en estas sesiones.",
-                      en: "Retained by MotivarCare on these sessions.",
-                      pt: "Retida pelo MotivarCare nestas sessoes."
-                    })}
-                  </small>
-                </article>
-                <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
-                  <strong>{formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)}</strong>
-                  <small className="pro-kpi-card-hint">
-                    {t(props.language, {
-                      es: "Neto profesional en el rango elegido (no es solo lo pendiente de pago).",
-                      en: "Professional net in the selected range (not the same as unpaid balance).",
-                      pt: "Liquido profissional no intervalo (nao e so o saldo pendente)."
-                    })}
-                  </small>
-                </article>
-              </div>
-            </div>
-          ))
+          <div className={revenueByCurrencyRows.length > 1 ? "pro-finance-stack" : undefined}>
+            {revenueByCurrencyRows.map((row) => {
+              const avgNetMinor =
+                row.completedSessions > 0 ? Math.round(row.professionalNetCents / row.completedSessions) : 0;
+              return (
+                <FinanceCurrencySection
+                  key={row.currency}
+                  currencyCode={row.currency}
+                  emphasizeCurrency={revenueByCurrencyRows.length > 1}
+                >
+                  <div className="pro-kpi-grid pro-kpi-grid--revenue">
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
+                      <strong>{formatRecordedFinanceMinor(row.grossCents, row.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {replaceTemplate(
+                          t(props.language, {
+                            es: "{n} sesiones con cobro registrado.",
+                            en: "{n} paid session(s).",
+                            pt: "{n} sessao(oes) com cobro registrado."
+                          }),
+                          { n: String(row.completedSessions) }
+                        )}
+                      </small>
+                    </article>
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Comisión", en: "Platform fee", pt: "Comissao" })}</span>
+                      <strong>{formatRecordedFinanceMinor(row.platformFeeCents, row.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
+                      </small>
+                    </article>
+                    <article className="pro-kpi-card">
+                      <span>{t(props.language, { es: "Tu neto", en: "Your net", pt: "Seu liquido" })}</span>
+                      <strong>{formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)}</strong>
+                      <small className="pro-kpi-card-hint">
+                        {row.completedSessions === 0
+                          ? t(props.language, {
+                              es: "Sin liquidaciones en este intervalo.",
+                              en: "No payouts in this range.",
+                              pt: "Sem liquidacoes neste intervalo."
+                            })
+                          : t(props.language, {
+                              es: `Promedio ${formatRecordedFinanceMinor(avgNetMinor, row.currency, props.language)} / sesión.`,
+                              en: `Avg ${formatRecordedFinanceMinor(avgNetMinor, row.currency, props.language)} / session.`,
+                              pt: `Media ${formatRecordedFinanceMinor(avgNetMinor, row.currency, props.language)} / sessao.`
+                            }) +
+                            " " +
+                            t(props.language, {
+                              es: "Para pendiente revisá “A cobrar”.",
+                              en: "Pending payout is tracked in “To collect”.",
+                              pt: "Pendencias estao em “A receber”."
+                            })}
+                      </small>
+                    </article>
+                  </div>
+                </FinanceCurrencySection>
+              );
+            })}
+          </div>
         ) : (
           <div className="pro-kpi-grid pro-kpi-grid--revenue">
             <article className="pro-kpi-card">
-              <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
+              <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
               <strong>{formatMoneyCents(data.revenueStats.grossCents, props.language, props.currency)}</strong>
               <small className="pro-kpi-card-hint">
                 {replaceTemplate(
@@ -495,24 +516,20 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
               </small>
             </article>
             <article className="pro-kpi-card">
-              <span>{t(props.language, { es: "Comision plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
+              <span>{t(props.language, { es: "Comisión", en: "Platform fee", pt: "Comissao" })}</span>
               <strong>{formatMoneyCents(data.revenueStats.platformFeeCents, props.language, props.currency)}</strong>
               <small className="pro-kpi-card-hint">
-                {t(props.language, {
-                  es: "Retenida por MotivarCare en estas sesiones.",
-                  en: "Retained by MotivarCare on these sessions.",
-                  pt: "Retida pelo MotivarCare nestas sessoes."
-                })}
+                {t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
               </small>
             </article>
             <article className="pro-kpi-card">
-              <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+              <span>{t(props.language, { es: "Tu neto", en: "Your net", pt: "Seu liquido" })}</span>
               <strong>{formatMoneyCents(data.revenueStats.professionalNetCents, props.language, props.currency)}</strong>
               <small className="pro-kpi-card-hint">
                 {t(props.language, {
-                  es: "Neto profesional en el rango elegido (no es solo lo pendiente de pago).",
-                  en: "Professional net in the selected range (not the same as unpaid balance).",
-                  pt: "Liquido profissional no intervalo (nao e so o saldo pendente)."
+                  es: "Este período. No es igual al saldo a cobrar.",
+                  en: "This period. Not the same as unpaid balance.",
+                  pt: "Este periodo. Nao e igual ao saldo pendente."
                 })}
               </small>
             </article>

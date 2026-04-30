@@ -8,6 +8,8 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
+import { FinanceCurrencySection } from "../components/FinanceCurrencySection";
+import { FinanceLifetimeFootnote } from "../components/FinanceLifetimeFootnote";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import {
   buildProfessionalStatsQuery,
@@ -118,6 +120,13 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
                 pt: "Mesmos criterios do dashboard: sessoes concluidas e preco efetivo por pacote ou tabela."
               })}
             </p>
+            <p className="pro-dashboard-revenue-microhint">
+              {t(props.language, {
+                es: "Los importes aparecen en la moneda registrada por sesión (no se convierten).",
+                en: "Amounts show in each session’s recorded currency (no conversion between currencies).",
+                pt: "Valores na moeda registrada por sessao (sem conversao entre moedas)."
+              })}
+            </p>
           </div>
           <div className="pro-dashboard-revenue-toolbar" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Periodo" })}>
           <label className="pro-dashboard-revenue-field">
@@ -168,60 +177,69 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
         ) : (
           <>
             {earningsSummaryBlocks.length > 0 ? (
-              earningsSummaryBlocks.map((block) => (
-                <div key={block.currency}>
-                  {earningsSummaryBlocks.length > 1 ? (
-                    <p className="pro-muted" style={{ marginBottom: "0.5rem" }}>
-                      {block.currency.toUpperCase()}
-                    </p>
-                  ) : null}
-                  <div className="pro-kpi-grid pro-kpi-grid--revenue">
-                    <article className="pro-kpi-card">
-                      <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
-                      <strong>{formatRecordedFinanceMinor(block.grossCents, block.currency, props.language)}</strong>
-                      <small className="pro-kpi-card-hint">
-                        {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
-                      </small>
-                    </article>
-                    <article className="pro-kpi-card">
-                      <span>{t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
-                      <strong>{formatRecordedFinanceMinor(block.platformFeeCents, block.currency, props.language)}</strong>
-                      <small className="pro-kpi-card-hint">
-                        {t(props.language, { es: "Retenida por MotivarCare.", en: "Retained by MotivarCare.", pt: "Retida pelo MotivarCare." })}
-                      </small>
-                    </article>
-                    <article className="pro-kpi-card">
-                      <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
-                      <strong>{formatRecordedFinanceMinor(block.professionalNetCents, block.currency, props.language)}</strong>
-                      <small className="pro-kpi-card-hint">
-                        {t(props.language, {
-                          es: `${block.sessions} sesiones · promedio ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`,
-                          en: `${block.sessions} sessions · avg ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`,
-                          pt: `${block.sessions} sessoes · media ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)}`
-                        })}
-                      </small>
-                    </article>
-                  </div>
-                </div>
-              ))
+              <div className={earningsSummaryBlocks.length > 1 ? "pro-finance-stack" : undefined}>
+                {earningsSummaryBlocks.map((block) => (
+                  <FinanceCurrencySection
+                    key={block.currency}
+                    currencyCode={block.currency}
+                    emphasizeCurrency={earningsSummaryBlocks.length > 1}
+                  >
+                    <div className="pro-kpi-grid pro-kpi-grid--revenue">
+                      <article className="pro-kpi-card">
+                        <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
+                        <strong>{formatRecordedFinanceMinor(block.grossCents, block.currency, props.language)}</strong>
+                        <small className="pro-kpi-card-hint">
+                          {t(props.language, {
+                            es: `${block.sessions} sesión(es) liquidadas aquí.`,
+                            en: `${block.sessions} session payout(s) in this view.`,
+                            pt: `${block.sessions} sessao(oes) liquidada(s) aqui.`
+                          })}
+                        </small>
+                      </article>
+                      <article className="pro-kpi-card">
+                        <span>{t(props.language, { es: "Comisión", en: "Platform fee", pt: "Comissao" })}</span>
+                        <strong>{formatRecordedFinanceMinor(block.platformFeeCents, block.currency, props.language)}</strong>
+                        <small className="pro-kpi-card-hint">
+                          {t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
+                        </small>
+                      </article>
+                      <article className="pro-kpi-card">
+                        <span>{t(props.language, { es: "Tu neto", en: "Your net", pt: "Seu liquido" })}</span>
+                        <strong>{formatRecordedFinanceMinor(block.professionalNetCents, block.currency, props.language)}</strong>
+                        <small className="pro-kpi-card-hint">
+                          {t(props.language, {
+                            es: `Promedio ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)} / sesión`,
+                            en: `Avg ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)} / session`,
+                            pt: `Media ${formatRecordedFinanceMinor(block.averageNetPerSessionCents, block.currency, props.language)} / sessao`
+                          })}
+                        </small>
+                      </article>
+                    </div>
+                  </FinanceCurrencySection>
+                ))}
+              </div>
             ) : (
               <div className="pro-kpi-grid pro-kpi-grid--revenue">
                 <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Ingresos brutos", en: "Gross revenue", pt: "Receita bruta" })}</span>
+                  <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
                   <strong>{formatMoneyCents(data.summary.grossCents, props.language, props.currency)}</strong>
                   <small className="pro-kpi-card-hint">
-                    {t(props.language, { es: "En el período seleccionado.", en: "In the selected period.", pt: "No periodo selecionado." })}
+                    {t(props.language, {
+                      es: `${data.summary.completedSessions} sesión(es) en este filtro.`,
+                      en: `${data.summary.completedSessions} session(s) in this filter.`,
+                      pt: `${data.summary.completedSessions} sessao(oes) neste filtro.`
+                    })}
                   </small>
                 </article>
                 <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao da plataforma" })}</span>
+                  <span>{t(props.language, { es: "Comisión", en: "Platform fee", pt: "Comissao" })}</span>
                   <strong>{formatMoneyCents(data.summary.platformFeeCents, props.language, props.currency)}</strong>
                   <small className="pro-kpi-card-hint">
-                    {t(props.language, { es: "Retenida por MotivarCare.", en: "Retained by MotivarCare.", pt: "Retida pelo MotivarCare." })}
+                    {t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
                   </small>
                 </article>
                 <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Tu parte (período)", en: "Your share (period)", pt: "Sua parte (periodo)" })}</span>
+                  <span>{t(props.language, { es: "Tu neto", en: "Your net", pt: "Seu liquido" })}</span>
                   <strong>{formatMoneyCents(data.summary.professionalNetCents, props.language, props.currency)}</strong>
                   <small className="pro-kpi-card-hint">
                     {t(props.language, {
@@ -233,62 +251,47 @@ export function IncomePage(props: { token: string; language: AppLanguage; curren
                 </article>
               </div>
             )}
-            <p className="pro-income-lifetime-hint">
-              {data.lifetimeByCurrency && data.lifetimeByCurrency.length > 0
-                ? t(props.language, {
-                    es: `Historial completo (neto): ${data.lifetimeByCurrency
-                      .map(
-                        (row) =>
-                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} ses.`
-                      )
-                      .join(" · ")}`,
-                    en: `All-time net: ${data.lifetimeByCurrency
-                      .map(
-                        (row) =>
-                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} sess.`
-                      )
-                      .join(" · ")}`,
-                    pt: `Historico liquido: ${data.lifetimeByCurrency
-                      .map(
-                        (row) =>
-                          `${row.currency.toUpperCase()}: ${formatRecordedFinanceMinor(row.professionalNetCents, row.currency, props.language)} · ${row.sessions} sess.`
-                      )
-                      .join(" · ")}`
-                  })
-                : t(props.language, {
-                    es: `Historial completo (neto acumulado): ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sesiones.`,
-                    en: `All-time net total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessions.`,
-                    pt: `Historico liquido total: ${formatMoneyCents(data.summary.lifetimeProfessionalNetCents, props.language, props.currency)} · ${data.summary.lifetimeCompletedSessions} sessoes.`
-                  })}
-            </p>
+            <FinanceLifetimeFootnote
+              language={props.language}
+              lifetimeByCurrency={data.lifetimeByCurrency}
+              legacyNetCents={data.summary.lifetimeProfessionalNetCents}
+              legacySessions={data.summary.lifetimeCompletedSessions}
+              formatLegacyNet={(cents) => formatMoneyCents(cents, props.language, props.currency)}
+            />
           </>
         )}
       </section>
 
       <section className="pro-card income-details-card">
-        <h2>{t(props.language, { es: "Movimientos en el período", en: "Movements in period", pt: "Movimentos no periodo" })}</h2>
+        <div className="pro-income-movements-heading">
+          <h2>{t(props.language, { es: "Movimientos del período", en: "Activity in period", pt: "Movimentos do periodo" })}</h2>
+        </div>
         {!data ? null : data.movements.length === 0 ? (
           <p>{t(props.language, { es: "Sin sesiones completadas en este período.", en: "No completed sessions in this period.", pt: "Sem sessoes concluidas neste periodo." })}</p>
         ) : (
           <ul className="pro-list pro-list--income">
             {data.movements.map((movement) => (
               <li key={movement.bookingId}>
-                <div>
+                <div className="pro-income-movement-meta">
                   <strong>{movement.patientName}</strong>
-                  <span>{formatDateTime(movement.startsAt, props.language)}</span>
+                  <span className="pro-income-movement-dateline">
+                    {formatDateTime(movement.startsAt, props.language)}
+                    <span className="pro-currency-chip">{movement.currency.toUpperCase()}</span>
+                  </span>
                 </div>
                 <div className="pro-income-movement-amounts">
-                  <span>
-                    {t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}{" "}
-                    {formatRecordedFinanceMinor(movement.grossCents, movement.currency, props.language)}
-                  </span>
-                  <span>
-                    {t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}{" "}
-                    {formatRecordedFinanceMinor(movement.platformFeeCents, movement.currency, props.language)}
-                  </span>
-                  <span className="pro-income-movement-net">
+                  <div className="pro-income-movement-hero-net">
                     {t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}{" "}
                     <strong>{formatRecordedFinanceMinor(movement.amountCents, movement.currency, props.language)}</strong>
+                  </div>
+                  <span className="pro-income-movement-split">
+                    <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
+                    <span>{formatRecordedFinanceMinor(movement.grossCents, movement.currency, props.language)}</span>
+                    <span className="pro-income-movement-split-sep" aria-hidden="true">
+                      ·
+                    </span>
+                    <span>{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}</span>
+                    <span>{formatRecordedFinanceMinor(movement.platformFeeCents, movement.currency, props.language)}</span>
                   </span>
                 </div>
               </li>

@@ -92,7 +92,7 @@ export function ProfessionalPracticeHealth(props: {
               className={`pro-practice-health-dot ${item.ok ? "pro-practice-health-dot--ok" : "pro-practice-health-dot--warn"}`}
               aria-hidden="true"
             >
-              {item.ok ? "✓" : "!"}
+              <span className="pro-practice-health-dot-inner">{item.ok ? "✓" : "!"}</span>
             </span>
             <span className="pro-practice-health-dot-label">
               {ITEM_LABELS[item.id]

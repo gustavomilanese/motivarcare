@@ -111,9 +111,9 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
         </div>
       </header>
 
-      <section className="pro-card pro-patient-metrics-card">
-        <h2 className="sr-only">
-          {t(props.language, { es: "Resumen", en: "Summary", pt: "Resumo" })}
+      <section className="pro-card pro-patient-metrics-card" aria-labelledby="pro-patient-activity-title">
+        <h2 id="pro-patient-activity-title" className="pro-section-kicker">
+          {t(props.language, { es: "Actividad", en: "Activity", pt: "Atividade" })}
         </h2>
         <dl className="pro-patient-metrics-dl">
           <div>
@@ -140,21 +140,44 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
             <dt>{t(props.language, { es: "Días desde última sesión", en: "Days since last session", pt: "Dias desde ultima sessao" })}</dt>
             <dd>{patient.daysSinceLastSession}</dd>
           </div>
-          {(patient.lifetimeTotals ?? []).map((row) => (
-            <div key={row.currency}>
-              <dt>
-                {t(props.language, {
-                  es: "Neto acumulado ({code})",
-                  en: "Lifetime net ({code})",
-                  pt: "Liquido acumulado ({code})"
-                }).replace(/\{code\}/g, row.currency.toUpperCase())}
-              </dt>
-              <dd>{formatRecordedFinanceMinor(row.netCents, row.currency, props.language)}</dd>
-              <dt>{t(props.language, { es: "Sesiones liquidadas", en: "Paid sessions", pt: "Sessoes liquidadas" })}</dt>
-              <dd>{row.sessions}</dd>
-            </div>
-          ))}
         </dl>
+        {(patient.lifetimeTotals ?? []).length > 0 ? (
+          <div className="pro-patient-finance-strip">
+            <h3 className="pro-patient-finance-strip__title">
+              {t(props.language, {
+                es: "Cobros registrados",
+                en: "Recorded payouts",
+                pt: "Pagamentos registrados"
+              })}
+            </h3>
+            <p className="pro-patient-finance-strip__hint">
+              {t(props.language, {
+                es: "Neto profesional según las liquidaciones en la plataforma.",
+                en: "Your net from platform payout records.",
+                pt: "Liquido profissional nas liquidacoes da plataforma."
+              })}
+            </p>
+            <ul className="pro-patient-finance-rows">
+              {(patient.lifetimeTotals ?? []).map((row) => (
+                <li key={row.currency} className="pro-patient-finance-row">
+                  <div className="pro-patient-finance-row__main">
+                    <span className="pro-currency-chip">{row.currency.toUpperCase()}</span>
+                    <span className="pro-patient-finance-row__amount">
+                      {formatRecordedFinanceMinor(row.netCents, row.currency, props.language)}
+                    </span>
+                  </div>
+                  <span className="pro-patient-finance-row__meta">
+                    {t(props.language, {
+                      es: `${row.sessions} sesión(es) liquidadas`,
+                      en: `${row.sessions} paid session(s)`,
+                      pt: `${row.sessions} sessao(oes) liquidadas`
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section className="pro-card pro-patient-actions-card">
@@ -176,14 +199,14 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
               <span className="pro-patient-action-icon" aria-hidden="true">
                 📊
               </span>
-              <span>{t(props.language, { es: "Historial de pagos (ingresos)", en: "Payment history (earnings)", pt: "Historico de pagamentos" })}</span>
+              <span>{t(props.language, { es: "Ver ingresos de este paciente", en: "View earnings for this client", pt: "Ver receitas deste paciente" })}</span>
             </Link>
           </li>
         </ul>
       </section>
 
       <section className="pro-card pro-patient-payments-preview">
-        <h2>{t(props.language, { es: "Últimos pagos registrados", en: "Latest recorded payments", pt: "Ultimos pagamentos" })}</h2>
+        <h2>{t(props.language, { es: "Últimos cobros", en: "Recent payouts", pt: "Ultimos cobros" })}</h2>
         {paymentMovements.length === 0 ? (
           <p className="pro-muted">
             {t(props.language, {
@@ -196,15 +219,17 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
           <ul className="pro-list pro-list--income pro-list--compact">
             {paymentMovements.slice(0, 8).map((movement) => (
               <li key={movement.bookingId}>
-                <div>
+                <div className="pro-income-movement-meta">
                   <strong>{formatDateWithLocale({ value: movement.startsAt, language: props.language, options: { dateStyle: "medium" } })}</strong>
-                  <span className="pro-muted">{movement.currency.toUpperCase()}</span>
+                  <span className="pro-income-movement-dateline">
+                    <span className="pro-currency-chip">{movement.currency.toUpperCase()}</span>
+                  </span>
                 </div>
                 <div className="pro-income-movement-amounts">
-                  <span className="pro-income-movement-net">
+                  <div className="pro-income-movement-hero-net">
                     {t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}{" "}
                     <strong>{formatRecordedFinanceMinor(movement.amountCents, movement.currency, props.language)}</strong>
-                  </span>
+                  </div>
                 </div>
               </li>
             ))}
