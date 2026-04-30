@@ -39,7 +39,8 @@ const P = {
   aboutAmbientJpg: "/photos/quienes-somos-premium.jpg",
   /** Acento visual banner profesionales — paisaje suave, no protagonista. */
   bannerAccent: "/photos/04-estudio-montanas-niebla.jpg",
-  videoHome: "/photos/07-videollamada-desde-casa.jpg",
+  /** Sección #precios: sesión online desde el living (imagen fija en public/photos). */
+  videoHome: "/photos/precios-terapia-online.png",
   therapistNotes: "/photos/08-sesion-profesional-notas.jpg",
   beachLaptop: "/photos/10-playa-primer-plano.jpg",
   poolLaptop: "/photos/11-pool-desayuno-laptop.jpg",
@@ -429,7 +430,7 @@ export function App() {
               <img
                 className="patient-ar-photo-grade"
                 src={P.videoHome}
-                alt="Persona en videollamada de terapia online desde casa, con laptop"
+                alt="Persona en el sillón con laptop en videollamada de terapia online desde casa"
                 loading="lazy"
                 width={800}
                 height={533}

@@ -36,7 +36,8 @@ const P = {
   studioMist: "/photos/04-estudio-montanas-niebla.jpg",
   mediterranean: "/photos/05-panorama-mediterraneo.jpg",
   podsOffice: "/photos/06-pods-oficina-premium.jpg",
-  videoHome: "/photos/07-videollamada-desde-casa.jpg",
+  /** Pricing / timeline / citas: sesión remota desde casa (public/photos). */
+  videoHome: "/photos/precios-terapia-online.png",
   therapistNotes: "/photos/08-sesion-profesional-notas.jpg",
   terracesNomad: "/photos/09-terrazas-arroz-nomada.jpg",
   beachLaptop: "/photos/10-playa-primer-plano.jpg",
@@ -324,7 +325,7 @@ export function App() {
                     className={"pl2-price-card" + (catalogFeaturedId === pkg.id ? " pl2-price-card--featured" : "")}
                   >
                     <div className="pl2-price-top">
-                      <img src={P.studioMist} alt="" loading="lazy" />
+                      <img src={P.videoHome} alt="" loading="lazy" />
                     </div>
                     <div className="pl2-price-inner">
                       {catalogFeaturedId === pkg.id ? <p className="pl2-price-badge">Destacado</p> : null}
@@ -353,7 +354,7 @@ export function App() {
               <div className="pl2-pricing-grid">
                 <article className="pl2-price-card">
                   <div className="pl2-price-top">
-                    <img src={P.beachLaptop} alt="" loading="lazy" />
+                    <img src={P.videoHome} alt="" loading="lazy" />
                   </div>
                   <div className="pl2-price-inner">
                     <h3>Sesión individual</h3>
@@ -372,7 +373,7 @@ export function App() {
                 </article>
                 <article className="pl2-price-card pl2-price-card--featured">
                   <div className="pl2-price-top">
-                    <img src={P.studioMist} alt="" loading="lazy" />
+                    <img src={P.videoHome} alt="" loading="lazy" />
                   </div>
                   <div className="pl2-price-inner">
                     <p className="pl2-price-badge">Popular</p>
@@ -390,7 +391,7 @@ export function App() {
                 </article>
                 <article className="pl2-price-card">
                   <div className="pl2-price-top">
-                    <img src={P.podsOffice} alt="" loading="lazy" />
+                    <img src={P.videoHome} alt="" loading="lazy" />
                   </div>
                   <div className="pl2-price-inner">
                     <h3>Sin suscripción</h3>
