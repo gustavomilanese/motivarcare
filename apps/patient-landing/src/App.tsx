@@ -32,8 +32,8 @@ const PROFESSIONAL_PORTAL_URL = portalUrl(
 const P = {
   heroWebp: "/photos/15-hero-balcon-valle.webp",
   heroJpg: "/photos/15-hero-balcon-valle.jpg",
-  /** Bento “Profesionales verificados”: por defecto placeholder; podés sobreescribir este archivo en `public/photos/`. */
-  bentoProfesionales: "/photos/16-bento-profesionales-verificado.jpg",
+  /** Bento “Profesionales verificados” (#beneficios). */
+  bentoProfesionales: "/photos/psicologos-verificados.png",
   /** Quiénes somos: asset visual (playa, laptop y café), exportado 2400×1371. */
   aboutAmbientWebp: "/photos/quienes-somos-premium.webp",
   aboutAmbientJpg: "/photos/quienes-somos-premium.jpg",
@@ -220,7 +220,7 @@ export function App() {
                 <img
                   className="patient-ar-photo-grade"
                   src={P.bentoProfesionales}
-                  alt="Profesionales de la salud mental en entorno de trabajo"
+                  alt="Equipo de psicólogos certificados de distintos países en consultorio profesional"
                   loading="lazy"
                 />
                 <div className="patient-ar-bento-scrim" />

@@ -33,6 +33,8 @@ const P = {
   hero: "/photos/14-banner-panoramico.jpg",
   parallaxStrip: "/photos/13-hero-panoramico.jpg",
   deskPanel: "/photos/03-escritorio-atardecer.jpg",
+  /** Card “Profesionales verificados” en #beneficios. */
+  bentoProfesionales: "/photos/psicologos-verificados.png",
   studioMist: "/photos/04-estudio-montanas-niebla.jpg",
   mediterranean: "/photos/05-panorama-mediterraneo.jpg",
   podsOffice: "/photos/06-pods-oficina-premium.jpg",
@@ -174,7 +176,7 @@ export function App() {
             <div className="pl2-cards-photo">
               <article className="pl2-cp-card">
                 <div className="pl2-cp-photo">
-                  <img src={P.studioMist} alt="" loading="lazy" width={800} height={520} />
+                  <img src={P.bentoProfesionales} alt="" loading="lazy" width={800} height={520} />
                 </div>
                 <div className="pl2-cp-body">
                   <h3>Profesionales verificados</h3>
