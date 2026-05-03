@@ -12,7 +12,9 @@
   "scripts": {
     "db:pre": "npm run db:up && npm run db:wait",
     "dev:apps": "concurrently -n API,PATIENT,PRO,ADMIN -c cyan,magenta,green,yellow \"npm run dev:api\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
-    "dev:all:apps": "concurrently -n API,LANDING,PATIENT_AR,PATIENT_AR2,PATIENT_MOB,PATIENT,PRO,ADMIN -c cyan,blue,red,white,gray,magenta,green,yellow \"npm run dev:api\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-landing-v2\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-mobile\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
+    "dev:all:apps": "concurrently -n API,LAND_FINAL,LAND_ALT1,LAND_ALT2,PAT_MOB,PATIENT,PRO,ADMIN -c cyan,green,blue,magenta,white,gray,red,yellow \"npm run dev:api\" \"npm run dev:patient-landing\" \"npm run dev:patient-landing-v2\" \"npm run dev:landing\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient-mobile\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:patient\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:professional\" \"wait-on -t 120000 tcp:127.0.0.1:4000 && npm run dev:admin\"",
+    "dev:landings": "concurrently -n LAND_FINAL,LAND_ALT1,LAND_ALT2 -c green,blue,magenta \"npm run dev:patient-landing\" \"npm run dev:patient-landing-v2\" \"npm run dev:landing\"",
+    "dev:landing-final": "npm run dev -w @therapy/patient-landing",
     "dev": "npm run db:pre && npm run dev:apps",
     "dev:all": "npm run db:pre && npm run dev:all:apps",
     "dev:full": "npm run dev:all",

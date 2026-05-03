@@ -1,5 +1,6 @@
 {
   "name": "@therapy/patient-landing",
+  "description": "Landing paciente MotivarCare — diseño actual (teal / motivarcare). En dev: npm run dev:landing-final o puerto 5176.",
   "version": "0.1.0",
   "private": true,
   "type": "module",

@@ -130,6 +130,18 @@ npm run db:push:remote:accept-data-loss
 
 ### B2. Frontends estáticos (admin, patient, professional, landing)
 
+**Landings públicas (tres apps en el repo, no hay una cuarta):**
+
+| Workspace npm | Carpeta | Rol típico |
+|---------------|---------|------------|
+| `@therapy/patient-landing` | `apps/patient-landing` | Landing paciente AR (la que estabas editando como “final”; diseño teal reciente). |
+| `@therapy/patient-landing-v2` | `apps/patient-landing-v2` | Variante alternativa (otro layout). |
+| `@therapy/landing` | `apps/landing` | Sitio marketing más amplio (blog, más páginas; título por defecto orientado a profesionales). |
+
+**[www.motivarcare.com](https://www.motivarcare.com/)** no es otro repositorio: es **el build desplegado** en Vercel con ese dominio. Qué app es depende de **qué proyecto de Vercel** tiene asignado el hostname `www` / apex — suele ser el proyecto que hace `npm run build -w @therapy/patient-landing` o el de `@therapy/landing`. Para confirmarlo: Vercel → ese proyecto → **Settings → Domains** y **Build Command** (debe coincidir con uno de los `vercel.json` bajo `apps/*/vercel.json`).
+
+En local, `npm run dev:all` levanta las tres como **LAND_FINAL** (5176), **LAND_ALT1** (5177), **LAND_ALT2** (5172); ver `package.json` raíz.
+
 Las apps web leen la URL del API con **`VITE_API_URL`** en tiempo de build. Antes de compilar, creá `.env` / `.env.production` en la **raíz de cada app** (o exportá en shell) con:
 
 ```bash
@@ -144,6 +156,7 @@ VITE_API_URL=https://tu-api.up.railway.app npm run build -w @therapy/admin
 VITE_API_URL=https://tu-api.up.railway.app npm run build -w @therapy/patient
 VITE_API_URL=https://tu-api.up.railway.app npm run build -w @therapy/professional
 VITE_API_URL=https://tu-api.up.railway.app npm run build -w @therapy/landing
+VITE_API_URL=https://tu-api.up.railway.app npm run build -w @therapy/patient-landing
 ```
 
 Cada app deja salida en su `dist/` (Vite). Subí el contenido de cada `dist` a:

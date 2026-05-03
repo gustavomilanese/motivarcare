@@ -23,4 +23,5 @@ for port in "${PORTS[@]}"; do
   fi
 done
 
-echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all (Docker MySQL+Redis; dev:all incluye API, landing pros, landings pacientes AR + alternativa 2, patient-mobile Expo, patient web, pro y admin)."
+echo "Listo. Volvé a correr: npm run dev  o  npm run dev:all."
+echo "Landings: 5176 LAND_FINAL = apps/patient-landing (última editada, teal). 5177 LAND_ALT1 = patient-landing-v2. 5172 LAND_ALT2 = apps/landing (marketing)."

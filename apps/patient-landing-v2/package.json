@@ -1,5 +1,6 @@
 {
   "name": "@therapy/patient-landing-v2",
+  "description": "Landing paciente alternativa (LAND_ALT1): identidad teal/azul, 5 columnas pastel. Puerto dev 5177.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
