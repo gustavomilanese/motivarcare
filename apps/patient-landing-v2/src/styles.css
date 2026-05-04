@@ -59,6 +59,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* La shell del hero va con overflow visible (sticky + card); cortamos solo el eje X. */
+  overflow-x: clip;
+}
+
+/* Bloques de scroll: el ritmo va en el padding de cada sección, no en margin (evita franjas del bg del body). */
+.plv2-hero-shell,
+.plv2-features,
+.plv2-bento,
+.plv2-steps,
+.plv2-photo-strip,
+.plv2-pricing-split,
+.plv2-faq {
+  margin: 0;
 }
 
 @media (max-width: 900px) {
@@ -88,7 +101,8 @@ body {
 /* ——— Hero (identidad): blanco, lockup PNG, CTA gradiente, card + pin ——— */
 .plv2-hero-shell {
   position: relative;
-  overflow: clip;
+  /* visible: si clip/hidden, el header sticky y la card quedan mal (scroll / recortes). */
+  overflow: visible;
   min-height: min(114vh, 1200px);
   display: flex;
   flex-direction: column;
@@ -137,7 +151,15 @@ body {
 
 @media (max-width: 960px) {
   .plv2-hero-bg-img {
-    object-position: 52% 12%;
+    /* Móvil: viewport muy alto/estrecho; el rostro del sujeto queda en el lado derecho del JPG.
+       Antes 52% recortaba la cara — empujamos el ancla hacia la derecha (coherente con web 56%). */
+    object-position: 76% 20%;
+  }
+}
+
+@media (max-width: 480px) {
+  .plv2-hero-bg-img {
+    object-position: 82% 22%;
   }
 }
 
@@ -245,7 +267,7 @@ body {
   box-shadow: var(--plv2-shadow-xs), 0 14px 32px rgba(47, 98, 196, 0.26);
 }
 
-/* Hero: copy + foto (mock) */
+/* Hero: copy + tarjeta match solo en ≥961px (en móvil se oculta vía CSS). */
 .plv2-hero-stage {
   position: relative;
   z-index: 2;
@@ -264,13 +286,17 @@ body {
 }
 
 @media (max-width: 960px) {
+  /* Editorial: la foto respira arriba (rostro); el velo fuerte solo en la banda del copy. */
   .plv2-hero-bg-scrim {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.11) 0%,
-      rgba(255, 255, 255, 0.47) 32%,
-      rgba(255, 255, 255, 0.81) 52%,
-      rgba(255, 255, 255, 0.87) 100%
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 18%,
+      rgba(255, 255, 255, 0.03) 32%,
+      rgba(248, 246, 252, 0.42) 52%,
+      rgba(247, 245, 252, 0.82) 68%,
+      rgba(243, 241, 249, 0.96) 82%,
+      #f3f1f8 100%
     );
   }
 
@@ -284,11 +310,9 @@ body {
     padding-right: 0;
   }
 
+  /* Tarjeta match: solo escritorio; no tapar el retrato en móvil. */
   .plv2-hero-media {
-    order: -1;
-    max-width: 440px;
-    margin-left: auto;
-    margin-right: auto;
+    display: none !important;
   }
 }
 
@@ -367,8 +391,8 @@ body {
 .plv2-cta-gradient {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 26px 14px 16px;
+  gap: 0;
+  padding: 14px 24px;
   border-radius: 999px;
   text-decoration: none;
   color: #fff;
@@ -391,24 +415,11 @@ body {
   box-shadow: var(--plv2-shadow-xs), 0 18px 42px rgba(47, 98, 196, 0.28);
 }
 
-.plv2-cta-gradient-globe {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  color: #fff;
-}
-
 .plv2-cta-gradient-text strong {
   font-weight: 800;
 }
 
-/* Match card (mock): fila avatar + copy, barra match, pin corazón */
+/* Match card (mock): solo visible en ≥961px — en móvil .plv2-hero-media está oculto */
 .plv2-match-card {
   --plv2-match-cycle: 11s;
   position: absolute;
@@ -754,32 +765,20 @@ body {
 }
 
 @media (max-width: 520px) {
-  .plv2-match-card {
-    position: relative;
-    left: auto;
-    right: auto;
-    transform: none;
-    bottom: auto;
-    margin-top: -28px;
-    margin-left: auto;
-    margin-right: auto;
-    width: min(300px, 100%);
-  }
-
-  .plv2-match-card-heart {
-    right: 8px;
-    bottom: 48px;
-  }
-
-  .plv2-hero-media {
-    align-items: center;
+  /* CTA a ancho útil: sin desbordes ni sensación “comprimida”. */
+  .plv2-hero-copy > .plv2-cta-gradient,
+  .plv2-photo-strip-content .plv2-cta-gradient {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 
 /* Features — cards blancas, imagen arriba, acento de marca */
 .plv2-features {
   padding: clamp(22px, 3.2vw, 40px) clamp(12px, 2.5vw, 22px) clamp(20px, 3vw, 36px);
-  margin: 0;
   background: linear-gradient(
     180deg,
     #e8e6f2 0%,
@@ -822,11 +821,13 @@ body {
   background: #fff;
   border-radius: 22px;
   overflow: hidden;
-  border: 1px solid rgba(107, 92, 179, 0.07);
+  border: 1px solid rgba(107, 92, 179, 0.08);
   box-shadow:
     var(--plv2-shadow-xs),
-    0 14px 36px rgba(91, 75, 179, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 2px 5px rgba(23, 28, 36, 0.03),
+    0 10px 28px rgba(91, 75, 179, 0.08),
+    0 22px 44px rgba(23, 28, 36, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
   transition:
     transform 0.22s ease,
     box-shadow 0.22s ease,
@@ -836,11 +837,14 @@ body {
 .plv2-feature-card:hover {
   z-index: 1;
   transform: translateY(-4px);
-  border-color: rgba(107, 92, 179, 0.14);
+  border-color: rgba(107, 92, 179, 0.16);
   box-shadow:
     var(--plv2-shadow-xs),
-    0 20px 48px rgba(91, 75, 179, 0.09),
-    0 0 0 1px rgba(107, 92, 179, 0.1);
+    0 4px 10px rgba(23, 28, 36, 0.05),
+    0 16px 38px rgba(91, 75, 179, 0.12),
+    0 28px 56px rgba(23, 28, 36, 0.08),
+    0 0 0 1px rgba(107, 92, 179, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .plv2-feature-card--accent-blue {
@@ -880,10 +884,38 @@ body {
   display: block;
 }
 
+@media (max-width: 960px) {
+  .plv2-feature-card-media--anywhere img {
+    object-position: 48% 28%;
+  }
+
+  /* Segunda card: asset ancho; en móvil mostramos la mitad derecha (sin el bloque de texto del asset). */
+  .plv2-feature-card-media--connect picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+    height: 100%;
+  }
+
+  .plv2-feature-card-media--connect picture img {
+    width: 200%;
+    max-width: none;
+    height: 100%;
+    margin-left: -100%;
+    object-fit: cover;
+    object-position: right 15%;
+  }
+
+  .plv2-feature-card--accent-teal .plv2-flag-overlay {
+    display: none;
+  }
+}
+
 .plv2-feature-card-media--ai {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
   aspect-ratio: 16 / 10;
   min-height: 0;
   padding: 0;
@@ -898,14 +930,15 @@ body {
 .plv2-ai-showcase {
   position: relative;
   box-sizing: border-box;
+  flex: 1 1 auto;
   width: 100%;
-  height: 100%;
-  max-width: none;
-  padding: clamp(12px, 3vw, 20px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 0;
+  max-width: none;
+  padding: clamp(8px, 1.5vw, 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .plv2-ai-showcase-bg {
@@ -926,9 +959,13 @@ body {
 
 .plv2-ai-glass {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   width: 100%;
-  max-width: 226px;
-  border-radius: 22px;
+  min-height: 0;
+  max-width: none;
+  border-radius: clamp(14px, 2.2vw, 20px);
   padding: 1px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.06) 100%);
   box-shadow:
@@ -938,8 +975,12 @@ body {
 }
 
 .plv2-ai-glass-inner {
-  border-radius: 21px;
-  padding: 11px 10px 12px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: calc(clamp(14px, 2.2vw, 20px) - 1px);
+  padding: clamp(9px, 1.4vw, 13px) clamp(10px, 1.6vw, 14px) clamp(10px, 1.6vw, 14px);
   background: rgba(15, 23, 42, 0.38);
   backdrop-filter: blur(20px) saturate(1.35);
   -webkit-backdrop-filter: blur(20px) saturate(1.35);
@@ -995,14 +1036,18 @@ body {
 }
 
 .plv2-ai-chat--onboarding {
+  flex: 1 1 auto;
   width: 100%;
   min-height: 0;
 }
 
 .plv2-ai-chat-window {
-  height: 118px;
+  flex: 1 1 auto;
+  min-height: clamp(104px, 22vmin, 220px);
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: clamp(10px, 1.5vw, 14px);
   mask-image: linear-gradient(180deg, transparent 0%, black 11%, black 89%, transparent 100%);
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 11%, black 89%, transparent 100%);
 }
@@ -1025,27 +1070,27 @@ body {
 .plv2-ai-chat-track {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  align-items: stretch;
+  gap: 6px;
   flex-shrink: 0;
   padding-bottom: 5px;
 }
 
 .plv2-ai-chat--onboarding .plv2-ai-bubble {
-  font-size: 0.54rem;
-  padding: 6px 8px;
+  font-size: clamp(0.54rem, 0.48rem + 0.35vw, 0.69rem);
+  padding: clamp(6px, 1vw, 8px) clamp(7px, 1.2vw, 10px);
   border-radius: 11px;
   line-height: 1.38;
 }
 
-.plv2-ai-chat--onboarding .plv2-ai-bot-row .plv2-ai-bubble--bot {
-  flex: 1;
-  min-width: 0;
+.plv2-ai-chat--onboarding .plv2-ai-bubble--user {
+  max-width: min(94%, 17.5rem);
 }
 
-.plv2-ai-bubble--follow {
-  align-self: flex-start;
-  margin-left: 34px;
-  max-width: calc(100% - 6px);
+.plv2-ai-chat--onboarding .plv2-ai-bot-row .plv2-ai-bubble--bot {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(100%, 17.5rem);
 }
 
 .plv2-ai-bubble--accent {
@@ -1115,8 +1160,10 @@ body {
 
 .plv2-ai-bot-row {
   display: flex;
+  align-self: flex-start;
   gap: 6px;
   align-items: flex-end;
+  max-width: 100%;
 }
 
 .plv2-ai-bot-avatar {
@@ -1298,7 +1345,6 @@ body {
 
 /* Cuatro pasos — flujo paciente */
 .plv2-steps {
-  margin-top: 20px;
   padding: clamp(36px, 5vw, 56px) clamp(16px, 3vw, 28px) clamp(44px, 6vw, 72px);
   background: linear-gradient(180deg, #f2f0f8 0%, #f8f8fc 38%, #fefeff 100%);
   border-top: 1px solid rgba(107, 92, 179, 0.07);
@@ -1395,6 +1441,48 @@ body {
   .plv2-steps-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .plv2-steps-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: start;
+    column-gap: 12px;
+    row-gap: 8px;
+    border-radius: 14px;
+    border: 1px solid rgba(107, 92, 179, 0.08);
+    box-shadow:
+      var(--plv2-shadow-xs),
+      0 2px 5px rgba(23, 28, 36, 0.03),
+      0 10px 28px rgba(91, 75, 179, 0.08),
+      0 22px 44px rgba(23, 28, 36, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  }
+
+  .plv2-steps-card-body {
+    display: contents;
+  }
+
+  .plv2-steps-num {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .plv2-steps-item-title {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    align-self: center;
+  }
+
+  .plv2-steps-item-text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1417,7 +1505,6 @@ body {
 /* Quiénes somos — imagen full-bleed + copy en blanco (después de pasos) */
 .plv2-photo-strip {
   width: 100%;
-  margin-top: 12px;
   padding: clamp(16px, 3vw, 28px) 0 clamp(36px, 5vw, 52px);
   background: linear-gradient(180deg, #fff 0%, #f8f6ff 55%, #f1f0f7 100%);
 }
@@ -1465,19 +1552,6 @@ body {
   );
 }
 
-@media (max-width: 960px) {
-  .plv2-photo-strip-scrim {
-    background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(255, 255, 255, 0.78) 38%,
-      rgba(255, 255, 255, 0.45) 62%,
-      rgba(255, 255, 255, 0.12) 82%,
-      transparent 100%
-    );
-  }
-}
-
 .plv2-photo-strip-content {
   grid-area: 1 / 1;
   position: relative;
@@ -1498,26 +1572,54 @@ body {
   color: var(--plv2-muted);
 }
 
+.plv2-photo-strip-tagline {
+  margin: 0 0 1.05rem;
+  max-width: 22rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.04rem, 1.75vw, 1.2rem);
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: #2f3847;
+}
+
+.plv2-photo-strip-prose {
+  margin: 0 0 1.65rem;
+  max-width: 30rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.98rem, 1.4vw, 1.07rem);
+  font-weight: 400;
+  line-height: 1.68;
+  letter-spacing: 0.01em;
+  color: #4b5564;
+}
+
+.plv2-photo-strip-accent {
+  font-weight: 600;
+  color: #2a3f7a;
+  background: linear-gradient(120deg, rgba(47, 98, 196, 0.12) 0%, rgba(69, 184, 173, 0.14) 100%);
+  padding: 0.1em 0.32em 0.12em;
+  border-radius: 0.4em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.plv2-photo-strip .plv2-hero-copy h2 {
+  max-width: none;
+  margin-bottom: 0.9rem;
+}
+
 /* Mismo ritmo que el hero: el último .plv2-hero-lead ya deja 1.65rem antes del CTA. */
 .plv2-photo-strip-cta {
   margin-top: 0;
 }
 
-@media (max-width: 600px) {
-  .plv2-photo-strip-frame {
-    grid-template-rows: minmax(min(380px, 72vh), auto);
-  }
-
-  .plv2-photo-strip-bg {
-    object-position: 45% 36%;
-  }
-}
-
 /* Precios — dos columnas (texto + cards | imagen), estilo mock */
 .plv2-pricing-split {
   --plv2-pricing-accent: var(--plv2-violet);
-  padding: clamp(40px, 5.5vw, 80px) 0 clamp(48px, 6vw, 88px);
-  background: linear-gradient(180deg, #f3f0ff 0%, #f0f4ff 45%, #f4f6fa 100%);
+  padding: clamp(44px, 6vw, 88px) 0 clamp(52px, 6.5vw, 96px);
+  background: linear-gradient(180deg, #f5f2fc 0%, #eef1fb 48%, #f3f5f9 100%);
 }
 
 .plv2-pricing-split-inner {
@@ -1527,89 +1629,108 @@ body {
   align-items: center;
 }
 
+.plv2-pricing-split-copy {
+  min-width: 0;
+}
+
 .plv2-pricing-eyebrow {
-  margin: 0 0 10px;
+  margin: 0 0 0.65rem;
   font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #5b4bb3;
+  color: #5b4db3;
 }
 
 .plv2-pricing-title {
-  margin: 0 0 12px;
+  margin: 0 0 0.85rem;
   font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  color: #17171d;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.032em;
+  color: #141822;
 }
 
 .plv2-pricing-lead {
-  margin: 0 0 1.25rem;
-  max-width: 40ch;
-  font-size: clamp(0.98rem, 1.5vw, 1.08rem);
-  line-height: 1.55;
-  font-weight: 600;
-  color: var(--plv2-muted);
+  margin: 0 0 1.35rem;
+  max-width: 34rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.98rem, 1.45vw, 1.06rem);
+  line-height: 1.65;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #4b5563;
 }
 
 .plv2-pricing-cards {
   list-style: none;
-  margin: 0 0 1.75rem;
+  margin: 0 0 1.85rem;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .plv2-pricing-card {
   margin: 0;
-  padding: 0.85rem 1rem 0.9rem 1.1rem;
-  border-radius: 16px;
+  padding: 0.95rem 1.05rem 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid rgba(107, 92, 179, 0.09);
   background: #fff;
   box-shadow:
     var(--plv2-shadow-xs),
-    0 10px 28px rgba(91, 75, 179, 0.07),
-    0 0 0 1px rgba(23, 28, 36, 0.04),
-    inset 4px 0 0 0 var(--plv2-pricing-accent);
+    0 2px 6px rgba(23, 28, 36, 0.035),
+    0 14px 36px rgba(91, 75, 179, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 2px 0 0 0 rgba(107, 92, 179, 0.42);
 }
 
 .plv2-pricing-card p {
   margin: 0;
-  font-size: clamp(0.92rem, 1.35vw, 1.02rem);
-  line-height: 1.55;
-  font-weight: 600;
-  color: #2a3140;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.9rem, 1.28vw, 1rem);
+  line-height: 1.58;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #374151;
 }
 
 .plv2-pricing-card strong {
-  font-weight: 800;
-  color: #17171d;
+  font-weight: 700;
+  color: #111827;
+}
+
+.plv2-pricing-card-note {
+  font-weight: 500;
+  font-size: 0.92em;
+  color: #6b7280;
 }
 
 .plv2-pricing-cta-block {
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
+  padding-top: 0.25rem;
 }
 
 .plv2-pricing-cta-title {
-  margin: 0 0 8px;
+  margin: 0 0 0.45rem;
   font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.1rem, 1.8vw, 1.25rem);
-  font-weight: 800;
-  color: #17171d;
+  font-size: clamp(1.08rem, 1.75vw, 1.22rem);
+  font-weight: 700;
+  color: #141822;
   letter-spacing: -0.02em;
 }
 
 .plv2-pricing-cta-text {
-  margin: 0 0 1.1rem;
-  max-width: 40ch;
-  font-size: 0.98rem;
-  line-height: 1.55;
-  font-weight: 600;
-  color: var(--plv2-muted);
+  margin: 0 0 1.15rem;
+  max-width: 34rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.96rem, 1.35vw, 1.02rem);
+  line-height: 1.62;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #5c6570;
 }
 
 .plv2-pricing-cta-btn {
@@ -1635,6 +1756,24 @@ body {
 }
 
 @media (max-width: 900px) {
+  /* Sin padding horizontal en la sección: el texto lleva márgenes; la foto al 100% real. */
+  .plv2-pricing-split {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .plv2-pricing-split-inner.plv2-container {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .plv2-pricing-split-copy {
+    padding-left: clamp(10px, 3vw, 16px);
+    padding-right: clamp(10px, 3vw, 16px);
+  }
+
   .plv2-pricing-split-inner {
     grid-template-columns: 1fr;
     gap: clamp(24px, 5vw, 36px);
@@ -1642,8 +1781,20 @@ body {
 
   .plv2-pricing-split-media {
     order: -1;
-    max-width: min(520px, 100%);
-    margin-inline: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .plv2-pricing-cta-block {
+    text-align: center;
+  }
+
+  .plv2-pricing-cta-text {
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
@@ -2106,3 +2257,335 @@ body {
     max-width: 34ch;
   }
 }
+
+/* ——— Mobile / touch (≤960px): densidad, fotos visibles, sin solapes; desktop ≥961 intacto ——— */
+
+@media (max-width: 960px) {
+  html {
+    scroll-padding-top: 76px;
+  }
+
+  /* Altura mínima + stage flexible: el copy queda abajo y la foto/rostro respiran arriba. */
+  .plv2-hero-shell {
+    min-height: min(88svh, 820px);
+    padding-bottom: clamp(28px, 7vw, 48px);
+  }
+
+  .plv2-hero-stage {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding-top: clamp(12px, 4vh, 28px);
+    padding-bottom: clamp(28px, 7vw, 52px);
+    min-height: min(48vh, 520px);
+  }
+
+  /* Sin “card” sobre la foto: solo aire; legibilidad vía velo + sombra suave al texto. */
+  .plv2-hero-shell .plv2-hero-copy {
+    padding-top: clamp(4px, 2vw, 12px);
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+    margin-top: 0;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* El H1 del hero es largo: dejar que use el ancho del contenedor (17ch achica demasiado en columna). */
+  .plv2-hero-shell .plv2-hero-copy h1 {
+    max-width: none;
+    font-size: clamp(1.65rem, 5.4vw, 2.15rem);
+    line-height: 1.14;
+    margin-bottom: clamp(1.2rem, 4.5vw, 1.65rem);
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.75),
+      0 8px 28px rgba(255, 252, 248, 0.55);
+  }
+
+  /* Subtítulo del hero oculto en móvil (el strip “Quiénes somos” sigue usando .plv2-hero-lead). */
+  .plv2-hero-shell .plv2-hero-lead {
+    display: none;
+  }
+
+  /*
+    “¿Quiénes somos?”: en ≤960px la foto es solo imagen; el copy va debajo sobre fondo claro
+    (nada de texto sobre la foto → se entiende mejor).
+  */
+  .plv2-photo-strip-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow: visible;
+    border-top: none;
+  }
+
+  .plv2-photo-strip-bg {
+    grid-area: 1 / 1 / 2 / 2;
+    width: 100%;
+    height: min(42vh, 300px);
+    min-height: 200px;
+    max-height: 360px;
+    object-fit: cover;
+    object-position: 48% 30%;
+  }
+
+  .plv2-photo-strip-scrim {
+    display: none;
+  }
+
+  .plv2-photo-strip-content {
+    grid-area: 2 / 1 / 3 / 2;
+    padding: clamp(22px, 5vw, 32px) clamp(10px, 3vw, 16px) clamp(30px, 7vw, 44px);
+    background: linear-gradient(180deg, #faf9ff 0%, #f5f3fb 42%, #eeecf5 100%);
+  }
+
+  .plv2-photo-strip-content .plv2-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .plv2-photo-strip .plv2-hero-copy {
+    max-width: none;
+    text-align: center;
+  }
+
+  .plv2-photo-strip .plv2-hero-copy h2 {
+    max-width: none;
+    font-size: clamp(1.42rem, 4.6vw, 1.88rem);
+    line-height: 1.22;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.75rem;
+  }
+
+  .plv2-photo-strip-tagline {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1rem;
+    max-width: min(22rem, 100%);
+    font-size: clamp(1.06rem, 3.15vw, 1.22rem);
+    font-weight: 500;
+    line-height: 1.46;
+    letter-spacing: 0.015em;
+    color: #283245;
+  }
+
+  .plv2-photo-strip-prose {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
+    max-width: min(30rem, 100%);
+    font-size: clamp(0.99rem, 2.9vw, 1.08rem);
+    line-height: 1.72;
+    letter-spacing: 0.012em;
+    color: #4a5463;
+  }
+
+  .plv2-photo-strip-accent {
+    background: linear-gradient(120deg, rgba(47, 98, 196, 0.14) 0%, rgba(69, 184, 173, 0.16) 100%);
+  }
+
+  .plv2-photo-strip-kicker {
+    color: #5b4db2;
+  }
+
+  /* Misma columna útil que `.plv2-features`; la foto del bento alinea con las cards. */
+  .plv2-bento {
+    padding-left: clamp(10px, 3vw, 16px);
+    padding-right: clamp(10px, 3vw, 16px);
+  }
+
+  .plv2-bento .plv2-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .plv2-bento-figure {
+    border-radius: 14px;
+    border: 1px solid rgba(107, 92, 179, 0.08);
+    box-shadow:
+      var(--plv2-shadow-xs),
+      0 2px 5px rgba(23, 28, 36, 0.03),
+      0 10px 28px rgba(91, 75, 179, 0.08),
+      0 22px 44px rgba(23, 28, 36, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    max-width: 100%;
+  }
+
+  .plv2-features {
+    padding-top: clamp(16px, 2.6vw, 28px);
+    padding-bottom: clamp(14px, 2.4vw, 22px);
+    padding-left: clamp(10px, 3vw, 16px);
+    padding-right: clamp(10px, 3vw, 16px);
+  }
+
+  .plv2-feature-grid {
+    gap: clamp(11px, 2.6vw, 16px);
+  }
+
+  .plv2-feature-title {
+    margin-bottom: 4px;
+    min-height: 0;
+  }
+
+  .plv2-feature-card {
+    border-radius: 14px;
+  }
+
+  .plv2-feature-card-body {
+    padding: 14px 14px 16px;
+  }
+
+  .plv2-feature-card-body::before {
+    left: 14px;
+    right: 14px;
+  }
+
+  .plv2-pricing-split-media {
+    overflow: hidden;
+  }
+
+  .plv2-faq-inner {
+    width: min(760px, 100%);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  /* FAQ: más editorial en móvil (tipo pricing / features). */
+  .plv2-faq {
+    padding: clamp(38px, 9vw, 64px) clamp(10px, 3vw, 16px) clamp(42px, 9vw, 72px);
+  }
+
+  .plv2-faq::before {
+    opacity: 0.5;
+  }
+
+  .plv2-faq-head {
+    margin-bottom: clamp(22px, 5vw, 34px);
+  }
+
+  .plv2-faq-eyebrow {
+    margin-bottom: 0.5rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+  }
+
+  .plv2-faq-title {
+    margin-bottom: 0.65rem;
+    font-size: clamp(1.36rem, 5vw, 1.82rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #141822;
+  }
+
+  .plv2-faq-lead {
+    max-width: 34rem;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    line-height: 1.65;
+    letter-spacing: 0.01em;
+    color: #4d5563;
+  }
+
+  .plv2-faq-head::after {
+    height: 3px;
+    margin-top: clamp(14px, 4vw, 22px);
+    opacity: 0.7;
+  }
+
+  .plv2-faq-list {
+    gap: 10px;
+  }
+
+  .plv2-faq-item {
+    border-radius: 14px;
+    border: 1px solid rgba(107, 92, 179, 0.08);
+    background: #fff;
+    box-shadow:
+      var(--plv2-shadow-xs),
+      0 2px 6px rgba(23, 28, 36, 0.04),
+      0 12px 34px rgba(91, 75, 179, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  }
+
+  .plv2-faq-item:hover,
+  .plv2-faq-item[open]:hover {
+    transform: none;
+  }
+
+  .plv2-faq-item:hover {
+    border-color: rgba(107, 92, 179, 0.14);
+    box-shadow:
+      var(--plv2-shadow-xs),
+      0 3px 10px rgba(23, 28, 36, 0.05),
+      0 14px 38px rgba(91, 75, 179, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+
+  .plv2-faq-item[open] {
+    border-color: rgba(107, 92, 179, 0.16);
+    box-shadow:
+      var(--plv2-shadow-xs),
+      0 4px 12px rgba(23, 28, 36, 0.06),
+      0 16px 42px rgba(91, 75, 179, 0.11),
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 2px 0 0 0 rgba(107, 92, 179, 0.4);
+  }
+
+  .plv2-faq-summary {
+    padding: 1rem 1rem 1rem 1.12rem;
+    font-weight: 700;
+    font-size: clamp(0.93rem, 3.35vw, 1.02rem);
+    line-height: 1.45;
+    color: #1a1f2e;
+    gap: 14px;
+  }
+
+  .plv2-faq-item[open] .plv2-faq-summary {
+    border-bottom-color: rgba(107, 92, 179, 0.1);
+    padding-bottom: 0.8rem;
+  }
+
+  .plv2-faq-chevron {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .plv2-faq-answer {
+    padding: 0 1rem 1.05rem 1.12rem;
+  }
+
+  .plv2-faq-answer p {
+    padding: 0.5rem 0 0 0.72rem;
+    border-left-width: 2px;
+    border-left-color: rgba(107, 92, 179, 0.26);
+    font-family: "Montserrat", sans-serif;
+    font-size: clamp(0.94rem, 3.2vw, 1.01rem);
+    font-weight: 500;
+    line-height: 1.68;
+    color: #4b5563;
+  }
+
+  .plv2-footer-band {
+    margin-left: max(10px, env(safe-area-inset-left, 0px));
+    margin-right: max(10px, env(safe-area-inset-right, 0px));
+    margin-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Header un poco más integrado con la foto (menos “tabla” blanca). */
+  .plv2-header--restyle {
+    background: rgba(252, 250, 255, 0.78);
+    border-bottom-color: rgba(107, 92, 179, 0.06);
+  }
+}
+
+@media (max-width: 600px) {
+  .plv2-feature-card:hover {
+    transform: none;
+  }
+}
+

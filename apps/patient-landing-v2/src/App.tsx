@@ -30,8 +30,10 @@ const HERO_PHOTO = {
 
 const IMG = {
   featAnywhere: "/photos/feat-desde-cualquier-lugar.jpg",
+  featAnywhereMobile: "/photos/feat-desde-cualquier-lugar-mobile.jpg",
   featMinutes: "/photos/feat-conecta-en-minutos.jpg",
   featLatam: "/photos/feat-latam-psicologos.jpg",
+  featLatamMobile: "/photos/feat-psicologos-certificados-mobile.jpg",
   featCare: "/photos/feat-acompanamiento-bien.jpg",
   matchAvatar: "/photos/08-sesion-profesional-notas.jpg",
   /** Panel único: copy + retratos y sellos (todo en la imagen; no superponer texto en HTML). */
@@ -85,40 +87,39 @@ function Plv2FaqChevron() {
   );
 }
 
-function GlobeIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.85" />
-      <path
-        d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"
-        stroke="currentColor"
-        strokeWidth="1.85"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function AiOnboardingBubbles() {
   return (
     <>
-      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿Me ayudás a encontrar psicólogo?</p>
+      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿Me ayudás a encontrar un psicólogo?</p>
       <div className="plv2-ai-bot-row">
-        <span className="plv2-ai-bot-avatar">
+        <span className="plv2-ai-bot-avatar" aria-hidden="true">
           <AiBotAvatar />
         </span>
-        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Qué te gustaría trabajar en terapia?</p>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¡Dale! ¿Qué te gustaría trabajar en terapia?</p>
       </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Ansiedad y que no duermo bien.</p>
-      <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--follow">¿Desde cuándo lo sentís así?</p>
+      <div className="plv2-ai-bot-row">
+        <span className="plv2-ai-bot-avatar" aria-hidden="true">
+          <AiBotAvatar />
+        </span>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Hace cuánto lo sentís así?</p>
+      </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Hace unos meses; peor los domingos.</p>
-      <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--follow">
-        ¿Preferís sesiones por la mañana o por la tarde?
-      </p>
+      <div className="plv2-ai-bot-row">
+        <span className="plv2-ai-bot-avatar" aria-hidden="true">
+          <AiBotAvatar />
+        </span>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Preferís sesiones por la mañana o por la tarde?</p>
+      </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Por la tarde.</p>
-      <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--follow plv2-ai-bubble--accent">
-        Gracias — ya estoy buscando tu match ideal.
-      </p>
+      <div className="plv2-ai-bot-row">
+        <span className="plv2-ai-bot-avatar" aria-hidden="true">
+          <AiBotAvatar />
+        </span>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--accent">
+          Gracias — ya estoy buscando tu match ideal.
+        </p>
+      </div>
     </>
   );
 }
@@ -194,9 +195,6 @@ export function App() {
               Terapia online, fácil, rápida y 100% pensada para vos. Desde cualquier lugar.
             </p>
             <a className="plv2-cta-gradient" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-              <span className="plv2-cta-gradient-globe" aria-hidden="true">
-                <GlobeIcon />
-              </span>
               <span className="plv2-cta-gradient-text">
                 Empezá hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
               </span>
@@ -265,8 +263,11 @@ export function App() {
         </h2>
         <ul className="plv2-feature-grid">
           <li className="plv2-feature-card plv2-feature-card--accent-blue">
-            <div className="plv2-feature-card-media">
-              <img src={IMG.featAnywhere} alt="" loading="lazy" width={1024} height={573} />
+            <div className="plv2-feature-card-media plv2-feature-card-media--anywhere">
+              <picture>
+                <source media="(max-width: 960px)" srcSet={IMG.featAnywhereMobile} />
+                <img src={IMG.featAnywhere} alt="" loading="lazy" width={1024} height={573} />
+              </picture>
             </div>
             <div className="plv2-feature-card-body">
               <h3 className="plv2-feature-title">Desde cualquier lugar</h3>
@@ -277,8 +278,11 @@ export function App() {
           </li>
 
           <li className="plv2-feature-card plv2-feature-card--accent-teal">
-            <div className="plv2-feature-card-media">
-              <img src={IMG.featLatam} alt="" loading="lazy" width={735} height={490} />
+            <div className="plv2-feature-card-media plv2-feature-card-media--connect">
+              <picture>
+                <source media="(max-width: 960px)" srcSet={IMG.featLatamMobile} />
+                <img src={IMG.featLatam} alt="" loading="lazy" width={735} height={490} />
+              </picture>
               <div className="plv2-flag-overlay" aria-label="Países de Latinoamérica">
                 {FLAGS.map((f) => (
                   <span key={f} className="plv2-flag" role="img">
@@ -443,13 +447,11 @@ export function App() {
               <div className="plv2-hero-copy">
                 <p className="plv2-photo-strip-kicker">MotivarCare</p>
                 <h2 id="plv2-photo-strip-title">¿Quiénes somos?</h2>
-                <p className="plv2-hero-lead">Terapia que se adapta a tu día, no al revés.</p>
-                <p className="plv2-hero-lead">
+                <p className="plv2-photo-strip-tagline">Terapia que se adapta a tu ritmo — no al contrario.</p>
+                <p className="plv2-photo-strip-prose">
                   Nacimos para acercarte a un{" "}
-                  <span className="plv2-hl-blue plv2-hl-mark">acompañamiento psicológico de calidad</span>,{" "}
-                  <br className="plv2-br-desktop" />
-                  sin barreras innecesarias:{" "}
-                  <span className="plv2-hl-blue plv2-hl-mark">accesible y cercano</span>, pensado para la vida real.
+                  <span className="plv2-photo-strip-accent">acompañamiento psicológico serio y humano</span>, sin vueltas
+                  ni humo: claro, accesible y pensado para el día a día.
                 </p>
                 <a
                   className="plv2-cta-gradient plv2-photo-strip-cta"
@@ -457,9 +459,6 @@ export function App() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <span className="plv2-cta-gradient-globe" aria-hidden="true">
-                    <GlobeIcon />
-                  </span>
                   <span className="plv2-cta-gradient-text">
                     Empezá hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
                   </span>
@@ -478,34 +477,34 @@ export function App() {
               Sesiones claras, sin sorpresas
             </h2>
             <p className="plv2-pricing-lead">
-              Cada profesional define el valor de su sesión; vos ves el precio antes de confirmar.
+              Cada profesional define su tarifa: vos ves el monto antes de confirmar, sin letras chicas.
             </p>
             <ul className="plv2-pricing-cards" role="list">
               <li className="plv2-pricing-card">
                 <p>
-                  Desde <strong>$40.000 ARS</strong> por sesión, según experiencia y orientación terapéutica.
+                  Desde <strong>$40.000 ARS</strong> por sesión <span className="plv2-pricing-card-note">(según experiencia y enfoque)</span>.
                 </p>
               </li>
               <li className="plv2-pricing-card">
                 <p>
-                  Duración estándar: <strong>50 minutos</strong>.
+                  Sesiones de <strong>50 minutos</strong> como referencia estándar.
                 </p>
               </li>
               <li className="plv2-pricing-card">
                 <p>
-                  <strong>Descuentos en packs</strong> de 4, 8 o 12 sesiones cuando el profesional los ofrezca.
+                  <strong>Packs con descuento</strong> cuando el profesional los publique (4, 8 o 12 sesiones).
                 </p>
               </li>
               <li className="plv2-pricing-card">
                 <p>
-                  <strong>Sin suscripción obligatoria:</strong> pagás por lo que usás.
+                  <strong>Sin suscripción forzosa:</strong> pagás solo lo que elegís usar.
                 </p>
               </li>
             </ul>
             <div className="plv2-pricing-cta-block">
               <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
               <p className="plv2-pricing-cta-text">
-                Creá tu cuenta, explorá perfiles y reservá tu primera sesión cuando quieras.
+                Creá tu cuenta, explorá perfiles y elegí tu primera sesión con total claridad.
               </p>
               <a
                 className="plv2-cta-gradient plv2-cta-gradient--header plv2-pricing-cta-btn"
