@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { LandingMacaChat } from "./LandingMacaChat";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 
@@ -98,9 +99,23 @@ export function App() {
             <MotivarCareLogoMark className="mc-brand-mark" />
             <div className="mc-brand-text">
               <span className="mc-brand-name">motivarcare</span>
-              <span className="mc-brand-tagline">Tu bienestar, sin esperas</span>
+              <span className="mc-brand-tagline">Bienestar, sin esperas</span>
             </div>
           </a>
+          <nav className="mc-header-nav" aria-label="Secciones">
+            <a className="mc-header-nav-link" href="#quienes-somos">
+              Quiénes somos
+            </a>
+            <a className="mc-header-nav-link" href="#como-empezar">
+              Cómo empezar
+            </a>
+            <a className="mc-header-nav-link" href="#reviews">
+              Reviews
+            </a>
+            <a className="mc-header-nav-link" href="#faq">
+              FAQs
+            </a>
+          </nav>
           <a className="mc-btn mc-btn--ghost" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
             Ingresar
           </a>
@@ -112,15 +127,23 @@ export function App() {
           <div className="mc-container mc-hero-grid">
             <div className="mc-hero-copy">
               <h1 id="mc-hero-title">
-                Encontrá el <strong>psicólogo ideal</strong> para vos, <strong>en minutos</strong>
+                <span className="mc-hero-title-line1">
+                  Encuentra el <strong>psicólogo ideal en minutos</strong>
+                </span>
+                <br />
+                <span className="mc-hero-title-line2">de forma simple y segura.</span>
+                <br />
+                <span className="mc-hero-title-line3">
+                  <strong>¡Tu cambio empieza acá!</strong>
+                </span>
               </h1>
               <p className="mc-hero-lead">
-                Terapia online, fácil, rápida y 100% pensada para vos. Desde cualquier lugar.
+                Terapia en línea, fácil y rápida, pensada para quien la necesita. Desde cualquier lugar.
               </p>
               <a className="mc-btn mc-btn--primary mc-hero-cta" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
                 <GlobeIcon />
                 <span>
-                  Empezá hoy en <strong>{portalLabel}</strong>
+                  Empiece hoy en <strong>{portalLabel}</strong>
                 </span>
               </a>
             </div>
@@ -150,7 +173,7 @@ export function App() {
                     ★★★★★ <span>5.0</span>
                   </p>
                 </div>
-                <span className="mc-match-badge">¡Es tu match!</span>
+                <span className="mc-match-badge">¡Coincidencia ideal!</span>
               </aside>
             </div>
           </div>
@@ -179,7 +202,7 @@ export function App() {
                 </div>
                 <h3 className="mc-feature-title">Desde cualquier lugar</h3>
                 <p className="mc-feature-text">
-                  Hacé terapia desde tu casa, tu trabajo o donde estés. Sin traslados, sin esperas.
+                  Terapia desde el hogar, el trabajo o donde se encuentre. Sin traslados ni esperas.
                 </p>
               </li>
 
@@ -197,9 +220,9 @@ export function App() {
                 <div className="mc-feature-photo">
                   <img src={IMG.featMinutes} alt="" loading="lazy" width={640} height={400} />
                 </div>
-                <h3 className="mc-feature-title">Conectá en minutos</h3>
+                <h3 className="mc-feature-title">Conexión en minutos</h3>
                 <p className="mc-feature-text">
-                  Encontramos el psicólogo ideal para vos en tiempo récord.
+                  Encontramos el psicólogo ideal en tiempo récord.
                 </p>
               </li>
 
@@ -217,7 +240,7 @@ export function App() {
                 </div>
                 <div className="mc-feature-photo mc-feature-photo--phone">
                   <div className="mc-ai-phone">
-                    <span className="mc-ai-phone-label">Buscando tu match perfecto…</span>
+                    <span className="mc-ai-phone-label">Buscando la mejor coincidencia…</span>
                     <span className="mc-ai-dots" aria-hidden="true">
                       <span />
                       <span />
@@ -225,9 +248,9 @@ export function App() {
                     </span>
                   </div>
                 </div>
-                <h3 className="mc-feature-title">Inteligencia artificial que te entiende</h3>
+                <h3 className="mc-feature-title">Inteligencia artificial a la medida</h3>
                 <p className="mc-feature-text">
-                  Nuestra IA analiza tus necesidades para hacer el match perfecto.
+                  Nuestra IA analiza las necesidades de cada persona para el mejor match.
                 </p>
               </li>
 
@@ -274,10 +297,102 @@ export function App() {
                 <div className="mc-feature-photo">
                   <img src={IMG.featCare} alt="" loading="lazy" width={640} height={400} />
                 </div>
-                <h3 className="mc-feature-title">Acompañamiento que te hace bien</h3>
-                <p className="mc-feature-text">No estás solo. Te acompañamos en cada paso del proceso.</p>
+                <h3 className="mc-feature-title">Acompañamiento que hace bien</h3>
+                <p className="mc-feature-text">No hay que enfrentarlo solo: acompañamos en cada paso del proceso.</p>
               </li>
             </ul>
+          </div>
+        </section>
+
+        <section className="mc-section mc-section--soft" id="quienes-somos" aria-labelledby="mc-quienes-title">
+          <div className="mc-container">
+            <h2 id="mc-quienes-title" className="mc-section-title">
+              Quiénes somos
+            </h2>
+            <p className="mc-section-prose">
+              <strong>Maca</strong> impulsó MotivarCare con la convicción de que pedir ayuda psicológica puede ser claro y
+              cercano. Conectamos a personas con psicólogos matriculados en Latinoamérica, con procesos simples, terapia en
+              línea y un enfoque humano. La relación clínica es entre usted y el profesional; nosotros facilitamos la
+              reserva, la videollamada y el acompañamiento del servicio.
+            </p>
+          </div>
+        </section>
+
+        <section className="mc-section" id="como-empezar" aria-labelledby="mc-pasos-title">
+          <div className="mc-container">
+            <h2 id="mc-pasos-title" className="mc-section-title">
+              Cómo empezar
+            </h2>
+            <ol className="mc-steps-list">
+              <li>
+                <strong>Registro.</strong> Cree la cuenta en el portal con su correo.
+              </li>
+              <li>
+                <strong>Contexto.</strong> Complete el informe o use la guía con IA para acotar qué busca.
+              </li>
+              <li>
+                <strong>Match.</strong> Revise la recomendación y perfiles alineados a sus preferencias.
+              </li>
+              <li>
+                <strong>Reserva.</strong> Elija horario y comience las sesiones en línea.
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        <section className="mc-section mc-section--soft" id="reviews" aria-labelledby="mc-reviews-title">
+          <div className="mc-container">
+            <h2 id="mc-reviews-title" className="mc-section-title">
+              Reviews
+            </h2>
+            <p className="mc-section-lead">Lo que dicen quienes ya usaron MotivarCare.</p>
+            <ul className="mc-reviews-grid" role="list">
+              <li className="mc-review-card">
+                <p className="mc-review-stars" aria-label="Calificación cinco sobre cinco">
+                  ★★★★★
+                </p>
+                <p className="mc-review-text">
+                  Proceso claro y buena experiencia con el matching. Las sesiones en línea son cómodas.
+                </p>
+                <p className="mc-review-meta">Andrea R. · Buenos Aires</p>
+              </li>
+              <li className="mc-review-card">
+                <p className="mc-review-stars" aria-label="Calificación cinco sobre cinco">
+                  ★★★★★
+                </p>
+                <p className="mc-review-text">Se ve el precio antes de confirmar; eso genera confianza.</p>
+                <p className="mc-review-meta">Luis M. · Monterrey</p>
+              </li>
+              <li className="mc-review-card">
+                <p className="mc-review-stars" aria-label="Calificación cinco sobre cinco">
+                  ★★★★★
+                </p>
+                <p className="mc-review-text">Plataforma simple y profesional con el que encajé bien.</p>
+                <p className="mc-review-meta">Carla V. · Bogotá</p>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="mc-section" id="faq" aria-labelledby="mc-faq-title">
+          <div className="mc-container">
+            <h2 id="mc-faq-title" className="mc-section-title">
+              FAQs
+            </h2>
+            <div className="mc-faq-list">
+              <details className="mc-faq-item">
+                <summary>¿Las sesiones son confidenciales?</summary>
+                <p>Sí. Son privadas y el profesional está sujeto al secreto profesional que corresponda según su matrícula.</p>
+              </details>
+              <details className="mc-faq-item">
+                <summary>¿Necesito experiencia previa en terapia?</summary>
+                <p>No. Puede empezar aunque sea la primera vez en un proceso terapéutico.</p>
+              </details>
+              <details className="mc-faq-item">
+                <summary>¿Puedo elegir horario?</summary>
+                <p>Sí. Puede elegir día y franja según la disponibilidad que cada profesional publique.</p>
+              </details>
+            </div>
           </div>
         </section>
 
@@ -294,19 +409,20 @@ export function App() {
                 </svg>
               </span>
               <p>
-                No tenés que estar bien para pedir ayuda. <strong>Estamos para acompañarte.</strong>
+                No hace falta estar bien para pedir ayuda. <strong>Estamos para acompañar.</strong>
               </p>
             </div>
             <div className="mc-footer-brand">
               <MotivarCareLogoMark className="mc-footer-logo-mark" />
               <div>
                 <span className="mc-footer-brand-name">motivarcare</span>
-                <span className="mc-footer-brand-tag">Tu bienestar, sin esperas</span>
+                <span className="mc-footer-brand-tag">Bienestar, sin esperas</span>
               </div>
             </div>
           </div>
         </footer>
       </main>
+      <LandingMacaChat portalUrl={PATIENT_PORTAL_URL} />
     </div>
   );
 }

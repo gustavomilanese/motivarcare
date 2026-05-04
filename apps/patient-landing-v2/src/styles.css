@@ -23,6 +23,14 @@
   --plv2-shadow-md: 0 8px 24px rgba(23, 28, 36, 0.06);
   --plv2-shadow-lg: 0 16px 40px rgba(23, 28, 36, 0.07);
   --plv2-shadow-brand: 0 10px 28px rgba(47, 98, 196, 0.1);
+  /* Altura reservada bajo el header fijo (marca + CTA; en ≤900px menú hamburguesa una sola fila). */
+  --plv2-header-clearance: 64px;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --plv2-header-clearance: 56px;
+  }
 }
 
 *,
@@ -33,6 +41,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--plv2-header-clearance) + env(safe-area-inset-top, 0px) + 8px);
 }
 
 html,
@@ -108,17 +117,39 @@ body {
   flex-direction: column;
   background: linear-gradient(165deg, #2a2848 0%, #243047 42%, #1e2d42 100%);
   border-bottom: 1px solid rgba(23, 28, 36, 0.08);
+  /* El header va fixed fuera de esta sección: el copy no debe quedar debajo del nav. */
+  padding-top: calc(var(--plv2-header-clearance) + env(safe-area-inset-top, 0px));
 }
 
-/* Web: hero más alto; less padding alrededor del copy para aprovechar altura */
+/* Web: hero más alto; columna de texto más ancha + menos “columna estrecha” en el título */
 @media (min-width: 961px) {
   .plv2-hero-shell {
     min-height: min(90vh, 1000px);
   }
 
+  /* Menos ancho fijo a la foto → más aire para el H1 (el rostro sigue a la derecha; el velo protege legibilidad). */
   .plv2-hero-stage {
+    grid-template-columns: minmax(0, 1.15fr) minmax(260px, 34vw);
+    gap: clamp(20px, 3.5vw, 40px);
     padding-top: clamp(8px, 1.6vw, 20px);
     padding-bottom: clamp(12px, 2.2vw, 32px);
+  }
+
+  .plv2-hero-copy {
+    position: relative;
+    z-index: 2;
+    max-width: none;
+    min-width: 0;
+    padding-right: 0;
+    /* Puede extenderse sobre el área de imagen a la izquierda del rostro; no empuja la cara. */
+    margin-right: clamp(-24px, -2vw, 0px);
+  }
+
+  /* Exactamente 3 líneas lógicas = 3 líneas visuales (sin cortes “Encuentra el / psicólogo…”). */
+  .plv2-hero-title-line1,
+  .plv2-hero-title-line2,
+  .plv2-hero-title-line3 {
+    white-space: nowrap;
   }
 
   .plv2-hero-media {
@@ -185,20 +216,233 @@ body {
 }
 
 .plv2-header--restyle {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 40;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding-top: env(safe-area-inset-top, 0px);
+  isolation: isolate;
   background: rgba(252, 250, 255, 0.94);
   backdrop-filter: blur(14px) saturate(1.15);
-  border-bottom: 1px solid rgba(107, 92, 179, 0.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.1);
+  box-shadow: 0 4px 24px rgba(23, 28, 36, 0.06);
+}
+
+.plv2-header-nav-backdrop {
+  display: none;
+}
+
+.plv2-header-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(107, 92, 179, 0.18);
+  box-shadow: var(--plv2-shadow-xs);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.plv2-header-menu-toggle:hover {
+  background: rgba(47, 98, 196, 0.06);
+  border-color: rgba(47, 98, 196, 0.28);
+}
+
+.plv2-header-menu-toggle-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 22px;
+}
+
+.plv2-header-menu-toggle-line {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: #374151;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.plv2-header--nav-open .plv2-header-menu-toggle-line:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.plv2-header--nav-open .plv2-header-menu-toggle-line:nth-child(2) {
+  opacity: 0;
+}
+
+.plv2-header--nav-open .plv2-header-menu-toggle-line:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
 }
 
 .plv2-header-inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px 16px;
   padding: 13px 0 11px;
+  position: relative;
+  z-index: 2;
+}
+
+#quienes-somos,
+#como-empezar,
+#maca-ia,
+#reviews,
+#faq,
+#precios {
+  scroll-margin-top: calc(var(--plv2-header-clearance) + env(safe-area-inset-top, 0px) + 10px);
+}
+
+.plv2-header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: min(100%, 200px);
+  padding: 5px 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(247, 245, 252, 0.88) 100%);
+  border: 1px solid rgba(107, 92, 179, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.plv2-header-nav-link {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.78rem, 1.15vw, 0.9rem);
+  letter-spacing: 0.01em;
+  color: #374151;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.plv2-header-nav-link:hover {
+  color: var(--plv2-blue);
+  background: rgba(47, 98, 196, 0.09);
+  border-color: rgba(47, 98, 196, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 900px) {
+  .plv2-header-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.38);
+    cursor: pointer;
+  }
+
+  .plv2-header-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "brand toggle cta"
+      "nav nav nav";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+
+  .plv2-brand.plv2-brand--official {
+    grid-area: brand;
+    min-width: 0;
+  }
+
+  .plv2-header-menu-toggle {
+    display: inline-flex;
+    grid-area: toggle;
+    justify-self: end;
+  }
+
+  .plv2-cta-gradient--header {
+    grid-area: cta;
+    justify-self: end;
+  }
+
+  .plv2-header-nav {
+    grid-area: nav;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    flex: none;
+    gap: 0;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid rgba(107, 92, 179, 0.14);
+    background: rgba(252, 250, 255, 0.98);
+    box-shadow: none;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      max-height 0.32s ease,
+      opacity 0.22s ease,
+      visibility 0.22s ease;
+  }
+
+  .plv2-header--nav-open .plv2-header-nav {
+    max-height: min(72vh, 420px);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .plv2-header-nav-link {
+    flex-shrink: 1;
+    white-space: normal;
+    padding: 14px 18px;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(107, 92, 179, 0.08);
+    font-size: 0.95rem;
+  }
+
+  .plv2-header-nav-link:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (min-width: 901px) {
+  .plv2-header-inner {
+    display: flex;
+  }
 }
 
 .plv2-brand {
@@ -282,6 +526,7 @@ body {
 
 .plv2-hero-copy {
   max-width: 520px;
+  min-width: 0;
   padding-right: clamp(0px, 2vw, 16px);
 }
 
@@ -373,7 +618,35 @@ body {
   letter-spacing: -0.035em;
   color: var(--plv2-ink);
   margin: 0 0 1.1rem;
-  max-width: 17ch;
+  max-width: 100%;
+}
+
+@media (min-width: 961px) {
+  .plv2-hero-copy h1 {
+    max-width: min(52rem, 92vw);
+    /* Menos agresivo en vw que el clamp de arriba: encaja en 3 líneas con white-space: nowrap. */
+    font-size: clamp(1.72rem, 2.85vw, 2.75rem);
+  }
+}
+
+.plv2-hero-title-line1,
+.plv2-hero-title-line2,
+.plv2-hero-title-line3 {
+  display: block;
+}
+
+@media (max-width: 960px) {
+  .plv2-hero-title-line2,
+  .plv2-hero-title-line3 {
+    margin-top: 0.14em;
+  }
+}
+
+@media (min-width: 961px) {
+  .plv2-hero-title-line2,
+  .plv2-hero-title-line3 {
+    margin-top: 0.08em;
+  }
 }
 
 /* Mismo criterio que el diseño del hero: cuerpo de apoyo en Montserrat (no DM Sans del body). */
@@ -1512,7 +1785,8 @@ body {
 .plv2-photo-strip-frame {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(min(320px, 56vw), auto);
+  /* Altura banda imagen (desktop): +20% sobre min(256px, 44.8vw). */
+  grid-template-rows: minmax(min(307px, 53.76vw), auto);
   width: 100%;
   border-radius: 0;
   overflow: hidden;
@@ -1523,19 +1797,38 @@ body {
   box-shadow: none;
 }
 
-.plv2-photo-strip-bg,
+.plv2-photo-strip-parallax {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.plv2-photo-strip-parallax .plv2-photo-strip-bg {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 118%;
+  top: -9%;
+  display: block;
+  object-fit: cover;
+  /* Foto: sujeto a la derecha, luz/ventana a la izquierda — encuadre para copy a la izquierda. */
+  object-position: 38% 42%;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plv2-photo-strip-parallax .plv2-photo-strip-bg {
+    will-change: auto;
+  }
+}
+
 .plv2-photo-strip-scrim {
   grid-area: 1 / 1;
   width: 100%;
   min-height: 100%;
-}
-
-.plv2-photo-strip-bg {
-  display: block;
-  height: 100%;
-  object-fit: cover;
-  /* Foto: sujeto a la derecha, luz/ventana a la izquierda — encuadre para copy a la izquierda. */
-  object-position: 38% 42%;
 }
 
 /* Mismo velo claro que el hero → tipografía oscura (ink / muted) como arriba. */
@@ -1613,6 +1906,296 @@ body {
 /* Mismo ritmo que el hero: el último .plv2-hero-lead ya deja 1.65rem antes del CTA. */
 .plv2-photo-strip-cta {
   margin-top: 0;
+}
+
+/* Maca (IA) — matcheo + soporte 24/7 (después de Quiénes somos) */
+.plv2-maca-ia {
+  position: relative;
+  padding: clamp(48px, 6.5vw, 88px) 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(69, 184, 173, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 88% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 52%),
+    linear-gradient(180deg, #fafbfc 0%, #f4f7fb 50%, #fafbfc 100%);
+  border-top: 1px solid rgba(107, 92, 179, 0.07);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.07);
+}
+
+.plv2-maca-ia-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(28px, 4.5vw, 48px);
+  align-items: center;
+}
+
+.plv2-maca-ia-copy {
+  min-width: 0;
+}
+
+.plv2-maca-ia-eyebrow {
+  margin: 0 0 12px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #45b8ad;
+}
+
+.plv2-maca-ia-title {
+  margin: 0 0 14px;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.5rem, 3.1vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  color: #12161f;
+}
+
+.plv2-maca-ia-lead {
+  margin: 0 0 18px;
+  max-width: 36rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.98rem, 1.5vw, 1.08rem);
+  line-height: 1.65;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.plv2-maca-ia-points {
+  margin: 0;
+  padding: 0 0 0 1.15rem;
+  max-width: 36rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.92rem, 1.35vw, 1.02rem);
+  line-height: 1.62;
+  font-weight: 500;
+  color: #3f4a5c;
+}
+
+.plv2-maca-ia-points li {
+  margin-bottom: 10px;
+}
+
+.plv2-maca-ia-points li:last-child {
+  margin-bottom: 0;
+}
+
+.plv2-maca-ia-disclaimer {
+  margin: 16px 0 0;
+  max-width: 36rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.plv2-maca-ia-visual {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.plv2-maca-phone {
+  width: min(100%, 456px);
+  border-radius: 22px;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(107, 92, 179, 0.12);
+  box-shadow:
+    0 24px 56px rgba(15, 23, 42, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  overflow: hidden;
+}
+
+.plv2-maca-phone-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.96) 100%);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.1);
+}
+
+.plv2-maca-phone-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.plv2-maca-phone-dot--on {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.28);
+  animation: plv2-maca-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes plv2-maca-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.plv2-maca-phone-title {
+  flex: 1;
+  min-width: 0;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  letter-spacing: -0.02em;
+  color: #1e293b;
+}
+
+.plv2-maca-phone-badge {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5b4db3;
+  background: rgba(107, 92, 179, 0.12);
+  border: 1px solid rgba(107, 92, 179, 0.18);
+}
+
+.plv2-maca-chat-window {
+  height: clamp(280px, 42vmin, 340px);
+  overflow: hidden;
+  padding: 12px 12px 14px;
+  mask-image: linear-gradient(180deg, transparent 0%, black 6%, black 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 6%, black 94%, transparent 100%);
+}
+
+.plv2-maca-chat-marquee {
+  display: flex;
+  flex-direction: column;
+  animation: plv2-maca-marquee-scroll 24s linear infinite;
+}
+
+@keyframes plv2-maca-marquee-scroll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.plv2-maca-chat-track {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+}
+
+.plv2-maca-chat-track .plv2-ai-chat {
+  gap: 10px;
+}
+
+.plv2-maca-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #fff;
+  background: linear-gradient(145deg, #6366f1 0%, #45b8ad 100%);
+  box-shadow:
+    0 6px 16px rgba(99, 102, 241, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: plv2-maca-avatar-float 3.4s ease-in-out infinite;
+}
+
+@keyframes plv2-maca-avatar-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.plv2-maca-phone .plv2-ai-bubble {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: clamp(0.78rem, 1.35vw, 0.88rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.015em;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.plv2-maca-phone .plv2-ai-bubble--user {
+  align-self: flex-end;
+  max-width: 92%;
+  background: linear-gradient(125deg, #3d6fd4 0%, #4ab9ae 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(47, 98, 196, 0.32);
+}
+
+.plv2-maca-phone .plv2-ai-bubble--bot {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid rgba(100, 116, 139, 0.14);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.plv2-maca-phone .plv2-ai-bot-row {
+  align-items: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .plv2-maca-ia-inner {
+    grid-template-columns: 1fr;
+    gap: clamp(22px, 4vw, 32px);
+  }
+
+  .plv2-maca-ia-visual {
+    order: -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plv2-maca-chat-marquee {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .plv2-maca-chat-window {
+    height: auto;
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    mask-image: none;
+    -webkit-mask-image: none;
+    scrollbar-width: thin;
+  }
+
+  .plv2-maca-chat-track[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  .plv2-maca-phone-dot--on {
+    animation: none;
+  }
+
+  .plv2-maca-avatar {
+    animation: none;
+  }
 }
 
 /* Precios — dos columnas (texto + cards | imagen), estilo mock */
@@ -1740,7 +2323,8 @@ body {
 .plv2-pricing-split-media {
   margin: 0;
   position: relative;
-  border-radius: 22px;
+  /* Web: esquinas más contenidas que el mock redondeado (móvil ≤900px va a 0 abajo). */
+  border-radius: 11px;
   overflow: hidden;
   background: #e8e4f5;
   box-shadow:
@@ -1796,6 +2380,286 @@ body {
     margin-left: auto;
     margin-right: auto;
   }
+}
+
+/* Reviews — testimonios (API + carrusel horizontal en web) */
+.plv2-reviews {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(48px, 6.5vw, 88px) 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
+  border-top: 1px solid rgba(107, 92, 179, 0.08);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.08);
+}
+
+.plv2-reviews-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.plv2-reviews-head {
+  text-align: center;
+  margin-bottom: clamp(28px, 4vw, 40px);
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.plv2-reviews-head--nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  max-width: none;
+  text-align: left;
+}
+
+.plv2-reviews-head-text {
+  flex: 1 1 260px;
+  text-align: center;
+}
+
+.plv2-reviews-head--nav .plv2-reviews-eyebrow,
+.plv2-reviews-head--nav .plv2-reviews-title,
+.plv2-reviews-head--nav .plv2-reviews-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.plv2-reviews-head--nav .plv2-reviews-lead {
+  max-width: 34rem;
+}
+
+.plv2-reviews-nav {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.plv2-reviews-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(107, 92, 179, 0.18);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--plv2-blue);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--plv2-shadow-xs);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.plv2-reviews-nav-btn:hover {
+  background: rgba(47, 98, 196, 0.08);
+  border-color: rgba(47, 98, 196, 0.35);
+}
+
+.plv2-reviews-nav-btn:active {
+  transform: scale(0.96);
+}
+
+.plv2-reviews-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.plv2-reviews-error {
+  margin: 0 0 1rem;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.92rem;
+  color: #b45309;
+}
+
+.plv2-reviews-loading {
+  margin: 0 0 1.1rem;
+  text-align: center;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.plv2-reviews-viewport-wrap {
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  width: 100vw;
+  position: relative;
+}
+
+.plv2-reviews-viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding: 4px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  outline: none;
+}
+
+.plv2-reviews-track {
+  display: flex;
+  flex-direction: row;
+  gap: clamp(14px, 2.5vw, 22px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: max-content;
+}
+
+.plv2-review-card-wrap {
+  flex: 0 0 min(360px, calc(100vw - 48px));
+  scroll-snap-align: start;
+}
+
+@media (min-width: 901px) {
+  .plv2-reviews-viewport-wrap {
+    margin-left: 0;
+    margin-right: 0;
+    width: auto;
+  }
+
+  .plv2-reviews-viewport {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .plv2-reviews-track {
+    max-width: none;
+    width: max-content;
+    margin: 0;
+  }
+
+  .plv2-review-card-wrap {
+    flex: 0 0 min(380px, 34vw);
+  }
+
+  .plv2-reviews-head--nav {
+    align-items: center;
+  }
+
+  .plv2-reviews-head-text {
+    text-align: left;
+  }
+
+  .plv2-reviews-head--nav .plv2-reviews-eyebrow,
+  .plv2-reviews-head--nav .plv2-reviews-title,
+  .plv2-reviews-head--nav .plv2-reviews-lead {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .plv2-reviews-nav {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+.plv2-reviews-eyebrow {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #45b8ad;
+}
+
+.plv2-reviews-title {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #12161f;
+}
+
+.plv2-reviews-lead {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.94rem, 2vw, 1.05rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: #5b6472;
+}
+
+.plv2-review-card {
+  margin: 0;
+  height: 100%;
+  padding: clamp(18px, 2.5vw, 24px) clamp(18px, 2.8vw, 22px);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(107, 92, 179, 0.12);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.plv2-review-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.plv2-review-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+.plv2-review-identity {
+  min-width: 0;
+}
+
+.plv2-review-name {
+  margin: 0 0 2px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.plv2-review-role {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.plv2-review-stars {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  color: #eab308;
+}
+
+.plv2-review-quote {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.9rem, 1.9vw, 0.98rem);
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.58;
+  color: #374151;
 }
 
 /* FAQ — acordeón (marca + profundidad + estados) */
@@ -2261,10 +3125,6 @@ body {
 /* ——— Mobile / touch (≤960px): densidad, fotos visibles, sin solapes; desktop ≥961 intacto ——— */
 
 @media (max-width: 960px) {
-  html {
-    scroll-padding-top: 76px;
-  }
-
   /* Altura mínima + stage flexible: el copy queda abajo y la foto/rostro respiran arriba. */
   .plv2-hero-shell {
     min-height: min(88svh, 820px);
@@ -2287,6 +3147,7 @@ body {
     padding-top: clamp(4px, 2vw, 12px);
     padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
     margin-top: 0;
+    text-align: center;
     background: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -2295,15 +3156,27 @@ body {
     box-shadow: none;
   }
 
-  /* El H1 del hero es largo: dejar que use el ancho del contenedor (17ch achica demasiado en columna). */
+  /* El H1 del hero es largo: dejar que use el ancho del contenedor en columna. */
   .plv2-hero-shell .plv2-hero-copy h1 {
     max-width: none;
-    font-size: clamp(1.65rem, 5.4vw, 2.15rem);
+    font-size: clamp(1.45rem, 5.2vw, 2.15rem);
     line-height: 1.14;
     margin-bottom: clamp(1.2rem, 4.5vw, 1.65rem);
+    text-align: center;
+    text-wrap: pretty;
     text-shadow:
       0 1px 0 rgba(255, 255, 255, 0.75),
       0 8px 28px rgba(255, 252, 248, 0.55);
+  }
+
+  .plv2-hero-shell .plv2-hero-copy .plv2-cta-gradient {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Encadena “y segura.” para evitar viuda suelta en bloque 2 */
+  .plv2-hero-shell .plv2-hero-title-line2 .plv2-hero-nb {
+    white-space: nowrap;
   }
 
   /* Subtítulo del hero oculto en móvil (el strip “Quiénes somos” sigue usando .plv2-hero-lead). */
@@ -2323,13 +3196,17 @@ body {
     border-top: none;
   }
 
-  .plv2-photo-strip-bg {
+  .plv2-photo-strip-parallax {
     grid-area: 1 / 1 / 2 / 2;
     width: 100%;
-    height: min(42vh, 300px);
-    min-height: 200px;
-    max-height: 360px;
-    object-fit: cover;
+    height: min(40.32vh, 288px);
+    min-height: 192px;
+    max-height: 346px;
+  }
+
+  .plv2-photo-strip-parallax .plv2-photo-strip-bg {
+    height: 112%;
+    top: -6%;
     object-position: 48% 30%;
   }
 

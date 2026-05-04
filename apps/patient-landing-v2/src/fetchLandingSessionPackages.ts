@@ -15,8 +15,9 @@ export function publicApiBase(): string {
   if (u) {
     return u.replace(/\/+$/, "");
   }
+  /** Dev + proxy `/api` en vite.config → rutas relativas al origen del front. */
   if (import.meta.env.DEV) {
-    return "http://127.0.0.1:4000";
+    return "";
   }
   return "";
 }

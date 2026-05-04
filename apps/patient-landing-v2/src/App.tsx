@@ -1,3 +1,8 @@
+import { LandingMacaChat } from "./LandingMacaChat";
+import { Plv2ReviewsSection } from "./Plv2ReviewsSection";
+import { Plv2SiteHeader } from "./Plv2SiteHeader";
+import { QuienesSomosStrip } from "./QuienesSomosStrip";
+
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 
 function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: string): string {
@@ -47,7 +52,7 @@ const IMG = {
 const PLV2_FAQ_ITEMS = [
   {
     q: "¿Cómo sé qué psicólogo elegir?",
-    a: "Revisá perfiles, años de experiencia y enfoque terapéutico. Si la primera opción no cierra, podés ajustar y probar con otro profesional sin dramas."
+    a: "Revise perfiles, años de experiencia y enfoque terapéutico. Si la primera opción no convence, puede ajustar y probar con otro profesional sin complicaciones."
   },
   {
     q: "¿Las sesiones son confidenciales?",
@@ -55,19 +60,19 @@ const PLV2_FAQ_ITEMS = [
   },
   {
     q: "¿Qué pasa si no conecto con el profesional?",
-    a: "Podés cambiar de psicólogo cuando lo necesites. La idea es encontrar uno que te guste y te dé confianza."
+    a: "Puede cambiar de psicólogo cuando lo necesite. La idea es encontrar a alguien con quien se sienta a gusto y le inspire confianza."
   },
   {
     q: "¿Necesito experiencia previa en terapia?",
-    a: "No. Podés empezar aunque sea tu primera vez en un proceso terapéutico."
+    a: "No. Puede empezar aunque sea la primera vez en un proceso terapéutico."
   },
   {
-    q: "¿Cómo es la sesión online?",
-    a: "Videollamada en un entorno seguro de la plataforma. Solo necesitás internet y un lugar tranquilo."
+    q: "¿Cómo es la sesión en línea?",
+    a: "Videollamada en un entorno seguro de la plataforma. Solo se necesita internet y un lugar tranquilo."
   },
   {
     q: "¿Puedo elegir horario?",
-    a: "Sí. Elegís día y franja según la disponibilidad que cada profesional publica."
+    a: "Sí. Puede elegir día y franja según la disponibilidad que cada profesional publica."
   }
 ] as const;
 
@@ -90,26 +95,26 @@ function Plv2FaqChevron() {
 function AiOnboardingBubbles() {
   return (
     <>
-      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿Me ayudás a encontrar un psicólogo?</p>
+      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿Me ayuda a encontrar un psicólogo?</p>
       <div className="plv2-ai-bot-row">
         <span className="plv2-ai-bot-avatar" aria-hidden="true">
           <AiBotAvatar />
         </span>
-        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¡Dale! ¿Qué te gustaría trabajar en terapia?</p>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">Claro. ¿Qué le gustaría trabajar en terapia?</p>
       </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Ansiedad y que no duermo bien.</p>
       <div className="plv2-ai-bot-row">
         <span className="plv2-ai-bot-avatar" aria-hidden="true">
           <AiBotAvatar />
         </span>
-        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Hace cuánto lo sentís así?</p>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Desde cuándo se siente así?</p>
       </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Hace unos meses; peor los domingos.</p>
       <div className="plv2-ai-bot-row">
         <span className="plv2-ai-bot-avatar" aria-hidden="true">
           <AiBotAvatar />
         </span>
-        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Preferís sesiones por la mañana o por la tarde?</p>
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">¿Prefiere sesiones por la mañana o por la tarde?</p>
       </div>
       <p className="plv2-ai-bubble plv2-ai-bubble--user">Por la tarde.</p>
       <div className="plv2-ai-bot-row">
@@ -117,10 +122,69 @@ function AiOnboardingBubbles() {
           <AiBotAvatar />
         </span>
         <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--accent">
-          Gracias — ya estoy buscando tu match ideal.
+          Gracias — ya estoy buscando la mejor coincidencia para usted.
         </p>
       </div>
     </>
+  );
+}
+
+function MacaAvatar() {
+  return (
+    <span className="plv2-maca-avatar" aria-hidden="true">
+      M
+    </span>
+  );
+}
+
+/** Diálogo demo (marquee duplicado para loop sin cortes). */
+function MacaIaChatDialogue() {
+  return (
+    <div className="plv2-ai-chat">
+      <p className="plv2-ai-bubble plv2-ai-bubble--user">Necesito ayuda para elegir psicólogo: no sé por dónde empezar.</p>
+      <div className="plv2-ai-bot-row">
+        <MacaAvatar />
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">
+          Hola, soy Maca. Estoy disponible las 24 horas para escuchar con calma y ordenar lo que siente.
+        </p>
+      </div>
+      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿La inteligencia artificial también ayuda con el match?</p>
+      <div className="plv2-ai-bot-row">
+        <MacaAvatar />
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot">
+          Sí. Cruzo lo que me cuenta con sus preferencias para acercar opciones que encajen mejor —no al azar.
+        </p>
+      </div>
+      <p className="plv2-ai-bubble plv2-ai-bubble--user">¿Puedo escribirle de madrugada?</p>
+      <div className="plv2-ai-bot-row">
+        <MacaAvatar />
+        <p className="plv2-ai-bubble plv2-ai-bubble--bot plv2-ai-bubble--accent">
+          Cuando quiera. Respondo al instante; el trabajo clínico lo hace un profesional matriculado en la sesión.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MacaIaChatShowcase() {
+  return (
+    <div className="plv2-maca-phone" aria-hidden="true">
+      <div className="plv2-maca-phone-header">
+        <span className="plv2-maca-phone-dot plv2-maca-phone-dot--on" />
+        <span className="plv2-maca-phone-title">Maca · asistente IA</span>
+        <span className="plv2-maca-phone-badge">24/7</span>
+      </div>
+      <div className="plv2-maca-chat-window">
+        <div className="plv2-maca-chat-marquee">
+          <div className="plv2-maca-chat-track">
+            <MacaIaChatDialogue />
+          </div>
+          <div className="plv2-maca-chat-track" aria-hidden="true">
+            <MacaIaChatDialogue />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -153,6 +217,8 @@ function BrandWordmark(props: { className?: string; light?: boolean }) {
 export function App() {
   return (
     <div className="plv2-page">
+      <Plv2SiteHeader patientPortalUrl={PATIENT_PORTAL_URL} />
+
       <section className="plv2-hero-shell" aria-labelledby="plv2-hero-title">
         <div className="plv2-hero-bg" aria-hidden="true">
           <img
@@ -167,36 +233,32 @@ export function App() {
           />
           <div className="plv2-hero-bg-scrim" />
         </div>
-        <header className="plv2-header plv2-header--restyle">
-          <div className="plv2-container plv2-header-inner">
-            <a href="/" className="plv2-brand plv2-brand--official" aria-label="MotivarCare — inicio">
-              <img
-                src="/brand/motivarcare-logo-full.png"
-                alt="MotivarCare"
-                className="plv2-brand-lockup"
-                width={172}
-                height={53}
-                decoding="async"
-              />
-            </a>
-            <a className="plv2-cta-gradient plv2-cta-gradient--header" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
-              Ingresar
-            </a>
-          </div>
-        </header>
 
         <div className="plv2-container plv2-hero-stage">
           <div className="plv2-hero-copy">
             <h1 id="plv2-hero-title">
-              Encontrá el <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal para vos,{" "}
-              <span className="plv2-hl-blue plv2-hl-mark">en minutos</span>
+              <span className="plv2-hero-title-line1">
+                Encuentra el <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal{" "}
+                <span className="plv2-hl-blue plv2-hl-mark">en&nbsp;minutos</span>
+              </span>
+              <br />
+              <span className="plv2-hero-title-line2">
+                de forma simple{" "}
+                <span className="plv2-hero-nb">y&nbsp;segura.</span>
+              </span>
+              <br />
+              <span className="plv2-hero-title-line3">
+                <span className="plv2-hl-blue plv2-hl-mark">
+                  ¡Tu cambio empieza&nbsp;acá!
+                </span>
+              </span>
             </h1>
             <p className="plv2-hero-lead">
-              Terapia online, fácil, rápida y 100% pensada para vos. Desde cualquier lugar.
+              Terapia en línea, fácil y rápida, pensada para quien la necesita. Desde cualquier lugar.
             </p>
             <a className="plv2-cta-gradient" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
               <span className="plv2-cta-gradient-text">
-                Empezá hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
+                Empiece hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
               </span>
             </a>
           </div>
@@ -242,7 +304,7 @@ export function App() {
                 <span className="plv2-match-badge-icon" aria-hidden="true">
                   ✓
                 </span>
-                <span className="plv2-match-anim-text plv2-match-anim-text--badge">¡Es tu match!</span>
+                <span className="plv2-match-anim-text plv2-match-anim-text--badge">¡Coincidencia ideal!</span>
               </span>
               <span className="plv2-match-card-heart plv2-match-anim-heart" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -272,7 +334,7 @@ export function App() {
             <div className="plv2-feature-card-body">
               <h3 className="plv2-feature-title">Desde cualquier lugar</h3>
               <p className="plv2-feature-text">
-                Hacé terapia desde tu casa, tu trabajo o donde estés. Sin traslados, sin esperas.
+                Terapia desde el hogar, el trabajo o donde se encuentre. Sin traslados ni esperas.
               </p>
             </div>
           </li>
@@ -292,8 +354,8 @@ export function App() {
               </div>
             </div>
             <div className="plv2-feature-card-body">
-              <h3 className="plv2-feature-title">Conectá en minutos</h3>
-              <p className="plv2-feature-text">Encontramos el psicólogo ideal para vos en tiempo récord.</p>
+              <h3 className="plv2-feature-title">Conexión en minutos</h3>
+              <p className="plv2-feature-text">Encontramos el psicólogo ideal en tiempo récord.</p>
             </div>
           </li>
 
@@ -321,8 +383,8 @@ export function App() {
               </div>
             </div>
             <div className="plv2-feature-card-body">
-              <h3 className="plv2-feature-title">Inteligencia artificial que te entiende</h3>
-              <p className="plv2-feature-text">Nuestra IA analiza tus necesidades para hacer el match perfecto.</p>
+              <h3 className="plv2-feature-title">Inteligencia artificial a la medida</h3>
+              <p className="plv2-feature-text">Nuestra IA analiza las necesidades de cada persona para el mejor match.</p>
             </div>
           </li>
 
@@ -343,8 +405,8 @@ export function App() {
               <img src={IMG.featCare} alt="" loading="lazy" width={735} height={490} />
             </div>
             <div className="plv2-feature-card-body">
-              <h3 className="plv2-feature-title">Acompañamiento que te hace bien</h3>
-              <p className="plv2-feature-text">No estás solo. Te acompañamos en cada paso del proceso.</p>
+              <h3 className="plv2-feature-title">Acompañamiento que hace bien</h3>
+              <p className="plv2-feature-text">No hay que enfrentarlo solo: acompañamos en cada paso del proceso.</p>
             </div>
           </li>
         </ul>
@@ -354,7 +416,7 @@ export function App() {
         <div className="plv2-container plv2-bento-intro">
           <p className="plv2-bento-eyebrow">Todo en un solo lugar</p>
           <h2 id="plv2-bento-title" className="plv2-bento-heading">
-            Pensado para que empieces sin fricción.
+            Pensado para empezar sin fricción.
           </h2>
           <p className="plv2-bento-lead">
             La misma idea que guía sitios de servicios modernos: información clara, pasos simples y confianza antes de
@@ -377,20 +439,20 @@ export function App() {
         </div>
       </section>
 
-      <section className="plv2-steps" aria-labelledby="plv2-steps-title">
+      <section className="plv2-steps" id="como-empezar" aria-labelledby="plv2-steps-title">
         <div className="plv2-container plv2-steps-inner">
           <h2 id="plv2-steps-title" className="plv2-steps-heading">
             Cuatro pasos para empezar
           </h2>
-          <p className="plv2-steps-lead">Del registro a tu primera sesión, sin complicaciones.</p>
+          <p className="plv2-steps-lead">Del registro a la primera sesión, sin complicaciones.</p>
           <ol className="plv2-steps-list">
             <li className="plv2-steps-card">
               <span className="plv2-steps-num" aria-hidden="true">
                 1
               </span>
               <div className="plv2-steps-card-body">
-                <h3 className="plv2-steps-item-title">Registrate</h3>
-                <p className="plv2-steps-item-text">Creá tu cuenta en el portal en minutos con tu correo.</p>
+                <h3 className="plv2-steps-item-title">Registro</h3>
+                <p className="plv2-steps-item-text">Cree la cuenta en el portal en minutos con el correo electrónico.</p>
               </div>
             </li>
             <li className="plv2-steps-card">
@@ -398,9 +460,9 @@ export function App() {
                 2
               </span>
               <div className="plv2-steps-card-body">
-                <h3 className="plv2-steps-item-title">Contanos sobre vos</h3>
+                <h3 className="plv2-steps-item-title">Cuéntenos lo que necesita</h3>
                 <p className="plv2-steps-item-text">
-                  Completá el informe o charlá con nuestra IA para entender qué necesitás.
+                  Complete el informe o converse con nuestra IA para acotar lo que busca.
                 </p>
               </div>
             </li>
@@ -409,9 +471,9 @@ export function App() {
                 3
               </span>
               <div className="plv2-steps-card-body">
-                <h3 className="plv2-steps-item-title">Conocé tu match</h3>
+                <h3 className="plv2-steps-item-title">Conozca el match</h3>
                 <p className="plv2-steps-item-text">
-                  Te mostramos profesionales que encajan con tu perfil y preferencias.
+                  Mostramos profesionales acordes al perfil y las preferencias.
                 </p>
               </div>
             </li>
@@ -420,9 +482,9 @@ export function App() {
                 4
               </span>
               <div className="plv2-steps-card-body">
-                <h3 className="plv2-steps-item-title">Reservá y empezá</h3>
+                <h3 className="plv2-steps-item-title">Reserve y comience</h3>
                 <p className="plv2-steps-item-text">
-                  Elegí horario y arrancá sesiones online cuando te quede cómodo.
+                  Elija horario y comience sesiones en línea cuando le convenga.
                 </p>
               </div>
             </li>
@@ -430,41 +492,44 @@ export function App() {
         </div>
       </section>
 
-      <section className="plv2-photo-strip" aria-labelledby="plv2-photo-strip-title">
-        <div className="plv2-photo-strip-frame">
-          <img
-            src={IMG.quienesSomosStrip}
-            alt="Persona en una videollamada con una profesional, desde un espacio tranquilo en casa"
-            width={1024}
-            height={682}
-            loading="lazy"
-            decoding="async"
-            className="plv2-photo-strip-bg"
-          />
-          <div className="plv2-photo-strip-scrim" aria-hidden="true" />
-          <div className="plv2-photo-strip-content">
-            <div className="plv2-container">
-              <div className="plv2-hero-copy">
-                <p className="plv2-photo-strip-kicker">MotivarCare</p>
-                <h2 id="plv2-photo-strip-title">¿Quiénes somos?</h2>
-                <p className="plv2-photo-strip-tagline">Terapia que se adapta a tu ritmo — no al contrario.</p>
-                <p className="plv2-photo-strip-prose">
-                  Nacimos para acercarte a un{" "}
-                  <span className="plv2-photo-strip-accent">acompañamiento psicológico serio y humano</span>, sin vueltas
-                  ni humo: claro, accesible y pensado para el día a día.
-                </p>
-                <a
-                  className="plv2-cta-gradient plv2-photo-strip-cta"
-                  href={PATIENT_PORTAL_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="plv2-cta-gradient-text">
-                    Empezá hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
-                  </span>
-                </a>
-              </div>
-            </div>
+      <QuienesSomosStrip
+        imageSrc={IMG.quienesSomosStrip}
+        patientPortalUrl={PATIENT_PORTAL_URL}
+        portalDisplayHost={PORTAL_CTA_DISPLAY_HOST}
+      />
+
+      <section className="plv2-maca-ia" id="maca-ia" aria-labelledby="plv2-maca-ia-title">
+        <div className="plv2-container plv2-maca-ia-inner">
+          <div className="plv2-maca-ia-copy">
+            <p className="plv2-maca-ia-eyebrow">Match con IA · soporte 24/7</p>
+            <h2 id="plv2-maca-ia-title" className="plv2-maca-ia-title">
+              Maca entiende el contexto. Usted elige el siguiente paso.
+            </h2>
+            <p className="plv2-maca-ia-lead">
+              Unimos inteligencia artificial para sugerir matches con sentido —no al azar— y una conversación siempre
+              disponible con <strong>Maca</strong>, la asistente por chat: contención emocional orientativa cuando la
+              incertidumbre pesa, de día o de noche, hasta que reserve con un profesional.
+            </p>
+            <ul className="plv2-maca-ia-points">
+              <li>
+                <strong>Matcheo con criterio:</strong> lo que comparte y sus preferencias alimentan sugerencias más
+                alineadas a usted.
+              </li>
+              <li>
+                <strong>Maca (IA), 24/7:</strong> diálogo empático para ordenar emociones y bajar la fricción antes de la
+                videollamada.
+              </li>
+              <li>
+                <strong>Terapia con humanos:</strong> el acompañamiento clínico lo realiza un psicólogo matriculado.
+              </li>
+            </ul>
+            <p className="plv2-maca-ia-disclaimer">
+              Maca no reemplaza una emergencia ni el criterio de un profesional; si hay riesgo inminente, contacte
+              servicios de urgencia o líneas de crisis de su localidad.
+            </p>
+          </div>
+          <div className="plv2-maca-ia-visual">
+            <MacaIaChatShowcase />
           </div>
         </div>
       </section>
@@ -477,7 +542,7 @@ export function App() {
               Sesiones claras, sin sorpresas
             </h2>
             <p className="plv2-pricing-lead">
-              Cada profesional define su tarifa: vos ves el monto antes de confirmar, sin letras chicas.
+              Cada profesional define su tarifa: el monto se muestra antes de confirmar, sin letras chicas.
             </p>
             <ul className="plv2-pricing-cards" role="list">
               <li className="plv2-pricing-card">
@@ -497,14 +562,14 @@ export function App() {
               </li>
               <li className="plv2-pricing-card">
                 <p>
-                  <strong>Sin suscripción forzosa:</strong> pagás solo lo que elegís usar.
+                  <strong>Sin suscripción forzosa:</strong> pague solo lo que elija usar.
                 </p>
               </li>
             </ul>
             <div className="plv2-pricing-cta-block">
               <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
               <p className="plv2-pricing-cta-text">
-                Creá tu cuenta, explorá perfiles y elegí tu primera sesión con total claridad.
+                Cree la cuenta, explore perfiles y elija la primera sesión con total claridad.
               </p>
               <a
                 className="plv2-cta-gradient plv2-cta-gradient--header plv2-pricing-cta-btn"
@@ -512,7 +577,7 @@ export function App() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Reservar mi primera sesión
+                Reservar la primera sesión
               </a>
             </div>
           </div>
@@ -530,6 +595,8 @@ export function App() {
         </div>
       </section>
 
+      <Plv2ReviewsSection />
+
       <section className="plv2-faq" id="faq" aria-labelledby="plv2-faq-title">
         <div className="plv2-container plv2-faq-inner">
           <header className="plv2-faq-head">
@@ -538,7 +605,7 @@ export function App() {
               Preguntas frecuentes
             </h2>
             <p className="plv2-faq-lead">
-              Respuestas claras antes de tu primera sesión. Si necesitás algo más específico, escribinos desde el portal.
+              Respuestas claras antes de la primera sesión. Si necesita algo más específico, escríbanos desde el portal.
             </p>
           </header>
           <div className="plv2-faq-list" role="region" aria-label="Preguntas y respuestas">
@@ -617,11 +684,12 @@ export function App() {
           <div className="plv2-footer-right">
             <div className="plv2-footer-brand-text">
               <BrandWordmark light className="plv2-footer-wm" />
-              <span className="plv2-footer-tag">TU BIENESTAR, SIN ESPERAS</span>
+              <span className="plv2-footer-tag">BIENESTAR, SIN ESPERAS</span>
             </div>
           </div>
         </div>
       </footer>
+      <LandingMacaChat portalUrl={PATIENT_PORTAL_URL} />
     </div>
   );
 }

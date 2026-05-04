@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/auth.js";
+import { DEFAULT_LANDING_WEB_REVIEWS } from "../src/modules/web-content/reviews.defaults.js";
 
 type AppRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 type SeedContext = {
@@ -700,12 +702,29 @@ async function seedBookingAndChat(context: SeedContext) {
   });
 }
 
+const WEB_REVIEWS_CONFIG_KEY = "landing-web-reviews";
+
+async function seedLandingWebReviews() {
+  const existing = await prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_CONFIG_KEY } });
+  const count = Array.isArray(existing?.value) ? existing.value.length : 0;
+  if (count > 0) {
+    return;
+  }
+  const value = JSON.parse(JSON.stringify(DEFAULT_LANDING_WEB_REVIEWS)) as Prisma.JsonValue;
+  await prisma.systemConfig.upsert({
+    where: { key: WEB_REVIEWS_CONFIG_KEY },
+    update: { value },
+    create: { key: WEB_REVIEWS_CONFIG_KEY, value }
+  });
+}
+
 async function main() {
   const context = await seedCoreUsers();
   await seedAvailability(context);
   await seedPackagesAndPurchase(context);
   await seedBookingAndChat(context);
   await seedExtraDemoPatientsWithEmma(context);
+  await seedLandingWebReviews();
 
   console.log("Seed completed. Demo credentials (avatares de prueba Unsplash; reemplazar en producción):");
   console.log("- Patient: alex@example.com / SecurePass123");

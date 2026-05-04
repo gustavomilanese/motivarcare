@@ -27,6 +27,7 @@ import {
   WEB_RELAXATION_PLAYLISTS_KEY,
   relaxationPlaylistsCollectionSchema
 } from "../web-content/relaxationPlaylists.defaults.js";
+import { DEFAULT_LANDING_WEB_REVIEWS } from "../web-content/reviews.defaults.js";
 
 const publicModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const demoAvatarsDir = path.join(publicModuleDir, "../../../public/demo-avatars");
@@ -473,6 +474,8 @@ publicRouter.get("/web-content", async (req, res) => {
   ]);
 
   const reviewsParsed = z.array(reviewSchema).safeParse(reviewsConfig?.value);
+  const storedReviews = reviewsParsed.success ? reviewsParsed.data : [];
+  const reviewsForPublic = storedReviews.length > 0 ? storedReviews : [...DEFAULT_LANDING_WEB_REVIEWS];
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
   const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
   const relaxationParsed = relaxationPlaylistsCollectionSchema.safeParse(relaxationConfig?.value);
@@ -522,7 +525,7 @@ publicRouter.get("/web-content", async (req, res) => {
 
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),
-    reviews: reviewsParsed.success ? reviewsParsed.data : [],
+    reviews: reviewsForPublic,
     blogPosts: publishedPosts,
     exercises: publishedExercises,
     relaxationPlaylists,
