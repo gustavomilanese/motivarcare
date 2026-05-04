@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap");
 
 :root {
   color-scheme: light;
@@ -9,7 +9,11 @@
   --plv2-hero-accent: #2563eb;
   --plv2-ink: #1a2332;
   --plv2-muted: #5c6570;
-  --plv2-page-bg: #f7f8fa;
+  /* Violeta de marca (mismo tono que FAQ / precios), para acentos suaves */
+  --plv2-violet: #6b5cb3;
+  --plv2-violet-ghost: rgba(107, 92, 179, 0.07);
+  --plv2-violet-mist: rgba(167, 139, 250, 0.06);
+  --plv2-page-bg: #f7f6fa;
   --plv2-shadow: 0 20px 48px rgba(23, 28, 36, 0.08);
   --plv2-radius: 20px;
   --plv2-container: min(1180px, 100% - 2rem);
@@ -41,7 +45,12 @@ body,
 body {
   font-family: "DM Sans", system-ui, sans-serif;
   color: var(--plv2-ink);
-  background: var(--plv2-page-bg);
+  background-color: var(--plv2-page-bg);
+  background-image:
+    radial-gradient(ellipse 85% 55% at 100% 0%, var(--plv2-violet-mist) 0%, transparent 52%),
+    radial-gradient(ellipse 70% 45% at 0% 85%, var(--plv2-violet-ghost) 0%, transparent 48%),
+    linear-gradient(180deg, #faf8ff 0%, #f7f8fa 42%, #f6f4fb 100%);
+  background-attachment: fixed;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -50,6 +59,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 .plv2-container {
@@ -74,27 +89,27 @@ body {
 .plv2-hero-shell {
   position: relative;
   overflow: clip;
-  min-height: min(111vh, 1162px);
+  min-height: min(114vh, 1200px);
   display: flex;
   flex-direction: column;
-  background: #243047;
+  background: linear-gradient(165deg, #2a2848 0%, #243047 42%, #1e2d42 100%);
   border-bottom: 1px solid rgba(23, 28, 36, 0.08);
 }
 
-/* Web: hero menos alto para que ~½ fila de cards entre en viewport sin scroll */
+/* Web: hero más alto; less padding alrededor del copy para aprovechar altura */
 @media (min-width: 961px) {
   .plv2-hero-shell {
-    min-height: min(75vh, 847px);
+    min-height: min(90vh, 1000px);
   }
 
   .plv2-hero-stage {
-    padding-top: clamp(12px, 2.2vw, 26px);
-    padding-bottom: clamp(18px, 3vw, 40px);
+    padding-top: clamp(8px, 1.6vw, 20px);
+    padding-bottom: clamp(12px, 2.2vw, 32px);
   }
 
   .plv2-hero-media {
-    min-height: min(315px, 41vh);
-    padding-bottom: 22px;
+    min-height: min(380px, 50vh);
+    padding-bottom: 12px;
   }
 }
 
@@ -105,7 +120,7 @@ body {
   pointer-events: none;
 }
 
-.plv2-hero-bg picture {
+.plv2-hero-bg img {
   display: block;
   width: 100%;
   height: 100%;
@@ -116,7 +131,14 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 42%;
+  /* Rostro arriba-derecha: anclar más al top para que no se corte la cara */
+  object-position: 56% 18%;
+}
+
+@media (max-width: 960px) {
+  .plv2-hero-bg-img {
+    object-position: 52% 12%;
+  }
 }
 
 .plv2-hero-bg-scrim {
@@ -144,9 +166,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(14px) saturate(1.2);
-  border-bottom: 1px solid rgba(23, 28, 36, 0.06);
+  background: rgba(252, 250, 255, 0.94);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.08);
 }
 
 .plv2-header-inner {
@@ -154,7 +176,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 0 14px;
+  padding: 13px 0 11px;
 }
 
 .plv2-brand {
@@ -171,9 +193,9 @@ body {
 
 .plv2-brand-lockup {
   display: block;
-  height: clamp(40px, 5.2vw, 50px);
+  height: clamp(29px, 3.79vw, 37px);
   width: auto;
-  max-width: min(248px, 72vw);
+  max-width: min(181px, 72vw);
   object-fit: contain;
   object-position: left center;
 }
@@ -211,17 +233,16 @@ body {
     border-color 0.15s ease;
 }
 
-.plv2-btn--header {
-  background: #fff;
-  color: var(--plv2-ink);
-  border: 1px solid rgba(23, 28, 36, 0.1);
-  box-shadow: var(--plv2-shadow-xs), var(--plv2-shadow-sm);
+/* Header: mismo look que CTA del hero, más compacto (sin ícono) */
+.plv2-cta-gradient--header {
+  padding: 9px 18px;
+  gap: 0;
+  font-size: clamp(0.78rem, 1.15vw, 0.88rem);
+  box-shadow: var(--plv2-shadow-xs), 0 10px 26px rgba(47, 98, 196, 0.2);
 }
 
-.plv2-btn--header:hover {
-  border-color: rgba(47, 98, 196, 0.35);
-  color: var(--plv2-blue);
-  transform: translateY(-1px);
+.plv2-cta-gradient--header:hover {
+  box-shadow: var(--plv2-shadow-xs), 0 14px 32px rgba(47, 98, 196, 0.26);
 }
 
 /* Hero: copy + foto (mock) */
@@ -233,8 +254,8 @@ body {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 42vw);
   gap: clamp(32px, 5vw, 56px);
   align-items: center;
-  padding-top: clamp(20px, 4vw, 40px);
-  padding-bottom: clamp(48px, 8vw, 88px);
+  padding-top: clamp(16px, 3.2vw, 36px);
+  padding-bottom: clamp(28px, 5vw, 64px);
 }
 
 .plv2-hero-copy {
@@ -255,7 +276,7 @@ body {
 
   .plv2-hero-stage {
     grid-template-columns: 1fr;
-    padding-bottom: 56px;
+    padding-bottom: 40px;
   }
 
   .plv2-hero-copy {
@@ -278,8 +299,8 @@ body {
   flex-direction: column;
   align-items: flex-end;
   justify-content: flex-end;
-  min-height: min(360px, 48vh);
-  padding-bottom: 36px;
+  min-height: min(380px, 52vh);
+  padding-bottom: 24px;
 }
 
 .plv2-hero-connector {
@@ -319,7 +340,8 @@ body {
   opacity: 0.92;
 }
 
-.plv2-hero-copy h1 {
+.plv2-hero-copy h1,
+.plv2-hero-copy h2 {
   font-family: "Montserrat", sans-serif;
   font-weight: 700;
   font-size: clamp(1.9rem, 4.2vw, 2.75rem);
@@ -330,12 +352,15 @@ body {
   max-width: 17ch;
 }
 
+/* Mismo criterio que el diseño del hero: cuerpo de apoyo en Montserrat (no DM Sans del body). */
 .plv2-hero-lead {
-  margin: 0 0 1.65rem;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 400;
   font-size: 1.07rem;
   color: var(--plv2-muted);
   max-width: 44ch;
   line-height: 1.55;
+  margin: 0 0 1.65rem;
 }
 
 /* CTA: pastilla gradiente azul → teal (mock) */
@@ -753,9 +778,15 @@ body {
 
 /* Features — cards blancas, imagen arriba, acento de marca */
 .plv2-features {
-  padding: clamp(28px, 4vw, 48px) clamp(12px, 2.5vw, 22px) clamp(20px, 3vw, 36px);
+  padding: clamp(22px, 3.2vw, 40px) clamp(12px, 2.5vw, 22px) clamp(20px, 3vw, 36px);
   margin: 0;
-  background: linear-gradient(180deg, #e9ecf2 0%, #eef1f6 24%, #f4f6fa 100%);
+  background: linear-gradient(
+    180deg,
+    #e8e6f2 0%,
+    #eceef5 22%,
+    #f1f2f8 50%,
+    #f5f4fb 100%
+  );
 }
 
 .plv2-feature-grid {
@@ -791,10 +822,10 @@ body {
   background: #fff;
   border-radius: 22px;
   overflow: hidden;
-  border: 1px solid rgba(23, 28, 36, 0.055);
+  border: 1px solid rgba(107, 92, 179, 0.07);
   box-shadow:
     var(--plv2-shadow-xs),
-    0 14px 36px rgba(23, 28, 36, 0.055),
+    0 14px 36px rgba(91, 75, 179, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
   transition:
     transform 0.22s ease,
@@ -805,11 +836,11 @@ body {
 .plv2-feature-card:hover {
   z-index: 1;
   transform: translateY(-4px);
-  border-color: rgba(23, 28, 36, 0.07);
+  border-color: rgba(107, 92, 179, 0.14);
   box-shadow:
     var(--plv2-shadow-xs),
-    0 20px 48px rgba(23, 28, 36, 0.08),
-    0 0 0 1px rgba(47, 98, 196, 0.06);
+    0 20px 48px rgba(91, 75, 179, 0.09),
+    0 0 0 1px rgba(107, 92, 179, 0.1);
 }
 
 .plv2-feature-card--accent-blue {
@@ -821,7 +852,7 @@ body {
 }
 
 .plv2-feature-card--accent-violet {
-  --fc-accent: #6b5cb3;
+  --fc-accent: var(--plv2-violet);
 }
 
 .plv2-feature-card--accent-amber {
@@ -1202,7 +1233,665 @@ body {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
 
-/* Footer — tres zonas */
+/* Bloque “certificados”: panel gráfico único (texto y retratos van en la imagen) */
+.plv2-bento {
+  padding: clamp(28px, 2.8vw, 40px) clamp(32px, 4vw, 48px) clamp(52px, 5.2vw, 72px);
+  background: linear-gradient(180deg, #f7f5fc 0%, #eef0f8 45%, #eae8f4 100%);
+}
+
+.plv2-bento-intro {
+  text-align: center;
+  max-width: 46rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-bottom: clamp(20px, 3vw, 32px);
+}
+
+.plv2-bento-eyebrow {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #5b4db2;
+}
+
+.plv2-bento-heading {
+  margin: 0 0 12px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.45rem, 3.2vw, 2.05rem);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  color: var(--plv2-ink);
+}
+
+.plv2-bento-lead {
+  margin: 0 auto;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  color: var(--plv2-muted);
+  line-height: 1.55;
+  max-width: 42rem;
+}
+
+.plv2-bento-figure {
+  margin: 0 auto;
+  padding: 0;
+  max-width: min(1040px, 100%);
+  border-radius: clamp(18px, 2.4vw, 26px);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(23, 28, 36, 0.06);
+  box-shadow:
+    var(--plv2-shadow-xs),
+    0 4px 6px rgba(26, 43, 72, 0.03),
+    0 22px 50px rgba(26, 35, 56, 0.1);
+}
+
+.plv2-bento-figure-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+/* Cuatro pasos — flujo paciente */
+.plv2-steps {
+  margin-top: 20px;
+  padding: clamp(36px, 5vw, 56px) clamp(16px, 3vw, 28px) clamp(44px, 6vw, 72px);
+  background: linear-gradient(180deg, #f2f0f8 0%, #f8f8fc 38%, #fefeff 100%);
+  border-top: 1px solid rgba(107, 92, 179, 0.07);
+}
+
+.plv2-steps-inner {
+  max-width: min(1100px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.plv2-steps-heading {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: var(--plv2-ink);
+}
+
+.plv2-steps-lead {
+  margin: 0 auto 28px;
+  max-width: 40rem;
+  text-align: center;
+  font-size: clamp(0.94rem, 1.45vw, 1.02rem);
+  color: var(--plv2-muted);
+  line-height: 1.5;
+}
+
+.plv2-steps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 20px);
+  align-items: stretch;
+}
+
+.plv2-steps-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0;
+  padding: clamp(18px, 2.4vw, 22px) clamp(16px, 2vw, 20px);
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(107, 92, 179, 0.08);
+  box-shadow:
+    var(--plv2-shadow-xs),
+    0 12px 32px rgba(91, 75, 179, 0.05);
+}
+
+.plv2-steps-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--plv2-blue) 0%, var(--plv2-teal) 100%);
+  box-shadow: 0 6px 16px rgba(47, 98, 196, 0.22);
+}
+
+.plv2-steps-card-body {
+  min-width: 0;
+}
+
+.plv2-steps-item-title {
+  margin: 0 0 6px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.92rem, 1.35vw, 1rem);
+  letter-spacing: -0.02em;
+  color: var(--plv2-ink);
+}
+
+.plv2-steps-item-text {
+  margin: 0;
+  font-size: clamp(0.82rem, 1.2vw, 0.9rem);
+  line-height: 1.55;
+  color: var(--plv2-muted);
+}
+
+@media (max-width: 960px) {
+  .plv2-steps-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .plv2-steps-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Saltos de línea solo en viewport “web” (≥961px), igual que el hero */
+.plv2-br-desktop {
+  display: none;
+}
+
+@media (min-width: 961px) {
+  .plv2-br-desktop {
+    display: block;
+  }
+}
+
+/* Quiénes somos — imagen full-bleed + copy en blanco (después de pasos) */
+.plv2-photo-strip {
+  width: 100%;
+  margin-top: 12px;
+  padding: clamp(16px, 3vw, 28px) 0 clamp(36px, 5vw, 52px);
+  background: linear-gradient(180deg, #fff 0%, #f8f6ff 55%, #f1f0f7 100%);
+}
+
+.plv2-photo-strip-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(min(320px, 56vw), auto);
+  width: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: #0f172a;
+  border: none;
+  border-top: 1px solid rgba(23, 28, 36, 0.06);
+  border-bottom: 1px solid rgba(23, 28, 36, 0.06);
+  box-shadow: none;
+}
+
+.plv2-photo-strip-bg,
+.plv2-photo-strip-scrim {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-height: 100%;
+}
+
+.plv2-photo-strip-bg {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  /* Foto: sujeto a la derecha, luz/ventana a la izquierda — encuadre para copy a la izquierda. */
+  object-position: 38% 42%;
+}
+
+/* Mismo velo claro que el hero → tipografía oscura (ink / muted) como arriba. */
+.plv2-photo-strip-scrim {
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0.86) 0%,
+    rgba(255, 255, 255, 0.76) 30%,
+    rgba(255, 255, 255, 0.34) 50%,
+    rgba(255, 255, 255, 0.07) 68%,
+    transparent 82%
+  );
+}
+
+@media (max-width: 960px) {
+  .plv2-photo-strip-scrim {
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.78) 38%,
+      rgba(255, 255, 255, 0.45) 62%,
+      rgba(255, 255, 255, 0.12) 82%,
+      transparent 100%
+    );
+  }
+}
+
+.plv2-photo-strip-content {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: clamp(32px, 6vw, 64px) 0 clamp(36px, 6vw, 64px);
+  text-align: left;
+  color: var(--plv2-ink);
+}
+
+.plv2-photo-strip-kicker {
+  margin: 0 0 12px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--plv2-muted);
+}
+
+/* Mismo ritmo que el hero: el último .plv2-hero-lead ya deja 1.65rem antes del CTA. */
+.plv2-photo-strip-cta {
+  margin-top: 0;
+}
+
+@media (max-width: 600px) {
+  .plv2-photo-strip-frame {
+    grid-template-rows: minmax(min(380px, 72vh), auto);
+  }
+
+  .plv2-photo-strip-bg {
+    object-position: 45% 36%;
+  }
+}
+
+/* Precios — dos columnas (texto + cards | imagen), estilo mock */
+.plv2-pricing-split {
+  --plv2-pricing-accent: var(--plv2-violet);
+  padding: clamp(40px, 5.5vw, 80px) 0 clamp(48px, 6vw, 88px);
+  background: linear-gradient(180deg, #f3f0ff 0%, #f0f4ff 45%, #f4f6fa 100%);
+}
+
+.plv2-pricing-split-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(28px, 4.5vw, 56px);
+  align-items: center;
+}
+
+.plv2-pricing-eyebrow {
+  margin: 0 0 10px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #5b4bb3;
+}
+
+.plv2-pricing-title {
+  margin: 0 0 12px;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: #17171d;
+}
+
+.plv2-pricing-lead {
+  margin: 0 0 1.25rem;
+  max-width: 40ch;
+  font-size: clamp(0.98rem, 1.5vw, 1.08rem);
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--plv2-muted);
+}
+
+.plv2-pricing-cards {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plv2-pricing-card {
+  margin: 0;
+  padding: 0.85rem 1rem 0.9rem 1.1rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    var(--plv2-shadow-xs),
+    0 10px 28px rgba(91, 75, 179, 0.07),
+    0 0 0 1px rgba(23, 28, 36, 0.04),
+    inset 4px 0 0 0 var(--plv2-pricing-accent);
+}
+
+.plv2-pricing-card p {
+  margin: 0;
+  font-size: clamp(0.92rem, 1.35vw, 1.02rem);
+  line-height: 1.55;
+  font-weight: 600;
+  color: #2a3140;
+}
+
+.plv2-pricing-card strong {
+  font-weight: 800;
+  color: #17171d;
+}
+
+.plv2-pricing-cta-block {
+  margin-top: 0.25rem;
+}
+
+.plv2-pricing-cta-title {
+  margin: 0 0 8px;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.25rem);
+  font-weight: 800;
+  color: #17171d;
+  letter-spacing: -0.02em;
+}
+
+.plv2-pricing-cta-text {
+  margin: 0 0 1.1rem;
+  max-width: 40ch;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  font-weight: 600;
+  color: var(--plv2-muted);
+}
+
+.plv2-pricing-cta-btn {
+  margin-top: 0;
+}
+
+.plv2-pricing-split-media {
+  margin: 0;
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #e8e4f5;
+  box-shadow:
+    var(--plv2-shadow-xs),
+    0 20px 50px rgba(91, 75, 179, 0.12),
+    0 0 0 1px rgba(23, 28, 36, 0.05);
+}
+
+.plv2-pricing-split-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 900px) {
+  .plv2-pricing-split-inner {
+    grid-template-columns: 1fr;
+    gap: clamp(24px, 5vw, 36px);
+  }
+
+  .plv2-pricing-split-media {
+    order: -1;
+    max-width: min(520px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* FAQ — acordeón (marca + profundidad + estados) */
+.plv2-faq {
+  --plv2-faq-accent: var(--plv2-violet);
+  position: relative;
+  overflow: hidden;
+  padding: clamp(52px, 7vw, 100px) 0 clamp(56px, 8vw, 104px);
+  background:
+    radial-gradient(ellipse 85% 65% at 88% 12%, rgba(167, 139, 250, 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 55% at 8% 88%, rgba(69, 184, 173, 0.1) 0%, transparent 55%),
+    linear-gradient(168deg, #f7f4ff 0%, #fefeff 42%, #f1f5ff 100%);
+}
+
+.plv2-faq::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(107, 92, 179, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.12) 45%, transparent 78%);
+  pointer-events: none;
+}
+
+.plv2-faq-inner {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  margin-inline: auto;
+}
+
+.plv2-faq-head {
+  text-align: center;
+  margin-bottom: clamp(32px, 5vw, 48px);
+}
+
+.plv2-faq-eyebrow {
+  margin: 0 0 14px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #5b4bb3;
+}
+
+.plv2-faq-title {
+  margin: 0 0 14px;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+  color: #12161f;
+}
+
+.plv2-faq-lead {
+  margin: 0 auto;
+  max-width: 46ch;
+  font-size: clamp(0.98rem, 1.45vw, 1.08rem);
+  line-height: 1.58;
+  font-weight: 600;
+  color: #5a6270;
+}
+
+.plv2-faq-head::after {
+  content: "";
+  display: block;
+  width: min(120px, 28vw);
+  height: 4px;
+  margin: clamp(18px, 3vw, 26px) auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent 0%, var(--plv2-faq-accent) 22%, #45b8ad 78%, transparent 100%);
+  opacity: 0.85;
+}
+
+.plv2-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plv2-faq-item {
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #ffffff 0%, #faf9ff 48%, #ffffff 100%);
+  border: 1px solid rgba(107, 92, 179, 0.11);
+  box-shadow:
+    0 1px 2px rgba(23, 28, 36, 0.04),
+    0 8px 28px rgba(91, 75, 179, 0.07),
+    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.plv2-faq-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(107, 92, 179, 0.2);
+  box-shadow:
+    0 1px 2px rgba(23, 28, 36, 0.05),
+    0 14px 40px rgba(91, 75, 179, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+}
+
+.plv2-faq-item[open] {
+  border-color: rgba(107, 92, 179, 0.24);
+  box-shadow:
+    0 1px 2px rgba(23, 28, 36, 0.05),
+    0 16px 44px rgba(91, 75, 179, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.95) inset,
+    inset 4px 0 0 0 var(--plv2-faq-accent);
+}
+
+.plv2-faq-item[open]:hover {
+  transform: translateY(-1px);
+}
+
+.plv2-faq-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  list-style: none;
+  padding: 1.15rem 1.15rem 1.15rem 1.35rem;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.96rem, 1.45vw, 1.06rem);
+  font-weight: 800;
+  line-height: 1.42;
+  color: #17171d;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.18s ease;
+}
+
+.plv2-faq-item[open] .plv2-faq-summary {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(107, 92, 179, 0.12);
+}
+
+.plv2-faq-summary::-webkit-details-marker,
+.plv2-faq-summary::marker {
+  display: none;
+}
+
+.plv2-faq-summary:focus {
+  outline: none;
+}
+
+.plv2-faq-summary:focus-visible {
+  outline: 2px solid var(--plv2-faq-accent);
+  outline-offset: 3px;
+  border-radius: 16px;
+}
+
+.plv2-faq-q {
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.plv2-faq-chevron {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: #4f46a3;
+  background: linear-gradient(155deg, rgba(107, 92, 179, 0.16) 0%, rgba(107, 92, 179, 0.05) 100%);
+  border: 1px solid rgba(107, 92, 179, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1),
+    background 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease;
+}
+
+.plv2-faq-item:hover .plv2-faq-chevron {
+  background: linear-gradient(155deg, rgba(107, 92, 179, 0.22) 0%, rgba(107, 92, 179, 0.08) 100%);
+  border-color: rgba(107, 92, 179, 0.28);
+}
+
+.plv2-faq-item[open] .plv2-faq-chevron {
+  color: #fff;
+  background: linear-gradient(145deg, #6b5cb3 0%, #5b4bb3 45%, #4a3d9e 100%);
+  border-color: rgba(91, 75, 179, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(91, 75, 179, 0.35);
+  transform: rotate(180deg);
+}
+
+.plv2-faq-chevron svg {
+  display: block;
+}
+
+.plv2-faq-answer {
+  padding: 0 1.25rem 1.2rem 1.35rem;
+  animation: plv2-faq-answer-in 0.35s ease both;
+}
+
+@keyframes plv2-faq-answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plv2-faq-answer p {
+  margin: 0;
+  padding: 0.65rem 0 0 0.85rem;
+  border-left: 3px solid rgba(107, 92, 179, 0.35);
+  font-size: clamp(0.95rem, 1.35vw, 1.02rem);
+  line-height: 1.65;
+  font-weight: 600;
+  color: #4b5260;
+  letter-spacing: 0.01em;
+}
+
+.plv2-faq-item:not([open]) .plv2-faq-answer {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plv2-faq-item,
+  .plv2-faq-chevron,
+  .plv2-faq-answer {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .plv2-faq-item:hover,
+  .plv2-faq-item[open]:hover {
+    transform: none;
+  }
+}
+
+/* Footer — marca + wordmark + enlaces */
 .plv2-footer-band {
   margin-top: auto;
   margin-left: clamp(12px, 2.2vw, 22px);
@@ -1211,15 +1900,120 @@ body {
   border-radius: 24px;
   background: linear-gradient(105deg, #2d5fc0 0%, #3568c4 38%, #3a9e9a 100%);
   color: #fff;
-  padding: clamp(28px, 5vw, 48px) 0;
+  padding: clamp(16px, 2.8vw, 24px) 0;
   box-shadow: var(--plv2-shadow-xs), var(--plv2-shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
 
+/* Una sola fila: isotipo | enlaces | wordmark (misma altura visual, sin rayita). */
 .plv2-footer-inner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(18px, 3vw, 36px);
+  gap: clamp(12px, 2.5vw, 28px);
+}
+
+.plv2-footer-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  text-align: center;
+}
+
+.plv2-footer-portals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 12px;
+}
+
+.plv2-footer-portal-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 8px 22px rgba(0, 0, 0, 0.12);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.18s ease,
+    box-shadow 0.2s ease;
+}
+
+.plv2-footer-portal-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.38);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.plv2-footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 2px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.plv2-footer-legal-link {
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: color 0.18s ease;
+}
+
+.plv2-footer-legal-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.plv2-footer-sep {
+  color: rgba(255, 255, 255, 0.42);
+  padding: 0 2px;
+  user-select: none;
+}
+
+.plv2-footer-copyline {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.plv2-footer-mail {
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: color 0.18s ease;
+}
+
+.plv2-footer-mail:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .plv2-footer-left {
@@ -1228,26 +2022,13 @@ body {
 }
 
 .plv2-footer-mark-img {
-  width: 138px;
-  height: 138px;
+  width: clamp(72px, 14vw, 96px);
+  height: auto;
+  max-height: 96px;
   object-fit: contain;
   display: block;
   background: transparent;
   box-shadow: none;
-}
-
-.plv2-footer-center {
-  margin: 0;
-  font-size: clamp(0.95rem, 1.6vw, 1.08rem);
-  line-height: 1.45;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.96);
-  max-width: 42ch;
-  justify-self: center;
-}
-
-.plv2-footer-center strong {
-  font-weight: 700;
 }
 
 .plv2-footer-right {
@@ -1288,14 +2069,40 @@ body {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
+    gap: 18px;
+  }
+
+  .plv2-footer-mid {
+    order: 3;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .plv2-footer-left {
+    order: 1;
   }
 
   .plv2-footer-right {
+    order: 2;
     flex-direction: column;
     text-align: center;
   }
 
   .plv2-footer-brand-text {
     align-items: center;
+  }
+
+  .plv2-footer-portals {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .plv2-footer-portal-link {
+    width: 100%;
+  }
+
+  .plv2-footer-legal {
+    max-width: 34ch;
   }
 }

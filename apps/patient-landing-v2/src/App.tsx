@@ -12,15 +12,20 @@ const PATIENT_PORTAL_URL = portalUrl(
   "https://app.motivarcare.com"
 );
 
+const PROFESSIONAL_PORTAL_URL = portalUrl(
+  viteEnv.VITE_PROFESSIONAL_PORTAL_URL,
+  "http://localhost:5174",
+  "https://pro.motivarcare.com"
+);
+
 /** Host que mostramos en el CTA (siempre marca pública; el `href` sigue usando PATIENT_PORTAL_URL). */
 const PORTAL_CTA_DISPLAY_HOST = "motivarcare.com";
 
-/** Hero full-bleed: premium 2400×1371 + WebP para nitidez en pantallas grandes. */
+/** Hero full-bleed (intrínsecos para CLS). */
 const HERO_PHOTO = {
-  webp: "/photos/hero-quienes-somos-premium.webp",
   jpg: "/photos/hero-quienes-somos-premium.jpg",
-  width: 2400,
-  height: 1371
+  width: 1024,
+  height: 682
 } as const;
 
 const IMG = {
@@ -28,8 +33,57 @@ const IMG = {
   featMinutes: "/photos/feat-conecta-en-minutos.jpg",
   featLatam: "/photos/feat-latam-psicologos.jpg",
   featCare: "/photos/feat-acompanamiento-bien.jpg",
-  matchAvatar: "/photos/08-sesion-profesional-notas.jpg"
+  matchAvatar: "/photos/08-sesion-profesional-notas.jpg",
+  /** Panel único: copy + retratos y sellos (todo en la imagen; no superponer texto en HTML). */
+  psicologosPanel: "/photos/psicologos-verificados-panel.jpg",
+  /** Videollamada terapia desde casa (¿Quiénes somos? — banda full width). */
+  quienesSomosStrip: "/photos/quienes-somos-videollamada.png",
+  /** Precios — panel + lifestyle (misma composición que mock). */
+  pricingLifestyle: "/photos/precios-terapia-online.png"
 } as const;
+
+const PLV2_FAQ_ITEMS = [
+  {
+    q: "¿Cómo sé qué psicólogo elegir?",
+    a: "Revisá perfiles, años de experiencia y enfoque terapéutico. Si la primera opción no cierra, podés ajustar y probar con otro profesional sin dramas."
+  },
+  {
+    q: "¿Las sesiones son confidenciales?",
+    a: "Sí. Son privadas y se rigen por el secreto profesional que corresponde a cada matriculado."
+  },
+  {
+    q: "¿Qué pasa si no conecto con el profesional?",
+    a: "Podés cambiar de psicólogo cuando lo necesites. La idea es encontrar uno que te guste y te dé confianza."
+  },
+  {
+    q: "¿Necesito experiencia previa en terapia?",
+    a: "No. Podés empezar aunque sea tu primera vez en un proceso terapéutico."
+  },
+  {
+    q: "¿Cómo es la sesión online?",
+    a: "Videollamada en un entorno seguro de la plataforma. Solo necesitás internet y un lugar tranquilo."
+  },
+  {
+    q: "¿Puedo elegir horario?",
+    a: "Sí. Elegís día y franja según la disponibilidad que cada profesional publica."
+  }
+] as const;
+
+function Plv2FaqChevron() {
+  return (
+    <span className="plv2-faq-chevron" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M6 9l6 6 6-6"
+          stroke="currentColor"
+          strokeWidth="2.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
 
 function GlobeIcon() {
   return (
@@ -100,19 +154,16 @@ export function App() {
     <div className="plv2-page">
       <section className="plv2-hero-shell" aria-labelledby="plv2-hero-title">
         <div className="plv2-hero-bg" aria-hidden="true">
-          <picture>
-            <source type="image/webp" srcSet={HERO_PHOTO.webp} />
-            <img
-              src={HERO_PHOTO.jpg}
-              alt=""
-              className="plv2-hero-bg-img"
-              width={HERO_PHOTO.width}
-              height={HERO_PHOTO.height}
-              sizes="100vw"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </picture>
+          <img
+            src={HERO_PHOTO.jpg}
+            alt=""
+            className="plv2-hero-bg-img"
+            width={HERO_PHOTO.width}
+            height={HERO_PHOTO.height}
+            sizes="100vw"
+            fetchPriority="high"
+            decoding="async"
+          />
           <div className="plv2-hero-bg-scrim" />
         </div>
         <header className="plv2-header plv2-header--restyle">
@@ -122,12 +173,12 @@ export function App() {
                 src="/brand/motivarcare-logo-full.png"
                 alt="MotivarCare"
                 className="plv2-brand-lockup"
-                width={236}
-                height={72}
+                width={172}
+                height={53}
                 decoding="async"
               />
             </a>
-            <a className="plv2-btn plv2-btn--header" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
+            <a className="plv2-cta-gradient plv2-cta-gradient--header" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
               Ingresar
             </a>
           </div>
@@ -295,6 +346,218 @@ export function App() {
         </ul>
       </section>
 
+      <section className="plv2-bento" aria-labelledby="plv2-bento-title">
+        <div className="plv2-container plv2-bento-intro">
+          <p className="plv2-bento-eyebrow">Todo en un solo lugar</p>
+          <h2 id="plv2-bento-title" className="plv2-bento-heading">
+            Pensado para que empieces sin fricción.
+          </h2>
+          <p className="plv2-bento-lead">
+            La misma idea que guía sitios de servicios modernos: información clara, pasos simples y confianza antes de
+            reservar.
+          </p>
+        </div>
+
+        <div className="plv2-container">
+          <figure className="plv2-bento-figure">
+            <img
+              src={IMG.psicologosPanel}
+              alt="Psicólogos certificados: equipo profesional con sello por país."
+              width={1024}
+              height={682}
+              loading="lazy"
+              decoding="async"
+              className="plv2-bento-figure-img"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section className="plv2-steps" aria-labelledby="plv2-steps-title">
+        <div className="plv2-container plv2-steps-inner">
+          <h2 id="plv2-steps-title" className="plv2-steps-heading">
+            Cuatro pasos para empezar
+          </h2>
+          <p className="plv2-steps-lead">Del registro a tu primera sesión, sin complicaciones.</p>
+          <ol className="plv2-steps-list">
+            <li className="plv2-steps-card">
+              <span className="plv2-steps-num" aria-hidden="true">
+                1
+              </span>
+              <div className="plv2-steps-card-body">
+                <h3 className="plv2-steps-item-title">Registrate</h3>
+                <p className="plv2-steps-item-text">Creá tu cuenta en el portal en minutos con tu correo.</p>
+              </div>
+            </li>
+            <li className="plv2-steps-card">
+              <span className="plv2-steps-num" aria-hidden="true">
+                2
+              </span>
+              <div className="plv2-steps-card-body">
+                <h3 className="plv2-steps-item-title">Contanos sobre vos</h3>
+                <p className="plv2-steps-item-text">
+                  Completá el informe o charlá con nuestra IA para entender qué necesitás.
+                </p>
+              </div>
+            </li>
+            <li className="plv2-steps-card">
+              <span className="plv2-steps-num" aria-hidden="true">
+                3
+              </span>
+              <div className="plv2-steps-card-body">
+                <h3 className="plv2-steps-item-title">Conocé tu match</h3>
+                <p className="plv2-steps-item-text">
+                  Te mostramos profesionales que encajan con tu perfil y preferencias.
+                </p>
+              </div>
+            </li>
+            <li className="plv2-steps-card">
+              <span className="plv2-steps-num" aria-hidden="true">
+                4
+              </span>
+              <div className="plv2-steps-card-body">
+                <h3 className="plv2-steps-item-title">Reservá y empezá</h3>
+                <p className="plv2-steps-item-text">
+                  Elegí horario y arrancá sesiones online cuando te quede cómodo.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="plv2-photo-strip" aria-labelledby="plv2-photo-strip-title">
+        <div className="plv2-photo-strip-frame">
+          <img
+            src={IMG.quienesSomosStrip}
+            alt="Persona en una videollamada con una profesional, desde un espacio tranquilo en casa"
+            width={1024}
+            height={682}
+            loading="lazy"
+            decoding="async"
+            className="plv2-photo-strip-bg"
+          />
+          <div className="plv2-photo-strip-scrim" aria-hidden="true" />
+          <div className="plv2-photo-strip-content">
+            <div className="plv2-container">
+              <div className="plv2-hero-copy">
+                <p className="plv2-photo-strip-kicker">MotivarCare</p>
+                <h2 id="plv2-photo-strip-title">¿Quiénes somos?</h2>
+                <p className="plv2-hero-lead">Terapia que se adapta a tu día, no al revés.</p>
+                <p className="plv2-hero-lead">
+                  Nacimos para acercarte a un{" "}
+                  <span className="plv2-hl-blue plv2-hl-mark">acompañamiento psicológico de calidad</span>,{" "}
+                  <br className="plv2-br-desktop" />
+                  sin barreras innecesarias:{" "}
+                  <span className="plv2-hl-blue plv2-hl-mark">accesible y cercano</span>, pensado para la vida real.
+                </p>
+                <a
+                  className="plv2-cta-gradient plv2-photo-strip-cta"
+                  href={PATIENT_PORTAL_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span className="plv2-cta-gradient-globe" aria-hidden="true">
+                    <GlobeIcon />
+                  </span>
+                  <span className="plv2-cta-gradient-text">
+                    Empezá hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="plv2-pricing-split" id="precios" aria-labelledby="plv2-pricing-title">
+        <div className="plv2-container plv2-pricing-split-inner">
+          <div className="plv2-pricing-split-copy">
+            <p className="plv2-pricing-eyebrow">Precios transparentes</p>
+            <h2 id="plv2-pricing-title" className="plv2-pricing-title">
+              Sesiones claras, sin sorpresas
+            </h2>
+            <p className="plv2-pricing-lead">
+              Cada profesional define el valor de su sesión; vos ves el precio antes de confirmar.
+            </p>
+            <ul className="plv2-pricing-cards" role="list">
+              <li className="plv2-pricing-card">
+                <p>
+                  Desde <strong>$40.000 ARS</strong> por sesión, según experiencia y orientación terapéutica.
+                </p>
+              </li>
+              <li className="plv2-pricing-card">
+                <p>
+                  Duración estándar: <strong>50 minutos</strong>.
+                </p>
+              </li>
+              <li className="plv2-pricing-card">
+                <p>
+                  <strong>Descuentos en packs</strong> de 4, 8 o 12 sesiones cuando el profesional los ofrezca.
+                </p>
+              </li>
+              <li className="plv2-pricing-card">
+                <p>
+                  <strong>Sin suscripción obligatoria:</strong> pagás por lo que usás.
+                </p>
+              </li>
+            </ul>
+            <div className="plv2-pricing-cta-block">
+              <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
+              <p className="plv2-pricing-cta-text">
+                Creá tu cuenta, explorá perfiles y reservá tu primera sesión cuando quieras.
+              </p>
+              <a
+                className="plv2-cta-gradient plv2-cta-gradient--header plv2-pricing-cta-btn"
+                href={PATIENT_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Reservar mi primera sesión
+              </a>
+            </div>
+          </div>
+          <figure className="plv2-pricing-split-media">
+            <img
+              src={IMG.pricingLifestyle}
+              alt="Persona en videollamada de terapia desde el sillón de casa, con la laptop."
+              width={1024}
+              height={682}
+              loading="lazy"
+              decoding="async"
+              className="plv2-pricing-split-img"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section className="plv2-faq" id="faq" aria-labelledby="plv2-faq-title">
+        <div className="plv2-container plv2-faq-inner">
+          <header className="plv2-faq-head">
+            <p className="plv2-faq-eyebrow">Dudas comunes</p>
+            <h2 id="plv2-faq-title" className="plv2-faq-title">
+              Preguntas frecuentes
+            </h2>
+            <p className="plv2-faq-lead">
+              Respuestas claras antes de tu primera sesión. Si necesitás algo más específico, escribinos desde el portal.
+            </p>
+          </header>
+          <div className="plv2-faq-list" role="region" aria-label="Preguntas y respuestas">
+            {PLV2_FAQ_ITEMS.map((item) => (
+              <details key={item.q} className="plv2-faq-item">
+                <summary className="plv2-faq-summary">
+                  <span className="plv2-faq-q">{item.q}</span>
+                  <Plv2FaqChevron />
+                </summary>
+                <div className="plv2-faq-answer">
+                  <p>{item.a}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="plv2-footer-band">
         <div className="plv2-container plv2-footer-inner">
           <div className="plv2-footer-left">
@@ -302,16 +565,56 @@ export function App() {
               src="/brand/motivarcare-mark.png"
               alt=""
               className="plv2-footer-mark-img"
-              width={138}
-              height={138}
+              width={96}
+              height={96}
               decoding="async"
             />
           </div>
-          <p className="plv2-footer-center">
-            No tenés que estar bien para pedir ayuda.
-            <br />
-            <strong>Estamos para acompañarte.</strong>
-          </p>
+
+          <div className="plv2-footer-mid">
+            <nav className="plv2-footer-portals" aria-label="Acceso a portales">
+              <a
+                className="plv2-footer-portal-link"
+                href={PATIENT_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Portal pacientes
+              </a>
+              <a
+                className="plv2-footer-portal-link"
+                href={PROFESSIONAL_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Portal profesionales
+              </a>
+            </nav>
+            <nav className="plv2-footer-legal" aria-label="Legal y apoyo">
+              <a className="plv2-footer-legal-link" href="/docs/privacy.html">
+                Política de privacidad
+              </a>
+              <span className="plv2-footer-sep" aria-hidden="true">
+                ·
+              </span>
+              <a className="plv2-footer-legal-link" href="/docs/terms.html">
+                Términos
+              </a>
+              <span className="plv2-footer-sep" aria-hidden="true">
+                ·
+              </span>
+              <a className="plv2-footer-legal-link" href="/docs/crisis.html">
+                Líneas de apoyo
+              </a>
+            </nav>
+            <p className="plv2-footer-copyline">
+              © 2026 MotivarCare · Argentina ·{" "}
+              <a className="plv2-footer-mail" href="mailto:soporte@motivarcare.com">
+                soporte@motivarcare.com
+              </a>
+            </p>
+          </div>
+
           <div className="plv2-footer-right">
             <div className="plv2-footer-brand-text">
               <BrandWordmark light className="plv2-footer-wm" />
