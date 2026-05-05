@@ -542,37 +542,50 @@ export function App() {
           <div className="plv2-pricing-split-copy">
             <p className="plv2-pricing-eyebrow">Precios transparentes</p>
             <h2 id="plv2-pricing-title" className="plv2-pricing-title">
-              Sesiones claras, sin sorpresas
+              Sesiones claras,
+              <span className="plv2-pricing-title-break"> sin sorpresas</span>
             </h2>
-            <p className="plv2-pricing-lead">
-              Cada profesional define su tarifa: el monto se muestra antes de confirmar, sin letras chicas.
-            </p>
+            <div className="plv2-pricing-lead-stack">
+              <p className="plv2-pricing-lead-line">Cada profesional define su tarifa.</p>
+              <p className="plv2-pricing-lead-line plv2-pricing-lead-line--emphasis">
+                El monto se ve <strong>antes de confirmar</strong>, sin letras chicas.
+              </p>
+            </div>
             <ul className="plv2-pricing-cards" role="list">
-              <li className="plv2-pricing-card">
-                <p>
-                  Desde <strong>$40.000 ARS</strong> por sesión <span className="plv2-pricing-card-note">(según experiencia y enfoque)</span>.
+              <li className="plv2-pricing-card plv2-pricing-card--featured">
+                <span className="plv2-pricing-card-kicker">Referencia en Argentina</span>
+                <p className="plv2-pricing-card-line">
+                  <span className="plv2-pricing-card-price">Desde $40.000 ARS</span>
+                  <span className="plv2-pricing-card-unit"> / sesión</span>
                 </p>
+                <p className="plv2-pricing-card-sub">Varía según experiencia y enfoque del profesional.</p>
               </li>
               <li className="plv2-pricing-card">
-                <p>
-                  Sesiones de <strong>50 minutos</strong> como referencia estándar.
+                <span className="plv2-pricing-card-kicker">Duración habitual</span>
+                <p className="plv2-pricing-card-line">
+                  <strong>50 minutos</strong> por encuentro
                 </p>
+                <p className="plv2-pricing-card-sub">Tiempo estándar en la plataforma.</p>
               </li>
               <li className="plv2-pricing-card">
-                <p>
-                  <strong>Packs con descuento</strong> cuando el profesional los publique (4, 8 o 12 sesiones).
+                <span className="plv2-pricing-card-kicker">Si quiere ahorrar</span>
+                <p className="plv2-pricing-card-line">
+                  <strong>Packs con descuento</strong> cuando el profesional los publique
                 </p>
+                <p className="plv2-pricing-card-sub">Por ejemplo 4, 8 o 12 sesiones.</p>
               </li>
               <li className="plv2-pricing-card">
-                <p>
-                  <strong>Sin suscripción forzosa:</strong> pague solo lo que elija usar.
+                <span className="plv2-pricing-card-kicker">Sin atarlo</span>
+                <p className="plv2-pricing-card-line">
+                  <strong>Sin suscripción obligatoria</strong>
                 </p>
+                <p className="plv2-pricing-card-sub">Paga solo lo que use.</p>
               </li>
             </ul>
             <div className="plv2-pricing-cta-block">
               <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
               <p className="plv2-pricing-cta-text">
-                Cree la cuenta, explore perfiles y elija la primera sesión con total claridad.
+                Cree la cuenta, explore perfiles y reserve la primera sesión con todo claro desde el inicio.
               </p>
               <a
                 className="plv2-cta-gradient plv2-cta-gradient--header plv2-pricing-cta-btn"
