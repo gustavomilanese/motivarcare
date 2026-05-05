@@ -2227,7 +2227,7 @@ body {
   }
 }
 
-/* Precios — dos columnas (texto + cards | imagen), estilo mock */
+/* Precios: título + fila (4 cards | foto misma altura que las cards) + CTA */
 .plv2-pricing-split {
   --plv2-pricing-accent: var(--plv2-violet);
   padding: clamp(44px, 6vw, 88px) 0 clamp(52px, 6.5vw, 96px);
@@ -2235,14 +2235,20 @@ body {
 }
 
 .plv2-pricing-split-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(28px, 4.5vw, 56px);
-  align-items: center;
+  min-width: 0;
 }
 
 .plv2-pricing-split-copy {
   min-width: 0;
+}
+
+.plv2-pricing-cards-media-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.52fr);
+  gap: clamp(20px, 3.5vw, 44px);
+  align-items: stretch;
+  margin-bottom: 1.85rem;
+  min-height: 0;
 }
 
 .plv2-pricing-eyebrow {
@@ -2257,64 +2263,33 @@ body {
 
 .plv2-pricing-title {
   margin: 0 0 1rem;
-  max-width: 20ch;
+  max-width: none;
   font-family: "Montserrat", sans-serif;
   font-size: clamp(1.45rem, 3vw, 2rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.2;
   letter-spacing: -0.032em;
   color: #141822;
 }
 
-.plv2-pricing-title-break {
-  display: block;
-  margin-top: 0.12em;
+.plv2-pricing-title-accent {
   background: linear-gradient(105deg, #2f62c4 0%, #45b8ad 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.plv2-pricing-lead-stack {
-  margin: 0 0 1.45rem;
-  max-width: 26rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.plv2-pricing-lead-line {
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(0.96rem, 1.35vw, 1.04rem);
-  line-height: 1.55;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: #64748b;
-}
-
-.plv2-pricing-lead-line--emphasis {
-  padding: 0.65rem 0.85rem;
-  border-radius: 12px;
-  border: 1px solid rgba(107, 92, 179, 0.12);
-  background: rgba(255, 255, 255, 0.72);
-  color: #3d4a5c;
-  line-height: 1.5;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.plv2-pricing-lead-line--emphasis strong {
-  font-weight: 700;
-  color: #1e293b;
-}
-
 .plv2-pricing-cards {
   list-style: none;
-  margin: 0 0 1.85rem;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-self: start;
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
 }
 
 .plv2-pricing-card {
@@ -2426,6 +2401,7 @@ body {
 .plv2-pricing-split-media {
   margin: 0;
   position: relative;
+  display: block;
   /* Web: esquinas más contenidas que el mock redondeado (móvil ≤900px va a 0 abajo). */
   border-radius: 11px;
   overflow: hidden;
@@ -2440,6 +2416,31 @@ body {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Escritorio: la altura de la fila la marca solo la columna de cards; la foto rellena ese alto (sin inflar el grid). */
+@media (min-width: 901px) {
+  .plv2-pricing-cards-media-row {
+    grid-template-rows: minmax(0, auto);
+  }
+
+  .plv2-pricing-split-media {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .plv2-pricing-split-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    object-position: center;
+  }
 }
 
 @media (max-width: 900px) {
@@ -2461,18 +2462,28 @@ body {
     padding-right: clamp(10px, 3vw, 16px);
   }
 
-  .plv2-pricing-split-inner {
+  .plv2-pricing-cards-media-row {
     grid-template-columns: 1fr;
-    gap: clamp(24px, 5vw, 36px);
+    gap: clamp(18px, 4vw, 26px);
+    margin-bottom: clamp(1.35rem, 4vw, 1.85rem);
   }
 
   .plv2-pricing-split-media {
     order: -1;
     width: 100%;
     max-width: none;
+    height: auto;
+    min-height: 0;
     margin: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .plv2-pricing-split-img {
+    height: auto;
+    max-height: none;
+    object-fit: unset;
+    aspect-ratio: auto;
   }
 
   .plv2-pricing-cta-block {

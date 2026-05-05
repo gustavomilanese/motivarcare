@@ -45,8 +45,8 @@ const IMG = {
   psicologosPanel: "/photos/psicologos-verificados-panel.jpg",
   /** Videollamada terapia desde casa (¿Quiénes somos? — banda full width). */
   quienesSomosStrip: "/photos/quienes-somos-videollamada.png",
-  /** Precios — panel + lifestyle (misma composición que mock). */
-  pricingLifestyle: "/photos/precios-terapia-online.png"
+  /** Precios — lifestyle vertical (trabajo remoto / naturaleza). */
+  pricingLifestyle: "/photos/precios-trabajo-remoto-vertical.png"
 } as const;
 
 const PLV2_FAQ_ITEMS = [
@@ -542,46 +542,53 @@ export function App() {
           <div className="plv2-pricing-split-copy">
             <p className="plv2-pricing-eyebrow">Precios transparentes</p>
             <h2 id="plv2-pricing-title" className="plv2-pricing-title">
-              Sesiones claras,
-              <span className="plv2-pricing-title-break"> sin sorpresas</span>
+              Sesiones claras y{" "}
+              <span className="plv2-pricing-title-accent">sin sorpresas</span>
             </h2>
-            <div className="plv2-pricing-lead-stack">
-              <p className="plv2-pricing-lead-line">Cada profesional define su tarifa.</p>
-              <p className="plv2-pricing-lead-line plv2-pricing-lead-line--emphasis">
-                El monto se ve <strong>antes de confirmar</strong>, sin letras chicas.
-              </p>
+            <div className="plv2-pricing-cards-media-row">
+              <ul className="plv2-pricing-cards" role="list">
+                <li className="plv2-pricing-card plv2-pricing-card--featured">
+                  <span className="plv2-pricing-card-kicker">Referencia en Argentina</span>
+                  <p className="plv2-pricing-card-line">
+                    <span className="plv2-pricing-card-price">Desde $40.000 ARS</span>
+                    <span className="plv2-pricing-card-unit"> / sesión</span>
+                  </p>
+                  <p className="plv2-pricing-card-sub">Varía según experiencia y enfoque del profesional.</p>
+                </li>
+                <li className="plv2-pricing-card">
+                  <span className="plv2-pricing-card-kicker">Duración habitual</span>
+                  <p className="plv2-pricing-card-line">
+                    <strong>50 minutos</strong> por encuentro
+                  </p>
+                  <p className="plv2-pricing-card-sub">Tiempo estándar en la plataforma.</p>
+                </li>
+                <li className="plv2-pricing-card">
+                  <span className="plv2-pricing-card-kicker">Si quiere ahorrar</span>
+                  <p className="plv2-pricing-card-line">
+                    <strong>Packs con descuento</strong> cuando el profesional los publique
+                  </p>
+                  <p className="plv2-pricing-card-sub">Por ejemplo 4, 8 o 12 sesiones.</p>
+                </li>
+                <li className="plv2-pricing-card">
+                  <span className="plv2-pricing-card-kicker">Sin atarlo</span>
+                  <p className="plv2-pricing-card-line">
+                    <strong>Sin suscripción obligatoria</strong>
+                  </p>
+                  <p className="plv2-pricing-card-sub">Paga solo lo que use.</p>
+                </li>
+              </ul>
+              <figure className="plv2-pricing-split-media">
+                <img
+                  src={IMG.pricingLifestyle}
+                  alt="Persona con auriculares trabajando con laptop frente a arrozales y palmeras al atardecer."
+                  width={576}
+                  height={1024}
+                  loading="lazy"
+                  decoding="async"
+                  className="plv2-pricing-split-img"
+                />
+              </figure>
             </div>
-            <ul className="plv2-pricing-cards" role="list">
-              <li className="plv2-pricing-card plv2-pricing-card--featured">
-                <span className="plv2-pricing-card-kicker">Referencia en Argentina</span>
-                <p className="plv2-pricing-card-line">
-                  <span className="plv2-pricing-card-price">Desde $40.000 ARS</span>
-                  <span className="plv2-pricing-card-unit"> / sesión</span>
-                </p>
-                <p className="plv2-pricing-card-sub">Varía según experiencia y enfoque del profesional.</p>
-              </li>
-              <li className="plv2-pricing-card">
-                <span className="plv2-pricing-card-kicker">Duración habitual</span>
-                <p className="plv2-pricing-card-line">
-                  <strong>50 minutos</strong> por encuentro
-                </p>
-                <p className="plv2-pricing-card-sub">Tiempo estándar en la plataforma.</p>
-              </li>
-              <li className="plv2-pricing-card">
-                <span className="plv2-pricing-card-kicker">Si quiere ahorrar</span>
-                <p className="plv2-pricing-card-line">
-                  <strong>Packs con descuento</strong> cuando el profesional los publique
-                </p>
-                <p className="plv2-pricing-card-sub">Por ejemplo 4, 8 o 12 sesiones.</p>
-              </li>
-              <li className="plv2-pricing-card">
-                <span className="plv2-pricing-card-kicker">Sin atarlo</span>
-                <p className="plv2-pricing-card-line">
-                  <strong>Sin suscripción obligatoria</strong>
-                </p>
-                <p className="plv2-pricing-card-sub">Paga solo lo que use.</p>
-              </li>
-            </ul>
             <div className="plv2-pricing-cta-block">
               <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
               <p className="plv2-pricing-cta-text">
@@ -597,17 +604,6 @@ export function App() {
               </a>
             </div>
           </div>
-          <figure className="plv2-pricing-split-media">
-            <img
-              src={IMG.pricingLifestyle}
-              alt="Persona en videollamada de terapia desde el sillón de casa, con la laptop."
-              width={1024}
-              height={682}
-              loading="lazy"
-              decoding="async"
-              className="plv2-pricing-split-img"
-            />
-          </figure>
         </div>
       </section>
 
