@@ -501,31 +501,34 @@ export function App() {
       <section className="plv2-maca-ia" id="maca-ia" aria-labelledby="plv2-maca-ia-title">
         <div className="plv2-container plv2-maca-ia-inner">
           <div className="plv2-maca-ia-copy">
-            <p className="plv2-maca-ia-eyebrow">Match con IA · soporte 24/7</p>
+            <p className="plv2-maca-ia-eyebrow">Maca · cuando necesite hablar</p>
             <h2 id="plv2-maca-ia-title" className="plv2-maca-ia-title">
-              Maca entiende el contexto. Usted elige el siguiente paso.
+              Una conversación que la escucha y la acompaña hasta el siguiente paso.
             </h2>
             <p className="plv2-maca-ia-lead">
-              Unimos inteligencia artificial para sugerir matches con sentido —no al azar— y una conversación siempre
-              disponible con <strong>Maca</strong>, la asistente por chat: contención emocional orientativa cuando la
-              incertidumbre pesa, de día o de noche, hasta que reserve con un profesional.
+              Acá no hace falta hablar como en un manual: usted cuenta lo que le pasa y cómo quiere que sea la terapia.
+              Con eso, la plataforma le acerca profesionales que tienen más chances de encajar con usted —no al azar— y{" "}
+              <strong>Maca</strong> queda en el chat las 24 horas para cuando la cabeza no para: para poner en palabras lo
+              que siente, ganar un poco de aire y llegar con más tranquilidad a la videollamada con su psicólogo o
+              psicóloga.
             </p>
             <ul className="plv2-maca-ia-points">
               <li>
-                <strong>Matcheo con criterio:</strong> lo que comparte y sus preferencias alimentan sugerencias más
-                alineadas a usted.
+                <strong>Profesionales que tienen sentido para usted:</strong> según lo que cuenta y lo que prefiere
+                (horario, enfoque, idioma…), le mostramos opciones más acordes a su historia.
               </li>
               <li>
-                <strong>Maca (IA), 24/7:</strong> diálogo empático para ordenar emociones y bajar la fricción antes de la
-                videollamada.
+                <strong>Maca a cualquier hora:</strong> charla por chat cuando necesite ordenar emociones o bajar la
+                ansiedad antes del primer turno.
               </li>
               <li>
-                <strong>Terapia con humanos:</strong> el acompañamiento clínico lo realiza un psicólogo matriculado.
+                <strong>La terapia la hace una persona:</strong> el acompañamiento clínico lo realiza un psicólogo o
+                psicóloga matriculado.
               </li>
             </ul>
             <p className="plv2-maca-ia-disclaimer">
-              Maca no reemplaza una emergencia ni el criterio de un profesional; si hay riesgo inminente, contacte
-              servicios de urgencia o líneas de crisis de su localidad.
+              Maca no reemplaza una emergencia ni el criterio de un profesional. Si cree que está en peligro o en crisis,
+              llame a emergencias o a una línea de ayuda en su zona.
             </p>
           </div>
           <div className="plv2-maca-ia-visual">
