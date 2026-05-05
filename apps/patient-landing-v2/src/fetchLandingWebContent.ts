@@ -27,6 +27,16 @@ export async function fetchLandingWebReviews(): Promise<LandingWebReviewItem[]> 
   if (!res.ok) {
     throw new Error("web-content");
   }
-  const data = (await res.json()) as WebContentResponse;
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("text/html")) {
+    /** Vercel sirve index.html en /api si no hay proxy ni VITE_API_URL al API real. */
+    throw new Error("web-content-html");
+  }
+  let data: WebContentResponse;
+  try {
+    data = (await res.json()) as WebContentResponse;
+  } catch {
+    throw new Error("web-content-json");
+  }
   return Array.isArray(data.reviews) ? data.reviews : [];
 }

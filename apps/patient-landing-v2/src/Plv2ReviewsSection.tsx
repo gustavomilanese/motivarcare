@@ -25,6 +25,7 @@ export function Plv2ReviewsSection() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [reviews, setReviews] = useState<LandingWebReviewItem[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [loadErrorHint, setLoadErrorHint] = useState<"html" | "other">("other");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,10 +37,13 @@ export function Plv2ReviewsSection() {
           setReviews(list);
           setLoadError(false);
         }
-      } catch {
+      } catch (e) {
         if (active) {
           setReviews([]);
           setLoadError(true);
+          setLoadErrorHint(
+            e instanceof Error && e.message === "web-content-html" ? "html" : "other"
+          );
         }
       } finally {
         if (active) {
@@ -101,7 +105,16 @@ export function Plv2ReviewsSection() {
 
         {loadError ? (
           <p className="plv2-reviews-error" role="status">
-            No pudimos cargar las opiniones. Actualice la página o intente más tarde.
+            {loadErrorHint === "html" ? (
+              <>
+                La web está llamando a <code>/api</code> en el mismo dominio y Vercel devuelve la página, no el servidor de datos.{" "}
+                <strong>En Vercel → proyecto de esta landing → Environment Variables</strong> agregá{" "}
+                <code>VITE_API_URL</code> con la URL pública del API (copiala de Railway, empieza con https://) y hacé{" "}
+                <strong>Redeploy</strong>. Sin eso, las opiniones del admin no pueden cargarse.
+              </>
+            ) : (
+              <>No pudimos cargar las opiniones. Actualizá la página o probá más tarde.</>
+            )}
           </p>
         ) : null}
 
