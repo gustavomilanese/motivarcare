@@ -79,13 +79,29 @@ const reviewSchema = z.object({
   id: z.string().min(2).max(120),
   name: z.string().min(2).max(120),
   role: z.string().min(2).max(80),
-  reviewDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  reviewDate: z.preprocess(
+    (v) => (v === null || v === undefined || v === "" ? undefined : v),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+  ),
   relativeDate: z.string().min(2).max(80),
   text: z.string().min(5).max(2000),
-  rating: z.number().int().min(1).max(5),
+  rating: z.coerce.number().int().min(1).max(5),
   avatar: imageSourceSchema,
-  accent: z.string().trim().min(4).max(32).optional()
+  accent: z.preprocess(
+    (v) => (v === null || v === undefined || v === "" ? undefined : v),
+    z.string().trim().min(4).max(32).optional()
+  )
 });
+
+function parseStoredLandingReviews(raw: unknown): z.infer<typeof reviewSchema>[] {
+  if (!Array.isArray(raw)) return [];
+  const out: z.infer<typeof reviewSchema>[] = [];
+  for (const item of raw) {
+    const parsed = reviewSchema.safeParse(item);
+    if (parsed.success) out.push(parsed.data);
+  }
+  return out;
+}
 
 const blogPostSchema = z.object({
   id: z.string().min(2).max(120),
@@ -473,8 +489,7 @@ publicRouter.get("/web-content", async (req, res) => {
     prisma.systemConfig.findUnique({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } })
   ]);
 
-  const reviewsParsed = z.array(reviewSchema).safeParse(reviewsConfig?.value);
-  const storedReviews = reviewsParsed.success ? reviewsParsed.data : [];
+  const storedReviews = parseStoredLandingReviews(reviewsConfig?.value);
   const reviewsForPublic = storedReviews.length > 0 ? storedReviews : [...DEFAULT_LANDING_WEB_REVIEWS];
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
   const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
