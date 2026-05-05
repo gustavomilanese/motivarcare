@@ -62,8 +62,8 @@ export function Plv2ReviewsSection() {
       return;
     }
     const card = el.querySelector<HTMLElement>(".plv2-review-card");
-    const step = card?.offsetWidth ?? Math.min(340, Math.floor(el.clientWidth * 0.88));
-    const gap = 20;
+    const step = card?.offsetWidth ?? Math.min(260, Math.floor(el.clientWidth * 0.72));
+    const gap = 12;
     el.scrollBy({
       left: direction === "left" ? -(step + gap) : step + gap,
       behavior: "smooth"
@@ -141,8 +141,8 @@ export function Plv2ReviewsSection() {
                             src={review.avatar}
                             alt=""
                             className="plv2-review-avatar"
-                            width={48}
-                            height={48}
+                            width={40}
+                            height={40}
                             loading="lazy"
                             decoding="async"
                           />
