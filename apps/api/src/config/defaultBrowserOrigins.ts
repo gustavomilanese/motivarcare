@@ -11,6 +11,9 @@ export const DEFAULT_TRUSTED_BROWSER_ORIGINS: readonly string[] = [
   /** Preview Vercel — paridad con paciente; prod usa `PROFESSIONAL_APP_URL` en env también. */
   "https://motivarcare-professional.vercel.app",
   "https://app.motivarcare.com",
+  /** Marketing / landing (www y apex) — fetch de `web-content` y session-packages. */
+  "https://motivarcare.com",
+  "https://www.motivarcare.com",
   "https://pro.motivarcare.com",
   /** Admin prod — http y https no son intercambiables en el header Origin (CORS exacto). */
   "https://admin.motivarcare.com",

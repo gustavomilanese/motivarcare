@@ -9,15 +9,36 @@ export interface LandingSessionPackageRow {
   currency: string;
 }
 
+declare global {
+  interface Window {
+    __THERAPY_API_BASE__?: string;
+  }
+}
+
+/**
+ * Base URL del API para fetch desde la landing.
+ * - En dev: vacío → mismo origen + proxy Vite a `:PORT` (ver repo root `PORT`).
+ * - En prod: obligatorio en build — `VITE_API_URL` o `API_PUBLIC_URL` en Vercel (inyectado como `window.__THERAPY_API_BASE__`).
+ */
 export function publicApiBase(): string {
   const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
-  const u = env.VITE_API_URL?.trim();
-  if (u) {
-    return u.replace(/\/+$/, "");
+  const fromEnv = env.VITE_API_URL?.trim().replace(/\/+$/, "");
+  if (fromEnv) {
+    return fromEnv;
   }
-  /** Dev + proxy `/api` en vite.config → rutas relativas al origen del front. */
   if (import.meta.env.DEV) {
     return "";
+  }
+  if (typeof window !== "undefined") {
+    const injected = window.__THERAPY_API_BASE__?.trim();
+    if (injected) {
+      return injected.replace(/\/+$/, "");
+    }
+  }
+  if (import.meta.env.PROD && typeof window !== "undefined") {
+    console.warn(
+      "[MotivarCare landing] Sin URL del API: definí VITE_API_URL (o API_PUBLIC_URL) en el build de Vercel apuntando al API público (Railway)."
+    );
   }
   return "";
 }
