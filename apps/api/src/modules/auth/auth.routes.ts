@@ -257,10 +257,45 @@ function hasGoogleCalendarOauthConfig(): boolean {
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 }
 
+const PRODUCTION_OAUTH_CANONICAL_ORIGIN = "https://app.motivarcare.com";
+
+function trimTrailingSlash(u: string): string {
+  return u.replace(/\/+$/, "");
+}
+
+/**
+ * Base pública del API para construir el redirect de Google Calendar OAuth.
+ * Orden: GOOGLE_REDIRECT_URI (URI completa) se maneja en el caller;
+ * aquí: BASE_URL → BACKEND_URL → API_PUBLIC_URL → default local.
+ * En producción, si la URL sigue siendo *.railway.app, se usa el dominio canónico
+ * (el intercambio de código debe coincidir con la URI autorizada en Google Cloud).
+ */
+function pickPublicApiOriginForGoogleOAuth(): string {
+  const raw =
+    env.BASE_URL.trim() || env.BACKEND_URL.trim() || env.API_PUBLIC_URL.trim() || "http://localhost:4000";
+  let base = trimTrailingSlash(raw);
+
+  if (env.NODE_ENV === "production") {
+    try {
+      const host = new URL(base).hostname;
+      if (host === "localhost" || host === "127.0.0.1") {
+        return PRODUCTION_OAUTH_CANONICAL_ORIGIN;
+      }
+      if (host.endsWith("railway.app")) {
+        return PRODUCTION_OAUTH_CANONICAL_ORIGIN;
+      }
+    } catch {
+      return PRODUCTION_OAUTH_CANONICAL_ORIGIN;
+    }
+  }
+
+  return base;
+}
+
 function getGoogleOauthRedirectUri(): string {
   const explicit = env.GOOGLE_REDIRECT_URI.trim();
   if (explicit.length > 0) return explicit;
-  return `${env.API_PUBLIC_URL.replace(/\/+$/, "")}/api/auth/google/calendar/callback`;
+  return `${pickPublicApiOriginForGoogleOAuth()}/api/auth/google/calendar/callback`;
 }
 
 function createGoogleOauthClient() {

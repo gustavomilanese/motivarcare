@@ -42,6 +42,10 @@ const EnvSchema = z.object({
   PROFESSIONAL_APP_URL: z.string().min(1).default("http://localhost:5174"),
   ADMIN_APP_URL: z.string().min(1).default("http://localhost:5175"),
   API_PUBLIC_URL: z.string().min(1).default("http://localhost:4000"),
+  /** Opcional: dominio público del API; si está definido, tiene prioridad sobre API_PUBLIC_URL al armar el OAuth Calendar callback. */
+  BASE_URL: z.string().optional().default(""),
+  /** Opcional: mismo rol que BASE_URL (segundo fallback). */
+  BACKEND_URL: z.string().optional().default(""),
   EMAIL_FROM: z.string().min(1).default("MotivarCare <no-reply@motivacare.app>"),
   RESEND_API_KEY: z.string().optional().default(""),
   JWT_SECRET: z.string().min(1).default("dev-only-change-me"),
