@@ -7,6 +7,8 @@
   --plv2-blue: #2f62c4;
   --plv2-blue-dark: #2656ad;
   --plv2-hero-accent: #2563eb;
+  /* Sea green — acento “simple” */
+  --plv2-hero-green-dark: #2e8b57;
   --plv2-ink: #1a2332;
   --plv2-muted: #5c6570;
   /* Violeta de marca (mismo tono que FAQ / precios), para acentos suaves */
@@ -591,6 +593,31 @@ body {
   font-weight: 800;
 }
 
+.plv2-hl-green-dark {
+  color: var(--plv2-hero-green-dark);
+  font-weight: 800;
+}
+
+/* Arco bajo “cambio” — curva swoosh (mismo azul que “psicólogo” vía .plv2-hl-blue) */
+.plv2-hero-cambio-arc {
+  position: relative;
+  display: inline;
+}
+
+.plv2-hero-cambio-arc::after {
+  content: "";
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  bottom: -0.14em;
+  height: 0.48em;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 14' preserveAspectRatio='none'%3E%3Cpath d='M5 10 Q50 2.5 95 10' fill='none' stroke='%232563eb' stroke-width='3.25' stroke-linecap='round'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
 .plv2-hl-mark {
   position: relative;
   display: inline;
@@ -613,8 +640,9 @@ body {
 .plv2-hero-copy h2 {
   font-family: "Montserrat", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.9rem, 4.2vw, 2.75rem);
-  line-height: 1.12;
+  /* +30% respecto al tamaño anterior; interlineado −30% (×0.7) respecto a 1.12 */
+  font-size: clamp(2.47rem, 5.46vw, 3.575rem);
+  line-height: 0.784;
   letter-spacing: -0.035em;
   color: var(--plv2-ink);
   margin: 0 0 1.1rem;
@@ -625,8 +653,13 @@ body {
   .plv2-hero-copy h1 {
     max-width: min(52rem, 92vw);
     /* Menos agresivo en vw que el clamp de arriba: encaja en 3 líneas con white-space: nowrap. */
-    font-size: clamp(1.72rem, 2.85vw, 2.75rem);
+    font-size: clamp(2.236rem, 3.705vw, 3.575rem);
   }
+}
+
+/* Más aire entre el título y el párrafo del hero (+20% respecto a 1.1rem) */
+.plv2-hero-shell .plv2-hero-copy h1 {
+  margin-bottom: 1.32rem;
 }
 
 .plv2-hero-title-line1,
@@ -650,14 +683,16 @@ body {
 }
 
 /* Mismo criterio que el diseño del hero: cuerpo de apoyo en Montserrat (no DM Sans del body). */
+/* padding-top: evita colapso de márgenes con el h1 (margin-top del <p> no sumaba espacio visible) */
 .plv2-hero-lead {
   font-family: "Montserrat", sans-serif;
   font-weight: 400;
-  font-size: 1.07rem;
+  font-size: 1.3375rem;
   color: var(--plv2-muted);
   max-width: 44ch;
   line-height: 1.55;
   margin: 0 0 1.65rem;
+  padding-top: clamp(1.1rem, 2.8vw, 1.65rem);
 }
 
 /* CTA: pastilla gradiente azul → teal (mock) */
@@ -3280,9 +3315,9 @@ body {
   /* El H1 del hero es largo: dejar que use el ancho del contenedor en columna. */
   .plv2-hero-shell .plv2-hero-copy h1 {
     max-width: none;
-    font-size: clamp(1.45rem, 5.2vw, 2.15rem);
-    line-height: 1.14;
-    margin-bottom: clamp(1.2rem, 4.5vw, 1.65rem);
+    font-size: clamp(1.885rem, 6.76vw, 2.795rem);
+    line-height: 0.798;
+    margin-bottom: clamp(1.44rem, 5.4vw, 1.98rem);
     text-align: center;
     text-wrap: pretty;
     text-shadow:
@@ -3300,9 +3335,11 @@ body {
     white-space: nowrap;
   }
 
-  /* Subtítulo del hero oculto en móvil (el strip “Quiénes somos” sigue usando .plv2-hero-lead). */
+  /* Hero lead visible también en móvil (el strip “Quiénes somos” usa otras clases). */
   .plv2-hero-shell .plv2-hero-lead {
-    display: none;
+    max-width: min(42ch, 100%);
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /*

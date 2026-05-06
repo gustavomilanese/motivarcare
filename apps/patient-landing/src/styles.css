@@ -13,6 +13,9 @@
   --mc-shadow: 0 18px 40px rgba(26, 43, 76, 0.12);
   --mc-radius: 20px;
   --mc-container: min(1180px, 100% - 2rem);
+  --mc-hero-blue: #2563eb;
+  /* Sea green — acento “simple” */
+  --mc-hero-green-dark: #2e8b57;
 }
 
 *,
@@ -241,11 +244,13 @@ body {
 .mc-hero-copy h1 {
   font-family: "Montserrat", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.75rem, 4vw, 2.55rem);
-  line-height: 1.18;
+  /* +30% respecto al tamaño anterior */
+  font-size: clamp(2.275rem, 5.2vw, 3.315rem);
+  /* interlineado −30% (×0.7) respecto a 1.18 */
+  line-height: 0.826;
   letter-spacing: -0.03em;
   color: var(--mc-navy);
-  margin: 0 0 1rem;
+  margin: 0 0 1.2rem;
   max-width: 100%;
 }
 
@@ -260,14 +265,41 @@ body {
   margin-top: 0.14em;
 }
 
-.mc-hero-copy h1 strong {
-  color: var(--mc-teal-dark);
+.mc-hero-word-blue {
+  color: var(--mc-hero-blue);
   font-weight: 800;
 }
 
+.mc-hero-word-green-dark {
+  color: var(--mc-hero-green-dark);
+  font-weight: 800;
+}
+
+/* Arco azul bajo “cambio” — curva tipo swoosh (vértice arriba; mismo azul que “psicólogo”) */
+.mc-hero-cambio-arc {
+  position: relative;
+  display: inline;
+}
+
+.mc-hero-cambio-arc::after {
+  content: "";
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  bottom: -0.14em;
+  height: 0.48em;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 14' preserveAspectRatio='none'%3E%3Cpath d='M5 10 Q50 2.5 95 10' fill='none' stroke='%232563eb' stroke-width='3.25' stroke-linecap='round'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* padding-top: el margen superior del <p> colapsaba con el margin-bottom del h1 y no sumaba aire */
 .mc-hero-lead {
   margin: 0 0 1.75rem;
-  font-size: 1.08rem;
+  padding-top: clamp(1.1rem, 2.8vw, 1.65rem);
+  font-size: 1.35rem;
   color: var(--mc-muted);
   max-width: 36ch;
 }

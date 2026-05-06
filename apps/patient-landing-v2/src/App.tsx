@@ -238,19 +238,16 @@ export function App() {
           <div className="plv2-hero-copy">
             <h1 id="plv2-hero-title">
               <span className="plv2-hero-title-line1">
-                Encuentra el <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal{" "}
-                <span className="plv2-hl-blue plv2-hl-mark">en&nbsp;minutos</span>
+                Encuentra el <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal
               </span>
               <br />
               <span className="plv2-hero-title-line2">
-                de forma simple{" "}
+                de forma <span className="plv2-hl-green-dark">simple</span>{" "}
                 <span className="plv2-hero-nb">y&nbsp;segura.</span>
               </span>
               <br />
               <span className="plv2-hero-title-line3">
-                <span className="plv2-hl-blue plv2-hl-mark">
-                  ¡Tu cambio empieza&nbsp;acá!
-                </span>
+                ¡Tu <span className="plv2-hl-blue plv2-hero-cambio-arc">cambio</span> empieza acá!
               </span>
             </h1>
             <p className="plv2-hero-lead">
@@ -258,7 +255,7 @@ export function App() {
             </p>
             <a className="plv2-cta-gradient" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
               <span className="plv2-cta-gradient-text">
-                Empiece hoy en <strong>{PORTAL_CTA_DISPLAY_HOST}</strong>
+                Comienza hoy en <strong>motivarcare.com</strong>
               </span>
             </a>
           </div>

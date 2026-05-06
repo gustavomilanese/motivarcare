@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { LandingMacaChat } from "./LandingMacaChat";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
@@ -83,14 +82,6 @@ function GlobeIcon() {
 const FLAGS = ["🇲🇽", "🇦🇷", "🇺🇾", "🇨🇴", "🇪🇨", "🇻🇪", "🇨🇱", "🇵🇪"] as const;
 
 export function App() {
-  const portalLabel = useMemo(() => {
-    try {
-      return new URL(PATIENT_PORTAL_URL).hostname.replace(/^www\./, "");
-    } catch {
-      return "motivarcare.com";
-    }
-  }, []);
-
   return (
     <div className="mc-page">
       <header className="mc-header">
@@ -128,13 +119,15 @@ export function App() {
             <div className="mc-hero-copy">
               <h1 id="mc-hero-title">
                 <span className="mc-hero-title-line1">
-                  Encuentra el <strong>psicólogo ideal en minutos</strong>
+                  Encuentra el <span className="mc-hero-word-blue">psicólogo</span> ideal
                 </span>
                 <br />
-                <span className="mc-hero-title-line2">de forma simple y segura.</span>
+                <span className="mc-hero-title-line2">
+                  de forma <span className="mc-hero-word-green-dark">simple</span> y segura.
+                </span>
                 <br />
                 <span className="mc-hero-title-line3">
-                  <strong>¡Tu cambio empieza acá!</strong>
+                  ¡Tu <span className="mc-hero-word-blue mc-hero-cambio-arc">cambio</span> empieza acá!
                 </span>
               </h1>
               <p className="mc-hero-lead">
@@ -143,7 +136,7 @@ export function App() {
               <a className="mc-btn mc-btn--primary mc-hero-cta" href={PATIENT_PORTAL_URL} target="_blank" rel="noreferrer">
                 <GlobeIcon />
                 <span>
-                  Empiece hoy en <strong>{portalLabel}</strong>
+                  Comienza hoy en <strong>motivarcare.com</strong>
                 </span>
               </a>
             </div>

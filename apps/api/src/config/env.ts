@@ -55,6 +55,11 @@ const EnvSchema = z.object({
   DAILY_DOMAIN: z.string().optional().default(""),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
+  /**
+   * URI completa del callback OAuth de Calendar (debe coincidir con Google Cloud Console).
+   * Si está vacío, se usa `{API_PUBLIC_URL}/api/auth/google/calendar/callback`.
+   */
+  GOOGLE_REDIRECT_URI: z.string().optional().default(""),
   GOOGLE_REFRESH_TOKEN: z.string().optional().default(""),
   GOOGLE_CALENDAR_ID: z.string().optional().default(""),
   OPENAI_API_KEY: z.string().optional().default(""),

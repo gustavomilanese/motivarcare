@@ -48,7 +48,8 @@ En el servicio de la **API**, agregá variables (o usá **Reference** para enlaz
 | `JWT_SECRET` | Cadena larga aleatoria (nunca commitear) |
 | `CORS_ORIGINS` | URLs HTTPS de tus frontends, separadas por coma (sin barra final) |
 | `TRUST_PROXY` | `true` |
-| `API_PUBLIC_URL` | URL pública de esta API, ej. `https://xxxx.up.railway.app` |
+| `API_PUBLIC_URL` | URL pública HTTPS del API (sin barra final), ej. `https://app.motivarcare.com` si el dominio apunta al servicio Railway. Usada para OAuth Calendar, enlaces en mails, URLs de assets. |
+| `GOOGLE_REDIRECT_URI` | (Opcional) URI completa del callback de Google Calendar si querés fijarla aparte; si vacío, es `{API_PUBLIC_URL}/api/auth/google/calendar/callback`. Debe estar también en Google Cloud Console → credencial OAuth → URIs autorizadas. |
 | `PATIENT_APP_URL` | URL del portal paciente en prod |
 | `PROFESSIONAL_APP_URL` | URL portal profesional |
 | `ADMIN_APP_URL` | URL portal admin |
@@ -103,10 +104,12 @@ npm run db:push:remote:accept-data-loss
 
    Si Railway construye dos veces: está bien; el `buildCommand` puede ser el mismo `npm ci && npm run build:api`.
 
-### A6. Dominio público y Stripe
+### A6. Dominio público, Google OAuth Calendar y Stripe
 
-1. En el servicio API → **Settings** → **Networking** → **Generate domain** o conectá dominio propio.
-2. Actualizá `API_PUBLIC_URL` y `CORS_ORIGINS` con las URLs finales.
+1. En el servicio API → **Settings** → **Networking** → **Generate domain** o conectá dominio propio (ej. `app.motivarcare.com` → Railway).
+2. Actualizá `API_PUBLIC_URL` y `CORS_ORIGINS` con las URLs finales. Para **Google Calendar OAuth**, la URI de redireccionamiento autorizada en Google Cloud debe ser exactamente  
+   `{API_PUBLIC_URL}/api/auth/google/calendar/callback`  
+   (o la URI completa en `GOOGLE_REDIRECT_URI` si la usás). Sin coincidencia exacta, el intercambio de código falla tras el login de Google.
 3. En Stripe → Webhooks → URL:
 
    `https://TU-API/api/v1/payments/stripe/webhook`

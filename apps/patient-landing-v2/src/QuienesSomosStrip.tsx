@@ -78,7 +78,7 @@ export function QuienesSomosStrip(props: Props) {
                 rel="noreferrer"
               >
                 <span className="plv2-cta-gradient-text">
-                  Empiece hoy en <strong>{portalDisplayHost}</strong>
+                  Comienza hoy en <strong>{portalDisplayHost}</strong>
                 </span>
               </a>
             </div>

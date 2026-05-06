@@ -258,6 +258,8 @@ function hasGoogleCalendarOauthConfig(): boolean {
 }
 
 function getGoogleOauthRedirectUri(): string {
+  const explicit = env.GOOGLE_REDIRECT_URI.trim();
+  if (explicit.length > 0) return explicit;
   return `${env.API_PUBLIC_URL.replace(/\/+$/, "")}/api/auth/google/calendar/callback`;
 }
 
@@ -773,7 +775,8 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
   } catch (error) {
     console.error("Could not complete Google Calendar OAuth callback", {
       redirectUriUsed: getGoogleOauthRedirectUri(),
-      hint: "Debe coincidir exactamente con una «URI de redireccionamiento autorizada» en Google Cloud (mismo esquema, host y puerto que API_PUBLIC_URL).",
+      hint:
+        "Debe coincidir exactamente con una «URI de redireccionamiento autorizada» en Google Cloud (misma URI que usa este servidor vía GOOGLE_REDIRECT_URI o API_PUBLIC_URL + /api/auth/google/calendar/callback).",
       error
     });
     return redirectWithCookieClear({
