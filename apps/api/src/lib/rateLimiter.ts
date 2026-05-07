@@ -178,3 +178,14 @@ export const treatmentChatPerUserLimiter = createRateLimiter({
   windowMs: env.TREATMENT_CHAT_RATE_LIMIT_WINDOW_MS,
   maxRequests: env.TREATMENT_CHAT_RATE_LIMIT_MAX_PER_USER
 });
+
+/**
+ * Maca pública en la landing: como el endpoint es anónimo (sin Bearer), no podemos
+ * cap por usuario. Acotamos por IP con una ventana corta para frenar bots y abuso
+ * desde tráfico web. El cap por sessionId vive en el service (counter con TTL).
+ */
+export const landingMacaPerIpLimiter = createRateLimiter({
+  keyPrefix: "landing_maca_ip",
+  windowMs: env.LANDING_MACA_RATE_LIMIT_WINDOW_MS,
+  maxRequests: env.LANDING_MACA_RATE_LIMIT_MAX_PER_IP
+});

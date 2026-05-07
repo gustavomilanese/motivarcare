@@ -125,6 +125,30 @@ const EnvSchema = z.object({
   TREATMENT_CHAT_RATE_LIMIT_MAX_PER_IP: z.coerce.number().int().positive().default(8),
   /** Tope de mensajes por minuto, por usuario autenticado, en el treatment chat (PR-T5). */
   TREATMENT_CHAT_RATE_LIMIT_MAX_PER_USER: z.coerce.number().int().positive().default(6),
+  /**
+   * Maca pública en la landing: chat anónimo orientado a marketing/orientación.
+   * Distinto del intake-chat y del treatment-chat (esos requieren auth y guardan estado en DB).
+   * Acá no persistimos nada y los caps son agresivos para limitar abuso desde tráfico anónimo.
+   */
+  LANDING_MACA_ENABLED: z.coerce.boolean().default(true),
+  /** `mock` para tests/dev sin OPENAI_API_KEY. `openai` en prod. */
+  LANDING_MACA_PROVIDER: z.enum(["openai", "mock"]).default("openai"),
+  /** Modelo barato/rápido pensado para chat de marketing breve. */
+  LANDING_MACA_OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  /** Cap duro de turnos del usuario por sessionId del landing chat (cliente puede mentir; cap server-side). */
+  LANDING_MACA_MAX_TURNS_PER_SESSION: z.coerce.number().int().positive().default(8),
+  /** Tamaño máx. del mensaje del visitante. */
+  LANDING_MACA_MAX_INPUT_CHARS: z.coerce.number().int().positive().default(400),
+  /** Tope de tokens de salida por respuesta para acotar costo y forzar concisión. */
+  LANDING_MACA_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(220),
+  /** Cantidad de mensajes recientes que pasamos como contexto al LLM. */
+  LANDING_MACA_CONTEXT_WINDOW: z.coerce.number().int().positive().default(8),
+  /** Ventana de rate-limit por IP (ms). */
+  LANDING_MACA_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  /** Tope de mensajes por ventana, por IP, para Maca de la landing. */
+  LANDING_MACA_RATE_LIMIT_MAX_PER_IP: z.coerce.number().int().positive().default(5),
+  /** TTL del counter por sessionId en memoria/Redis (limpieza). 1h por defecto. */
+  LANDING_MACA_SESSION_TTL_MS: z.coerce.number().int().positive().default(60 * 60 * 1000),
   /** Secreto Turnstile (registro profesional). Vacío = no se exige token en el API. */
   TURNSTILE_SECRET_KEY: z.string().optional().default("")
 });

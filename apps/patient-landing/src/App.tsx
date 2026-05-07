@@ -1,5 +1,3 @@
-import { LandingMacaChat } from "./LandingMacaChat";
-
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
 
 function portalUrl(explicit: string | undefined, devUrl: string, prodDefault: string): string {
@@ -415,7 +413,6 @@ export function App() {
           </div>
         </footer>
       </main>
-      <LandingMacaChat portalUrl={PATIENT_PORTAL_URL} />
     </div>
   );
 }

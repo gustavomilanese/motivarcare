@@ -2,11 +2,13 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
   type KeyboardEvent
 } from "react";
+import { publicApiBase } from "./fetchLandingSessionPackages";
 
 type Role = "assistant" | "user";
 
@@ -16,98 +18,165 @@ interface ChatMsg {
   content: string;
 }
 
+interface ChatStatus {
+  enabled: boolean;
+  maxTurnsPerSession: number;
+  maxInputChars: number;
+}
+
+const DEFAULT_STATUS: ChatStatus = {
+  enabled: true,
+  /** Defaults frontend; el server manda los reales vía /status. */
+  maxTurnsPerSession: 8,
+  maxInputChars: 400
+};
+
 function mkId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-const DEMO_CAP = 8;
+function mkSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+const INITIAL_GREETING =
+  "Hola, soy Maca. Soy una IA de MotivarCare: te puedo escuchar un rato y orientarte sobre cómo funciona la terapia online acá. Lo profundo lo trabajás con un profesional dentro del portal.";
 
 function buildInitialMessages(): ChatMsg[] {
   return [
     {
       id: mkId(),
       role: "assistant",
-      content: "¡Hola! Soy Maca. Acá podés preguntarme lo esencial sobre MotivarCare o escribir cómo te sentís."
+      content: INITIAL_GREETING
     }
   ];
 }
 
-/**
- * Demo **sin** modelo de lenguaje: no hay “entendimiento” real. Conviene imaginar un
- * desvío: si el texto parece de precio, de terapeuta, de ánimo, etc., respondemos con
- * un guion fijo; si no, una **lista de frases** que **rota** (según cuántos mensajes
- * mandó el usuario) para que no suene siempre igual. Eso da sensación de charla, pero
- * no memoria ni hilo: el hilo de verdad está en el portal, con Maca + IA y tu cuenta.
- */
-function replyForUserMessage(text: string, userTurnIndex: number): string {
-  const lower = text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+const FALLBACK_MESSAGES = {
+  rateLimited:
+    "Estamos yendo muy rápido. Esperá unos segundos y volvé a probar, por favor.",
+  providerError:
+    "Tuve un problema para responder en este momento. Probá de nuevo en unos segundos. Si no, en el portal de MotivarCare te pueden orientar mejor.",
+  network:
+    "No pude conectarme. Revisá tu conexión y volvé a intentar; si sigue, podés seguir en el portal.",
+  disabled:
+    "Maca está fuera de servicio temporalmente. Podés crear cuenta en MotivarCare y seguir desde ahí cuando quieras."
+} as const;
 
-  if (/precio|pagar|pago|costo|cu[aá]nto|tarifa|\$|peso|paquete|sesion|sesiones/.test(lower)) {
-    return "Cada profesional define sus honorarios: los ves antes de pagar en el portal, sin sorpresas. Ahí podés comparar, elegir y comprar paquetes cuando quieras.";
-  }
-  if (/match|psic[oó]logo|terapeuta|elegir|reserv|agenda|hora|turno/.test(lower)) {
-    return "Puedo orientarte con lo que me cuentes. Para elegir profesional, ver la agenda y reservar, todo eso se gestiona en el portal —la IA y el equipo te acompañan en serio.";
-  }
-  if (
-    /c[oó]mo funciona|c[oó]mo es (esto)?|qu[eé] es (esto|motivar|motivacare)|para qu[eé] (sirve|es esto)|de qu[eé] se trata|en qu[eé] consiste|qu[eé] tipo de (plataforma|servicio|app)|para qu[eé] es esto|qu[eé] ofrece/.test(
-      lower
-    )
-  ) {
-    return (
-      "MotivarCare es una plataforma de terapia online: te conectás con psicólogos para sesiones por videollamada, con reservas y pagos claros. " +
-      "Está pensada para estar disponible las 24 horas para escribir y acompañarte cuando lo necesites. " +
-      "Además del trabajo clínico con tu profesional, sumamos IA (yo, Maca), música, ejercicios e información para apoyarte entre sesiones y hacer el proceso más completo. " +
-      "Eso complementa la terapia; no la reemplaza."
-    );
-  }
-  if (/\b(hola|buenas|hey|gracias)\b|^(\s*)(ok|si|s[ií])(\s*)$/i.test(lower)) {
-    return "Un gusto leerte.";
-  }
-  if (
-    /ansiedad|miedo|miedos|nervio|nervios|triste|baj[oó]n|angustia|no puedo m[aá]s|estoy mal|me siento|solo|sola|solas|ayuda|desesper|duro|dif[ií]cil|insomnio|ataque|p[aá]nico/.test(
-      lower
-    )
-  ) {
-    return "Gracias por contarlo: lo que sentís importa. Un profesional puede acompañarte a fondo; en MotivarCare podés reservar cuando quieras. Si sentís riesgo inmediato, buscá ayuda de emergencia en tu zona.";
-  }
-  if (/primera vez|nunca fui|no s[eé] si|tengo dudas|me da vergüenza|verguenza|da miedo agendar/.test(lower)) {
-    return "Es normal el miedo o la duda al empezar: mucha gente tarda en dar el primer paso. El proceso en MotivarCare va por etapas; nadie te apura. La terapia en profundidad la lleva tu psicólogo o psicóloga; yo sigo en el chat para el día a día.";
-  }
-  if (/privacidad|secreto|nadie se entere|discreto|an[oó]nimo/.test(lower)) {
-    return "Entiendo el cuidado con la privacidad. En la app, el chat y los datos clínicos están protegidos para eso.";
-  }
-  if (
-    /demo|muestra|vista previa|es (real|falso|en serio|un bot)|me lees|me guardan|se guarda|queda guardado|esto graba|privado (aca|aqui|en la web)/.test(
-      lower
-    )
-  ) {
-    return "Lo que escribís en esta página no queda guardado: sirve para orientarte en la web. En MotivarCare, con tu registro, el chat y el resto del servicio van en tu cuenta de forma privada.";
+interface SendApiResponse {
+  assistantMessage?: string;
+  remainingTurns?: number;
+  capReached?: boolean;
+  code?: string;
+  message?: string;
+}
+
+interface SendOutcome {
+  reply: string;
+  capReached: boolean;
+  /** `true` si vino del servidor (LLM o crisis). `false` si caímos a un fallback de UX. */
+  ok: boolean;
+}
+
+async function callMacaApi(params: {
+  apiBase: string;
+  sessionId: string;
+  message: string;
+  history: Array<{ role: Role; content: string }>;
+}): Promise<SendOutcome> {
+  const url = `${params.apiBase}/api/landing-chat/maca`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: params.sessionId,
+        message: params.message,
+        history: params.history
+      })
+    });
+  } catch {
+    return { reply: FALLBACK_MESSAGES.network, capReached: false, ok: false };
   }
 
-  const empatheticGeneral = [
-    "Te leo. Lo que contás no es una molestia: mucha gente atraviesa algo parecido.",
-    "A veces alcanza con ponerlo en palabras, aunque sea un poco.",
-    "No tenés que tener todo resuelto para acercarte: curiosidad o necesidad, las dos cuentan.",
-    "Si sirve de algo: dar el primer paso suele ser lo más pesado; después el proceso se ordena un poco más.",
-    "Gracias por escribir. Hay espacio en MotivarCare para cuando quieras dar el siguiente paso.",
-    "Si necesitás ordenar lo operativo, pagos y turnos quedan claros al reservar; lo importante es que no estés solo con lo que te pasa.",
-    "Gracias por la confianza. Lo que sentís por dentro merece espacio: un profesional puede trabajarlo en profundidad y yo sumo en el camino.",
-    "Si te sentís muy mal o en riesgo, pedí ayuda de emergencia o apoyo cercano. También podés hablar con tu psicólogo o psicóloga en MotivarCare."
-  ];
-  return empatheticGeneral[userTurnIndex % empatheticGeneral.length];
+  let body: SendApiResponse | null = null;
+  try {
+    body = (await res.json()) as SendApiResponse;
+  } catch {
+    body = null;
+  }
+
+  if (res.ok && body?.assistantMessage) {
+    return {
+      reply: body.assistantMessage,
+      capReached: Boolean(body.capReached),
+      ok: true
+    };
+  }
+
+  if (res.status === 429) {
+    /**
+     * El backend distingue rate-limit por IP (mensaje "muy rápido") del cap por
+     * sessionId (`details.capReached`). Si llegamos al cap, mostramos el texto
+     * exacto que mandó el server y bloqueamos el input.
+     */
+    if (body && (body as { details?: { capReached?: boolean } }).details?.capReached) {
+      return {
+        reply: body.message ?? body.assistantMessage ?? FALLBACK_MESSAGES.providerError,
+        capReached: true,
+        ok: true
+      };
+    }
+    return { reply: FALLBACK_MESSAGES.rateLimited, capReached: false, ok: false };
+  }
+
+  if (res.status === 503) {
+    return { reply: FALLBACK_MESSAGES.disabled, capReached: false, ok: false };
+  }
+
+  return { reply: FALLBACK_MESSAGES.providerError, capReached: false, ok: false };
 }
 
 export function LandingMacaChat(props: { portalUrl: string }) {
   const { portalUrl } = props;
+  const apiBase = useMemo(() => publicApiBase(), []);
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<ChatStatus>(DEFAULT_STATUS);
   const [messages, setMessages] = useState<ChatMsg[]>(buildInitialMessages);
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
-  const [userSendCount, setUserSendCount] = useState(0);
+  const [inputLocked, setInputLocked] = useState(false);
+  const sessionIdRef = useRef<string>(mkSessionId());
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const inputLocked = userSendCount >= DEMO_CAP;
+  /** Lee feature flag y caps reales del backend. Si falla, usamos los defaults. */
+  useEffect(() => {
+    if (!apiBase) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/landing-chat/status`);
+        if (!res.ok) return;
+        const data = (await res.json()) as Partial<ChatStatus>;
+        if (cancelled) return;
+        setStatus({
+          enabled: data.enabled !== false,
+          maxTurnsPerSession: typeof data.maxTurnsPerSession === "number" ? data.maxTurnsPerSession : DEFAULT_STATUS.maxTurnsPerSession,
+          maxInputChars: typeof data.maxInputChars === "number" ? data.maxInputChars : DEFAULT_STATUS.maxInputChars
+        });
+      } catch {
+        /** Silencioso: si no podemos leer el status, asumimos enabled y usamos defaults. */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase]);
 
   useLayoutEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -128,45 +197,58 @@ export function LandingMacaChat(props: { portalUrl: string }) {
   }, [open]);
 
   const handleSend = useCallback(
-    (raw: string) => {
+    async (raw: string) => {
       const trimmed = raw.trim();
       if (trimmed.length === 0 || typing || inputLocked) return;
+      const safeMessage = trimmed.slice(0, status.maxInputChars);
 
-      setMessages((prev) => [...prev, { id: mkId(), role: "user", content: trimmed }]);
+      setMessages((prev) => [...prev, { id: mkId(), role: "user", content: safeMessage }]);
       setDraft("");
       setTyping(true);
 
-      const turn = userSendCount;
-      setUserSendCount((c) => c + 1);
+      /**
+       * Mandamos al server SOLO los últimos turnos (rol user/assistant) para que
+       * el LLM tenga contexto pero sin inflar tokens. El cap final lo aplica el server.
+       */
+      const historyForApi = messages
+        .filter((m) => m.role === "assistant" || m.role === "user")
+        .slice(-12)
+        .map((m) => ({ role: m.role, content: m.content }));
 
-      window.setTimeout(() => {
-        const body = replyForUserMessage(trimmed, turn);
-        const capClose =
-          turn + 1 >= DEMO_CAP
-            ? "Llegaste al tope de mensajes de esta charla. Podés seguir en MotivarCare cuando quieras."
-            : null;
-        setMessages((prev) => {
-          const next = [...prev, { id: mkId(), role: "assistant" as const, content: body }];
-          if (capClose) next.push({ id: mkId(), role: "assistant", content: capClose });
-          return next;
-        });
-        setTyping(false);
-      }, 750);
+      const outcome = await callMacaApi({
+        apiBase,
+        sessionId: sessionIdRef.current,
+        message: safeMessage,
+        history: historyForApi
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        { id: mkId(), role: "assistant", content: outcome.reply }
+      ]);
+      if (outcome.capReached) {
+        setInputLocked(true);
+      }
+      setTyping(false);
     },
-    [typing, inputLocked, userSendCount]
+    [apiBase, inputLocked, messages, status.maxInputChars, typing]
   );
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    handleSend(draft);
+    void handleSend(draft);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend(draft);
+      void handleSend(draft);
     }
   };
+
+  if (!status.enabled) {
+    return null;
+  }
 
   return (
     <>
@@ -229,10 +311,13 @@ export function LandingMacaChat(props: { portalUrl: string }) {
                 rows={2}
                 value={draft}
                 disabled={typing || inputLocked}
+                maxLength={status.maxInputChars}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={
-                  inputLocked ? "Podés seguir en MotivarCare cuando quieras." : "Escribí lo que te gustaría saber o lo que sentís…"
+                  inputLocked
+                    ? "Podés seguir en MotivarCare cuando quieras."
+                    : "Escribí lo que te gustaría saber o lo que sentís…"
                 }
               />
               <button type="submit" disabled={typing || inputLocked || draft.trim().length === 0} className="treatment-chat-panel__send">
@@ -241,7 +326,7 @@ export function LandingMacaChat(props: { portalUrl: string }) {
             </form>
 
             <p className="treatment-chat-panel__disclaimer">
-              Si estás en peligro o en crisis, buscá ayuda de emergencia en tu zona. Maca no reemplaza la terapia con un profesional: suma acompañamiento entre sesiones y recursos en la plataforma.
+              Esta charla es pública y no queda guardada. Maca es IA: orienta y acompaña, no reemplaza la terapia con un profesional. Si estás en peligro o en crisis, buscá ayuda de emergencia en tu zona.
             </p>
           </aside>
         </div>
