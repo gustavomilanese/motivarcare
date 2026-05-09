@@ -268,9 +268,21 @@ body {
 @media (max-width: 960px) {
   .mc-hero {
     padding-top: clamp(36px, 8vw, 52px);
+    padding-bottom: clamp(22px, 6vw, 40px);
+  }
+
+  .mc-hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.75rem, 3.2vw, 1rem);
   }
 
   .mc-hero-title-line3 {
+    display: none;
+  }
+
+  .mc-hero-title-line1 + br {
     display: none;
   }
 
@@ -279,15 +291,16 @@ body {
   }
 
   .mc-hero-copy h1 {
-    line-height: 1.02;
-    padding-bottom: 0.06em;
+    line-height: 1.08;
+    padding-bottom: 0.08em;
     overflow-wrap: break-word;
     font-size: clamp(1.72rem, 6.2vw, 2.85rem);
-    margin-bottom: 0.55rem;
+    margin-bottom: 0;
+    text-wrap: balance;
   }
 
   .mc-hero-title-line2 {
-    margin-top: 0.12em;
+    margin-top: 0.22em;
   }
 
   .mc-hero-title-line3 {
@@ -299,8 +312,12 @@ body {
     font-size: clamp(1.05rem, 3.65vw, 1.28rem);
     color: #4a5563;
     line-height: 1.42;
-    padding-top: clamp(0.28rem, 1.2vw, 0.5rem);
-    margin-bottom: clamp(0.85rem, 3.2vw, 1.2rem);
+    margin: 0;
+    padding: 0;
+  }
+
+  .mc-hero-cta {
+    margin-top: 0;
   }
 }
 

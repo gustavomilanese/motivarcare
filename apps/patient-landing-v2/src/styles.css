@@ -1097,6 +1097,12 @@ body {
   );
 }
 
+@media (max-width: 960px) {
+  .plv2-features {
+    padding-top: clamp(14px, 3vw, 22px);
+  }
+}
+
 .plv2-feature-grid {
   list-style: none;
   margin: 0 auto;
@@ -3286,7 +3292,8 @@ body {
   .plv2-hero-shell {
     /* Más alto en móvil: el copy queda más abajo y la foto respira arriba */
     min-height: min(92svh, 860px);
-    padding-bottom: clamp(28px, 7vw, 48px);
+    /* Menos aire bajo el CTA (antes shell + stage + copy sumaban demasiado) */
+    padding-bottom: clamp(12px, 3.5vw, 22px);
   }
 
   .plv2-hero-stage {
@@ -3296,14 +3303,18 @@ body {
     justify-content: flex-end;
     align-items: stretch;
     padding-top: clamp(20px, 5.5vh, 40px);
-    padding-bottom: clamp(32px, 8vw, 56px);
+    padding-bottom: clamp(14px, 4vw, 28px);
     min-height: min(56vh, 600px);
   }
 
   /* Sin “card” sobre la foto: solo aire; legibilidad vía velo + sombra suave al texto. */
   .plv2-hero-shell .plv2-hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.75rem, 3.2vw, 1rem);
     padding-top: clamp(12px, 3.5vw, 22px);
-    padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
     margin-top: 0;
     text-align: center;
     background: none;
@@ -3320,23 +3331,28 @@ body {
     display: none;
   }
 
+  /* El <br> entre línea 1 y 2 duplica el hueco (caja de línea ≈ 1× line-height); el margen de line2 ya basta */
+  .plv2-hero-shell .plv2-hero-title-line1 + br {
+    display: none;
+  }
+
   .plv2-hero-shell .plv2-hero-title-line2 + br {
     display: none;
   }
 
-  /* Solo quedan 2 bloques en el H1 móvil: interlineado más cerrado entre ellos */
+  /* Aire entre las dos frases del título (sin el <br> duplicado) */
   .plv2-hero-shell .plv2-hero-title-line2 {
-    margin-top: 0.12em;
+    margin-top: 0.22em;
   }
 
   .plv2-hero-shell .plv2-hero-copy h1 {
     max-width: none;
     font-size: clamp(1.72rem, 6.2vw, 2.795rem);
-    line-height: 1.02;
-    margin-bottom: clamp(0.45rem, 2vw, 0.75rem);
-    padding-bottom: 0.06em;
+    line-height: 1.08;
+    margin-bottom: 0;
+    padding-bottom: 0.08em;
     text-align: center;
-    text-wrap: pretty;
+    text-wrap: balance;
     overflow-wrap: break-word;
     text-shadow:
       0 1px 0 rgba(255, 255, 255, 0.75),
@@ -3348,13 +3364,14 @@ body {
   }
 
   .plv2-hero-shell .plv2-hero-copy h1 .plv2-hl-mark::after {
-    bottom: 1px;
+    bottom: 2px;
     height: 3px;
   }
 
   .plv2-hero-shell .plv2-hero-copy .plv2-cta-gradient {
     margin-left: auto;
     margin-right: auto;
+    margin-top: 0;
   }
 
   /* Encadena “y segura.” para evitar viuda suelta en bloque 2 */
@@ -3362,13 +3379,11 @@ body {
     white-space: nowrap;
   }
 
-  /* Hero lead: en móvil menos aire (el base trae padding-top grande para desktop). */
+  /* Hero lead: sin márgenes verticales extra — el gap del flex padre unifica el stack */
   .plv2-hero-shell .plv2-hero-lead {
     max-width: min(42ch, 100%);
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: clamp(0.85rem, 3.2vw, 1.2rem);
-    padding-top: clamp(0.28rem, 1.2vw, 0.5rem);
+    margin: 0 auto;
+    padding: 0;
     font-weight: 500;
     font-size: clamp(1.05rem, 3.65vw, 1.28rem);
     color: #4a5563;

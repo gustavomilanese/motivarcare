@@ -117,7 +117,9 @@ export function App() {
             <div className="mc-hero-copy">
               <h1 id="mc-hero-title">
                 <span className="mc-hero-title-line1">
-                  Encuentra tu <span className="mc-hero-word-blue">psicólogo</span> ideal
+                  Encuentra{"\u00A0"}tu{" "}
+                  <span className="mc-hero-word-blue">psicólogo</span>
+                  {"\u00A0"}ideal
                 </span>
                 <br />
                 <span className="mc-hero-title-line2">

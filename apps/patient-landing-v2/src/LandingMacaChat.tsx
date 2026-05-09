@@ -275,8 +275,16 @@ export function LandingMacaChat(props: { portalUrl: string }) {
               <div className="treatment-chat-panel__header-text">
                 <strong>Maca</strong>
               </div>
-              <button type="button" className="treatment-chat-panel__close" onClick={() => setOpen(false)} aria-label="Cerrar chat">
-                ×
+              <button
+                type="button"
+                className="treatment-chat-panel__close"
+                onClick={() => setOpen(false)}
+                aria-label="Cerrar chat y volver a la landing"
+              >
+                <span className="treatment-chat-panel__close-x" aria-hidden="true">
+                  ×
+                </span>
+                <span className="treatment-chat-panel__close-label">Cerrar</span>
               </button>
             </header>
 
