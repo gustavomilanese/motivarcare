@@ -606,3 +606,18 @@ model OutboxEvent {
   @@index([status, availableAt])
   @@index([createdAt])
 }
+
+/// Eventos de seguridad legibles desde Admin (complemento a logs de Railway/Vercel).
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  category  String   @db.VarChar(80)
+  message   String?  @db.VarChar(512)
+  ip        String?  @db.VarChar(128)
+  userAgent String?  @map("user_agent") @db.VarChar(512)
+  metadata  Json?
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@map("security_audit_logs")
+}

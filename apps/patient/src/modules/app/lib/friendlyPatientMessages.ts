@@ -148,6 +148,20 @@ export function friendlyAuthSurfaceMessage(raw: string, language: AppLanguage): 
       pt: "O email ou a senha nao confere. Verifique maiusculas e espacos, tente de novo ou toque em cadastrar se for novo."
     });
   }
+  if (n === "Security verification required" || n === "Security verification failed") {
+    return t(language, {
+      es: "La verificación anti-bot no se completó. Actualizá la página, completá el recuadro de seguridad y volvé a intentar.",
+      en: "The anti-bot check didn’t complete. Refresh the page, complete the security box, and try again.",
+      pt: "A verificacao anti-bot nao foi concluida. Atualize a pagina, complete a caixa de seguranca e tente de novo."
+    });
+  }
+  if (n.startsWith("Too many login attempts") || n.includes("Too many login attempts")) {
+    return t(language, {
+      es: "Hubo demasiados intentos de inicio de sesión desde esta red o para este email. Esperá unos minutos y volvé a intentar.",
+      en: "Too many sign-in attempts from this network or for this email. Wait a few minutes and try again.",
+      pt: "Muitas tentativas de login desta rede ou para este email. Aguarde alguns minutos e tente de novo."
+    });
+  }
   if (n === "Email already in use") {
     return t(language, {
       es: "Ese email ya tiene cuenta. Podés iniciar sesión con la contraseña que usaste, o pedir recuperar acceso si no la recordás.",

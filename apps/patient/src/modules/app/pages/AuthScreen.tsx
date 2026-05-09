@@ -1,4 +1,4 @@
-import { FormEvent, SyntheticEvent, useState } from "react";
+import { FormEvent, SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const PATIENT_AUTH_REMEMBER_KEY = "motivarcare_patient_auth_remember";
@@ -36,19 +36,49 @@ function persistPatientRemember(remember: boolean, emailLower: string): void {
     // ignore
   }
 }
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import {
   type AppLanguage,
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
-import { RESIDENCY_COUNTRY_OPTIONS, filterResidencyOptionsForPatientPortal } from "@therapy/types";
+import { PATIENT_PORTAL_RESIDENCY_CODES } from "@therapy/types";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, SessionUser } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+const PATIENT_RESIDENCY_SET = new Set<string>(PATIENT_PORTAL_RESIDENCY_CODES);
+
+/**
+ * La API exige ISO2; sin selector en auth inferimos locale/zona. Corrección en intake/onboarding.
+ */
+function inferPatientPortalResidencyIso2(): string {
+  try {
+    const locales = [navigator.language, ...(navigator.languages ?? [])];
+    for (const loc of locales) {
+      const m = loc.match(/-([A-Za-z]{2})$/);
+      if (m) {
+        const region = m[1].toUpperCase();
+        if (PATIENT_RESIDENCY_SET.has(region)) return region;
+      }
+    }
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    if (/Argentina|Buenos_Aires|Cordoba|Mendoza|Ushuaia|Salta/i.test(tz)) return "AR";
+    if (/Sao_Paulo|Fortaleza|Recife|Bahia|Belem|Manaus|Brazil/i.test(tz)) return "BR";
+    if (/Bogota/i.test(tz)) return "CO";
+    if (/New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Honolulu|Detroit|Indianapolis/i.test(tz)) {
+      return "US";
+    }
+  } catch {
+    // ignore
+  }
+  return "AR";
 }
 
 export function AuthScreen(props: {
@@ -71,12 +101,30 @@ export function AuthScreen(props: {
   const [email, setEmail] = useState(readRememberedPatientEmail);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [residencyCountry, setResidencyCountry] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(readPatientRememberFlag);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileSiteKey =
+    typeof import.meta.env.VITE_TURNSTILE_SITE_KEY === "string" ? import.meta.env.VITE_TURNSTILE_SITE_KEY.trim() : "";
+  const requiresTurnstileWidget = turnstileSiteKey.length > 0;
+  const [turnstileToken, setTurnstileToken] = useState("");
+
+  const onTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+
+  const onTurnstileExpire = useCallback(() => {
+    setTurnstileToken("");
+  }, []);
+
+  useEffect(() => {
+    if (mode === "login") {
+      setTurnstileToken("");
+    }
+  }, [mode]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -92,17 +140,8 @@ export function AuthScreen(props: {
       return;
     }
 
-    const residencyIso = residencyCountry.trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(residencyIso)) {
-      setError(
-        t(props.language, {
-          es: "Elegí tu país de residencia (define moneda y catálogo de paquetes).",
-          en: "Choose your country of residence (this sets currency and package catalog).",
-          pt: "Escolha seu pais de residencia."
-        })
-      );
-      return;
-    }
+    /** País en auth: inferido (locale/zona); el paciente puede corregir en onboarding / intake. */
+    const residencyIso = inferPatientPortalResidencyIso2();
 
     if (mode === "register") {
       const given = firstName.trim();
@@ -129,6 +168,29 @@ export function AuthScreen(props: {
       }
     }
 
+    let resolvedTurnstileForRegister: string | undefined;
+    if (mode === "register" && requiresTurnstileWidget) {
+      let resolved = turnstileRef.current?.getResponse()?.trim() ?? turnstileToken.trim();
+      if (!resolved && turnstileRef.current) {
+        try {
+          resolved = (await turnstileRef.current.getResponsePromise(8000)).trim();
+        } catch {
+          resolved = "";
+        }
+      }
+      if (!resolved) {
+        setError(
+          t(props.language, {
+            es: "Completá la verificación de seguridad e intentá de nuevo.",
+            en: "Complete the security verification and try again.",
+            pt: "Complete a verificacao de seguranca e tente de novo."
+          })
+        );
+        return;
+      }
+      resolvedTurnstileForRegister = resolved;
+    }
+
     setError("");
     setLoading(true);
 
@@ -143,7 +205,8 @@ export function AuthScreen(props: {
               password,
               role: "PATIENT",
               timezone: detectBrowserTimezone(),
-              residencyCountry: residencyIso
+              residencyCountry: residencyIso,
+              ...(resolvedTurnstileForRegister ? { turnstileToken: resolvedTurnstileForRegister } : {})
             }
           : {
               email: email.trim().toLowerCase(),
@@ -199,22 +262,33 @@ export function AuthScreen(props: {
   return (
     <div className="auth-shell">
       <section className="auth-card">
-        <div className="auth-media">
-          <div className="visual-hero">
+        <div className="auth-hero-stack">
+          <div className="auth-brand-mark auth-brand-mark--above-hero">
             <img
-              src={props.heroImage}
-              alt={t(props.language, {
-                es: "Paciente en una sesión online",
-                en: "Patient in an online session",
-                pt: "Paciente em uma sessao online"
-              })}
-              onError={props.onHeroFallback}
+              className="auth-brand-lockup"
+              src="/brand/motivarcare-logo-full.png"
+              alt="MotivarCare"
+              width={708}
+              height={148}
             />
+          </div>
+          <div className="auth-media">
+            <div className="visual-hero">
+              <img
+                src={props.heroImage}
+                alt={t(props.language, {
+                  es: "Paciente en una sesión online",
+                  en: "Patient in an online session",
+                  pt: "Paciente em uma sessao online"
+                })}
+                onError={props.onHeroFallback}
+              />
+            </div>
           </div>
         </div>
         <div className="auth-form-panel">
           <div className="auth-header-copy">
-            <div className="auth-brand-mark">
+            <div className="auth-brand-mark auth-brand-mark--in-form">
               <img
                 className="auth-brand-lockup"
                 src="/brand/motivarcare-logo-full.png"
@@ -281,40 +355,6 @@ export function AuthScreen(props: {
                 </div>
               </div>
             ) : null}
-
-            <div className="auth-field-stack">
-              <span className="auth-field-label">
-                {t(props.language, {
-                  es: "País de residencia",
-                  en: "Country of residence",
-                  pt: "Pais de residencia"
-                })}
-              </span>
-              <span className="auth-field-hint muted">
-                {t(props.language, {
-                  es: "Define en qué mercado ves precios y paquetes (no depende del profesional que elijas).",
-                  en: "Sets which market, prices, and packages you see (not tied to which therapist you pick).",
-                  pt: "Define o mercado e precos que voce ve."
-                })}
-              </span>
-              <div className="auth-input-shell">
-                <select
-                  className="auth-input-inset auth-select-full"
-                  value={residencyCountry}
-                  onChange={(event) => setResidencyCountry(event.target.value)}
-                  autoComplete="country"
-                >
-                  <option value="">
-                    {t(props.language, { es: "Seleccionar…", en: "Select…", pt: "Selecionar…" })}
-                  </option>
-                  {filterResidencyOptionsForPatientPortal(RESIDENCY_COUNTRY_OPTIONS).map((row) => (
-                    <option key={row.code} value={row.code}>
-                      {row.names.es} ({row.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
             <div className="auth-field-stack">
               <span className="auth-field-label">{t(props.language, { es: "Correo electrónico", en: "Email", pt: "E-mail" })}</span>
@@ -390,6 +430,33 @@ export function AuthScreen(props: {
                       : t(props.language, { es: "Mostrar", en: "Show", pt: "Mostrar" })}
                   </button>
                 </div>
+              </div>
+            ) : null}
+
+            {mode === "register" && requiresTurnstileWidget ? (
+              <div className="auth-turnstile-wrap">
+                <span className="auth-field-label">
+                  {t(props.language, {
+                    es: "Verificación de seguridad",
+                    en: "Security verification",
+                    pt: "Verificacao de seguranca"
+                  })}
+                </span>
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={turnstileSiteKey}
+                  onSuccess={onTurnstileSuccess}
+                  onExpire={onTurnstileExpire}
+                  options={{
+                    appearance: "always",
+                    theme: "light",
+                    language:
+                      props.language === "es" ? "es" : props.language === "pt" ? "pt-BR" : "en",
+                    size: "flexible",
+                    retry: "auto",
+                    refreshExpired: "auto"
+                  }}
+                />
               </div>
             ) : null}
 

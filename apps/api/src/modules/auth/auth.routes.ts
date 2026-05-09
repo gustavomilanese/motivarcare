@@ -20,6 +20,11 @@ import {
 } from "./emailVerification.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 import { verifyTurnstileResponse } from "../../lib/turnstile.js";
+import {
+  maskEmailHint,
+  SECURITY_AUDIT_CATEGORY,
+  writeSecurityAuditLog
+} from "../../lib/securityAuditLog.js";
 
 const residencyCountryIso2Schema = z
   .string()
@@ -38,7 +43,7 @@ const registerSchema = z
     isTestUser: z.boolean().optional(),
     /** Obligatorio si `role === PATIENT`: país de residencia (ISO2); el mercado se deriva de acá. */
     residencyCountry: residencyCountryIso2Schema.optional(),
-    /** Cloudflare Turnstile (registro profesional web cuando `TURNSTILE_SECRET_KEY` está definido). */
+    /** Cloudflare Turnstile: con `TURNSTILE_SECRET_KEY`, obligatorio en registro profesional y paciente (portal web). */
     turnstileToken: z.string().trim().max(4096).optional()
   })
   .superRefine((data, ctx) => {
@@ -453,11 +458,9 @@ authRouter.post("/register", async (req, res) => {
   }
 
   const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
-  if (parsed.data.role === "PROFESSIONAL" && turnstileSecret) {
-    const token = (parsed.data.turnstileToken ?? "").trim();
-    if (!token) {
-      return res.status(400).json({ error: "Security verification required" });
-    }
+  const roleNeedsTurnstile =
+    turnstileSecret && (parsed.data.role === "PROFESSIONAL" || parsed.data.role === "PATIENT");
+  if (roleNeedsTurnstile) {
     const cfConnecting = req.headers["cf-connecting-ip"];
     const remoteip =
       typeof cfConnecting === "string" && cfConnecting.trim()
@@ -465,8 +468,30 @@ authRouter.post("/register", async (req, res) => {
         : typeof req.ip === "string"
           ? req.ip
           : undefined;
-    const turnstileOk = await verifyTurnstileResponse({ secret: turnstileSecret, token, remoteip });
+    const token = (parsed.data.turnstileToken ?? "").trim();
+    if (!token) {
+      writeSecurityAuditLog({
+        category: SECURITY_AUDIT_CATEGORY.AUTH_REGISTER_TURNSTILE_MISSING,
+        message: "Turnstile token missing on register",
+        ip: getRequestIp(req),
+        userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+        metadata: { role: parsed.data.role, emailMask: maskEmailHint(parsed.data.email) }
+      });
+      return res.status(400).json({ error: "Security verification required" });
+    }
+    const turnstileOk = await verifyTurnstileResponse({
+      secret: turnstileSecret as string,
+      token,
+      remoteip
+    });
     if (!turnstileOk) {
+      writeSecurityAuditLog({
+        category: SECURITY_AUDIT_CATEGORY.AUTH_REGISTER_TURNSTILE_FAILED,
+        message: "Turnstile verification failed",
+        ip: getRequestIp(req),
+        userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+        metadata: { role: parsed.data.role, emailMask: maskEmailHint(parsed.data.email) }
+      });
       return res.status(400).json({ error: "Security verification failed" });
     }
   }
@@ -880,6 +905,13 @@ authRouter.post("/login", async (req, res) => {
     if (blocked) {
       const retryAfterSeconds = Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds);
       res.setHeader("Retry-After", String(retryAfterSeconds));
+      writeSecurityAuditLog({
+        category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_RATE_LIMITED,
+        message: "Login rate limit exceeded",
+        ip: requestIp,
+        userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+        metadata: { emailMask: maskEmailHint(attemptedEmail) }
+      });
       return sendApiError({
         res,
         status: 429,
@@ -911,6 +943,13 @@ authRouter.post("/login", async (req, res) => {
   });
 
   if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+    writeSecurityAuditLog({
+      category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_FAILED,
+      message: "Invalid credentials",
+      ip: requestIp,
+      userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+      metadata: { emailMask: maskEmailHint(email) }
+    });
     return res.status(401).json({ error: "Invalid credentials" });
   }
 

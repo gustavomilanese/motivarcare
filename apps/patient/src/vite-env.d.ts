@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly API_PUBLIC_URL?: string;
   readonly VITE_CANONICAL_PATIENT_ORIGIN?: string;
   readonly VITE_LEGACY_PATIENT_HOSTS?: string;
+  readonly VITE_TURNSTILE_SITE_KEY?: string;
 }
 
 interface ImportMeta {

@@ -242,6 +242,18 @@ ul {
     0 0 0 1px rgba(255, 255, 255, 0.8) inset;
 }
 
+.auth-hero-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+/* Móvil muestra el logo arriba del hero (≤720px); desktop, en el panel del form. */
+.auth-brand-mark.auth-brand-mark--above-hero {
+  display: none;
+}
+
 .auth-card.auth-card-verify-email {
   grid-template-columns: 1fr;
   width: min(420px, 100%);
@@ -490,6 +502,29 @@ ul {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Dos columnas (≥1081px): la foto ocupa todo el alto de la tarjeta junto al formulario */
+@media (min-width: 1081px) {
+  .auth-card:not(.auth-card-verify-email) > .auth-hero-stack {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    align-self: stretch;
+  }
+
+  .auth-card:not(.auth-card-verify-email) > .auth-hero-stack > .auth-media {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .auth-card:not(.auth-card-verify-email) > .auth-hero-stack .visual-hero {
+    flex: 1 1 auto;
+    min-height: 440px;
+    height: auto;
+  }
 }
 
 .auth-form-panel {
@@ -8054,7 +8089,7 @@ button.sessions-balance {
   }
 
   .auth-brand-lockup {
-    max-height: clamp(40px, 11vw, 52px);
+    max-height: clamp(36px, 9.9vw, 47px);
     max-width: 100%;
   }
 
@@ -9037,6 +9072,168 @@ button.sessions-balance {
   }
 }
 
+/* Auth (paciente): en ≤720px la foto vuelve a mostrarse, recortada a ~25% del alto de pantalla. */
+@media (max-width: 720px) {
+  /**
+   * Evita la franja blanca bajo el login: en móvil el área útil a veces es > #root
+   * si solo usamos 100vh; el mismo gradiente en #root + flex llena el viewport real.
+   */
+  #root:has(> .auth-shell) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    min-height: 100svh;
+    background:
+      linear-gradient(180deg, #f1f5f9 0%, #eef2ff 48%, #f8fafc 100%);
+    background-color: #f1f5f9;
+  }
+
+  /**
+   * El shell usa `place-items: center` en desktop y centra la tarjeta en toda la
+   * altura: en móvil eso deja un “margen” enorme arriba. Alineamos arriba y al centro.
+   * Safe-area evita el borde físico en notch; casi sin padding extra.
+   */
+  .auth-shell {
+    place-items: start center;
+    flex: 1 0 auto;
+    align-self: stretch;
+    width: 100%;
+    min-height: 100dvh;
+    min-height: 100svh;
+    min-height: -webkit-fill-available;
+    padding-top: max(0px, var(--safe-top));
+    /* Solo safe-area: sin franja del gradiente a los lados de la tarjeta */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: max(14px, var(--safe-bottom));
+    /* Sin tonos rosa/melocotón del desktop: gris-azulado suave, alineado al card/form. */
+    background: linear-gradient(180deg, #f1f5f9 0%, #eef2ff 48%, #f8fafc 100%);
+    background-color: #f1f5f9;
+  }
+
+  /**
+   * Sin “caja” blanca global: logo + foto + copy sobre el gradiente del shell.
+   * Campos y botón siguen con fondos propios (.auth-input-shell, .primary).
+   */
+  .auth-card:not(.auth-card-verify-email) {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: none;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .auth-hero-stack {
+    gap: 8px;
+    width: 100%;
+    /* +10% aire extra sobre el ajuste previo (4×1.1×1.1) */
+    padding: calc(4px * 1.21) 0 0;
+  }
+
+  .auth-brand-mark.auth-brand-mark--above-hero {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+    align-self: center;
+    /* Logo centrado en horizontal; +10% más de aire arriba vs el bloque anterior */
+    padding: calc(12px * 1.21) max(16px, env(safe-area-inset-left, 0px)) calc(2px * 1.1)
+      max(16px, env(safe-area-inset-right, 0px));
+    box-sizing: border-box;
+    /* 5% del ancho del bloque (~pantalla) hacia la izquierda */
+    transform: translateX(-5%);
+  }
+
+  .auth-brand-mark.auth-brand-mark--above-hero .auth-brand-lockup {
+    margin-left: 0;
+    max-height: clamp(43px, 11.7vw, 58px);
+    object-position: center center;
+  }
+
+  .auth-brand-mark.auth-brand-mark--center .auth-brand-lockup {
+    max-height: clamp(40px, 9vw, 50px);
+  }
+
+  .auth-brand-mark--in-form {
+    display: none;
+  }
+
+  .auth-form-panel {
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    border-top: none;
+    box-shadow: none;
+    width: 100%;
+    max-width: 100%;
+    padding-top: 20px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+
+  .auth-media {
+    display: block;
+    /* Mismo marco que desktop: banda con gradiente + padding + foto con borde claro */
+    padding: 14px max(14px, env(safe-area-inset-right, 0px)) 14px max(14px, env(safe-area-inset-left, 0px));
+    background: linear-gradient(160deg, #111833 0%, #2e2a57 34%, #4f3fb7 100%);
+  }
+
+  .auth-card .visual-hero {
+    min-height: 0;
+    height: 25vh;
+    max-height: 25vh;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(221, 226, 245, 0.35);
+  }
+
+  .auth-card .visual-hero img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    /* Foco un poco más abajo para ver bien escritorio / ventana */
+    object-position: center 55%;
+  }
+
+  @supports (height: 1dvh) {
+    .auth-card .visual-hero {
+      height: 25dvh;
+      max-height: 25dvh;
+    }
+  }
+
+  .auth-header-copy {
+    justify-items: center;
+  }
+
+  .auth-header-copy h1 {
+    text-align: center;
+    white-space: normal;
+    font-size: clamp(22px, 6.7vw, 34px);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+    width: 100%;
+  }
+
+  .auth-form-panel .auth-divider {
+    display: none;
+  }
+
+  .auth-card-footer {
+    border-top-color: rgba(226, 232, 240, 0.75);
+    background: transparent;
+  }
+
+  .intake-brand-logo {
+    max-height: 56px;
+  }
+}
+
 /* —— Patient portal: safe-area + touch (tokens in top :root) —— */
 
 @media (prefers-reduced-motion: reduce) {
@@ -9091,6 +9288,15 @@ button.sessions-balance {
 .auth-divider-label {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.auth-turnstile-wrap {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: 100%;
+  min-height: 72px;
+  margin-top: 4px;
 }
 
 .auth-submit {

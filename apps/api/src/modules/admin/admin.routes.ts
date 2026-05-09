@@ -691,6 +691,45 @@ function utcMonthRangeFromYearMonth(year: number, month1to12: number) {
   return { start, end };
 }
 
+const securityAuditLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  category: z.string().trim().max(80).optional()
+});
+
+adminRouter.get("/security-audit-logs", async (req, res) => {
+  const parsed = securityAuditLogsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query", details: parsed.error.flatten() });
+  }
+  const limit = parsed.data.limit ?? 80;
+  const category = parsed.data.category?.trim();
+  try {
+    const rows = await prisma.securityAuditLog.findMany({
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      where: category ? { category } : undefined,
+      select: {
+        id: true,
+        createdAt: true,
+        category: true,
+        message: true,
+        ip: true,
+        userAgent: true,
+        metadata: true
+      }
+    });
+    return res.json({
+      rows: rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString()
+      }))
+    });
+  } catch (error) {
+    console.error("security-audit-logs", error);
+    return res.status(500).json({ error: "Could not load security audit logs" });
+  }
+});
+
 adminRouter.get("/kpis", async (req, res) => {
   const parsed = kpisQuerySchema.safeParse(req.query);
   if (!parsed.success) {

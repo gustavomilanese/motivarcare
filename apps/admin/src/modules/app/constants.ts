@@ -9,6 +9,7 @@ export const links: Array<{ to: PortalPath; label: string }> = [
   { to: "/professionals", label: "Psicólogos" },
   { to: "/sessions", label: "Sesiones" },
   { to: "/finances", label: "Finanzas" },
+  { to: "/security", label: "Seguridad" },
   { to: "/settings", label: "Configuración" },
   { to: "/ai", label: "Auditoría IA (próx.)" }
 ];

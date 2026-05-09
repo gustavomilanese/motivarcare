@@ -9,6 +9,7 @@ import { AdminDashboardPage } from "./AdminDashboardPage";
 import { InfoPage } from "./InfoPage";
 import { PatientsOpsPage } from "./PatientsOpsPage";
 import { ProfessionalsOpsPage } from "./ProfessionalsOpsPage";
+import { SecurityAuditPage } from "./SecurityAuditPage";
 import { SessionsOpsPage } from "./SessionsOpsPage";
 import { SettingsPage } from "./SettingsPage";
 import { SettingsOutletLayout } from "./SettingsOutletLayout";
@@ -112,6 +113,9 @@ export function AdminPortal(props: {
     }
     if (to === "/finances") {
       return t(props.language, { es: "Finanzas", en: "Finance", pt: "Financas" });
+    }
+    if (to === "/security") {
+      return t(props.language, { es: "Seguridad", en: "Security", pt: "Seguranca" });
     }
     if (to === "/calendar") {
       return t(props.language, { es: "Calendario", en: "Calendar", pt: "Calendario" });
@@ -253,6 +257,7 @@ export function AdminPortal(props: {
                 <FinancesPage token={props.token} language={props.language} currency={props.currency} />
               }
             />
+            <Route path="/security" element={<SecurityAuditPage token={props.token} language={props.language} />} />
             <Route
               path="/calendar"
               element={

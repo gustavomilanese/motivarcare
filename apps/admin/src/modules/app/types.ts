@@ -16,6 +16,7 @@ export type PortalPath =
   | "/library"
   | "/imports"
   | "/settings"
+  | "/security"
   | "/ai";
 
 export interface AuthApiUser {
@@ -463,4 +464,18 @@ export interface EditUserDraft {
   professionalActivePatientsCount: string;
   professionalSessionsCount: string;
   professionalCompletedSessionsCount: string;
+}
+
+export interface SecurityAuditLogRow {
+  id: string;
+  createdAt: string;
+  category: string;
+  message: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface SecurityAuditLogsResponse {
+  rows: SecurityAuditLogRow[];
 }
