@@ -117,7 +117,7 @@ export function App() {
             <div className="mc-hero-copy">
               <h1 id="mc-hero-title">
                 <span className="mc-hero-title-line1">
-                  Encuentra el <span className="mc-hero-word-blue">psicólogo</span> ideal
+                  Encuentra tu <span className="mc-hero-word-blue">psicólogo</span> ideal
                 </span>
                 <br />
                 <span className="mc-hero-title-line2">

@@ -238,7 +238,7 @@ export function App() {
           <div className="plv2-hero-copy">
             <h1 id="plv2-hero-title">
               <span className="plv2-hero-title-line1">
-                Encuentra el <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal
+                Encuentra tu <span className="plv2-hl-blue plv2-hl-mark">psicólogo</span> ideal
               </span>
               <br />
               <span className="plv2-hero-title-line2">
