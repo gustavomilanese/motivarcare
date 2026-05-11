@@ -125,6 +125,34 @@ function clearCalendarOnboardingPending(): void {
 
 const PRO_AUTH_ME_SYNC_TIMEOUT_MS = 45_000;
 
+/**
+ * Lista de userIds para los que el profesional ya cerró el modal "Conectar Calendar"
+ * con "Lo hago después". Persiste en localStorage para no molestar entre sesiones.
+ * El modal sigue accesible desde Configuración → Conexiones, así que un dismiss
+ * permanente acá no bloquea reconexión voluntaria.
+ */
+const PROFESSIONAL_CALENDAR_PROMPT_DISMISSED_KEY = "professional_calendar_prompt_dismissed_users";
+
+function readDismissedProfessionalCalendarPromptUsers(): string[] {
+  try {
+    const raw = window.localStorage.getItem(PROFESSIONAL_CALENDAR_PROMPT_DISMISSED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value): value is string => typeof value === "string" && value.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeDismissedProfessionalCalendarPromptUsers(values: string[]): void {
+  try {
+    window.localStorage.setItem(PROFESSIONAL_CALENDAR_PROMPT_DISMISSED_KEY, JSON.stringify(values));
+  } catch {
+    // ignore
+  }
+}
+
 function rejectAfterMs(ms: number, message: string): Promise<never> {
   return new Promise((_, reject) => {
     setTimeout(() => reject(new Error(message)), ms);
@@ -156,6 +184,14 @@ export function App() {
   );
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
+  /**
+   * Estado de la conexión a Google Calendar del usuario actual.
+   * `null` = aún no se sincronizó con el backend; evita disparar el modal antes de tiempo.
+   */
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState<boolean | null>(null);
+  const [calendarPromptDismissedUserIds, setCalendarPromptDismissedUserIds] = useState<string[]>(
+    () => readDismissedProfessionalCalendarPromptUsers()
+  );
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const resumeWebOnboarding = useMemo(
@@ -210,6 +246,7 @@ export function App() {
       setEmailVerificationRequired(false);
       setAuthSyncReady(true);
       setShowCalendarOnboarding(false);
+      setGoogleCalendarConnected(null);
       navigate("/", { replace: true });
     });
     return () => setProfessionalApiUnauthorizedHandler(undefined);
@@ -246,6 +283,7 @@ export function App() {
     setEmailVerificationRequired(false);
     setAuthSyncReady(true);
     setShowCalendarOnboarding(false);
+    setGoogleCalendarConnected(null);
   };
 
   const handlePrepareOnboardingSync = (
@@ -340,6 +378,7 @@ export function App() {
               avatarUrl?: string | null;
             };
             emailVerificationRequired: boolean;
+            googleCalendarConnected?: boolean;
           }>("/api/auth/me", token),
           rejectAfterMs(PRO_AUTH_ME_SYNC_TIMEOUT_MS, "Professional auth sync timed out waiting for API")
         ]);
@@ -369,6 +408,9 @@ export function App() {
         setUser(nextUser);
         setEmailVerificationRequired(response.emailVerificationRequired);
         persistEmailVerificationRequired(response.emailVerificationRequired);
+        if (typeof response.googleCalendarConnected === "boolean") {
+          setGoogleCalendarConnected(response.googleCalendarConnected);
+        }
       } catch (error) {
         console.error("Could not sync professional auth state", error);
       } finally {
@@ -579,7 +621,9 @@ export function App() {
     let cancelled = false;
     void apiRequest<{ connected: boolean }>("/api/auth/google/calendar/status", token)
       .then((response) => {
-        if (!cancelled && response.connected) {
+        if (cancelled) return;
+        setGoogleCalendarConnected(response.connected);
+        if (response.connected) {
           clearCalendarOnboardingPending();
           setShowCalendarOnboarding(false);
         }
@@ -591,6 +635,69 @@ export function App() {
       cancelled = true;
     };
   }, [showCalendarOnboarding, token, user]);
+
+  /**
+   * Al volver del callback OAuth (`?calendar_sync=connected`), reflejamos la
+   * conexión recién hecha para que el efecto post-login NO vuelva a abrir el
+   * modal mientras se limpia la URL.
+   */
+  useEffect(() => {
+    if (!token || !user) {
+      return;
+    }
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get("calendar_sync") === "connected") {
+        setGoogleCalendarConnected(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, [token, user, location.search]);
+
+  /**
+   * Post-login: si el profesional entra al portal con cuenta activa pero sin
+   * Google Calendar conectado, abrimos el modal automáticamente. Pensado para
+   * que el reviewer de Google App Verification vea el consent screen sin tener
+   * que ir a Configuración. Para usuarios reales: si pinchan "Lo hago después"
+   * persistimos el dismiss y no vuelve a abrirse solo.
+   */
+  useEffect(() => {
+    if (!token || !user || !authSyncReady) {
+      return;
+    }
+    if (!user.emailVerified || emailVerificationRequired) {
+      return;
+    }
+    if (showCalendarOnboarding) {
+      return;
+    }
+    if (googleCalendarConnected !== false) {
+      /** null = aún no sincronizamos; true = ya conectado. Solo disparamos cuando es `false`. */
+      return;
+    }
+    if (calendarPromptDismissedUserIds.includes(user.id)) {
+      return;
+    }
+    /** Evitar disparar el modal mientras se está navegando el callback OAuth. */
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("calendar_sync")) {
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    setShowCalendarOnboarding(true);
+  }, [
+    token,
+    user,
+    authSyncReady,
+    emailVerificationRequired,
+    showCalendarOnboarding,
+    googleCalendarConnected,
+    calendarPromptDismissedUserIds
+  ]);
 
   useEffect(() => {
     if (!user || location.pathname === "/verify-email") {
@@ -749,6 +856,14 @@ export function App() {
                 setCalendarOnboardingError("");
                 clearCalendarOnboardingPending();
                 setShowCalendarOnboarding(false);
+                if (user?.id) {
+                  setCalendarPromptDismissedUserIds((current) => {
+                    if (current.includes(user.id)) return current;
+                    const next = [...current, user.id];
+                    writeDismissedProfessionalCalendarPromptUsers(next);
+                    return next;
+                  });
+                }
               }}
               disabled={calendarOnboardingLoading}
             >

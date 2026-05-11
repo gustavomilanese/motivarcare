@@ -15,6 +15,15 @@ type CalendarAuthConfig = {
 };
 
 function getPlatformCalendarAuthConfig(): CalendarAuthConfig | null {
+  /**
+   * `PLATFORM_MEET_FALLBACK_ENABLED=false` apaga el camino "Meet desde cuenta corporativa"
+   * sin tener que borrar `GOOGLE_REFRESH_TOKEN`/`GOOGLE_CALENDAR_ID` en Railway.
+   * Necesario para Google App Verification: cuando ni el pro ni el paciente conectaron
+   * Calendar, el booking debe quedar sin Meet (no aparecer desde un calendar desconocido).
+   */
+  if (!env.PLATFORM_MEET_FALLBACK_ENABLED) {
+    return null;
+  }
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REFRESH_TOKEN || !env.GOOGLE_CALENDAR_ID) {
     return null;
   }
@@ -127,9 +136,15 @@ export function logGoogleMeetStartupHints(): void {
       console.warn("[Google Meet] Falta GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET: sin OAuth no hay Calendar connect ni Meet en cuentas de usuario.");
     }
     if (oauthApp && !platform) {
-      console.warn(
-        "[Google Meet] Sin calendario de plataforma (GOOGLE_REFRESH_TOKEN + GOOGLE_CALENDAR_ID): si falla Meet en el calendario del pro/paciente, quedará el fallback Daily."
-      );
+      if (!env.PLATFORM_MEET_FALLBACK_ENABLED) {
+        console.warn(
+          "[Google Meet] PLATFORM_MEET_FALLBACK_ENABLED=false: las reservas solo crean Meet si el pro o el paciente conectó Calendar."
+        );
+      } else {
+        console.warn(
+          "[Google Meet] Sin calendario de plataforma (GOOGLE_REFRESH_TOKEN + GOOGLE_CALENDAR_ID): si falla Meet en el calendario del pro/paciente, quedará el fallback Daily."
+        );
+      }
     }
     return;
   }

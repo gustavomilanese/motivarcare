@@ -6,6 +6,12 @@ import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
 import {
+  TEST_PATIENT_EMAIL,
+  TEST_PROFESSIONAL_EMAIL,
+  TEST_USERS_DEFAULT_PASSWORD,
+  seedTestUsers
+} from "../../lib/testUsersSeed.js";
+import {
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
@@ -1521,6 +1527,59 @@ async function handleAdminDeleteUser(req: AuthenticatedRequest, res: Response) {
 
 adminRouter.delete("/users/:userId", handleAdminDeleteUser);
 adminRouter.post("/users/:userId/delete", handleAdminDeleteUser);
+
+/**
+ * Endpoint dedicado para refrescar las cuentas de Google App Verification
+ * (motivarcare.test.pac@gmail.com y motivarcare.test.pro@gmail.com).
+ *
+ * - Sin body / con `{ purge: false }`: upsert (no toca historial).
+ * - Con `{ purge: true }`: hard-delete + recrear desde cero (estado limpio).
+ *
+ * Siempre devuelve la password en claro: es la que se la pasa al reviewer,
+ * está sandboxeada al admin autenticado y los usuarios viven con `isTestUser=true`.
+ */
+const seedTestUsersBodySchema = z
+  .object({
+    purge: z.boolean().optional(),
+    password: z.string().trim().min(8).max(128).optional()
+  })
+  .optional();
+
+adminRouter.post("/test-users/seed", async (req, res) => {
+  const parsed = seedTestUsersBodySchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+  try {
+    const result = await seedTestUsers({
+      purgeBefore: parsed.data?.purge ?? false,
+      password: parsed.data?.password
+    });
+    return res.status(200).json({
+      patient: result.patient,
+      professional: result.professional,
+      password: result.passwordPlain,
+      hint:
+        "Cuentas listas para Google App Verification. Login en /login con el email y la password mostrada. " +
+        "Ambas arrancan sin Calendar conectado: el reviewer verá el OAuth consent screen completo al activarlo."
+    });
+  } catch (error) {
+    console.error("[admin] seed test users failed", error);
+    return res.status(500).json({
+      error: "No se pudieron preparar los usuarios de prueba",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/** Lectura simple para que el admin sepa qué emails y password default usar. */
+adminRouter.get("/test-users/info", (_req, res) => {
+  return res.json({
+    patientEmail: TEST_PATIENT_EMAIL,
+    professionalEmail: TEST_PROFESSIONAL_EMAIL,
+    defaultPassword: TEST_USERS_DEFAULT_PASSWORD
+  });
+});
 
 adminRouter.get("/session-packages", async (req, res) => {
   const parsed = listPackagesQuerySchema.safeParse(req.query);

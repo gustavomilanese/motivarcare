@@ -4,7 +4,15 @@ import { PATIENT_CLINICAL_INTAKE_FIRST_STEPS } from "../intake/patientClinicalIn
 /** Tras confirmar sesión de prueba: AppRoot ofrece conectar Google Calendar (no aplica a compras con crédito). */
 export const POST_TRIAL_CALENDAR_PENDING_SESSION_KEY = "mc_post_trial_calendar_pending";
 
-export type CalendarOfferContext = "pre-matching" | "post-trial";
+/**
+ * Distintos puntos en los que AppRoot puede ofrecer Google Calendar:
+ * - `pre-matching`: durante el onboarding, justo después del intake (legacy).
+ * - `post-trial`: tras confirmar la primera sesión de prueba (legacy).
+ * - `post-login`: al ingresar al portal con cuenta ya activa pero sin Calendar
+ *   conectado. Pensado para que el reviewer de Google App Verification vea el
+ *   consent screen sin tener que navegar a Perfil.
+ */
+export type CalendarOfferContext = "pre-matching" | "post-trial" | "post-login";
 
 const CALENDAR_OFFER_CONTEXT_SESSION_KEY = "mc_calendar_offer_context";
 
@@ -19,7 +27,9 @@ export function setCalendarOfferContext(ctx: CalendarOfferContext): void {
 export function getCalendarOfferContext(): CalendarOfferContext {
   try {
     const raw = window.sessionStorage.getItem(CALENDAR_OFFER_CONTEXT_SESSION_KEY);
-    return raw === "post-trial" ? "post-trial" : "pre-matching";
+    if (raw === "post-trial") return "post-trial";
+    if (raw === "post-login") return "post-login";
+    return "pre-matching";
   } catch {
     return "pre-matching";
   }

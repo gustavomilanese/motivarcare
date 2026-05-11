@@ -756,6 +756,52 @@ export function App() {
     state.googleCalendarConnected
   ]);
 
+  /**
+   * Post-login: si el paciente ya pasó el intake y NO tiene Calendar conectado,
+   * mostrar el modal de oferta apenas entra al portal. Pensado para el reviewer
+   * de Google App Verification: entra con cuenta lista y ve el OAuth screen
+   * sin tener que buscar el botón en Perfil. Para usuarios reales, si pinchan
+   * "Lo hago después" se persiste el dismiss y no vuelve a aparecer.
+   */
+  useEffect(() => {
+    if (!sessionId || !state.authToken || !profileSyncReady) {
+      return;
+    }
+    if (showCalendarOnboarding) {
+      return;
+    }
+    if (state.googleCalendarConnected) {
+      return;
+    }
+    if (calendarPromptDismissedUserIds.includes(sessionId)) {
+      return;
+    }
+    if (!state.intake?.completed || state.intake?.riskBlocked) {
+      /** Si el intake no está completo, el wizard tiene prioridad; el calendar va después. */
+      return;
+    }
+    /** Evitar disparar el modal mientras se está navegando el callback OAuth. */
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("calendar_sync")) {
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    setCalendarOfferContext("post-login");
+    setShowCalendarOnboarding(true);
+  }, [
+    sessionId,
+    state.authToken,
+    profileSyncReady,
+    showCalendarOnboarding,
+    calendarPromptDismissedUserIds,
+    state.googleCalendarConnected,
+    state.intake?.completed,
+    state.intake?.riskBlocked
+  ]);
+
   const handleConnectCalendarFromOnboarding = async () => {
     if (!state.authToken) {
       return;
@@ -772,7 +818,12 @@ export function App() {
       } catch {
         // ignore
       }
-      const returnPath = getCalendarOfferContext() === "post-trial" ? "/" : "/onboarding/final/matching";
+      const calendarCtx = getCalendarOfferContext();
+      /** `post-trial` y `post-login` ya están en el portal: vuelven a home. `pre-matching` sigue el flujo de onboarding. */
+      const returnPath =
+        calendarCtx === "post-trial" || calendarCtx === "post-login"
+          ? "/"
+          : "/onboarding/final/matching";
       const response = await apiRequest<{ authUrl: string }>(
         "/api/auth/google/calendar/connect",
         {
@@ -1205,7 +1256,12 @@ export function App() {
       const ctxErr = getCalendarOfferContext();
       clearCalendarOfferContext();
       clearPostTrialCalendarPending();
-      const errorTarget = ctxErr === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
+      const errorTarget =
+        ctxErr === "post-trial" || ctxErr === "post-login"
+          ? "/"
+          : resumeMatching
+            ? onboardingPath
+            : location.pathname;
       calendarNav(errorTarget, { calendar_sync: "error", calendar_reason: "session_mismatch" });
       return;
     }
@@ -1230,7 +1286,11 @@ export function App() {
       clearCalendarOfferContext();
       clearPostTrialCalendarPending();
       const targetPath =
-        ctx === "post-trial" ? "/" : resumeMatching ? onboardingPath : location.pathname;
+        ctx === "post-trial" || ctx === "post-login"
+          ? "/"
+          : resumeMatching
+            ? onboardingPath
+            : location.pathname;
       calendarNav(targetPath, null);
       return;
     }
@@ -1267,7 +1327,10 @@ export function App() {
     const ctx = getCalendarOfferContext();
     clearCalendarOfferContext();
     clearPostTrialCalendarPending();
-    navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
+    navigate(
+      ctx === "post-trial" || ctx === "post-login" ? "/" : "/onboarding/final/matching",
+      { replace: true }
+    );
   }, [showCalendarOnboarding, state.authToken, sessionId, state.googleCalendarConnected, navigate]);
 
   useEffect(() => {
@@ -1409,7 +1472,10 @@ export function App() {
                 clearCalendarOfferContext();
                 clearPostTrialCalendarPending();
                 setShowCalendarOnboarding(false);
-                navigate(ctx === "post-trial" ? "/" : "/onboarding/final/matching", { replace: true });
+                navigate(
+                  ctx === "post-trial" || ctx === "post-login" ? "/" : "/onboarding/final/matching",
+                  { replace: true }
+                );
               }}
               disabled={calendarOnboardingLoading}
             >

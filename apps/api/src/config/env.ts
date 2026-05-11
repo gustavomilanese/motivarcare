@@ -66,6 +66,14 @@ const EnvSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().optional().default(""),
   GOOGLE_REFRESH_TOKEN: z.string().optional().default(""),
   GOOGLE_CALENDAR_ID: z.string().optional().default(""),
+  /**
+   * Si está en `false`, no se intenta crear el Meet desde la cuenta de plataforma
+   * (`GOOGLE_REFRESH_TOKEN` + `GOOGLE_CALENDAR_ID`). Útil para Google App Verification:
+   * el reviewer entra como pro/paciente, no conecta Google, reserva, y si está en
+   * `false` el booking queda sin Meet hasta que alguien conecte Calendar. Default `true`
+   * conserva el comportamiento histórico (Meet "siempre disponible" para demos).
+   */
+  PLATFORM_MEET_FALLBACK_ENABLED: z.coerce.boolean().default(true),
   OPENAI_API_KEY: z.string().optional().default(""),
   /** Modelo OpenAI usado por features de IA (intake-chat, ai-audit). gpt-5-mini es el sweet spot costo/calidad. */
   OPENAI_MODEL: z.string().min(1).default("gpt-5-mini"),
