@@ -1,4 +1,4 @@
-import { ProfessionalRegistrationApproval, type Prisma } from "@prisma/client";
+import { BookingStatus, ProfessionalRegistrationApproval, type Prisma } from "@prisma/client";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { hashPassword } from "./auth.js";
 import { prisma } from "./prisma.js";
@@ -7,6 +7,14 @@ import {
   hardDeleteUserInTransaction,
   type HardDeleteUserExisting
 } from "./hardDeleteUserInTransaction.js";
+
+/**
+ * Misma key que usa el admin (`admin.routes.ts`) para guardar el mapping
+ * `{ [patientProfileId]: professionalProfileId }`. Inyectar acá garantiza que
+ * el portal del paciente vea al profesional asignado al loguearse, así no cae
+ * en el flujo de "matching" antes de poder usar Calendar/Meet en el video.
+ */
+const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 
 /**
  * Identidad estable de las cuentas que enviamos a Google App Verification.
@@ -39,9 +47,22 @@ export interface SeededTestUserSummary {
   created: boolean;
 }
 
+export interface SeededDemoBookingSummary {
+  bookingId: string;
+  /** `true` si la booking se creó en esta corrida; `false` si ya existía y se respetó. */
+  created: boolean;
+  startsAt: Date;
+}
+
 export interface SeedTestUsersResult {
   patient: SeededTestUserSummary;
   professional: SeededTestUserSummary;
+  /**
+   * Booking CONFIRMED futura entre el patient y el professional test. Sirve
+   * para que el reviewer vea "tu próxima sesión" al loguearse y pueda
+   * demostrar el scope de Google Calendar (sin pasar por el matching).
+   */
+  demoBooking: SeededDemoBookingSummary;
   /** Echo de la password en claro (para devolverla al admin que la pidió). */
   passwordPlain: string;
 }
@@ -97,6 +118,7 @@ async function purgeUserIfPresent(email: string): Promise<boolean> {
 
 async function upsertPatientTestUser(passwordHash: string): Promise<{
   userId: string;
+  patientProfileId: string;
   created: boolean;
 }> {
   const nameParts = userNamePartsFromFullNameString("Paciente de Prueba");
@@ -167,11 +189,12 @@ async function upsertPatientTestUser(passwordHash: string): Promise<{
    */
   await prisma.googleCalendarConnection.deleteMany({ where: { userId: user.id } });
 
-  return { userId: user.id, created: !before };
+  return { userId: user.id, patientProfileId: profile.id, created: !before };
 }
 
 async function upsertProfessionalTestUser(passwordHash: string): Promise<{
   userId: string;
+  professionalProfileId: string;
   created: boolean;
 }> {
   const nameParts = userNamePartsFromFullNameString("Profesional de Prueba");
@@ -291,7 +314,100 @@ async function upsertProfessionalTestUser(passwordHash: string): Promise<{
   /** Mismo cuidado que en el paciente: arrancamos sin conexión a Google. */
   await prisma.googleCalendarConnection.deleteMany({ where: { userId: user.id } });
 
-  return { userId: user.id, created: !before };
+  return { userId: user.id, professionalProfileId: profile.id, created: !before };
+}
+
+/**
+ * Asigna el patient test al professional test en `SystemConfig`. Esto hace que
+ * el portal del paciente vea a "su" profesional ya elegido al iniciar sesión
+ * (skip matching), pieza clave para que el video del reviewer no muestre el
+ * flujo interno de selección.
+ */
+async function assignTestPatientToTestProfessional(
+  patientProfileId: string,
+  professionalProfileId: string
+): Promise<void> {
+  const existing = await prisma.systemConfig.findUnique({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY }
+  });
+
+  const currentRaw =
+    existing?.value && typeof existing.value === "object" && !Array.isArray(existing.value)
+      ? (existing.value as Record<string, unknown>)
+      : {};
+
+  /** Conservamos asignaciones ajenas y solo pisamos la nuestra. */
+  const merged: Record<string, string | null> = {};
+  for (const [key, value] of Object.entries(currentRaw)) {
+    if (typeof value === "string" || value === null) {
+      merged[key] = value;
+    }
+  }
+  merged[patientProfileId] = professionalProfileId;
+
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY },
+    update: { value: merged as Prisma.InputJsonValue },
+    create: {
+      key: PATIENT_ACTIVE_ASSIGNMENTS_KEY,
+      value: merged as Prisma.InputJsonValue
+    }
+  });
+}
+
+/**
+ * Garantiza que el patient test tenga al menos UNA reserva CONFIRMED futura
+ * con el professional test. La reserva sale gratis (sin créditos consumidos,
+ * sin purchase asociada) — solo sirve como "demo data" para que el reviewer
+ * vea su próxima sesión en el dashboard y demuestre el uso del scope de
+ * Google Calendar agregándola al calendario.
+ *
+ * Idempotente: si ya hay una reserva CONFIRMED futura entre ambos, no crea
+ * otra para no inundar la base de datos al re-seedear varias veces.
+ */
+async function ensureFutureConfirmedBooking(
+  patientProfileId: string,
+  professionalProfileId: string
+): Promise<{ bookingId: string; created: boolean; startsAt: Date }> {
+  const now = new Date();
+  const existing = await prisma.booking.findFirst({
+    where: {
+      patientId: patientProfileId,
+      professionalId: professionalProfileId,
+      status: BookingStatus.CONFIRMED,
+      startsAt: { gte: now }
+    },
+    orderBy: { startsAt: "asc" }
+  });
+
+  if (existing) {
+    return { bookingId: existing.id, created: false, startsAt: existing.startsAt };
+  }
+
+  /**
+   * Próxima sesión: ~2 días a las 11:00 hs hora Argentina (= 14:00 UTC).
+   * Suficientemente lejos como para no chocar contra políticas de cancelación
+   * y para que aparezca claro como "upcoming" en el dashboard.
+   */
+  const startsAt = new Date();
+  startsAt.setUTCDate(startsAt.getUTCDate() + 2);
+  startsAt.setUTCHours(14, 0, 0, 0);
+  const endsAt = new Date(startsAt.getTime() + 50 * 60 * 1000);
+
+  const created = await prisma.booking.create({
+    data: {
+      patientId: patientProfileId,
+      professionalId: professionalProfileId,
+      patientTimezoneAtBooking: "America/Argentina/Buenos_Aires",
+      professionalTimezoneAtBooking: "America/Argentina/Buenos_Aires",
+      startsAt,
+      endsAt,
+      status: BookingStatus.CONFIRMED,
+      consumedCredits: 0
+    }
+  });
+
+  return { bookingId: created.id, created: true, startsAt: created.startsAt };
 }
 
 /**
@@ -318,6 +434,17 @@ export async function seedTestUsers(opts: SeedTestUsersOptions = {}): Promise<Se
   const patient = await upsertPatientTestUser(passwordHash);
   const professional = await upsertProfessionalTestUser(passwordHash);
 
+  /**
+   * Asignación + reserva de demo: en este orden para que cuando el frontend
+   * llame a `/api/profiles/me`, ya encuentre tanto el `activeProfessional`
+   * como la booking futura.
+   */
+  await assignTestPatientToTestProfessional(patient.patientProfileId, professional.professionalProfileId);
+  const demoBooking = await ensureFutureConfirmedBooking(
+    patient.patientProfileId,
+    professional.professionalProfileId
+  );
+
   return {
     patient: {
       email: TEST_PATIENT_EMAIL,
@@ -333,6 +460,7 @@ export async function seedTestUsers(opts: SeedTestUsersOptions = {}): Promise<Se
       purged: purgedPro,
       created: professional.created
     },
+    demoBooking,
     passwordPlain: password
   };
 }

@@ -1558,10 +1558,12 @@ adminRouter.post("/test-users/seed", async (req, res) => {
     return res.status(200).json({
       patient: result.patient,
       professional: result.professional,
+      demoBooking: result.demoBooking,
       password: result.passwordPlain,
       hint:
         "Cuentas listas para Google App Verification. Login en /login con el email y la password mostrada. " +
-        "Ambas arrancan sin Calendar conectado: el reviewer verá el OAuth consent screen completo al activarlo."
+        "Ambas arrancan sin Calendar conectado: el reviewer verá el OAuth consent screen completo al activarlo. " +
+        "El paciente ya tiene profesional asignado + sesión confirmada futura para saltar matching."
     });
   } catch (error) {
     console.error("[admin] seed test users failed", error);

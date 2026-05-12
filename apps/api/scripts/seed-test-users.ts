@@ -65,6 +65,10 @@ async function main() {
   } else {
     console.log("  PASSWORD      (provided via --password flag)");
   }
+  console.log(
+    `  DEMO BOOKING  id=${result.demoBooking.bookingId} created=${result.demoBooking.created}`
+  );
+  console.log(`                startsAt=${result.demoBooking.startsAt.toISOString()}`);
 }
 
 main()
