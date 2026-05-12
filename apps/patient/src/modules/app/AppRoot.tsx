@@ -837,7 +837,8 @@ export function App() {
           method: "POST",
           body: JSON.stringify({
             returnPath,
-            clientOrigin: window.location.origin
+            clientOrigin: window.location.origin,
+            language: state.language
           })
         },
         state.authToken

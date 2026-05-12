@@ -146,7 +146,11 @@ export function ProfilePage(props: {
         "/api/auth/google/calendar/connect",
         {
           method: "POST",
-          body: JSON.stringify({ returnPath: "/profile", clientOrigin: window.location.origin })
+          body: JSON.stringify({
+            returnPath: "/profile",
+            clientOrigin: window.location.origin,
+            language: props.language
+          })
         },
         props.authToken
       );

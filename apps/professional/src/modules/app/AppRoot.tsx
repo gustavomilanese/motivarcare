@@ -322,7 +322,11 @@ export function App() {
         token,
         {
           method: "POST",
-          body: JSON.stringify({ clientOrigin: window.location.origin, returnPath: "/" })
+          body: JSON.stringify({
+            clientOrigin: window.location.origin,
+            returnPath: "/",
+            language
+          })
         }
       );
       try {

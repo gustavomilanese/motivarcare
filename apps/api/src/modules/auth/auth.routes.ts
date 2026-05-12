@@ -102,7 +102,13 @@ const updateMeSchema = z
 const googleCalendarConnectSchema = z.object({
   returnPath: z.string().trim().min(1).max(200).optional(),
   /** Actual browser origin (e.g. alternate Vite port) so post-OAuth redirect preserves localStorage. */
-  clientOrigin: z.string().trim().max(128).optional()
+  clientOrigin: z.string().trim().max(128).optional(),
+  /**
+   * Idioma de la UI cuando el usuario inició la conexión. Se reenvía a Google
+   * como `hl=` en el OAuth consent screen para que el reviewer (o cualquier
+   * usuario con UI en inglés/portugués) vea la pantalla de Google traducida.
+   */
+  language: z.enum(["es", "en", "pt"]).optional()
 });
 
 function getTrustedBrowserOrigins(): Set<string> {
@@ -680,13 +686,37 @@ authRouter.post("/google/calendar/connect", requireAuth, async (req: Authenticat
   });
 
   const oauth2Client = createGoogleOauthClient();
-  const authUrl = oauth2Client.generateAuthUrl({
+  const rawAuthUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: GOOGLE_CALENDAR_SCOPE,
     include_granted_scopes: true,
     state: stateToken
   });
+
+  /**
+   * Si el frontend nos pasó el idioma de su UI, lo reenviamos a Google con
+   * `hl=`. Sin esto, Google decide por su cuenta (sesión Google previa o
+   * `Accept-Language` del browser) y termina mostrando el consent screen en
+   * un idioma distinto al de nuestra app — confuso para el reviewer y para
+   * cualquier usuario en mercados secundarios.
+   *
+   * Convertimos a locale BCP-47 (`en-US`, `es-AR`, `pt-BR`) porque es lo que
+   * Google maneja mejor; usar solo `en` también funciona pero pierde región.
+   */
+  let authUrl = rawAuthUrl;
+  const requestedLanguage = parsedConnectPayload.data.language;
+  if (requestedLanguage) {
+    try {
+      const url = new URL(rawAuthUrl);
+      const locale =
+        requestedLanguage === "es" ? "es-AR" : requestedLanguage === "pt" ? "pt-BR" : "en-US";
+      url.searchParams.set("hl", locale);
+      authUrl = url.toString();
+    } catch {
+      /** Si Google devolviera una URL inesperada, dejamos la original (mejor que romper). */
+    }
+  }
 
   setGoogleCalendarStateCookie(res, stateToken);
   setGoogleCalendarReturnPathCookie(res, returnPath);
