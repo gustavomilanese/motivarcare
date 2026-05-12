@@ -20,6 +20,13 @@ import {
   rescheduleGoogleMeetEventForPlatformCalendar,
   rescheduleGoogleMeetEventForUserCalendar
 } from "../video/googleMeet.service.js";
+import {
+  decodeGoogleMeetSyncTargets,
+  encodeGoogleMeetSyncTargets,
+  listGoogleMeetSyncTargets,
+  type GoogleMeetOwnerTarget,
+  type GoogleMeetSyncTargets
+} from "../video/meetSyncTargets.js";
 
 const createBookingSchema = z.object({
   professionalId: z.string().min(1),
@@ -105,96 +112,6 @@ function normalizeIdempotencyKey(value: string | undefined | null): string | nul
   }
 
   return normalized;
-}
-
-function encodeGoogleMeetOwnerEventId(ownerUserId: string, eventId: string): string {
-  return `${ownerUserId}|${eventId}`;
-}
-
-function decodeGoogleMeetOwnerEventId(value: string): { ownerUserId: string; eventId: string } | null {
-  const separatorIndex = value.indexOf("|");
-  if (separatorIndex <= 0 || separatorIndex >= value.length - 1) {
-    return null;
-  }
-  return {
-    ownerUserId: value.slice(0, separatorIndex),
-    eventId: value.slice(separatorIndex + 1)
-  };
-}
-
-type GoogleMeetOwnerTarget = { ownerUserId: string; eventId: string };
-type GoogleMeetSyncTargets = {
-  primary: GoogleMeetOwnerTarget;
-  mirror?: GoogleMeetOwnerTarget;
-};
-
-function encodeGoogleMeetSyncTargets(targets: GoogleMeetSyncTargets): string {
-  if (!targets.mirror) {
-    return encodeGoogleMeetOwnerEventId(targets.primary.ownerUserId, targets.primary.eventId);
-  }
-
-  const payload = Buffer.from(JSON.stringify(targets), "utf8").toString("base64url");
-  return `v2:${payload}`;
-}
-
-function decodeGoogleMeetSyncTargets(value: string): GoogleMeetSyncTargets | null {
-  if (value.startsWith("v2:")) {
-    const payload = value.slice(3);
-    if (!payload) {
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as unknown;
-      if (!parsed || typeof parsed !== "object") {
-        return null;
-      }
-
-      const primary = (parsed as { primary?: GoogleMeetOwnerTarget }).primary;
-      const mirror = (parsed as { mirror?: GoogleMeetOwnerTarget }).mirror;
-
-      if (!primary || typeof primary.ownerUserId !== "string" || typeof primary.eventId !== "string") {
-        return null;
-      }
-
-      if (!mirror) {
-        return { primary };
-      }
-
-      if (typeof mirror.ownerUserId !== "string" || typeof mirror.eventId !== "string") {
-        return { primary };
-      }
-
-      return { primary, mirror };
-    } catch {
-      return null;
-    }
-  }
-
-  const legacy = decodeGoogleMeetOwnerEventId(value);
-  if (!legacy) {
-    return null;
-  }
-
-  return { primary: legacy };
-}
-
-function listGoogleMeetSyncTargets(value: string): GoogleMeetOwnerTarget[] {
-  const decoded = decodeGoogleMeetSyncTargets(value);
-  if (!decoded) {
-    return [];
-  }
-
-  const targets = [decoded.primary];
-  if (decoded.mirror) {
-    targets.push(decoded.mirror);
-  }
-
-  const deduped = new Map<string, GoogleMeetOwnerTarget>();
-  for (const target of targets) {
-    deduped.set(`${target.ownerUserId}|${target.eventId}`, target);
-  }
-  return Array.from(deduped.values());
 }
 
 function parsePatientIntakeTriage(value: unknown): Record<string, {

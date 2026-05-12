@@ -20,6 +20,7 @@ import {
 } from "./emailVerification.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 import { verifyTurnstileResponse } from "../../lib/turnstile.js";
+import { backfillMeetForUserAfterCalendarConnect } from "../video/calendarBackfill.js";
 import {
   maskEmailHint,
   SECURITY_AUDIT_CATEGORY,
@@ -854,6 +855,20 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
         tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
       }
     });
+
+    /**
+     * Backfill de Meet para bookings CONFIRMED futuras que aún no tienen Meet
+     * en el calendar de este usuario. Se ejecuta ANTES de redirigir para que
+     * cuando el frontend vuelva al dashboard y pegue a `/api/bookings/upcoming`,
+     * ya vea el `joinUrlPatient`/`joinUrlProfessional` actualizado. Cualquier
+     * error queda capturado dentro del módulo: no rompemos la conexión por una
+     * llamada fallida a Google Calendar.
+     */
+    try {
+      await backfillMeetForUserAfterCalendarConnect({ userId: stateToken.user.id });
+    } catch (backfillError) {
+      console.error("[google/calendar/callback] backfill threw despite internal handling", backfillError);
+    }
 
     return redirectWithCookieClear({
       role: stateToken.user.role,

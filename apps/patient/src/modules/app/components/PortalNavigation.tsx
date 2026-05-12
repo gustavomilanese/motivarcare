@@ -379,7 +379,7 @@ export function PortalNavigation(props: {
                         {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
                       </button>
                       <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("settings")}>
-                        {t(props.language, { es: "Notificaciones", en: "Notification settings", pt: "Notificacoes" })}
+                        {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
                       </button>
                       <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("support")}>
                         {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
