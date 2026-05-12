@@ -38,6 +38,46 @@ export function localeFromLanguage(language: AppLanguage): string {
   return LANGUAGE_LOCALE[language];
 }
 
+/**
+ * Decide el idioma inicial de las apps web cuando el usuario todavía no
+ * eligió uno explícitamente. Orden de prioridad:
+ *
+ *   1. `?lang=es|en|pt` en el query string — útil para enlaces compartidos
+ *      con reviewers (Google App Verification) y para QA.
+ *   2. `navigator.language` (ej. browser del reviewer en inglés → arranca
+ *      en inglés, sin que tenga que tocar el selector).
+ *   3. Fallback hardcodeado: `"es"` (el mercado principal hoy es Argentina).
+ *
+ * No tocamos `localStorage` acá: cada app guarda preferencia con su propia
+ * clave y la usa antes de invocar este helper.
+ */
+export function detectInitialAppLanguage(): AppLanguage {
+  if (typeof window === "undefined") {
+    return "es";
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("lang");
+    if (fromQuery && (SUPPORTED_LANGUAGES as readonly string[]).includes(fromQuery)) {
+      return fromQuery as AppLanguage;
+    }
+  } catch {
+    // ignore: query parsing puede fallar en entornos exóticos.
+  }
+
+  try {
+    const browser = (window.navigator?.language ?? "").toLowerCase();
+    if (browser.startsWith("en")) return "en";
+    if (browser.startsWith("pt")) return "pt";
+    if (browser.startsWith("es")) return "es";
+  } catch {
+    // ignore: navigator puede no estar disponible en tests.
+  }
+
+  return "es";
+}
+
 export function textByLanguage(language: AppLanguage, value: LocalizedText): string {
   return value[language];
 }

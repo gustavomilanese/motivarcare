@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
+  detectInitialAppLanguage,
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
@@ -200,7 +201,15 @@ export function App() {
   );
   const [language, setLanguage] = useState<AppLanguage>(() => {
     const saved = window.localStorage.getItem(LANGUAGE_KEY);
-    return (SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "") ? (saved as AppLanguage) : "es";
+    if ((SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "")) {
+      return saved as AppLanguage;
+    }
+    /**
+     * Sin preferencia guardada: detectar del browser (o `?lang=`) para que
+     * el reviewer de Google App Verification arranque en inglés si su
+     * sistema está en inglés. Usuarios reales no se ven afectados.
+     */
+    return detectInitialAppLanguage();
   });
   const [currency, setCurrency] = useState<SupportedCurrency>(() => {
     const saved = window.localStorage.getItem(CURRENCY_KEY);

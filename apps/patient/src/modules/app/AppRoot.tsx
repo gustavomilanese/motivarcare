@@ -5,6 +5,7 @@ import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
   defaultDisplayCurrencyForMarket,
+  detectInitialAppLanguage,
   type AppLanguage,
   type LocalizedText,
   textByLanguage
@@ -94,7 +95,13 @@ const defaultState: PatientAppState = {
   authToken: null,
   googleCalendarConnected: false,
   emailVerificationRequired: false,
-  language: "es",
+  /**
+   * Si el usuario nunca eligió idioma, arrancamos detectando del browser
+   * (o `?lang=` query). Permite que el reviewer de Google App Verification
+   * vea la app en inglés sin tocar el selector. Usuarios reales con browser
+   * en español siguen viendo `es` por default.
+   */
+  language: detectInitialAppLanguage(),
   /** Por defecto se asume mercado AR; la moneda se sincroniza con `patientMarket`. */
   currency: defaultDisplayCurrencyForMarket("AR"),
   profileResidencyCountry: null,
@@ -154,7 +161,7 @@ function loadState(): PatientAppState {
       ...parsed,
       language: (SUPPORTED_LANGUAGES as readonly string[]).includes((parsed as any).language)
         ? (parsed as any).language
-        : "es",
+        : detectInitialAppLanguage(),
       patientMarket: (() => {
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
         return isMarket(pm) ? pm : "AR";
