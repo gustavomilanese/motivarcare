@@ -36,6 +36,10 @@ const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
 
 const ASSIGN_PRO_MODAL_DISMISS_KEY = "mc.assignProPromptDismissed";
 
+function firstUpcomingSpotlightStorageKey(userId: string): string {
+  return `motivarcare.patient.firstUpcomingSpotlight.v2.${userId}`;
+}
+
 function localizedPackageName(planId: PackageId | null, fallback: string, language: AppLanguage): string {
   if (!planId) {
     return t(language, {
@@ -240,6 +244,8 @@ export function DashboardPage(props: {
   const [sessionRnLayout, setSessionRnLayout] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false
   );
+  const [firstUpcomingSpotlight, setFirstUpcomingSpotlight] = useState(false);
+  const [googleCalendarCtaPulse, setGoogleCalendarCtaPulse] = useState(false);
   const now = Date.now();
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
@@ -253,6 +259,8 @@ export function DashboardPage(props: {
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
+  const dashboardSpotlightBlockersRef = useRef(false);
+  dashboardSpotlightBlockersRef.current = assignProModalOpen || acquireSessionsModalOpen || trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
@@ -501,6 +509,59 @@ export function DashboardPage(props: {
     return () => window.clearTimeout(tid);
   }, [searchParams, setSearchParams]);
 
+  /** Spotlight una sola vez por usuario en el panel de próximas reservas (complementa el tour guiado). */
+  useEffect(() => {
+    const uid = props.state.session?.id != null ? String(props.state.session.id).trim() : "";
+    if (!uid || upcomingConfirmedBookings.length === 0) {
+      return undefined;
+    }
+    let cancelled = false;
+    let endSpotlightTimer: number | undefined;
+    try {
+      if (window.localStorage.getItem(firstUpcomingSpotlightStorageKey(uid)) === "1") {
+        return undefined;
+      }
+    } catch {
+      return undefined;
+    }
+
+    const startTimer = window.setTimeout(() => {
+      if (cancelled || dashboardSpotlightBlockersRef.current) {
+        return;
+      }
+      try {
+        window.localStorage.setItem(firstUpcomingSpotlightStorageKey(uid), "1");
+      } catch {
+        // ignore
+      }
+      setFirstUpcomingSpotlight(true);
+      endSpotlightTimer = window.setTimeout(() => {
+        setFirstUpcomingSpotlight(false);
+      }, 12000);
+    }, 1400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(startTimer);
+      if (endSpotlightTimer) {
+        window.clearTimeout(endSpotlightTimer);
+      }
+    };
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, trialModalOpen]);
+
+  useEffect(() => {
+    if (!showGoogleCalendarCta) {
+      setGoogleCalendarCtaPulse(false);
+      return undefined;
+    }
+    setGoogleCalendarCtaPulse(true);
+    const tid = window.setTimeout(() => setGoogleCalendarCtaPulse(false), 7000);
+    return () => {
+      window.clearTimeout(tid);
+      setGoogleCalendarCtaPulse(false);
+    };
+  }, [showGoogleCalendarCta]);
+
   const dashboardIntroTitle = t(props.language, {
     es: "Gestioná tu bienestar desde acá",
     en: "Manage your wellbeing here",
@@ -561,7 +622,7 @@ export function DashboardPage(props: {
               {showGoogleCalendarCta ? (
                 <button
                   type="button"
-                  className="dashboard-hero-google-calendar-button"
+                  className={`dashboard-hero-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
                   onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
                 >
                   {t(props.language, {
@@ -768,7 +829,12 @@ export function DashboardPage(props: {
         )}
       </section>
 
-      <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel" data-tour="patient-tour-bookings">
+      <section
+        className={`content-card booking-session-card booking-card-minimal sessions-confirmed-panel${
+          firstUpcomingSpotlight ? " patient-dashboard-upcoming-spotlight" : ""
+        }`}
+        data-tour="patient-tour-bookings"
+      >
         <div className="sessions-panel-head">
           <div>
             <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
@@ -1129,7 +1195,7 @@ export function DashboardPage(props: {
             {showGoogleCalendarCta ? (
               <button
                 type="button"
-                className="dashboard-package-google-calendar-button"
+                className={`dashboard-package-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
                 onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
               >
                 {t(props.language, {
@@ -1396,7 +1462,7 @@ export function DashboardPage(props: {
             <div className="dashboard-rn-google-cta-wrap">
               <button
                 type="button"
-                className="dashboard-rn-google-calendar-button"
+                className={`dashboard-rn-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
                 onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
               >
                 {t(props.language, {
@@ -1408,7 +1474,10 @@ export function DashboardPage(props: {
             </div>
           ) : null}
 
-          <section className="dashboard-rn-section" data-tour="patient-tour-bookings-rn">
+          <section
+            className={`dashboard-rn-section${firstUpcomingSpotlight ? " patient-dashboard-upcoming-spotlight" : ""}`}
+            data-tour="patient-tour-bookings-rn"
+          >
             <div className="dashboard-rn-section-head">
               <h2 className="dashboard-rn-section-title">
                 {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}
