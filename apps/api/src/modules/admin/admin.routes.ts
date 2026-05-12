@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
@@ -1537,6 +1538,9 @@ adminRouter.post("/users/:userId/delete", handleAdminDeleteUser);
  *
  * Siempre devuelve la password en claro: es la que se la pasa al reviewer,
  * está sandboxeada al admin autenticado y los usuarios viven con `isTestUser=true`.
+ *
+ * En `NODE_ENV=production` queda deshabilitado por defecto (`env.adminTestUserSeedEnabled`);
+ * activar solo en staging con `ADMIN_TEST_USER_SEED_ENABLED=true`.
  */
 const seedTestUsersBodySchema = z
   .object({
@@ -1546,6 +1550,15 @@ const seedTestUsersBodySchema = z
   .optional();
 
 adminRouter.post("/test-users/seed", async (req, res) => {
+  if (!env.adminTestUserSeedEnabled) {
+    return res.status(403).json({
+      error: "Test user seed disabled",
+      message:
+        "Este entorno no permite preparar usuarios de verificación de Google. " +
+        "En staging, definí ADMIN_TEST_USER_SEED_ENABLED=true en el API. " +
+        "En producción real debe permanecer deshabilitado."
+    });
+  }
   const parsed = seedTestUsersBodySchema.safeParse(req.body ?? {});
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
@@ -1576,6 +1589,14 @@ adminRouter.post("/test-users/seed", async (req, res) => {
 
 /** Lectura simple para que el admin sepa qué emails y password default usar. */
 adminRouter.get("/test-users/info", (_req, res) => {
+  if (!env.adminTestUserSeedEnabled) {
+    return res.status(403).json({
+      error: "Test user seed disabled",
+      message:
+        "Este entorno no expone los datos de usuarios de verificación. " +
+        "En staging, definí ADMIN_TEST_USER_SEED_ENABLED=true en el API."
+    });
+  }
   return res.json({
     patientEmail: TEST_PATIENT_EMAIL,
     professionalEmail: TEST_PROFESSIONAL_EMAIL,

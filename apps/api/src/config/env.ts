@@ -180,10 +180,28 @@ const patientMobileCalendarOriginPrefixes =
       ? "motivarcare://,exp://"
       : "";
 
+/**
+ * POST/GET `/admin/test-users/*` (seed cuentas Google App Verification).
+ * - Sin variable y `NODE_ENV !== production` → habilitado (local / tests).
+ * - `NODE_ENV=production` (p. ej. Railway prod o staging) → deshabilitado salvo `ADMIN_TEST_USER_SEED_ENABLED=true`.
+ * En staging para reviewers: setear `ADMIN_TEST_USER_SEED_ENABLED=true`. En prod real: omitir o `false`.
+ */
+function resolveAdminTestUserSeedEnabled(): boolean {
+  const raw = process.env.ADMIN_TEST_USER_SEED_ENABLED?.trim().toLowerCase();
+  if (raw === "true" || raw === "1" || raw === "yes") {
+    return true;
+  }
+  if (raw === "false" || raw === "0" || raw === "no") {
+    return false;
+  }
+  return parsedEnv.NODE_ENV !== "production";
+}
+
 export const env = {
   ...parsedEnv,
   apiListenHost: resolveApiListenHost(),
   PATIENT_MOBILE_CALENDAR_ORIGIN_PREFIXES: patientMobileCalendarOriginPrefixes,
   EMAIL_VERIFICATION_REQUIRED:
-    parsedEnv.EMAIL_VERIFICATION_REQUIRED ?? parsedEnv.NODE_ENV === "production"
+    parsedEnv.EMAIL_VERIFICATION_REQUIRED ?? parsedEnv.NODE_ENV === "production",
+  adminTestUserSeedEnabled: resolveAdminTestUserSeedEnabled()
 };
