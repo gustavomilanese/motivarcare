@@ -148,7 +148,17 @@ function tourStorageKey(sessionUserId: string): string {
   return `motivarcare.patient.dashboardTour.v1.${sessionUserId}`;
 }
 
-function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
+export interface DashboardTourBookingContext {
+  /** Hay al menos una reserva confirmada futura (p. ej. cuenta demo / reviewer). */
+  hasUpcomingConfirmed: boolean;
+  /** Alguna reserva futura ya tiene enlace de videollamada (Meet u otro). */
+  hasUpcomingMeetLink: boolean;
+}
+
+function buildDashboardTourSteps(
+  language: AppLanguage,
+  bookingContext?: DashboardTourBookingContext | null
+): DriveStep[] {
   const steps: DriveStep[] = [];
 
   steps.push({
@@ -159,6 +169,60 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
       align: "center"
     }
   });
+
+  const earlyBookingsPanel: HTMLElement | null =
+    bookingContext?.hasUpcomingConfirmed
+      ? pickVisible('[data-tour="patient-tour-bookings"]', '[data-tour="patient-tour-bookings-rn"]')
+      : null;
+  if (earlyBookingsPanel) {
+    const tourAttr = earlyBookingsPanel.getAttribute("data-tour");
+    const bookingsSelector =
+      tourAttr === "patient-tour-bookings-rn"
+        ? '[data-tour="patient-tour-bookings-rn"]'
+        : '[data-tour="patient-tour-bookings"]';
+    steps.push({
+      element: bookingsSelector,
+      popover: {
+        title: t(language, {
+          es: "Tu sesión reservada",
+          en: "Your booked session",
+          pt: "Sua sessao reservada"
+        }),
+        description: bookingContext?.hasUpcomingMeetLink
+          ? t(language, {
+              es: "Acá está tu próxima sesión confirmada. En el paso siguiente te señalamos el botón para <strong>entrar con Google Meet</strong> (videollamada).",
+              en: "Here is your next confirmed session. Next we will point to the <strong>Join with Google Meet</strong> button (video call).",
+              pt: "Aqui esta sua proxima sessao confirmada. No proximo passo indicamos o botao para <strong>entrar com Google Meet</strong>."
+            })
+          : t(language, {
+              es: "Acá está tu próxima sesión confirmada. Cuando conectes Google Calendar, vas a ver el enlace para unirte a la videollamada.",
+              en: "Here is your next confirmed session. After you connect Google Calendar, you will see the link to join the video call.",
+              pt: "Aqui esta sua proxima sessao confirmada. Ao conectar o Google Calendar, voce vera o link da videochamada."
+            }),
+        side: "top",
+        align: "center"
+      }
+    });
+    if (bookingContext?.hasUpcomingMeetLink && pickVisible('[data-tour="patient-join-first-meet"]')) {
+      steps.push({
+        element: '[data-tour="patient-join-first-meet"]',
+        popover: {
+          title: t(language, {
+            es: "Unirte a la sesión (Meet)",
+            en: "Join your session (Meet)",
+            pt: "Entrar na sessao (Meet)"
+          }),
+          description: t(language, {
+            es: "Tocá <strong>Entrar a la sesión</strong> cuando llegue el horario. Se abre Google Meet en una pestaña nueva.",
+            en: "Tap <strong>Join session</strong> when it is time. Google Meet opens in a new tab.",
+            pt: "Toque <strong>Entrar na sessao</strong> na hora. O Google Meet abre numa nova aba."
+          }),
+          side: "bottom",
+          align: "center"
+        }
+      });
+    }
+  }
 
   if (pickVisible('[data-tour="patient-tour-sidebar"]')) {
     steps.push({
@@ -261,7 +325,7 @@ function buildDashboardTourSteps(language: AppLanguage): DriveStep[] {
   }
 
   const bookings = pickVisible('[data-tour="patient-tour-bookings"]', '[data-tour="patient-tour-bookings-rn"]');
-  if (bookings) {
+  if (bookings && !earlyBookingsPanel) {
     const sel =
       bookings.getAttribute("data-tour") === "patient-tour-bookings-rn"
         ? '[data-tour="patient-tour-bookings-rn"]'
@@ -394,6 +458,8 @@ export function DashboardGuidedTour(props: {
    * no arrancamos el tour: evita dos capas dialog superpuestas con driver.js.
    */
   suppressTour?: boolean;
+  /** Ajusta el tour cuando ya hay sesiones confirmadas (p. ej. flujo reviewer / demo). */
+  bookingContext?: DashboardTourBookingContext | null;
 }) {
   const driverInstanceRef = useRef<ReturnType<typeof driver> | null>(null);
 
@@ -420,7 +486,7 @@ export function DashboardGuidedTour(props: {
       if (cancelled) {
         return;
       }
-      const steps = buildDashboardTourSteps(props.language);
+      const steps = buildDashboardTourSteps(props.language, props.bookingContext ?? null);
       if (steps.length === 0) {
         return;
       }
@@ -439,7 +505,7 @@ export function DashboardGuidedTour(props: {
       driverInstanceRef.current?.destroy();
       driverInstanceRef.current = null;
     };
-  }, [props.language, props.sessionUserId, props.suppressTour]);
+  }, [props.language, props.sessionUserId, props.suppressTour, props.bookingContext]);
 
   return null;
 }

@@ -414,6 +414,20 @@ export function App() {
     schedulePortalSyncRef.current(true);
   }, []);
 
+  const openPatientGoogleCalendarFromDashboard = useCallback(() => {
+    const uid = state.session?.id != null ? String(state.session.id).trim() : "";
+    if (uid.length === 0) {
+      return;
+    }
+    setCalendarPromptDismissedUserIds((prev) => {
+      const next = prev.filter((id) => id !== uid);
+      writeDismissedCalendarPromptUsers(next);
+      return next;
+    });
+    setCalendarOfferContext("post-login");
+    setShowCalendarOnboarding(true);
+  }, [state.session?.id]);
+
   const sessionTimezone = useMemo(() => detectBrowserTimezone(), []);
   const isVerifyEmailRoute = useMemo(() => location.pathname === "/verify-email", [location.pathname]);
   const isForgotPasswordRoute = useMemo(() => location.pathname === "/forgot-password", [location.pathname]);
@@ -1299,7 +1313,9 @@ export function App() {
           : resumeMatching
             ? onboardingPath
             : location.pathname;
-      calendarNav(targetPath, null);
+      const meetExtra =
+        targetPath === "/" ? ({ meet_hint: "1" } as Record<string, string>) : null;
+      calendarNav(targetPath, meetExtra);
       return;
     }
 
@@ -1336,7 +1352,7 @@ export function App() {
     clearCalendarOfferContext();
     clearPostTrialCalendarPending();
     navigate(
-      ctx === "post-trial" || ctx === "post-login" ? "/" : "/onboarding/final/matching",
+      ctx === "post-trial" || ctx === "post-login" ? "/?meet_hint=1" : "/onboarding/final/matching",
       { replace: true }
     );
   }, [showCalendarOnboarding, state.authToken, sessionId, state.googleCalendarConnected, navigate]);
@@ -1448,6 +1464,13 @@ export function App() {
                 es: "Cada vez que confirmes una sesión, vas a poder añadirla a tu calendario con un solo clic. De esta forma, recibís recordatorios automáticos y tenés toda tu agenda sincronizada en un solo lugar.",
                 en: "Each time you confirm a session, you can add it to your calendar in one click. This way, you get automatic reminders and keep your full agenda in one place.",
                 pt: "Cada vez que confirmar uma sessão, você poderá adicioná-la ao calendário com um clique. Assim, recebe lembretes automáticos e mantém toda a sua agenda num só lugar."
+              })}
+            </p>
+            <p className="calendar-consent-meet-hint">
+              {t(state.language, {
+                es: "Al terminar la conexión, en tu panel resaltamos el acceso a la videollamada (Google Meet) de tu próxima sesión para que lo encuentres al instante.",
+                en: "After you finish connecting, we highlight your next session’s Google Meet link on your dashboard so you can spot it instantly.",
+                pt: "Ao terminar a conexão, destacamos no painel o acesso ao Google Meet da sua próxima sessão para você achar na hora."
               })}
             </p>
             {calendarOnboardingError ? (
@@ -1689,6 +1712,12 @@ export function App() {
     );
   }
 
+  const showPatientGoogleCalendarReconnectCta = Boolean(
+    state.session?.id &&
+      !state.googleCalendarConnected &&
+      calendarPromptDismissedUserIds.includes(String(state.session.id).trim())
+  );
+
   return (
     <>
       <MainPortal
@@ -1697,6 +1726,8 @@ export function App() {
         professionalPhotoMap={professionalPhotoMap}
         sessionTimezone={sessionTimezone}
         onStateChange={updateState}
+        showPatientGoogleCalendarReconnectCta={showPatientGoogleCalendarReconnectCta}
+        onOpenPatientGoogleCalendarConnect={openPatientGoogleCalendarFromDashboard}
         onLogout={() => {
           clearPostTrialCalendarPending();
           clearCalendarOfferContext();

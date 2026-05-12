@@ -74,6 +74,9 @@ export function MainPortal(props: {
   sessionTimezone: string;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   onLogout: () => void;
+  /** Postergó el modal de Calendar: mostrar CTA en dashboard para volver al flujo OAuth. */
+  showPatientGoogleCalendarReconnectCta?: boolean;
+  onOpenPatientGoogleCalendarConnect?: () => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -326,6 +329,8 @@ export function MainPortal(props: {
             sendMessage={sendMessage}
             markThreadAsRead={markThreadAsRead}
             onBookingSelectProfessional={onBookingSelectProfessional}
+            showPatientGoogleCalendarReconnectCta={props.showPatientGoogleCalendarReconnectCta ?? false}
+            onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
           />
         </main>
       </PortalNavigation>

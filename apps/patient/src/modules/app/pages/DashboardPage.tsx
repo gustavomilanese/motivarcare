@@ -1,4 +1,5 @@
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -10,7 +11,7 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
-import { DashboardGuidedTour } from "../components/DashboardGuidedTour";
+import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
@@ -130,6 +131,10 @@ function DashboardRnUpcomingCard(props: {
   language: AppLanguage;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBookingDetail: (bookingId: string) => void;
+  /** Primer enlace Meet del listado: ancla el paso extra del tour guiado. */
+  dataTourMeetJoin?: boolean;
+  /** Pulso breve tras conectar Calendar (query meet_hint). */
+  meetJoinPulse?: boolean;
 }) {
   const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
   const isTrialBooking = props.booking.bookingMode === "trial";
@@ -151,7 +156,10 @@ function DashboardRnUpcomingCard(props: {
   return (
     <button
       type="button"
-      className={`session-rn-card session-management-card dashboard-rn-session-pressable ${isTrialBooking ? "session-rn-card--trial" : ""}`}
+      data-tour={props.dataTourMeetJoin ? "patient-join-first-meet" : undefined}
+      className={`session-rn-card session-management-card dashboard-rn-session-pressable ${isTrialBooking ? "session-rn-card--trial" : ""}${
+        props.meetJoinPulse ? " patient-join-meet--pulse" : ""
+      }`}
       onClick={handleActivate}
     >
       <div className="session-rn-top">
@@ -222,7 +230,16 @@ export function DashboardPage(props: {
   onNavigateToBookTrial: () => void;
   /** Sin profesional asignado: volver al matching del onboarding para elegir uno. */
   onNavigateToAssignProfessional: () => void;
+  /** El usuario eligió «Lo hago después» en el modal de Calendar: CTA para reabrir OAuth. */
+  showPatientGoogleCalendarReconnectCta?: boolean;
+  onOpenPatientGoogleCalendarConnect?: () => void;
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const meetHintHandledRef = useRef(false);
+  const [meetJoinHighlight, setMeetJoinHighlight] = useState(false);
+  const [sessionRnLayout, setSessionRnLayout] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false
+  );
   const now = Date.now();
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
@@ -423,6 +440,66 @@ export function DashboardPage(props: {
   const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
   const availableSessions = props.state.subscription.creditsRemaining;
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
+  const showGoogleCalendarCta = Boolean(
+    props.showPatientGoogleCalendarReconnectCta && props.onOpenPatientGoogleCalendarConnect
+  );
+
+  const firstMeetBookingId = useMemo(() => {
+    for (const b of upcomingConfirmedBookings) {
+      const j = typeof b.joinUrl === "string" ? b.joinUrl.trim() : "";
+      if (j) {
+        return b.id;
+      }
+    }
+    return null;
+  }, [upcomingConfirmedBookings]);
+
+  const upcomingTourDependency = upcomingConfirmedBookings
+    .map((b) => `${b.id}:${typeof b.joinUrl === "string" ? b.joinUrl.trim().length : 0}`)
+    .join("|");
+
+  const dashboardTourBookingContext: DashboardTourBookingContext | null = useMemo(() => {
+    if (upcomingConfirmedBookings.length === 0) {
+      return null;
+    }
+    return {
+      hasUpcomingConfirmed: true,
+      hasUpcomingMeetLink: upcomingConfirmedBookings.some(
+        (b) => typeof b.joinUrl === "string" && b.joinUrl.trim().length > 0
+      )
+    };
+  }, [upcomingTourDependency]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    const mq = window.matchMedia("(max-width: 680px)");
+    const sync = () => setSessionRnLayout(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    meetHintHandledRef.current = false;
+  }, [props.state.session?.id]);
+
+  useEffect(() => {
+    if (meetHintHandledRef.current) {
+      return undefined;
+    }
+    if (searchParams.get("meet_hint") !== "1") {
+      return undefined;
+    }
+    meetHintHandledRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("meet_hint");
+    setSearchParams(next, { replace: true });
+    setMeetJoinHighlight(true);
+    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 14000);
+    return () => window.clearTimeout(tid);
+  }, [searchParams, setSearchParams]);
 
   const dashboardIntroTitle = t(props.language, {
     es: "Gestioná tu bienestar desde acá",
@@ -470,15 +547,30 @@ export function DashboardPage(props: {
         <div className="hero-title-wrap dashboard-home-hero-intro-aside">
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
           <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
-          {hasAssignedProfessional && defaultPackagePlan ? (
+          {(hasAssignedProfessional && defaultPackagePlan) || showGoogleCalendarCta ? (
             <div className="dashboard-hero-purchase-row">
-              <button
-                className="sessions-hero-buy-button dashboard-hero-buy-button"
-                type="button"
-                onClick={() => setAcquireSessionsModalOpen(true)}
-              >
-                {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
-              </button>
+              {hasAssignedProfessional && defaultPackagePlan ? (
+                <button
+                  className="sessions-hero-buy-button dashboard-hero-buy-button"
+                  type="button"
+                  onClick={() => setAcquireSessionsModalOpen(true)}
+                >
+                  {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
+                </button>
+              ) : null}
+              {showGoogleCalendarCta ? (
+                <button
+                  type="button"
+                  className="dashboard-hero-google-calendar-button"
+                  onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+                >
+                  {t(props.language, {
+                    es: "Conectá Google Calendar",
+                    en: "Connect Google Calendar",
+                    pt: "Conectar o Google Calendar"
+                  })}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -712,6 +804,8 @@ export function DashboardPage(props: {
                 {upcomingConfirmedBookings.slice(0, 3).map((booking) => {
                   const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
                   const canReschedule = canPatientRescheduleBooking(booking.startsAt);
+                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
+                  const joinTourTarget = Boolean(joinUrl && firstMeetBookingId === booking.id);
                   return (
                     <article
                       className="session-management-card session-management-card-clickable"
@@ -767,6 +861,26 @@ export function DashboardPage(props: {
                           </div>
                         ) : (
                           <div className="session-management-actions">
+                            {joinUrl ? (
+                              <a
+                                className={`session-detail-button session-management-join-link${
+                                  meetJoinHighlight && joinTourTarget && !sessionRnLayout ? " patient-join-meet--pulse" : ""
+                                }`}
+                                data-tour={joinTourTarget && !sessionRnLayout ? "patient-join-first-meet" : undefined}
+                                href={joinUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                              >
+                                {t(props.language, {
+                                  es: "Entrar a la sesión",
+                                  en: "Join session",
+                                  pt: "Entrar na sessao"
+                                })}
+                              </a>
+                            ) : null}
                             <button
                               type="button"
                               className="icon-only"
@@ -1001,7 +1115,7 @@ export function DashboardPage(props: {
 
       {hasAssignedProfessional && packagePlans.length > 0 ? (
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
-          <div className="session-booking-panel-head">
+          <div className={`session-booking-panel-head${showGoogleCalendarCta ? " session-booking-panel-head--split" : ""}`}>
             <div>
               <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
               <p>
@@ -1012,6 +1126,19 @@ export function DashboardPage(props: {
                 })}
               </p>
             </div>
+            {showGoogleCalendarCta ? (
+              <button
+                type="button"
+                className="dashboard-package-google-calendar-button"
+                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+              >
+                {t(props.language, {
+                  es: "Conectá Google Calendar",
+                  en: "Connect Google Calendar",
+                  pt: "Conectar o Google Calendar"
+                })}
+              </button>
+            ) : null}
           </div>
           <div className="deal-grid sessions-package-options-grid">
             {packagePlans.slice(0, 3).map((plan) => {
@@ -1265,6 +1392,22 @@ export function DashboardPage(props: {
             </div>
           </div>
 
+          {showGoogleCalendarCta ? (
+            <div className="dashboard-rn-google-cta-wrap">
+              <button
+                type="button"
+                className="dashboard-rn-google-calendar-button"
+                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+              >
+                {t(props.language, {
+                  es: "Conectá Google Calendar",
+                  en: "Connect Google Calendar",
+                  pt: "Conectar o Google Calendar"
+                })}
+              </button>
+            </div>
+          ) : null}
+
           <section className="dashboard-rn-section" data-tour="patient-tour-bookings-rn">
             <div className="dashboard-rn-section-head">
               <h2 className="dashboard-rn-section-title">
@@ -1303,7 +1446,10 @@ export function DashboardPage(props: {
               </div>
             ) : (
               <div className="dashboard-rn-session-list">
-                {rnUpcomingSlice.map((booking) => (
+                {rnUpcomingSlice.map((booking) => {
+                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
+                  const joinTourTarget = Boolean(joinUrl && firstMeetBookingId === booking.id);
+                  return (
                   <DashboardRnUpcomingCard
                     key={`rn-${booking.id}`}
                     booking={booking}
@@ -1313,8 +1459,11 @@ export function DashboardPage(props: {
                     language={props.language}
                     onImageFallback={props.onImageFallback}
                     onOpenBookingDetail={props.onOpenBookingDetail}
+                    dataTourMeetJoin={joinTourTarget && sessionRnLayout}
+                    meetJoinPulse={meetJoinHighlight && joinTourTarget && sessionRnLayout}
                   />
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1487,6 +1636,7 @@ export function DashboardPage(props: {
         language={props.language}
         sessionUserId={props.state.session?.id ?? null}
         suppressTour={assignProModalOpen || acquireSessionsModalOpen || trialModalOpen}
+        bookingContext={dashboardTourBookingContext}
       />
     </div>
   );

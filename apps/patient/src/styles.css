@@ -196,6 +196,18 @@ ul {
   color: #4b5f80;
 }
 
+.calendar-consent-body .calendar-consent-meet-hint {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #312e81;
+  background: linear-gradient(125deg, rgba(99, 102, 241, 0.09) 0%, rgba(139, 92, 246, 0.06) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 12px;
+}
+
 .calendar-consent-body .calendar-consent-error {
   margin: 0;
   max-width: 52ch;
@@ -6225,6 +6237,34 @@ button.sessions-balance {
   color: #58667e;
 }
 
+.session-booking-panel-head--split {
+  align-items: flex-start;
+}
+
+.dashboard-package-google-calendar-button {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(95, 68, 235, 0.4);
+  background: #fff;
+  color: #4f3cd2;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dashboard-package-google-calendar-button:hover {
+  background: rgba(245, 243, 255, 0.95);
+  border-color: rgba(95, 68, 235, 0.55);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.1);
+}
+
 .session-booking-timezone {
   border: 1px solid #dbe1f0;
   border-radius: 999px;
@@ -10238,9 +10278,67 @@ button.sessions-balance {
 .patient-dashboard-home .dashboard-hero-purchase-row {
   display: flex;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 14px;
   margin-top: auto;
   margin-bottom: 0;
   padding-top: 14px;
+}
+
+.patient-dashboard-home .dashboard-hero-google-calendar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.45);
+  background: rgba(255, 255, 255, 0.92);
+  color: #4f3cd2;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.patient-dashboard-home .dashboard-hero-google-calendar-button:hover {
+  background: rgba(245, 243, 255, 0.98);
+  border-color: rgba(95, 68, 235, 0.65);
+  box-shadow: 0 6px 18px rgba(95, 68, 235, 0.12);
+}
+
+.patient-dashboard-home .dashboard-hero-google-calendar-button:focus-visible {
+  outline: 2px solid rgba(109, 86, 255, 0.55);
+  outline-offset: 2px;
+}
+
+@keyframes patient-join-meet-pulse-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(95, 68, 235, 0.28),
+      0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(95, 68, 235, 0.12),
+      0 8px 26px rgba(95, 68, 235, 0.22);
+  }
+}
+
+.patient-join-meet--pulse {
+  animation: patient-join-meet-pulse-glow 1.9s ease-in-out infinite;
+}
+
+.patient-dashboard-home .session-management-join-link {
+  text-decoration: none;
+  margin-right: 6px;
 }
 
 .patient-dashboard-home .hero-title-wrap {
@@ -10621,6 +10719,32 @@ button.sessions-balance {
       0 1px 0 rgba(255, 255, 255, 0.9) inset;
     backdrop-filter: blur(18px) saturate(1.25);
     -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  }
+
+  .patient-dashboard-home .dashboard-rn-google-cta-wrap {
+    margin: 0 2px 14px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-google-calendar-button {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(95, 68, 235, 0.38);
+    background: rgba(255, 255, 255, 0.88);
+    color: #4f3cd2;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .patient-dashboard-home .dashboard-rn-google-calendar-button:hover {
+    background: rgba(245, 243, 255, 0.96);
+    border-color: rgba(95, 68, 235, 0.52);
+    box-shadow: 0 6px 18px rgba(95, 68, 235, 0.1);
   }
 
   .patient-dashboard-home .dashboard-rn-toolbar-inner {

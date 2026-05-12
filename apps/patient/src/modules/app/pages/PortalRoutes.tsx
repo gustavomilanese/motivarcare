@@ -134,6 +134,8 @@ export function PortalRoutes(props: {
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
   onBookingSelectProfessional: (professionalId: string) => void;
+  showPatientGoogleCalendarReconnectCta?: boolean;
+  onOpenPatientGoogleCalendarConnect?: () => void;
 }) {
   const startPackagePurchase = (plan: PackagePlan) => {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
@@ -173,6 +175,8 @@ export function PortalRoutes(props: {
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
+                  showPatientGoogleCalendarReconnectCta={props.showPatientGoogleCalendarReconnectCta}
+                  onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
                 />
               )
         }
