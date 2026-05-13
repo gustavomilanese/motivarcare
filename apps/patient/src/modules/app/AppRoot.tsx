@@ -1200,6 +1200,48 @@ export function App() {
     };
   }, [portalLoginKey]);
 
+  /**
+   * Post-verificación de email (y similar): al volver desde Gmail/Outlook la pestaña puede
+   * quedar congelada o restaurarse desde bfcache sin re-ejecutar efectos; el sync queda colgado
+   * y solo "Cargando tu perfil…" hasta un refresh manual. Re-disparamos sync al volver a visible
+   * o al `pageshow` persistido (throttle corto para no spamear el API).
+   */
+  useEffect(() => {
+    let lastKickAt = 0;
+
+    function kickPortalSyncIfStuck() {
+      if (!portalLoginKey || profileSyncReady) {
+        return;
+      }
+      const now = Date.now();
+      if (now - lastKickAt < 2000) {
+        return;
+      }
+      lastKickAt = now;
+      requestPortalResync();
+    }
+
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        kickPortalSyncIfStuck();
+      }
+    }
+
+    function onVisibility() {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      kickPortalSyncIfStuck();
+    }
+
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [portalLoginKey, profileSyncReady, requestPortalResync]);
+
   useEffect(() => {
     if (!sessionId || !state.authToken) {
       portalLanguageBootstrapRef.current = false;
