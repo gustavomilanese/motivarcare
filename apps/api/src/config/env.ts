@@ -158,7 +158,18 @@ const EnvSchema = z.object({
   /** TTL del counter por sessionId en memoria/Redis (limpieza). 1h por defecto. */
   LANDING_MACA_SESSION_TTL_MS: z.coerce.number().int().positive().default(60 * 60 * 1000),
   /** Secreto Turnstile (registro profesional). Vacío = no se exige token en el API. */
-  TURNSTILE_SECRET_KEY: z.string().optional().default("")
+  TURNSTILE_SECRET_KEY: z.string().optional().default(""),
+  /**
+   * Solo entornos de staging/demos: tras login o registro de un paciente elegible, el API prepara en DB
+   * intake bajo riesgo + asignación al profesional test + reserva futura (mismo baseline que el seed de
+   * Google Verification). Sin UI; deshabilitado por defecto.
+   */
+  REVIEWER_STAGING_PREP_ENABLED: z.coerce.boolean().default(false),
+  /**
+   * Emails adicionales (coma, sin espacios obligatorios) que reciben el prep además de los usuarios con
+   * `isTestUser=true`. Vacío = solo cuentas marcadas como test user.
+   */
+  REVIEWER_STAGING_PREP_EMAIL_ALLOWLIST: z.string().optional().default("")
 });
 
 const parsedEnv = EnvSchema.parse(process.env);

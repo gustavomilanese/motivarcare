@@ -26,6 +26,8 @@ import {
   SECURITY_AUDIT_CATEGORY,
   writeSecurityAuditLog
 } from "../../lib/securityAuditLog.js";
+import { shouldApplyReviewerStagingPatientPrep } from "../../lib/reviewerStagingPrep.js";
+import { prepareStagingPatientForReviewerFlow } from "../../lib/testUsersSeed.js";
 
 const residencyCountryIso2Schema = z
   .string()
@@ -239,6 +241,25 @@ function shapeUserResponse(user: {
     patientProfileId: user.patient?.id ?? null,
     professionalProfileId: user.professional?.id ?? null
   };
+}
+
+async function maybeApplyStagingReviewerPatientPrep(user: {
+  id: string;
+  email: string;
+  role: string;
+  isTestUser: boolean;
+}): Promise<void> {
+  if (user.role !== "PATIENT") {
+    return;
+  }
+  if (!shouldApplyReviewerStagingPatientPrep(user.email, user.isTestUser)) {
+    return;
+  }
+  try {
+    await prepareStagingPatientForReviewerFlow(user.id);
+  } catch (error) {
+    console.error("[auth] reviewer staging patient prep failed", error);
+  }
 }
 
 export const authRouter = Router();
@@ -568,6 +589,15 @@ authRouter.post("/register", async (req, res) => {
     } catch (verificationError) {
       console.error("Could not send email verification link", verificationError);
     }
+  }
+
+  if (created.role === "PATIENT") {
+    await maybeApplyStagingReviewerPatientPrep({
+      id: created.id,
+      email: created.email,
+      role: created.role,
+      isTestUser: created.isTestUser
+    });
   }
 
   const token = createAuthToken({
@@ -1000,6 +1030,15 @@ authRouter.post("/login", async (req, res) => {
 
   if (!user.isActive) {
     return res.status(403).json({ error: "User account is disabled" });
+  }
+
+  if (user.role === "PATIENT") {
+    await maybeApplyStagingReviewerPatientPrep({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isTestUser: user.isTestUser
+    });
   }
 
   const token = createAuthToken({

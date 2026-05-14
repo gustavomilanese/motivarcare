@@ -464,3 +464,62 @@ export async function seedTestUsers(opts: SeedTestUsersOptions = {}): Promise<Se
     passwordPlain: password
   };
 }
+
+/**
+ * Idempotente: alinea **cualquier** paciente (por `userId`) con el mismo estado base que los usuarios
+ * test de Google Verification — intake bajo riesgo, profesional test asignado, reserva CONFIRMED futura,
+ * sin Google Calendar conectado. Pensado para staging con `REVIEWER_STAGING_PREP_ENABLED` (sin UI).
+ */
+export async function prepareStagingPatientForReviewerFlow(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { patient: true }
+  });
+
+  if (!user || user.role !== "PATIENT" || !user.patient) {
+    return;
+  }
+
+  const passwordHash = hashPassword(TEST_USERS_DEFAULT_PASSWORD);
+  const professional = await upsertProfessionalTestUser(passwordHash);
+
+  const nameParts = userNamePartsFromFullNameString(user.fullName?.trim() || "Paciente Reviewer");
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      fullName: nameParts.fullName,
+      firstName: nameParts.firstName,
+      lastName: nameParts.lastName,
+      emailVerified: true,
+      isActive: true
+    }
+  });
+
+  await prisma.patientProfile.update({
+    where: { id: user.patient.id },
+    data: {
+      residencyCountry: PATIENT_RESIDENCY_COUNTRY,
+      market: marketFromResidencyCountry(PATIENT_RESIDENCY_COUNTRY),
+      timezone: "America/Argentina/Buenos_Aires",
+      status: "active"
+    }
+  });
+
+  await prisma.patientIntake.upsert({
+    where: { patientId: user.patient.id },
+    update: {
+      riskLevel: "low",
+      answers: PATIENT_INTAKE_ANSWERS as unknown as Prisma.InputJsonValue
+    },
+    create: {
+      patientId: user.patient.id,
+      riskLevel: "low",
+      answers: PATIENT_INTAKE_ANSWERS as unknown as Prisma.InputJsonValue
+    }
+  });
+
+  await prisma.googleCalendarConnection.deleteMany({ where: { userId: user.id } });
+
+  await assignTestPatientToTestProfessional(user.patient.id, professional.professionalProfileId);
+  await ensureFutureConfirmedBooking(user.patient.id, professional.professionalProfileId);
+}
