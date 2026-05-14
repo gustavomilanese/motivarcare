@@ -505,7 +505,7 @@ export function DashboardPage(props: {
     next.delete("meet_hint");
     setSearchParams(next, { replace: true });
     setMeetJoinHighlight(true);
-    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 24000);
+    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 9000);
     return () => window.clearTimeout(tid);
   }, [searchParams, setSearchParams]);
 
@@ -537,8 +537,8 @@ export function DashboardPage(props: {
       setFirstUpcomingSpotlight(true);
       endSpotlightTimer = window.setTimeout(() => {
         setFirstUpcomingSpotlight(false);
-      }, 18000);
-    }, 1400);
+      }, 6800);
+    }, 700);
 
     return () => {
       cancelled = true;
