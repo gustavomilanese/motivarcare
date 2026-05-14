@@ -16,6 +16,18 @@ export default defineConfig(({ mode }) => {
   const portRaw = fromFiles.PORT ?? process.env.PORT ?? "4000";
   const portN = Number.parseInt(String(portRaw), 10);
   const localApiPort = Number.isFinite(portN) && portN > 0 && portN < 65536 ? portN : 4000;
+
+  const apiProxyTarget = (() => {
+    const fromProcess = (process.env.API_PROXY_TARGET ?? process.env.VITE_API_PROXY_TARGET ?? "").trim();
+    if (fromProcess) {
+      return fromProcess.replace(/\/+$/, "");
+    }
+    const fromFile = (fromFiles.API_PROXY_TARGET ?? fromFiles.VITE_API_PROXY_TARGET ?? "").trim();
+    if (fromFile) {
+      return fromFile.replace(/\/+$/, "");
+    }
+    return `http://127.0.0.1:${localApiPort}`;
+  })();
   /** Vercel/Railway: VITE_API_URL o API_PUBLIC_URL (misma URL pública del API que en el backend). */
   const apiBase = (
     fromFiles.VITE_API_URL ??
@@ -31,7 +43,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: `http://127.0.0.1:${localApiPort}`,
+          target: apiProxyTarget,
           changeOrigin: true
         }
       }
