@@ -388,7 +388,13 @@ function ScheduleMenuIcon(props: { kind: "settings" | "vacation" | "notice" | "w
   );
 }
 
-export function SchedulePage(props: { token: string; language: AppLanguage; mode?: "work" | "settings" }) {
+export function SchedulePage(props: {
+  token: string;
+  language: AppLanguage;
+  mode?: "work" | "settings";
+  /** Cuando el horario semanal vive bajo `/horarios` junto a Disponibilidad (tabs del hub). */
+  inScheduleHub?: boolean;
+}) {
   const navigate = useNavigate();
   const mode = props.mode ?? "work";
   const [view, setView] = useState<"workHours" | "settings" | "vacations" | "bookingNotice" | "sessionRate">(() =>
@@ -1355,17 +1361,25 @@ export function SchedulePage(props: { token: string; language: AppLanguage; mode
   return (
     <div className="pro-grid-stack">
       <section className="pro-card schedule-work-card">
-        <header className="schedule-work-head">
-          <button
-            type="button"
-            className="schedule-back"
-            onClick={() => navigate("/")}
-            aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-          >
-            ‹
-          </button>
+        <header className={`schedule-work-head${props.inScheduleHub ? " schedule-work-head--hub" : ""}`}>
+          {props.inScheduleHub ? null : (
+            <button
+              type="button"
+              className="schedule-back"
+              onClick={() => navigate("/")}
+              aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+            >
+              ‹
+            </button>
+          )}
           <div>
-            <h2>{t(props.language, { es: "Horario de trabajo", en: "Work schedule", pt: "Horario de trabalho" })}</h2>
+            <h2>
+              {t(props.language, {
+                es: "Configurar horarios de trabajo",
+                en: "Configure work hours",
+                pt: "Configurar horários de trabalho"
+              })}
+            </h2>
           </div>
         </header>
 

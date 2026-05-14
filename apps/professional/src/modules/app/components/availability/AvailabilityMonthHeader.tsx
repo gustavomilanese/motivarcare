@@ -24,7 +24,11 @@ export function AvailabilityMonthHeader(props: {
           <NavLink
             to="/horarios"
             className="schedule-back availability-month-back"
-            aria-label={t(props.language, { es: "Volver a Horarios", en: "Back to Schedule", pt: "Voltar para Horario" })}
+            aria-label={t(props.language, {
+              es: "Volver a Mi Agenda",
+              en: "Back to My agenda",
+              pt: "Voltar para Minha agenda"
+            })}
           >
             ‹
           </NavLink>

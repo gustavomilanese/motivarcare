@@ -1,7 +1,7 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PortalSection } from "../types";
 
-export type PortalNavGroup = "agenda" | "patients" | "business";
+export type PortalNavGroup = "patients" | "business";
 
 export type PortalNavItemDef = {
   to: PortalSection;
@@ -11,11 +11,6 @@ export type PortalNavItemDef = {
 
 /** Título visible encima del primer ítem de cada grupo en el sidebar. */
 export const PORTAL_NAV_GROUP_LABELS: Record<PortalNavGroup, LocalizedText> = {
-  agenda: {
-    es: "Tu agenda",
-    en: "Your schedule",
-    pt: "Sua agenda"
-  },
   patients: {
     es: "Tus Pacientes",
     en: "Your patients",
@@ -30,16 +25,7 @@ export const PORTAL_NAV_GROUP_LABELS: Record<PortalNavGroup, LocalizedText> = {
 
 export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
   { to: "/", label: { es: "Dashboard", en: "Dashboard", pt: "Dashboard" } },
-  {
-    to: "/horarios",
-    label: { es: "Horario", en: "Schedule", pt: "Horario" },
-    group: "agenda"
-  },
-  {
-    to: "/disponibilidad",
-    label: { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" },
-    group: "agenda"
-  },
+  { to: "/horarios", label: { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" } },
   {
     to: "/pacientes",
     label: { es: "Pacientes", en: "Patients", pt: "Pacientes" },

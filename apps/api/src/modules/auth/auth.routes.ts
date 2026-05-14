@@ -1044,89 +1044,114 @@ authRouter.post("/login", async (req, res) => {
     });
   }
 
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid credentials payload" });
-  }
-
-  const email = parsed.data.email.trim().toLowerCase();
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      patient: { select: { id: true } },
-      professional: { select: { id: true } }
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid credentials payload" });
     }
-  });
 
-  if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
-    writeSecurityAuditLog({
-      category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_FAILED,
-      message: "Invalid credentials",
-      ip: requestIp,
-      userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
-      metadata: { emailMask: maskEmailHint(email) }
-    });
-    return res.status(401).json({ error: "Invalid credentials" });
-  }
-
-  if (!user.isActive) {
-    return res.status(403).json({ error: "User account is disabled" });
-  }
-
-  if (user.role === "PATIENT") {
-    await maybeApplyStagingReviewerPatientPrep({
-      id: user.id,
-      role: user.role
-    });
-  } else if (user.role === "PROFESSIONAL") {
-    await maybeApplyStagingReviewerProfessionalPrep({
-      id: user.id,
-      role: user.role
-    });
-  }
-
-  let loginResponseUser = user;
-  if (user.role === "PROFESSIONAL" && isReviewerStagingPatientPrepEnabled()) {
-    const refreshed = await prisma.user.findUnique({
-      where: { id: user.id },
+    const email = parsed.data.email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email },
       include: {
         patient: { select: { id: true } },
         professional: { select: { id: true } }
       }
     });
-    if (refreshed) {
-      loginResponseUser = refreshed;
+
+    if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+      writeSecurityAuditLog({
+        category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_FAILED,
+        message: "Invalid credentials",
+        ip: requestIp,
+        userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+        metadata: { emailMask: maskEmailHint(email) }
+      });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
-  }
 
-  const token = createAuthToken({
-    userId: user.id,
-    role: user.role,
-    email: user.email
-  });
+    if (!user.isActive) {
+      return res.status(403).json({ error: "User account is disabled" });
+    }
 
-  const googleCalendarConnectionAtLogin = await prisma.googleCalendarConnection.findUnique({
-    where: { userId: user.id },
-    select: { id: true }
-  });
+    if (user.role === "PATIENT") {
+      await maybeApplyStagingReviewerPatientPrep({
+        id: user.id,
+        role: user.role
+      });
+    } else if (user.role === "PROFESSIONAL") {
+      await maybeApplyStagingReviewerProfessionalPrep({
+        id: user.id,
+        role: user.role
+      });
+    }
 
-  if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
-    await prisma.patientProfile.update({
-      where: { id: user.patient.id },
-      data: {
-        residencyCountry: parsed.data.residencyCountry,
-        market: marketFromResidencyCountry(parsed.data.residencyCountry)
+    let loginResponseUser = user;
+    if (user.role === "PROFESSIONAL" && isReviewerStagingPatientPrepEnabled()) {
+      const refreshed = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          patient: { select: { id: true } },
+          professional: { select: { id: true } }
+        }
+      });
+      if (refreshed) {
+        loginResponseUser = refreshed;
       }
+    }
+
+    const token = createAuthToken({
+      userId: user.id,
+      role: user.role,
+      email: user.email
+    });
+
+    const googleCalendarConnectionAtLogin = await prisma.googleCalendarConnection.findUnique({
+      where: { userId: user.id },
+      select: { id: true }
+    });
+
+    if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
+      await prisma.patientProfile.update({
+        where: { id: user.patient.id },
+        data: {
+          residencyCountry: parsed.data.residencyCountry,
+          market: marketFromResidencyCountry(parsed.data.residencyCountry)
+        }
+      });
+    }
+
+    setNoStoreJsonResponse(res);
+    return res.json({
+      token,
+      user: shapeUserResponse(loginResponseUser),
+      ...authResponseMeta(user.role),
+      googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin)
+    });
+  } catch (err) {
+    console.error("[api] POST /auth/login failed", err);
+    if (res.headersSent) {
+      return;
+    }
+    const devMessage = err instanceof Error ? err.message : String(err);
+    const prismaMeta = err && typeof err === "object" && "meta" in err ? (err as { meta?: unknown }).meta : undefined;
+    return sendApiError({
+      res,
+      status: 500,
+      code: "INTERNAL_ERROR",
+      message: env.NODE_ENV === "development" ? devMessage : "Internal server error",
+      details:
+        env.NODE_ENV === "development"
+          ? {
+              stack: err instanceof Error ? err.stack : undefined,
+              prismaMeta,
+              ...(err && typeof err === "object" && "code" in err && typeof (err as { code: unknown }).code === "string"
+                ? { prismaCode: (err as { code: string }).code }
+                : {})
+            }
+          : undefined
     });
   }
-
-  setNoStoreJsonResponse(res);
-  return res.json({
-    token,
-    user: shapeUserResponse(loginResponseUser),
-    ...authResponseMeta(user.role),
-    googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin)
-  });
 });
 
 authRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {

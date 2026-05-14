@@ -19,6 +19,7 @@ import { IncomePage } from "./IncomePage";
 import { PatientDetailPage } from "./PatientDetailPage";
 import { PatientsPage } from "./PatientsPage";
 import { ProfilePage } from "./ProfilePage";
+import { ScheduleHubPage } from "./ScheduleHubPage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
 import { TreatmentReportsPage } from "./TreatmentReportsPage";
@@ -309,9 +310,12 @@ export function ProfessionalPortal(props: {
         <main className="pro-main-content">
           <Routes>
             <Route path="/" element={<DashboardPage token={props.token} language={props.language} currency={props.currency} user={props.user} />} />
-            <Route path="/horarios" element={<SchedulePage token={props.token} language={props.language} mode="work" />} />
+            <Route path="/horarios" element={<ScheduleHubPage language={props.language} />}>
+              <Route index element={<SchedulePage token={props.token} language={props.language} mode="work" inScheduleHub />} />
+              <Route path="disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
+            </Route>
+            <Route path="/disponibilidad" element={<Navigate to="/horarios/disponibilidad" replace />} />
             <Route path="/agenda/ajustes" element={<SchedulePage token={props.token} language={props.language} mode="settings" />} />
-            <Route path="/disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
             <Route
               path="/pacientes/:patientId"
               element={<PatientDetailPage token={props.token} language={props.language} currency={props.currency} />}

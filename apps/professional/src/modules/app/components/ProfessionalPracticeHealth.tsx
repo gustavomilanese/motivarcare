@@ -5,6 +5,97 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+function yn(language: AppLanguage, value: boolean): string {
+  return value
+    ? t(language, { es: "Sí", en: "Yes", pt: "Sim" })
+    : t(language, { es: "No", en: "No", pt: "Nao" });
+}
+
+type PracticeHealthItem = { id: string; ok: boolean; detail?: Record<string, number | boolean> };
+
+function practiceHealthTooltipLines(language: AppLanguage, item: PracticeHealthItem): string[] {
+  const d = item.detail ?? {};
+  switch (item.id) {
+    case "listing_live":
+      return [
+        `${t(language, { es: "Visible en directorio", en: "Visible in directory", pt: "Visivel no diretorio" })}: ${yn(language, Boolean(d.visible))}`,
+        `${t(language, { es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}: ${yn(language, Boolean(d.hasTitle))}`,
+        `${t(language, { es: "Precio en USD", en: "USD price", pt: "Preco em USD" })}: ${yn(language, Boolean(d.hasPriceUsd))}`,
+        `${t(language, { es: "Precio en ARS", en: "ARS price", pt: "Preco em ARS" })}: ${yn(language, Boolean(d.hasPriceArs))}`
+      ];
+    case "availability_week": {
+      const n = Number(d.slotsNext7Days) || 0;
+      return [
+        t(language, {
+          es: `Franjas libres publicadas en los próximos 7 días: ${n}.`,
+          en: `Published open slots in the next 7 days: ${n}.`,
+          pt: `Janelas livres publicadas nos proximos 7 dias: ${n}.`
+        })
+      ];
+    }
+    case "agenda_active":
+      return [
+        t(language, {
+          es: `Reservas con inicio en los próximos 7 días: ${Number(d.weeklySessions) || 0}.`,
+          en: `Bookings starting in the next 7 days: ${Number(d.weeklySessions) || 0}.`,
+          pt: `Reservas com inicio nos proximos 7 dias: ${Number(d.weeklySessions) || 0}.`
+        }),
+        t(language, {
+          es: `Próximas reservas activas (confirmadas o pedidas): ${Number(d.upcomingBookings) || 0}.`,
+          en: `Upcoming active bookings (confirmed or requested): ${Number(d.upcomingBookings) || 0}.`,
+          pt: `Proximas reservas ativas (confirmadas ou pedidas): ${Number(d.upcomingBookings) || 0}.`
+        })
+      ];
+    case "conversion_sound": {
+      const base = Number(d.nonCancelledBookings) || 0;
+      const rate = Number(d.conversionRate) || 0;
+      const completed = Number(d.completedSessions) || 0;
+      const thr = Number(d.thresholdPercent) || 32;
+      const minBase = Number(d.minBaseForRule) || 4;
+      if (base < minBase) {
+        return [
+          t(language, {
+            es: `Contactos no cancelados: ${base} (con menos de ${minBase} no aplicamos la meta de conversión).`,
+            en: `Non-cancelled touchpoints: ${base} (below ${minBase} we do not apply the conversion target yet).`,
+            pt: `Contatos nao cancelados: ${base} (abaixo de ${minBase} nao aplicamos a meta de conversao).`
+          }),
+          t(language, {
+            es: `Sesiones completadas en el historial: ${completed}.`,
+            en: `Completed sessions in history: ${completed}.`,
+            pt: `Sessoes concluidas no historico: ${completed}.`
+          })
+        ];
+      }
+      return [
+        t(language, {
+          es: `Completadas / base (no canceladas): ${completed} / ${base} → ${rate}%.`,
+          en: `Completed / base (non-cancelled): ${completed} / ${base} → ${rate}%.`,
+          pt: `Concluidas / base (nao canceladas): ${completed} / ${base} → ${rate}%.`
+        }),
+        t(language, {
+          es: `Meta con datos suficientes: ≥ ${thr}%.`,
+          en: `Target with enough data: ≥ ${thr}%.`,
+          pt: `Meta com dados suficientes: ≥ ${thr}%.`
+        })
+      ];
+    }
+    case "active_caseload":
+      return [
+        t(language, {
+          es: `Pacientes en estado «activo» (según historial de reservas): ${Number(d.activePatients) || 0}.`,
+          en: `Patients marked active (from booking history rules): ${Number(d.activePatients) || 0}.`,
+          pt: `Pacientes em estado «ativo» (pelo historico de reservas): ${Number(d.activePatients) || 0}.`
+        })
+      ];
+    default:
+      return [
+        item.ok
+          ? t(language, { es: "Señal en verde.", en: "Signal looks good.", pt: "Sinal ok." })
+          : t(language, { es: "Conviene revisar este punto.", en: "Worth reviewing this item.", pt: "Vale revisar este ponto." })
+      ];
+  }
+}
+
 const GAUGE_R = 17;
 const GAUGE_C = 2 * Math.PI * GAUGE_R;
 
@@ -132,7 +223,7 @@ function variantPillClass(variant: PracticeHealthVariant): string {
 export function ProfessionalPracticeHealth(props: {
   language: AppLanguage;
   variant: PracticeHealthVariant;
-  items: Array<{ id: string; ok: boolean }>;
+  items: PracticeHealthItem[];
 }) {
   const { title, subtitle } = variantCopy(props.language, props.variant);
   return (
@@ -153,14 +244,31 @@ export function ProfessionalPracticeHealth(props: {
         </div>
       </div>
       <div className="pro-practice-health-gauges" role="list" aria-label={t(props.language, { es: "Señales", en: "Signals", pt: "Sinais" })}>
-        {props.items.map((item) => (
-          <div key={item.id} className="pro-signal-gauge-wrap" role="listitem">
-            <PracticeSignalGauge
-              ok={item.ok}
-              label={ITEM_LABELS[item.id] ? t(props.language, ITEM_LABELS[item.id]) : item.id}
-            />
-          </div>
-        ))}
+        {props.items.map((item) => {
+          const tipId = `pro-ph-tip-${item.id}`;
+          const lines = practiceHealthTooltipLines(props.language, item);
+          return (
+            <div
+              key={item.id}
+              className="pro-signal-gauge-wrap pro-signal-gauge-wrap--tippable"
+              role="listitem"
+              tabIndex={0}
+              aria-describedby={tipId}
+            >
+              <PracticeSignalGauge
+                ok={item.ok}
+                label={ITEM_LABELS[item.id] ? t(props.language, ITEM_LABELS[item.id]) : item.id}
+              />
+              <div id={tipId} role="tooltip" className="pro-practice-health-tooltip">
+                <ul className="pro-practice-health-tooltip-list">
+                  {lines.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

@@ -9,7 +9,7 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
-import { PatientStatusSummaryBar, ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
+import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import {
   buildProfessionalStatsQuery,
@@ -87,6 +87,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
+  /** Solo la card «Dinero ejecutado»: ARS (pesos) por defecto; USD = moneda dura del período. */
+  const [executedDisplayCurrency, setExecutedDisplayCurrency] = useState<"ars" | "usd">("ars");
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -225,6 +227,15 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     ?? (props.currency.toLowerCase() === "ars" ? data.revenueStats.grossCents : 0);
   const executedArsCents = data.revenueStats.executedDisplay?.arsGrossCents ?? fallbackArs;
   const executedUsdCents = data.revenueStats.executedDisplay?.usdHardCents ?? 0;
+  const executedAmountLabel =
+    executedDisplayCurrency === "ars"
+      ? formatRecordedFinanceMinor(executedArsCents, "ars", props.language)
+      : formatRecordedFinanceMinor(executedUsdCents, "usd", props.language);
+  const executedCurrencyAria = t(props.language, {
+    es: "Moneda del monto ejecutado",
+    en: "Currency for executed revenue",
+    pt: "Moeda da receita executada"
+  });
 
   const openRescheduleModal = async (booking: UpcomingReservationItem) => {
     setBookingActionError("");
@@ -369,6 +380,17 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const monthAria = t(props.language, { es: "Mes a mostrar", en: "Month to show", pt: "Mes a exibir" });
   const yearAria = t(props.language, { es: "Año a mostrar", en: "Year to show", pt: "Ano a exibir" });
 
+  const executedMoneyTooltip = t(props.language, {
+    es: "Total de Ingreso bruto de sesiones ya realizadas, en el periodo definido en los filtros.",
+    en: "Total gross revenue from sessions already completed, in the period set by the filters above.",
+    pt: "Total de receita bruta de sessoes ja realizadas, no periodo definido nos filtros."
+  });
+  const pendingCollectTooltip = t(props.language, {
+    es: "Total de Ingreso neto a cobrar",
+    en: "Total net revenue to collect",
+    pt: "Total de receita liquida a receber"
+  });
+
   return (
     <div className="pro-grid-stack pro-dashboard-stack">
       {profileSavedNotice ? (
@@ -378,12 +400,12 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       ) : null}
       <div className="pro-dashboard-overview">
         <section
-          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact"
-          aria-labelledby="pro-revenue-heading"
+          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero"
+          aria-labelledby="pro-dashboard-heading"
         >
           <div className="pro-dashboard-revenue-top-row">
             <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
-              <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
+              <h2 id="pro-dashboard-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
                 {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
               </h2>
             </div>
@@ -435,33 +457,45 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
               ) : null}
             </div>
           </div>
-          <div className="pro-executed-revenue pro-executed-revenue--compact">
-            <div className="pro-executed-revenue-main">
-              <span className="pro-executed-revenue-label">
-                {t(props.language, { es: "Dinero ejecutado (ARS)", en: "Executed revenue (ARS)", pt: "Receita executada (ARS)" })}
-              </span>
-              <strong>{formatRecordedFinanceMinor(executedArsCents, "ars", props.language)}</strong>
-              <small>
+
+          <div
+            className="pro-dashboard-kpi-row"
+            role="group"
+            aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}
+          >
+          <div
+            className="pro-dashboard-kpi-tip-wrap pro-dashboard-kpi-tip-wrap--focusable"
+            tabIndex={0}
+            aria-describedby="pro-dashboard-tip-ejecutado"
+          >
+            <article className="pro-kpi-card pro-kpi-card--executed-revenue">
+              <div className="pro-kpi-executed-head">
+                <span className="pro-executed-revenue-label">
+                  {t(props.language, { es: "Dinero ejecutado", en: "Executed revenue", pt: "Receita executada" })}
+                </span>
+                <select
+                  className="pro-dashboard-revenue-control pro-kpi-executed-currency"
+                  aria-label={executedCurrencyAria}
+                  value={executedDisplayCurrency}
+                  onChange={(event) => setExecutedDisplayCurrency(event.target.value as "ars" | "usd")}
+                >
+                  <option value="ars">{t(props.language, { es: "Pesos (ARS)", en: "ARS", pt: "ARS" })}</option>
+                  <option value="usd">{t(props.language, { es: "Dólares (USD)", en: "USD", pt: "USD" })}</option>
+                </select>
+              </div>
+              <strong className="pro-kpi-executed-amount">{executedAmountLabel}</strong>
+              <small className="pro-kpi-executed-meta">
                 {t(props.language, {
                   es: `${data.revenueStats.completedSessions} sesiones en el período`,
                   en: `${data.revenueStats.completedSessions} sessions in period`,
                   pt: `${data.revenueStats.completedSessions} sessoes no periodo`
                 })}
               </small>
+            </article>
+            <div id="pro-dashboard-tip-ejecutado" role="tooltip" className="pro-dashboard-kpi-tooltip">
+              <p>{executedMoneyTooltip}</p>
             </div>
-            <aside
-              className="pro-executed-revenue-side"
-              aria-label={t(props.language, { es: "Moneda dura", en: "Hard currency", pt: "Moeda forte" })}
-            >
-              <div className="pro-executed-revenue-side-row">
-                <span>USD</span>
-                <strong>{formatRecordedFinanceMinor(executedUsdCents, "usd", props.language)}</strong>
-              </div>
-            </aside>
           </div>
-        </section>
-
-        <section className="pro-kpi-grid pro-kpi-grid--dashboard" aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}>
           <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
             <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
             <strong>{data.kpis.sessionsScheduled}</strong>
@@ -472,20 +506,18 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
             <strong>{data.kpis.activePatients}</strong>
             <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
           </NavLink>
-          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
-            <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
-            <strong>{formatMoneyCents(data.kpis.pendingPayoutCents, props.language, props.currency)}</strong>
-            <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
-          </NavLink>
+          <div className="pro-dashboard-kpi-tip-wrap">
+            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos" aria-describedby="pro-dashboard-tip-cobrar">
+              <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
+              <strong>{formatMoneyCents(data.kpis.pendingPayoutCents, props.language, props.currency)}</strong>
+              <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
+            </NavLink>
+            <div id="pro-dashboard-tip-cobrar" role="tooltip" className="pro-dashboard-kpi-tooltip">
+              <p>{pendingCollectTooltip}</p>
+            </div>
+          </div>
+          </div>
         </section>
-
-        {data.patientStatusCounts ? (
-          <PatientStatusSummaryBar
-            language={props.language}
-            counts={data.patientStatusCounts}
-            className="pro-patient-status-summary--dashboard"
-          />
-        ) : null}
       </div>
 
       {data.practiceHealth && data.practiceHealth.items.length > 0 ? (

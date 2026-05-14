@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
 
 const sendMessageSchema = z.object({
@@ -181,6 +183,7 @@ async function ensureThreadsForProfessionalPatients(professionalProfileId: strin
 }
 
 chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -371,6 +374,30 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
       : [];
 
   return res.json({ threads: mapped, availableProfessionalIds });
+  } catch (err) {
+    console.error("[api] GET /chat/threads failed", err);
+    if (res.headersSent) {
+      return;
+    }
+    const devMessage = err instanceof Error ? err.message : String(err);
+    const prismaMeta = err && typeof err === "object" && "meta" in err ? (err as { meta?: unknown }).meta : undefined;
+    return sendApiError({
+      res,
+      status: 500,
+      code: "INTERNAL_ERROR",
+      message: env.NODE_ENV === "development" ? devMessage : "Internal server error",
+      details:
+        env.NODE_ENV === "development"
+          ? {
+              stack: err instanceof Error ? err.stack : undefined,
+              prismaMeta,
+              ...(err && typeof err === "object" && "code" in err && typeof (err as { code: unknown }).code === "string"
+                ? { prismaCode: (err as { code: string }).code }
+                : {})
+            }
+          : undefined
+    });
+  }
 });
 
 chatRouter.post("/threads/by-professional/:professionalId", requireAuth, async (req: AuthenticatedRequest, res) => {

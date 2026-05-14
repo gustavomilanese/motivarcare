@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
+import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
 import {
   ProfessionalReportError,
@@ -184,6 +186,7 @@ export const professionalRouter = Router();
 professionalRouter.use(requireAuth);
 
 professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
+  try {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -394,21 +397,57 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
 
   const weekAheadMs = now.getTime() + 7 * 24 * 60 * 60 * 1000;
   const hasAvailabilityThisWeek = futureSlots.some((slot: { startsAt: Date }) => slot.startsAt.getTime() <= weekAheadMs);
+  const slotsNext7Days = futureSlots.filter(
+    (slot: { startsAt: Date }) => slot.startsAt.getTime() <= weekAheadMs
+  ).length;
+  const listingVisible = Boolean(professionalProfileSnippet?.visible);
+  const listingHasTitle = Boolean(professionalProfileSnippet?.professionalTitle?.trim());
+  const listingHasPriceUsd = professionalProfileSnippet?.sessionPriceUsd != null;
+  const listingHasPriceArs = professionalProfileSnippet?.sessionPriceArs != null;
   const listingLive =
-    Boolean(professionalProfileSnippet?.visible) &&
-    (Boolean(professionalProfileSnippet?.professionalTitle?.trim()) ||
-      professionalProfileSnippet?.sessionPriceUsd != null ||
-      professionalProfileSnippet?.sessionPriceArs != null);
+    listingVisible &&
+    (listingHasTitle || listingHasPriceUsd || listingHasPriceArs);
 
-  const practiceHealthItems: Array<{ id: string; ok: boolean }> = [
-    { id: "listing_live", ok: listingLive },
-    { id: "availability_week", ok: hasAvailabilityThisWeek },
-    { id: "agenda_active", ok: weeklySessionsCount > 0 || upcomingBookingsCount > 0 },
+  const practiceHealthItems: Array<{
+    id: string;
+    ok: boolean;
+    detail: Record<string, number | boolean>;
+  }> = [
+    {
+      id: "listing_live",
+      ok: listingLive,
+      detail: {
+        visible: listingVisible,
+        hasTitle: listingHasTitle,
+        hasPriceUsd: listingHasPriceUsd,
+        hasPriceArs: listingHasPriceArs
+      }
+    },
+    {
+      id: "availability_week",
+      ok: hasAvailabilityThisWeek,
+      detail: { slotsNext7Days }
+    },
+    {
+      id: "agenda_active",
+      ok: weeklySessionsCount > 0 || upcomingBookingsCount > 0,
+      detail: {
+        weeklySessions: weeklySessionsCount,
+        upcomingBookings: upcomingBookingsCount
+      }
+    },
     {
       id: "conversion_sound",
-      ok: conversionBase < 4 ? true : conversionRate >= 32
+      ok: conversionBase < 4 ? true : conversionRate >= 32,
+      detail: {
+        conversionRate,
+        nonCancelledBookings: conversionBase,
+        completedSessions: sessionsCompleted,
+        minBaseForRule: 4,
+        thresholdPercent: 32
+      }
     },
-    { id: "active_caseload", ok: activePatients >= 1 }
+    { id: "active_caseload", ok: activePatients >= 1, detail: { activePatients } }
   ];
   const practiceHealthOkCount = practiceHealthItems.filter((item) => item.ok).length;
   const practiceHealthVariant =
@@ -475,6 +514,30 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       joinUrl: booking.videoSession?.joinUrlProfessional ?? null
     }))
   });
+  } catch (err) {
+    console.error("[api] GET /professional/dashboard failed", err);
+    if (res.headersSent) {
+      return;
+    }
+    const devMessage = err instanceof Error ? err.message : String(err);
+    const prismaMeta = err && typeof err === "object" && "meta" in err ? (err as { meta?: unknown }).meta : undefined;
+    return sendApiError({
+      res,
+      status: 500,
+      code: "INTERNAL_ERROR",
+      message: env.NODE_ENV === "development" ? devMessage : "Internal server error",
+      details:
+        env.NODE_ENV === "development"
+          ? {
+              stack: err instanceof Error ? err.stack : undefined,
+              prismaMeta,
+              ...(err && typeof err === "object" && "code" in err && typeof (err as { code: unknown }).code === "string"
+                ? { prismaCode: (err as { code: string }).code }
+                : {})
+            }
+          : undefined
+    });
+  }
 });
 
 professionalRouter.get("/patients", async (req: AuthenticatedRequest, res) => {

@@ -5,7 +5,7 @@ export type PortalSection =
   | "/"
   | "/agenda"
   | "/horarios"
-  | "/disponibilidad"
+  | "/horarios/disponibilidad"
   | "/agenda/ajustes"
   | "/pacientes"
   | "/chat"
@@ -69,7 +69,7 @@ export interface DashboardResponse {
   };
   practiceHealth?: {
     variant: PracticeHealthVariant;
-    items: Array<{ id: string; ok: boolean }>;
+    items: Array<{ id: string; ok: boolean; detail?: Record<string, number | boolean> }>;
   };
   /** Sesiones COMPLETED con filas en finance: precios efectivos por paquete / lista. */
   revenueStats: {

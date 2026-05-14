@@ -4292,6 +4292,10 @@ ul {
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+.pro-card.pro-dashboard-revenue--floating.pro-dashboard-hero {
+  overflow: visible;
+}
+
 .pro-dashboard-revenue-head--compact {
   gap: 0;
   margin-bottom: 2px;
@@ -6007,6 +6011,10 @@ button.schedule-home-item {
   gap: 12px;
 }
 
+.schedule-work-head--hub {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .schedule-work-head p {
   margin-top: 4px;
   color: #6a7384;
@@ -6028,6 +6036,50 @@ button.schedule-home-item {
   line-height: 1;
   padding: 0;
   cursor: pointer;
+}
+
+/* Hub: configurar horarios + disponibilidad bajo /horarios */
+.pro-schedule-hub {
+  display: grid;
+  gap: 16px;
+}
+
+.pro-schedule-hub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 32px; /* 2× el gap del hub (16px): más aire respecto al header */
+}
+
+.pro-schedule-hub-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pro-schedule-hub-tab:hover {
+  border-color: rgba(95, 68, 235, 0.35);
+  color: #1e293b;
+}
+
+.pro-schedule-hub-tab.active {
+  border-color: rgba(95, 68, 235, 0.45);
+  color: #312e81;
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.12);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%);
 }
 
 .schedule-work-days {
@@ -11457,6 +11509,169 @@ button:disabled {
   gap: 12px;
 }
 
+/* Una fila: dinero ejecutado (ARS/USD) + 3 KPIs enlazables */
+.pro-dashboard-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.pro-dashboard-kpi-row > .pro-kpi-card,
+.pro-dashboard-kpi-row > .pro-kpi-card-link,
+.pro-dashboard-kpi-row > .pro-dashboard-kpi-tip-wrap {
+  min-height: 0;
+}
+
+.pro-dashboard-kpi-tip-wrap {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  align-items: stretch;
+  cursor: help;
+  overflow: visible;
+}
+
+.pro-dashboard-kpi-tip-wrap--focusable {
+  outline: none;
+}
+
+.pro-dashboard-kpi-tip-wrap--focusable:focus-visible {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  border-radius: 16px;
+}
+
+.pro-dashboard-kpi-tip-wrap > .pro-kpi-card,
+.pro-dashboard-kpi-tip-wrap > .pro-kpi-card-link {
+  min-height: 0;
+  height: 100%;
+}
+
+/* Tooltip bajo la card; compacto, alto contraste */
+.pro-dashboard-kpi-tooltip {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 10px);
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: min(100%, 220px);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    visibility 0.16s ease,
+    transform 0.16s ease;
+}
+
+.pro-dashboard-kpi-tip-wrap:last-child .pro-dashboard-kpi-tooltip {
+  left: auto;
+  right: 0;
+  transform: translateY(-4px);
+}
+
+/* Más específico que .pro-card p (evita el azul #304257 en el texto del tooltip) */
+.pro-card .pro-dashboard-kpi-tooltip,
+.pro-card .pro-dashboard-kpi-tooltip p {
+  margin: 0;
+  color: #ffffff;
+}
+
+.pro-dashboard-kpi-tip-wrap:hover .pro-dashboard-kpi-tooltip,
+.pro-dashboard-kpi-tip-wrap:focus-within .pro-dashboard-kpi-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pro-dashboard-kpi-tip-wrap:last-child:hover .pro-dashboard-kpi-tooltip,
+.pro-dashboard-kpi-tip-wrap:last-child:focus-within .pro-dashboard-kpi-tooltip {
+  transform: translateY(0);
+}
+
+.pro-kpi-card--executed-revenue {
+  margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(95, 68, 235, 0.1), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7f7fc 100%);
+  border: 1px solid #e1e3ec;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.pro-kpi-executed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pro-kpi-executed-head .pro-executed-revenue-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-kpi-executed-currency {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-radius: 10px;
+  max-width: min(100%, 160px);
+}
+
+.pro-kpi-executed-amount {
+  margin: 0;
+  font-size: clamp(22px, 3.2vw, 28px);
+  line-height: 1.05;
+  font-weight: 600;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-kpi-executed-meta {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pro-dashboard-kpi-row .pro-kpi-card-link {
+  min-height: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.pro-dashboard-kpi-row .pro-kpi-card-link strong {
+  font-size: 22px;
+}
+
+/* Título «Dashboard» + período + 4 KPIs en la misma card */
+.pro-dashboard-hero .pro-dashboard-kpi-row {
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+}
+
 .pro-dashboard-revenue--compact.pro-dashboard-revenue--floating {
   gap: 10px;
   padding: clamp(12px, 2.8vw, 18px) clamp(12px, 2.6vw, 20px) clamp(12px, 2.8vw, 16px);
@@ -11480,55 +11695,14 @@ button:disabled {
   font-size: 14px;
 }
 
-.pro-kpi-grid--dashboard {
-  gap: 10px;
-}
-
-.pro-kpi-grid--dashboard .pro-kpi-card {
-  min-height: 72px;
-  padding: 10px 12px;
-  border-radius: 14px;
-}
-
-.pro-kpi-grid--dashboard .pro-kpi-card strong {
-  font-size: 22px;
-}
-
-.pro-patient-status-summary--dashboard {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-.pro-patient-status-summary--dashboard .pro-patient-status-pill {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-  min-height: 64px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%);
-  border: 1px solid #e8ecf4;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-}
-
-.pro-patient-status-summary--dashboard .pro-patient-status-pill strong {
-  font-size: 1.35rem;
-}
-
-@media (max-width: 720px) {
-  .pro-patient-status-summary--dashboard {
+@media (max-width: 1100px) {
+  .pro-dashboard-kpi-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 420px) {
-  .pro-kpi-grid--dashboard {
+@media (max-width: 520px) {
+  .pro-dashboard-kpi-row {
     grid-template-columns: 1fr;
   }
 }
@@ -11591,6 +11765,68 @@ button:disabled {
 
 .pro-signal-gauge-wrap {
   min-width: 0;
+}
+
+.pro-signal-gauge-wrap--tippable {
+  position: relative;
+  cursor: help;
+  outline: none;
+  border-radius: 16px;
+}
+
+.pro-signal-gauge-wrap--tippable:focus-visible {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45);
+}
+
+.pro-practice-health-tooltip {
+  position: absolute;
+  z-index: 50;
+  left: 50%;
+  bottom: calc(100% - 4px);
+  transform: translateX(-50%) translateY(6px);
+  min-width: 200px;
+  max-width: min(94vw, 300px);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.28),
+    0 2px 8px rgba(15, 23, 42, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease,
+    visibility 0.14s ease,
+    transform 0.14s ease;
+}
+
+.pro-practice-health-tooltip-list {
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: disc;
+  display: grid;
+  gap: 4px;
+}
+
+.pro-practice-health-tooltip-list li::marker {
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.pro-signal-gauge-wrap--tippable:hover .pro-practice-health-tooltip,
+.pro-signal-gauge-wrap--tippable:focus-within .pro-practice-health-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pro-card.pro-practice-health {
+  overflow: visible;
 }
 
 .pro-signal-gauge {
