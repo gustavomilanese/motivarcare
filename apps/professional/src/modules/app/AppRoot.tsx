@@ -43,6 +43,8 @@ import {
   USER_KEY,
   apiRequest,
   backupProfessionalLocalStorageForCalendarOAuth,
+  peekProfessionalAuthCalendarConnectedSession,
+  rememberProfessionalAuthCalendarConnectedSession,
   restoreProfessionalPortalAfterCalendarOAuth,
   setProfessionalApiUnauthorizedHandler
 } from "./services/api";
@@ -262,6 +264,15 @@ export function App() {
   }, [navigate]);
 
   const handleAuthSuccess = (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => {
+    const uid = String(params.user.id).trim();
+    const nextDismissed =
+      uid.length > 0
+        ? readDismissedProfessionalCalendarPromptUsers().filter((id) => id !== uid)
+        : readDismissedProfessionalCalendarPromptUsers();
+    writeDismissedProfessionalCalendarPromptUsers(nextDismissed);
+    setCalendarPromptDismissedUserIds(nextDismissed);
+    setGoogleCalendarConnected(null);
+    setShowCalendarOnboarding(false);
     window.localStorage.setItem(TOKEN_KEY, params.token);
     window.localStorage.setItem(USER_KEY, JSON.stringify(params.user));
     persistEmailVerificationRequired(params.emailVerificationRequired);
@@ -422,6 +433,21 @@ export function App() {
         setEmailVerificationRequired(response.emailVerificationRequired);
         persistEmailVerificationRequired(response.emailVerificationRequired);
         if (typeof response.googleCalendarConnected === "boolean") {
+          const calUid = String(nextUser.id).trim();
+          if (calUid.length > 0) {
+            const prevStored = peekProfessionalAuthCalendarConnectedSession(calUid);
+            rememberProfessionalAuthCalendarConnectedSession(calUid, response.googleCalendarConnected);
+            if (prevStored === true && response.googleCalendarConnected === false) {
+              setCalendarPromptDismissedUserIds((ids) => {
+                if (!ids.includes(calUid)) {
+                  return ids;
+                }
+                const nextIds = ids.filter((id) => id !== calUid);
+                writeDismissedProfessionalCalendarPromptUsers(nextIds);
+                return nextIds;
+              });
+            }
+          }
           setGoogleCalendarConnected(response.googleCalendarConnected);
         }
       } catch (error) {

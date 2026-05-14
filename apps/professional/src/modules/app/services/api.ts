@@ -74,6 +74,40 @@ export const PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY = "therapy_pro_gcal_oau
 /** Backup de sesión antes del redirect OAuth (Google puede dejar localStorage vacío al volver). */
 export const PROFESSIONAL_CALENDAR_OAUTH_LS_BACKUP_KEY = "therapy_pro_calendar_oauth_ls_backup";
 
+const PRO_AUTH_CALENDAR_LAST_CONNECTED_SESSION_KEY = "motivarcare.pro.authCalendarConnected.v1.";
+
+/** Último `googleCalendarConnected` de GET /auth/me por usuario (misma pestaña). Paridad con portal paciente. */
+export function peekProfessionalAuthCalendarConnectedSession(userId: string): boolean | null {
+  const uid = userId.trim();
+  if (!uid) {
+    return null;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(PRO_AUTH_CALENDAR_LAST_CONNECTED_SESSION_KEY + uid);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function rememberProfessionalAuthCalendarConnectedSession(userId: string, connected: boolean): void {
+  const uid = userId.trim();
+  if (!uid) {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(PRO_AUTH_CALENDAR_LAST_CONNECTED_SESSION_KEY + uid, connected ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
 export function backupProfessionalLocalStorageForCalendarOAuth(): void {
   try {
     const tok = window.localStorage.getItem(TOKEN_KEY);

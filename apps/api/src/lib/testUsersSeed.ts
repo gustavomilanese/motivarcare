@@ -523,3 +523,28 @@ export async function prepareStagingPatientForReviewerFlow(userId: string): Prom
   await assignTestPatientToTestProfessional(user.patient.id, professional.professionalProfileId);
   await ensureFutureConfirmedBooking(user.patient.id, professional.professionalProfileId);
 }
+
+/**
+ * Staging con `REVIEWER_STAGING_PREP_ENABLED`: deja al profesional listo para el flujo reviewer
+ * (email verificado, sin Google Calendar en DB). Idempotente.
+ */
+export async function prepareStagingProfessionalForReviewerFlow(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { professional: true }
+  });
+
+  if (!user || user.role !== "PROFESSIONAL" || !user.professional) {
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: true,
+      isActive: true
+    }
+  });
+
+  await prisma.googleCalendarConnection.deleteMany({ where: { userId: user.id } });
+}

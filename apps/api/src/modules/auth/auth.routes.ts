@@ -27,7 +27,7 @@ import {
   writeSecurityAuditLog
 } from "../../lib/securityAuditLog.js";
 import { isReviewerStagingPatientPrepEnabled } from "../../lib/reviewerStagingPrep.js";
-import { prepareStagingPatientForReviewerFlow } from "../../lib/testUsersSeed.js";
+import { prepareStagingPatientForReviewerFlow, prepareStagingProfessionalForReviewerFlow } from "../../lib/testUsersSeed.js";
 
 const residencyCountryIso2Schema = z
   .string()
@@ -254,6 +254,20 @@ async function maybeApplyStagingReviewerPatientPrep(user: { id: string; role: st
     await prepareStagingPatientForReviewerFlow(user.id);
   } catch (error) {
     console.error("[auth] reviewer staging patient prep failed", error);
+  }
+}
+
+async function maybeApplyStagingReviewerProfessionalPrep(user: { id: string; role: string }): Promise<void> {
+  if (user.role !== "PROFESSIONAL") {
+    return;
+  }
+  if (!isReviewerStagingPatientPrepEnabled()) {
+    return;
+  }
+  try {
+    await prepareStagingProfessionalForReviewerFlow(user.id);
+  } catch (error) {
+    console.error("[auth] reviewer staging professional prep failed", error);
   }
 }
 
@@ -570,10 +584,15 @@ authRouter.post("/register", async (req, res) => {
       id: created.id,
       role: created.role
     });
+  } else if (created.role === "PROFESSIONAL") {
+    await maybeApplyStagingReviewerProfessionalPrep({
+      id: created.id,
+      role: created.role
+    });
   }
 
   const userForResponse =
-    created.role === "PATIENT"
+    created.role === "PATIENT" || created.role === "PROFESSIONAL"
       ? await prisma.user.findUnique({
           where: { id: created.id },
           include: {
@@ -1047,6 +1066,25 @@ authRouter.post("/login", async (req, res) => {
       id: user.id,
       role: user.role
     });
+  } else if (user.role === "PROFESSIONAL") {
+    await maybeApplyStagingReviewerProfessionalPrep({
+      id: user.id,
+      role: user.role
+    });
+  }
+
+  let loginResponseUser = user;
+  if (user.role === "PROFESSIONAL" && isReviewerStagingPatientPrepEnabled()) {
+    const refreshed = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        patient: { select: { id: true } },
+        professional: { select: { id: true } }
+      }
+    });
+    if (refreshed) {
+      loginResponseUser = refreshed;
+    }
   }
 
   const token = createAuthToken({
@@ -1067,7 +1105,7 @@ authRouter.post("/login", async (req, res) => {
 
   return res.json({
     token,
-    user: shapeUserResponse(user),
+    user: shapeUserResponse(loginResponseUser),
     ...authResponseMeta(user.role)
   });
 });
