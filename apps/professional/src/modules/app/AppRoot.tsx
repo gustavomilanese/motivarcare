@@ -43,7 +43,6 @@ import {
   USER_KEY,
   apiRequest,
   backupProfessionalLocalStorageForCalendarOAuth,
-  peekProfessionalAuthCalendarConnectedSession,
   rememberProfessionalAuthCalendarConnectedSession,
   restoreProfessionalPortalAfterCalendarOAuth,
   setProfessionalApiUnauthorizedHandler
@@ -432,24 +431,28 @@ export function App() {
         setUser(nextUser);
         setEmailVerificationRequired(response.emailVerificationRequired);
         persistEmailVerificationRequired(response.emailVerificationRequired);
-        if (typeof response.googleCalendarConnected === "boolean") {
-          const calUid = String(nextUser.id).trim();
-          if (calUid.length > 0) {
-            const prevStored = peekProfessionalAuthCalendarConnectedSession(calUid);
-            rememberProfessionalAuthCalendarConnectedSession(calUid, response.googleCalendarConnected);
-            if (prevStored === true && response.googleCalendarConnected === false) {
-              setCalendarPromptDismissedUserIds((ids) => {
-                if (!ids.includes(calUid)) {
-                  return ids;
-                }
-                const nextIds = ids.filter((id) => id !== calUid);
-                writeDismissedProfessionalCalendarPromptUsers(nextIds);
-                return nextIds;
-              });
-            }
+
+        const calConnected =
+          typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : false;
+        const calUid = String(nextUser.id).trim();
+        if (calUid.length > 0) {
+          rememberProfessionalAuthCalendarConnectedSession(calUid, calConnected);
+          /**
+           * Sin Calendar en servidor: limpiar dismiss para que el modal pueda mostrarse
+           * (login fresco, sesión desde localStorage, o prep staging que borró la conexión).
+           */
+          if (!calConnected) {
+            setCalendarPromptDismissedUserIds((ids) => {
+              if (!ids.includes(calUid)) {
+                return ids;
+              }
+              const nextIds = ids.filter((id) => id !== calUid);
+              writeDismissedProfessionalCalendarPromptUsers(nextIds);
+              return nextIds;
+            });
           }
-          setGoogleCalendarConnected(response.googleCalendarConnected);
         }
+        setGoogleCalendarConnected(calConnected);
       } catch (error) {
         console.error("Could not sync professional auth state", error);
       } finally {
