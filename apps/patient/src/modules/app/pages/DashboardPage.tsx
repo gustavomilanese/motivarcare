@@ -505,7 +505,7 @@ export function DashboardPage(props: {
     next.delete("meet_hint");
     setSearchParams(next, { replace: true });
     setMeetJoinHighlight(true);
-    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 14000);
+    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 24000);
     return () => window.clearTimeout(tid);
   }, [searchParams, setSearchParams]);
 
@@ -537,7 +537,7 @@ export function DashboardPage(props: {
       setFirstUpcomingSpotlight(true);
       endSpotlightTimer = window.setTimeout(() => {
         setFirstUpcomingSpotlight(false);
-      }, 12000);
+      }, 18000);
     }, 1400);
 
     return () => {
@@ -561,6 +561,8 @@ export function DashboardPage(props: {
       setGoogleCalendarCtaPulse(false);
     };
   }, [showGoogleCalendarCta]);
+
+  const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
 
   const dashboardIntroTitle = t(props.language, {
     es: "Gestioná tu bienestar desde acá",
@@ -831,7 +833,7 @@ export function DashboardPage(props: {
 
       <section
         className={`content-card booking-session-card booking-card-minimal sessions-confirmed-panel${
-          firstUpcomingSpotlight ? " patient-dashboard-upcoming-spotlight" : ""
+          upcomingSpotlightRing ? " patient-dashboard-upcoming-spotlight" : ""
         }`}
         data-tour="patient-tour-bookings"
       >
@@ -1475,7 +1477,7 @@ export function DashboardPage(props: {
           ) : null}
 
           <section
-            className={`dashboard-rn-section${firstUpcomingSpotlight ? " patient-dashboard-upcoming-spotlight" : ""}`}
+            className={`dashboard-rn-section${upcomingSpotlightRing ? " patient-dashboard-upcoming-spotlight" : ""}`}
             data-tour="patient-tour-bookings-rn"
           >
             <div className="dashboard-rn-section-head">
