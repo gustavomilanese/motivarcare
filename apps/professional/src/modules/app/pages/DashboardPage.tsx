@@ -376,96 +376,117 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           {profileSavedNotice}
         </p>
       ) : null}
-      <section
-        className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating"
-        aria-labelledby="pro-revenue-heading"
-      >
-        <div className="pro-dashboard-revenue-top-row">
-          <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
-            <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
-              {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-            </h2>
-          </div>
-          <div
-            className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
-            role="group"
-            aria-label={periodGroupLabel}
-          >
-          <select
-            className="pro-dashboard-revenue-control"
-            value={revenuePreset}
-            aria-label={presetAria}
-            onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
-          >
-            <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
-            <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
-            <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
-            <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
-            <option value="all">{t(props.language, { es: "Todo", en: "All", pt: "Todo" })}</option>
-          </select>
-          {revenuePreset === "day" || revenuePreset === "week" ? (
-            <input
-              className="pro-dashboard-revenue-control"
-              type="date"
-              value={revenueDay}
-              aria-label={dateAria}
-              onChange={(event) => setRevenueDay(event.target.value)}
-            />
-          ) : null}
-          {revenuePreset === "month" ? (
-            <input
-              className="pro-dashboard-revenue-control"
-              type="month"
-              value={revenueMonth}
-              aria-label={monthAria}
-              onChange={(event) => setRevenueMonth(event.target.value)}
-            />
-          ) : null}
-          {revenuePreset === "year" ? (
-            <input
-              className="pro-dashboard-revenue-control pro-dashboard-revenue-control--year"
-              type="number"
-              min={2020}
-              max={2035}
-              value={revenueYear}
-              aria-label={yearAria}
-              onChange={(event) => setRevenueYear(event.target.value)}
-            />
-          ) : null}
-          </div>
-        </div>
-        <div className="pro-executed-revenue">
-          <div className="pro-executed-revenue-main">
-            <span className="pro-executed-revenue-label">
-              {t(props.language, { es: "Dinero ejecutado (ARS)", en: "Executed revenue (ARS)", pt: "Receita executada (ARS)" })}
-            </span>
-            <strong>{formatRecordedFinanceMinor(executedArsCents, "ars", props.language)}</strong>
-            <small>
-              {t(props.language, {
-                es: `${data.revenueStats.completedSessions} sesiones en el período`,
-                en: `${data.revenueStats.completedSessions} sessions in period`,
-                pt: `${data.revenueStats.completedSessions} sessoes no periodo`
-              })}
-            </small>
-          </div>
-          <aside
-            className="pro-executed-revenue-side"
-            aria-label={t(props.language, { es: "Moneda dura", en: "Hard currency", pt: "Moeda forte" })}
-          >
-            <div className="pro-executed-revenue-side-row">
-              <span>USD</span>
-              <strong>{formatRecordedFinanceMinor(executedUsdCents, "usd", props.language)}</strong>
+      <div className="pro-dashboard-overview">
+        <section
+          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact"
+          aria-labelledby="pro-revenue-heading"
+        >
+          <div className="pro-dashboard-revenue-top-row">
+            <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
+              <h2 id="pro-revenue-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
+                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+              </h2>
             </div>
-          </aside>
-        </div>
-        <p className="pro-dashboard-revenue-microhint">
-          {t(props.language, {
-            es: "El USD es el equivalente en moneda dura según el tipo de cambio registrado al cobrar cada paquete en ARS.",
-            en: "USD shows hard-currency equivalent using the FX snapshot captured at each ARS checkout.",
-            pt: "USD mostra o equivalente em moeda forte usando o cambio salvo no checkout ARS."
-          })}
-        </p>
-      </section>
+            <div
+              className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
+              role="group"
+              aria-label={periodGroupLabel}
+            >
+              <select
+                className="pro-dashboard-revenue-control"
+                value={revenuePreset}
+                aria-label={presetAria}
+                onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
+              >
+                <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
+                <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
+                <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
+                <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
+                <option value="all">{t(props.language, { es: "Todo", en: "All", pt: "Todo" })}</option>
+              </select>
+              {revenuePreset === "day" || revenuePreset === "week" ? (
+                <input
+                  className="pro-dashboard-revenue-control"
+                  type="date"
+                  value={revenueDay}
+                  aria-label={dateAria}
+                  onChange={(event) => setRevenueDay(event.target.value)}
+                />
+              ) : null}
+              {revenuePreset === "month" ? (
+                <input
+                  className="pro-dashboard-revenue-control"
+                  type="month"
+                  value={revenueMonth}
+                  aria-label={monthAria}
+                  onChange={(event) => setRevenueMonth(event.target.value)}
+                />
+              ) : null}
+              {revenuePreset === "year" ? (
+                <input
+                  className="pro-dashboard-revenue-control pro-dashboard-revenue-control--year"
+                  type="number"
+                  min={2020}
+                  max={2035}
+                  value={revenueYear}
+                  aria-label={yearAria}
+                  onChange={(event) => setRevenueYear(event.target.value)}
+                />
+              ) : null}
+            </div>
+          </div>
+          <div className="pro-executed-revenue pro-executed-revenue--compact">
+            <div className="pro-executed-revenue-main">
+              <span className="pro-executed-revenue-label">
+                {t(props.language, { es: "Dinero ejecutado (ARS)", en: "Executed revenue (ARS)", pt: "Receita executada (ARS)" })}
+              </span>
+              <strong>{formatRecordedFinanceMinor(executedArsCents, "ars", props.language)}</strong>
+              <small>
+                {t(props.language, {
+                  es: `${data.revenueStats.completedSessions} sesiones en el período`,
+                  en: `${data.revenueStats.completedSessions} sessions in period`,
+                  pt: `${data.revenueStats.completedSessions} sessoes no periodo`
+                })}
+              </small>
+            </div>
+            <aside
+              className="pro-executed-revenue-side"
+              aria-label={t(props.language, { es: "Moneda dura", en: "Hard currency", pt: "Moeda forte" })}
+            >
+              <div className="pro-executed-revenue-side-row">
+                <span>USD</span>
+                <strong>{formatRecordedFinanceMinor(executedUsdCents, "usd", props.language)}</strong>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="pro-kpi-grid pro-kpi-grid--dashboard" aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}>
+          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
+            <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
+            <strong>{data.kpis.sessionsScheduled}</strong>
+            <em>{t(props.language, { es: "Ver próximas reservas", en: "View upcoming bookings", pt: "Ver próximas reservas" })}</em>
+          </NavLink>
+          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/pacientes">
+            <span>{t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}</span>
+            <strong>{data.kpis.activePatients}</strong>
+            <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
+          </NavLink>
+          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
+            <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
+            <strong>{formatMoneyCents(data.kpis.pendingPayoutCents, props.language, props.currency)}</strong>
+            <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
+          </NavLink>
+        </section>
+
+        {data.patientStatusCounts ? (
+          <PatientStatusSummaryBar
+            language={props.language}
+            counts={data.patientStatusCounts}
+            className="pro-patient-status-summary--dashboard"
+          />
+        ) : null}
+      </div>
 
       {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
         <ProfessionalPracticeHealth
@@ -474,27 +495,6 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           items={data.practiceHealth.items}
         />
       ) : null}
-      {data.patientStatusCounts ? (
-        <PatientStatusSummaryBar language={props.language} counts={data.patientStatusCounts} />
-      ) : null}
-
-      <section className="pro-kpi-grid">
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
-          <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
-          <strong>{data.kpis.sessionsScheduled}</strong>
-          <em>{t(props.language, { es: "Ver próximas reservas", en: "View upcoming bookings", pt: "Ver próximas reservas" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/pacientes">
-          <span>{t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}</span>
-          <strong>{data.kpis.activePatients}</strong>
-          <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
-        </NavLink>
-        <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
-          <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
-          <strong>{formatMoneyCents(data.kpis.pendingPayoutCents, props.language, props.currency)}</strong>
-          <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
-        </NavLink>
-      </section>
 
       <section className="pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap" id="sesiones-agendadas" ref={upcomingSectionRef} tabIndex={-1}>
         <div className="agenda-upcoming-head">

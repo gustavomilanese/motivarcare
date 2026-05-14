@@ -11449,3 +11449,223 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* ——— Dashboard snapshot: ingresos + KPIs + pacientes (cards compactas) ——— */
+.pro-dashboard-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pro-dashboard-revenue--compact.pro-dashboard-revenue--floating {
+  gap: 10px;
+  padding: clamp(12px, 2.8vw, 18px) clamp(12px, 2.6vw, 20px) clamp(12px, 2.8vw, 16px);
+}
+
+.pro-dashboard-revenue--compact .pro-dashboard-revenue-toolbar--minimal {
+  margin-top: 2px;
+}
+
+.pro-executed-revenue--compact {
+  padding: 10px 12px;
+  gap: 10px;
+  border-radius: 12px;
+}
+
+.pro-executed-revenue--compact .pro-executed-revenue-main strong {
+  font-size: clamp(24px, 5vw, 34px);
+}
+
+.pro-executed-revenue--compact .pro-executed-revenue-side-row strong {
+  font-size: 14px;
+}
+
+.pro-kpi-grid--dashboard {
+  gap: 10px;
+}
+
+.pro-kpi-grid--dashboard .pro-kpi-card {
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.pro-kpi-grid--dashboard .pro-kpi-card strong {
+  font-size: 22px;
+}
+
+.pro-patient-status-summary--dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.pro-patient-status-summary--dashboard .pro-patient-status-pill {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%);
+  border: 1px solid #e8ecf4;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.pro-patient-status-summary--dashboard .pro-patient-status-pill strong {
+  font-size: 1.35rem;
+}
+
+@media (max-width: 720px) {
+  .pro-patient-status-summary--dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .pro-kpi-grid--dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ——— Practice health: medidores tipo reloj ——— */
+.pro-practice-health--gauges {
+  background: linear-gradient(160deg, #ffffff 0%, #f4f6fb 55%, #eef1f8 100%);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.06);
+}
+
+.pro-practice-health-head--gauges {
+  margin-bottom: 2px;
+}
+
+.pro-practice-health-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pro-practice-health-title-row h2 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-practice-health-pill {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.pro-practice-health-pill--strong {
+  background: #22c55e;
+}
+
+.pro-practice-health-pill--balanced {
+  background: #eab308;
+}
+
+.pro-practice-health-pill--growth {
+  background: #f97316;
+}
+
+.pro-practice-health-head--gauges .pro-practice-health-lead {
+  margin-top: 6px;
+  font-size: 0.875rem;
+}
+
+.pro-practice-health-gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pro-signal-gauge-wrap {
+  min-width: 0;
+}
+
+.pro-signal-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 12px 6px 10px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e8ecf4;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.045);
+  height: 100%;
+}
+
+.pro-signal-gauge-dial {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pro-signal-gauge-svg {
+  width: 52px;
+  height: 52px;
+  display: block;
+}
+
+.pro-signal-gauge-tick {
+  stroke: #d4dbe8;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+}
+
+.pro-signal-gauge-track {
+  stroke: #eef1f7;
+  stroke-width: 3.2;
+  fill: none;
+}
+
+.pro-signal-gauge-ring {
+  stroke-width: 3.2;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.pro-signal-gauge-ring--ok {
+  stroke: #22c55e;
+}
+
+.pro-signal-gauge-ring--warn {
+  stroke: #fb923c;
+}
+
+.pro-signal-gauge-hub {
+  fill: #fff;
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+
+.pro-signal-gauge-hand {
+  stroke: #1e293b;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+}
+
+.pro-signal-gauge-label {
+  font-size: 11px;
+  line-height: 1.28;
+  font-weight: 600;
+  color: #475569;
+  max-width: 18ch;
+}
+
+@media (max-width: 380px) {
+  .pro-practice-health-gauges {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
