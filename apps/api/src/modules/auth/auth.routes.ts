@@ -29,6 +29,11 @@ import {
 import { isReviewerStagingPatientPrepEnabled } from "../../lib/reviewerStagingPrep.js";
 import { prepareStagingPatientForReviewerFlow, prepareStagingProfessionalForReviewerFlow } from "../../lib/testUsersSeed.js";
 
+/** Evita 304 / caché en JSON de sesión (p. ej. `googleCalendarConnected` tras prep staging). */
+function setNoStoreJsonResponse(res: Response) {
+  res.setHeader("Cache-Control", "no-store, private");
+}
+
 const residencyCountryIso2Schema = z
   .string()
   .trim()
@@ -640,6 +645,7 @@ authRouter.post("/register", async (req, res) => {
     select: { id: true }
   });
 
+  setNoStoreJsonResponse(res);
   return res.status(201).json({
     token,
     user: shapeUserResponse(resolvedUser),
@@ -1114,6 +1120,7 @@ authRouter.post("/login", async (req, res) => {
     });
   }
 
+  setNoStoreJsonResponse(res);
   return res.json({
     token,
     user: shapeUserResponse(loginResponseUser),
@@ -1147,6 +1154,7 @@ authRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
     return res.status(404).json({ error: "User not found" });
   }
 
+  setNoStoreJsonResponse(res);
   return res.json({
     user: shapeUserResponse(user),
     ...authResponseMeta(user.role),
