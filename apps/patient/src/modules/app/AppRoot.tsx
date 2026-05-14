@@ -483,7 +483,13 @@ export function App() {
         setProfessionalPhotoMap(professionalImageMap);
         setShowCalendarOnboarding(false);
         setCalendarOnboardingLoading(false);
-        setCalendarPromptDismissedUserIds(readDismissedCalendarPromptUsers());
+        const verifyUid = String(payload.user.id).trim();
+        const nextDismissedVerify =
+          verifyUid.length > 0
+            ? readDismissedCalendarPromptUsers().filter((id) => id !== verifyUid)
+            : readDismissedCalendarPromptUsers();
+        writeDismissedCalendarPromptUsers(nextDismissedVerify);
+        setCalendarPromptDismissedUserIds(nextDismissedVerify);
         flushSync(() => {
           setState((current) => ({
             ...defaultState,
@@ -1468,7 +1474,18 @@ export function App() {
           setProfessionalPhotoMap(professionalImageMap);
           setShowCalendarOnboarding(false);
           setCalendarOnboardingLoading(false);
-          setCalendarPromptDismissedUserIds(readDismissedCalendarPromptUsers());
+          /**
+           * Cada login nuevo: sacamos a este usuario de la lista "no volver a mostrar Calendar".
+           * Así el prep staging (Calendar borrado en servidor en cada login) siempre puede volver a mostrar el modal,
+           * aunque sessionStorage no tenga aún el histórico true→false (p. ej. primer deploy o pestaña nueva).
+           */
+          const uid = String(user.id).trim();
+          const nextDismissed =
+            uid.length > 0
+              ? readDismissedCalendarPromptUsers().filter((id) => id !== uid)
+              : readDismissedCalendarPromptUsers();
+          writeDismissedCalendarPromptUsers(nextDismissed);
+          setCalendarPromptDismissedUserIds(nextDismissed);
           setState((current) => ({
             ...defaultState,
             language: current.language,
