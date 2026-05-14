@@ -121,7 +121,12 @@ type RegisterBackMode = "register-web" | "register-profile-full" | "register-suc
 export function ProfessionalAuthFlow(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
-  onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
+  onAuthSuccess: (params: {
+    token: string;
+    user: AuthUser;
+    emailVerificationRequired: boolean;
+    googleCalendarConnected?: boolean;
+  }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
   onPrepareOnboardingSync: (draft: OnboardingPatchDraft, meta?: { displayFullName?: string }) => void;
   /** Reanudar onboarding web tras verificar el mail (mismo navegador). */
@@ -199,7 +204,8 @@ export function ProfessionalAuthFlow(props: {
         professionalProfileId: mobilePreAuthSession.user.professionalProfileId,
         avatarUrl: mobilePreAuthSession.user.avatarUrl ?? null
       },
-      emailVerificationRequired: mobilePreAuthSession.emailVerificationRequired
+      emailVerificationRequired: mobilePreAuthSession.emailVerificationRequired,
+      googleCalendarConnected: mobilePreAuthSession.googleCalendarConnected
     });
     props.onRegistrationAuthSuccess?.(mobilePreAuthSession.user.id);
   };
@@ -276,7 +282,9 @@ export function ProfessionalAuthFlow(props: {
           emailVerified: response.user.emailVerified,
           professionalProfileId: response.user.professionalProfileId,
           avatarUrl: response.user.avatarUrl ?? null
-        }
+        },
+        googleCalendarConnected:
+          typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : undefined
       };
       setMobilePreAuthSession(meta);
       {
@@ -415,7 +423,8 @@ export function ProfessionalAuthFlow(props: {
               professionalProfileId: meta.user.professionalProfileId,
               avatarUrl: meta.user.avatarUrl ?? null
             },
-            emailVerificationRequired: meta.emailVerificationRequired
+            emailVerificationRequired: meta.emailVerificationRequired,
+            googleCalendarConnected: meta.googleCalendarConnected
           });
           props.onRegistrationAuthSuccess?.(meta.user.id);
         }}

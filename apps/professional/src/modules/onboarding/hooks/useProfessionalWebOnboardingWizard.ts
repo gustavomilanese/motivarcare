@@ -84,6 +84,7 @@ export type WebOnboardingSessionState = {
     professionalProfileId: string;
     avatarUrl?: string | null;
   };
+  googleCalendarConnected?: boolean;
 };
 
 export type WebInterstitialVisual = "earnings" | "reservations" | "growth" | "trust";
@@ -638,7 +639,9 @@ export function useProfessionalWebOnboardingWizard(input: {
               fullName: response.user.fullName,
               professionalProfileId: response.user.professionalProfileId,
               avatarUrl: response.user.avatarUrl ?? null
-            }
+            },
+            googleCalendarConnected:
+              typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : undefined
           };
           setWebOnboardingSession(session);
           if (response.emailVerificationRequired && !response.user.emailVerified) {
@@ -942,7 +945,8 @@ export function useProfessionalWebOnboardingWizard(input: {
         emailVerified: webOnboardingSession.user.emailVerified,
         professionalProfileId: webOnboardingSession.user.professionalProfileId,
         avatarUrl: webOnboardingSession.user.avatarUrl ?? null
-      }
+      },
+      googleCalendarConnected: webOnboardingSession.googleCalendarConnected
     };
 
     input.onFinish(payload, meta);

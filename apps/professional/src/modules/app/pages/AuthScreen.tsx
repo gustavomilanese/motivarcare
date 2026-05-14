@@ -51,7 +51,12 @@ function persistProRemember(remember: boolean, emailLower: string): void {
 
 export function AuthScreen(props: {
   language: AppLanguage;
-  onAuthSuccess: (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => void;
+  onAuthSuccess: (params: {
+    token: string;
+    user: AuthUser;
+    emailVerificationRequired: boolean;
+    googleCalendarConnected?: boolean;
+  }) => void;
   initialMode?: "login" | "register";
   initialEmail?: string;
   initialPassword?: string;
@@ -114,7 +119,9 @@ export function AuthScreen(props: {
         professionalProfileId: response.user.professionalProfileId,
         avatarUrl: response.user.avatarUrl ?? null
       },
-      emailVerificationRequired: response.emailVerificationRequired
+      emailVerificationRequired: response.emailVerificationRequired,
+      googleCalendarConnected:
+        typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : undefined
     });
   };
 

@@ -51,6 +51,7 @@ export type ProfessionalWebOnboardingFinishMeta = {
     professionalProfileId: string;
     avatarUrl?: string | null;
   };
+  googleCalendarConnected?: boolean;
 };
 
 export interface ProfessionalWebOnboardingPayload {

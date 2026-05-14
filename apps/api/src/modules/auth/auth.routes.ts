@@ -635,11 +635,17 @@ authRouter.post("/register", async (req, res) => {
     email: resolvedUser.email
   });
 
+  const googleCalendarConnectionAtRegister = await prisma.googleCalendarConnection.findUnique({
+    where: { userId: resolvedUser.id },
+    select: { id: true }
+  });
+
   return res.status(201).json({
     token,
     user: shapeUserResponse(resolvedUser),
     verificationEmailSent,
-    ...authResponseMeta(resolvedUser.role)
+    ...authResponseMeta(resolvedUser.role),
+    googleCalendarConnected: Boolean(googleCalendarConnectionAtRegister)
   });
 });
 
@@ -1093,6 +1099,11 @@ authRouter.post("/login", async (req, res) => {
     email: user.email
   });
 
+  const googleCalendarConnectionAtLogin = await prisma.googleCalendarConnection.findUnique({
+    where: { userId: user.id },
+    select: { id: true }
+  });
+
   if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
     await prisma.patientProfile.update({
       where: { id: user.patient.id },
@@ -1106,7 +1117,8 @@ authRouter.post("/login", async (req, res) => {
   return res.json({
     token,
     user: shapeUserResponse(loginResponseUser),
-    ...authResponseMeta(user.role)
+    ...authResponseMeta(user.role),
+    googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin)
   });
 });
 

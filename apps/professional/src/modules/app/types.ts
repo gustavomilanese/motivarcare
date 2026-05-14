@@ -44,6 +44,8 @@ export interface AuthResponse {
   emailVerificationRequired: boolean;
   devEmailVerificationBypassEnabled?: boolean;
   verificationEmailSent?: boolean;
+  /** Presente en login/registro API; alinea el modal de Calendar antes del primer GET /me. */
+  googleCalendarConnected?: boolean;
 }
 
 export type PracticeHealthVariant = "strong" | "balanced" | "growth";

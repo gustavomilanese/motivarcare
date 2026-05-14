@@ -262,7 +262,12 @@ export function App() {
     return () => setProfessionalApiUnauthorizedHandler(undefined);
   }, [navigate]);
 
-  const handleAuthSuccess = (params: { token: string; user: AuthUser; emailVerificationRequired: boolean }) => {
+  const handleAuthSuccess = (params: {
+    token: string;
+    user: AuthUser;
+    emailVerificationRequired: boolean;
+    googleCalendarConnected?: boolean;
+  }) => {
     const uid = String(params.user.id).trim();
     const nextDismissed =
       uid.length > 0
@@ -270,15 +275,34 @@ export function App() {
         : readDismissedProfessionalCalendarPromptUsers();
     writeDismissedProfessionalCalendarPromptUsers(nextDismissed);
     setCalendarPromptDismissedUserIds(nextDismissed);
-    setGoogleCalendarConnected(null);
     setShowCalendarOnboarding(false);
+
+    const calFromLogin = params.googleCalendarConnected;
+    if (typeof calFromLogin === "boolean") {
+      setGoogleCalendarConnected(calFromLogin);
+      if (uid.length > 0) {
+        rememberProfessionalAuthCalendarConnectedSession(uid, calFromLogin);
+        if (!calFromLogin) {
+          setCalendarPromptDismissedUserIds((ids) => {
+            if (!ids.includes(uid)) {
+              return ids;
+            }
+            const nextIds = ids.filter((id) => id !== uid);
+            writeDismissedProfessionalCalendarPromptUsers(nextIds);
+            return nextIds;
+          });
+        }
+      }
+    } else {
+      setGoogleCalendarConnected(null);
+    }
+
     window.localStorage.setItem(TOKEN_KEY, params.token);
     window.localStorage.setItem(USER_KEY, JSON.stringify(params.user));
     persistEmailVerificationRequired(params.emailVerificationRequired);
     setToken(params.token);
     setUser(params.user);
     setEmailVerificationRequired(params.emailVerificationRequired);
-    setAuthSyncReady(true);
   };
 
   const handleUserChange = (nextUser: AuthUser) => {
@@ -455,6 +479,9 @@ export function App() {
         setGoogleCalendarConnected(calConnected);
       } catch (error) {
         console.error("Could not sync professional auth state", error);
+        if (!cancelled) {
+          setGoogleCalendarConnected(false);
+        }
       } finally {
         if (!cancelled) {
           setAuthSyncReady(true);
