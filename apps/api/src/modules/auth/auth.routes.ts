@@ -565,18 +565,42 @@ authRouter.post("/register", async (req, res) => {
     }
   });
 
+  if (created.role === "PATIENT") {
+    await maybeApplyStagingReviewerPatientPrep({
+      id: created.id,
+      role: created.role
+    });
+  }
+
+  const userForResponse =
+    created.role === "PATIENT"
+      ? await prisma.user.findUnique({
+          where: { id: created.id },
+          include: {
+            patient: { select: { id: true } },
+            professional: { select: { id: true } }
+          }
+        })
+      : created;
+
+  const resolvedUser = userForResponse ?? created;
+
   let verificationEmailSent = false;
-  if (isEmailVerificationSupportedRole(created.role)) {
+  if (
+    isEmailVerificationSupportedRole(resolvedUser.role)
+    && isEmailVerificationRequiredForRole(resolvedUser.role)
+    && !resolvedUser.emailVerified
+  ) {
     try {
       const verificationToken = await createEmailVerificationToken({
-        userId: created.id,
+        userId: resolvedUser.id,
         replaceExisting: true
       });
 
       const deliveryResult = await sendEmailVerificationEmail({
-        fullName: created.fullName,
-        email: created.email,
-        role: created.role,
+        fullName: resolvedUser.fullName,
+        email: resolvedUser.email,
+        role: resolvedUser.role,
         token: verificationToken.token
       });
 
@@ -586,24 +610,17 @@ authRouter.post("/register", async (req, res) => {
     }
   }
 
-  if (created.role === "PATIENT") {
-    await maybeApplyStagingReviewerPatientPrep({
-      id: created.id,
-      role: created.role
-    });
-  }
-
   const token = createAuthToken({
-    userId: created.id,
-    role: created.role,
-    email: created.email
+    userId: resolvedUser.id,
+    role: resolvedUser.role,
+    email: resolvedUser.email
   });
 
   return res.status(201).json({
     token,
-    user: shapeUserResponse(created),
+    user: shapeUserResponse(resolvedUser),
     verificationEmailSent,
-    ...authResponseMeta(created.role)
+    ...authResponseMeta(resolvedUser.role)
   });
 });
 

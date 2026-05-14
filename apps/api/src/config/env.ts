@@ -203,11 +203,25 @@ function resolveAdminTestUserSeedEnabled(): boolean {
   return parsedEnv.NODE_ENV !== "production";
 }
 
+/**
+ * Por defecto: en `NODE_ENV=production` (p. ej. Railway) la verificación de email está activa.
+ * Staging de reviewers con `REVIEWER_STAGING_PREP_ENABLED`: si no seteás `EMAIL_VERIFICATION_REQUIRED`
+ * explícitamente, queda en `false` (registro sin bloqueo ni mail obligatorio).
+ */
+function resolveEmailVerificationRequired(): boolean {
+  if (parsedEnv.EMAIL_VERIFICATION_REQUIRED !== undefined) {
+    return parsedEnv.EMAIL_VERIFICATION_REQUIRED;
+  }
+  if (parsedEnv.REVIEWER_STAGING_PREP_ENABLED) {
+    return false;
+  }
+  return parsedEnv.NODE_ENV === "production";
+}
+
 export const env = {
   ...parsedEnv,
   apiListenHost: resolveApiListenHost(),
   PATIENT_MOBILE_CALENDAR_ORIGIN_PREFIXES: patientMobileCalendarOriginPrefixes,
-  EMAIL_VERIFICATION_REQUIRED:
-    parsedEnv.EMAIL_VERIFICATION_REQUIRED ?? parsedEnv.NODE_ENV === "production",
+  EMAIL_VERIFICATION_REQUIRED: resolveEmailVerificationRequired(),
   adminTestUserSeedEnabled: resolveAdminTestUserSeedEnabled()
 };
