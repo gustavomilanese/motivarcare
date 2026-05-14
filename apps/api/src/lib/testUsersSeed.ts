@@ -468,7 +468,7 @@ export async function seedTestUsers(opts: SeedTestUsersOptions = {}): Promise<Se
 /**
  * Idempotente: alinea **cualquier** paciente (por `userId`) con el mismo estado base que los usuarios
  * test de Google Verification — intake bajo riesgo, profesional test asignado, reserva CONFIRMED futura,
- * sin Google Calendar conectado. Pensado para staging con `REVIEWER_STAGING_PREP_ENABLED` (sin UI).
+ * sin Google Calendar conectado. Pensado para staging con `REVIEWER_STAGING_PREP_ENABLED` (sin UI; aplica a todo paciente en ese API).
  */
 export async function prepareStagingPatientForReviewerFlow(userId: string): Promise<void> {
   const user = await prisma.user.findUnique({

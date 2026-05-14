@@ -26,7 +26,7 @@ import {
   SECURITY_AUDIT_CATEGORY,
   writeSecurityAuditLog
 } from "../../lib/securityAuditLog.js";
-import { shouldApplyReviewerStagingPatientPrep } from "../../lib/reviewerStagingPrep.js";
+import { isReviewerStagingPatientPrepEnabled } from "../../lib/reviewerStagingPrep.js";
 import { prepareStagingPatientForReviewerFlow } from "../../lib/testUsersSeed.js";
 
 const residencyCountryIso2Schema = z
@@ -243,16 +243,11 @@ function shapeUserResponse(user: {
   };
 }
 
-async function maybeApplyStagingReviewerPatientPrep(user: {
-  id: string;
-  email: string;
-  role: string;
-  isTestUser: boolean;
-}): Promise<void> {
+async function maybeApplyStagingReviewerPatientPrep(user: { id: string; role: string }): Promise<void> {
   if (user.role !== "PATIENT") {
     return;
   }
-  if (!shouldApplyReviewerStagingPatientPrep(user.email, user.isTestUser)) {
+  if (!isReviewerStagingPatientPrepEnabled()) {
     return;
   }
   try {
@@ -594,9 +589,7 @@ authRouter.post("/register", async (req, res) => {
   if (created.role === "PATIENT") {
     await maybeApplyStagingReviewerPatientPrep({
       id: created.id,
-      email: created.email,
-      role: created.role,
-      isTestUser: created.isTestUser
+      role: created.role
     });
   }
 
@@ -1035,9 +1028,7 @@ authRouter.post("/login", async (req, res) => {
   if (user.role === "PATIENT") {
     await maybeApplyStagingReviewerPatientPrep({
       id: user.id,
-      email: user.email,
-      role: user.role,
-      isTestUser: user.isTestUser
+      role: user.role
     });
   }
 

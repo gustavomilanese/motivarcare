@@ -164,12 +164,7 @@ const EnvSchema = z.object({
    * intake bajo riesgo + asignación al profesional test + reserva futura (mismo baseline que el seed de
    * Google Verification). Sin UI; deshabilitado por defecto.
    */
-  REVIEWER_STAGING_PREP_ENABLED: z.coerce.boolean().default(false),
-  /**
-   * Emails adicionales (coma, sin espacios obligatorios) que reciben el prep además de los usuarios con
-   * `isTestUser=true`. Vacío = solo cuentas marcadas como test user.
-   */
-  REVIEWER_STAGING_PREP_EMAIL_ALLOWLIST: z.string().optional().default("")
+  REVIEWER_STAGING_PREP_ENABLED: z.coerce.boolean().default(false)
 });
 
 const parsedEnv = EnvSchema.parse(process.env);
