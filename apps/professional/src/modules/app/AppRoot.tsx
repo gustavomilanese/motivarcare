@@ -735,7 +735,8 @@ export function App() {
     if (!token || !user || !authSyncReady) {
       return;
     }
-    if (!user.emailVerified || emailVerificationRequired) {
+    /** Igual que el redirect a verify: solo bloquear si el usuario aún no verificó el mail. */
+    if (!user.emailVerified) {
       return;
     }
     if (showCalendarOnboarding) {
@@ -762,7 +763,6 @@ export function App() {
     token,
     user,
     authSyncReady,
-    emailVerificationRequired,
     showCalendarOnboarding,
     googleCalendarConnected,
     calendarPromptDismissedUserIds
