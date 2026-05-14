@@ -20,6 +20,8 @@ import {
   clearCalendarOfferContext,
   clearPostTrialCalendarPending,
   getCalendarOfferContext,
+  peekPatientAuthCalendarConnectedSession,
+  rememberPatientAuthCalendarConnectedSession,
   setCalendarOfferContext
 } from "./constants";
 import { AuthScreen } from "./pages/AuthScreen";
@@ -1103,6 +1105,33 @@ export function App() {
             bookings: syncedBookings
           };
         });
+
+        /**
+         * Tras conectar Calendar, guardábamos el userId en "dismissed" para no reabrir el modal en bucle.
+         * Si el servidor vuelve a `googleCalendarConnected: false` (p. ej. prep staging en cada login),
+         * hay que sacar ese dismiss para que el reviewer pueda repetir el flujo OAuth en el mismo navegador.
+         */
+        if (
+          authResponse
+          && typeof authResponse.googleCalendarConnected === "boolean"
+          && sid
+        ) {
+          const uid = String(sid).trim();
+          if (uid.length > 0) {
+            const prevStored = peekPatientAuthCalendarConnectedSession(uid);
+            rememberPatientAuthCalendarConnectedSession(uid, authResponse.googleCalendarConnected);
+            if (prevStored === true && authResponse.googleCalendarConnected === false) {
+              setCalendarPromptDismissedUserIds((ids) => {
+                if (!ids.includes(uid)) {
+                  return ids;
+                }
+                const nextIds = ids.filter((id) => id !== uid);
+                writeDismissedCalendarPromptUsers(nextIds);
+                return nextIds;
+              });
+            }
+          }
+        }
 
         if (profileResult.status === "rejected") {
           console.error("Could not sync profile from API", profileResult.reason);

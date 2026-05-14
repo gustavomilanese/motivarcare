@@ -51,6 +51,40 @@ export function clearPostTrialCalendarPending(): void {
   }
 }
 
+const PATIENT_AUTH_CALENDAR_LAST_SESSION_KEY = "motivarcare.patient.authCalendarConnected.v1.";
+
+/** Último valor conocido de GET /auth/me `googleCalendarConnected` para este usuario (por pestaña). */
+export function peekPatientAuthCalendarConnectedSession(userId: string): boolean | null {
+  const uid = userId.trim();
+  if (!uid) {
+    return null;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(PATIENT_AUTH_CALENDAR_LAST_SESSION_KEY + uid);
+    if (raw === "1") {
+      return true;
+    }
+    if (raw === "0") {
+      return false;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function rememberPatientAuthCalendarConnectedSession(userId: string, connected: boolean): void {
+  const uid = userId.trim();
+  if (!uid) {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(PATIENT_AUTH_CALENDAR_LAST_SESSION_KEY + uid, connected ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
 /** Fallback local si falla la URL remota del hero (configurada desde Admin → Web → Imágenes hero). */
 export const DEFAULT_PATIENT_HERO_IMAGE = "/images/hero-therapy.jpg";
 
