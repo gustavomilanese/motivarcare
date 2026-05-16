@@ -1,6 +1,6 @@
 import { subscribeDocumentVisibleInterval } from "@therapy/auth";
-import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -60,6 +60,10 @@ function rangesOverlap(startA: string, endA: string, startB: string, endB: strin
 
 type DashboardLocationState = { profileUpdated?: boolean };
 
+function firstProUpcomingSpotlightStorageKey(userId: string): string {
+  return `motivarcare.pro.firstUpcomingSpotlight.v1.${userId}`;
+}
+
 function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
   return formatCurrencyCents({
     centsInUsd: cents,
@@ -92,7 +96,13 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const upcomingSectionRef = useRef<HTMLElement | null>(null);
+  const meetHintHandledRef = useRef(false);
+  const [meetJoinHighlight, setMeetJoinHighlight] = useState(false);
+  const [firstUpcomingSpotlight, setFirstUpcomingSpotlight] = useState(false);
+  const dashboardSpotlightBlockersRef = useRef(false);
+  dashboardSpotlightBlockersRef.current = isRescheduleModalOpen || isCancelModalOpen;
 
   const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
 
@@ -208,6 +218,82 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [isCancelModalOpen]);
+
+  const firstMeetBookingId = useMemo(() => {
+    for (const b of upcomingReservations) {
+      const j = typeof b.joinUrl === "string" ? b.joinUrl.trim() : "";
+      if (j) {
+        return b.id;
+      }
+    }
+    return null;
+  }, [upcomingReservations]);
+
+  const upcomingTourDependency = upcomingReservations
+    .map((b) => `${b.id}:${typeof b.joinUrl === "string" ? b.joinUrl.trim().length : 0}`)
+    .join("|");
+
+  useEffect(() => {
+    meetHintHandledRef.current = false;
+  }, [props.user.id]);
+
+  useEffect(() => {
+    if (meetHintHandledRef.current) {
+      return undefined;
+    }
+    if (searchParams.get("meet_hint") !== "1") {
+      return undefined;
+    }
+    meetHintHandledRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("meet_hint");
+    setSearchParams(next, { replace: true });
+    setMeetJoinHighlight(true);
+    const tid = window.setTimeout(() => setMeetJoinHighlight(false), 9000);
+    return () => window.clearTimeout(tid);
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const uid = props.user.id != null ? String(props.user.id).trim() : "";
+    if (!uid || upcomingReservations.length === 0) {
+      return undefined;
+    }
+    let cancelled = false;
+    let endSpotlightTimer: number | undefined;
+    try {
+      if (window.localStorage.getItem(firstProUpcomingSpotlightStorageKey(uid)) === "1") {
+        return undefined;
+      }
+    } catch {
+      return undefined;
+    }
+
+    const startTimer = window.setTimeout(() => {
+      if (cancelled || dashboardSpotlightBlockersRef.current) {
+        return;
+      }
+      try {
+        window.localStorage.setItem(firstProUpcomingSpotlightStorageKey(uid), "1");
+      } catch {
+        // ignore
+      }
+      setFirstUpcomingSpotlight(true);
+      endSpotlightTimer = window.setTimeout(() => {
+        setFirstUpcomingSpotlight(false);
+      }, 6800);
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(startTimer);
+      if (endSpotlightTimer) {
+        window.clearTimeout(endSpotlightTimer);
+      }
+    };
+  }, [props.user.id, upcomingTourDependency, isRescheduleModalOpen, isCancelModalOpen]);
+
+  const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
+  const highlightJoinPulseBookingId = meetJoinHighlight && firstMeetBookingId ? firstMeetBookingId : null;
 
   if (error) {
     return <section className="pro-card"><p className="pro-error">{error}</p></section>;
@@ -528,7 +614,12 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
         />
       ) : null}
 
-      <section className="pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap" id="sesiones-agendadas" ref={upcomingSectionRef} tabIndex={-1}>
+      <section
+        className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
+        id="sesiones-agendadas"
+        ref={upcomingSectionRef}
+        tabIndex={-1}
+      >
         <div className="agenda-upcoming-head">
           <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
         </div>
@@ -538,6 +629,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           busyBookingId={bookingActionInProgressId}
           onRequestReschedule={openRescheduleModal}
           onRequestCancel={openCancelModal}
+          highlightJoinPulseBookingId={highlightJoinPulseBookingId}
         />
         {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
       </section>

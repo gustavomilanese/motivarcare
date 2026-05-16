@@ -65,6 +65,8 @@ export function UpcomingReservationsList(props: {
   busyBookingId?: string | null;
   onRequestReschedule?: (booking: UpcomingReservationItem) => void;
   onRequestCancel?: (booking: UpcomingReservationItem) => void;
+  /** Primera reserva con Meet: pulso breve (p. ej. `?meet_hint=1` tras OAuth Calendar). */
+  highlightJoinPulseBookingId?: string | null;
 }) {
   const loading = Boolean(props.loading);
   const error = props.error ?? "";
@@ -98,6 +100,9 @@ export function UpcomingReservationsList(props: {
       <div className="agenda-upcoming-list">
         {props.reservations.map((booking) => {
           const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
+          const joinTrim = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
+          const pulseJoin =
+            Boolean(props.highlightJoinPulseBookingId && props.highlightJoinPulseBookingId === booking.id && joinTrim);
           return (
           <article className="agenda-upcoming-row" key={booking.id}>
             <div className="agenda-upcoming-cell">
@@ -130,7 +135,12 @@ export function UpcomingReservationsList(props: {
               <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
               <div className="agenda-row-actions">
                 {booking.joinUrl ? (
-                  <a href={booking.joinUrl} target="_blank" rel="noreferrer" className="agenda-join-button">
+                  <a
+                    href={booking.joinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`agenda-join-button${pulseJoin ? " pro-join-session--pulse" : ""}`}
+                  >
                     {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}
                   </a>
                 ) : (

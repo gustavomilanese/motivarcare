@@ -3,7 +3,6 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
-  detectInitialAppLanguage,
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
@@ -47,6 +46,7 @@ import {
   restoreProfessionalPortalAfterCalendarOAuth,
   setProfessionalApiUnauthorizedHandler
 } from "./services/api";
+import { resolveProfessionalPortalLanguage } from "../../professionalPortalDefaultLanguage";
 import type { AuthUser } from "./types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -200,18 +200,9 @@ export function App() {
     () => new URLSearchParams(location.search).get("resumeWebOnboarding") === "1",
     [location.search]
   );
-  const [language, setLanguage] = useState<AppLanguage>(() => {
-    const saved = window.localStorage.getItem(LANGUAGE_KEY);
-    if ((SUPPORTED_LANGUAGES as readonly string[]).includes(saved ?? "")) {
-      return saved as AppLanguage;
-    }
-    /**
-     * Sin preferencia guardada: detectar del browser (o `?lang=`) para que
-     * el reviewer de Google App Verification arranque en inglés si su
-     * sistema está en inglés. Usuarios reales no se ven afectados.
-     */
-    return detectInitialAppLanguage();
-  });
+  const [language, setLanguage] = useState<AppLanguage>(() =>
+    resolveProfessionalPortalLanguage(window.localStorage.getItem(LANGUAGE_KEY))
+  );
   const [currency, setCurrency] = useState<SupportedCurrency>(() => {
     const saved = window.localStorage.getItem(CURRENCY_KEY);
     return (SUPPORTED_CURRENCIES as readonly string[]).includes(saved ?? "") ? (saved as SupportedCurrency) : "USD";

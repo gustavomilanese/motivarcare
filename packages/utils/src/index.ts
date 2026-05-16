@@ -78,6 +78,75 @@ export function detectInitialAppLanguage(): AppLanguage {
   return "es";
 }
 
+/**
+ * Idioma al montar la SPA.
+ * Prioridad: `?lang=` → preferencia guardada → `defaultLanguage` (p. ej. staging reviewer) → browser → `es`.
+ */
+export function resolveAppLanguage(options?: {
+  storedLanguage?: string | null;
+  defaultLanguage?: AppLanguage;
+}): AppLanguage {
+  if (typeof window === "undefined") {
+    return options?.defaultLanguage ?? "es";
+  }
+
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get("lang");
+    if (fromQuery && (SUPPORTED_LANGUAGES as readonly string[]).includes(fromQuery)) {
+      return fromQuery as AppLanguage;
+    }
+  } catch {
+    // ignore
+  }
+
+  const stored = options?.storedLanguage;
+  if (stored && (SUPPORTED_LANGUAGES as readonly string[]).includes(stored)) {
+    return stored as AppLanguage;
+  }
+
+  if (options?.defaultLanguage && (SUPPORTED_LANGUAGES as readonly string[]).includes(options.defaultLanguage)) {
+    return options.defaultLanguage;
+  }
+
+  return detectInitialAppLanguage();
+}
+
+/** Deploys Vercel solo para Google App Verification (reviewer); inglés por defecto. */
+export const GOOGLE_REVIEWER_STAGING_HOSTS: readonly string[] = [
+  "motivarcare-patient-staging.vercel.app",
+  "motivarcare-professional-staging.vercel.app"
+];
+
+export function isGoogleReviewerStagingHost(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return GOOGLE_REVIEWER_STAGING_HOSTS.includes(window.location.hostname.toLowerCase());
+}
+
+export function parseBuildDefaultLanguage(raw: string | undefined): AppLanguage | undefined {
+  const trimmed = raw?.trim() ?? "";
+  if ((SUPPORTED_LANGUAGES as readonly string[]).includes(trimmed)) {
+    return trimmed as AppLanguage;
+  }
+  return undefined;
+}
+
+/**
+ * Paciente y profesional: en hosts de staging reviewer → `en` salvo `?lang=`;
+ * en el resto, respeta localStorage y `VITE_DEFAULT_APP_LANGUAGE` opcional.
+ */
+export function resolvePortalLanguage(options?: {
+  storedLanguage?: string | null;
+  buildDefaultLanguage?: string;
+}): AppLanguage {
+  const stored = isGoogleReviewerStagingHost() ? undefined : (options?.storedLanguage ?? undefined);
+  const defaultLanguage: AppLanguage | undefined = isGoogleReviewerStagingHost()
+    ? "en"
+    : parseBuildDefaultLanguage(options?.buildDefaultLanguage);
+  return resolveAppLanguage({ storedLanguage: stored, defaultLanguage });
+}
+
 export function textByLanguage(language: AppLanguage, value: LocalizedText): string {
   return value[language];
 }

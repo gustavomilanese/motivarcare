@@ -81,6 +81,8 @@ export function ProfessionalPortal(props: {
     }
 
     const stripQuery = () => navigate({ pathname: location.pathname, search: "" }, { replace: true });
+    /** Paridad con paciente: al volver con Calendar conectado, el dashboard puede pulsar la fila de Meet. */
+    const searchAfterCalendarOk = (pathname: string) => (pathname === "/" ? "?meet_hint=1" : "");
 
     if (calendarSync !== "connected") {
       stripQuery();
@@ -97,10 +99,11 @@ export function ProfessionalPortal(props: {
       return;
     }
 
+    const nextSearch = searchAfterCalendarOk(target);
     if (location.pathname !== target) {
-      navigate({ pathname: target, search: "" }, { replace: true });
+      navigate({ pathname: target, search: nextSearch }, { replace: true });
     } else {
-      stripQuery();
+      navigate({ pathname: location.pathname, search: searchAfterCalendarOk(location.pathname) }, { replace: true });
     }
   }, [location.pathname, location.search, navigate]);
 

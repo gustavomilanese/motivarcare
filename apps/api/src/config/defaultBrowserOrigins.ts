@@ -8,6 +8,7 @@ export const DEFAULT_TRUSTED_BROWSER_ORIGINS: readonly string[] = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://motivarcare-patient.vercel.app",
+  "https://motivarcare-patient-staging.vercel.app",
   /** Preview Vercel — paridad con paciente; prod usa `PROFESSIONAL_APP_URL` en env también. */
   "https://motivarcare-professional.vercel.app",
   /** Deploy staging Vercel (portal pro); debe coincidir con CORS si no va en `CORS_ORIGINS`. */

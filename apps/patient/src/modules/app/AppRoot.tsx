@@ -5,12 +5,12 @@ import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
   defaultDisplayCurrencyForMarket,
-  detectInitialAppLanguage,
   type AppLanguage,
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
 import { isMarket, joinFirstLastToFullName, type Market } from "@therapy/types";
+import { resolvePatientPortalLanguage } from "../../patientPortalDefaultLanguage";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
@@ -103,7 +103,7 @@ const defaultState: PatientAppState = {
    * vea la app en inglés sin tocar el selector. Usuarios reales con browser
    * en español siguen viendo `es` por default.
    */
-  language: detectInitialAppLanguage(),
+  language: resolvePatientPortalLanguage(undefined),
   /** Por defecto se asume mercado AR; la moneda se sincroniza con `patientMarket`. */
   currency: defaultDisplayCurrencyForMarket("AR"),
   profileResidencyCountry: null,
@@ -161,9 +161,7 @@ function loadState(): PatientAppState {
     return {
       ...defaultState,
       ...parsed,
-      language: (SUPPORTED_LANGUAGES as readonly string[]).includes((parsed as any).language)
-        ? (parsed as any).language
-        : detectInitialAppLanguage(),
+      language: resolvePatientPortalLanguage((parsed as { language?: unknown }).language),
       patientMarket: (() => {
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
         return isMarket(pm) ? pm : "AR";
