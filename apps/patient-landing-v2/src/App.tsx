@@ -234,7 +234,7 @@ export function App() {
           <div className="plv2-hero-bg-scrim" />
         </div>
 
-        <div className="plv2-container plv2-hero-stage">
+        <div className="plv2-container plv2-container--wide plv2-hero-stage">
           <div className="plv2-hero-copy">
             <h1 id="plv2-hero-title">
               <span className="plv2-hero-title-line1">

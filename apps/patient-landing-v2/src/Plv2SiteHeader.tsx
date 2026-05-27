@@ -53,7 +53,7 @@ export function Plv2SiteHeader(props: Plv2SiteHeaderProps) {
       {navOpen ? (
         <button type="button" className="plv2-header-nav-backdrop" aria-label="Cerrar menú" onClick={() => setNavOpen(false)} />
       ) : null}
-      <div className="plv2-container plv2-header-inner">
+      <div className="plv2-container plv2-container--wide plv2-header-inner">
         <a href="/" className="plv2-brand plv2-brand--official" aria-label="MotivarCare — inicio">
           <img
             src="/brand/motivarcare-logo-full.png"

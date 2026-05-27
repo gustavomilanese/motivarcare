@@ -19,6 +19,8 @@
   --plv2-shadow: 0 20px 48px rgba(23, 28, 36, 0.08);
   --plv2-radius: 20px;
   --plv2-container: min(1180px, 100% - 2rem);
+  /* Header + hero: más ancho y mitad de margen lateral (1rem total vs 2rem). */
+  --plv2-container-wide: min(1360px, 100% - 1rem);
 
   --plv2-shadow-xs: 0 1px 2px rgba(23, 28, 36, 0.04);
   --plv2-shadow-sm: 0 4px 14px rgba(23, 28, 36, 0.05);
@@ -97,6 +99,10 @@ body {
   margin-right: auto;
 }
 
+.plv2-container--wide {
+  width: var(--plv2-container-wide);
+}
+
 .plv2-visually-hidden {
   position: absolute;
   width: 1px;
@@ -126,8 +132,8 @@ body {
 /* Web: hero más alto; columna de texto más ancha + menos “columna estrecha” en el título */
 @media (min-width: 961px) {
   .plv2-hero-shell {
-    /* Un poco menos alto → menos recorte vertical de la foto (cabeza completa). */
-    min-height: min(84vh, 940px);
+    /* Más alto en desktop para mostrar escritorio / laptop en la foto. */
+    min-height: min(98vh, 1120px);
   }
 
   /* Columna de texto acotada: no invade la zona del rostro (derecha). */
@@ -190,8 +196,14 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Rostro a la derecha; anclar arriba para no cortar la cabeza. Izquierda = laptop/velo. */
-  object-position: 82% top;
+  /* Rostro a la derecha; anclar arriba. Con hero más alto se ve la laptop abajo. */
+  object-position: 80% top;
+}
+
+@media (min-width: 961px) {
+  .plv2-hero-bg-img {
+    object-position: 78% 8%;
+  }
 }
 
 @media (max-width: 960px) {
