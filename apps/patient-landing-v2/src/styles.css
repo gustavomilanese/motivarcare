@@ -1624,7 +1624,7 @@ body {
 
 /* Bloque “certificados”: panel gráfico único (texto y retratos van en la imagen) */
 .plv2-bento {
-  padding: clamp(28px, 2.8vw, 40px) clamp(32px, 4vw, 48px) clamp(52px, 5.2vw, 72px);
+  padding: clamp(28px, 2.8vw, 40px) 0 clamp(52px, 5.2vw, 72px);
   background: linear-gradient(180deg, #f7f5fc 0%, #eef0f8 45%, #eae8f4 100%);
 }
 
@@ -1634,6 +1634,8 @@ body {
   margin-left: auto;
   margin-right: auto;
   padding-bottom: clamp(20px, 3vw, 32px);
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
 .plv2-bento-eyebrow {
@@ -1676,6 +1678,22 @@ body {
     var(--plv2-shadow-xs),
     0 4px 6px rgba(26, 43, 72, 0.03),
     0 22px 50px rgba(26, 35, 56, 0.1);
+}
+
+/* Panel certificados: borde a borde (sin “caja” centrada). */
+.plv2-bento-figure--bleed {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.plv2-bento-figure--bleed .plv2-bento-figure-img {
+  width: 100%;
+  height: auto;
 }
 
 .plv2-bento-figure-img {
@@ -3502,27 +3520,15 @@ body {
     color: #5b4db2;
   }
 
-  /* Misma columna útil que `.plv2-features`; la foto del bento alinea con las cards. */
   .plv2-bento {
-    padding-left: clamp(10px, 3vw, 16px);
-    padding-right: clamp(10px, 3vw, 16px);
+    padding-left: 0;
+    padding-right: 0;
   }
 
-  .plv2-bento .plv2-container {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .plv2-bento-figure {
-    border-radius: 14px;
-    border: 1px solid rgba(107, 92, 179, 0.08);
-    box-shadow:
-      var(--plv2-shadow-xs),
-      0 2px 5px rgba(23, 28, 36, 0.03),
-      0 10px 28px rgba(91, 75, 179, 0.08),
-      0 22px 44px rgba(23, 28, 36, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.96);
-    max-width: 100%;
+  .plv2-bento-figure--bleed {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
   }
 
   .plv2-features {

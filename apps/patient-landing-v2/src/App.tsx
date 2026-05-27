@@ -412,7 +412,7 @@ export function App() {
       </section>
 
       <section className="plv2-bento" aria-labelledby="plv2-bento-title">
-        <div className="plv2-container plv2-bento-intro">
+        <div className="plv2-container plv2-container--wide plv2-bento-intro">
           <p className="plv2-bento-eyebrow">Todo en un solo lugar</p>
           <h2 id="plv2-bento-title" className="plv2-bento-heading">
             Pensado para empezar sin fricción.
@@ -423,19 +423,17 @@ export function App() {
           </p>
         </div>
 
-        <div className="plv2-container">
-          <figure className="plv2-bento-figure">
-            <img
-              src={IMG.psicologosPanel}
-              alt="Psicólogos certificados: equipo profesional con sello por país."
-              width={1024}
-              height={682}
-              loading="lazy"
-              decoding="async"
-              className="plv2-bento-figure-img"
-            />
-          </figure>
-        </div>
+        <figure className="plv2-bento-figure plv2-bento-figure--bleed">
+          <img
+            src={IMG.psicologosPanel}
+            alt="Psicólogos certificados: equipo profesional con sello por país."
+            width={1024}
+            height={682}
+            loading="lazy"
+            decoding="async"
+            className="plv2-bento-figure-img"
+          />
+        </figure>
       </section>
 
       <section className="plv2-steps" id="como-empezar" aria-labelledby="plv2-steps-title">
