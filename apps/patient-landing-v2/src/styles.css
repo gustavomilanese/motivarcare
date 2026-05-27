@@ -178,21 +178,20 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Rostro arriba-derecha: anclar más al top para que no se corte la cara */
-  object-position: 56% 18%;
+  /* Sujeto centro-derecha; lado izquierdo más limpio para el copy + scrim */
+  object-position: 62% 28%;
 }
 
 @media (max-width: 960px) {
   .plv2-hero-bg-img {
-    /* Móvil: viewport muy alto/estrecho; el rostro del sujeto queda en el lado derecho del JPG.
-       Antes 52% recortaba la cara — empujamos el ancla hacia la derecha (coherente con web 56%). */
-    object-position: 76% 20%;
+    /* Móvil: encuadre más centrado (la modelo ya no está tan pegada al borde derecho) */
+    object-position: 58% 22%;
   }
 }
 
 @media (max-width: 480px) {
   .plv2-hero-bg-img {
-    object-position: 82% 22%;
+    object-position: 54% 24%;
   }
 }
 
