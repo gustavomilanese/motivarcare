@@ -123,8 +123,9 @@ body {
   min-height: min(114vh, 1200px);
   display: flex;
   flex-direction: column;
-  background: linear-gradient(165deg, #2a2848 0%, #243047 42%, #1e2d42 100%);
-  border-bottom: 1px solid rgba(23, 28, 36, 0.08);
+  /* Fondo claro: si la foto no cubre un pixel, no aparece franja oscura. */
+  background: #f7f6fa;
+  border-bottom: 1px solid rgba(23, 28, 36, 0.06);
   /* El header va fixed fuera de esta sección: el copy no debe quedar debajo del nav. */
   padding-top: calc(var(--plv2-header-clearance) + env(safe-area-inset-top, 0px));
 }
@@ -195,14 +196,20 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  min-width: 100%;
+  min-height: 100%;
   object-fit: cover;
   /* Rostro a la derecha; anclar arriba. Con hero más alto se ve la laptop abajo. */
   object-position: 80% top;
+  /* Evita línea/borde oscuro por subpíxeles al hacer cover */
+  transform: scale(1.04);
+  transform-origin: 78% top;
 }
 
 @media (min-width: 961px) {
   .plv2-hero-bg-img {
     object-position: 78% 8%;
+    transform-origin: 78% 8%;
   }
 }
 
@@ -1862,25 +1869,22 @@ body {
   }
 }
 
-/* Quiénes somos — imagen full-bleed + copy en blanco (después de pasos) */
+/* Quiénes somos — imagen borde a borde + copy (después de pasos) */
 .plv2-photo-strip {
   width: 100%;
-  padding: clamp(16px, 3vw, 28px) 0 clamp(36px, 5vw, 52px);
-  background: linear-gradient(180deg, #fff 0%, #f8f6ff 55%, #f1f0f7 100%);
+  padding: 0 0 clamp(28px, 4vw, 44px);
+  background: #f3f1f8;
 }
 
 .plv2-photo-strip-frame {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  /* Altura banda imagen (desktop): +20% sobre min(256px, 44.8vw). */
-  grid-template-rows: minmax(min(307px, 53.76vw), auto);
+  grid-template-rows: 1fr;
   width: 100%;
   border-radius: 0;
   overflow: hidden;
-  background: #0f172a;
+  background: #f0eef6;
   border: none;
-  border-top: 1px solid rgba(23, 28, 36, 0.06);
-  border-bottom: 1px solid rgba(23, 28, 36, 0.06);
   box-shadow: none;
 }
 
@@ -1889,20 +1893,20 @@ body {
   position: relative;
   z-index: 0;
   width: 100%;
-  min-height: 100%;
+  min-height: clamp(280px, 42vw, 560px);
   overflow: hidden;
+  background: #f0eef6;
 }
 
 .plv2-photo-strip-parallax .plv2-photo-strip-bg {
   position: absolute;
-  left: 0;
+  inset: 0;
   width: 100%;
-  height: 118%;
-  top: -9%;
+  height: 100%;
   display: block;
   object-fit: cover;
   /* Foto: sujeto a la derecha, luz/ventana a la izquierda — encuadre para copy a la izquierda. */
-  object-position: 38% 42%;
+  object-position: 42% 38%;
   will-change: transform;
 }
 
@@ -3444,21 +3448,21 @@ body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
     overflow: visible;
-    border-top: none;
   }
 
   .plv2-photo-strip-parallax {
     grid-area: 1 / 1 / 2 / 2;
     width: 100%;
-    height: min(40.32vh, 288px);
-    min-height: 192px;
-    max-height: 346px;
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    max-height: none;
   }
 
   .plv2-photo-strip-parallax .plv2-photo-strip-bg {
-    height: 112%;
-    top: -6%;
-    object-position: 48% 30%;
+    inset: 0;
+    height: 100%;
+    object-position: 50% 32%;
   }
 
   .plv2-photo-strip-scrim {

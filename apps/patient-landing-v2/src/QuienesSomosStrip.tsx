@@ -55,12 +55,15 @@ export function QuienesSomosStrip(props: Props) {
             loading="lazy"
             decoding="async"
             className="plv2-photo-strip-bg"
-            style={{ transform: `translate3d(0, ${parallaxY}px, 0)` }}
+            style={{
+              transform: `translate3d(0, ${parallaxY}px, 0) scale(1.04)`,
+              transformOrigin: "42% 38%"
+            }}
           />
         </div>
         <div className="plv2-photo-strip-scrim" aria-hidden="true" />
         <div className="plv2-photo-strip-content">
-          <div className="plv2-container">
+          <div className="plv2-container plv2-container--wide">
             <div className="plv2-hero-copy">
               <p className="plv2-photo-strip-kicker">MotivarCare</p>
               <h2 id="plv2-photo-strip-title">¿Quiénes somos?</h2>
