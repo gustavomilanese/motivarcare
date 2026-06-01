@@ -286,10 +286,26 @@ export function PatientEditModal(props: {
               }
             >
               <option value="">Pendiente de asignacion</option>
-              {props.professionals.map((professional) => (
-                <option key={professional.id} value={professional.id}>{professional.fullName}</option>
-              ))}
+              {(() => {
+                const currentId = editingPatientDraft.activeProfessionalId;
+                const assignable = props.professionals.filter(
+                  (professional) =>
+                    professional.registrationApproval === "APPROVED"
+                    || professional.id === currentId
+                );
+                const sorted = [...assignable].sort((a, b) => a.fullName.localeCompare(b.fullName, "es"));
+                return sorted.map((professional) => (
+                  <option key={professional.id} value={professional.id}>
+                    {professional.fullName}
+                    {professional.registrationApproval !== "APPROVED" ? " (no aprobado)" : ""}
+                    {!professional.visible ? " · oculto" : ""}
+                  </option>
+                ));
+              })()}
             </select>
+            <p className="web-admin-helper-note">
+              Cambio manual: el paciente puede solicitar otro profesional desde su dashboard o Perfil → Soporte.
+            </p>
           </label>
 
           <ProfessionalPhotoUrlField

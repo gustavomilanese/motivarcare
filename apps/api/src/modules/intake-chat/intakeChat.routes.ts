@@ -66,6 +66,14 @@ function handleIntakeChatError(res: Parameters<typeof sendApiError>[0]["res"], e
           message: error.message,
           details: error.details
         });
+      case "SAFETY_REFERRAL_REQUIRED":
+        return void sendApiError({
+          res,
+          status: 422,
+          code: "SAFETY_REFERRAL_REQUIRED",
+          message: error.message,
+          details: error.details
+        });
       case "PROVIDER_ERROR":
       default:
         return void sendApiError({

@@ -40,6 +40,7 @@ import {
 } from "./lib/friendlyPatientMessages";
 import { sessionUserFromAuthMe } from "./lib/sessionFromAuthMe";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
+import { SafetyReferralScreen } from "../intake/pages/SafetyReferralScreen";
 import { IntakeMethodChooserScreen } from "../intake/pages/IntakeMethodChooserScreen";
 import { IntakeChatScreen } from "../intake/pages/IntakeChatScreen";
 import {
@@ -1756,10 +1757,11 @@ export function App() {
       <IntakeScreen
         user={state.session}
         language={state.language}
+        authToken={state.authToken!}
         profileResidencyCountryIso={state.profileResidencyCountry}
         onBack={cleanupAndLogout}
         onCancel={cleanupAndLogout}
-        onSafetyFrequentAbandon={cleanupAndLogout}
+        onSafetyReferralExit={cleanupAndLogout}
         onComplete={async ({ answers, residencyCountry }) => {
           if (!state.authToken) {
             throw new Error("No se encontró sesión autenticada");
@@ -1803,6 +1805,30 @@ export function App() {
       !state.googleCalendarConnected &&
       calendarPromptDismissedUserIds.includes(String(state.session.id).trim())
   );
+
+  const needsSafetyReferralExit = Boolean(
+    state.intake?.completed
+    && state.intake.riskLevel !== "low"
+    && state.intake.triageDecision !== "approved"
+  );
+
+  if (needsSafetyReferralExit) {
+    return (
+      <SafetyReferralScreen
+        language={state.language}
+        residencyCountry={state.profileResidencyCountry}
+        emailNote={false}
+        onExit={() => {
+          clearPostTrialCalendarPending();
+          clearCalendarOfferContext();
+          setProfileSyncReady(false);
+          setProfessionalDirectory(professionalsCatalog);
+          setProfessionalPhotoMap(professionalImageMap);
+          setState(defaultState);
+        }}
+      />
+    );
+  }
 
   return (
     <>

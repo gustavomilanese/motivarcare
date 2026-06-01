@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  __internals,
+  __emergencyResourcesInternals,
   getEmergencyResources,
   renderEmergencyResourcesText
-} from "./emergencyResources.js";
+} from "@therapy/types";
 
 describe("getEmergencyResources", () => {
   it("devuelve null cuando el código es vacío o nulo", () => {
@@ -20,7 +20,7 @@ describe("getEmergencyResources", () => {
     expect(getEmergencyResources("ZZ")).toBeNull();
   });
 
-  it.each(Object.keys(__internals.RESOURCES_BY_COUNTRY))(
+  it.each(Object.keys(__emergencyResourcesInternals.RESOURCES_BY_COUNTRY))(
     "%s tiene al menos un recurso configurado",
     (code) => {
       const resources = getEmergencyResources(code);

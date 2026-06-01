@@ -12,6 +12,7 @@ import {
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
+import { ProfessionalChangeSupportPanel } from "../components/ProfessionalChangeSupportPanel";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
@@ -215,6 +216,7 @@ function canPatientRescheduleBooking(startsAt: string): boolean {
 
 export function DashboardPage(props: {
   state: PatientAppState;
+  authToken: string | null;
   professionals: Professional[];
   professionalPhotoMap: Record<string, string>;
   language: AppLanguage;
@@ -798,6 +800,14 @@ export function DashboardPage(props: {
             >
               {t(props.language, { es: "Abrir chat con profesional", en: "Open chat with professional", pt: "Abrir chat com profissional" })}
             </button>
+            {hasAssignedProfessional ? (
+              <ProfessionalChangeSupportPanel
+                language={props.language}
+                authToken={props.authToken}
+                assignedProfessionalName={professionalAccessibleName(activeProfessional)}
+                compact
+              />
+            ) : null}
           </div>
         ) : (
           <div className="hero-card active-professional-card active-professional-card--empty" aria-live="polite">

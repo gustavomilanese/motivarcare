@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { getEmergencyResources } from "@therapy/types";
 import { usePatientProfile } from "../../context/PatientProfileContext";
 import { useAuth } from "../../auth/AuthContext";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
@@ -39,23 +40,16 @@ function buildRiskBlockedStyles(colors: AppThemeColors) {
       borderWidth: 1,
       borderColor: colors.border
     },
-    label: {
-      fontSize: 12,
-      fontWeight: "800",
-      color: colors.textMuted,
-      textTransform: "uppercase",
-      letterSpacing: 0.6
-    },
-    value: {
-      fontSize: 17,
-      fontWeight: "700",
-      color: colors.text
-    },
-    note: {
+    body: {
       fontSize: 14,
       color: colors.textMuted,
-      lineHeight: 20,
-      marginVertical: 8
+      lineHeight: 20
+    },
+    subhead: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: colors.text,
+      marginTop: 8
     }
   });
 }
@@ -67,22 +61,40 @@ export function RiskBlockedScreen() {
   const { profile } = usePatientProfile();
   const { signOut } = useAuth();
 
+  const resources = useMemo(
+    () => getEmergencyResources(profile?.residencyCountry ?? null),
+    [profile?.residencyCountry]
+  );
+
   return (
     <View style={[styles.root, { paddingTop: insets.top + 16 }]}>
       <LinearGradient colors={[...gradients.hero]} style={styles.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <Text style={styles.heroTitle}>Revisión humana</Text>
+        <Text style={styles.heroTitle}>Apoyo inmediato</Text>
         <Text style={styles.heroText}>
-          Por seguridad, un administrador debe aprobar tu cuenta antes de reservar sesiones. Te avisaremos por email.
+          Por lo que nos compartiste, no podemos continuar con el registro en MotivarCare. Buscá ayuda en una línea de crisis
+          local o servicios de emergencia.
         </Text>
       </LinearGradient>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Nivel informado</Text>
-        <Text style={styles.value}>{profile?.intakeRiskLevel ?? "—"}</Text>
-        <Text style={styles.label}>Estado</Text>
-        <Text style={styles.value}>{profile?.intakeTriageDecision ?? "pendiente"}</Text>
-        <Text style={styles.note}>
-          Si necesitás ayuda inmediata, contactá una línea de crisis local o servicios de emergencia.
+        {resources ? (
+          <>
+            <Text style={styles.subhead}>{resources.countryName} — recursos</Text>
+            {resources.resources.map((resource) => (
+              <Text key={`${resource.label}-${resource.contact}`} style={styles.body}>
+                • {resource.label}: {resource.contact}
+              </Text>
+            ))}
+          </>
+        ) : (
+          <>
+            <Text style={styles.body}>• Emergencias: 911 / 112 según tu país.</Text>
+            <Text style={styles.body}>• Argentina: 0800-345-1435.</Text>
+            <Text style={styles.body}>• Estados Unidos: 988.</Text>
+          </>
+        )}
+        <Text style={styles.body}>
+          Si necesitás ayuda inmediata, contactá estos servicios. Podés cerrar sesión y volver cuando te sientas en condiciones.
         </Text>
 
         <PrimaryButton

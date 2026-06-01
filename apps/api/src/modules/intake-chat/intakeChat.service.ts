@@ -2,7 +2,8 @@ import type { PatientIntakeChatSession, Prisma } from "@prisma/client";
 import { marketFromResidencyCountry } from "@therapy/types";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
-import { evaluateIntakeRiskLevel, type IntakeRiskLevel } from "../profiles/intake.shared.js";
+import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer, type IntakeRiskLevel } from "../profiles/intake.shared.js";
+import { sendPatientSafetyReferralEmail } from "../notifications/patientSafetyReferralEmail.js";
 import {
   INTAKE_CHAT_FALLBACK_GREETING,
   INTAKE_CHAT_SAFETY_ALERT_MESSAGE,
@@ -99,6 +100,7 @@ export class IntakeChatError extends Error {
       | "COST_LIMIT_REACHED"
       | "INCOMPLETE_ANSWERS"
       | "MISSING_RESIDENCY"
+      | "SAFETY_REFERRAL_REQUIRED"
       | "PROVIDER_ERROR",
     message: string,
     public readonly details?: Record<string, unknown>
@@ -360,6 +362,35 @@ export async function submitSession(params: {
   }
 
   const sanitizedAnswers = sanitizeExtractedAnswers(answers);
+
+  if (isSafetyRiskPositiveAnswer(sanitizedAnswers.safetyRisk)) {
+    const patient = await prisma.patientProfile.findUnique({
+      where: { id: params.patientId },
+      select: {
+        user: { select: { email: true, fullName: true } }
+      }
+    });
+
+    if (patient?.user) {
+      await sendPatientSafetyReferralEmail({
+        fullName: patient.user.fullName,
+        email: patient.user.email,
+        residencyCountry: session.residencyCountry
+      });
+    }
+
+    await prisma.patientIntakeChatSession.update({
+      where: { id: session.id },
+      data: { status: "safety_blocked" }
+    });
+
+    throw new IntakeChatError(
+      "SAFETY_REFERRAL_REQUIRED",
+      "Por seguridad, no podemos continuar con el registro. Te enviamos recursos de apoyo por email.",
+      { residencyCountry: session.residencyCountry }
+    );
+  }
+
   const riskLevel = evaluateIntakeRiskLevel(sanitizedAnswers as Record<string, string>);
 
   const intake = await prisma.patientIntake.create({

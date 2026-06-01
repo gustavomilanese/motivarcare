@@ -20,9 +20,17 @@ export const INTAKE_MAIN_REASON_VALUE_JOINER = "\n";
 export const PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES =
   "Estoy teniendo pensamientos de hacerme daño o de no querer vivir";
 
+export function isSafetyRiskPositiveAnswer(raw: string): boolean {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return normalized !== "no" && normalized !== "nao";
+}
+
+/** @deprecated Usar `isSafetyRiskPositiveAnswer`. */
 export function isSafetyRiskFrequentlyAnswer(raw: string): boolean {
-  const v = raw.trim().toLowerCase();
-  return v === "frecuentemente" || v === "frequently" || v === "frequentemente";
+  return isSafetyRiskPositiveAnswer(raw);
 }
 
 export function intakePieces(raw: string): string[] {

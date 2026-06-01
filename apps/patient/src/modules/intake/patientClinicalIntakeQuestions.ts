@@ -7,10 +7,18 @@ const INTAKE_JOIN = "\n";
 export const PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES =
   "Estoy teniendo pensamientos de hacerme daño o de no querer vivir";
 
-/** Respuesta “Frecuentemente” (o etiqueta EN/PT equivalente) en la pregunta de seguridad del intake. */
+/** Respuesta distinta de «No» en la pregunta de autolesión del intake. */
+export function isSafetyRiskPositiveAnswer(raw: string): boolean {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return normalized !== "no" && normalized !== "nao";
+}
+
+/** @deprecated Usar `isSafetyRiskPositiveAnswer`. */
 export function isSafetyRiskFrequentlyAnswer(raw: string): boolean {
-  const v = raw.trim().toLowerCase();
-  return v === "frecuentemente" || v === "frequently" || v === "frequentemente";
+  return isSafetyRiskPositiveAnswer(raw);
 }
 
 /** Valor guardado cuando el paciente no quiere detallar preferencias. */

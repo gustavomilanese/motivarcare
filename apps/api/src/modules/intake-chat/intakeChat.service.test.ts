@@ -122,14 +122,13 @@ describe("evaluateIntakeRiskLevel (compartido entre wizard y chat)", () => {
     expect(evaluateIntakeRiskLevel({ emotionalState: "tengo pensamientos de no querer vivir" })).toBe("high");
   });
 
-  it("high si safetyRisk = Frecuentemente (cualquier idioma)", () => {
+  it("high si safetyRisk es cualquier respuesta distinta de No", () => {
     expect(evaluateIntakeRiskLevel({ safetyRisk: "Frecuentemente" })).toBe("high");
     expect(evaluateIntakeRiskLevel({ safetyRisk: "frequently" })).toBe("high");
-  });
-
-  it("medium si safetyRisk = A veces", () => {
-    expect(evaluateIntakeRiskLevel({ safetyRisk: "A veces" })).toBe("medium");
-    expect(evaluateIntakeRiskLevel({ safetyRisk: "sometimes" })).toBe("medium");
+    expect(evaluateIntakeRiskLevel({ safetyRisk: "A veces" })).toBe("high");
+    expect(evaluateIntakeRiskLevel({ safetyRisk: "sometimes" })).toBe("high");
+    expect(evaluateIntakeRiskLevel({ safetyRisk: "Prefiero no responder" })).toBe("high");
+    expect(evaluateIntakeRiskLevel({ safetyRisk: "Prefer not to answer" })).toBe("high");
   });
 
   it("low en caso default", () => {

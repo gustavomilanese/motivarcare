@@ -6,10 +6,27 @@
 
 export type IntakeRiskLevel = "low" | "medium" | "high";
 
+const SAFETY_RISK_NEGATIVE_ANSWERS = new Set([
+  "no",
+  "nao"
+]);
+
+/**
+ * Cualquier respuesta distinta de «No» en la pregunta de autolesión implica
+ * derivación inmediata (no continúa el onboarding ni accede al portal).
+ */
+export function isSafetyRiskPositiveAnswer(raw: string | null | undefined): boolean {
+  const normalized = (raw ?? "").trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return !SAFETY_RISK_NEGATIVE_ANSWERS.has(normalized);
+}
+
 /**
  * Evalúa el riesgo del paciente a partir de las respuestas crudas del intake.
- * - `high`: ideación de autolesión / no querer vivir (texto libre) o "Frecuentemente" en `safetyRisk`.
- * - `medium`: "A veces" en `safetyRisk`.
+ * - `high`: ideación de autolesión / no querer vivir (texto libre) o cualquier
+ *   respuesta distinta de «No» en `safetyRisk`.
  * - `low`: resto.
  *
  * El criterio se mantiene espejado del wizard clásico para que un mismo paciente
@@ -24,14 +41,8 @@ export function evaluateIntakeRiskLevel(answers: Record<string, string>): Intake
     return "high";
   }
 
-  const safetyAnswer = (answers.safetyRisk ?? "").toLowerCase();
-
-  if (["frequently", "frecuentemente", "frequentemente"].includes(safetyAnswer)) {
+  if (isSafetyRiskPositiveAnswer(answers.safetyRisk)) {
     return "high";
-  }
-
-  if (["sometimes", "a veces", "as vezes"].includes(safetyAnswer)) {
-    return "medium";
   }
 
   return "low";

@@ -47,6 +47,8 @@ const EnvSchema = z.object({
   /** Opcional: mismo rol que BASE_URL (segundo fallback). */
   BACKEND_URL: z.string().optional().default(""),
   EMAIL_FROM: z.string().min(1).default("MotivarCare <no-reply@motivacare.app>"),
+  /** Bandeja operativa para solicitudes de pacientes (cambio de profesional, etc.). */
+  SUPPORT_EMAIL: z.string().email().default("soporte@motivarcare.com"),
   RESEND_API_KEY: z.string().optional().default(""),
   JWT_SECRET: z.string().min(1).default("dev-only-change-me"),
   STRIPE_SECRET_KEY: z.string().optional().default(""),

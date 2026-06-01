@@ -159,6 +159,7 @@ export function PortalRoutes(props: {
             : (
                 <DashboardPage
                   state={props.stateForDisplay}
+                  authToken={props.state.authToken}
                   professionals={props.professionalDirectory}
                   professionalPhotoMap={props.professionalPhotoMap}
                   language={props.state.language}
@@ -416,6 +417,7 @@ export function PortalRoutes(props: {
                     user={props.state.session}
                     language={props.state.language}
                     authToken={props.state.authToken}
+                    assignedProfessionalName={props.state.assignedProfessionalName}
                     profile={props.state.profile}
                     subscription={props.state.subscription}
                     onSessionAvatarUpdate={(avatarUrl) => {

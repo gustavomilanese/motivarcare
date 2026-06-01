@@ -40,7 +40,7 @@ import { INTAKE_MAIN_REASON_VALUE_JOINER, intakeQuestions } from "../../app/cons
 import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages";
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
 import {
-  isSafetyRiskFrequentlyAnswer,
+  isSafetyRiskPositiveAnswer,
   PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
   THERAPIST_PREF_AGE_OPTIONS_ES,
   THERAPIST_PREF_EXCLUSIVE_ES,
@@ -49,6 +49,9 @@ import {
   buildTherapistPreferencesStored,
   parseTherapistPreferencesStored
 } from "../patientClinicalIntakeQuestions";
+import { requestPatientSafetyReferral } from "../services/safetyReferralApi";
+import { SafetyReferralScreen } from "./SafetyReferralScreen";
+import type { CountryEmergencyResources } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -263,13 +266,14 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
 export function IntakeScreen(props: {
   user: SessionUser;
   language: AppLanguage;
+  authToken: string;
   /** ISO2 desde perfil (registro/login): si ya es uno de los países habilitados en portal, no repetimos el paso país. */
   profileResidencyCountryIso?: string | null;
   onComplete: (payload: IntakeCompletionPayload) => Promise<void>;
   onBack?: () => void;
   onCancel?: () => void;
-  /** Sin guardar intake: cierra sesión / estado del portal (p. ej. respuesta “Frecuentemente” en seguridad). */
-  onSafetyFrequentAbandon?: () => void;
+  /** Sin guardar intake: cierra sesión / estado del portal (respuesta de riesgo en seguridad). */
+  onSafetyReferralExit?: () => void;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -283,7 +287,8 @@ export function IntakeScreen(props: {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [crisisGate, setCrisisGate] = useState(false);
-  const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
+  const [safetyReferralGate, setSafetyReferralGate] = useState(false);
+  const [safetyReferralResources, setSafetyReferralResources] = useState<CountryEmergencyResources | null>(null);
   const [residencyCountry, setResidencyCountry] = useState("");
 
   const presetIso = useMemo(
@@ -404,6 +409,20 @@ export function IntakeScreen(props: {
     return true;
   };
 
+  const triggerSafetyReferral = (countryIso: string) => {
+    setSafetyReferralGate(true);
+    void requestPatientSafetyReferral(props.authToken, {
+      residencyCountry: countryIso,
+      language: props.language
+    })
+      .then((response) => {
+        setSafetyReferralResources(response.resources);
+      })
+      .catch((err) => {
+        console.warn("[safety-referral] email request failed:", err instanceof Error ? err.message : err);
+      });
+  };
+
   const goNext = () => {
     if (stepIndex === 0) {
       setError("");
@@ -422,6 +441,11 @@ export function IntakeScreen(props: {
     }
     if (current?.id === "emotionalState" && isCrisisEmotionalAnswer(answers.emotionalState ?? "")) {
       setCrisisGate(true);
+      return;
+    }
+    if (current?.id === "safetyRisk" && isSafetyRiskPositiveAnswer(answers.safetyRisk ?? "")) {
+      const rc = (countryStepEnabled ? residencyCountry : presetIso).trim().toUpperCase();
+      triggerSafetyReferral(/^[A-Z]{2}$/.test(rc) ? rc : presetIso || "AR");
       return;
     }
     if (!isLast) {
@@ -458,6 +482,22 @@ export function IntakeScreen(props: {
       };
     });
   }, [current?.id]);
+
+  const dismissSafetyReferral = () => {
+    setSafetyReferralGate(false);
+    (props.onSafetyReferralExit ?? props.onCancel)?.();
+  };
+
+  if (safetyReferralGate) {
+    return (
+      <SafetyReferralScreen
+        language={props.language}
+        residencyCountry={residencyCountry || presetIso}
+        resources={safetyReferralResources}
+        onExit={dismissSafetyReferral}
+      />
+    );
+  }
 
   if (crisisGate) {
     return (
@@ -554,8 +594,9 @@ export function IntakeScreen(props: {
       return;
     }
 
-    if (isSafetyRiskFrequentlyAnswer(answers.safetyRisk ?? "")) {
-      setSafetyFrequentModal(true);
+    if (isSafetyRiskPositiveAnswer(answers.safetyRisk ?? "")) {
+      const rc = residencyCountry.trim().toUpperCase();
+      triggerSafetyReferral(/^[A-Z]{2}$/.test(rc) ? rc : presetIso || "AR");
       return;
     }
 
@@ -571,11 +612,6 @@ export function IntakeScreen(props: {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const dismissSafetyFrequentModal = () => {
-    setSafetyFrequentModal(false);
-    (props.onSafetyFrequentAbandon ?? props.onCancel)?.();
   };
 
   return (
@@ -926,9 +962,10 @@ export function IntakeScreen(props: {
                           aria-pressed={selected}
                           onClick={() => {
                             setError("");
-                            if (!multi && current.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(option)) {
+                            if (!multi && current.id === "safetyRisk" && isSafetyRiskPositiveAnswer(option)) {
                               setAnswers((prev) => ({ ...prev, [current.id]: option }));
-                              setSafetyFrequentModal(true);
+                              const rc = (countryStepEnabled ? residencyCountry : presetIso).trim().toUpperCase();
+                              triggerSafetyReferral(/^[A-Z]{2}$/.test(rc) ? rc : presetIso || "AR");
                               return;
                             }
                             setAnswers((prev) => {
@@ -1043,71 +1080,6 @@ export function IntakeScreen(props: {
         </form>
       </section>
     </div>
-
-    {safetyFrequentModal ? (
-      <div
-        className="session-modal-backdrop"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="intake-safety-frequent-title"
-      >
-        <div className="session-modal intake-safety-frequent-modal" onClick={(e) => e.stopPropagation()}>
-          <h2 id="intake-safety-frequent-title" className="intake-question-title">
-            {t(props.language, {
-              es: "Apoyo inmediato",
-              en: "Immediate support",
-              pt: "Apoio imediato"
-            })}
-          </h2>
-          <p className="intake-question-help">
-            {t(props.language, {
-              es: "Lo que estás sintiendo es importante y no tenés que afrontarlo solo/a. En este momento, lo más recomendable es buscar ayuda inmediata a través de un servicio de emergencia, una línea de apoyo en crisis o una persona de confianza que pueda acompañarte ahora.",
-              en: "What you are feeling matters, and you do not have to face it alone. Right now, the safest next step is to reach an emergency service, a crisis helpline, or a trusted person who can be with you.",
-              pt: "O que voce esta sentindo importa e voce nao precisa enfrentar isso sozinho/a. Agora, o mais seguro e buscar um servico de emergencia, uma linha de crise ou uma pessoa de confianca que possa estar com voce."
-            })}
-          </p>
-          <p className="intake-question-help intake-safety-frequent-subhead">
-            {t(props.language, {
-              es: "Argentina — recursos",
-              en: "Argentina — resources",
-              pt: "Argentina — recursos"
-            })}
-          </p>
-          <ul className="intake-crisis-list">
-            <li>
-              {t(props.language, {
-                es: "Línea de apoyo al suicida y crisis: 0800-345-1435 (gratis, las 24 h).",
-                en: "Suicide and crisis support line: 0800-345-1435 (free, 24/7).",
-                pt: "Linha de apoio ao suicidio e crise: 0800-345-1435 (gratuita, 24 h)."
-              })}
-            </li>
-            <li>
-              {t(props.language, {
-                es: "Emergencias: 911.",
-                en: "Emergencies: 911.",
-                pt: "Emergencias: 911."
-              })}
-            </li>
-          </ul>
-          <p className="intake-question-help">
-            {t(props.language, {
-              es: "Gracias por tu tiempo. No guardamos este cuestionario; podés volver a registrarte cuando te sientas en condiciones.",
-              en: "Thank you for your time. We are not saving this questionnaire—you can sign up again when you feel ready.",
-              pt: "Obrigado pelo seu tempo. Nao salvamos este questionario; voce pode se registrar de novo quando se sentir preparado/a."
-            })}
-          </p>
-          <div className="intake-wizard-actions">
-            <button className="primary intake-wizard-primary" type="button" onClick={dismissSafetyFrequentModal}>
-              {t(props.language, {
-                es: "Entendido, salir",
-                en: "OK, exit",
-                pt: "Entendi, sair"
-              })}
-            </button>
-          </div>
-        </div>
-      </div>
-    ) : null}
     </Fragment>
   );
 }

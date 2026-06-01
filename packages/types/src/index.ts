@@ -35,6 +35,14 @@ export type {
   SessionPackagesVisibilityPayload
 } from "./sessionPackageVisibility.js";
 
+export {
+  getEmergencyResources,
+  renderEmergencyResourcesText,
+  __emergencyResourcesInternals,
+  type CountryEmergencyResources,
+  type EmergencyResource
+} from "./emergencyResources.js";
+
 export interface CancellationPolicy {
   freeCancellationHours: number;
   lateCancellationPenalty: "none" | "partial_credit" | "full_credit";

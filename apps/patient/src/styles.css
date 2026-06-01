@@ -2437,6 +2437,61 @@ button.danger {
   padding-left: 0;
 }
 
+.professional-change-support {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.professional-change-support--compact .professional-change-support-lead {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.professional-change-support-lead,
+.professional-change-support-meta {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.professional-change-support-reason {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.professional-change-support-btn {
+  justify-self: start;
+  font-size: 13px;
+}
+
+.professional-change-support-feedback {
+  margin: 0;
+  font-size: 13px;
+}
+
+.profile-support-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 10px;
+}
+
+.profile-support-block h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
 .unread-messages-card::before {
   top: 10px;
   left: 10px;

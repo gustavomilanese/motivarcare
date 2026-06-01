@@ -22,7 +22,10 @@ import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
-import { evaluateIntakeRiskLevel } from "./intake.shared.js";
+import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer } from "./intake.shared.js";
+import { sendPatientSafetyReferralEmail } from "../notifications/patientSafetyReferralEmail.js";
+import { sendProfessionalChangeRequestEmail } from "../notifications/patientSupportEmail.js";
+import { getEmergencyResources } from "@therapy/types";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
@@ -56,6 +59,22 @@ const submitIntakeSchema = z.object({
     .length(2)
     .regex(/^[A-Za-z]{2}$/)
     .transform((value) => value.toUpperCase())
+});
+
+const safetyReferralSchema = z.object({
+  residencyCountry: z
+    .string()
+    .trim()
+    .length(2)
+    .regex(/^[A-Za-z]{2}$/)
+    .transform((value) => value.toUpperCase())
+    .optional(),
+  language: z.enum(["es", "en", "pt"]).optional()
+});
+
+const professionalChangeRequestSchema = z.object({
+  reason: z.string().trim().max(2000).optional(),
+  language: z.enum(["es", "en", "pt"]).optional()
 });
 
 const imageSourceSchema = z
@@ -1448,6 +1467,107 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
   });
 });
 
+profilesRouter.post("/me/support-requests/professional-change", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = professionalChangeRequestSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can request a professional change" });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth.userId },
+    select: { email: true, fullName: true }
+  });
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const assignedProfessionalId = assignments[actor.patientProfileId] ?? null;
+
+  let currentProfessionalName: string | null = null;
+  if (assignedProfessionalId) {
+    const professional = await prisma.professionalProfile.findUnique({
+      where: { id: assignedProfessionalId },
+      include: { user: { select: { fullName: true } } }
+    });
+    currentProfessionalName = professional?.user.fullName ?? null;
+  }
+
+  const emailResult = await sendProfessionalChangeRequestEmail({
+    patientName: user.fullName,
+    patientEmail: user.email,
+    patientId: actor.patientProfileId,
+    currentProfessionalName,
+    reason: parsed.data.reason,
+    language: parsed.data.language
+  });
+
+  return res.status(200).json({
+    requestSent: true,
+    emailDelivered: emailResult.delivered,
+    supportEmail: emailResult.supportEmail
+  });
+});
+
+profilesRouter.post("/me/safety-referral", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = safetyReferralSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can request safety referral" });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth.userId },
+    select: { email: true, fullName: true }
+  });
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const residencyCountry =
+    parsed.data.residencyCountry
+    ?? (await prisma.patientProfile.findUnique({
+      where: { id: actor.patientProfileId },
+      select: { residencyCountry: true }
+    }))?.residencyCountry
+    ?? null;
+
+  const emailResult = await sendPatientSafetyReferralEmail({
+    fullName: user.fullName,
+    email: user.email,
+    language: parsed.data.language,
+    residencyCountry
+  });
+
+  const resources = getEmergencyResources(residencyCountry);
+
+  return res.status(200).json({
+    referralSent: true,
+    emailDelivered: emailResult.delivered,
+    resources
+  });
+});
+
 profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -1469,6 +1589,27 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
 
   if (existing) {
     return res.status(409).json({ error: "Intake already completed" });
+  }
+
+  if (isSafetyRiskPositiveAnswer(parsed.data.answers.safetyRisk)) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.auth.userId },
+      select: { email: true, fullName: true }
+    });
+
+    if (user) {
+      await sendPatientSafetyReferralEmail({
+        fullName: user.fullName,
+        email: user.email,
+        residencyCountry: parsed.data.residencyCountry
+      });
+    }
+
+    return res.status(422).json({
+      error: "Safety referral required",
+      code: "SAFETY_REFERRAL_REQUIRED",
+      resources: getEmergencyResources(parsed.data.residencyCountry)
+    });
   }
 
   const riskLevel = evaluateIntakeRiskLevel(parsed.data.answers);

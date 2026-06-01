@@ -13,6 +13,7 @@ import {
   friendlyProfileCalendarConnectMessage
 } from "../lib/friendlyPatientMessages";
 import { apiRequest, DEFAULT_PROFESSIONAL_AVATAR_SRC, resolvePublicAssetUrl } from "../services/api";
+import { ProfessionalChangeSupportPanel } from "../components/ProfessionalChangeSupportPanel";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
   PackageId,
@@ -55,6 +56,7 @@ export function ProfilePage(props: {
   user: SessionUser;
   language: AppLanguage;
   authToken: string | null;
+  assignedProfessionalName?: string | null;
   profile: PatientProfile;
   subscription: SubscriptionState;
   onSessionAvatarUpdate: (avatarUrl: string | null) => void;
@@ -536,7 +538,17 @@ export function ProfilePage(props: {
         {tab === "support" ? (
           <>
             <h2>{t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}</h2>
-            <p className="profile-panel-lead">{t(props.language, { es: "Envianos tu consulta y el equipo operativo te responde a la brevedad.", en: "Send us your request and the operations team will reply shortly.", pt: "Envie sua consulta e a equipe operacional respondera em breve." })}</p>
+            <section className="profile-support-block">
+              <h3>{t(props.language, { es: "Cambio de profesional", en: "Change professional", pt: "Troca de profissional" })}</h3>
+              <ProfessionalChangeSupportPanel
+                language={props.language}
+                authToken={props.authToken}
+                assignedProfessionalName={props.assignedProfessionalName}
+              />
+            </section>
+            <section className="profile-support-block">
+              <h3>{t(props.language, { es: "Otras consultas", en: "Other requests", pt: "Outras consultas" })}</h3>
+              <p className="profile-panel-lead">{t(props.language, { es: "Envianos tu consulta y el equipo operativo te responde a la brevedad.", en: "Send us your request and the operations team will reply shortly.", pt: "Envie sua consulta e a equipe operacional respondera em breve." })}</p>
             <textarea
               rows={4}
               value={supportMessage}
@@ -559,6 +571,7 @@ export function ProfilePage(props: {
               {t(props.language, { es: "Enviar solicitud", en: "Send request", pt: "Enviar solicitacao" })}
             </button>
             {supportMessage ? <p className="success-text">{supportMessage}</p> : null}
+            </section>
           </>
         ) : null}
       </section>

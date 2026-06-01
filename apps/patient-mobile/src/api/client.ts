@@ -113,6 +113,22 @@ export async function submitPatientIntake(params: {
   });
 }
 
+export async function requestPatientSafetyReferral(params: {
+  token: string;
+  residencyCountry?: string;
+  language?: "es" | "en" | "pt";
+}) {
+  return requestJson<{ emailDelivered: boolean; resources: { countryName: string; resources: { label: string; contact: string }[] } | null }>({
+    path: "/api/profiles/me/safety-referral",
+    method: "POST",
+    token: params.token,
+    body: {
+      ...(params.residencyCountry ? { residencyCountry: params.residencyCountry } : {}),
+      ...(params.language ? { language: params.language } : {})
+    }
+  });
+}
+
 export async function getMatchingProfessionals(token: string) {
   return requestJson<MatchingResponse>({
     path: "/api/profiles/me/matching?language=es",

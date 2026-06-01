@@ -9,6 +9,7 @@ export type SendResendEmailParams = {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
   tags?: ResendTag[];
 };
 
@@ -30,6 +31,9 @@ export async function sendResendEmail(params: SendResendEmailParams): Promise<vo
   };
   if (params.text) {
     body.text = params.text;
+  }
+  if (params.replyTo) {
+    body.reply_to = params.replyTo;
   }
   if (params.tags && params.tags.length > 0) {
     body.tags = params.tags;

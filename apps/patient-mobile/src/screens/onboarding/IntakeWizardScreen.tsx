@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
+import { RESIDENCY_COUNTRY_OPTIONS, getEmergencyResources } from "@therapy/types";
 import {
   applyIntakeOptionSelection,
   buildTherapistPreferencesStored,
@@ -21,7 +21,7 @@ import {
   intakePieces,
   INTAKE_MAIN_REASON_VALUE_JOINER,
   intakeQuestions,
-  isSafetyRiskFrequentlyAnswer,
+  isSafetyRiskPositiveAnswer,
   parseTherapistPreferencesStored,
   PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
   THERAPIST_PREF_AGE_OPTIONS_ES,
@@ -29,7 +29,7 @@ import {
   THERAPIST_PREF_GENDER_OPTIONS_ES,
   THERAPIST_PREF_LGBT_OPTIONS_ES
 } from "../../constants/intakeQuestions";
-import { submitPatientIntake } from "../../api/client";
+import { submitPatientIntake, requestPatientSafetyReferral } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
@@ -294,6 +294,27 @@ export function IntakeWizardScreen() {
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
   const [picker, setPicker] = useState<null | "gender" | "age" | "lgbt">(null);
 
+  const openSafetyReferral = useCallback(
+    (countryIso: string) => {
+      setSafetyFrequentModal(true);
+      if (!token) {
+        return;
+      }
+      void requestPatientSafetyReferral({
+        token,
+        residencyCountry: countryIso
+      }).catch((err) => {
+        console.warn("[safety-referral]", err instanceof Error ? err.message : err);
+      });
+    },
+    [token]
+  );
+
+  const safetyResources = useMemo(
+    () => getEmergencyResources(residencyCountry.trim().toUpperCase() || "AR"),
+    [residencyCountry]
+  );
+
   const totalScreens = 1 + intakeQuestions.length;
   const questionIdx = screenIndex === 0 ? -1 : screenIndex - 1;
   const question = questionIdx >= 0 ? intakeQuestions[questionIdx] : null;
@@ -358,8 +379,9 @@ export function IntakeWizardScreen() {
       return;
     }
 
-    if (question.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(currentAnswer)) {
-      setSafetyFrequentModal(true);
+    if (question.id === "safetyRisk" && isSafetyRiskPositiveAnswer(currentAnswer)) {
+      const isoRes = residencyCountry.trim().toUpperCase();
+      openSafetyReferral(/^[A-Z]{2}$/.test(isoRes) ? isoRes : "AR");
       return;
     }
 
@@ -388,7 +410,7 @@ export function IntakeWizardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [answers, question, refresh, residencyCountry, screenIndex, token, totalScreens]);
+  }, [answers, openSafetyReferral, question, refresh, residencyCountry, screenIndex, token, totalScreens]);
 
   const goBack = useCallback(() => {
     Keyboard.dismiss();
@@ -616,9 +638,10 @@ export function IntakeWizardScreen() {
                       onPress={() => {
                         Keyboard.dismiss();
                         setError("");
-                        if (question.id === "safetyRisk" && isSafetyRiskFrequentlyAnswer(opt)) {
+                        if (question.id === "safetyRisk" && isSafetyRiskPositiveAnswer(opt)) {
                           setAnswers((prev) => applyIntakeOptionSelection(prev, question, opt));
-                          setSafetyFrequentModal(true);
+                          const isoRes = residencyCountry.trim().toUpperCase();
+                          openSafetyReferral(/^[A-Z]{2}$/.test(isoRes) ? isoRes : "AR");
                           return;
                         }
                         setAnswers((prev) => applyIntakeOptionSelection(prev, question, opt));
@@ -709,16 +732,27 @@ export function IntakeWizardScreen() {
             <View style={styles.safetyModalCard}>
               <Text style={styles.safetyModalTitle}>Apoyo inmediato</Text>
               <Text style={styles.safetyModalBody}>
-                Lo que estás sintiendo es importante y no tenés que afrontarlo solo/a. En este momento, lo más recomendable es
-                buscar ayuda inmediata a través de un servicio de emergencia, una línea de apoyo en crisis o una persona de
-                confianza que pueda acompañarte ahora.
+                Lo que estás sintiendo es importante y no tenés que afrontarlo solo/a. MotivarCare no brinda atención de
+                emergencia: buscá ahora un servicio de crisis local, emergencias o una persona de confianza.
               </Text>
-              <Text style={styles.safetyModalSubhead}>Argentina — recursos</Text>
-              <Text style={styles.safetyModalBody}>• Línea de apoyo al suicida y crisis: 0800-345-1435 (gratis, las 24 h).</Text>
-              <Text style={styles.safetyModalBody}>• Emergencias: 911.</Text>
+              <Text style={styles.safetyModalSubhead}>
+                {safetyResources ? `${safetyResources.countryName} — recursos` : "Recursos de apoyo"}
+              </Text>
+              {safetyResources ? (
+                safetyResources.resources.map((resource) => (
+                  <Text key={`${resource.label}-${resource.contact}`} style={styles.safetyModalBody}>
+                    • {resource.label}: {resource.contact}
+                  </Text>
+                ))
+              ) : (
+                <>
+                  <Text style={styles.safetyModalBody}>• Emergencias: 911 / 112 según tu país.</Text>
+                  <Text style={styles.safetyModalBody}>• Argentina: 0800-345-1435.</Text>
+                  <Text style={styles.safetyModalBody}>• Estados Unidos: 988.</Text>
+                </>
+              )}
               <Text style={styles.safetyModalBody}>
-                Gracias por tu tiempo. No guardamos este cuestionario; podés iniciar sesión de nuevo cuando te sientas en
-                condiciones.
+                También te enviamos un correo con estos recursos. Gracias por tu tiempo. No guardamos este cuestionario.
               </Text>
               <PrimaryButton
                 label="Entendido, salir"
