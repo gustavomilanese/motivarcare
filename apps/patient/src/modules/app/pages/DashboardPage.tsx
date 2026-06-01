@@ -804,8 +804,7 @@ export function DashboardPage(props: {
               <ProfessionalChangeSupportPanel
                 language={props.language}
                 authToken={props.authToken}
-                assignedProfessionalName={professionalAccessibleName(activeProfessional)}
-                compact
+                variant="link"
               />
             ) : null}
           </div>

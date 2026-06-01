@@ -2155,6 +2155,7 @@ button.danger {
   grid-template-columns: minmax(0, 1.9fr) minmax(0, 1.25fr);
   gap: 12px;
   margin-top: 12px;
+  align-items: start;
 }
 
 .hero-card {
@@ -2449,6 +2450,42 @@ button.danger {
 .professional-change-support--compact .professional-change-support-lead {
   font-size: 13px;
   line-height: 1.45;
+}
+
+.professional-change-support--link {
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: none;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+}
+
+.professional-change-link-btn {
+  border: none;
+  background: transparent;
+  color: #5c6578;
+  font-size: 12px;
+  line-height: 1.3;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.professional-change-link-btn:hover:not(:disabled) {
+  color: #6f59f5;
+}
+
+.professional-change-link-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.professional-change-support--link .professional-change-support-feedback {
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .professional-change-support-lead,
@@ -10534,13 +10571,21 @@ button.sessions-balance {
 }
 
 .patient-dashboard-home .hero-card {
-  min-height: 160px;
+  min-height: 0;
   padding: 10px 10px 8px;
   gap: 5px;
 }
 
 .patient-dashboard-home .sessions-combined-card {
-  min-height: 160px;
+  min-height: 0;
+  height: auto;
+  align-self: start;
+}
+
+.patient-dashboard-home .active-professional-card {
+  gap: 6px;
+  min-height: 0;
+  align-self: start;
 }
 
 .patient-dashboard-home .hero-card::before {

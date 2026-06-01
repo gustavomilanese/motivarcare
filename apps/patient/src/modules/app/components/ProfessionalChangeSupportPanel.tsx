@@ -11,8 +11,12 @@ export function ProfessionalChangeSupportPanel(props: {
   language: AppLanguage;
   authToken: string | null;
   assignedProfessionalName?: string | null;
+  /** `link`: solo un enlace discreto (dashboard). `full`: formulario en Perfil → Soporte. */
+  variant?: "full" | "link";
+  /** @deprecated Usar variant="link" */
   compact?: boolean;
 }) {
+  const variant = props.variant ?? (props.compact ? "link" : "full");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,15 +80,17 @@ export function ProfessionalChangeSupportPanel(props: {
   };
 
   return (
-    <div className={`professional-change-support${props.compact ? " professional-change-support--compact" : ""}`}>
-      <p className="professional-change-support-lead">
-        {t(props.language, {
-          es: "Si querés cambiar de profesional, nuestro equipo lo gestiona manualmente. Contanos brevemente el motivo y te respondemos por email.",
-          en: "If you'd like to change professionals, our team handles it manually. Tell us briefly why and we'll reply by email.",
-          pt: "Se quiser trocar de profissional, nossa equipe faz isso manualmente. Conte brevemente o motivo e responderemos por e-mail."
-        })}
-      </p>
-      {props.assignedProfessionalName ? (
+    <div className={`professional-change-support${variant === "link" ? " professional-change-support--link" : ""}`}>
+      {variant === "full" ? (
+        <p className="professional-change-support-lead">
+          {t(props.language, {
+            es: "Si querés cambiar de profesional, nuestro equipo lo gestiona manualmente. Contanos brevemente el motivo y te respondemos por email.",
+            en: "If you'd like to change professionals, our team handles it manually. Tell us briefly why and we'll reply by email.",
+            pt: "Se quiser trocar de profissional, nossa equipe faz isso manualmente. Conte brevemente o motivo e responderemos por e-mail."
+          })}
+        </p>
+      ) : null}
+      {variant === "full" && props.assignedProfessionalName ? (
         <p className="professional-change-support-meta">
           {t(props.language, {
             es: `Profesional actual: ${props.assignedProfessionalName}`,
@@ -93,7 +99,7 @@ export function ProfessionalChangeSupportPanel(props: {
           })}
         </p>
       ) : null}
-      {!props.compact ? (
+      {variant === "full" ? (
         <textarea
           className="professional-change-support-reason"
           rows={3}
@@ -107,7 +113,12 @@ export function ProfessionalChangeSupportPanel(props: {
           onChange={(event) => setReason(event.target.value)}
         />
       ) : null}
-      <button className="ghost professional-change-support-btn" type="button" disabled={loading} onClick={() => void submit()}>
+      <button
+        className={variant === "link" ? "professional-change-link-btn" : "ghost professional-change-support-btn"}
+        type="button"
+        disabled={loading}
+        onClick={() => void submit()}
+      >
         {loading
           ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
           : t(props.language, {
