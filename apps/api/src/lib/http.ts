@@ -8,7 +8,8 @@ export type ApiErrorCode =
   | "CONFLICT"
   | "TOO_MANY_REQUESTS"
   | "SERVICE_UNAVAILABLE"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "SAFETY_REFERRAL_REQUIRED";
 
 export function sendApiError(params: {
   res: Response;
