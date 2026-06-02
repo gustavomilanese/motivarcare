@@ -540,10 +540,20 @@ export function ProfilePage(props: {
             <h2>{t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}</h2>
             <section className="profile-support-block">
               <h3>{t(props.language, { es: "Cambio de profesional", en: "Change professional", pt: "Troca de profissional" })}</h3>
+              <p className="profile-panel-lead">
+                {t(props.language, {
+                  es: "Si necesitás otro profesional, solicitá el cambio y el equipo de soporte te guía por email.",
+                  en: "If you need a different therapist, request a change and support will guide you by email.",
+                  pt: "Se precisar de outro profissional, solicite a troca e o suporte orientara por e-mail."
+                })}
+              </p>
               <ProfessionalChangeSupportPanel
                 language={props.language}
                 authToken={props.authToken}
+                patientName={props.user.fullName}
+                patientEmail={props.user.email}
                 assignedProfessionalName={props.assignedProfessionalName}
+                triggerStyle="profile-button"
               />
             </section>
             <section className="profile-support-block">

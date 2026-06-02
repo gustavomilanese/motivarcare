@@ -804,7 +804,10 @@ export function DashboardPage(props: {
               <ProfessionalChangeSupportPanel
                 language={props.language}
                 authToken={props.authToken}
-                variant="link"
+                patientName={props.state.session?.fullName}
+                patientEmail={props.state.session?.email}
+                assignedProfessionalName={professionalAccessibleName(activeProfessional)}
+                triggerStyle="card-link"
               />
             ) : null}
           </div>

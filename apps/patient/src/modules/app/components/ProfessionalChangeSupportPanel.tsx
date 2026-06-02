@@ -1,42 +1,77 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { PATIENT_SUPPORT_EMAIL } from "../constants/support";
+import { buildProfessionalChangeMailtoUrl, PATIENT_SUPPORT_EMAIL } from "../constants/support";
 import { requestProfessionalChange } from "../services/professionalChangeRequestApi";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-export function ProfessionalChangeSupportPanel(props: {
+function openMailtoFallback(params: {
+  supportEmail?: string;
+  patientName?: string | null;
+  patientEmail?: string | null;
+  assignedProfessionalName?: string | null;
+  reason?: string | null;
+}): void {
+  window.location.href = buildProfessionalChangeMailtoUrl(params);
+}
+
+function ProfessionalChangeRequestModal(props: {
   language: AppLanguage;
   authToken: string | null;
+  patientName?: string | null;
+  patientEmail?: string | null;
   assignedProfessionalName?: string | null;
-  /** `link`: solo un enlace discreto (dashboard). `full`: formulario en Perfil → Soporte. */
-  variant?: "full" | "link";
-  /** @deprecated Usar variant="link" */
-  compact?: boolean;
+  onClose: () => void;
 }) {
-  const variant = props.variant ?? (props.compact ? "link" : "full");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [showMailtoFallback, setShowMailtoFallback] = useState(false);
+  const [fallbackSupportEmail, setFallbackSupportEmail] = useState(PATIENT_SUPPORT_EMAIL);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !loading) {
+        props.onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loading, props]);
+
+  const mailtoParams = {
+    supportEmail: fallbackSupportEmail,
+    patientName: props.patientName,
+    patientEmail: props.patientEmail,
+    assignedProfessionalName: props.assignedProfessionalName,
+    reason: reason.trim() || undefined
+  };
+
+  const offerMailtoFallback = (supportEmail: string) => {
+    setFallbackSupportEmail(supportEmail || PATIENT_SUPPORT_EMAIL);
+    setShowMailtoFallback(true);
+    setMessage(
+      t(props.language, {
+        es: "No pudimos enviar el correo automáticamente. Podés abrir tu cliente de email con el mensaje ya preparado.",
+        en: "We couldn't send the email automatically. You can open your email app with a pre-filled message.",
+        pt: "Nao foi possivel enviar o e-mail automaticamente. Voce pode abrir seu app de e-mail com a mensagem pronta."
+      })
+    );
+  };
 
   const submit = async () => {
     if (!props.authToken) {
-      setError(
-        t(props.language, {
-          es: "Necesitás iniciar sesión para enviar la solicitud.",
-          en: "You need to be signed in to send this request.",
-          pt: "Voce precisa estar conectado/a para enviar a solicitacao."
-        })
-      );
+      offerMailtoFallback(PATIENT_SUPPORT_EMAIL);
       return;
     }
 
     setLoading(true);
-    setError("");
     setMessage("");
+    setShowMailtoFallback(false);
+    setSuccess(false);
 
     try {
       const response = await requestProfessionalChange(props.authToken, {
@@ -45,6 +80,7 @@ export function ProfessionalChangeSupportPanel(props: {
       });
 
       if (response.emailDelivered) {
+        setSuccess(true);
         setMessage(
           t(props.language, {
             es: "Recibimos tu solicitud. Soporte te contactará por email a la brevedad.",
@@ -53,82 +89,174 @@ export function ProfessionalChangeSupportPanel(props: {
           })
         );
         setReason("");
-      } else {
-        setMessage(
-          t(props.language, {
-            es: `No pudimos enviar el correo automáticamente. Escribinos a ${response.supportEmail || PATIENT_SUPPORT_EMAIL}.`,
-            en: `We couldn't send the email automatically. Write to ${response.supportEmail || PATIENT_SUPPORT_EMAIL}.`,
-            pt: `Nao foi possivel enviar o e-mail automaticamente. Escreva para ${response.supportEmail || PATIENT_SUPPORT_EMAIL}.`
-          })
-        );
+        return;
       }
+
+      offerMailtoFallback(response.supportEmail);
     } catch (requestError) {
-      const fallback = `mailto:${PATIENT_SUPPORT_EMAIL}?subject=${encodeURIComponent("Solicitud de cambio de profesional")}`;
-      setError(
-        t(props.language, {
-          es: `No pudimos enviar la solicitud ahora. Probá de nuevo o escribinos a ${PATIENT_SUPPORT_EMAIL}.`,
-          en: `We couldn't send the request right now. Try again or email ${PATIENT_SUPPORT_EMAIL}.`,
-          pt: `Nao foi possivel enviar agora. Tente de novo ou escreva para ${PATIENT_SUPPORT_EMAIL}.`
-        })
-      );
-      if (requestError instanceof Error) {
-        console.warn("[professional-change]", requestError.message, fallback);
-      }
+      console.warn("[professional-change]", requestError instanceof Error ? requestError.message : requestError);
+      offerMailtoFallback(PATIENT_SUPPORT_EMAIL);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={`professional-change-support${variant === "link" ? " professional-change-support--link" : ""}`}>
-      {variant === "full" ? (
-        <p className="professional-change-support-lead">
+    <div
+      className="session-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="professional-change-modal-title"
+      onClick={() => {
+        if (!loading) {
+          props.onClose();
+        }
+      }}
+    >
+      <div
+        className="session-modal professional-change-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="professional-change-modal-title" className="intake-question-title">
           {t(props.language, {
-            es: "Si querés cambiar de profesional, nuestro equipo lo gestiona manualmente. Contanos brevemente el motivo y te respondemos por email.",
-            en: "If you'd like to change professionals, our team handles it manually. Tell us briefly why and we'll reply by email.",
-            pt: "Se quiser trocar de profissional, nossa equipe faz isso manualmente. Conte brevemente o motivo e responderemos por e-mail."
+            es: "Cambio de profesional",
+            en: "Change professional",
+            pt: "Troca de profissional"
+          })}
+        </h2>
+        <p className="intake-question-help">
+          {t(props.language, {
+            es: "Si querés trabajar con otro psicólogo/a, nuestro equipo lo gestiona de forma manual. No podés elegir otro profesional directamente desde la app por ahora.",
+            en: "If you'd like to work with a different therapist, our team handles the change manually. You can't pick another professional directly in the app yet.",
+            pt: "Se quiser trabalhar com outro/a profissional, nossa equipe faz a troca manualmente. Por enquanto nao e possivel escolher outro profissional direto no app."
           })}
         </p>
-      ) : null}
-      {variant === "full" && props.assignedProfessionalName ? (
-        <p className="professional-change-support-meta">
+        <p className="intake-question-help">
           {t(props.language, {
-            es: `Profesional actual: ${props.assignedProfessionalName}`,
-            en: `Current professional: ${props.assignedProfessionalName}`,
-            pt: `Profissional atual: ${props.assignedProfessionalName}`
+            es: "Contanos brevemente el motivo (opcional) y te respondemos por email con los próximos pasos.",
+            en: "Tell us briefly why (optional) and we'll reply by email with next steps.",
+            pt: "Conte brevemente o motivo (opcional) e responderemos por e-mail com os proximos passos."
           })}
         </p>
-      ) : null}
-      {variant === "full" ? (
-        <textarea
-          className="professional-change-support-reason"
-          rows={3}
-          value={reason}
-          disabled={loading}
-          placeholder={t(props.language, {
-            es: "Motivo del cambio (opcional)",
-            en: "Reason for the change (optional)",
-            pt: "Motivo da troca (opcional)"
-          })}
-          onChange={(event) => setReason(event.target.value)}
+        {props.assignedProfessionalName ? (
+          <p className="professional-change-modal-meta">
+            {t(props.language, {
+              es: `Profesional actual: ${props.assignedProfessionalName}`,
+              en: `Current professional: ${props.assignedProfessionalName}`,
+              pt: `Profissional atual: ${props.assignedProfessionalName}`
+            })}
+          </p>
+        ) : null}
+
+        {!success ? (
+          <textarea
+            className="professional-change-support-reason"
+            rows={4}
+            value={reason}
+            disabled={loading}
+            placeholder={t(props.language, {
+              es: "Motivo del cambio (opcional)",
+              en: "Reason for the change (optional)",
+              pt: "Motivo da troca (opcional)"
+            })}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        ) : null}
+
+        {message ? (
+          <p className={success ? "success-text professional-change-modal-feedback" : "professional-change-modal-feedback"}>
+            {message}
+          </p>
+        ) : null}
+
+        <div className="intake-wizard-actions professional-change-modal-actions">
+          <button
+            className="ghost intake-wizard-secondary"
+            type="button"
+            disabled={loading}
+            onClick={props.onClose}
+          >
+            {success
+              ? t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })
+              : t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+          </button>
+          {!success && showMailtoFallback ? (
+            <button
+              className="ghost intake-wizard-secondary"
+              type="button"
+              onClick={() => openMailtoFallback(mailtoParams)}
+            >
+              {t(props.language, {
+                es: "Abrir email",
+                en: "Open email",
+                pt: "Abrir e-mail"
+              })}
+            </button>
+          ) : null}
+          {!success ? (
+            <button
+              className="primary intake-wizard-primary"
+              type="button"
+              disabled={loading}
+              onClick={() => void submit()}
+            >
+              {loading
+                ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
+                : t(props.language, {
+                    es: "Enviar solicitud",
+                    en: "Send request",
+                    pt: "Enviar solicitacao"
+                  })}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Botón + modal: en la card del dashboard solo se ve el botón; el detalle va en el popup.
+ */
+export function ProfessionalChangeSupportPanel(props: {
+  language: AppLanguage;
+  authToken: string | null;
+  patientName?: string | null;
+  patientEmail?: string | null;
+  assignedProfessionalName?: string | null;
+  /** Estilo del botón en la card del home. */
+  triggerStyle?: "card-link" | "profile-button";
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerStyle = props.triggerStyle ?? "card-link";
+
+  return (
+    <>
+      <button
+        type="button"
+        className={
+          triggerStyle === "card-link"
+            ? "professional-change-link-btn"
+            : "ghost professional-change-support-btn"
+        }
+        onClick={() => setOpen(true)}
+      >
+        {t(props.language, {
+          es: "Solicitar cambio de profesional",
+          en: "Request a professional change",
+          pt: "Solicitar troca de profissional"
+        })}
+      </button>
+      {open ? (
+        <ProfessionalChangeRequestModal
+          language={props.language}
+          authToken={props.authToken}
+          patientName={props.patientName}
+          patientEmail={props.patientEmail}
+          assignedProfessionalName={props.assignedProfessionalName}
+          onClose={() => setOpen(false)}
         />
       ) : null}
-      <button
-        className={variant === "link" ? "professional-change-link-btn" : "ghost professional-change-support-btn"}
-        type="button"
-        disabled={loading}
-        onClick={() => void submit()}
-      >
-        {loading
-          ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
-          : t(props.language, {
-              es: "Solicitar cambio de profesional",
-              en: "Request a professional change",
-              pt: "Solicitar troca de profissional"
-            })}
-      </button>
-      {message ? <p className="success-text professional-change-support-feedback">{message}</p> : null}
-      {error ? <p className="error-text professional-change-support-feedback">{error}</p> : null}
-    </div>
+    </>
   );
 }

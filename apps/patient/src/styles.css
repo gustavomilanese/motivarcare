@@ -2482,10 +2482,30 @@ button.danger {
   cursor: wait;
 }
 
-.professional-change-support--link .professional-change-support-feedback {
-  font-size: 11px;
-  line-height: 1.35;
-  text-align: center;
+.professional-change-modal {
+  width: min(100%, 480px);
+  max-height: min(90vh, 640px);
+  overflow-y: auto;
+  padding: 22px 20px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.professional-change-modal-meta {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c2b47;
+}
+
+.professional-change-modal-feedback {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.professional-change-modal-actions {
+  margin-top: 4px;
 }
 
 .professional-change-support-lead,

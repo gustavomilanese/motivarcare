@@ -37,22 +37,55 @@ export async function sendProfessionalChangeRequestEmail(params: {
     .map((line) => (line.length === 0 ? "<br/>" : `<p>${line.replace(/</g, "&lt;")}</p>`))
     .join("");
 
-  if (!env.RESEND_API_KEY) {
-    console.info("Professional change request email skipped: RESEND_API_KEY not configured", {
-      patientEmail: params.patientEmail,
-      supportEmail
-    });
+  if (!env.RESEND_API_KEY?.trim()) {
+    console.info(
+      JSON.stringify({
+        level: "info",
+        event: "professional_change_request_email_skipped",
+        reason: "missing_resend_api_key",
+        patientEmail: params.patientEmail,
+        supportEmail,
+        patientId: params.patientId,
+        timestamp: new Date().toISOString()
+      })
+    );
     return { delivered: false, supportEmail };
   }
 
-  await sendResendEmail({
-    to: supportEmail,
-    subject,
-    html,
-    text,
-    replyTo: params.patientEmail,
-    tags: [{ name: "event", value: "professional_change_request" }]
-  });
+  try {
+    await sendResendEmail({
+      to: supportEmail,
+      subject,
+      html,
+      text,
+      replyTo: params.patientEmail,
+      tags: [{ name: "event", value: "professional_change_request" }]
+    });
 
-  return { delivered: true, supportEmail };
+    console.info(
+      JSON.stringify({
+        level: "info",
+        event: "professional_change_request_email_sent",
+        patientEmail: params.patientEmail,
+        supportEmail,
+        patientId: params.patientId,
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    return { delivered: true, supportEmail };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "professional_change_request_email_failed",
+        patientEmail: params.patientEmail,
+        supportEmail,
+        patientId: params.patientId,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      })
+    );
+    return { delivered: false, supportEmail };
+  }
 }
