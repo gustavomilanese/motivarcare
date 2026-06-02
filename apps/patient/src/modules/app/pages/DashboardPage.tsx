@@ -793,23 +793,28 @@ export function DashboardPage(props: {
                 )}
               </p>
             </div>
-            <button
-              className="chat-gradient-button"
-              type="button"
-              onClick={() => props.onGoToChat(activeProfessional.id)}
-            >
-              {t(props.language, { es: "Abrir chat con profesional", en: "Open chat with professional", pt: "Abrir chat com profissional" })}
-            </button>
-            {hasAssignedProfessional ? (
-              <ProfessionalChangeSupportPanel
-                language={props.language}
-                authToken={props.authToken}
-                patientName={props.state.session?.fullName}
-                patientEmail={props.state.session?.email}
-                assignedProfessionalName={professionalAccessibleName(activeProfessional)}
-                triggerStyle="card-link"
-              />
-            ) : null}
+            <div className="active-professional-actions">
+              <button
+                className="active-professional-action-btn active-professional-action-btn--primary"
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  props.onGoToChat(activeProfessional.id);
+                }}
+              >
+                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+              </button>
+              {hasAssignedProfessional ? (
+                <ProfessionalChangeSupportPanel
+                  language={props.language}
+                  authToken={props.authToken}
+                  patientName={props.state.session?.fullName}
+                  patientEmail={props.state.session?.email}
+                  assignedProfessionalName={professionalAccessibleName(activeProfessional)}
+                  triggerStyle="card-action"
+                />
+              ) : null}
+            </div>
           </div>
         ) : (
           <div className="hero-card active-professional-card active-professional-card--empty" aria-live="polite">

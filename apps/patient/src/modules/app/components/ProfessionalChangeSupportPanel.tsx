@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { buildProfessionalChangeMailtoUrl, PATIENT_SUPPORT_EMAIL } from "../constants/support";
 import { requestProfessionalChange } from "../services/professionalChangeRequestApi";
@@ -33,6 +34,14 @@ function ProfessionalChangeRequestModal(props: {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !loading) {
         props.onClose();
@@ -40,7 +49,7 @@ function ProfessionalChangeRequestModal(props: {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [loading, props]);
+  }, [loading, props.onClose]);
 
   const mailtoParams = {
     supportEmail: fallbackSupportEmail,
@@ -103,19 +112,20 @@ function ProfessionalChangeRequestModal(props: {
 
   return (
     <div
-      className="session-modal-backdrop"
+      className="session-modal-backdrop professional-change-modal-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="professional-change-modal-title"
-      onClick={() => {
-        if (!loading) {
-          props.onClose();
+      onMouseDown={(event) => {
+        if (event.target !== event.currentTarget || loading) {
+          return;
         }
+        props.onClose();
       }}
     >
       <div
         className="session-modal professional-change-modal"
-        onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <h2 id="professional-change-modal-title" className="intake-question-title">
           {t(props.language, {
@@ -216,7 +226,7 @@ function ProfessionalChangeRequestModal(props: {
 }
 
 /**
- * Botón + modal: en la card del dashboard solo se ve el botón; el detalle va en el popup.
+ * Botón + modal en portal (body): la card del dashboard solo muestra el trigger.
  */
 export function ProfessionalChangeSupportPanel(props: {
   language: AppLanguage;
@@ -224,39 +234,59 @@ export function ProfessionalChangeSupportPanel(props: {
   patientName?: string | null;
   patientEmail?: string | null;
   assignedProfessionalName?: string | null;
-  /** Estilo del botón en la card del home. */
-  triggerStyle?: "card-link" | "profile-button";
+  /** Botón dentro de la fila de acciones de la card del home. */
+  triggerStyle?: "card-action" | "profile-button";
 }) {
   const [open, setOpen] = useState(false);
-  const triggerStyle = props.triggerStyle ?? "card-link";
+  const close = useCallback(() => setOpen(false), []);
+  const triggerStyle = props.triggerStyle ?? "profile-button";
+
+  const openModal = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setOpen(true);
+  };
+
+  const triggerLabel =
+    triggerStyle === "card-action"
+      ? t(props.language, {
+          es: "Solicitar cambio",
+          en: "Request change",
+          pt: "Solicitar troca"
+        })
+      : t(props.language, {
+          es: "Solicitar cambio de profesional",
+          en: "Request a professional change",
+          pt: "Solicitar troca de profissional"
+        });
 
   return (
     <>
       <button
         type="button"
         className={
-          triggerStyle === "card-link"
-            ? "professional-change-link-btn"
+          triggerStyle === "card-action"
+            ? "active-professional-action-btn active-professional-action-btn--secondary"
             : "ghost professional-change-support-btn"
         }
-        onClick={() => setOpen(true)}
+        onClick={openModal}
+        aria-haspopup="dialog"
       >
-        {t(props.language, {
-          es: "Solicitar cambio de profesional",
-          en: "Request a professional change",
-          pt: "Solicitar troca de profissional"
-        })}
+        {triggerLabel}
       </button>
-      {open ? (
-        <ProfessionalChangeRequestModal
-          language={props.language}
-          authToken={props.authToken}
-          patientName={props.patientName}
-          patientEmail={props.patientEmail}
-          assignedProfessionalName={props.assignedProfessionalName}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <ProfessionalChangeRequestModal
+              language={props.language}
+              authToken={props.authToken}
+              patientName={props.patientName}
+              patientEmail={props.patientEmail}
+              assignedProfessionalName={props.assignedProfessionalName}
+              onClose={close}
+            />,
+            document.body
+          )
+        : null}
     </>
   );
 }
