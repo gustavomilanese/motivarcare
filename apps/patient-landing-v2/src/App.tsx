@@ -29,8 +29,8 @@ const PORTAL_CTA_DISPLAY_HOST = "motivarcare.com";
 /** Hero full-bleed (intrínsecos para CLS). */
 const HERO_PHOTO = {
   jpg: "/photos/hero_landing.jpg",
-  width: 2400,
-  height: 1600
+  width: 1024,
+  height: 585
 } as const;
 
 const IMG = {

@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ADMIN_TRIAL_BOOKING_CANCEL_PHRASE, SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../constants";
 import {
   type BookingDraft,
@@ -59,6 +60,18 @@ function isoToInputDateTime(value: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function patientOpsFromManagement(
+  patient: PatientManagementResponse["patient"]
+): AdminPatientOps {
+  const confirmedCount = patient.confirmedBookings.filter((booking) => booking.status === "CONFIRMED").length;
+  const { confirmedBookings: _bookings, ...fields } = patient;
+  return {
+    ...fields,
+    bookingsCount: confirmedCount,
+    creditBalance: patient.latestPurchase?.remainingCredits ?? 0
+  };
+}
+
 function patientStatusLabel(status: PatientStatus | string, language: AppLanguage): string {
   if (status === "active") {
     return t(language, { es: "activo", en: "active", pt: "ativo" });
@@ -76,6 +89,8 @@ function patientStatusLabel(status: PatientStatus | string, language: AppLanguag
 }
 
 export function PatientsOpsPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
+  const [searchParams] = useSearchParams();
+  const handledDeepLinkPatientIdRef = useRef<string | null>(null);
   const [packages, setPackages] = useState<AdminSessionPackage[]>([]);
   const [patients, setPatients] = useState<AdminPatientOps[]>([]);
   const [professionals, setProfessionals] = useState<AdminProfessionalOps[]>([]);
@@ -194,6 +209,30 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   }, [props.token]);
 
   useEffect(() => {
+    const patientId = searchParams.get("patientId")?.trim() ?? "";
+    if (!patientId || !props.token) {
+      return;
+    }
+    if (handledDeepLinkPatientIdRef.current === patientId) {
+      return;
+    }
+    handledDeepLinkPatientIdRef.current = patientId;
+
+    const shouldOpenEditModal = searchParams.get("edit") !== "0";
+    setEditingPatientId(patientId);
+    if (shouldOpenEditModal) {
+      setIsPatientEditModalOpen(true);
+    }
+
+    void loadPatientManagement(patientId).catch((requestError: unknown) => {
+      handledDeepLinkPatientIdRef.current = null;
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("patients-ops-load", props.language, raw));
+      setIsPatientEditModalOpen(false);
+    });
+  }, [props.language, props.token, searchParams]);
+
+  useEffect(() => {
     if (!editingPatientId && !isCreatePatientModalOpen && !isPatientEditModalOpen) {
       return;
     }
@@ -308,20 +347,25 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     setPatientBookingsLoading((current) => ({ ...current, [patientId]: true }));
     try {
       const response = await apiRequest<PatientManagementResponse>("/api/admin/patients/" + patientId + "/management", {}, props.token);
+      const refreshedPatient = patientOpsFromManagement(response.patient);
 
-      setPatients((current) => current.map((patient) =>
-        patient.id === patientId
-          ? {
-              ...patient,
-              avatarUrl: response.patient.avatarUrl ?? patient.avatarUrl ?? null,
-              intakeAnswers: response.patient.intakeAnswers ?? null,
-              activeProfessionalId: response.patient.activeProfessionalId ?? null,
-              activeProfessionalName: response.patient.activeProfessionalName ?? null,
-              assignmentStatus: response.patient.assignmentStatus ?? "pending",
-              latestPurchase: response.patient.latestPurchase
-            }
-          : patient
-      ));
+      setPatients((current) => {
+        const exists = current.some((patient) => patient.id === patientId);
+        if (!exists) {
+          setPatientSearchInput(refreshedPatient.email);
+          setPatientSearch(refreshedPatient.email);
+          return [refreshedPatient, ...current];
+        }
+        return current.map((patient) =>
+          patient.id === patientId
+            ? {
+                ...patient,
+                ...refreshedPatient,
+                avatarUrl: response.patient.avatarUrl ?? patient.avatarUrl ?? null
+              }
+            : patient
+        );
+      });
 
       setPatientBookings((current) => ({ ...current, [patientId]: response.patient.confirmedBookings }));
       setActiveProfessionalDrafts((current) => ({ ...current, [patientId]: response.patient.activeProfessionalId ?? "" }));
