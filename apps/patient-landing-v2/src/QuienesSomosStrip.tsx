@@ -44,8 +44,8 @@ export function QuienesSomosStrip(props: Props) {
               <p className="plv2-photo-strip-prose">
                 <span className="plv2-photo-strip-accent">Maca</span> impulsó MotivarCare con una idea clara: que pedir
                 ayuda psicológica sea sencillo. Nacimos para acercar un{" "}
-                <span className="plv2-photo-strip-accent">acompañamiento psicológico serio y humano</span>, sin vueltas ni
-                humo: claro, accesible y pensado para el día a día.
+                <span className="plv2-photo-strip-accent">acompañamiento psicológico serio y humano</span>: claro,
+                accesible y pensado para el día a día.
               </p>
               <a
                 className="plv2-cta-gradient plv2-photo-strip-cta"
