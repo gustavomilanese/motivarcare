@@ -1,7 +1,21 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap");
 
 :root {
   color-scheme: light;
+  /* Tipografía única en toda la landing */
+  --plv2-font: "Montserrat", system-ui, -apple-system, sans-serif;
+  --plv2-text-eyebrow: 0.72rem;
+  --plv2-text-sm: 0.875rem;
+  --plv2-text-base: 1rem;
+  --plv2-text-lead: clamp(1.04rem, 1.75vw, 1.2rem);
+  --plv2-text-body: clamp(0.98rem, 1.4vw, 1.07rem);
+  --plv2-text-h3: clamp(1.35rem, 2.8vw, 1.85rem);
+  --plv2-text-h2: clamp(2.05rem, 3.35vw, 3.35rem);
+  --plv2-text-display: clamp(2.47rem, 5.46vw, 3.575rem);
+  --plv2-weight-regular: 400;
+  --plv2-weight-medium: 500;
+  --plv2-weight-semibold: 600;
+  --plv2-weight-bold: 700;
   --plv2-teal: #45b8ad;
   --plv2-teal-dark: #3aa89e;
   --plv2-blue: #2f62c4;
@@ -56,7 +70,8 @@ body,
 }
 
 body {
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: var(--plv2-font);
+  font-weight: var(--plv2-weight-regular);
   color: var(--plv2-ink);
   background-color: var(--plv2-page-bg);
   background-image:
@@ -72,9 +87,16 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: var(--plv2-font);
   /* La shell del hero va con overflow visible (sticky + card); cortamos solo el eje X. */
   overflow-x: clip;
 }
+
+/*
+ * Tipografía: Montserrat en toda la landing.
+ * Escala (--plv2-text-*): eyebrow · sm · base · lead · body · h3 · h2 · display
+ * Pesos: 400 cuerpo · 500 énfasis · 600 labels · 700 títulos
+ */
 
 /* Bloques de scroll: el ritmo va en el padding de cada sección, no en margin (evita franjas del bg del body). */
 .plv2-hero-shell,
@@ -82,7 +104,7 @@ body {
 .plv2-bento,
 .plv2-steps,
 .plv2-photo-strip,
-.plv2-pricing-split,
+.plv2-precios-panel,
 .plv2-faq {
   margin: 0;
 }
@@ -356,7 +378,6 @@ body {
 }
 
 .plv2-header-nav-link {
-  font-family: "Montserrat", sans-serif;
   font-weight: 600;
   font-size: clamp(0.78rem, 1.15vw, 0.9rem);
   letter-spacing: 0.01em;
@@ -518,7 +539,6 @@ body {
   gap: 10px;
   padding: 12px 22px;
   border-radius: 999px;
-  font-family: "Montserrat", sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
@@ -615,17 +635,17 @@ body {
 
 .plv2-hl-blue {
   color: var(--plv2-hero-accent);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .plv2-hl-teal {
   color: var(--plv2-teal);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .plv2-hl-green-dark {
   color: var(--plv2-hero-green-dark);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Arco bajo “cambio” — curva swoosh (mismo azul que “psicólogo” vía .plv2-hl-blue) */
@@ -668,10 +688,8 @@ body {
 
 .plv2-hero-copy h1,
 .plv2-hero-copy h2 {
-  font-family: "Montserrat", sans-serif;
-  font-weight: 700;
-  /* +30% respecto al tamaño anterior; interlineado −30% (×0.7) respecto a 1.12 */
-  font-size: clamp(2.47rem, 5.46vw, 3.575rem);
+  font-weight: var(--plv2-weight-bold);
+  font-size: var(--plv2-text-display);
   line-height: 0.784;
   letter-spacing: -0.035em;
   color: var(--plv2-ink);
@@ -682,8 +700,7 @@ body {
 @media (min-width: 961px) {
   .plv2-hero-copy h1 {
     max-width: 11.8em;
-    /* Menos agresivo en vw que el clamp de arriba: encaja en 3 líneas con white-space: nowrap. */
-    font-size: clamp(2.05rem, 3.35vw, 3.35rem);
+    font-size: var(--plv2-text-h2);
   }
 
   .plv2-hero-lead {
@@ -717,12 +734,10 @@ body {
   }
 }
 
-/* Mismo criterio que el diseño del hero: cuerpo de apoyo en Montserrat (no DM Sans del body). */
-/* padding-top: evita colapso de márgenes con el h1 (margin-top del <p> no sumaba espacio visible) */
+/* Texto de apoyo — misma escala en hero, quiénes somos y certificados */
 .plv2-hero-lead {
-  font-family: "Montserrat", sans-serif;
-  font-weight: 400;
-  font-size: 1.3375rem;
+  font-weight: var(--plv2-weight-regular);
+  font-size: var(--plv2-text-lead);
   color: var(--plv2-muted);
   max-width: 44ch;
   line-height: 1.55;
@@ -739,7 +754,6 @@ body {
   border-radius: 999px;
   text-decoration: none;
   color: #fff;
-  font-family: "Montserrat", sans-serif;
   font-weight: 700;
   font-size: clamp(0.9rem, 1.5vw, 1.02rem);
   line-height: 1.25;
@@ -759,7 +773,7 @@ body {
 }
 
 .plv2-cta-gradient-text strong {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Match card (mock): solo visible en ≥961px — en móvil .plv2-hero-media está oculto */
@@ -809,7 +823,6 @@ body {
 
 .plv2-match-card-name {
   margin: 0;
-  font-family: "Montserrat", sans-serif;
   font-weight: 700;
   font-size: 0.92rem;
   line-height: 1.25;
@@ -1088,8 +1101,8 @@ body {
   border-radius: 50%;
   background: rgba(5, 95, 70, 0.12);
   color: #047857;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: 700;
 }
 
 .plv2-match-card-heart {
@@ -1135,17 +1148,21 @@ body {
   .plv2-features {
     padding-top: clamp(14px, 3vw, 22px);
   }
+
+  .plv2-feature-grid {
+    margin-top: clamp(20px, 5vw, 32px);
+  }
 }
 
 .plv2-feature-grid {
   list-style: none;
-  margin: 0 auto;
+  margin: clamp(28px, 4.2vw, 48px) auto 0;
   padding: 0;
   width: 100%;
-  max-width: 1240px;
+  max-width: 1364px;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(16px, 2vw, 22px);
+  gap: clamp(18px, 2.2vw, 24px);
   align-items: stretch;
 }
 
@@ -1168,7 +1185,7 @@ body {
   height: 100%;
   min-height: 0;
   background: #fff;
-  border-radius: 22px;
+  border-radius: 24px;
   overflow: hidden;
   border: 1px solid rgba(107, 92, 179, 0.08);
   box-shadow:
@@ -1354,7 +1371,7 @@ body {
   flex-direction: column;
   align-items: flex-start;
   min-height: 0;
-  padding: 16px 18px 20px;
+  padding: 18px 20px 22px;
   text-align: left;
   border-top: none;
   position: relative;
@@ -1364,8 +1381,8 @@ body {
   content: "";
   position: absolute;
   top: 0;
-  left: 16px;
-  right: 16px;
+  left: 18px;
+  right: 18px;
   height: 2px;
   border-radius: 2px;
   background: linear-gradient(
@@ -1473,7 +1490,6 @@ body {
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.018em;
-  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .plv2-ai-bubble--user {
@@ -1583,12 +1599,11 @@ body {
 }
 
 .plv2-feature-title {
-  font-family: "Montserrat", sans-serif;
-  font-weight: 700;
-  font-size: 1.03rem;
+  font-weight: var(--plv2-weight-semibold);
+  font-size: var(--plv2-text-base);
   line-height: 1.28;
   color: var(--plv2-ink);
-  margin: 0 0 8px;
+  margin: 0 0 9px;
   letter-spacing: -0.025em;
   min-height: 2.45em;
 }
@@ -1596,7 +1611,7 @@ body {
 .plv2-feature-text {
   margin: 0;
   margin-top: auto;
-  font-size: 0.875rem;
+  font-size: var(--plv2-text-sm);
   color: var(--plv2-muted);
   line-height: 1.58;
   letter-spacing: 0.01em;
@@ -1629,10 +1644,175 @@ body {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
 
-/* Bloque “certificados”: panel gráfico único (texto y retratos van en la imagen) */
+/* Bloque “certificados”: copy en HTML + foto nítida (sin texto quemado en imagen). */
 .plv2-bento {
   padding: clamp(28px, 2.8vw, 40px) 0 clamp(52px, 5.2vw, 72px);
   background: linear-gradient(180deg, #f7f5fc 0%, #eef0f8 45%, #eae8f4 100%);
+}
+
+/* Intro sola: el panel certificados va fuera (full-bleed como Precios). */
+.plv2-bento--intro {
+  padding-bottom: clamp(20px, 3vw, 32px);
+}
+
+.plv2-certificados-panel {
+  display: grid;
+  padding: 0;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "photo"
+    "copy";
+  align-items: stretch;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #eef0f6;
+}
+
+.plv2-certificados-bg {
+  grid-area: photo;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1024 / 682;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.plv2-certificados-bg-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: 58% center;
+}
+
+.plv2-certificados-content {
+  grid-area: copy;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(22px, 5vw, 32px) clamp(16px, 3.2vw, 40px) clamp(30px, 7vw, 44px);
+  background: linear-gradient(180deg, #faf9ff 0%, #f5f3fb 42%, #eeecf5 100%);
+}
+
+.plv2-certificados-title {
+  margin: 0 0 14px;
+  font-weight: var(--plv2-weight-bold);
+  font-size: calc(var(--plv2-text-h3) * 0.9);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--plv2-ink);
+}
+
+.plv2-certificados-rule {
+  display: block;
+  width: clamp(72px, 12vw, 96px);
+  height: 4px;
+  margin-bottom: clamp(18px, 2.5vw, 24px);
+  border-radius: 999px;
+  background: var(--plv2-hero-accent);
+}
+
+.plv2-certificados-lead {
+  margin: 0 0 clamp(22px, 3vw, 32px);
+  max-width: 34ch;
+  font-size: var(--plv2-text-lead);
+  font-weight: var(--plv2-weight-medium);
+  line-height: 1.55;
+  color: var(--plv2-ink);
+}
+
+.plv2-certificados-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2vw, 20px);
+}
+
+.plv2-certificados-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: var(--plv2-weight-regular);
+  font-size: var(--plv2-text-body);
+  line-height: 1.68;
+  color: var(--plv2-muted);
+}
+
+.plv2-certificados-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--plv2-hero-accent);
+}
+
+@media (min-width: 961px) {
+  .plv2-certificados-frame {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    grid-template-rows: auto;
+    grid-template-areas: "copy photo";
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .plv2-certificados-bg {
+    grid-area: photo;
+    position: relative;
+    align-self: stretch;
+    aspect-ratio: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .plv2-certificados-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 54% center;
+  }
+
+  .plv2-certificados-content {
+    grid-area: copy;
+    align-self: stretch;
+    justify-content: center;
+    padding: clamp(40px, 4.5vw, 64px) clamp(36px, 4vw, 56px);
+    background: linear-gradient(180deg, #faf9ff 0%, #f5f3fb 50%, #eeecf5 100%);
+  }
+
+  .plv2-certificados-title {
+    font-size: calc(var(--plv2-text-display) * 0.9);
+    line-height: 0.784;
+    letter-spacing: -0.035em;
+    margin: 0 0 0.9rem;
+  }
+
+  .plv2-certificados-rule {
+    margin-bottom: 1.05rem;
+  }
+
+  .plv2-certificados-lead {
+    margin: 0 0 1.05rem;
+    max-width: 22rem;
+  }
+
+  .plv2-certificados-list {
+    gap: clamp(12px, 1.5vw, 16px);
+  }
 }
 
 .plv2-bento-intro {
@@ -1647,9 +1827,8 @@ body {
 
 .plv2-bento-eyebrow {
   margin: 0 0 10px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: var(--plv2-weight-semibold);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #5b4db2;
@@ -1657,9 +1836,8 @@ body {
 
 .plv2-bento-heading {
   margin: 0 0 12px;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
-  font-size: clamp(1.45rem, 3.2vw, 2.05rem);
+  font-weight: var(--plv2-weight-bold);
+  font-size: var(--plv2-text-h3);
   line-height: 1.18;
   letter-spacing: -0.03em;
   color: var(--plv2-ink);
@@ -1667,47 +1845,10 @@ body {
 
 .plv2-bento-lead {
   margin: 0 auto;
-  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  font-size: var(--plv2-text-body);
   color: var(--plv2-muted);
   line-height: 1.55;
   max-width: 42rem;
-}
-
-.plv2-bento-figure {
-  margin: 0 auto;
-  padding: 0;
-  max-width: min(1040px, 100%);
-  border-radius: clamp(18px, 2.4vw, 26px);
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid rgba(23, 28, 36, 0.06);
-  box-shadow:
-    var(--plv2-shadow-xs),
-    0 4px 6px rgba(26, 43, 72, 0.03),
-    0 22px 50px rgba(26, 35, 56, 0.1);
-}
-
-/* Panel certificados: borde a borde (sin “caja” centrada). */
-.plv2-bento-figure--bleed {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-}
-
-.plv2-bento-figure--bleed .plv2-bento-figure-img {
-  width: 100%;
-  height: auto;
-}
-
-.plv2-bento-figure-img {
-  display: block;
-  width: 100%;
-  height: auto;
-  vertical-align: middle;
 }
 
 /* Cuatro pasos — flujo paciente */
@@ -1725,9 +1866,8 @@ body {
 
 .plv2-steps-heading {
   margin: 0 0 10px;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
-  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: var(--plv2-weight-bold);
+  font-size: var(--plv2-text-h3);
   line-height: 1.2;
   letter-spacing: -0.03em;
   text-align: center;
@@ -1738,7 +1878,7 @@ body {
   margin: 0 auto 28px;
   max-width: 40rem;
   text-align: center;
-  font-size: clamp(0.94rem, 1.45vw, 1.02rem);
+  font-size: var(--plv2-text-body);
   color: var(--plv2-muted);
   line-height: 1.5;
 }
@@ -1776,8 +1916,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.95rem;
   color: #fff;
   background: linear-gradient(135deg, var(--plv2-blue) 0%, var(--plv2-teal) 100%);
@@ -1790,8 +1929,7 @@ body {
 
 .plv2-steps-item-title {
   margin: 0 0 6px;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: clamp(0.92rem, 1.35vw, 1rem);
   letter-spacing: -0.02em;
   color: var(--plv2-ink);
@@ -1893,7 +2031,7 @@ body {
   position: relative;
   z-index: 0;
   width: 100%;
-  min-height: clamp(280px, 42vw, 560px);
+  min-height: clamp(322px, calc(42vw * 1.15), 644px);
   overflow: hidden;
   background: #f0eef6;
 }
@@ -1905,8 +2043,8 @@ body {
   height: 100%;
   display: block;
   object-fit: cover;
-  /* Foto: sujeto a la derecha, luz/ventana a la izquierda — encuadre para copy a la izquierda. */
-  object-position: 42% 38%;
+  /* Sujeto centrado; copy a la izquierda — encuadre un poco a la derecha. */
+  object-position: 58% 42%;
   will-change: transform;
 }
 
@@ -1977,9 +2115,8 @@ body {
 
 .plv2-photo-strip-kicker {
   margin: 0 0 12px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: var(--plv2-weight-semibold);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--plv2-muted);
@@ -1988,24 +2125,22 @@ body {
 .plv2-photo-strip-tagline {
   margin: 0 0 1.05rem;
   max-width: 22rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.04rem, 1.75vw, 1.2rem);
-  font-weight: 500;
+  font-size: var(--plv2-text-lead);
+  font-weight: var(--plv2-weight-medium);
   font-style: normal;
   line-height: 1.45;
   letter-spacing: 0.01em;
-  color: #2f3847;
+  color: var(--plv2-ink);
 }
 
 .plv2-photo-strip-prose {
   margin: 0 0 1.65rem;
   max-width: 30rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(0.98rem, 1.4vw, 1.07rem);
-  font-weight: 400;
+  font-size: var(--plv2-text-body);
+  font-weight: var(--plv2-weight-regular);
   line-height: 1.68;
   letter-spacing: 0.01em;
-  color: #4b5564;
+  color: var(--plv2-muted);
 }
 
 .plv2-photo-strip-accent {
@@ -2053,9 +2188,8 @@ body {
 
 .plv2-maca-ia-eyebrow {
   margin: 0 0 12px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #45b8ad;
@@ -2063,9 +2197,8 @@ body {
 
 .plv2-maca-ia-title {
   margin: 0 0 14px;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(1.5rem, 3.1vw, 2.1rem);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.035em;
   color: #12161f;
@@ -2074,7 +2207,6 @@ body {
 .plv2-maca-ia-lead {
   margin: 0 0 18px;
   max-width: 36rem;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(0.98rem, 1.5vw, 1.08rem);
   line-height: 1.65;
   font-weight: 500;
@@ -2085,7 +2217,6 @@ body {
   margin: 0;
   padding: 0 0 0 1.15rem;
   max-width: 36rem;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(0.92rem, 1.35vw, 1.02rem);
   line-height: 1.62;
   font-weight: 500;
@@ -2103,7 +2234,6 @@ body {
 .plv2-maca-ia-disclaimer {
   margin: 16px 0 0;
   max-width: 36rem;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.82rem;
   line-height: 1.55;
   font-weight: 500;
@@ -2162,8 +2292,7 @@ body {
 .plv2-maca-phone-title {
   flex: 1;
   min-width: 0;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.88rem;
   letter-spacing: -0.02em;
   color: #1e293b;
@@ -2173,9 +2302,8 @@ body {
   flex-shrink: 0;
   padding: 4px 9px;
   border-radius: 999px;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #5b4db3;
@@ -2226,8 +2354,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.78rem;
   color: #fff;
   background: linear-gradient(145deg, #6366f1 0%, #45b8ad 100%);
@@ -2255,7 +2382,6 @@ body {
   font-weight: 600;
   line-height: 1.45;
   letter-spacing: 0.015em;
-  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 .plv2-maca-phone .plv2-ai-bubble--user {
@@ -2318,272 +2444,262 @@ body {
   }
 }
 
-/* Precios: título + fila (4 cards | foto misma altura que las cards) + CTA */
-.plv2-pricing-split {
-  --plv2-pricing-accent: var(--plv2-violet);
-  padding: clamp(44px, 6vw, 88px) 0 clamp(52px, 6.5vw, 96px);
-  background: linear-gradient(180deg, #f5f2fc 0%, #eef1fb 48%, #f3f5f9 100%);
+/* Precios: banner full-bleed con foto de equipo + panel glass */
+.plv2-precios-panel {
+  padding: 0;
+  width: 100%;
 }
 
-.plv2-pricing-split-inner {
-  min-width: 0;
-}
-
-.plv2-pricing-split-copy {
-  min-width: 0;
-}
-
-.plv2-pricing-cards-media-row {
+.plv2-precios-frame {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.52fr);
-  gap: clamp(20px, 3.5vw, 44px);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "photo"
+    "copy";
   align-items: stretch;
-  margin-bottom: 1.85rem;
-  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: #eef0f6;
 }
 
-.plv2-pricing-eyebrow {
-  margin: 0 0 0.65rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.68rem;
-  font-weight: 800;
+.plv2-precios-bg {
+  grid-area: photo;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2048 / 1364;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.plv2-precios-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.plv2-precios-bg-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: 50% center;
+  filter: brightness(0.92) saturate(0.88) contrast(0.96);
+}
+
+.plv2-precios-content {
+  grid-area: copy;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(22px, 5vw, 32px) clamp(16px, 3.2vw, 40px) clamp(30px, 7vw, 44px);
+  background: linear-gradient(180deg, #faf9ff 0%, #f5f3fb 42%, #eeecf5 100%);
+}
+
+.plv2-precios-eyebrow {
+  margin: 0 0 0.55rem;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #5b4db3;
 }
 
-.plv2-pricing-title {
-  margin: 0 0 1rem;
-  max-width: none;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.45rem, 3vw, 2rem);
-  font-weight: 700;
-  line-height: 1.2;
+.plv2-precios-title {
+  margin: 0 0 12px;
+  font-weight: var(--plv2-weight-bold);
+  font-size: clamp(1.35rem, 2.8vw, 1.95rem);
+  line-height: 1.18;
   letter-spacing: -0.032em;
-  color: #141822;
+  color: var(--plv2-ink);
 }
 
-.plv2-pricing-title-accent {
+.plv2-precios-title-accent {
   background: linear-gradient(105deg, #2f62c4 0%, #45b8ad 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.plv2-pricing-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-self: start;
-  grid-column: 1;
-  grid-row: 1;
-  min-height: 0;
+.plv2-precios-rule {
+  display: block;
+  width: clamp(72px, 12vw, 96px);
+  height: 4px;
+  margin-bottom: clamp(18px, 2.5vw, 24px);
+  border-radius: 999px;
+  background: var(--plv2-hero-accent);
 }
 
-.plv2-pricing-card {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 1rem 1.1rem 1.05rem 1.2rem;
-  border-radius: 14px;
-  border: 1px solid rgba(107, 92, 179, 0.09);
-  background: #fff;
-  box-shadow:
-    var(--plv2-shadow-xs),
-    0 2px 6px rgba(23, 28, 36, 0.035),
-    0 14px 36px rgba(91, 75, 179, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 2px 0 0 0 rgba(107, 92, 179, 0.42);
+.plv2-precios-hero {
+  margin-bottom: clamp(18px, 2.5vw, 24px);
+  padding-bottom: clamp(16px, 2.2vw, 20px);
+  border-bottom: 1px solid rgba(107, 92, 179, 0.12);
 }
 
-.plv2-pricing-card--featured {
-  border-color: rgba(47, 98, 196, 0.18);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 255, 0.95) 100%);
-  box-shadow:
-    var(--plv2-shadow-xs),
-    0 4px 14px rgba(47, 98, 196, 0.08),
-    0 16px 40px rgba(91, 75, 179, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    inset 3px 0 0 0 rgba(47, 98, 196, 0.55);
-}
-
-.plv2-pricing-card-kicker {
-  font-family: "Montserrat", sans-serif;
+.plv2-precios-kicker {
+  display: block;
+  margin-bottom: 0.35rem;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #45b8ad;
 }
 
-.plv2-pricing-card-line {
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(0.92rem, 1.25vw, 1.02rem);
-  line-height: 1.45;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #1e293b;
+.plv2-precios-price-line {
+  margin: 0 0 0.4rem;
+  line-height: 1.25;
 }
 
-.plv2-pricing-card-line strong {
+.plv2-precios-price {
+  font-size: clamp(1.25rem, 2.4vw, 1.55rem);
   font-weight: 700;
-  color: #0f172a;
-}
-
-.plv2-pricing-card-price {
-  font-size: clamp(1.05rem, 1.85vw, 1.2rem);
-  font-weight: 800;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   color: #0f172a;
 }
 
-.plv2-pricing-card-unit {
+.plv2-precios-unit {
   font-weight: 600;
-  font-size: 0.88em;
+  font-size: 0.82em;
   color: #64748b;
 }
 
-.plv2-pricing-card-sub {
+.plv2-precios-price-note {
   margin: 0;
-  padding-top: 0.15rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.8rem;
-  line-height: 1.45;
+  font-size: 0.84rem;
+  line-height: 1.5;
   font-weight: 500;
-  letter-spacing: 0.02em;
   color: #7c8796;
 }
 
-.plv2-pricing-cta-block {
-  margin-top: 0.35rem;
-  padding-top: 0.25rem;
+.plv2-precios-details {
+  list-style: none;
+  margin: 0 0 clamp(20px, 2.8vw, 28px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.6vw, 14px);
 }
 
-.plv2-pricing-cta-title {
-  margin: 0 0 0.45rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.08rem, 1.75vw, 1.22rem);
-  font-weight: 700;
-  color: #141822;
-  letter-spacing: -0.02em;
-}
-
-.plv2-pricing-cta-text {
-  margin: 0 0 1.15rem;
-  max-width: 34rem;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(0.96rem, 1.35vw, 1.02rem);
-  line-height: 1.62;
+.plv2-precios-details li {
+  position: relative;
+  padding-left: 1.15rem;
+  font-size: clamp(0.88rem, 1.2vw, 0.96rem);
+  line-height: 1.55;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  color: #4a5463;
+}
+
+.plv2-precios-details li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f62c4 0%, #45b8ad 100%);
+}
+
+.plv2-precios-details li strong {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.plv2-precios-cta-text {
+  margin: 0 0 1.1rem;
+  font-size: clamp(0.92rem, 1.25vw, 0.98rem);
+  line-height: 1.6;
+  font-weight: 500;
   color: #5c6570;
 }
 
-.plv2-pricing-cta-btn {
+.plv2-precios-cta-btn {
   margin-top: 0;
 }
 
-.plv2-pricing-split-media {
-  margin: 0;
-  position: relative;
-  display: block;
-  /* Web: esquinas más contenidas que el mock redondeado (móvil ≤900px va a 0 abajo). */
-  border-radius: 11px;
-  overflow: hidden;
-  background: #e8e4f5;
-  box-shadow:
-    var(--plv2-shadow-xs),
-    0 20px 50px rgba(91, 75, 179, 0.12),
-    0 0 0 1px rgba(23, 28, 36, 0.05);
-}
-
-.plv2-pricing-split-img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* Escritorio: la altura de la fila la marca solo la columna de cards; la foto rellena ese alto (sin inflar el grid). */
-@media (min-width: 901px) {
-  .plv2-pricing-cards-media-row {
-    grid-template-rows: minmax(0, auto);
+@media (min-width: 961px) {
+  .plv2-precios-frame {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "photo copy";
+    align-items: stretch;
   }
 
-  .plv2-pricing-split-media {
-    grid-column: 2;
-    grid-row: 1;
+  .plv2-precios-bg {
+    grid-area: photo;
+    position: relative;
     align-self: stretch;
-    height: 100%;
+    aspect-ratio: auto;
     min-height: 0;
+    overflow: hidden;
   }
 
-  .plv2-pricing-split-img {
+  .plv2-precios-bg-img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    min-height: 0;
     object-fit: cover;
-    object-position: center;
+    object-position: 50% center;
+  }
+
+  .plv2-precios-content {
+    grid-area: copy;
+    align-self: stretch;
+    justify-content: center;
+    padding: clamp(40px, 4.5vw, 64px) clamp(36px, 4vw, 56px);
+    background: linear-gradient(180deg, #faf9ff 0%, #f5f3fb 50%, #eeecf5 100%);
   }
 }
 
-@media (max-width: 900px) {
-  /* Sin padding horizontal en la sección: el texto lleva márgenes; la foto al 100% real. */
-  .plv2-pricing-split {
-    padding-left: 0;
-    padding-right: 0;
+@media (max-width: 960px) {
+  .plv2-precios-frame {
+    overflow: visible;
   }
 
-  .plv2-pricing-split-inner.plv2-container {
-    width: 100%;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
+  .plv2-precios-bg-img {
+    object-position: 50% center;
   }
 
-  .plv2-pricing-split-copy {
-    padding-left: clamp(10px, 3vw, 16px);
-    padding-right: clamp(10px, 3vw, 16px);
-  }
-
-  .plv2-pricing-cards-media-row {
-    grid-template-columns: 1fr;
-    gap: clamp(18px, 4vw, 26px);
-    margin-bottom: clamp(1.35rem, 4vw, 1.85rem);
-  }
-
-  .plv2-pricing-split-media {
-    order: -1;
-    width: 100%;
-    max-width: none;
-    height: auto;
-    min-height: 0;
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .plv2-pricing-split-img {
-    height: auto;
-    max-height: none;
-    object-fit: unset;
-    aspect-ratio: auto;
-  }
-
-  .plv2-pricing-cta-block {
+  .plv2-precios-content {
     text-align: center;
   }
 
-  .plv2-pricing-cta-text {
+  .plv2-precios-title {
+    font-size: clamp(1.42rem, 4.6vw, 1.88rem);
+  }
+
+  .plv2-precios-rule {
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .plv2-precios-hero {
+    text-align: center;
+  }
+
+  .plv2-precios-details li {
+    text-align: left;
+    max-width: min(22rem, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .plv2-precios-cta-text {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: min(24rem, 100%);
   }
 }
 
@@ -2683,7 +2799,6 @@ body {
 .plv2-reviews-error {
   margin: 0 0 1rem;
   text-align: center;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.92rem;
   color: #b45309;
 }
@@ -2691,7 +2806,6 @@ body {
 .plv2-reviews-loading {
   margin: 0 0 1.1rem;
   text-align: center;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.92rem;
   font-weight: 500;
   color: #64748b;
@@ -2781,9 +2895,8 @@ body {
 
 .plv2-reviews-eyebrow {
   margin: 0 0 10px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #45b8ad;
@@ -2791,16 +2904,14 @@ body {
 
 .plv2-reviews-title {
   margin: 0 0 10px;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(1.45rem, 3vw, 2rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   color: #12161f;
 }
 
 .plv2-reviews-lead {
   margin: 0;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(0.94rem, 2vw, 1.05rem);
   font-weight: 500;
   line-height: 1.55;
@@ -2840,7 +2951,6 @@ body {
 
 .plv2-review-name {
   margin: 0 0 2px;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2849,8 +2959,7 @@ body {
 
 .plv2-review-role {
   margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
+  font-size: var(--plv2-text-eyebrow);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #64748b;
@@ -2866,7 +2975,6 @@ body {
 
 .plv2-review-quote {
   margin: 0;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(0.82rem, 1.65vw, 0.9rem);
   font-weight: 500;
   font-style: normal;
@@ -2910,9 +3018,8 @@ body {
 
 .plv2-faq-eyebrow {
   margin: 0 0 14px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--plv2-text-eyebrow);
+  font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #5b4bb3;
@@ -2920,9 +3027,8 @@ body {
 
 .plv2-faq-title {
   margin: 0 0 14px;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(1.55rem, 3.2vw, 2.15rem);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.18;
   letter-spacing: -0.035em;
   color: #12161f;
@@ -2999,9 +3105,8 @@ body {
   list-style: none;
   padding: 1.15rem 1.15rem 1.15rem 1.35rem;
   cursor: pointer;
-  font-family: "Montserrat", sans-serif;
   font-size: clamp(0.96rem, 1.45vw, 1.06rem);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.42;
   color: #17171d;
   user-select: none;
@@ -3163,7 +3268,6 @@ body {
   justify-content: center;
   padding: 8px 16px;
   border-radius: 999px;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -3196,7 +3300,6 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px 2px;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.84rem;
   font-weight: 600;
   line-height: 1.5;
@@ -3222,7 +3325,6 @@ body {
 
 .plv2-footer-copyline {
   margin: 0;
-  font-family: "Montserrat", sans-serif;
   font-size: 0.76rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -3274,8 +3376,7 @@ body {
   display: inline-flex;
   align-items: baseline;
   gap: 0;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.15rem;
   letter-spacing: -0.02em;
   text-transform: lowercase;
@@ -3283,7 +3384,6 @@ body {
 }
 
 .plv2-footer-tag {
-  font-family: "Montserrat", sans-serif;
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -3455,7 +3555,7 @@ body {
     width: 100%;
     min-height: 0;
     height: auto;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 11.5;
     max-height: none;
   }
 
@@ -3529,10 +3629,43 @@ body {
     padding-right: 0;
   }
 
-  .plv2-bento-figure--bleed {
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
+  .plv2-certificados-content {
+    text-align: center;
+  }
+
+  .plv2-certificados-title {
+    max-width: none;
+    font-size: calc(clamp(1.42rem, 4.6vw, 1.88rem) * 0.9);
+    line-height: 1.22;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+  }
+
+  .plv2-certificados-rule {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .plv2-certificados-lead {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1rem;
+    max-width: min(22rem, 100%);
+    font-size: clamp(1.06rem, 3.15vw, 1.22rem);
+    font-weight: 500;
+    line-height: 1.46;
+    letter-spacing: 0.015em;
+    color: #283245;
+  }
+
+  .plv2-certificados-list li {
+    justify-content: center;
+    font-weight: 400;
+    font-size: clamp(0.99rem, 2.9vw, 1.08rem);
+    line-height: 1.72;
+    letter-spacing: 0.012em;
+    color: #4a5463;
   }
 
   .plv2-features {
@@ -3543,29 +3676,25 @@ body {
   }
 
   .plv2-feature-grid {
-    gap: clamp(11px, 2.6vw, 16px);
+    gap: clamp(12px, 2.8vw, 18px);
   }
 
   .plv2-feature-title {
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     min-height: 0;
   }
 
   .plv2-feature-card {
-    border-radius: 14px;
+    border-radius: 15px;
   }
 
   .plv2-feature-card-body {
-    padding: 14px 14px 16px;
+    padding: 15px 16px 18px;
   }
 
   .plv2-feature-card-body::before {
-    left: 14px;
-    right: 14px;
-  }
-
-  .plv2-pricing-split-media {
-    overflow: hidden;
+    left: 16px;
+    right: 16px;
   }
 
   .plv2-faq-inner {
@@ -3603,7 +3732,6 @@ body {
 
   .plv2-faq-lead {
     max-width: 34rem;
-    font-family: "Montserrat", sans-serif;
     font-weight: 500;
     line-height: 1.65;
     letter-spacing: 0.01em;
@@ -3683,7 +3811,6 @@ body {
     padding: 0.5rem 0 0 0.72rem;
     border-left-width: 2px;
     border-left-color: rgba(107, 92, 179, 0.26);
-    font-family: "Montserrat", sans-serif;
     font-size: clamp(0.94rem, 3.2vw, 1.01rem);
     font-weight: 500;
     line-height: 1.68;

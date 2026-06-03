@@ -1,6 +1,8 @@
+import { CertificadosPanel } from "./CertificadosPanel";
 import { LandingMacaChat } from "./LandingMacaChat";
 import { Plv2ReviewsSection } from "./Plv2ReviewsSection";
 import { Plv2SiteHeader } from "./Plv2SiteHeader";
+import { PreciosPanel } from "./PreciosPanel";
 import { QuienesSomosStrip } from "./QuienesSomosStrip";
 
 const viteEnv = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
@@ -41,12 +43,19 @@ const IMG = {
   featLatamMobile: "/photos/feat-psicologos-certificados-mobile.jpg",
   featCare: "/photos/feat-acompanamiento-bien.jpg",
   matchAvatar: "/photos/08-sesion-profesional-notas.jpg",
-  /** Panel único: copy + retratos y sellos (todo en la imagen; no superponer texto en HTML). */
-  psicologosPanel: "/photos/psicologos-verificados-panel.jpg",
+  /** Psicólogos certificados — foto de equipo (copy en HTML). */
+  psicologosEquipo: "/photos/psicologos-certificados-equipo.jpg",
   /** Videollamada terapia desde casa (¿Quiénes somos? — banda full width). */
-  quienesSomosStrip: "/photos/quienes-somos-videollamada.png",
-  /** Precios — lifestyle vertical (trabajo remoto / naturaleza). */
-  pricingLifestyle: "/photos/precios-trabajo-remoto-vertical.png"
+  quienesSomosStrip: "/photos/quienes-somos.jpg",
+  /** Precios — equipo de profesionales (banner full-bleed). */
+  preciosEquipo: "/photos/precios-profesionales-equipo.jpg"
+} as const;
+
+/** Card ilustrativo del hero (`aria-label="Ejemplo de match"`). Datos de ejemplo, no persona real. */
+const HERO_MATCH_EXAMPLE = {
+  name: "Lic. Agustina Torres",
+  role: "Psicóloga",
+  licenseMp: "47268"
 } as const;
 
 const PLV2_FAQ_ITEMS = [
@@ -280,11 +289,12 @@ export function App() {
                 </div>
                 <div className="plv2-match-card-copy">
                   <p className="plv2-match-card-name">
-                    <span className="plv2-match-anim-text plv2-match-anim-text--name">Lic. Agustina Torres</span>
+                    <span className="plv2-match-anim-text plv2-match-anim-text--name">{HERO_MATCH_EXAMPLE.name}</span>
                   </p>
                   <p className="plv2-match-card-meta">
                     <span className="plv2-match-anim-text plv2-match-anim-text--meta">
-                      Psicóloga<span className="plv2-match-meta-sep"> | </span>MP 12345
+                      {HERO_MATCH_EXAMPLE.role}
+                      <span className="plv2-match-meta-sep"> | </span>MP {HERO_MATCH_EXAMPLE.licenseMp}
                     </span>
                   </p>
                   <p className="plv2-match-card-stars" aria-label="Calificación cinco sobre cinco">
@@ -411,7 +421,7 @@ export function App() {
         </ul>
       </section>
 
-      <section className="plv2-bento" aria-labelledby="plv2-bento-title">
+      <section className="plv2-bento plv2-bento--intro" aria-labelledby="plv2-bento-title">
         <div className="plv2-container plv2-container--wide plv2-bento-intro">
           <p className="plv2-bento-eyebrow">Todo en un solo lugar</p>
           <h2 id="plv2-bento-title" className="plv2-bento-heading">
@@ -422,19 +432,9 @@ export function App() {
             reservar.
           </p>
         </div>
-
-        <figure className="plv2-bento-figure plv2-bento-figure--bleed">
-          <img
-            src={IMG.psicologosPanel}
-            alt="Psicólogos certificados: equipo profesional con sello por país."
-            width={1024}
-            height={682}
-            loading="lazy"
-            decoding="async"
-            className="plv2-bento-figure-img"
-          />
-        </figure>
       </section>
+
+      <CertificadosPanel imageSrc={IMG.psicologosEquipo} />
 
       <section className="plv2-steps" id="como-empezar" aria-labelledby="plv2-steps-title">
         <div className="plv2-container plv2-steps-inner">
@@ -534,75 +534,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="plv2-pricing-split" id="precios" aria-labelledby="plv2-pricing-title">
-        <div className="plv2-container plv2-pricing-split-inner">
-          <div className="plv2-pricing-split-copy">
-            <p className="plv2-pricing-eyebrow">Precios transparentes</p>
-            <h2 id="plv2-pricing-title" className="plv2-pricing-title">
-              Sesiones claras y{" "}
-              <span className="plv2-pricing-title-accent">sin sorpresas</span>
-            </h2>
-            <div className="plv2-pricing-cards-media-row">
-              <ul className="plv2-pricing-cards" role="list">
-                <li className="plv2-pricing-card plv2-pricing-card--featured">
-                  <span className="plv2-pricing-card-kicker">Referencia en Argentina</span>
-                  <p className="plv2-pricing-card-line">
-                    <span className="plv2-pricing-card-price">Desde $40.000 ARS</span>
-                    <span className="plv2-pricing-card-unit"> / sesión</span>
-                  </p>
-                  <p className="plv2-pricing-card-sub">Varía según experiencia y enfoque del profesional.</p>
-                </li>
-                <li className="plv2-pricing-card">
-                  <span className="plv2-pricing-card-kicker">Duración habitual</span>
-                  <p className="plv2-pricing-card-line">
-                    <strong>50 minutos</strong> por encuentro
-                  </p>
-                  <p className="plv2-pricing-card-sub">Tiempo estándar en la plataforma.</p>
-                </li>
-                <li className="plv2-pricing-card">
-                  <span className="plv2-pricing-card-kicker">Si quiere ahorrar</span>
-                  <p className="plv2-pricing-card-line">
-                    <strong>Packs con descuento</strong> cuando el profesional los publique
-                  </p>
-                  <p className="plv2-pricing-card-sub">Por ejemplo 4, 8 o 12 sesiones.</p>
-                </li>
-                <li className="plv2-pricing-card">
-                  <span className="plv2-pricing-card-kicker">Sin atarlo</span>
-                  <p className="plv2-pricing-card-line">
-                    <strong>Sin suscripción obligatoria</strong>
-                  </p>
-                  <p className="plv2-pricing-card-sub">Paga solo lo que use.</p>
-                </li>
-              </ul>
-              <figure className="plv2-pricing-split-media">
-                <img
-                  src={IMG.pricingLifestyle}
-                  alt="Persona con auriculares trabajando con laptop frente a arrozales y palmeras al atardecer."
-                  width={576}
-                  height={1024}
-                  loading="lazy"
-                  decoding="async"
-                  className="plv2-pricing-split-img"
-                />
-              </figure>
-            </div>
-            <div className="plv2-pricing-cta-block">
-              <h3 className="plv2-pricing-cta-title">Listo para empezar</h3>
-              <p className="plv2-pricing-cta-text">
-                Cree la cuenta, explore perfiles y reserve la primera sesión con todo claro desde el inicio.
-              </p>
-              <a
-                className="plv2-cta-gradient plv2-cta-gradient--header plv2-pricing-cta-btn"
-                href={PATIENT_PORTAL_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Reservar la primera sesión
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PreciosPanel imageSrc={IMG.preciosEquipo} patientPortalUrl={PATIENT_PORTAL_URL} />
 
       <Plv2ReviewsSection />
 

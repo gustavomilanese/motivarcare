@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { useSectionParallax } from "./useScrollMotion";
 
 type Props = {
   imageSrc: string;
@@ -13,35 +14,7 @@ type Props = {
 export function QuienesSomosStrip(props: Props) {
   const { imageSrc, patientPortalUrl, portalDisplayHost } = props;
   const sectionRef = useRef<HTMLElement>(null);
-  const [parallaxY, setParallaxY] = useState(0);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const update = () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        setParallaxY(0);
-        return;
-      }
-      if (window.matchMedia("(max-width: 960px)").matches) {
-        setParallaxY(0);
-        return;
-      }
-      const rect = section.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const centerOffset = rect.top + rect.height / 2 - vh / 2;
-      setParallaxY(centerOffset * -0.1);
-    };
-
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, []);
+  const parallaxY = useSectionParallax(sectionRef);
 
   return (
     <section ref={sectionRef} className="plv2-photo-strip" id="quienes-somos" aria-labelledby="plv2-photo-strip-title">
@@ -49,15 +22,15 @@ export function QuienesSomosStrip(props: Props) {
         <div className="plv2-photo-strip-parallax">
           <img
             src={imageSrc}
-            alt="Persona en una videollamada con una profesional, desde un espacio tranquilo en casa"
+            alt="Profesional sonriendo en un entorno cálido y tranquilo"
             width={1024}
-            height={546}
+            height={573}
             loading="lazy"
             decoding="async"
             className="plv2-photo-strip-bg"
             style={{
               transform: `translate3d(0, ${parallaxY}px, 0) scale(1.04)`,
-              transformOrigin: "42% 38%"
+              transformOrigin: "58% 42%"
             }}
           />
         </div>

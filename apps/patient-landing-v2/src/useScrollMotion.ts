@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 export function useScrollY(): number {
   const [y, setY] = useState(0);
@@ -32,4 +32,44 @@ export function useScrollY(): number {
   }, [reduced]);
 
   return reduced ? 0 : y;
+}
+
+/** Parallax suave al hacer scroll; desactivado en móvil y con prefers-reduced-motion. */
+export function useSectionParallax(
+  sectionRef: RefObject<HTMLElement | null>,
+  options?: { factor?: number; disableMaxWidthPx?: number }
+): number {
+  const factor = options?.factor ?? -0.1;
+  const disableMaxWidthPx = options?.disableMaxWidthPx ?? 960;
+  const [parallaxY, setParallaxY] = useState(0);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const update = () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setParallaxY(0);
+        return;
+      }
+      if (window.matchMedia(`(max-width: ${disableMaxWidthPx}px)`).matches) {
+        setParallaxY(0);
+        return;
+      }
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const centerOffset = rect.top + rect.height / 2 - vh / 2;
+      setParallaxY(centerOffset * factor);
+    };
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [factor, disableMaxWidthPx, sectionRef]);
+
+  return parallaxY;
 }

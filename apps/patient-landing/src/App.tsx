@@ -22,6 +22,13 @@ const IMG = {
   matchAvatar: "/photos/08-sesion-profesional-notas.jpg"
 } as const;
 
+/** Card ilustrativo del hero. Datos de ejemplo, no persona real. */
+const HERO_MATCH_EXAMPLE = {
+  name: "Lic. Agustina Torres",
+  role: "Psicóloga",
+  licenseMp: "47268"
+} as const;
+
 function MotivarCareLogoMark(props: { className?: string }) {
   return (
     <svg
@@ -160,8 +167,10 @@ export function App() {
                   <img src={IMG.matchAvatar} alt="" width={56} height={56} />
                 </div>
                 <div className="mc-match-card-body">
-                  <p className="mc-match-card-name">Lic. Agustina Torres</p>
-                  <p className="mc-match-card-meta">Psicóloga · MP 12345</p>
+                  <p className="mc-match-card-name">{HERO_MATCH_EXAMPLE.name}</p>
+                  <p className="mc-match-card-meta">
+                    {HERO_MATCH_EXAMPLE.role} · MP {HERO_MATCH_EXAMPLE.licenseMp}
+                  </p>
                   <p className="mc-match-card-stars" aria-label="Calificación cinco sobre cinco">
                     ★★★★★ <span>5.0</span>
                   </p>
