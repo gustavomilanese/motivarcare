@@ -9,6 +9,12 @@ import {
   ProfessionalReportError,
   getOrGenerateProfessionalReport
 } from "../treatment-chat/professionalReports.service.js";
+import {
+  EmotionalDiaryError,
+  getSessionSummaryForProfessional,
+  listPatientsWithSharedEntries,
+  listSharedEntriesForProfessional
+} from "../emotional-diary/emotionalDiary.service.js";
 
 const adminPayloadSchema = z.object({
   taxId: z.string().max(60).optional(),
@@ -1093,6 +1099,95 @@ professionalRouter.get("/treatment-reports/:patientId", async (req: Authenticate
       return res.status(503).json({ error: err.code, message: err.message });
     }
     console.error("[professional/treatment-reports] unexpected", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
+  }
+});
+
+/* ========================================================================== */
+/* Diario emocional compartido (Phase 3)                                       */
+/* ========================================================================== */
+
+/**
+ * GET /api/professional/emotional-diary/patients
+ *
+ * Lista pacientes del profesional con entradas compartidas (published + share + !private).
+ */
+professionalRouter.get("/emotional-diary/patients", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access emotional diary" });
+  }
+
+  try {
+    const items = await listPatientsWithSharedEntries(actor.professionalProfileId);
+    return res.json({ items });
+  } catch (err) {
+    console.error("[professional/emotional-diary/patients] unexpected", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
+  }
+});
+
+/**
+ * GET /api/professional/patients/:patientId/emotional-diary
+ *
+ * Entradas compartidas del paciente. Requiere relación de booking pro↔paciente.
+ */
+professionalRouter.get("/patients/:patientId/emotional-diary", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access emotional diary" });
+  }
+
+  const patientId = req.params.patientId;
+  if (!patientId) {
+    return res.status(400).json({ error: "patientId is required" });
+  }
+
+  try {
+    const entries = await listSharedEntriesForProfessional(actor.professionalProfileId, patientId);
+    return res.json({ entries });
+  } catch (err) {
+    if (err instanceof EmotionalDiaryError && err.code === "FORBIDDEN") {
+      return res.status(403).json({ error: "FORBIDDEN", message: err.message });
+    }
+    console.error("[professional/emotional-diary] unexpected", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
+  }
+});
+
+/**
+ * GET /api/professional/patients/:patientId/emotional-diary/summary
+ *
+ * Resumen de sesión (markdown) de entradas compartidas del paciente.
+ */
+professionalRouter.get("/patients/:patientId/emotional-diary/summary", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access emotional diary" });
+  }
+
+  const patientId = req.params.patientId;
+  if (!patientId) {
+    return res.status(400).json({ error: "patientId is required" });
+  }
+
+  try {
+    const result = await getSessionSummaryForProfessional(actor.professionalProfileId, patientId);
+    return res.json(result);
+  } catch (err) {
+    if (err instanceof EmotionalDiaryError && err.code === "FORBIDDEN") {
+      return res.status(403).json({ error: "FORBIDDEN", message: err.message });
+    }
+    console.error("[professional/emotional-diary/summary] unexpected", err);
     return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
   }
 });

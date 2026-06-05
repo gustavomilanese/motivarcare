@@ -43,6 +43,21 @@ export {
   type EmergencyResource
 } from "./emergencyResources.js";
 
+export {
+  EMOTIONAL_DIARY_WHAT_HAPPENED_MAX_LENGTH
+} from "./emotionalDiary.js";
+export type {
+  EmotionalDiaryEntry,
+  EmotionalDiaryEntryStatus,
+  EmotionalDiaryInsight,
+  EmotionalDiaryMood,
+  EmotionalDiaryMoodTrendPoint,
+  EmotionalDiaryPatientListItem,
+  EmotionalDiarySessionSummary,
+  EmotionalDiarySettings,
+  EmotionalDiaryStats
+} from "./emotionalDiary.js";
+
 export interface CancellationPolicy {
   freeCancellationHours: number;
   lateCancellationPenalty: "none" | "partial_credit" | "full_credit";

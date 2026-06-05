@@ -779,21 +779,41 @@ export function BookingPage(props: {
 
   return (
     <div className="page-stack sessions-booking-page session-rn-root">
-      <section className="sessions-page-hero sessions-page-hero-plain">
-        <div className="sessions-page-hero-copy sessions-booking-hero-layout">
-          <div className="sessions-hero-title-main">
-            <span className="sessions-hero-icon" aria-hidden="true">◔</span>
-            <div className="sessions-hero-title-block">
-              <h2>{t(props.language, { es: "Gestiona tus Reservas", en: "Manage your bookings", pt: "Gerencie suas reservas" })}</h2>
-              <p className="sessions-booking-hero-sub">
+      <section
+        className="sessions-hero-immersive"
+        aria-label={t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+      >
+        <div className="sessions-hero-banner-wrap">
+          <div className="sessions-hero-banner">
+            <img
+              className="sessions-hero-banner-photo"
+              src="/images/hero-sesiones.png"
+              alt=""
+              width={1200}
+              height={520}
+              loading="eager"
+              decoding="async"
+            />
+            <div className="sessions-hero-banner-scrim" aria-hidden="true" />
+            <div className="sessions-hero-banner-copy">
+              <h1 className="sessions-hero-title-on-photo">
+                {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+              </h1>
+              <p className="sessions-hero-subtitle-on-photo">
                 {t(props.language, {
-                  es: "Revisá tus sesiones agendadas y reservá nuevas cuando quieras.",
-                  en: "Review your scheduled sessions and book new ones anytime.",
-                  pt: "Revise suas sessoes agendadas e reserve novas quando quiser."
+                  es: "Gestiona tus reservas",
+                  en: "Manage your bookings",
+                  pt: "Gerencie suas reservas"
                 })}
               </p>
             </div>
           </div>
+          <div id="sessions-hero-toolbar-mount" className="sessions-hero-toolbar-mount" />
+        </div>
+      </section>
+
+      <section className="sessions-hero-actions-band">
+        <div className="sessions-booking-hero-layout">
           {hasAssignedProfessional ? (
             <div className="sessions-hero-actions sessions-booking-hero-actions">
               <button
@@ -878,6 +898,7 @@ export function BookingPage(props: {
         </div>
       </section>
 
+      <div className="sessions-booking-body">
       <section className="content-card booking-session-card booking-card-minimal sessions-confirmed-panel">
         <div className="sessions-panel-head">
           <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
@@ -1324,6 +1345,7 @@ export function BookingPage(props: {
           />
         ) : null}
       </section>
+      </div>
 
       <BookingActionModal
         panelMode={panelMode}

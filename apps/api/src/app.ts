@@ -20,6 +20,7 @@ import { professionalRouter } from "./modules/professional/professional.routes.j
 import { publicRouter } from "./modules/public/public.routes.js";
 import { intakeChatRouter } from "./modules/intake-chat/intakeChat.routes.js";
 import { treatmentChatRouter } from "./modules/treatment-chat/treatmentChat.routes.js";
+import { emotionalDiaryRouter } from "./modules/emotional-diary/emotionalDiary.routes.js";
 import { landingChatRouter } from "./modules/landing-chat/landingChat.routes.js";
 
 export const app = express();
@@ -274,6 +275,7 @@ function mountApiRoutes(prefix: "/api" | "/api/v1") {
   app.use(`${prefix}/public`, publicRouter);
   app.use(`${prefix}/intake-chat`, intakeChatRouter);
   app.use(`${prefix}/treatment-chat`, treatmentChatRouter);
+  app.use(`${prefix}/emotional-diary`, emotionalDiaryRouter);
   app.use(`${prefix}/landing-chat`, landingChatRouter);
 }
 

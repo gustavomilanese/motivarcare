@@ -5,8 +5,10 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { avatarInitialsFromNameParts } from "@therapy/types";
-import { type ChangeEvent, type ReactNode, type SyntheticEvent, useId } from "react";
-import { NavLink } from "react-router-dom";
+import { type ChangeEvent, type ReactNode, type SyntheticEvent, useId, useLayoutEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
 import type { ProfileTab } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -161,6 +163,120 @@ export function PortalNavigation(props: {
     props.sessionFullName ?? ""
   );
   const avatarInputId = useId();
+  const location = useLocation();
+  const diaryImmersive = location.pathname.startsWith("/diario");
+  const diaryHomeImmersive = location.pathname === "/diario";
+  const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
+  const dashboardHomeImmersive = location.pathname === "/";
+  const sessionsHomeImmersive = location.pathname === "/sessions";
+  const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica";
+  const immersivePortalHome =
+    diaryImmersive || dashboardHomeImmersive || sessionsHomeImmersive || wellbeingRelaxImmersive;
+  const [diaryHeroToolbarMount, setDiaryHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const diaryPortalToolbarMount = useDiaryPortalToolbarMountElement();
+  const [dashboardHeroToolbarMount, setDashboardHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!diaryHomeImmersive) {
+      setDiaryHeroToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("diary-hero-toolbar-mount");
+      if (mount) {
+        setDiaryHeroToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [diaryHomeImmersive, location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!dashboardHomeImmersive) {
+      setDashboardHeroToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("dashboard-hero-toolbar-mount");
+      if (mount) {
+        setDashboardHeroToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboardHomeImmersive, location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!sessionsHomeImmersive) {
+      setSessionsHeroToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("sessions-hero-toolbar-mount");
+      if (mount) {
+        setSessionsHeroToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionsHomeImmersive, location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!wellbeingRelaxImmersive) {
+      setWellbeingRelaxToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("wellbeing-relax-toolbar-mount");
+      if (mount) {
+        setWellbeingRelaxToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [wellbeingRelaxImmersive, location.pathname]);
 
   const avatarVisual = (
     <span className="portal-header-avatar-edit-visual">
@@ -188,6 +304,126 @@ export function PortalNavigation(props: {
     pt: "Alterar foto do perfil"
   });
 
+  function renderHeaderActions(onDiaryHero = false) {
+    if (props.hideSidebar) {
+      return null;
+    }
+
+    return (
+      <div className={`header-actions${onDiaryHero ? " header-actions--diary-hero" : ""}`}>
+        <div className="header-actions-cluster">
+          <NavLink
+            to="/favorites"
+            className={({ isActive }) => `header-favorites-link header-icon-link ${isActive ? "active" : ""}`}
+            aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
+          >
+            <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
+            </svg>
+            {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
+          </NavLink>
+          <div className="notifications-wrap">
+            <button
+              type="button"
+              className={`header-icon-link ${props.notificationsOpen ? "active" : ""}`}
+              aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
+              onClick={props.onToggleNotifications}
+            >
+              <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
+                <path d="M10 18a2 2 0 0 0 4 0" />
+              </svg>
+              {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
+            </button>
+            {props.notificationsOpen ? (
+              <div className="notifications-dropdown">
+                <div className="notifications-head">
+                  <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
+                </div>
+                <div className="menu-sep" />
+                {props.notifications.length === 0 ? (
+                  <p className="notifications-empty">
+                    {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
+                  </p>
+                ) : (
+                  <ul className="notifications-list">
+                    {props.notifications.slice(0, 8).map((item) => (
+                      <li key={item.id}>
+                        <button type="button" className={`notification-item ${item.unread ? "unread" : ""}`} onClick={() => props.onOpenNotificationThread(item.professionalId)}>
+                          <span>{item.title}</span>
+                          <strong>{item.body}</strong>
+                          {item.detail ? <em>{item.detail}</em> : null}
+                          <small>{item.meta}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="menu-wrap">
+          <button
+            aria-label={t(props.language, { es: "Abrir menú", en: "Open menu", pt: "Abrir menu" })}
+            className="menu-toggle"
+            type="button"
+            onClick={props.onToggleMenu}
+          >
+            <IconMenu className="menu-toggle-icon" />
+          </button>
+          {props.menuOpen ? (
+            <div className="menu-dropdown">
+              <div className="menu-panel-head">
+                <strong>{props.sessionEmail ?? ""}</strong>
+                <span>{props.sessionFullName ?? ""}</span>
+              </div>
+              <div className="menu-sep" />
+
+              <div
+                className="menu-dropdown-account"
+                role="group"
+                aria-label={t(props.language, {
+                  es: "Mi Cuenta",
+                  en: "My account",
+                  pt: "Minha conta"
+                })}
+              >
+                <button className="menu-item menu-item--account-main" type="button" onClick={() => props.onOpenProfileTab("data")}>
+                  {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
+                </button>
+                <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
+                  {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
+                </button>
+                <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
+                  {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
+                </button>
+                <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("settings")}>
+                  {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+                </button>
+                <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("support")}>
+                  {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
+                </button>
+              </div>
+
+              <button className="menu-item menu-item-split" type="button" onClick={props.onOpenPreferences}>
+                <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
+                <small>
+                  {props.languageSummary} · {props.currencySummary}
+                </small>
+              </button>
+
+              <div className="menu-sep" />
+              <button className="menu-item danger" type="button" onClick={props.onLogout}>
+                {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {!props.hideSidebar ? (
@@ -212,11 +448,11 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
             </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
+              {t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" })}
+            </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/profesionales">
               {t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
-            </NavLink>
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/notas">
-              {t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/ejercicios">
               {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}
@@ -242,167 +478,59 @@ export function PortalNavigation(props: {
         </aside>
       ) : null}
 
-      <div className="portal-main">
-        <header className="portal-header">
-          <div
-            className={`portal-header-greeting${props.patientHeaderAvatarUploadBusy ? " portal-header-greeting--avatar-busy" : ""}`}
-            aria-busy={props.patientHeaderAvatarUploadBusy || undefined}
-          >
-            <input
-              id={avatarInputId}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              disabled={!props.authToken || props.patientHeaderAvatarUploadBusy}
-              onChange={props.onPatientHeaderAvatarFileChange}
-            />
+      <div
+        className={`portal-main${diaryImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}`}
+      >
+        {!immersivePortalHome ? (
+          <header className="portal-header">
+            <div
+              className={`portal-header-greeting${props.patientHeaderAvatarUploadBusy ? " portal-header-greeting--avatar-busy" : ""}`}
+              aria-busy={props.patientHeaderAvatarUploadBusy || undefined}
+            >
+              <input
+                id={avatarInputId}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={!props.authToken || props.patientHeaderAvatarUploadBusy}
+                onChange={props.onPatientHeaderAvatarFileChange}
+              />
 
-            <div className="portal-header-desktop-greet">
-              <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--desktop">
-                {avatarVisual}
-                <span className="sr-only">{avatarSrLabel}</span>
-              </label>
-              <h1 className="portal-header-greeting-desktop">
-                {replaceTemplate(
-                  t(props.language, {
-                    es: "Hola, {name}",
-                    en: "Hi, {name}",
-                    pt: "Ola, {name}"
-                  }),
-                  { name: props.sessionFullName ?? "" }
-                )}
-              </h1>
+              <div className="portal-header-desktop-greet">
+                <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--desktop">
+                  {avatarVisual}
+                  <span className="sr-only">{avatarSrLabel}</span>
+                </label>
+                <h1 className="portal-header-greeting-desktop">
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "Hola, {name}",
+                      en: "Hi, {name}",
+                      pt: "Ola, {name}"
+                    }),
+                    { name: props.sessionFullName ?? "" }
+                  )}
+                </h1>
+              </div>
+
+              <div className="portal-header-greeting-mobile" aria-label={mobileFirstName}>
+                <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--mobile">
+                  {avatarVisual}
+                  <span className="sr-only">{avatarSrLabel}</span>
+                </label>
+                <span className="portal-header-patient-name">{mobileFirstName}</span>
+              </div>
+
+              {props.patientHeaderAvatarError ? (
+                <p className="portal-header-avatar-error" role="status">
+                  {props.patientHeaderAvatarError}
+                </p>
+              ) : null}
             </div>
 
-            <div className="portal-header-greeting-mobile" aria-label={mobileFirstName}>
-              <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--mobile">
-                {avatarVisual}
-                <span className="sr-only">{avatarSrLabel}</span>
-              </label>
-              <span className="portal-header-patient-name">{mobileFirstName}</span>
-            </div>
-
-            {props.patientHeaderAvatarError ? (
-              <p className="portal-header-avatar-error" role="status">
-                {props.patientHeaderAvatarError}
-              </p>
-            ) : null}
-          </div>
-
-          {!props.hideSidebar ? (
-            <div className="header-actions">
-              <div className="header-actions-cluster">
-              <NavLink
-                to="/favorites"
-                className={({ isActive }) => `header-favorites-link header-icon-link ${isActive ? "active" : ""}`}
-                aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
-              >
-                <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
-                </svg>
-                {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
-              </NavLink>
-              <div className="notifications-wrap">
-                <button
-                  type="button"
-                  className={`header-icon-link ${props.notificationsOpen ? "active" : ""}`}
-                  aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
-                  onClick={props.onToggleNotifications}
-                >
-                  <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
-                    <path d="M10 18a2 2 0 0 0 4 0" />
-                  </svg>
-                  {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
-                </button>
-                {props.notificationsOpen ? (
-                  <div className="notifications-dropdown">
-                    <div className="notifications-head">
-                      <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
-                    </div>
-                    <div className="menu-sep" />
-                    {props.notifications.length === 0 ? (
-                      <p className="notifications-empty">
-                        {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
-                      </p>
-                    ) : (
-                      <ul className="notifications-list">
-                        {props.notifications.slice(0, 8).map((item) => (
-                          <li key={item.id}>
-                            <button type="button" className={`notification-item ${item.unread ? "unread" : ""}`} onClick={() => props.onOpenNotificationThread(item.professionalId)}>
-                              <span>{item.title}</span>
-                              <strong>{item.body}</strong>
-                              {item.detail ? <em>{item.detail}</em> : null}
-                              <small>{item.meta}</small>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-              </div>
-              <div className="menu-wrap">
-                <button
-                  aria-label={t(props.language, { es: "Abrir menú", en: "Open menu", pt: "Abrir menu" })}
-                  className="menu-toggle"
-                  type="button"
-                  onClick={props.onToggleMenu}
-                >
-                  <IconMenu className="menu-toggle-icon" />
-                </button>
-                {props.menuOpen ? (
-                  <div className="menu-dropdown">
-                    <div className="menu-panel-head">
-                      <strong>{props.sessionEmail ?? ""}</strong>
-                      <span>{props.sessionFullName ?? ""}</span>
-                    </div>
-                    <div className="menu-sep" />
-
-                    <div
-                      className="menu-dropdown-account"
-                      role="group"
-                      aria-label={t(props.language, {
-                        es: "Mi Cuenta",
-                        en: "My account",
-                        pt: "Minha conta"
-                      })}
-                    >
-                      <button className="menu-item menu-item--account-main" type="button" onClick={() => props.onOpenProfileTab("data")}>
-                        {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
-                      </button>
-                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
-                        {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
-                      </button>
-                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
-                        {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
-                      </button>
-                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("settings")}>
-                        {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-                      </button>
-                      <button className="menu-item menu-item--account-sub" type="button" onClick={() => props.onOpenProfileTab("support")}>
-                        {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
-                      </button>
-                    </div>
-
-                    <button className="menu-item menu-item-split" type="button" onClick={props.onOpenPreferences}>
-                      <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
-                      <small>
-                        {props.languageSummary} · {props.currencySummary}
-                      </small>
-                    </button>
-
-                    <div className="menu-sep" />
-                    <button className="menu-item danger" type="button" onClick={props.onLogout}>
-                      {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </header>
+            {renderHeaderActions()}
+          </header>
+        ) : null}
 
         {!props.hideSidebar ? (
           <nav
@@ -425,13 +553,13 @@ export function PortalNavigation(props: {
               <IconSessions className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
             </NavLink>
+            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
+              <IconNotes className="mobile-nav-icon" />
+              <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
+            </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profesionales">
               <IconProfessionals className="mobile-nav-icon" />
               <span className="mobile-nav-label">{t(props.language, { es: "Equipo", en: "Team", pt: "Equipe" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/notas">
-              <IconNotes className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Notas", en: "Articles", pt: "Notas" })}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios">
               <IconExercises className="mobile-nav-icon" />
@@ -455,6 +583,21 @@ export function PortalNavigation(props: {
           </nav>
         ) : null}
         {props.children}
+        {diaryHomeImmersive && diaryHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), diaryHeroToolbarMount)
+          : null}
+        {diarySubpageImmersive && diaryPortalToolbarMount
+          ? createPortal(renderHeaderActions(true), diaryPortalToolbarMount)
+          : null}
+        {dashboardHomeImmersive && dashboardHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), dashboardHeroToolbarMount)
+          : null}
+        {sessionsHomeImmersive && sessionsHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), sessionsHeroToolbarMount)
+          : null}
+        {wellbeingRelaxImmersive && wellbeingRelaxToolbarMount
+          ? createPortal(renderHeaderActions(true), wellbeingRelaxToolbarMount)
+          : null}
       </div>
     </>
   );

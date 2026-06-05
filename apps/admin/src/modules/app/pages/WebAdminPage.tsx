@@ -93,8 +93,15 @@ function normalizeRelaxationPlaylists(raw: unknown): AdminRelaxationPlaylist[] {
     .map((item) => {
       const title = item.title as { es?: string; en?: string; pt?: string } | undefined;
       const blurb = item.blurb as { es?: string; en?: string; pt?: string } | undefined;
+      const categoryLabel = item.categoryLabel as { es?: string; en?: string; pt?: string } | undefined;
       return {
         id: String(item.id ?? ""),
+        categoryId: String(item.categoryId ?? "general"),
+        categoryLabel: {
+          es: String(categoryLabel?.es ?? "Música relajante"),
+          en: String(categoryLabel?.en ?? "Relaxing music"),
+          pt: String(categoryLabel?.pt ?? "Música relaxante")
+        },
         title: {
           es: String(title?.es ?? ""),
           en: String(title?.en ?? ""),
@@ -115,9 +122,11 @@ function normalizeRelaxationPlaylists(raw: unknown): AdminRelaxationPlaylist[] {
 
 const EMPTY_RELAXATION_PLAYLIST: AdminRelaxationPlaylist = {
   id: "",
+  categoryId: "general",
+  categoryLabel: { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" },
   title: { es: "", en: "", pt: "" },
   blurb: { es: "", en: "", pt: "" },
-  embedType: "spotify",
+  embedType: "youtube",
   embedSrc: "",
   openUrl: ""
 };

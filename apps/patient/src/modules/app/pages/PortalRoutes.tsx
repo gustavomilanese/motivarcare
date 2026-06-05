@@ -13,6 +13,9 @@ import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
 import { ExerciseDetailPage } from "../../exercises/pages/ExerciseDetailPage";
 import { RelaxationMusicPage } from "../../wellbeing/pages/RelaxationMusicPage";
+import { DiaryHomePage } from "../../emotional-diary/pages/DiaryHomePage";
+import { DiaryNewEntryPage } from "../../emotional-diary/pages/DiaryNewEntryPage";
+import { DiaryRecordsPage } from "../../emotional-diary/pages/DiaryRecordsPage";
 import { API_BASE } from "../services/api";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
@@ -341,6 +344,36 @@ export function PortalRoutes(props: {
                   onImageFallback={props.onImageFallback}
                 />
               )
+        }
+      />
+      <Route
+        path="/diario"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : props.state.authToken
+              ? <DiaryHomePage language={props.state.language} authToken={props.state.authToken} />
+              : <Navigate replace to="/login" />
+        }
+      />
+      <Route
+        path="/diario/nueva"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : props.state.authToken
+              ? <DiaryNewEntryPage language={props.state.language} authToken={props.state.authToken} />
+              : <Navigate replace to="/login" />
+        }
+      />
+      <Route
+        path="/diario/registros"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : props.state.authToken
+              ? <DiaryRecordsPage language={props.state.language} authToken={props.state.authToken} />
+              : <Navigate replace to="/login" />
         }
       />
       <Route

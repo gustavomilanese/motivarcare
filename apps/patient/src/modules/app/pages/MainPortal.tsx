@@ -8,6 +8,7 @@ import {
 } from "@therapy/i18n-config";
 import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
 import { friendlyProfileAvatarErrorMessage } from "../lib/friendlyPatientMessages";
+import { DiaryPortalToolbarMountProvider } from "../../emotional-diary/context/DiaryPortalToolbarMount";
 import { PortalNavigation } from "../components/PortalNavigation";
 import { type LanguageChoice, PortalPreferencesModal } from "../components/PortalPreferencesModal";
 import { usePortalNotifications } from "../hooks/usePortalNotifications";
@@ -256,6 +257,7 @@ export function MainPortal(props: {
 
   return (
     <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : ""}`}>
+      <DiaryPortalToolbarMountProvider>
       <PortalNavigation
         language={props.state.language}
         sessionEmail={props.state.session?.email}
@@ -334,6 +336,7 @@ export function MainPortal(props: {
           />
         </main>
       </PortalNavigation>
+      </DiaryPortalToolbarMountProvider>
       {selectedBooking ? (
         <SessionDetailModal
           booking={selectedBooking}

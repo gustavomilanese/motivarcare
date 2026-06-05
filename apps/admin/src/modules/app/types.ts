@@ -232,6 +232,8 @@ export interface AdminExercise {
 
 export interface AdminRelaxationPlaylist {
   id: string;
+  categoryId: string;
+  categoryLabel: { es: string; en: string; pt: string };
   title: { es: string; en: string; pt: string };
   blurb: { es: string; en: string; pt: string };
   embedType: "spotify" | "youtube";

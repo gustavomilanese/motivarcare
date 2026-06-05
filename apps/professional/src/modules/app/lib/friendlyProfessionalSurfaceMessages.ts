@@ -121,6 +121,8 @@ export type ProfessionalSurfaceContext =
   | "profile-image-read"
   | "patients-load"
   | "patient-detail-load"
+  | "patient-emotional-diary-load"
+  | "patient-emotional-diary-summary"
   | "income-load"
   | "dashboard-load"
   | "dashboard-reschedule-availability"
@@ -254,6 +256,16 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     es: "No pudimos cargar la ficha de este paciente. Volvé a la lista o intentá de nuevo.",
     en: "We couldn’t load this patient’s details. Go back to the list or try again.",
     pt: "Nao foi possivel carregar a ficha deste paciente. Volte a lista ou tente de novo."
+  },
+  "patient-emotional-diary-load": {
+    es: "No pudimos cargar el diario emocional compartido. Intentá de nuevo.",
+    en: "We couldn’t load the shared emotional diary. Try again.",
+    pt: "Nao foi possivel carregar o diario emocional compartilhado. Tente de novo."
+  },
+  "patient-emotional-diary-summary": {
+    es: "No pudimos generar el resumen de sesión del diario. Intentá de nuevo.",
+    en: "We couldn’t generate the diary session summary. Try again.",
+    pt: "Nao foi possivel gerar o resumo de sessao do diario. Tente de novo."
   },
   "income-load": {
     es: "No pudimos mostrar tus ingresos aún. Reintentá más tarde o revisá filtros de fechas.",

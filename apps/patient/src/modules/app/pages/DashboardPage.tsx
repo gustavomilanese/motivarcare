@@ -580,13 +580,14 @@ export function DashboardPage(props: {
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
       <div className="dashboard-legacy-home">
-      <section className="hero-composite hero-composite--media-only" data-tour="patient-tour-hero">
-        <div className="hero-media">
-          <figure className={`hero-photo-tile${landingPatientHeroImage === null ? " hero-photo-tile--loading" : ""}`}>
+      <section className="dashboard-hero-immersive" data-tour="patient-tour-hero">
+        <div className="dashboard-hero-banner-wrap">
+          <div className={`dashboard-hero-banner${landingPatientHeroImage === null ? " dashboard-hero-banner--loading" : ""}`}>
             {landingPatientHeroImage === null ? (
-              <span className="hero-photo-tile-skeleton" aria-hidden="true" />
+              <span className="dashboard-hero-banner-skeleton" aria-hidden="true" />
             ) : (
               <img
+                className="dashboard-hero-banner-photo"
                 src={landingPatientHeroImage}
                 alt={t(props.language, {
                   es: "Paciente en sesión virtual",
@@ -598,47 +599,40 @@ export function DashboardPage(props: {
                 onError={props.onHeroFallback}
               />
             )}
-            <figcaption className="hero-note-card">
-              <p>
-                {t(props.language, {
-                  es: "La paz viene de adentro. No la busques afuera.",
-                  en: "Peace comes from within. Do not seek it without.",
-                  pt: "A paz vem de dentro. Nao a procure fora."
-                })}
-              </p>
-            </figcaption>
-          </figure>
-        </div>
-        <div className="hero-title-wrap dashboard-home-hero-intro-aside">
-          <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
-          <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
-          {(hasAssignedProfessional && defaultPackagePlan) || showGoogleCalendarCta ? (
-            <div className="dashboard-hero-purchase-row">
-              {hasAssignedProfessional && defaultPackagePlan ? (
-                <button
-                  className="sessions-hero-buy-button dashboard-hero-buy-button"
-                  type="button"
-                  onClick={() => setAcquireSessionsModalOpen(true)}
-                >
-                  {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
-                </button>
-              ) : null}
-              {showGoogleCalendarCta ? (
-                <button
-                  type="button"
-                  className={`dashboard-hero-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-                  onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-                >
-                  {t(props.language, {
-                    es: "Conectá Google Calendar",
-                    en: "Connect Google Calendar",
-                    pt: "Conectar o Google Calendar"
-                  })}
-                </button>
-              ) : null}
+            <div className="dashboard-hero-banner-scrim" aria-hidden="true" />
+            <div className="dashboard-hero-banner-copy">
+              <h2 className="dashboard-hero-title-on-photo">{dashboardIntroTitle}</h2>
+              <p className="dashboard-hero-subtitle-on-photo">{dashboardIntroBody}</p>
             </div>
-          ) : null}
+          </div>
+          <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount" />
         </div>
+        {(hasAssignedProfessional && defaultPackagePlan) || showGoogleCalendarCta ? (
+          <div className="dashboard-hero-cta-band">
+            {hasAssignedProfessional && defaultPackagePlan ? (
+              <button
+                className="sessions-hero-buy-button dashboard-hero-buy-button"
+                type="button"
+                onClick={() => setAcquireSessionsModalOpen(true)}
+              >
+                {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
+              </button>
+            ) : null}
+            {showGoogleCalendarCta ? (
+              <button
+                type="button"
+                className={`dashboard-hero-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+              >
+                {t(props.language, {
+                  es: "Conectá Google Calendar",
+                  en: "Connect Google Calendar",
+                  pt: "Conectar o Google Calendar"
+                })}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <section className="content-card trial-priority-banner trial-priority-inline" data-tour="patient-tour-trial">

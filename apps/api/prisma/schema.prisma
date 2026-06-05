@@ -137,6 +137,8 @@ model PatientProfile {
   financeRecords FinanceSessionRecord[]
   intakeChatSessions PatientIntakeChatSession[]
   treatmentChat  PatientTreatmentChat?
+  emotionalDiarySettings EmotionalDiarySettings?
+  emotionalDiaryEntries  EmotionalDiaryEntry[]
 }
 
 model ProfessionalProfile {
@@ -324,6 +326,50 @@ model PatientTreatmentChatMessage {
 
   @@index([chatId, createdAt])
   @@map("patient_treatment_chat_message")
+}
+
+enum EmotionalDiaryEntryStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum EmotionalDiaryMood {
+  VERY_BAD
+  BAD
+  REGULAR
+  GOOD
+  VERY_GOOD
+}
+
+model EmotionalDiarySettings {
+  patientId                    String         @id @map("patient_id")
+  shareWithPsychologistDefault Boolean        @default(true) @map("share_with_psychologist_default")
+  updatedAt                    DateTime       @updatedAt @map("updated_at")
+  patient                      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("emotional_diary_settings")
+}
+
+model EmotionalDiaryEntry {
+  id                    String                    @id @default(cuid())
+  patientId             String                    @map("patient_id")
+  status                EmotionalDiaryEntryStatus @default(DRAFT)
+  mood                  EmotionalDiaryMood
+  title                 String                    @db.VarChar(200)
+  whatHappened          String                    @db.Text @map("what_happened")
+  feelings              Json
+  recurringThought      String                    @db.Text @map("recurring_thought")
+  needsNow              Json                      @map("needs_now")
+  isPrivate             Boolean                   @default(false) @map("is_private")
+  shareWithPsychologist Boolean                   @default(true) @map("share_with_psychologist")
+  publishedAt           DateTime?                 @map("published_at")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  patient               PatientProfile            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, updatedAt])
+  @@index([patientId, status, updatedAt])
+  @@map("emotional_diary_entry")
 }
 
 model SessionPackage {

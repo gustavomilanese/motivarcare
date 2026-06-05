@@ -83,14 +83,14 @@ function sidebarMenuHtml(language: AppLanguage): string {
       pt: "<strong>Sessoes</strong> — agendar e ver horarios"
     },
     {
+      es: "<strong>Diario emocional</strong> — registrá cómo te sentís",
+      en: "<strong>Emotional diary</strong> — log how you feel",
+      pt: "<strong>Diário emocional</strong> — registre como se sente"
+    },
+    {
       es: "<strong>Profesionales</strong> — explorar el equipo",
       en: "<strong>Professionals</strong> — browse the team",
       pt: "<strong>Profissionais</strong> — conhecer a equipe"
-    },
-    {
-      es: "<strong>Notas</strong> — lecturas útiles",
-      en: "<strong>Articles</strong> — helpful reads",
-      pt: "<strong>Notas</strong> — leituras uteis"
     },
     {
       es: "<strong>Ejercicios</strong> — recursos entre sesión y sesión",

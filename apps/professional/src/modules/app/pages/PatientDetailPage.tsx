@@ -5,6 +5,7 @@ import { PatientAvatarImage } from "../components/PatientAvatarImage";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest, resolveApiAssetUrl } from "../services/api";
+import { PatientEmotionalDiaryPanel } from "../../patients/components/PatientEmotionalDiaryPanel";
 import type { PatientDetailResponse } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -204,6 +205,8 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
           </li>
         </ul>
       </section>
+
+      <PatientEmotionalDiaryPanel patientId={patientId} token={props.token} language={props.language} />
 
       <section className="pro-card pro-patient-payments-preview">
         <h2>{t(props.language, { es: "Últimos cobros", en: "Recent payouts", pt: "Ultimos cobros" })}</h2>

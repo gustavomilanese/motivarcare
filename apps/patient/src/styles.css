@@ -1235,6 +1235,7 @@ button.danger {
   align-items: start;
 }
 
+
 .portal-header {
   background: transparent;
   border: 0;
@@ -1730,7 +1731,7 @@ button.danger {
   align-items: start;
 }
 
-.portal-main-content:has(.sessions-booking-page) {
+.portal-main:not(.portal-main--sessions-home) .portal-main-content:has(.sessions-booking-page) {
   gap: 10px;
   padding-top: 8px;
 }
@@ -1798,11 +1799,13 @@ button.danger {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid rgba(189, 170, 255, 0.45);
+  padding: 16px 18px;
+  border: 1px solid rgba(99, 130, 235, 0.28);
   border-radius: var(--portal-radius-sm);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 244, 255, 0.95) 100%);
-  box-shadow: 0 4px 20px rgba(95, 68, 235, 0.08);
+  background: linear-gradient(145deg, #eaf0ff 0%, #dce8ff 42%, #c7d6fe 78%, #b8c9fc 100%);
+  box-shadow:
+    0 4px 20px rgba(79, 118, 235, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .trial-priority-inline {
@@ -1815,14 +1818,14 @@ button.danger {
   min-width: 120px;
   padding: 9px 16px;
   justify-self: end;
-  border: 1px solid #d6ccff;
-  color: #673de6;
+  border: 1px solid rgba(99, 130, 235, 0.35);
+  color: #4338ca;
   background: #fff;
   border-radius: 10px;
 }
 
 .trial-inline-action:hover {
-  background: #f7f4ff;
+  background: #f0f5ff;
 }
 
 .trial-priority-banner h2 {
@@ -1847,8 +1850,8 @@ button.danger {
   border-radius: 10px;
   display: inline-grid;
   place-items: center;
-  background: #f2efff;
-  border: 1px solid #e2dcff;
+  background: linear-gradient(145deg, #f4f7ff 0%, #e3ecff 100%);
+  border: 1px solid rgba(99, 130, 235, 0.22);
   box-shadow: none;
 }
 
@@ -1857,7 +1860,7 @@ button.danger {
   width: 13px;
   height: 13px;
   border-radius: 4px;
-  border: 2px solid #673de6;
+  border: 2px solid #4f46e5;
   border-top-color: transparent;
   transform: rotate(-45deg);
 }
@@ -5507,20 +5510,173 @@ button.sessions-balance {
   display: none;
 }
 
-/* Pagina Sesiones: hero con paddings equilibrados; creditos bajo el titulo (no bajo la columna de botones) */
-.sessions-booking-page.page-stack {
-  gap: 14px;
+/* Sesiones — hero inmersivo (foto ancha; título sobre la foto como Inicio) */
+.sessions-booking-page .sessions-hero-immersive {
+  margin: 0 0 18px;
+  padding: 0;
+  width: 100%;
 }
 
-.sessions-booking-page .sessions-page-hero.sessions-page-hero-plain {
-  padding: 22px 24px 24px;
-  gap: 0;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(111, 89, 245, 0.1), transparent 40%),
-    linear-gradient(180deg, #ffffff 0%, #f7f8fc 100%);
-  border: 1px solid var(--portal-border);
-  box-shadow: var(--portal-elev);
+.sessions-booking-page .sessions-hero-banner-wrap {
+  position: relative;
+  width: 100%;
 }
+
+.sessions-booking-page .sessions-hero-toolbar-mount {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.sessions-booking-page .sessions-hero-toolbar-mount .header-actions {
+  position: static;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.sessions-booking-page .sessions-hero-toolbar-mount .header-icon-link,
+.sessions-booking-page .sessions-hero-toolbar-mount .menu-toggle {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.sessions-booking-page .sessions-hero-toolbar-mount .header-actions-cluster,
+.sessions-booking-page .sessions-hero-toolbar-mount .menu-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sessions-booking-page .sessions-hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: clamp(240px, 37vh, 352px);
+  overflow: hidden;
+  background: #1a2234;
+}
+
+.sessions-booking-page .sessions-hero-banner-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+}
+
+.sessions-booking-page .sessions-hero-banner-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.16) 0%,
+    transparent 20%,
+    transparent 40%,
+    rgba(30, 22, 68, 0.52) 72%,
+    rgba(22, 16, 52, 0.9) 100%
+  );
+}
+
+.sessions-booking-page .sessions-hero-banner-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 20px 18px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.sessions-booking-page .sessions-hero-title-on-photo {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+
+.sessions-booking-page .sessions-hero-subtitle-on-photo {
+  margin: 0;
+  max-width: 52ch;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Sesiones (/sessions): ancho completo del panel principal (como música relajante) */
+.portal-main-content:has(.sessions-booking-page) {
+  width: 100%;
+  max-width: none;
+}
+
+.portal-main--sessions-home .portal-main-content:has(.sessions-booking-page) {
+  padding-top: 0;
+  gap: 0;
+}
+
+.portal-main--sessions-home .sessions-booking-page > :not(.sessions-hero-immersive):not(.sessions-booking-body) {
+  padding-left: clamp(12px, 2.4vw, 22px);
+  padding-right: clamp(12px, 2.4vw, 22px);
+  box-sizing: border-box;
+}
+
+.portal-main--sessions-home .sessions-booking-page .sessions-hero-immersive {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0;
+}
+
+.sessions-booking-page .sessions-hero-actions-band {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 18px clamp(12px, 2.4vw, 22px) 8px;
+  background: linear-gradient(180deg, #f8f9fc 0%, #f1f3f8 100%);
+}
+
+/* Pagina Sesiones: créditos y CTA bajo el hero fotográfico */
+.sessions-booking-page.page-stack {
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
+.sessions-booking-page .sessions-booking-body {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+  padding: 14px clamp(12px, 2.4vw, 22px) clamp(28px, 5vh, 40px);
+  background: #f1f3f8;
+  border-radius: 20px 20px 0 0;
+  margin-top: -6px;
+}
+
 
 .sessions-booking-hero-layout {
   display: grid;
@@ -5529,13 +5685,6 @@ button.sessions-balance {
   column-gap: clamp(16px, 3vw, 28px);
   row-gap: 24px;
   align-items: center;
-}
-
-.sessions-booking-hero-layout .sessions-hero-title-main {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-  min-width: 0;
 }
 
 .sessions-booking-hero-layout .sessions-booking-hero-balance {
@@ -5562,30 +5711,6 @@ button.sessions-balance {
   grid-row: 1;
   justify-self: end;
   align-self: center;
-}
-
-.sessions-booking-page .sessions-page-hero-copy {
-  gap: 0;
-}
-
-.sessions-booking-page .sessions-hero-title-main {
-  align-items: center;
-}
-
-.sessions-booking-page .sessions-hero-title-block {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.sessions-booking-page .sessions-booking-hero-sub {
-  display: none;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.35;
-  color: #64748b;
-  font-weight: 400;
-  max-width: 360px;
 }
 
 .sessions-booking-page .sessions-booking-mobile-only {
@@ -5618,7 +5743,7 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-balance {
-  margin-top: 20px;
+  margin-top: 0;
   padding: 18px 22px;
   gap: 16px;
   border-radius: 20px;
@@ -5700,9 +5825,23 @@ button.sessions-balance {
   margin-top: 0;
 }
 
+.sessions-booking-page .sessions-booking-body .booking-session-card {
+  background: #fff;
+  border: 1px solid #e4e8f0;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+}
+
 .sessions-booking-page .sessions-confirmed-panel.content-card {
-  padding: 14px 16px;
-  gap: 10px;
+  padding: 18px 18px 16px;
+  gap: 12px;
+}
+
+.sessions-booking-page .sessions-confirmed-panel .sessions-panel-head h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
 }
 
 .sessions-booking-page .booking-card-minimal {
@@ -5775,20 +5914,74 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-empty-state {
-  padding: 14px;
+  padding: 20px 16px;
   gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e8ecf4;
+  border-radius: 14px;
 }
 
-.sessions-booking-page .sessions-calendar-collapsible.sessions-secondary-section {
-  margin-top: 12px;
+.sessions-booking-page .sessions-empty-state strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #475569;
 }
 
-.sessions-booking-page .sessions-secondary-section {
-  padding-top: 10px;
+.sessions-booking-page .sessions-booking-body .sessions-secondary-section,
+.sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section {
+  margin-top: 0;
+  margin-left: 0;
+  padding: 16px 18px 18px;
+  border-top: 0;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #e4e8f0;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
-.sessions-booking-page .sessions-secondary-section.sessions-purchased-history {
-  padding: 16px 16px 18px;
+.sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history {
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+  border-color: rgba(139, 124, 248, 0.2);
+  box-shadow: 0 6px 22px rgba(95, 68, 235, 0.08);
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-secondary-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-secondary-toggle-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #6d5ce8;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-purchased-history .sessions-secondary-toggle-label {
+  color: #5f45ee;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-calendar-toggle {
+  padding: 4px 2px;
+  border-radius: 10px;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-purchased-history .sessions-calendar-toggle {
+  margin: 0;
+  padding: 6px 4px;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible {
+  gap: 12px;
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-history-section > p,
+.sessions-booking-page .sessions-booking-body .sessions-purchased-history > p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
 }
 
 .sessions-booking-page .sessions-calendar-collapsible {
@@ -8355,25 +8548,25 @@ button.sessions-balance {
     margin-bottom: 6px;
   }
 
-  .sessions-booking-page .sessions-page-hero.sessions-page-hero-plain {
-    padding: 16px 16px 18px;
+  .sessions-booking-page .sessions-hero-actions-band {
+    padding: 12px 16px 4px;
   }
 
   .sessions-booking-hero-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto;
     row-gap: 16px;
     column-gap: 0;
+    gap: 14px;
   }
 
-  .sessions-booking-hero-layout .sessions-hero-title-main {
-    grid-column: 1;
-    grid-row: 1;
+  .sessions-booking-page .sessions-hero-banner-copy {
+    padding: 16px 16px 14px;
   }
 
   .sessions-booking-hero-layout .sessions-booking-hero-actions {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1;
     width: 100%;
     max-width: none;
     justify-self: stretch;
@@ -8381,7 +8574,7 @@ button.sessions-balance {
 
   .sessions-booking-hero-layout .sessions-booking-hero-balance {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
     margin-top: 20px;
     width: 100%;
     max-width: none;
@@ -8446,29 +8639,8 @@ button.sessions-balance {
     padding-right: 2px;
   }
 
-  .sessions-booking-page .sessions-page-hero.sessions-page-hero-plain {
-    background: #ffffff;
-    border-radius: 16px;
-  }
-
-  .sessions-booking-page .sessions-hero-icon {
-    display: none;
-  }
-
-  .sessions-booking-page .sessions-hero-title-main {
-    align-items: flex-start;
-  }
-
-  .sessions-booking-page .sessions-hero-title-main h2 {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-  }
-
-  .sessions-booking-page .sessions-booking-hero-sub {
-    display: block;
-    font-size: 13px;
-    max-width: none;
+  .portal-main--sessions-home .sessions-booking-page .sessions-hero-banner {
+    min-height: clamp(200px, 32vh, 280px);
   }
 
   .sessions-booking-page .sessions-booking-mobile-only .sessions-confirmed-list--mobile {
@@ -9124,8 +9296,8 @@ button.sessions-balance {
     font-size: 19px;
   }
 
-  .sessions-booking-page .sessions-page-hero.sessions-page-hero-plain {
-    padding: 18px 18px 20px;
+  .sessions-booking-page .sessions-hero-actions-band {
+    padding: 12px 18px 4px;
   }
 
   .sessions-booking-page .sessions-balance {
@@ -10373,6 +10545,149 @@ button.sessions-balance {
   color: #3730a3;
 }
 
+/* Inicio — hero inmersivo (foto ancha, título abajo; sin Hola/iconos en header) */
+.patient-dashboard-home .dashboard-hero-immersive {
+  margin: 0 0 22px;
+  padding: 0;
+  width: 100%;
+}
+
+.patient-dashboard-home .dashboard-hero-banner-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Montaje de iconos del portal (top/right con margen fijo sobre la foto) */
+.patient-dashboard-home .dashboard-hero-toolbar-mount {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions {
+  position: static;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link,
+.patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions-cluster,
+.patient-dashboard-home .dashboard-hero-toolbar-mount .menu-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.patient-dashboard-home .dashboard-hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: clamp(240px, 37vh, 352px);
+  overflow: hidden;
+  background: #1a2234;
+}
+
+.patient-dashboard-home .dashboard-hero-banner--loading {
+  min-height: clamp(208px, 34vh, 304px);
+}
+
+.patient-dashboard-home .dashboard-hero-banner-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #e8ecf4 8%, #f8fafc 18%, #e8ecf4 33%);
+  background-size: 200% 100%;
+  animation: dashboard-hero-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes dashboard-hero-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.patient-dashboard-home .dashboard-hero-banner-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+.patient-dashboard-home .dashboard-hero-banner-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.16) 0%,
+    transparent 20%,
+    transparent 40%,
+    rgba(30, 22, 68, 0.52) 72%,
+    rgba(22, 16, 52, 0.9) 100%
+  );
+}
+
+.patient-dashboard-home .dashboard-hero-banner-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 20px 18px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.patient-dashboard-home .dashboard-hero-title-on-photo {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+
+.patient-dashboard-home .dashboard-hero-subtitle-on-photo {
+  margin: 0;
+  max-width: 52ch;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+.patient-dashboard-home .dashboard-hero-cta-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 14px;
+  padding: 14px 18px 0;
+}
+
 .patient-dashboard-home .hero-composite {
   border-radius: 22px;
   overflow: hidden;
@@ -10803,6 +11118,16 @@ button.sessions-balance {
 }
 
 @media (max-width: 1080px) {
+  .patient-dashboard-home .dashboard-hero-banner {
+    min-height: clamp(208px, 41.6vw, 288px);
+  }
+
+  .patient-dashboard-home .dashboard-hero-banner-copy,
+  .patient-dashboard-home .dashboard-hero-cta-band {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
   .patient-dashboard-home .hero-composite {
     border-radius: 18px;
     padding: 10px 12px 12px;
@@ -14154,55 +14479,233 @@ button.sessions-balance {
   font-size: 14px;
 }
 
-/* Bienestar: música relajante */
+/* Bienestar: música relajante — iconos arriba a la derecha, misma línea que el título */
+.wellbeing-relax-toolbar-mount {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.wellbeing-relax-toolbar-mount .header-actions {
+  position: static;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.wellbeing-relax-toolbar-mount .header-icon-link,
+.wellbeing-relax-toolbar-mount .menu-toggle {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.wellbeing-relax-toolbar-mount .header-actions-cluster,
+.wellbeing-relax-toolbar-mount .menu-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-main-content:has(.wellbeing-relax-page) {
+  width: 100%;
+  max-width: none;
+  gap: 6px;
+}
+
 .wellbeing-relax-page {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 8px 4px 32px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(12px, 2.4vw, 24px) 32px;
+  box-sizing: border-box;
+  gap: 10px;
+}
+
+.wellbeing-relax-header {
+  position: relative;
+  margin: 0;
+  padding: 0;
 }
 
 .wellbeing-relax-header h1 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
+  padding-right: clamp(100px, 22vw, 156px);
   font-size: clamp(24px, 3vw, 32px);
   color: #0f172a;
   letter-spacing: -0.02em;
 }
 
 .wellbeing-relax-lead {
-  margin: 0 0 22px;
+  margin: 0 0 14px;
   font-size: 15px;
   line-height: 1.5;
   color: #475569;
-  max-width: 720px;
+  max-width: 72ch;
 }
 
-.wellbeing-relax-grid {
+.wellbeing-relax-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.wellbeing-relax-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.wellbeing-relax-category-pill--active {
+  border-color: rgba(95, 68, 235, 0.45);
+  background: #f5f3ff;
+  color: #4c31d8;
+}
+
+.wellbeing-relax-category-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7c6bcf;
+  background: #ede9fe;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.wellbeing-relax-player {
+  margin: 0 0 22px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(129, 108, 235, 0.22);
+  background: linear-gradient(145deg, #fafbff 0%, #f5f0ff 100%);
+  box-shadow: 0 12px 32px rgba(95, 68, 235, 0.1);
+}
+
+.wellbeing-relax-player-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.wellbeing-relax-player-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c6bcf;
+}
+
+.wellbeing-relax-player-blurb {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  max-width: 52ch;
+}
+
+.wellbeing-relax-open-yt {
+  flex-shrink: 0;
+}
+
+.wellbeing-relax-video-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  gap: 14px;
+  width: 100%;
 }
 
-.wellbeing-relax-card {
-  padding: 18px 18px 16px;
-  border-radius: 18px;
+.wellbeing-relax-video-card {
+  width: 100%;
   border: 1px solid #e2e8f0;
-  background: #fafbff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.wellbeing-relax-card h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
+.wellbeing-relax-video-card:hover {
+  border-color: rgba(139, 124, 248, 0.45);
+  box-shadow: 0 8px 22px rgba(95, 68, 235, 0.1);
+}
+
+.wellbeing-relax-video-card--active {
+  border-color: #8b7cf8;
+  box-shadow: 0 0 0 2px rgba(139, 124, 248, 0.25);
+}
+
+.wellbeing-relax-video-thumb {
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.wellbeing-relax-video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wellbeing-relax-video-thumb-fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 2rem;
+  color: #94a3b8;
+}
+
+.wellbeing-relax-video-copy {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 12px;
+}
+
+.wellbeing-relax-video-copy strong {
+  font-size: 0.86rem;
   color: #1e293b;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.wellbeing-relax-card > p {
-  margin: 0 0 14px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: #64748b;
+.wellbeing-relax-video-copy > span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #7c6bcf;
 }
 
 .wellbeing-relax-embed-wrap {
@@ -14212,8 +14715,8 @@ button.sessions-balance {
   overflow: hidden;
   border: 1px solid #e2e8f0;
   background: #0f172a;
-  aspect-ratio: 16 / 10;
-  max-height: 360px;
+  aspect-ratio: 16 / 9;
+  max-height: min(56vh, 520px);
 }
 
 .wellbeing-relax-iframe {
