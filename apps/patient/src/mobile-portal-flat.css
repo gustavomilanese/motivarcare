@@ -1,0 +1,429 @@
+/**
+ * Mobile-only surface system (≤1080px).
+ * Jerarquía por bandas, tipografía y divisores — no cajas anidadas con sombra.
+ * Web / desktop: sin efecto (todo dentro del media query).
+ */
+@media (max-width: 1080px) {
+  :root {
+    --mobile-canvas: #f4f2fa;
+    --mobile-surface: #ffffff;
+    --mobile-divider: rgba(226, 232, 240, 0.98);
+    --mobile-section-gap: 8px;
+    --mobile-pad-x: max(16px, env(safe-area-inset-left, 0px));
+    --mobile-pad-x-end: max(16px, env(safe-area-inset-right, 0px));
+    --mobile-section-y: 18px;
+  }
+
+  /* —— Canvas & ritmo vertical —— */
+  .portal-main:has(.patient-dashboard-home),
+  .portal-main:has(.sessions-booking-page),
+  .portal-main:has(.wa-shell),
+  .portal-main:has(.profile-layout) {
+    background: var(--mobile-canvas);
+  }
+
+  .portal-main-content,
+  .portal-main-content .page-stack {
+    gap: 0;
+  }
+
+  .portal-main-content .page-stack > * + * {
+    margin-top: var(--mobile-section-gap);
+  }
+
+  /* Header estándar (no inmersivo): banda, no tarjeta flotante */
+  .portal-header {
+    margin: 0;
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  /* —— Shell genérico de sección —— */
+  .portal-main .content-card,
+  .portal-main .booking-session-card,
+  .portal-main .sessions-package-options-panel {
+    background: var(--mobile-surface);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+    gap: 12px;
+  }
+
+  .portal-main .content-card + .content-card,
+  .portal-main .sessions-secondary-section {
+    border-top: none;
+  }
+
+  /* Inicio legacy (681–1080): KPIs sin cajas flotantes */
+  .patient-dashboard-home .hero-grid {
+    gap: 0;
+    margin-top: 0;
+  }
+
+  .patient-dashboard-home .hero-card,
+  .patient-dashboard-home .sessions-combined-card,
+  .patient-dashboard-home .active-professional-card {
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .patient-dashboard-home .hero-card::before {
+    display: none;
+  }
+
+  .patient-dashboard-home .trial-priority-banner.content-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: linear-gradient(180deg, #dce4ff 0%, #eef2ff 100%);
+    border-bottom: 1px solid rgba(109, 86, 255, 0.12);
+  }
+
+  /* Sesiones: paneles y secciones colapsables */
+  .sessions-booking-page .sessions-confirmed-panel.content-card,
+  .patient-dashboard-home .sessions-confirmed-panel.content-card {
+    padding-top: var(--mobile-section-y);
+    padding-bottom: var(--mobile-section-y);
+    background: var(--mobile-surface);
+  }
+
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history {
+    margin: 0;
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    box-shadow: none;
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .sessions-booking-page .sessions-credit-alert,
+  .sessions-booking-page .sessions-empty-state {
+    margin: 0;
+    padding: 14px 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    border-top: 1px solid var(--mobile-divider);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .sessions-balance,
+  .sessions-balance--interactive {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+  }
+
+  .sessions-panel-head h2,
+  .sessions-secondary-title,
+  .dashboard-rn-section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  /* Filas de sesión: lista, no mini-cards */
+  .session-rn-root .session-rn-session-list,
+  .sessions-confirmed-list--mobile,
+  .sessions-confirmed-list--dashboard-mobile {
+    gap: 0;
+    background: var(--mobile-surface);
+  }
+
+  .session-rn-root .session-rn-card.session-management-card,
+  .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .session-rn-root .session-rn-card.session-management-card:last-child,
+  .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child {
+    border-bottom: none;
+  }
+
+  .session-rn-root .session-rn-card--trial.session-management-card {
+    border: none;
+    border-left: 3px solid rgba(245, 158, 11, 0.65);
+    padding-left: calc(var(--mobile-pad-x) - 3px);
+  }
+
+  /* Historial / paquetes: filas planas */
+  .sessions-purchased-history .session-history-list,
+  .dashboard-compact-section.sessions-purchased-history .session-history-list {
+    gap: 0;
+  }
+
+  .sessions-purchased-history .session-history-list li,
+  .dashboard-compact-section.sessions-purchased-history .session-history-list li {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .sessions-purchased-history .session-history-list li:last-child {
+    border-bottom: none;
+  }
+
+  .patient-dashboard-home .sessions-secondary-section,
+  .patient-dashboard-home .dashboard-compact-section {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history {
+    background: var(--mobile-surface);
+    border: none;
+    box-shadow: none;
+  }
+
+  /* Paquetes: panel plano + filas seleccionables */
+  .sessions-package-options-grid,
+  .deal-grid.sessions-package-options-grid {
+    gap: 0;
+  }
+
+  .deal-card-shell {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .deal-card-shell .deal-card-roof {
+    display: none;
+  }
+
+  .deal-card,
+  .dashboard-deal-card.sessions-package-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .deal-card.selected,
+  .dashboard-deal-card.sessions-package-card.selected {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: inset 3px 0 0 var(--brand);
+    padding-left: 12px;
+  }
+
+  /* Inicio RN (≤680): toolbar y bloques MCare */
+  .patient-dashboard-home .dashboard-rn-toolbar {
+    margin: 0 0 var(--mobile-section-gap);
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .patient-dashboard-home .dashboard-rn-scroll {
+    padding-left: var(--mobile-pad-x);
+    padding-right: var(--mobile-pad-x-end);
+  }
+
+  .patient-dashboard-home .dashboard-rn-section {
+    padding: var(--mobile-section-y) 0;
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .patient-dashboard-home .dashboard-rn-empty-card {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 8px 0 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-google-calendar-button {
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--mobile-divider);
+    border-bottom: 1px solid var(--mobile-divider);
+    background: var(--mobile-surface);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-outer {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-gradient {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-inner {
+    padding: var(--mobile-section-y) 0 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-stack {
+    gap: 0;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-card--selected {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: inset 3px 0 0 var(--brand);
+    padding-left: 12px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-divider {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-sticky {
+    padding: 12px var(--mobile-pad-x-end) calc(12px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border-top: 1px solid var(--mobile-divider);
+    box-shadow: none;
+  }
+
+  /* Chat: mensajería a ancho completo, sin marco */
+  .wa-shell {
+    min-height: calc(100dvh - var(--portal-tab-clear) - 48px);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+  }
+
+  .wa-sidebar {
+    background: var(--mobile-surface);
+    border-right: none;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .wa-sidebar-header {
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+  }
+
+  .wa-main {
+    background: #efeae2;
+  }
+
+  .wa-composer {
+    border-top: 1px solid var(--mobile-divider);
+    background: var(--mobile-surface);
+  }
+
+  .wa-composer textarea {
+    border-radius: 20px;
+    border-color: var(--mobile-divider);
+    box-shadow: none;
+  }
+
+  /* Perfil: menos cajas */
+  .profile-layout .profile-panel.content-card,
+  .profile-layout .profile-sidebar.content-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .profile-tab-nav {
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+    box-shadow: none;
+  }
+
+  /* Música / bienestar: grid de videos como lista */
+  .portal-main:has(.wellbeing-relax-page) {
+    background: var(--mobile-canvas);
+  }
+
+  .wellbeing-relax-page.page-stack {
+    gap: 0;
+  }
+
+  .wellbeing-relax-header {
+    background: var(--mobile-surface);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .wellbeing-relax-player {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .wellbeing-relax-video-grid {
+    gap: 0;
+    background: var(--mobile-surface);
+  }
+
+  .wellbeing-relax-video-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .wellbeing-relax-video-card--active {
+    background: rgba(95, 68, 235, 0.05);
+    box-shadow: inset 3px 0 0 var(--brand);
+  }
+
+  .wellbeing-relax-filter-active {
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    margin: 0;
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+}

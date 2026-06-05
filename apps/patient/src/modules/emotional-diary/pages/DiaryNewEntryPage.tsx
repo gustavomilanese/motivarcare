@@ -2,7 +2,7 @@ import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { EMOTIONAL_DIARY_WHAT_HAPPENED_MAX_LENGTH } from "@therapy/types";
-import { DiaryMacaFab, DiaryPortalToolbar, DiarySectionIntro, DiaryShell, useDiaryLeaveConfirm } from "../components/DiaryChrome";
+import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell, useDiaryLeaveConfirm } from "../components/DiaryChrome";
 import { t } from "../lib/labels";
 import { FEELING_CHIPS, MOOD_OPTIONS, NEED_OPTIONS } from "../lib/moods";
 import { createDiaryEntry, fetchDiarySettings } from "../services/emotionalDiaryApi";
@@ -310,8 +310,6 @@ export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
           </div>
         </div>
       </div>
-
-      <DiaryMacaFab language={props.language} />
     </DiaryShell>
   );
 }

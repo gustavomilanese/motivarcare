@@ -4,7 +4,7 @@ import { type AppLanguage } from "@therapy/i18n-config";
 import type { EmotionalDiaryStats } from "@therapy/types";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
-import { DiaryMacaFab, DiaryPortalToolbar, DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
+import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
 import { buildWeeklyMoodLineSegments, buildWeeklyMoodSeries, moodLabelForStats } from "../lib/analytics";
 import { t } from "../lib/labels";
 import { moodMeta, MOOD_OPTIONS } from "../lib/moods";
@@ -353,8 +353,6 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
           onClose={() => setDetailEntryId(null)}
         />
       ) : null}
-
-      <DiaryMacaFab language={props.language} />
     </DiaryShell>
   );
 }

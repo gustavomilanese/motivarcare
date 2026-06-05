@@ -202,16 +202,3 @@ export function DiaryPageHeader(props: {
     </header>
   );
 }
-
-export function DiaryMacaFab(props: { language: AppLanguage }) {
-  return (
-    <Link className="diary-maca-fab" to="/chat">
-      <span aria-hidden="true">💬</span>
-      {t(props.language, {
-        es: "Hablar con Maca",
-        en: "Talk to Maca",
-        pt: "Falar com Maca"
-      })}
-    </Link>
-  );
-}

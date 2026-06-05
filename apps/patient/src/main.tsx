@@ -5,6 +5,7 @@ import { redirectLegacyPatientHostToCanonical } from "./canonicalPatientOrigin";
 import { App } from "./App";
 import "./styles.css";
 import "./modules/emotional-diary/emotional-diary.css";
+import "./mobile-portal-flat.css";
 
 redirectLegacyPatientHostToCanonical();
 

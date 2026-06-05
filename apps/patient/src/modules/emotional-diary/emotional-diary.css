@@ -926,13 +926,6 @@
   transform: none;
 }
 
-.diary-page .diary-maca-fab:hover {
-  color: #fff !important;
-  background: linear-gradient(135deg, #5b47f0 0%, #7c4fe8 100%) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(109, 86, 255, 0.42);
-}
-
 .diary-guide-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1151,24 +1144,6 @@
 .diary-suggest-list small {
   color: var(--text-soft);
   font-size: 0.8rem;
-}
-
-.diary-maca-fab {
-  position: fixed;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: calc(16px + var(--safe-bottom));
-  z-index: 45;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #6d56ff 0%, #8b5cf6 100%);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.88rem;
-  box-shadow: 0 14px 32px rgba(109, 86, 255, 0.35);
 }
 
 .diary-card--mood {
@@ -2091,12 +2066,5 @@
   .diary-home-band {
     padding-left: 14px;
     padding-right: 14px;
-  }
-
-  .diary-maca-fab {
-    right: 12px;
-    bottom: calc(72px + var(--safe-bottom));
-    font-size: 0.8rem;
-    padding: 10px 14px;
   }
 }

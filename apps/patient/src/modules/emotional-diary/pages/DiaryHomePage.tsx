@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
-import { DiaryMacaFab, DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
+import { DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
 import { t } from "../lib/labels";
 import { MOOD_OPTIONS } from "../lib/moods";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
@@ -247,8 +247,6 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
           onClose={() => setDetailEntryId(null)}
         />
       ) : null}
-
-      <DiaryMacaFab language={props.language} />
     </DiaryShell>
   );
 }

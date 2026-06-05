@@ -19,6 +19,8 @@ export interface PortalHelpLegalLinksProps {
   patientMarket: Market;
   /** Cierra el menú móvil al navegar (solo modo menu). */
   onNavigate?: () => void;
+  /** Abre la pestaña Soporte del perfil (solo menú móvil). */
+  onOpenSupport?: () => void;
 }
 
 export function PortalHelpLegalFooter(props: PortalHelpLegalLinksProps) {
@@ -112,38 +114,57 @@ export function PortalHelpLegalMenuSection(props: PortalHelpLegalLinksProps) {
   const closeMenu = props.onNavigate;
 
   return (
-    <div
-      className="menu-dropdown-help"
-      role="group"
-      aria-label={t(props.language, { es: "Ayuda y legal", en: "Help and legal", pt: "Ajuda e legal" })}
-    >
-      <p className="menu-dropdown-section-label">
-        {t(props.language, { es: "Ayuda y legal", en: "Help and legal", pt: "Ajuda e legal" })}
-      </p>
-      <Link className="menu-item menu-item--help" to="/ayuda/preguntas-frecuentes" onClick={closeMenu}>
-        {t(props.language, { es: "Preguntas frecuentes", en: "FAQ", pt: "Perguntas frequentes" })}
-      </Link>
-      <Link className="menu-item menu-item--help" to="/ayuda/manual" onClick={closeMenu}>
-        {t(props.language, { es: "Manual de usuario", en: "User manual", pt: "Manual do usuário" })}
-      </Link>
-      <a className="menu-item menu-item--help menu-item--help-email" href={`mailto:${PATIENT_SUPPORT_EMAIL}`}>
-        <span>{t(props.language, { es: "Contactar soporte", en: "Contact support", pt: "Contactar suporte" })}</span>
-        <small>{PATIENT_SUPPORT_EMAIL}</small>
-      </a>
-      <a className="menu-item menu-item--help" href="/docs/terms.html" target="_blank" rel="noopener noreferrer">
-        {t(props.language, { es: "Términos y condiciones", en: "Terms and conditions", pt: "Termos e condições" })}
-      </a>
-      <a className="menu-item menu-item--help" href="/docs/privacy.html" target="_blank" rel="noopener noreferrer">
-        {t(props.language, { es: "Política de privacidad", en: "Privacy policy", pt: "Política de privacidade" })}
-      </a>
-      <a className="menu-item menu-item--help" href="/docs/crisis.html" target="_blank" rel="noopener noreferrer">
-        {t(props.language, { es: "Líneas de apoyo", en: "Crisis lines", pt: "Linhas de apoio" })}
-      </a>
+    <>
+      <section
+        className="menu-dropdown-group menu-dropdown-help"
+        aria-label={t(props.language, { es: "Ayuda", en: "Help", pt: "Ajuda" })}
+      >
+        <p className="menu-dropdown-section-label">
+          {t(props.language, { es: "Ayuda", en: "Help", pt: "Ajuda" })}
+        </p>
+        <Link className="menu-item menu-item--help" to="/ayuda/preguntas-frecuentes" onClick={closeMenu}>
+          {t(props.language, { es: "Preguntas frecuentes", en: "FAQ", pt: "Perguntas frequentes" })}
+        </Link>
+        <Link className="menu-item menu-item--help" to="/ayuda/manual" onClick={closeMenu}>
+          {t(props.language, { es: "Manual de usuario", en: "User manual", pt: "Manual do usuário" })}
+        </Link>
+        {props.onOpenSupport ? (
+          <button className="menu-item menu-item--help" type="button" onClick={props.onOpenSupport}>
+            {t(props.language, { es: "Soporte", en: "Support", pt: "Suporte" })}
+          </button>
+        ) : null}
+        <a className="menu-item menu-item--help menu-item--help-email" href={`mailto:${PATIENT_SUPPORT_EMAIL}`}>
+          <span>{t(props.language, { es: "Contactar soporte", en: "Contact support", pt: "Contactar suporte" })}</span>
+          <small>{PATIENT_SUPPORT_EMAIL}</small>
+        </a>
+      </section>
+
+      <section
+        className="menu-dropdown-group menu-dropdown-legal"
+        aria-label={t(props.language, { es: "Legal", en: "Legal", pt: "Legal" })}
+      >
+        <p className="menu-dropdown-section-label">
+          {t(props.language, { es: "Legal", en: "Legal", pt: "Legal" })}
+        </p>
+        <a className="menu-item menu-item--help" href="/docs/terms.html" target="_blank" rel="noopener noreferrer">
+          {t(props.language, { es: "Términos y condiciones", en: "Terms and conditions", pt: "Termos e condições" })}
+        </a>
+        <a className="menu-item menu-item--help" href="/docs/privacy.html" target="_blank" rel="noopener noreferrer">
+          {t(props.language, { es: "Política de privacidad", en: "Privacy policy", pt: "Política de privacidade" })}
+        </a>
+        <a className="menu-item menu-item--help" href="/docs/crisis.html" target="_blank" rel="noopener noreferrer">
+          {t(props.language, { es: "Líneas de apoyo", en: "Crisis lines", pt: "Linhas de apoio" })}
+        </a>
+      </section>
+
       {emergency ? (
-        <div className="menu-dropdown-phones">
-          <p className="menu-dropdown-phones-title">
+        <section
+          className="menu-dropdown-group menu-dropdown-emergency"
+          aria-label={t(props.language, { es: "Teléfonos útiles", en: "Useful numbers", pt: "Telefones úteis" })}
+        >
+          <p className="menu-dropdown-section-label">
             {t(props.language, { es: "Teléfonos útiles", en: "Useful numbers", pt: "Telefones úteis" })}
-            <span> — {emergency.countryName}</span>
+            <span className="menu-dropdown-section-country"> — {emergency.countryName}</span>
           </p>
           <ul className="menu-dropdown-phones-list">
             {emergency.resources.map((resource) => (
@@ -160,8 +181,8 @@ export function PortalHelpLegalMenuSection(props: PortalHelpLegalLinksProps) {
               pt: "Perigo imediato: emergências do seu país."
             })}
           </p>
-        </div>
+        </section>
       ) : null}
-    </div>
+    </>
   );
 }
