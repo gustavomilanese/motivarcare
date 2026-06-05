@@ -15107,9 +15107,12 @@ body.driver-active .driver-overlay {
 .portal-site-footer {
   margin-top: 12px;
   padding: 28px clamp(16px, 3vw, 28px) calc(20px + var(--portal-tab-clear, 0px));
-  border: 1px solid rgba(226, 232, 240, 0.95);
+  border: 1px solid rgba(95, 68, 235, 0.22);
   border-radius: var(--portal-radius);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.65) 0%, #eef1f6 100%);
+  background: linear-gradient(145deg, #ede9fe 0%, #e4ddff 42%, #d9d0ff 100%);
+  box-shadow:
+    0 8px 28px rgba(95, 68, 235, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
   box-sizing: border-box;
 }
 
@@ -15149,7 +15152,7 @@ body.driver-active .driver-overlay {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #64748b;
+  color: #5b4a9e;
 }
 
 .portal-site-footer-country {
@@ -15229,7 +15232,7 @@ body.driver-active .driver-overlay {
 .portal-site-footer-copy {
   margin: 20px 0 0;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #6b5cad;
   text-align: center;
 }
 
