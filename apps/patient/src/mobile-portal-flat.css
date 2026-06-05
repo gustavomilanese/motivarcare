@@ -1,24 +1,38 @@
 /**
  * Mobile-only surface system (≤1080px).
- * Jerarquía por bandas, tipografía y divisores — no cajas anidadas con sombra.
+ * Uber/Shopify-style: grey canvas, white full-bleed bands, dividers — no nested cards.
  * Web / desktop: sin efecto (todo dentro del media query).
  */
 @media (max-width: 1080px) {
   :root {
-    --mobile-canvas: #f4f2fa;
+    --mobile-canvas: #f6f6f6;
     --mobile-surface: #ffffff;
     --mobile-divider: rgba(226, 232, 240, 0.98);
-    --mobile-section-gap: 8px;
+    --mobile-section-gap: 10px;
     --mobile-pad-x: max(16px, env(safe-area-inset-left, 0px));
     --mobile-pad-x-end: max(16px, env(safe-area-inset-right, 0px));
-    --mobile-section-y: 18px;
+    --mobile-section-y: 16px;
+    --mobile-row-min: 48px;
   }
 
-  /* —— Canvas & ritmo vertical —— */
+  /* —— Shell: full-bleed bands on grey canvas —— */
+  .portal-shell:not(.onboarding-match-focus) {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: 100%;
+  }
+
+  .portal-main,
+  .portal-main:has(.sessions-booking-page),
+  .portal-main:has(.patient-dashboard-home) {
+    background: var(--mobile-canvas);
+  }
+
   .portal-main:has(.patient-dashboard-home),
   .portal-main:has(.sessions-booking-page),
   .portal-main:has(.wa-shell),
-  .portal-main:has(.profile-layout) {
+  .portal-main:has(.profile-layout),
+  .portal-main:has(.wellbeing-relax-page) {
     background: var(--mobile-canvas);
   }
 
@@ -31,21 +45,123 @@
     margin-top: var(--mobile-section-gap);
   }
 
-  /* Header estándar (no inmersivo): banda, no tarjeta flotante */
-  .portal-header {
-    margin: 0;
-    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
-    background: var(--mobile-surface);
+  /* —— Tab bar: unified white bar, no per-item pills —— */
+  .portal-mobile-nav {
+    gap: 0;
+    padding:
+      6px max(4px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px))
+      max(4px, env(safe-area-inset-right, 0px));
+    background: var(--mobile-surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-top: 1px solid var(--mobile-divider);
+    border-radius: 0;
+    box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.06);
+  }
+
+  .portal-mobile-nav .mobile-nav-link,
+  .portal-mobile-nav .mobile-nav-link--more {
+    min-height: var(--mobile-row-min);
+    padding: 4px 2px 6px;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #64748b;
+  }
+
+  .portal-mobile-nav .mobile-nav-link.active {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: var(--brand) !important;
+  }
+
+  .portal-mobile-nav .mobile-nav-link.active .mobile-nav-icon {
+    color: var(--brand);
+  }
+
+  .portal-mobile-nav .mobile-nav-link.active .mobile-nav-label {
+    color: var(--brand);
+    font-weight: 600;
+  }
+
+  .portal-mobile-nav .mobile-nav-link.active .chat-badge-pill {
+    background: #16a34a;
+    color: #fff;
+  }
+
+  /* More sheet: flat bottom panel */
+  .portal-mobile-more-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .portal-mobile-more-sheet {
+    left: 0;
+    right: 0;
     border: none;
     border-radius: 0;
-    box-shadow: none;
+    border-top: 1px solid var(--mobile-divider);
+    background: var(--mobile-surface);
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.12);
+  }
+
+  .portal-mobile-more-link {
+    min-height: var(--mobile-row-min);
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  /* —— Shell genérico de sección —— */
+  .portal-mobile-more-link.active,
+  .portal-mobile-more-link:hover {
+    background: rgba(95, 68, 235, 0.04);
+    color: var(--brand);
+  }
+
+  /* Header estándar (no inmersivo): banda plana */
+  .portal-header {
+    margin: 0;
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    background: var(--mobile-surface) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main:has(.sessions-booking-page) .portal-header {
+    margin-bottom: 0;
+  }
+
+  /* —— Typography: section hierarchy without boxes —— */
+  .portal-main .sessions-panel-head h2,
+  .portal-main .sessions-secondary-title,
+  .portal-main .dashboard-rn-section-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+
+  .portal-main .sessions-secondary-section > .sessions-secondary-title,
+  .portal-main .dashboard-rn-mcare-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  /* —— Generic cards → flat bands —— */
   .portal-main .content-card,
   .portal-main .booking-session-card,
-  .portal-main .sessions-package-options-panel {
+  .portal-main .sessions-package-options-panel,
+  .portal-main .booking-card-minimal {
     background: var(--mobile-surface);
     border: none;
     border-radius: 0;
@@ -54,20 +170,344 @@
     gap: 12px;
   }
 
-  .portal-main .content-card + .content-card,
-  .portal-main .sessions-secondary-section {
+  .portal-main .content-card + .content-card {
     border-top: none;
   }
 
-  /* Inicio legacy (681–1080): KPIs sin cajas flotantes */
-  .patient-dashboard-home .hero-grid {
+  /* —— Sesiones: hero band + booking body —— */
+  .portal-main .sessions-booking-page.page-stack {
+    gap: 0;
+  }
+
+  .portal-main .sessions-booking-page .sessions-hero-actions-band {
+    padding: 0;
+    background: var(--mobile-surface);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-hero-layout {
+    gap: 0;
+  }
+
+  .portal-main .sessions-booking-page .sessions-hero-actions.sessions-booking-hero-actions {
+    width: 100%;
+    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .sessions-booking-page .sessions-hero-buy-button,
+  .portal-main .patient-dashboard-home .sessions-hero-buy-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 12px 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--brand);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: none;
+    text-align: left;
+  }
+
+  .portal-main .sessions-booking-page .sessions-hero-buy-button:hover,
+  .portal-main .sessions-booking-page .sessions-hero-buy-button:active,
+  .portal-main .patient-dashboard-home .sessions-hero-buy-button:hover,
+  .portal-main .patient-dashboard-home .sessions-hero-buy-button:active {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance,
+  .portal-main .sessions-booking-page .sessions-balance--interactive,
+  .portal-main .sessions-booking-page .sessions-balance--zero,
+  .portal-main .sessions-booking-page button.sessions-balance {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    gap: 14px;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    min-height: var(--mobile-row-min);
+    text-align: left;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance--interactive:hover,
+  .portal-main .sessions-booking-page .sessions-balance--interactive.sessions-balance--zero:hover {
+    box-shadow: none !important;
+    background: rgba(95, 68, 235, 0.03) !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance-figure {
+    width: auto;
+    min-width: 28px;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: transparent !important;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--brand);
+    box-shadow: none !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance--zero .sessions-balance-figure {
+    color: #64748b;
+    background: transparent !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance-sub {
+    font-size: 13px;
+    font-weight: 400;
+    color: #64748b;
+  }
+
+  .portal-main .sessions-booking-page .sessions-balance-cta-hint {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand);
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body {
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    background: var(--mobile-canvas);
+    border-radius: 0 !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-confirmed-panel.content-card,
+  .portal-main .patient-dashboard-home .sessions-confirmed-panel.content-card {
+    margin: 0;
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  .portal-main .sessions-booking-page .sessions-panel-head {
+    padding: 0;
+    min-height: var(--mobile-row-min);
+    align-items: center;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .booking-session-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .portal-main .sessions-booking-page .sessions-credit-alert,
+  .portal-main .sessions-booking-page .sessions-empty-state {
+    margin: 0;
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+    border-top: 1px solid var(--mobile-divider);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
+  }
+
+  /* Secondary / collapsible sections: list rows */
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-section,
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history,
+  .portal-main .patient-dashboard-home .sessions-secondary-section,
+  .portal-main .patient-dashboard-home .dashboard-compact-section {
+    margin: 0 !important;
+    padding: 0 var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: none !important;
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas) !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history,
+  .portal-main .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history {
+    background: var(--mobile-surface) !important;
+    border-color: transparent !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history:hover,
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history:focus-within,
+  .portal-main .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:hover,
+  .portal-main .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:focus-within {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-toggle,
+  .portal-main .patient-dashboard-home .sessions-calendar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 14px 0;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--mobile-divider);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-toggle-label,
+  .portal-main .patient-dashboard-home .sessions-secondary-toggle-label {
+    position: relative;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
+    overflow: hidden;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-toggle-label::after,
+  .portal-main .patient-dashboard-home .sessions-secondary-toggle-label::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -5px;
+    margin-left: -4px;
+    border-right: 2px solid #94a3b8;
+    border-bottom: 2px solid #94a3b8;
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-toggle[aria-expanded="true"] .sessions-secondary-toggle-label::after,
+  .portal-main .patient-dashboard-home .sessions-calendar-toggle[aria-expanded="true"] .sessions-secondary-toggle-label::after {
+    margin-top: -2px;
+    transform: rotate(-135deg);
+  }
+
+  .portal-main .sessions-booking-page .sessions-purchased-history .session-history-list li,
+  .portal-main .patient-dashboard-home .sessions-purchased-history .session-history-list li,
+  .portal-main .sessions-booking-page .sessions-purchased-history .simple-list li,
+  .portal-main .patient-dashboard-home .sessions-purchased-history .simple-list li {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 14px 0 !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-purchased-history .session-history-list li:last-child,
+  .portal-main .patient-dashboard-home .sessions-purchased-history .session-history-list li:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Session list rows */
+  .portal-main .session-rn-root .session-rn-session-list,
+  .portal-main .sessions-confirmed-list--mobile,
+  .portal-main .sessions-confirmed-list--dashboard-mobile,
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
+    gap: 0;
+    background: var(--mobile-surface);
+  }
+
+  .portal-main .session-rn-root .session-rn-card.session-management-card,
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x) !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    min-height: var(--mobile-row-min);
+  }
+
+  .portal-main .session-rn-root .session-rn-card.session-management-card:last-child,
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child {
+    border-bottom: none !important;
+  }
+
+  .portal-main .session-rn-root .session-rn-card--trial.session-management-card {
+    border: none !important;
+    border-left: 3px solid rgba(245, 158, 11, 0.65) !important;
+    padding-left: calc(var(--mobile-pad-x) - 3px) !important;
+  }
+
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:active {
+    background: rgba(95, 68, 235, 0.04) !important;
+    border-color: var(--mobile-divider) !important;
+  }
+
+  /* Historial / paquetes: filas planas */
+  .portal-main .sessions-purchased-history .session-history-list,
+  .portal-main .dashboard-compact-section.sessions-purchased-history .session-history-list {
+    gap: 0;
+  }
+
+  /* Paquetes: panel plano + filas seleccionables */
+  .portal-main .sessions-package-options-grid,
+  .portal-main .deal-grid.sessions-package-options-grid {
+    gap: 0;
+  }
+
+  .portal-main .deal-card-shell {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .portal-main .deal-card-shell .deal-card-roof {
+    display: none;
+  }
+
+  .portal-main .deal-card,
+  .portal-main .dashboard-deal-card.sessions-package-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .deal-card.selected,
+  .portal-main .dashboard-deal-card.sessions-package-card.selected {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: inset 3px 0 0 var(--brand);
+    padding-left: 12px;
+  }
+
+  /* —— Dashboard home (legacy + RN) —— */
+  .portal-main .patient-dashboard-home .hero-grid {
     gap: 0;
     margin-top: 0;
   }
 
-  .patient-dashboard-home .hero-card,
-  .patient-dashboard-home .sessions-combined-card,
-  .patient-dashboard-home .active-professional-card {
+  .portal-main .patient-dashboard-home .hero-card,
+  .portal-main .patient-dashboard-home .sessions-combined-card,
+  .portal-main .patient-dashboard-home .active-professional-card {
     min-height: 0;
     border: none;
     border-radius: 0;
@@ -76,11 +516,11 @@
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  .patient-dashboard-home .hero-card::before {
+  .portal-main .patient-dashboard-home .hero-card::before {
     display: none;
   }
 
-  .patient-dashboard-home .trial-priority-banner.content-card {
+  .portal-main .patient-dashboard-home .trial-priority-banner.content-card {
     border: none;
     border-radius: 0;
     box-shadow: none;
@@ -88,242 +528,174 @@
     border-bottom: 1px solid rgba(109, 86, 255, 0.12);
   }
 
-  /* Sesiones: paneles y secciones colapsables */
-  .sessions-booking-page .sessions-confirmed-panel.content-card,
-  .patient-dashboard-home .sessions-confirmed-panel.content-card {
-    padding-top: var(--mobile-section-y);
-    padding-bottom: var(--mobile-section-y);
-    background: var(--mobile-surface);
-  }
-
-  .sessions-booking-page .sessions-booking-body .sessions-secondary-section,
-  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
-  .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history {
-    margin: 0;
-    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
-    border: none;
-    border-radius: 0;
-    background: var(--mobile-surface);
-    box-shadow: none;
-    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
-  }
-
-  .sessions-booking-page .sessions-credit-alert,
-  .sessions-booking-page .sessions-empty-state {
-    margin: 0;
-    padding: 14px 0;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    border-top: 1px solid var(--mobile-divider);
+  .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
+    margin: 0 0 var(--mobile-section-gap) !important;
+    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  .sessions-balance,
-  .sessions-balance--interactive {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: var(--mobile-surface);
-    border-bottom: 1px solid var(--mobile-divider);
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted {
+    max-width: 100%;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
 
-  .sessions-panel-head h2,
-  .sessions-secondary-title,
-  .dashboard-rn-section-title {
-    font-size: 1.125rem;
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-num {
+    font-size: 17px;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    color: var(--brand) !important;
   }
 
-  /* Filas de sesión: lista, no mini-cards */
-  .session-rn-root .session-rn-session-list,
-  .sessions-confirmed-list--mobile,
-  .sessions-confirmed-list--dashboard-mobile {
-    gap: 0;
-    background: var(--mobile-surface);
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-suffix,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-num,
+  .portal-main .patient-dashboard-home .dashboard-rn-sessions-pill--muted .dashboard-rn-sessions-suffix {
+    font-size: 15px;
+    font-weight: 500;
+    color: #475569 !important;
   }
 
-  .session-rn-root .session-rn-card.session-management-card,
-  .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: var(--mobile-surface);
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
-    border-bottom: 1px solid var(--mobile-divider);
+  .portal-main .patient-dashboard-home .dashboard-rn-fab {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(95, 68, 235, 0.25);
   }
 
-  .session-rn-root .session-rn-card.session-management-card:last-child,
-  .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child {
-    border-bottom: none;
-  }
-
-  .session-rn-root .session-rn-card--trial.session-management-card {
-    border: none;
-    border-left: 3px solid rgba(245, 158, 11, 0.65);
-    padding-left: calc(var(--mobile-pad-x) - 3px);
-  }
-
-  /* Historial / paquetes: filas planas */
-  .sessions-purchased-history .session-history-list,
-  .dashboard-compact-section.sessions-purchased-history .session-history-list {
-    gap: 0;
-  }
-
-  .sessions-purchased-history .session-history-list li,
-  .dashboard-compact-section.sessions-purchased-history .session-history-list li {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--mobile-divider);
-  }
-
-  .sessions-purchased-history .session-history-list li:last-child {
-    border-bottom: none;
-  }
-
-  .patient-dashboard-home .sessions-secondary-section,
-  .patient-dashboard-home .dashboard-compact-section {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: var(--mobile-surface);
-    padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
-    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
-  }
-
-  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history {
-    background: var(--mobile-surface);
-    border: none;
-    box-shadow: none;
-  }
-
-  /* Paquetes: panel plano + filas seleccionables */
-  .sessions-package-options-grid,
-  .deal-grid.sessions-package-options-grid {
-    gap: 0;
-  }
-
-  .deal-card-shell {
-    border: none;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .deal-card-shell .deal-card-roof {
-    display: none;
-  }
-
-  .deal-card,
-  .dashboard-deal-card.sessions-package-card {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--mobile-divider);
-  }
-
-  .deal-card.selected,
-  .dashboard-deal-card.sessions-package-card.selected {
-    background: rgba(95, 68, 235, 0.04);
-    box-shadow: inset 3px 0 0 var(--brand);
-    padding-left: 12px;
-  }
-
-  /* Inicio RN (≤680): toolbar y bloques MCare */
-  .patient-dashboard-home .dashboard-rn-toolbar {
-    margin: 0 0 var(--mobile-section-gap);
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
-    border: none;
-    border-radius: 0;
-    background: var(--mobile-surface);
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-bottom: 1px solid var(--mobile-divider);
-  }
-
-  .patient-dashboard-home .dashboard-rn-scroll {
+  .portal-main .patient-dashboard-home .dashboard-rn-scroll {
     padding-left: var(--mobile-pad-x);
     padding-right: var(--mobile-pad-x-end);
   }
 
-  .patient-dashboard-home .dashboard-rn-section {
+  .portal-main .patient-dashboard-home .dashboard-rn-section {
     padding: var(--mobile-section-y) 0;
+    margin: 0;
     border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
   }
 
-  .patient-dashboard-home .dashboard-rn-empty-card {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    padding: 8px 0 0;
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card,
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card--plain {
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 8px 0 0 !important;
   }
 
-  .patient-dashboard-home .dashboard-rn-google-calendar-button {
-    border-radius: 0;
+  .portal-main .patient-dashboard-home .dashboard-rn-google-calendar-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
     border: none;
+    border-radius: 0;
     border-top: 1px solid var(--mobile-divider);
-    border-bottom: 1px solid var(--mobile-divider);
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
     background: var(--mobile-surface);
     box-shadow: none;
+    color: var(--brand);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-outer {
+  .portal-main .patient-dashboard-home .dashboard-rn-google-calendar-button:hover {
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: none;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-outer {
     margin: 0;
     padding: 0;
-    border: none;
-    border-radius: 0;
-    background: var(--mobile-surface);
-    box-shadow: none;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: none !important;
+    overflow: visible;
+    border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas) !important;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-gradient {
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-gradient {
     display: none;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-inner {
-    padding: var(--mobile-section-y) 0 0;
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inner {
+    padding: var(--mobile-section-y) var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-stack {
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-title {
+    display: block;
+    padding: 0 0 8px;
+    border-radius: 0;
+    background: transparent !important;
+    color: #64748b !important;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-stack {
     gap: 0;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-card {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--mobile-divider);
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-card {
+    position: relative;
+    width: 100%;
+    margin: 0 !important;
+    padding: 14px 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    min-height: var(--mobile-row-min);
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-card--selected {
-    background: rgba(95, 68, 235, 0.04);
-    box-shadow: inset 3px 0 0 var(--brand);
-    padding-left: 12px;
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-card--selected {
+    border: none !important;
+    background: rgba(95, 68, 235, 0.04) !important;
+    box-shadow: inset 3px 0 0 var(--brand) !important;
+    padding-left: 12px !important;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-divider {
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-divider {
     display: none;
   }
 
-  .patient-dashboard-home .dashboard-rn-mcare-sticky {
-    padding: 12px var(--mobile-pad-x-end) calc(12px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
-    background: var(--mobile-surface);
-    border-top: 1px solid var(--mobile-divider);
-    box-shadow: none;
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-save {
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
   }
 
-  /* Chat: mensajería a ancho completo, sin marco */
-  .wa-shell {
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-sticky {
+    padding: 10px var(--mobile-pad-x-end) calc(10px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
+    background: var(--mobile-surface) !important;
+    border-top: 1px solid var(--mobile-divider);
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-cta {
+    min-height: var(--mobile-row-min);
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Chat: mensajería a ancho completo */
+  .portal-main .wa-shell {
     min-height: calc(100dvh - var(--portal-tab-clear) - 48px);
     border: none;
     border-radius: 0;
@@ -331,36 +703,36 @@
     background: var(--mobile-surface);
   }
 
-  .wa-sidebar {
+  .portal-main .wa-sidebar {
     background: var(--mobile-surface);
     border-right: none;
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  .wa-sidebar-header {
+  .portal-main .wa-sidebar-header {
     background: var(--mobile-surface);
     border-bottom: 1px solid var(--mobile-divider);
     padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
   }
 
-  .wa-main {
+  .portal-main .wa-main {
     background: #efeae2;
   }
 
-  .wa-composer {
+  .portal-main .wa-composer {
     border-top: 1px solid var(--mobile-divider);
     background: var(--mobile-surface);
   }
 
-  .wa-composer textarea {
+  .portal-main .wa-composer textarea {
     border-radius: 20px;
     border-color: var(--mobile-divider);
     box-shadow: none;
   }
 
-  /* Perfil: menos cajas */
-  .profile-layout .profile-panel.content-card,
-  .profile-layout .profile-sidebar.content-card {
+  /* Perfil */
+  .portal-main .profile-layout .profile-panel.content-card,
+  .portal-main .profile-layout .profile-sidebar.content-card {
     border: none;
     border-radius: 0;
     box-shadow: none;
@@ -368,7 +740,7 @@
     border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
   }
 
-  .profile-tab-nav {
+  .portal-main .profile-tab-nav {
     border: none;
     border-radius: 0;
     background: var(--mobile-surface);
@@ -376,21 +748,21 @@
     box-shadow: none;
   }
 
-  /* Música / bienestar: grid de videos como lista */
+  /* Bienestar / relax */
   .portal-main:has(.wellbeing-relax-page) {
     background: var(--mobile-canvas);
   }
 
-  .wellbeing-relax-page.page-stack {
+  .portal-main .wellbeing-relax-page.page-stack {
     gap: 0;
   }
 
-  .wellbeing-relax-header {
+  .portal-main .wellbeing-relax-header {
     background: var(--mobile-surface);
     border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
   }
 
-  .wellbeing-relax-player {
+  .portal-main .wellbeing-relax-player {
     border: none;
     border-radius: 0;
     box-shadow: none;
@@ -399,31 +771,53 @@
     border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
   }
 
-  .wellbeing-relax-video-grid {
+  .portal-main .wellbeing-relax-video-grid {
     gap: 0;
     background: var(--mobile-surface);
   }
 
-  .wellbeing-relax-video-card {
+  .portal-main .wellbeing-relax-video-card {
     border: none;
     border-radius: 0;
     box-shadow: none;
     background: var(--mobile-surface);
     padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
     border-bottom: 1px solid var(--mobile-divider);
+    min-height: var(--mobile-row-min);
   }
 
-  .wellbeing-relax-video-card--active {
+  .portal-main .wellbeing-relax-video-card--active {
     background: rgba(95, 68, 235, 0.05);
     box-shadow: inset 3px 0 0 var(--brand);
   }
 
-  .wellbeing-relax-filter-active {
+  .portal-main .wellbeing-relax-filter-active {
     border: none;
     border-radius: 0;
     background: var(--mobile-surface);
     margin: 0;
     padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
     border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  /* ≤480px: tab bar density */
+  @media (max-width: 480px) {
+    .portal-mobile-nav {
+      padding-left: max(2px, env(safe-area-inset-left, 0px));
+      padding-right: max(2px, env(safe-area-inset-right, 0px));
+    }
+
+    .portal-mobile-nav .mobile-nav-link {
+      padding: 4px 1px 6px;
+    }
+
+    .portal-mobile-nav .mobile-nav-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .portal-mobile-nav .mobile-nav-label {
+      font-size: 10px;
+    }
   }
 }
