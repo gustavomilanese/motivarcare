@@ -3,6 +3,26 @@ import type { HelpManualSection } from "./helpTypes";
 export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   {
     title: { es: "1. Bienvenida", en: "1. Welcome", pt: "1. Boas-vindas" },
+    figures: [
+      {
+        src: "/images/hero-therapy.jpg",
+        alt: { es: "Vista del inicio del portal paciente", en: "Patient portal home view", pt: "Vista do início do portal do paciente" },
+        caption: {
+          es: "Inicio: resumen de sesiones, profesional activo y accesos rápidos.",
+          en: "Home: session summary, active therapist and quick links.",
+          pt: "Início: resumo de sessões, profissional ativo e atalhos."
+        }
+      },
+      {
+        src: "/help/manual/inicio.svg",
+        alt: { es: "Esquema del panel de inicio", en: "Home dashboard schematic", pt: "Esquema do painel inicial" },
+        caption: {
+          es: "Esquema: menú lateral, hero y tarjetas principales.",
+          en: "Schematic: sidebar, hero banner and main cards.",
+          pt: "Esquema: menu lateral, hero e cartões principais."
+        }
+      }
+    ],
     paragraphs: [
       {
         es: "MotivarCare es tu portal para gestionar terapia online: reservar sesiones, hablar con tu profesional, llevar un diario emocional y acceder a recursos de bienestar.",
@@ -18,6 +38,17 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   },
   {
     title: { es: "2. Mapa del menú", en: "2. Menu map", pt: "2. Mapa do menu" },
+    figures: [
+      {
+        src: "/help/manual/menu.svg",
+        alt: { es: "Menú lateral e iconos del encabezado", en: "Sidebar and header icons", pt: "Menu lateral e ícones do cabeçalho" },
+        caption: {
+          es: "Escritorio: navegación lateral e iconos arriba a la derecha.",
+          en: "Desktop: sidebar navigation and top-right icons.",
+          pt: "Desktop: navegação lateral e ícones no canto superior direito."
+        }
+      }
+    ],
     bullets: [
       {
         label: { es: "Inicio", en: "Home", pt: "Início" },
@@ -117,6 +148,26 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   },
   {
     title: { es: "4. Reservar y gestionar sesiones", en: "4. Book and manage sessions", pt: "4. Reservar e gerenciar sessões" },
+    figures: [
+      {
+        src: "/images/hero-sesiones.png",
+        alt: { es: "Página de Sesiones con hero y reservas", en: "Sessions page with hero and bookings", pt: "Página Sessões com hero e reservas" },
+        caption: {
+          es: "Sesiones: hero, créditos disponibles y próximas reservas.",
+          en: "Sessions: hero, available credits and upcoming bookings.",
+          pt: "Sessões: hero, créditos disponíveis e próximas reservas."
+        }
+      },
+      {
+        src: "/help/manual/sesiones.svg",
+        alt: { es: "Esquema de la página Sesiones", en: "Sessions page schematic", pt: "Esquema da página Sessões" },
+        caption: {
+          es: "Esquema: banner, botón reservar y listado de citas.",
+          en: "Schematic: banner, book button and appointment list.",
+          pt: "Esquema: banner, botão reservar e lista de consultas."
+        }
+      }
+    ],
     paragraphs: [
       {
         es: "En Sesiones verás un resumen de créditos disponibles arriba. El botón principal abre el flujo de reserva con calendario del profesional activo.",
@@ -149,6 +200,17 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   },
   {
     title: { es: "5. Chat y Maca", en: "5. Chat and Maca", pt: "5. Chat e Maca" },
+    figures: [
+      {
+        src: "/help/manual/chat.svg",
+        alt: { es: "Interfaz de chat con el profesional", en: "Chat interface with therapist", pt: "Interface de chat com o profissional" },
+        caption: {
+          es: "Chat: conversación escrita con tu profesional asignado.",
+          en: "Chat: written conversation with your assigned therapist.",
+          pt: "Chat: conversa escrita com seu profissional atribuído."
+        }
+      }
+    ],
     bullets: [
       {
         body: {
@@ -175,6 +237,26 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   },
   {
     title: { es: "6. Diario emocional", en: "6. Emotional diary", pt: "6. Diário emocional" },
+    figures: [
+      {
+        src: "/images/diario-emocional-hero.png",
+        alt: { es: "Inicio del diario emocional", en: "Emotional diary home", pt: "Início do diário emocional" },
+        caption: {
+          es: "Diario: hero, nueva entrada e historial de notas.",
+          en: "Diary: hero, new entry and note history.",
+          pt: "Diário: hero, nova entrada e histórico de notas."
+        }
+      },
+      {
+        src: "/help/manual/diario.svg",
+        alt: { es: "Esquema del diario emocional", en: "Emotional diary schematic", pt: "Esquema do diário emocional" },
+        caption: {
+          es: "Esquema: estado de ánimo, texto libre y registro.",
+          en: "Schematic: mood, free text and records.",
+          pt: "Esquema: humor, texto livre e registro."
+        }
+      }
+    ],
     steps: [
       {
         es: "Entrá a Diario emocional → «Nueva entrada» o el botón equivalente.",
@@ -200,6 +282,17 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
   },
   {
     title: { es: "7. Música relajante y ejercicios", en: "7. Relaxing music and exercises", pt: "7. Música relaxante e exercícios" },
+    figures: [
+      {
+        src: "/help/manual/musica.svg",
+        alt: { es: "Biblioteca de música relajante", en: "Relaxing music library", pt: "Biblioteca de música relaxante" },
+        caption: {
+          es: "Música: categorías, reproductor y grilla de videos.",
+          en: "Music: categories, player and video grid.",
+          pt: "Música: categorias, player e grade de vídeos."
+        }
+      }
+    ],
     paragraphs: [
       {
         es: "Música relajante: filtrá por categoría (lofi, piano, naturaleza…), elegí un video y reproducilo en el portal. Si no carga, «Abrir en YouTube» siempre funciona.",

@@ -10,17 +10,35 @@ export function HelpFaqSections(props: { language: AppLanguage; sections: HelpFa
       {props.sections.map((section) => (
         <section key={t(props.language, section.title)} className="patient-help-section">
           <h2>{t(props.language, section.title)}</h2>
-          <dl className="patient-help-faq">
+          <div className="patient-help-faq">
             {section.items.map((item) => (
-              <div key={t(props.language, item.question)}>
-                <dt>{t(props.language, item.question)}</dt>
-                <dd>{t(props.language, item.answer)}</dd>
-              </div>
+              <details key={t(props.language, item.question)} className="patient-help-faq-item">
+                <summary className="patient-help-faq-question">{t(props.language, item.question)}</summary>
+                <div className="patient-help-faq-answer">{t(props.language, item.answer)}</div>
+              </details>
             ))}
-          </dl>
+          </div>
         </section>
       ))}
     </>
+  );
+}
+
+function HelpManualFigures(props: {
+  language: AppLanguage;
+  figures: NonNullable<HelpManualSection["figures"]>;
+}) {
+  return (
+    <div className="patient-help-figures">
+      {props.figures.map((figure) => (
+        <figure key={figure.src} className="patient-help-figure">
+          <img src={figure.src} alt={t(props.language, figure.alt)} loading="lazy" decoding="async" />
+          {figure.caption ? (
+            <figcaption className="patient-help-figure-caption">{t(props.language, figure.caption)}</figcaption>
+          ) : null}
+        </figure>
+      ))}
+    </div>
   );
 }
 
@@ -30,6 +48,9 @@ export function HelpManualSections(props: { language: AppLanguage; sections: Hel
       {props.sections.map((section) => (
         <section key={t(props.language, section.title)} className="patient-help-section">
           <h2>{t(props.language, section.title)}</h2>
+          {section.figures && section.figures.length > 0 ? (
+            <HelpManualFigures language={props.language} figures={section.figures} />
+          ) : null}
           {section.paragraphs?.map((paragraph) => (
             <p key={t(props.language, paragraph)} className="patient-help-paragraph">
               {t(props.language, paragraph)}

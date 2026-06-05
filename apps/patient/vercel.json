@@ -5,7 +5,7 @@
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     {
-      "source": "/((?!api/|assets/|images/|brand/|docs/|favicon\\.svg).+)",
+      "source": "/((?!api/|assets/|images/|brand/|docs/|help/|favicon\\.svg).+)",
       "destination": "/index.html"
     }
   ]

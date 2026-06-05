@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" role="img" aria-label="Música relajante">
+  <rect width="800" height="360" fill="#f1f3f8"/>
+  <rect x="24" y="24" width="752" height="48" rx="10" fill="#fff" stroke="#e2e8f0"/>
+  <rect x="40" y="38" width="80" height="20" rx="10" fill="#5f44eb"/>
+  <rect x="128" y="38" width="100" height="20" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="236" y="38" width="120" height="20" rx="10" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="24" y="88" width="752" height="120" rx="14" fill="#fff" stroke="#e2e8f0"/>
+  <rect x="44" y="108" width="80" height="10" rx="4" fill="#7c6bcf"/>
+  <rect x="44" y="128" width="240" height="10" rx="4" fill="#94a3b8"/>
+  <rect x="44" y="152" width="680" height="44" rx="6" fill="#1a2234"/>
+  <rect x="24" y="224" width="180" height="112" rx="10" fill="#fff" stroke="#c4b5fd"/>
+  <rect x="36" y="236" width="156" height="72" rx="6" fill="#cbd5e1"/>
+  <rect x="220" y="224" width="180" height="112" rx="10" fill="#fff" stroke="#e2e8f0"/>
+  <rect x="416" y="224" width="180" height="112" rx="10" fill="#fff" stroke="#e2e8f0"/>
+  <rect x="612" y="224" width="164" height="112" rx="10" fill="#fff" stroke="#e2e8f0"/>
+</svg>

@@ -15306,7 +15306,98 @@ body.driver-active .driver-overlay {
 .patient-help-faq {
   margin: 0;
   display: grid;
-  gap: 14px;
+  gap: 8px;
+}
+
+.patient-help-faq-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.patient-help-faq-item[open] {
+  border-color: rgba(95, 68, 235, 0.35);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08);
+}
+
+.patient-help-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  list-style: none;
+}
+
+.patient-help-faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.patient-help-faq-question::after {
+  content: "+";
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.patient-help-faq-item[open] .patient-help-faq-question::after {
+  content: "−";
+  background: #ede9fe;
+  color: #4c31d8;
+}
+
+.patient-help-faq-answer {
+  padding: 0 16px 14px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #475569;
+  border-top: 1px solid #f1f5f9;
+}
+
+.patient-help-figures {
+  display: grid;
+  gap: 16px;
+  margin: 0 0 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.patient-help-figure {
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.patient-help-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+.patient-help-figure-caption {
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #64748b;
+  background: #fff;
+  border-top: 1px solid #eef2f7;
 }
 
 .patient-help-faq dt {

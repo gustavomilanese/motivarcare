@@ -10,9 +10,16 @@ export interface HelpFaqSection {
   items: HelpFaqItem[];
 }
 
+export interface HelpManualFigure {
+  src: string;
+  alt: LocalizedText;
+  caption?: LocalizedText;
+}
+
 export interface HelpManualSection {
   title: LocalizedText;
   paragraphs?: LocalizedText[];
   bullets?: Array<{ label?: LocalizedText; body: LocalizedText }>;
   steps?: LocalizedText[];
+  figures?: HelpManualFigure[];
 }

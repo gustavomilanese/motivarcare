@@ -17,9 +17,9 @@ export function PatientFaqPage(props: { language: AppLanguage }) {
     >
       <p className="patient-help-intro">
         {t(language, {
-          es: "Respuestas a las dudas más comunes del portal paciente. Si no encontrás lo que buscás, revisá el manual de usuario o escribinos a soporte@motivarcare.com.",
-          en: "Answers to the most common patient portal questions. If you can't find what you need, see the user manual or email soporte@motivarcare.com.",
-          pt: "Respostas às dúvidas mais comuns do portal do paciente. Se não encontrar o que precisa, veja o manual do usuário ou escreva para soporte@motivarcare.com."
+          es: "Respuestas a las dudas más comunes. Tocá cada pregunta para expandirla.",
+          en: "Answers to common questions. Tap each question to expand it.",
+          pt: "Respostas às dúvidas mais comuns. Toque em cada pergunta para expandir."
         })}{" "}
         <Link to="/ayuda/manual" className="patient-help-inline-link">
           {t(language, { es: "Manual de usuario", en: "User manual", pt: "Manual do usuário" })}
