@@ -32,9 +32,9 @@ function replaceRelaxationFilterSummary(
     pt: visibleCount === 1 ? "vídeo" : "vídeos"
   });
   return t(language, {
-    es: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} en total).`,
-    en: `Showing ${visibleCount} ${videoWord} in «${categoryLabel}» (${totalCount} total).`,
-    pt: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} no total).`
+    es: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} videos en la biblioteca).`,
+    en: `Showing ${visibleCount} ${videoWord} in «${categoryLabel}» (${totalCount} videos in the library).`,
+    pt: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} vídeos na biblioteca).`
   });
 }
 

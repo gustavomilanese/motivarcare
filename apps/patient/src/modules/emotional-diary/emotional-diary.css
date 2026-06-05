@@ -286,6 +286,14 @@
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
 }
 
+@media (max-width: 1080px) {
+  .diary-hero-toolbar-mount {
+    left: max(10px, env(safe-area-inset-left, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    justify-content: stretch;
+  }
+}
+
 .diary-hero-toolbar-mount .header-actions-cluster,
 .diary-hero-toolbar-mount .menu-wrap {
   display: flex;

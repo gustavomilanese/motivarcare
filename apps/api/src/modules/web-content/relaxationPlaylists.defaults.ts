@@ -40,3 +40,28 @@ export { RELAXATION_CATALOG_CATEGORIES } from "./relaxationCatalog.seed.js";
 
 /** Plantilla del servidor: catálogo YouTube verificado por categoría (generado). */
 export const DEFAULT_RELAXATION_PLAYLISTS: RelaxationPlaylistItem[] = DEFAULT_RELAXATION_CATALOG;
+
+/** Por debajo de este umbral, un guardado en admin se trata como overrides parciales (no reemplazo total). */
+export const RELAXATION_MIN_STORED_FOR_FULL_CATALOG = 50;
+
+export function mergeRelaxationPlaylistsById(
+  base: RelaxationPlaylistItem[],
+  overrides: RelaxationPlaylistItem[]
+): RelaxationPlaylistItem[] {
+  const byId = new Map(base.map((item) => [item.id, item]));
+  for (const item of overrides) {
+    byId.set(item.id, item);
+  }
+  return Array.from(byId.values());
+}
+
+/** Catálogo público: defaults + overrides admin; reemplazo total solo si el admin guardó un catálogo completo. */
+export function resolvePublicRelaxationPlaylists(stored: RelaxationPlaylistItem[]): RelaxationPlaylistItem[] {
+  if (stored.length === 0) {
+    return DEFAULT_RELAXATION_PLAYLISTS;
+  }
+  if (stored.length >= RELAXATION_MIN_STORED_FOR_FULL_CATALOG) {
+    return stored;
+  }
+  return mergeRelaxationPlaylistsById(DEFAULT_RELAXATION_PLAYLISTS, stored);
+}

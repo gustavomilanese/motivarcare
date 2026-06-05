@@ -1,5 +1,6 @@
 import { apiRequest } from "../../app/services/api";
 import { RELAXATION_CATALOG_FALLBACK } from "../data/relaxationCatalogFallback";
+import { resolveRelaxationPlaylistsFromApi } from "../lib/mergeRelaxationCatalog";
 
 /** Alineado con `relaxationPlaylistItemSchema` del API. */
 export interface RelaxationPlaylistItem {
@@ -56,7 +57,9 @@ export async function fetchRelaxationPlaylists(): Promise<RelaxationPlaylistItem
         const normalized = list
           .map((item) => normalizePlaylistItem(item))
           .filter((item): item is RelaxationPlaylistItem => item !== null);
-        if (normalized.length > 0) return normalized;
+        if (normalized.length > 0) {
+          return resolveRelaxationPlaylistsFromApi(normalized, RELAXATION_CATALOG_FALLBACK);
+        }
       }
     } catch {
       // usar fallback

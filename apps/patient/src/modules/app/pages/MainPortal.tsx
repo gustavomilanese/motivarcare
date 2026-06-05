@@ -286,6 +286,8 @@ export function MainPortal(props: {
         patientHeaderAvatarUploadBusy={headerAvatarBusy}
         patientHeaderAvatarError={headerAvatarError || null}
         onPatientHeaderAvatarFileChange={handlePatientHeaderAvatarFileChange}
+        residencyCountry={props.state.profileResidencyCountry}
+        patientMarket={props.state.patientMarket}
       >
         {props.state.intake?.riskBlocked ? (
           <section className="content-card danger">

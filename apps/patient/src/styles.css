@@ -1747,6 +1747,90 @@ button.danger {
   border-left-color: rgba(95, 68, 235, 0.55);
 }
 
+.menu-dropdown-section-label {
+  margin: 0 0 6px;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.menu-dropdown-help {
+  display: grid;
+  gap: 6px;
+}
+
+.menu-item--help {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.menu-item--help-email small {
+  color: #4c31d8;
+  font-size: 11px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.menu-dropdown-phones {
+  margin-top: 2px;
+  padding: 10px 12px;
+  border: 1px solid #e8ecf4;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.menu-dropdown-phones-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.menu-dropdown-phones-title span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: #475569;
+}
+
+.menu-dropdown-phones-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.menu-dropdown-phones-list li {
+  display: grid;
+  gap: 2px;
+}
+
+.menu-dropdown-phones-list strong {
+  font-size: 12px;
+  color: #334155;
+}
+
+.menu-dropdown-phones-list span {
+  font-size: 13px;
+  color: #475569;
+}
+
+.menu-dropdown-phones-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #94a3b8;
+}
+
 .portal-main-content {
   min-width: 0;
   display: grid;
@@ -2280,8 +2364,8 @@ button.danger {
 
 .sessions-combined-action {
   width: 100%;
-  text-align: left;
-  justify-content: flex-start;
+  text-align: center;
+  justify-items: center;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -8007,8 +8091,8 @@ button.sessions-balance {
 
 @media (max-width: 1080px) {
   :root {
-    /* Altura total tab bar anclada abajo (links + padding vertical + safe-area) */
-    --portal-tab-clear: calc(78px + env(safe-area-inset-bottom, 0px));
+    /* Tab bar fija abajo (5 accesos principales + safe-area) */
+    --portal-tab-clear: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
   .portal-shell.onboarding-match-focus {
@@ -8045,8 +8129,26 @@ button.sessions-balance {
 
   .portal-shell {
     grid-template-columns: 1fr;
-    padding: 10px 10px 0;
+    padding: max(8px, var(--safe-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
     max-width: 100%;
+  }
+
+  .portal-shell.portal-shell--site-footer {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .portal-shell.portal-shell--site-footer > .portal-main,
+  .portal-shell.portal-shell--site-footer > .portal-site-footer {
+    grid-column: 1;
+  }
+
+  .portal-shell.portal-shell--site-footer > .portal-main {
+    grid-row: 1;
+  }
+
+  .portal-site-footer {
+    display: none;
   }
 
   .portal-sidebar {
@@ -8149,18 +8251,6 @@ button.sessions-balance {
   .preferences-groups {
     grid-template-columns: 1fr;
     gap: 18px;
-  }
-
-  .portal-mobile-nav {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 2px 0 4px;
-    scrollbar-width: none;
-  }
-
-  .portal-mobile-nav::-webkit-scrollbar {
-    display: none;
   }
 
   .content-card {
@@ -8910,7 +9000,7 @@ button.sessions-balance {
     right: 0;
     left: auto;
     width: min(340px, calc(100vw - 24px));
-    max-height: min(75vh, 560px);
+    max-height: min(82vh, 640px);
   }
 
   .notifications-dropdown {
@@ -10186,7 +10276,12 @@ button.sessions-balance {
   background: transparent;
   color: #64748b;
   text-decoration: none;
+  font: inherit;
   -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-link--more {
+  cursor: pointer;
 }
 
 .mobile-nav-link.active {
@@ -10232,10 +10327,10 @@ button.sessions-balance {
     display: flex;
     justify-content: space-between;
     align-items: stretch;
-    gap: 4px;
+    gap: 6px;
     padding:
-      8px max(12px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px))
-      max(12px, env(safe-area-inset-right, 0px));
+      8px max(10px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-right, 0px));
     margin: 0;
     overflow: visible;
     background: rgba(252, 252, 254, 0.98);
@@ -10245,6 +10340,131 @@ button.sessions-balance {
     border-top: 1px solid rgba(226, 232, 240, 0.98);
     border-radius: 0;
     box-shadow: 0 -6px 28px rgba(15, 23, 42, 0.1);
+  }
+
+  .portal-mobile-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 48;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.34);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .portal-mobile-more-sheet {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    z-index: 49;
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  }
+
+  .portal-mobile-more-sheet--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .portal-mobile-more-sheet-head h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #0f172a;
+  }
+
+  .portal-mobile-more-sheet-head p {
+    margin: 4px 0 0;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: #64748b;
+  }
+
+  .portal-mobile-more-links {
+    display: grid;
+    gap: 8px;
+  }
+
+  .portal-mobile-more-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .portal-mobile-more-link.active,
+  .portal-mobile-more-link:hover {
+    border-color: rgba(95, 68, 235, 0.35);
+    background: #f5f3ff;
+    color: #4c31d8;
+  }
+
+  .portal-mobile-more-link-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #5f44eb;
+  }
+
+  .portal-immersive-mobile-greet {
+    display: none;
+  }
+
+  .header-actions--immersive-toolbar {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-actions--immersive-toolbar .portal-immersive-mobile-greet {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+    padding-left: 2px;
+  }
+
+  .portal-immersive-mobile-greet-label {
+    font-size: clamp(16px, 4.2vw, 18px);
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 10px rgba(15, 23, 42, 0.45);
+  }
+
+  .dashboard-hero-toolbar-mount,
+  .sessions-booking-page .sessions-hero-toolbar-mount,
+  .wellbeing-relax-toolbar-mount {
+    left: max(10px, env(safe-area-inset-left, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    justify-content: stretch;
   }
 
   .portal-mobile-nav::-webkit-scrollbar {
@@ -10259,6 +10479,16 @@ button.sessions-balance {
     border: 1px solid rgba(232, 236, 244, 0.95);
   }
 
+  .mobile-nav-link--more {
+    background: rgba(248, 250, 252, 0.96);
+  }
+
+  .mobile-nav-label {
+    font-size: 11px;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .mobile-nav-link:active {
       transform: scale(0.97);
@@ -10271,14 +10501,9 @@ button.sessions-balance {
   }
 }
 
-/* Densidad mobile-nav: 7 items requieren texto más compacto en pantallas chicas */
+/* Mobile tab bar — 5 accesos principales */
 @media (max-width: 1080px) {
   .mobile-nav-label {
-    font-size: 10.5px;
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
     max-width: 100%;
   }
 }
@@ -11053,6 +11278,23 @@ button.sessions-balance {
 .patient-dashboard-home .sessions-combined-section {
   padding: 11px 10px;
   gap: 5px;
+  justify-items: center;
+  text-align: center;
+}
+
+.patient-dashboard-home .sessions-combined-card .sessions-combined-section .label {
+  padding-left: 0;
+  width: 100%;
+  justify-content: center;
+}
+
+.patient-dashboard-home .sessions-combined-card .sessions-combined-action {
+  text-align: center;
+  justify-items: center;
+}
+
+.patient-dashboard-home .sessions-combined-card .hero-inline-link {
+  justify-self: center;
 }
 
 .patient-dashboard-home .sessions-combined-section + .sessions-combined-section::before {

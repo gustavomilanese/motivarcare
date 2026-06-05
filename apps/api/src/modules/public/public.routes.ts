@@ -23,9 +23,9 @@ import { env } from "../../config/env.js";
 import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
 import { DEFAULT_BLOG_POSTS, type BlogPostDefault } from "../web-content/blogPosts.defaults.js";
 import {
-  DEFAULT_RELAXATION_PLAYLISTS,
   WEB_RELAXATION_PLAYLISTS_KEY,
-  relaxationPlaylistsCollectionSchema
+  relaxationPlaylistsCollectionSchema,
+  resolvePublicRelaxationPlaylists
 } from "../web-content/relaxationPlaylists.defaults.js";
 import { DEFAULT_LANDING_WEB_REVIEWS } from "../web-content/reviews.defaults.js";
 
@@ -535,8 +535,7 @@ publicRouter.get("/web-content", async (req, res) => {
     });
 
   const storedRelaxation = relaxationParsed.success ? relaxationParsed.data : [];
-  const relaxationPlaylists =
-    storedRelaxation.length > 0 ? storedRelaxation : DEFAULT_RELAXATION_PLAYLISTS;
+  const relaxationPlaylists = resolvePublicRelaxationPlaylists(storedRelaxation);
 
   return res.json({
     settings: parseLandingSettings(settingsConfig?.value),

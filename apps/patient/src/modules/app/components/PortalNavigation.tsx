@@ -5,11 +5,13 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { avatarInitialsFromNameParts } from "@therapy/types";
-import { type ChangeEvent, type ReactNode, type SyntheticEvent, useId, useLayoutEffect, useState } from "react";
+import { type ChangeEvent, type ReactNode, type SyntheticEvent, useEffect, useId, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
+import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import type { ProfileTab } from "../types";
+import type { Market } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -105,6 +107,17 @@ function IconMusic(props: { className?: string }) {
   );
 }
 
+function IconMore(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="6" cy="6" r="1.75" />
+      <circle cx="12" cy="6" r="1.75" />
+      <circle cx="6" cy="12" r="1.75" />
+      <circle cx="12" cy="12" r="1.75" />
+    </svg>
+  );
+}
+
 function IconPencilTiny() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -154,6 +167,8 @@ export function PortalNavigation(props: {
   patientHeaderAvatarUploadBusy: boolean;
   patientHeaderAvatarError?: string | null;
   onPatientHeaderAvatarFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  residencyCountry: string | null;
+  patientMarket: Market;
   children: ReactNode;
 }) {
   const mobileFirstName = firstNameOnly(props.sessionFullName);
@@ -304,13 +319,42 @@ export function PortalNavigation(props: {
     pt: "Alterar foto do perfil"
   });
 
-  function renderHeaderActions(onDiaryHero = false) {
+  const mobileGreeting = replaceTemplate(
+    t(props.language, {
+      es: "Hola, {name}",
+      en: "Hi, {name}",
+      pt: "Olá, {name}"
+    }),
+    { name: mobileFirstName || t(props.language, { es: "paciente", en: "there", pt: "paciente" }) }
+  );
+
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const mobileSecondaryActive =
+    location.pathname.startsWith("/profesionales") ||
+    location.pathname.startsWith("/ejercicios") ||
+    location.pathname.startsWith("/bienestar/musica") ||
+    location.pathname.startsWith("/profile");
+
+  useEffect(() => {
+    setMobileMoreOpen(false);
+  }, [location.pathname]);
+
+  function renderImmersiveMobileGreeting() {
+    return (
+      <div className="portal-immersive-mobile-greet">
+        <span className="portal-immersive-mobile-greet-label">{mobileGreeting}</span>
+      </div>
+    );
+  }
+
+  function renderHeaderActions(onImmersiveToolbar = false) {
     if (props.hideSidebar) {
       return null;
     }
 
     return (
-      <div className={`header-actions${onDiaryHero ? " header-actions--diary-hero" : ""}`}>
+      <div className={`header-actions${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}`}>
+        {onImmersiveToolbar ? renderImmersiveMobileGreeting() : null}
         <div className="header-actions-cluster">
           <NavLink
             to="/favorites"
@@ -414,6 +458,14 @@ export function PortalNavigation(props: {
               </button>
 
               <div className="menu-sep" />
+              <PortalHelpLegalMenuSection
+                language={props.language}
+                residencyCountry={props.residencyCountry}
+                patientMarket={props.patientMarket}
+                onNavigate={props.onToggleMenu}
+              />
+
+              <div className="menu-sep" />
               <button className="menu-item danger" type="button" onClick={props.onLogout}>
                 {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
               </button>
@@ -513,12 +565,12 @@ export function PortalNavigation(props: {
                 </h1>
               </div>
 
-              <div className="portal-header-greeting-mobile" aria-label={mobileFirstName}>
+              <div className="portal-header-greeting-mobile" aria-label={mobileGreeting}>
                 <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--mobile">
                   {avatarVisual}
                   <span className="sr-only">{avatarSrLabel}</span>
                 </label>
-                <span className="portal-header-patient-name">{mobileFirstName}</span>
+                <span className="portal-header-patient-name">{mobileGreeting}</span>
               </div>
 
               {props.patientHeaderAvatarError ? (
@@ -533,54 +585,94 @@ export function PortalNavigation(props: {
         ) : null}
 
         {!props.hideSidebar ? (
-          <nav
-            className="portal-mobile-nav"
-            aria-label={t(props.language, {
-              es: "Navegación principal",
-              en: "Main navigation",
-              pt: "Navegacao principal"
-            })}
-          >
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profile">
-              <IconAccount className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
-              <IconHome className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
-              <IconSessions className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
-              <IconNotes className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/profesionales">
-              <IconProfessionals className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Equipo", en: "Team", pt: "Equipe" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/ejercicios">
-              <IconExercises className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/bienestar/musica">
-              <IconMusic className="mobile-nav-icon" />
-              <span className="mobile-nav-label">{t(props.language, { es: "Música", en: "Music", pt: "Música" })}</span>
-            </NavLink>
-            <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
-              <span className="mobile-nav-link-inner">
-                <IconChat className="mobile-nav-icon" />
-                {props.unreadMessagesCount > 0 ? (
-                  <span className="chat-badge-pill mobile-nav-badge" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
-                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
-                  </span>
-                ) : null}
-              </span>
-              <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
-            </NavLink>
-          </nav>
+          <>
+            {mobileMoreOpen ? (
+              <div
+                className="portal-mobile-more-backdrop"
+                role="presentation"
+                onClick={() => setMobileMoreOpen(false)}
+              />
+            ) : null}
+            <div
+              id="portal-mobile-more-sheet"
+              className={`portal-mobile-more-sheet ${mobileMoreOpen ? "portal-mobile-more-sheet--open" : ""}`}
+              role="dialog"
+              aria-modal="true"
+              aria-hidden={!mobileMoreOpen}
+              aria-label={t(props.language, { es: "Explorar el portal", en: "Explore the portal", pt: "Explorar o portal" })}
+            >
+              <div className="portal-mobile-more-sheet-head">
+                <h2>{t(props.language, { es: "Explorar", en: "Explore", pt: "Explorar" })}</h2>
+                <p>
+                  {t(props.language, {
+                    es: "Profesionales, bienestar y tu cuenta.",
+                    en: "Therapists, wellbeing and your account.",
+                    pt: "Profissionais, bem-estar e sua conta."
+                  })}
+                </p>
+              </div>
+              <nav className="portal-mobile-more-links" aria-label={t(props.language, { es: "Más secciones", en: "More sections", pt: "Mais seções" })}>
+                <NavLink className="portal-mobile-more-link" to="/profesionales" onClick={() => setMobileMoreOpen(false)}>
+                  <IconProfessionals className="portal-mobile-more-link-icon" />
+                  <span>{t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}</span>
+                </NavLink>
+                <NavLink className="portal-mobile-more-link" to="/ejercicios" onClick={() => setMobileMoreOpen(false)}>
+                  <IconExercises className="portal-mobile-more-link-icon" />
+                  <span>{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}</span>
+                </NavLink>
+                <NavLink className="portal-mobile-more-link" to="/bienestar/musica" onClick={() => setMobileMoreOpen(false)}>
+                  <IconMusic className="portal-mobile-more-link-icon" />
+                  <span>{t(props.language, { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" })}</span>
+                </NavLink>
+                <NavLink className="portal-mobile-more-link" to="/profile" onClick={() => setMobileMoreOpen(false)}>
+                  <IconAccount className="portal-mobile-more-link-icon" />
+                  <span>{t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}</span>
+                </NavLink>
+              </nav>
+            </div>
+            <nav
+              className="portal-mobile-nav"
+              aria-label={t(props.language, {
+                es: "Navegación principal",
+                en: "Main navigation",
+                pt: "Navegacao principal"
+              })}
+            >
+              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
+                <IconHome className="mobile-nav-icon" />
+                <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
+              </NavLink>
+              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
+                <IconSessions className="mobile-nav-icon" />
+                <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
+              </NavLink>
+              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
+                <span className="mobile-nav-link-inner">
+                  <IconChat className="mobile-nav-icon" />
+                  {props.unreadMessagesCount > 0 ? (
+                    <span className="chat-badge-pill mobile-nav-badge" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                      {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
+              </NavLink>
+              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
+                <IconNotes className="mobile-nav-icon" />
+                <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
+              </NavLink>
+              <button
+                type="button"
+                className={`mobile-nav-link mobile-nav-link--more ${mobileSecondaryActive ? "active" : ""}`}
+                aria-expanded={mobileMoreOpen}
+                aria-controls="portal-mobile-more-sheet"
+                onClick={() => setMobileMoreOpen((open) => !open)}
+              >
+                <IconMore className="mobile-nav-icon" />
+                <span className="mobile-nav-label">{t(props.language, { es: "Más", en: "More", pt: "Mais" })}</span>
+              </button>
+            </nav>
+          </>
         ) : null}
         {props.children}
         {diaryHomeImmersive && diaryHeroToolbarMount
