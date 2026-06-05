@@ -15240,6 +15240,11 @@ body.driver-active .driver-overlay {
 .patient-help-page {
   width: 100%;
   max-width: none;
+  scroll-margin-top: 12px;
+}
+
+.patient-help-card h1:focus {
+  outline: none;
 }
 
 .patient-help-back {
@@ -15296,6 +15301,7 @@ body.driver-active .driver-overlay {
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid #e2e8f0;
+  scroll-margin-top: 12px;
 }
 
 .patient-help-section:first-of-type {
@@ -15335,6 +15341,7 @@ body.driver-active .driver-overlay {
   border-radius: 12px;
   background: #fff;
   overflow: hidden;
+  scroll-margin-top: 12px;
 }
 
 .patient-help-faq-item[open] {

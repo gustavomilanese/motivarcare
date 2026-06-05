@@ -1,8 +1,20 @@
+import type { SyntheticEvent } from "react";
 import { type AppLanguage, textByLanguage } from "@therapy/i18n-config";
 import type { HelpFaqSection, HelpManualSection } from "../content/helpTypes";
 
 const t = (language: AppLanguage, values: { es: string; en: string; pt: string }) =>
   textByLanguage(language, values);
+
+function handleFaqItemToggle(event: SyntheticEvent<HTMLDetailsElement>) {
+  const details = event.currentTarget;
+  if (!details.open) {
+    return;
+  }
+  const summary = details.querySelector("summary");
+  if (summary instanceof HTMLElement) {
+    summary.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+}
 
 export function HelpFaqSections(props: { language: AppLanguage; sections: HelpFaqSection[] }) {
   return (
@@ -12,7 +24,11 @@ export function HelpFaqSections(props: { language: AppLanguage; sections: HelpFa
           <h2>{t(props.language, section.title)}</h2>
           <div className="patient-help-faq">
             {section.items.map((item) => (
-              <details key={t(props.language, item.question)} className="patient-help-faq-item">
+              <details
+                key={t(props.language, item.question)}
+                className="patient-help-faq-item"
+                onToggle={handleFaqItemToggle}
+              >
                 <summary className="patient-help-faq-question">{t(props.language, item.question)}</summary>
                 <div className="patient-help-faq-answer">{t(props.language, item.answer)}</div>
               </details>
