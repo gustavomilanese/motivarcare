@@ -1078,7 +1078,7 @@ button.danger {
 }
 
 .portal-shell.portal-shell--site-footer > .portal-site-footer {
-  grid-column: 1 / -1;
+  grid-column: 2;
   grid-row: 2;
   width: 100%;
   min-width: 0;
