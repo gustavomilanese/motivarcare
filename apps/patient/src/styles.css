@@ -10474,6 +10474,12 @@ button.sessions-balance {
     justify-content: stretch;
   }
 
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions,
+  .sessions-booking-page .sessions-hero-toolbar-mount .header-actions,
+  .wellbeing-relax-toolbar-mount .header-actions {
+    width: 100%;
+  }
+
   .portal-mobile-nav::-webkit-scrollbar {
     display: none;
   }
@@ -11537,8 +11543,13 @@ button.sessions-balance {
 }
 
 @media (max-width: 680px) {
-  .patient-dashboard-home .dashboard-legacy-home {
+  /* Hero + toolbar (saludo, ☰) visibles; el resto del layout desktop queda oculto. */
+  .patient-dashboard-home .dashboard-legacy-home > :not(.dashboard-hero-immersive) {
     display: none !important;
+  }
+
+  .patient-dashboard-home .dashboard-hero-immersive {
+    margin: 0 0 14px;
   }
 
   .patient-dashboard-home .dashboard-rn-home {
@@ -11548,8 +11559,14 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-rn-scroll {
-    padding: 6px 20px 12px;
+    padding: 0 20px 12px;
     padding-bottom: 16px;
+  }
+
+  /* Título/subtítulo ya están sobre la foto del banner */
+  .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-heading,
+  .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-lead {
+    display: none;
   }
 
   .patient-dashboard-home .dashboard-rn-scroll .dashboard-home-intro-lead {
