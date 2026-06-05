@@ -127,17 +127,43 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
               {t(language, { es: "Todos", en: "All", pt: "Todos" })}
               <span className="wellbeing-relax-category-count">{playlists.length}</span>
             </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                className={`wellbeing-relax-category-pill ${categoryId === category.id ? "wellbeing-relax-category-pill--active" : ""}`}
-                onClick={() => setCategoryId(category.id)}
-              >
-                {t(language, category.label)}
-                <span className="wellbeing-relax-category-count">{category.items.length}</span>
-              </button>
-            ))}
+            {categories.map((category) => {
+              const isActive = categoryId === category.id;
+              if (isActive) {
+                return (
+                  <span
+                    key={category.id}
+                    className="wellbeing-relax-category-pill wellbeing-relax-category-pill--active wellbeing-relax-category-pill--filtered"
+                  >
+                    <span className="wellbeing-relax-category-pill-label">{t(language, category.label)}</span>
+                    <span className="wellbeing-relax-category-count">{category.items.length}</span>
+                    <button
+                      type="button"
+                      className="wellbeing-relax-category-clear"
+                      aria-label={t(language, {
+                        es: "Quitar filtro de categoría",
+                        en: "Clear category filter",
+                        pt: "Remover filtro de categoria"
+                      })}
+                      onClick={() => setCategoryId("all")}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  className="wellbeing-relax-category-pill"
+                  onClick={() => setCategoryId(category.id)}
+                >
+                  {t(language, category.label)}
+                  <span className="wellbeing-relax-category-count">{category.items.length}</span>
+                </button>
+              );
+            })}
           </nav>
 
           {selected ? (

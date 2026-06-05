@@ -14622,6 +14622,43 @@ button.sessions-balance {
   color: #4c31d8;
 }
 
+.wellbeing-relax-category-pill--filtered {
+  padding-right: 8px;
+  cursor: default;
+}
+
+.wellbeing-relax-category-pill-label {
+  line-height: 1.2;
+}
+
+.wellbeing-relax-category-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.14);
+  color: #4c31d8;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wellbeing-relax-category-clear:hover {
+  background: rgba(95, 68, 235, 0.26);
+}
+
+.wellbeing-relax-category-clear:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.55);
+  outline-offset: 2px;
+}
+
 .wellbeing-relax-category-count {
   font-size: 0.75rem;
   font-weight: 700;
