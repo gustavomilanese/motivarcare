@@ -13,6 +13,8 @@ import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
 import { ExerciseDetailPage } from "../../exercises/pages/ExerciseDetailPage";
 import { RelaxationMusicPage } from "../../wellbeing/pages/RelaxationMusicPage";
+import { PatientFaqPage } from "../../help/pages/PatientFaqPage";
+import { PatientManualPage } from "../../help/pages/PatientManualPage";
 import { DiaryHomePage } from "../../emotional-diary/pages/DiaryHomePage";
 import { DiaryNewEntryPage } from "../../emotional-diary/pages/DiaryNewEntryPage";
 import { DiaryRecordsPage } from "../../emotional-diary/pages/DiaryRecordsPage";
@@ -480,6 +482,22 @@ export function PortalRoutes(props: {
                   />
                 ) : null
               )
+        }
+      />
+      <Route
+        path="/ayuda/preguntas-frecuentes"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <PatientFaqPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/ayuda/manual"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <PatientManualPage language={props.state.language} />
         }
       />
       <Route

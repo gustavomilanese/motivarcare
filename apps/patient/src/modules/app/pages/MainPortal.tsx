@@ -9,6 +9,7 @@ import {
 import { SessionDetailModal } from "../../booking/components/SessionDetailModal";
 import { friendlyProfileAvatarErrorMessage } from "../lib/friendlyPatientMessages";
 import { DiaryPortalToolbarMountProvider } from "../../emotional-diary/context/DiaryPortalToolbarMount";
+import { PortalFooter } from "../components/PortalFooter";
 import { PortalNavigation } from "../components/PortalNavigation";
 import { type LanguageChoice, PortalPreferencesModal } from "../components/PortalPreferencesModal";
 import { usePortalNotifications } from "../hooks/usePortalNotifications";
@@ -335,6 +336,14 @@ export function MainPortal(props: {
             onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
           />
         </main>
+
+        {!hideSidebar ? (
+          <PortalFooter
+            language={props.state.language}
+            residencyCountry={props.state.profileResidencyCountry}
+            patientMarket={props.state.patientMarket}
+          />
+        ) : null}
       </PortalNavigation>
       </DiaryPortalToolbarMountProvider>
       {selectedBooking ? (

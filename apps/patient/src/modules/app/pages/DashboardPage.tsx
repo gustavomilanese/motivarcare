@@ -12,7 +12,6 @@ import {
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
-import { ProfessionalChangeSupportPanel } from "../components/ProfessionalChangeSupportPanel";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
@@ -787,7 +786,7 @@ export function DashboardPage(props: {
                 )}
               </p>
             </div>
-            <div className="active-professional-actions">
+            <div className="active-professional-actions active-professional-actions--solo">
               <button
                 className="active-professional-action-btn active-professional-action-btn--primary"
                 type="button"
@@ -798,16 +797,6 @@ export function DashboardPage(props: {
               >
                 {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
               </button>
-              {hasAssignedProfessional ? (
-                <ProfessionalChangeSupportPanel
-                  language={props.language}
-                  authToken={props.authToken}
-                  patientName={props.state.session?.fullName}
-                  patientEmail={props.state.session?.email}
-                  assignedProfessionalName={professionalAccessibleName(activeProfessional)}
-                  triggerStyle="card-action"
-                />
-              ) : null}
             </div>
           </div>
         ) : (

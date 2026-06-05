@@ -2451,6 +2451,20 @@ button.danger {
   padding: 0 2px 2px;
 }
 
+.active-professional-actions--solo {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.active-professional-actions--solo .active-professional-action-btn {
+  width: auto;
+  min-width: min(100%, 168px);
+  max-width: 220px;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
 .active-professional-action-btn {
   border-radius: 10px;
   padding: 8px 8px;
@@ -15008,5 +15022,223 @@ body.driver-active .driver-overlay {
   .patient-tour-maca-mini {
     align-self: center;
   }
+}
+
+/* Portal paciente — pie de página global */
+.portal-site-footer {
+  margin-top: 28px;
+  padding: 24px clamp(12px, 2.4vw, 24px) calc(20px + var(--portal-tab-clear, 0px));
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.4) 0%, #f1f3f8 100%);
+}
+
+@media (min-width: 1081px) {
+  .portal-site-footer {
+    padding-bottom: 28px;
+  }
+}
+
+.portal-site-footer-inner {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
+.portal-site-footer-heading {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.portal-site-footer-country {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #475569;
+}
+
+.portal-site-footer-lead {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.portal-site-footer-email {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #4c31d8;
+  text-decoration: none;
+}
+
+.portal-site-footer-email:hover {
+  text-decoration: underline;
+}
+
+.portal-site-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portal-site-footer-links a {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+  text-decoration: none;
+}
+
+.portal-site-footer-links a:hover {
+  color: #4c31d8;
+  text-decoration: underline;
+}
+
+.portal-site-footer-phones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.portal-site-footer-phones li {
+  display: grid;
+  gap: 2px;
+}
+
+.portal-site-footer-phone-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.portal-site-footer-phone-contact {
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.portal-site-footer-crisis-note {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+.portal-site-footer-copy {
+  margin: 20px 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* Ayuda — FAQ y manual */
+.patient-help-page {
+  width: 100%;
+  max-width: none;
+}
+
+.patient-help-back {
+  margin: 0;
+}
+
+.patient-help-back a {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4c31d8;
+  text-decoration: none;
+}
+
+.patient-help-back a:hover {
+  text-decoration: underline;
+}
+
+.patient-help-card h1 {
+  margin: 0 0 16px;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.patient-help-intro {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.patient-help-inline-link {
+  font-weight: 600;
+  color: #4c31d8;
+  text-decoration: none;
+}
+
+.patient-help-inline-link:hover {
+  text-decoration: underline;
+}
+
+.patient-help-paragraph {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.patient-help-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.patient-help-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.patient-help-section:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.patient-help-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.patient-help-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.patient-help-list--ordered {
+  list-style: decimal;
+}
+
+.patient-help-faq {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.patient-help-faq dt {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.patient-help-faq dd {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #475569;
 }
 
