@@ -367,6 +367,12 @@ export function WebAdminPage({
     const idRaw = relaxationForm.id.trim().toLowerCase().replace(/\s+/g, "-");
     const payload: AdminRelaxationPlaylist = {
       id: idRaw,
+      categoryId: relaxationForm.categoryId.trim() || "general",
+      categoryLabel: {
+        es: relaxationForm.categoryLabel.es.trim() || "Música relajante",
+        en: relaxationForm.categoryLabel.en.trim() || "Relaxing music",
+        pt: relaxationForm.categoryLabel.pt.trim() || "Música relaxante"
+      },
       title: {
         es: relaxationForm.title.es.trim(),
         en: relaxationForm.title.en.trim(),
