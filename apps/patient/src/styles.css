@@ -1161,6 +1161,12 @@ button.danger {
   display: none;
 }
 
+/* Sheet «Explorar» y tab bar mobile: solo ≤1080px (en desktop quedaría en flujo con SVGs gigantes). */
+.portal-mobile-more-sheet,
+.portal-mobile-more-backdrop {
+  display: none;
+}
+
 .mobile-nav-link {
   text-decoration: none;
   border: 1px solid #d6dbec;
@@ -10343,6 +10349,7 @@ button.sessions-balance {
   }
 
   .portal-mobile-more-backdrop {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 48;
