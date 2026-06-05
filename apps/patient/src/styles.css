@@ -14622,39 +14622,57 @@ button.sessions-balance {
   color: #4c31d8;
 }
 
-.wellbeing-relax-category-pill--filtered {
-  padding-right: 8px;
-  cursor: default;
+.wellbeing-relax-category-pill--show-all {
+  border-color: #8b7cf8;
+  background: #fff;
+  color: #4c31d8;
+  box-shadow: 0 0 0 2px rgba(139, 124, 248, 0.22);
 }
 
-.wellbeing-relax-category-pill-label {
-  line-height: 1.2;
+.wellbeing-relax-category-pill--show-all:hover {
+  background: #f5f3ff;
 }
 
-.wellbeing-relax-category-clear {
+.wellbeing-relax-filter-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(95, 68, 235, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8f7ff 0%, #f1effe 100%);
+}
+
+.wellbeing-relax-filter-active-copy {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.wellbeing-relax-filter-clear {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-left: 2px;
-  padding: 0;
-  border: none;
+  gap: 6px;
+  border: 1px solid rgba(95, 68, 235, 0.35);
   border-radius: 999px;
-  background: rgba(95, 68, 235, 0.14);
+  padding: 8px 14px;
+  background: #fff;
   color: #4c31d8;
-  font-size: 1.05rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  line-height: 1;
   cursor: pointer;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.wellbeing-relax-category-clear:hover {
-  background: rgba(95, 68, 235, 0.26);
+.wellbeing-relax-filter-clear:hover {
+  background: #ede9fe;
 }
 
-.wellbeing-relax-category-clear:focus-visible {
+.wellbeing-relax-filter-clear:focus-visible {
   outline: 2px solid rgba(95, 68, 235, 0.55);
   outline-offset: 2px;
 }

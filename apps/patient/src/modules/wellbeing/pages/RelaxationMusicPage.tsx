@@ -20,6 +20,24 @@ export interface RelaxationMusicPageProps {
 const t = (language: AppLanguage, values: { es: string; en: string; pt: string }) =>
   textByLanguage(language, values);
 
+function replaceRelaxationFilterSummary(
+  language: AppLanguage,
+  categoryLabel: string,
+  visibleCount: number,
+  totalCount: number
+): string {
+  const videoWord = t(language, {
+    es: visibleCount === 1 ? "video" : "videos",
+    en: visibleCount === 1 ? "video" : "videos",
+    pt: visibleCount === 1 ? "vídeo" : "vídeos"
+  });
+  return t(language, {
+    es: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} en total).`,
+    en: `Showing ${visibleCount} ${videoWord} in «${categoryLabel}» (${totalCount} total).`,
+    pt: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} no total).`
+  });
+}
+
 function resolveOpenUrl(item: RelaxationPlaylistItem): string {
   if (item.openUrl?.trim()) return item.openUrl.trim();
   const videoId = extractYoutubeVideoId(item.embedSrc, "");
@@ -68,6 +86,11 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
   }, []);
 
   const categories = useMemo(() => groupRelaxationPlaylists(playlists), [playlists]);
+
+  const activeCategory = useMemo(
+    () => (categoryId === "all" ? null : categories.find((category) => category.id === categoryId) ?? null),
+    [categories, categoryId]
+  );
 
   const visibleItems = useMemo(() => {
     if (categoryId === "all") return playlists;
@@ -121,43 +144,23 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
           <nav className="wellbeing-relax-categories" aria-label={t(language, { es: "Categorías", en: "Categories", pt: "Categorias" })}>
             <button
               type="button"
-              className={`wellbeing-relax-category-pill ${categoryId === "all" ? "wellbeing-relax-category-pill--active" : ""}`}
+              className={`wellbeing-relax-category-pill ${categoryId === "all" ? "wellbeing-relax-category-pill--active" : ""} ${categoryId !== "all" ? "wellbeing-relax-category-pill--show-all" : ""}`}
               onClick={() => setCategoryId("all")}
             >
-              {t(language, { es: "Todos", en: "All", pt: "Todos" })}
+              {categoryId !== "all"
+                ? t(language, { es: "Ver todos", en: "Show all", pt: "Ver todos" })
+                : t(language, { es: "Todos", en: "All", pt: "Todos" })}
               <span className="wellbeing-relax-category-count">{playlists.length}</span>
             </button>
             {categories.map((category) => {
               const isActive = categoryId === category.id;
-              if (isActive) {
-                return (
-                  <span
-                    key={category.id}
-                    className="wellbeing-relax-category-pill wellbeing-relax-category-pill--active wellbeing-relax-category-pill--filtered"
-                  >
-                    <span className="wellbeing-relax-category-pill-label">{t(language, category.label)}</span>
-                    <span className="wellbeing-relax-category-count">{category.items.length}</span>
-                    <button
-                      type="button"
-                      className="wellbeing-relax-category-clear"
-                      aria-label={t(language, {
-                        es: "Quitar filtro de categoría",
-                        en: "Clear category filter",
-                        pt: "Remover filtro de categoria"
-                      })}
-                      onClick={() => setCategoryId("all")}
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              }
               return (
                 <button
                   key={category.id}
                   type="button"
-                  className="wellbeing-relax-category-pill"
-                  onClick={() => setCategoryId(category.id)}
+                  className={`wellbeing-relax-category-pill ${isActive ? "wellbeing-relax-category-pill--active" : ""}`}
+                  aria-pressed={isActive}
+                  onClick={() => setCategoryId(isActive ? "all" : category.id)}
                 >
                   {t(language, category.label)}
                   <span className="wellbeing-relax-category-count">{category.items.length}</span>
@@ -165,6 +168,26 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
               );
             })}
           </nav>
+
+          {activeCategory ? (
+            <div className="wellbeing-relax-filter-active" role="status">
+              <p className="wellbeing-relax-filter-active-copy">
+                {replaceRelaxationFilterSummary(
+                  language,
+                  textByLanguage(language, activeCategory.label),
+                  visibleItems.length,
+                  playlists.length
+                )}
+              </p>
+              <button type="button" className="wellbeing-relax-filter-clear" onClick={() => setCategoryId("all")}>
+                {t(language, {
+                  es: "Ver todos los videos",
+                  en: "Show all videos",
+                  pt: "Ver todos os vídeos"
+                })}
+              </button>
+            </div>
+          ) : null}
 
           {selected ? (
             <section id="wellbeing-relax-player" className="wellbeing-relax-player" aria-live="polite">
