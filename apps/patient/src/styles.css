@@ -1060,6 +1060,30 @@ button.danger {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Footer a ancho completo del portal (sidebar + contenido) */
+.portal-shell.portal-shell--site-footer {
+  grid-template-rows: auto auto;
+  align-items: start;
+}
+
+.portal-shell.portal-shell--site-footer > .portal-sidebar {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.portal-shell.portal-shell--site-footer > .portal-main {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.portal-shell.portal-shell--site-footer > .portal-site-footer {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+}
+
 .portal-sidebar {
   position: sticky;
   top: max(16px, var(--safe-top));
@@ -15026,10 +15050,12 @@ body.driver-active .driver-overlay {
 
 /* Portal paciente — pie de página global */
 .portal-site-footer {
-  margin-top: 28px;
-  padding: 24px clamp(12px, 2.4vw, 24px) calc(20px + var(--portal-tab-clear, 0px));
-  border-top: 1px solid rgba(226, 232, 240, 0.95);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.4) 0%, #f1f3f8 100%);
+  margin-top: 12px;
+  padding: 28px clamp(16px, 3vw, 28px) calc(20px + var(--portal-tab-clear, 0px));
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: var(--portal-radius);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.65) 0%, #eef1f6 100%);
+  box-sizing: border-box;
 }
 
 @media (min-width: 1081px) {
@@ -15040,8 +15066,26 @@ body.driver-active .driver-overlay {
 
 .portal-site-footer-inner {
   display: grid;
-  gap: 22px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: clamp(20px, 3vw, 32px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 1080px) {
+  .portal-shell.portal-shell--site-footer > .portal-site-footer {
+    grid-column: 1 / -1;
+  }
+
+  .portal-site-footer-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .portal-site-footer-inner {
+    grid-template-columns: 1fr;
+  }
 }
 
 .portal-site-footer-heading {

@@ -257,7 +257,7 @@ export function MainPortal(props: {
   }, [location.pathname, navigate, lockToTherapistSelection]);
 
   return (
-    <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : ""}`}>
+    <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : "portal-shell--site-footer"}`}>
       <DiaryPortalToolbarMountProvider>
       <PortalNavigation
         language={props.state.language}
@@ -336,15 +336,15 @@ export function MainPortal(props: {
             onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
           />
         </main>
-
-        {!hideSidebar ? (
-          <PortalFooter
-            language={props.state.language}
-            residencyCountry={props.state.profileResidencyCountry}
-            patientMarket={props.state.patientMarket}
-          />
-        ) : null}
       </PortalNavigation>
+
+      {!hideSidebar ? (
+        <PortalFooter
+          language={props.state.language}
+          residencyCountry={props.state.profileResidencyCountry}
+          patientMarket={props.state.patientMarket}
+        />
+      ) : null}
       </DiaryPortalToolbarMountProvider>
       {selectedBooking ? (
         <SessionDetailModal
