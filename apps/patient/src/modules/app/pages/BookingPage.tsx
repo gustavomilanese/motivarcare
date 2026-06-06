@@ -155,11 +155,12 @@ export function BookingPage(props: {
   const selectedCheckoutPlanId = searchParams.get("plan");
   const checkoutSource = searchParams.get("source");
 
-  const assignedProfessionalId = props.state.assignedProfessionalId;
+  const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
+  const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
   const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
   const effectiveProfessionalId = canChangeProfessionalForNewPackage
-    ? props.state.selectedProfessionalId
-    : assignedProfessionalId ?? props.state.selectedProfessionalId;
+    ? selectedProfessionalId || assignedProfessionalId
+    : assignedProfessionalId || selectedProfessionalId;
   const professional = findProfessionalById(effectiveProfessionalId, props.professionals);
   const now = Date.now();
 
@@ -367,7 +368,7 @@ export function BookingPage(props: {
   }, [isCheckoutFlow, pendingSessions, searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!isCheckoutFlow) {
+    if (!isCheckoutFlow || !isMobilePortal) {
       return;
     }
     const frame = window.requestAnimationFrame(() => {
@@ -376,7 +377,7 @@ export function BookingPage(props: {
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [isCheckoutFlow]);
+  }, [isCheckoutFlow, isMobilePortal, selectedCheckoutPlanId, packagesLoading]);
 
   useEffect(() => {
     if (
@@ -647,13 +648,22 @@ export function BookingPage(props: {
     setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
   };
 
+  const scrollCheckoutIntoView = () => {
+    window.requestAnimationFrame(() => {
+      checkoutSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const openMobilePurchaseFlow = () => {
     if (!hasAssignedProfessional) {
       props.onNavigateToAssignProfessional();
       return;
     }
-    if (packagePlans.length > 0) {
+    if (packagePlans.length > 0 || packagesLoading) {
       handleOpenPackages();
+      if (isMobilePortal) {
+        scrollCheckoutIntoView();
+      }
       return;
     }
     setAcquireSessionsModalOpen(true);

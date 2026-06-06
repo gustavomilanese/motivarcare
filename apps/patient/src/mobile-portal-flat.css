@@ -568,14 +568,92 @@
 
   /* Paquetes: panel plano + filas seleccionables */
   .portal-main .sessions-package-options-grid,
-  .portal-main .deal-grid.sessions-package-options-grid {
+  .portal-main .deal-grid.sessions-package-options-grid,
+  .portal-main .deal-grid {
+    display: flex;
+    flex-direction: column;
     gap: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-main .checkout-package-column {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-main .checkout-packages-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .checkout-packages-head-inner h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .checkout-packages-head-inner p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-main .checkout-packages-head > button {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .portal-main .sessions-package-options-grid .deal-card-shell,
+  .portal-main .checkout-package-column .deal-card-shell {
+    display: block;
+    grid-template-rows: none;
   }
 
   .portal-main .deal-card-shell {
     border: none;
     background: transparent;
     box-shadow: none;
+  }
+
+  .portal-main .sessions-package-options-grid .dashboard-deal-card.sessions-package-card,
+  .portal-main .deal-card.sessions-package-card {
+    min-height: 0 !important;
+    height: auto;
+    overflow: visible;
+    transform: none !important;
+  }
+
+  .portal-main .sessions-package-options-grid .deal-select-button,
+  .portal-main .deal-card .deal-select-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin-top: 8px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .portal-main .sessions-package-options-grid .sessions-package-individual-link,
+  .portal-main .deal-card .sessions-package-individual-link {
+    width: 100%;
+    margin-top: 8px;
+    text-align: left;
+    padding: 8px 0;
   }
 
   .portal-main .deal-card-shell .deal-card-roof {
@@ -928,6 +1006,28 @@
     box-shadow: none;
     font-size: 15px;
     font-weight: 600;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-foot {
+    padding: 12px var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta:active {
+    opacity: 0.92;
   }
 
   /* —— Chat: WhatsApp mobile (pantalla completa) —— */

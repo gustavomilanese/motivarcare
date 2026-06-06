@@ -251,10 +251,12 @@ export function DashboardPage(props: {
   const [googleCalendarCtaPulse, setGoogleCalendarCtaPulse] = useState(false);
   const now = Date.now();
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
-  const canChangeProfessionalForNewPackage = !props.state.assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
+  const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
+  const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
+  const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
   const pricingProfessionalId = canChangeProfessionalForNewPackage
-    ? props.state.selectedProfessionalId
-    : props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
+    ? selectedProfessionalId || assignedProfessionalId
+    : assignedProfessionalId || selectedProfessionalId;
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [trialProfessionalId, setTrialProfessionalId] = useState(props.state.assignedProfessionalId ?? props.state.selectedProfessionalId);
   const [trialSlotId, setTrialSlotId] = useState("");
@@ -451,7 +453,33 @@ export function DashboardPage(props: {
   const canIndividualCtaHome = individualUnitHome !== null && packagePlans.length > 0;
   const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
   const availableSessions = props.state.subscription.creditsRemaining;
+  const resolveMcarePurchasePlan = () =>
+    rnSelectedPlan
+    ?? rnPackagePlansSorted.find((plan) => plan.id === featuredPackageId)
+    ?? rnPackagePlansSorted[0]
+    ?? null;
+
+  const startMcarePurchase = (planOverride?: PackagePlan | null) => {
+    const plan = planOverride ?? resolveMcarePurchasePlan();
+    if (!plan) {
+      return false;
+    }
+    if (!rnSelectedPlan || rnSelectedPlan.id !== plan.id) {
+      setRnMcarePlanId(plan.id);
+    }
+    props.onStartPackagePurchase(plan);
+    return true;
+  };
+
   const openMobilePurchaseFlow = () => {
+    if (isMobilePortal && hasAssignedProfessional && rnPackagePlansSorted.length > 0) {
+      const defaultPlan = resolveMcarePurchasePlan();
+      if (defaultPlan && !rnMcarePlanId) {
+        setRnMcarePlanId(defaultPlan.id);
+      }
+      rnMcareSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     const plan = defaultPackagePlan ?? rnPackagePlansSorted[0] ?? null;
     if (plan) {
       props.onStartPackagePurchase(plan);
@@ -1409,7 +1437,7 @@ export function DashboardPage(props: {
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div
-          className={`dashboard-rn-scroll${rnSelectedPlan ? " dashboard-rn-scroll--cta" : ""}`}
+          className={`dashboard-rn-scroll${hasAssignedProfessional && rnPackagePlansSorted.length > 0 ? " dashboard-rn-scroll--cta" : ""}`}
           data-tour="patient-tour-hero-rn"
         >
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
@@ -1472,7 +1500,12 @@ export function DashboardPage(props: {
                     props.onNavigateToBookTrial();
                   }
                 }}
-                disabled={hasAssignedProfessional ? !pricingProfessionalId && trialStatus !== "pending" : false}
+                disabled={
+                  hasAssignedProfessional
+                  && !(isMobilePortal && availableSessions <= 0)
+                  && !pricingProfessionalId
+                  && trialStatus !== "pending"
+                }
                 aria-label={t(props.language, {
                   es: !hasAssignedProfessional
                     ? "Elegir profesional"
@@ -1648,30 +1681,54 @@ export function DashboardPage(props: {
                       })}
                     </p>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="dashboard-rn-mcare-foot">
+                    <button
+                      type="button"
+                      className="dashboard-rn-mcare-inline-cta"
+                      onClick={() => {
+                        startMcarePurchase();
+                      }}
+                    >
+                      {t(props.language, {
+                        es: "Comprar sesiones",
+                        en: "Buy sessions",
+                        pt: "Comprar sessoes"
+                      })}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </section>
           ) : null}
         </div>
 
-        {hasAssignedProfessional && rnSelectedPlan ? (
+        {hasAssignedProfessional && rnPackagePlansSorted.length > 0 ? (
           <div className="dashboard-rn-mcare-sticky">
             <button
               type="button"
               className="dashboard-rn-mcare-cta"
-              onClick={() => props.onStartPackagePurchase(rnSelectedPlan)}
+              onClick={() => {
+                startMcarePurchase();
+              }}
             >
-              {replaceTemplate(
-                t(props.language, {
-                  es: "Continuar — {total} total",
-                  en: "Continue — {total} total",
-                  pt: "Continuar — {total} total"
-                }),
-                {
-                  total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, rnSelectedPlan.currency, props.currency)
-                }
-              )}
+              {rnSelectedPlan
+                ? replaceTemplate(
+                    t(props.language, {
+                      es: "Continuar — {total} total",
+                      en: "Continue — {total} total",
+                      pt: "Continuar — {total} total"
+                    }),
+                    {
+                      total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, rnSelectedPlan.currency, props.currency)
+                    }
+                  )
+                : t(props.language, {
+                    es: "Ver paquetes y comprar",
+                    en: "View packages and buy",
+                    pt: "Ver pacotes e comprar"
+                  })}
             </button>
           </div>
         ) : null}

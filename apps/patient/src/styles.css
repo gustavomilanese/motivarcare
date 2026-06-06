@@ -12188,6 +12188,30 @@ button.sessions-balance {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
+
+  .patient-dashboard-home .dashboard-rn-mcare-foot {
+    padding: 12px 2px 4px;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-inline-cta {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 28px;
+    border: none;
+    background: linear-gradient(135deg, #5f44eb 0%, #7c6afc 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(95, 68, 235, 0.35);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-rn-mcare-inline-cta:active {
+    transform: scale(0.99);
+    opacity: 0.95;
+  }
 }
 
 /* === Intake method chooser (PR2: AI chat alternative) === */
