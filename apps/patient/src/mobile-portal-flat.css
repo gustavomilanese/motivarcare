@@ -1291,6 +1291,16 @@
     opacity: 0.92;
   }
 
+  .portal-main .patient-dashboard-home .dashboard-rn-empty-card--plain {
+    display: grid;
+    gap: 12px;
+    padding: 4px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta--empty {
+    margin-top: 4px;
+  }
+
   /* —— Chat: WhatsApp mobile (pantalla completa) —— */
   .portal-main.portal-main--chat {
     padding-bottom: var(--portal-tab-clear);

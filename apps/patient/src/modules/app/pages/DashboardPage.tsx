@@ -14,7 +14,7 @@ import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceM
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
-import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
+import { DEFAULT_PATIENT_HERO_IMAGE, defaultPackagePlans } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
@@ -230,6 +230,8 @@ export function DashboardPage(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
+  /** Sesiones → checkout de paquetes (sin plan concreto; el catálogo carga en destino). */
+  onNavigateToSessionsCheckout: () => void;
   /** Abre Sesiones en checkout enfocado en compra suelta (misma UX que el panel de paquetes). */
   onNavigateToIndividualSessions: () => void;
   /** Flujo de matching + reserva de prueba (p. ej. tras posponer onboarding). */
@@ -269,6 +271,7 @@ export function DashboardPage(props: {
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(false);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const [rnMcarePlanId, setRnMcarePlanId] = useState<string | null>(null);
   const packageSectionRef = useRef<HTMLElement | null>(null);
@@ -390,22 +393,31 @@ export function DashboardPage(props: {
     if (!hasAssignedProfessional) {
       setPackagePlans([]);
       setFeaturedPackageId(null);
+      setPackagesLoading(false);
       return () => {
         active = false;
       };
     }
 
+    setPackagesLoading(true);
     void loadPublicPackagePlans({
       language: props.language,
       professionalId: pricingProfessionalId,
       market: props.state.patientMarket,
-      t: (values) => t(props.language, values)
-    }).then((catalog) => {
-      if (active) {
-        setPackagePlans(catalog.plans);
-        setFeaturedPackageId(catalog.featuredPackageId);
-      }
-    });
+      t: (values) => t(props.language, values),
+      fallbackPlans: defaultPackagePlans
+    })
+      .then((catalog) => {
+        if (active) {
+          setPackagePlans(catalog.plans);
+          setFeaturedPackageId(catalog.featuredPackageId);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setPackagesLoading(false);
+        }
+      });
 
     return () => {
       active = false;
@@ -472,24 +484,16 @@ export function DashboardPage(props: {
   };
 
   const openMobilePurchaseFlow = () => {
-    if (isMobilePortal && hasAssignedProfessional && rnPackagePlansSorted.length > 0) {
-      const defaultPlan = resolveMcarePurchasePlan();
-      if (defaultPlan && !rnMcarePlanId) {
-        setRnMcarePlanId(defaultPlan.id);
-      }
-      rnMcareSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!hasAssignedProfessional) {
+      props.onNavigateToAssignProfessional();
       return;
     }
-    const plan = defaultPackagePlan ?? rnPackagePlansSorted[0] ?? null;
+    const plan = resolveMcarePurchasePlan();
     if (plan) {
       props.onStartPackagePurchase(plan);
       return;
     }
-    if (rnMcareSectionRef.current) {
-      rnMcareSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    setAcquireSessionsModalOpen(true);
+    props.onNavigateToSessionsCheckout();
   };
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
   const showGoogleCalendarCta = Boolean(
@@ -1674,12 +1678,31 @@ export function DashboardPage(props: {
                 {rnPackagePlansSorted.length === 0 ? (
                   <div className="dashboard-rn-empty-card dashboard-rn-empty-card--plain">
                     <p className="dashboard-rn-empty-meta">
-                      {t(props.language, {
-                        es: "Todavía no hay paquetes disponibles para compra.",
-                        en: "No packages are available for purchase yet.",
-                        pt: "Ainda nao ha pacotes disponiveis para compra."
-                      })}
+                      {packagesLoading
+                        ? t(props.language, {
+                            es: "Cargando paquetes disponibles…",
+                            en: "Loading available packages…",
+                            pt: "Carregando pacotes disponiveis…"
+                          })
+                        : t(props.language, {
+                            es: "Elegí un paquete en la pantalla de compra.",
+                            en: "Choose a package on the purchase screen.",
+                            pt: "Escolha um pacote na tela de compra."
+                          })}
                     </p>
+                    {!packagesLoading ? (
+                      <button
+                        type="button"
+                        className="dashboard-rn-mcare-inline-cta dashboard-rn-mcare-inline-cta--empty"
+                        onClick={() => openMobilePurchaseFlow()}
+                      >
+                        {t(props.language, {
+                          es: "Ver opciones de compra",
+                          en: "View purchase options",
+                          pt: "Ver opcoes de compra"
+                        })}
+                      </button>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="dashboard-rn-mcare-foot">

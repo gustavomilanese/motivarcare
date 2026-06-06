@@ -659,14 +659,10 @@ export function BookingPage(props: {
       props.onNavigateToAssignProfessional();
       return;
     }
-    if (packagePlans.length > 0 || packagesLoading) {
-      handleOpenPackages();
-      if (isMobilePortal) {
-        scrollCheckoutIntoView();
-      }
-      return;
+    handleOpenPackages();
+    if (isMobilePortal) {
+      scrollCheckoutIntoView();
     }
-    setAcquireSessionsModalOpen(true);
   };
 
   const openIndividualSessionsCheckoutFromModal = () => {

@@ -146,6 +146,10 @@ export function PortalRoutes(props: {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
   };
 
+  const startSessionsCheckoutFromDashboard = () => {
+    props.navigate("/sessions?flow=checkout&source=dashboard");
+  };
+
   const startIndividualSessionsFromDashboard = () => {
     props.navigate("/sessions?flow=checkout&purchase=individual&source=dashboard");
   };
@@ -178,6 +182,7 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onNavigateToSessionsCheckout={startSessionsCheckoutFromDashboard}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
