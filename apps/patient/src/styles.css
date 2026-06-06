@@ -8199,6 +8199,118 @@ button.sessions-balance {
     --portal-tab-clear: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
+  @media (orientation: landscape), (max-height: 500px) {
+    :root {
+      --portal-tab-clear: calc(50px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .portal-mobile-nav {
+      padding:
+        2px max(8px, env(safe-area-inset-left, 0px)) calc(2px + env(safe-area-inset-bottom, 0px))
+        max(8px, env(safe-area-inset-right, 0px));
+    }
+
+    .portal-mobile-more-sheet {
+      bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+      max-height: min(72dvh, 100%);
+      overflow-y: auto;
+    }
+
+    .mobile-nav-link {
+      min-height: 40px;
+      padding: 4px 2px 6px;
+    }
+
+    .mobile-nav-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .mobile-nav-label {
+      font-size: 9px;
+    }
+
+    .patient-dashboard-home .dashboard-hero-banner {
+      min-height: clamp(96px, 38dvh, 140px);
+      max-height: 34dvh;
+    }
+
+    .patient-dashboard-home .dashboard-hero-banner--loading {
+      min-height: clamp(88px, 34dvh, 128px);
+      max-height: 32dvh;
+    }
+
+    .patient-dashboard-home .dashboard-hero-immersive {
+      margin-bottom: 0 !important;
+    }
+
+    .patient-dashboard-home .dashboard-hero-banner-copy,
+    .patient-dashboard-home .dashboard-hero-cta-band {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .patient-dashboard-home .dashboard-hero-title-on-photo {
+      font-size: clamp(1.05rem, 4vw, 1.3rem);
+    }
+
+    .patient-dashboard-home .dashboard-hero-subtitle-on-photo {
+      font-size: 12px;
+      white-space: normal;
+    }
+
+    .patient-dashboard-home .dashboard-rn-scroll--cta {
+      padding-bottom: calc(12px + var(--portal-tab-clear));
+    }
+
+    .portal-main--sessions-home .sessions-booking-page .sessions-hero-banner,
+    .sessions-booking-page .sessions-hero-banner {
+      min-height: clamp(96px, 38dvh, 140px);
+      max-height: 34dvh;
+    }
+
+    .sessions-booking-page .sessions-hero-banner-copy {
+      padding: 10px 14px;
+      gap: 4px;
+    }
+
+    .sessions-booking-page .sessions-hero-title-on-photo {
+      font-size: clamp(1.05rem, 4vw, 1.3rem);
+    }
+
+    .sessions-booking-page .sessions-hero-subtitle-on-photo {
+      font-size: 12px;
+    }
+
+    .wellbeing-relax-page {
+      padding-bottom: calc(16px + var(--portal-tab-clear));
+    }
+
+    .wellbeing-relax-header h1 {
+      font-size: clamp(18px, 4vw, 24px);
+      padding-right: 80px;
+      margin-bottom: 4px;
+    }
+
+    .wellbeing-relax-lead {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .wellbeing-relax-embed-wrap {
+      max-height: min(42dvh, 260px);
+    }
+
+    .wellbeing-relax-footnote {
+      margin-top: 16px;
+    }
+
+    .profile-layout .profile-panel.content-card,
+    .profile-layout .profile-sidebar.content-card {
+      padding: 12px 16px;
+    }
+  }
+
   .portal-shell.onboarding-match-focus {
     grid-template-columns: 1fr;
     padding: 10px 10px 0;

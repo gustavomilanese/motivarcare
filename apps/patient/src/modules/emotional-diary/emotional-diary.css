@@ -2338,3 +2338,66 @@
     padding: 16px 0;
   }
 }
+
+@media (max-width: 1080px) and (orientation: landscape),
+  (max-width: 1080px) and (max-height: 500px) {
+  .diary-hero-banner {
+    min-height: clamp(96px, 38dvh, 140px);
+    max-height: 34dvh;
+  }
+
+  .diary-hero-banner-copy {
+    padding: 10px 14px;
+    gap: 4px;
+  }
+
+  .diary-page-title--on-hero {
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
+    line-height: 1.15;
+  }
+
+  .diary-page-subtitle--on-hero {
+    white-space: normal;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .diary-page--home {
+    padding-bottom: calc(var(--portal-tab-clear, 50px) + 8px);
+  }
+
+  .diary-home-band {
+    padding: 14px;
+  }
+
+  .diary-home-band--intro .diary-subnav {
+    padding: 10px 14px 12px;
+  }
+
+  .diary-hero-card {
+    padding: 16px 14px;
+  }
+
+  .diary-hero-card > p {
+    white-space: normal;
+    font-size: 0.82rem;
+  }
+
+  .portal-main--diary-home .diary-page--records,
+  .portal-main--diary-home .diary-page--entry {
+    padding-bottom: calc(var(--portal-tab-clear, 50px) + 12px);
+  }
+
+  .diary-entry-modal {
+    max-height: min(92dvh, 100%);
+  }
+
+  .diary-chart--weekly {
+    min-height: 180px;
+  }
+
+  .diary-chart-plot {
+    min-height: 160px;
+    padding-bottom: 32px;
+  }
+}

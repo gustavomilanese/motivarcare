@@ -201,7 +201,17 @@ export function usePortalActions(params: {
       } catch (error) {
         console.error("Could not create booking", error);
         const errorMessage = error instanceof Error ? error.message : "";
-        if (errorMessage === "Trial session already used. Purchase a package to continue.") {
+        const hasLocalCredits = !bookingAsTrial && params.state.subscription.creditsRemaining > 0;
+        const apiCreditStateMismatch =
+          errorMessage === "Trial session already used. Purchase a package to continue."
+          || errorMessage === "No available session credits. Purchase a package to continue.";
+
+        if (hasLocalCredits && apiCreditStateMismatch) {
+          console.warn(
+            "Booking API credits mismatch; creating reservation with local session balance",
+            errorMessage
+          );
+        } else if (errorMessage === "Trial session already used. Purchase a package to continue.") {
           return {
             ok: false,
             error: t(params.state.language, {
@@ -210,8 +220,7 @@ export function usePortalActions(params: {
               pt: "Voce ja teve sua sessao de teste conosco. Quando quiser, pode adicionar um pacote e continuar."
             })
           };
-        }
-        if (errorMessage === "No available session credits. Purchase a package to continue.") {
+        } else if (errorMessage === "No available session credits. Purchase a package to continue.") {
           return {
             ok: false,
             error: t(params.state.language, {
@@ -220,11 +229,12 @@ export function usePortalActions(params: {
               pt: "Por enquanto voce nao tem sessoes para agendar. Adicione um pacote quando fizer sentido e seguimos a partir dai."
             })
           };
+        } else {
+          return {
+            ok: false,
+            error: friendlyBookingFailureMessage(errorMessage, params.state.language)
+          };
         }
-        return {
-          ok: false,
-          error: friendlyBookingFailureMessage(errorMessage, params.state.language)
-        };
       }
     } else if (!bookingAsTrial && params.state.subscription.creditsRemaining <= 0) {
       return {

@@ -1469,7 +1469,9 @@ export function DashboardPage(props: {
               </div>
               <button
                 type="button"
-                className="dashboard-rn-fab"
+                className={`dashboard-rn-fab${
+                  isMobilePortal && availableSessions <= 0 ? " dashboard-rn-fab--buy" : " dashboard-rn-fab--book"
+                }`}
                 onClick={() => {
                   if (!hasAssignedProfessional) {
                     props.onNavigateToAssignProfessional();
@@ -1511,12 +1513,21 @@ export function DashboardPage(props: {
                       : "Agendar uma sessao"
                 })}
               >
-                <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-                  />
-                </svg>
+                {isMobilePortal && availableSessions <= 0 ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M18 6h-2V4a4 4 0 0 0-8 0v2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm-8 0V4a2 2 0 1 1 4 0v2h-4Z"
+                    />
+                  </svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 16H5V9h14v11ZM7 11h2v2H7v-2Zm4 0h2v2h-2v-2Zm4 0h2v2h-2v-2Z"
+                    />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -1566,14 +1577,14 @@ export function DashboardPage(props: {
                   {hasAssignedProfessional
                     ? availableSessions > 0
                       ? t(props.language, {
-                          es: "Tocá + para elegir horario.",
-                          en: "Tap + to pick a time.",
-                          pt: "Toque em + para escolher horario."
+                          es: "Tocá el calendario para elegir horario.",
+                          en: "Tap the calendar to pick a time.",
+                          pt: "Toque no calendario para escolher horario."
                         })
                       : t(props.language, {
-                          es: "Tocá + para comprar sesiones.",
-                          en: "Tap + to buy sessions.",
-                          pt: "Toque em + para comprar sessoes."
+                          es: "Tocá la bolsa para comprar sesiones.",
+                          en: "Tap the bag to buy sessions.",
+                          pt: "Toque na bolsa para comprar sessoes."
                         })
                     : t(props.language, {
                         es: "Elegí un profesional con + para empezar a agendar.",

@@ -998,9 +998,21 @@ export function BookingPage(props: {
               ) : null}
             </div>
             <span className="sessions-booking-fab-in-pill" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-              </svg>
+              {isMobilePortal && pendingSessions <= 0 ? (
+                <svg width="22" height="22" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M18 6h-2V4a4 4 0 0 0-8 0v2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm-8 0V4a2 2 0 1 1 4 0v2h-4Z"
+                  />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 16H5V9h14v11ZM7 11h2v2H7v-2Zm4 0h2v2h-2v-2Zm4 0h2v2h-2v-2Z"
+                  />
+                </svg>
+              )}
             </span>
           </button>
         </div>

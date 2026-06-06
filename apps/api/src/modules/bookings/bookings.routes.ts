@@ -536,7 +536,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               select: { id: true }
             });
             if (existingTrialBooking) {
-              throw new Error("TRIAL_ALREADY_USED");
+              throw new Error("NO_AVAILABLE_CREDITS");
             }
           }
 
