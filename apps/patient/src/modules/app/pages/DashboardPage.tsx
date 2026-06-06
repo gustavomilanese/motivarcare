@@ -275,9 +275,7 @@ export function DashboardPage(props: {
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
-  const [rnMcarePlanId, setRnMcarePlanId] = useState<string | null>(null);
   const packageSectionRef = useRef<HTMLElement | null>(null);
-  const rnMcareSectionRef = useRef<HTMLElement | null>(null);
   const defaultPackagePlan = packagePlans.find((plan) => plan.id === featuredPackageId) ?? packagePlans[0] ?? null;
   const nextBooking = getNextBooking(props.state.bookings);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
@@ -465,25 +463,11 @@ export function DashboardPage(props: {
     return bundle.priceCents / 100 / bundle.credits;
   }, [packagePlans]);
   const canIndividualCtaHome = individualUnitHome !== null && packagePlans.length > 0;
-  const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
   const availableSessions = props.state.subscription.creditsRemaining;
   const resolveMcarePurchasePlan = () =>
-    rnSelectedPlan
-    ?? rnPackagePlansSorted.find((plan) => plan.id === featuredPackageId)
+    rnPackagePlansSorted.find((plan) => plan.id === featuredPackageId)
     ?? rnPackagePlansSorted[0]
     ?? null;
-
-  const startMcarePurchase = (planOverride?: PackagePlan | null) => {
-    const plan = planOverride ?? resolveMcarePurchasePlan();
-    if (!plan) {
-      return false;
-    }
-    if (!rnSelectedPlan || rnSelectedPlan.id !== plan.id) {
-      setRnMcarePlanId(plan.id);
-    }
-    props.onStartPackagePurchase(plan);
-    return true;
-  };
 
   const openMobilePurchaseFlow = () => {
     if (!hasAssignedProfessional) {
@@ -1442,10 +1426,7 @@ export function DashboardPage(props: {
       </div>
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
-        <div
-          className={`dashboard-rn-scroll${hasAssignedProfessional && rnPackagePlansSorted.length > 0 ? " dashboard-rn-scroll--cta" : ""}`}
-          data-tour="patient-tour-hero-rn"
-        >
+        <div className="dashboard-rn-scroll" data-tour="patient-tour-hero-rn">
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
           <p className="dashboard-home-intro-lead">{dashboardIntroBody}</p>
           <div
@@ -1590,9 +1571,9 @@ export function DashboardPage(props: {
                           pt: "Toque em + para escolher horario."
                         })
                       : t(props.language, {
-                          es: "Tocá + para comprar sesiones o elegí un paquete abajo.",
-                          en: "Tap + to buy sessions or pick a package below.",
-                          pt: "Toque em + para comprar sessoes ou escolha um pacote abaixo."
+                          es: "Tocá + para comprar sesiones.",
+                          en: "Tap + to buy sessions.",
+                          pt: "Toque em + para comprar sessoes."
                         })
                     : t(props.language, {
                         es: "Elegí un profesional con + para empezar a agendar.",
@@ -1625,139 +1606,7 @@ export function DashboardPage(props: {
               </div>
             )}
           </section>
-
-          {hasAssignedProfessional ? (
-          <section className="dashboard-rn-mcare-outer" ref={rnMcareSectionRef}>
-            <div className="dashboard-rn-mcare-gradient" aria-hidden="true" />
-            <div className="dashboard-rn-mcare-inner">
-              <div className="dashboard-rn-mcare-head">
-                <h2 className="dashboard-rn-section-title dashboard-rn-mcare-title">
-                  {t(props.language, { es: "Sumá sesiones", en: "Add sessions", pt: "Adicione sessoes" })}
-                </h2>
-              </div>
-              <div className="dashboard-rn-mcare-stack">
-                {rnPackagePlansSorted.map((plan) => {
-                  const selected = rnMcarePlanId === plan.id;
-                  const unitLabel = formatMoney(packageUnitPriceMajor(plan), props.language, plan.currency, props.currency);
-                  const marketingLabel = packageRhythmLabel(plan.credits, (values) => t(props.language, values));
-                  return (
-                    <button
-                      type="button"
-                      key={plan.id}
-                      className={`dashboard-rn-mcare-card${selected ? " dashboard-rn-mcare-card--selected" : ""}`}
-                      onClick={() => setRnMcarePlanId((current) => (current === plan.id ? null : plan.id))}
-                      aria-pressed={selected}
-                    >
-                      <div className="dashboard-rn-mcare-card-top">
-                        <span className="dashboard-rn-mcare-marketing">{marketingLabel}</span>
-                        {plan.discountPercent > 0 ? (
-                          <span className="dashboard-rn-mcare-save">
-                            {replaceTemplate(
-                              t(props.language, { es: "Ahorrá {n}%", en: "Save {n}%", pt: "Economize {n}%" }),
-                              { n: String(plan.discountPercent) }
-                            )}
-                          </span>
-                        ) : (
-                          <span className="dashboard-rn-mcare-marketing-spacer" aria-hidden="true" />
-                        )}
-                      </div>
-                      <div className="dashboard-rn-mcare-divider" />
-                      <div className="dashboard-rn-mcare-price-row">
-                        <span className="dashboard-rn-mcare-credits-title">
-                          {replaceTemplate(t(props.language, { es: "{n} sesiones", en: "{n} sessions", pt: "{n} sessoes" }), {
-                            n: String(plan.credits)
-                          })}
-                        </span>
-                        <span className="dashboard-rn-mcare-unit">
-                          {replaceTemplate(
-                            t(props.language, { es: "{amount} c/u", en: "{amount} each", pt: "{amount} c/u" }),
-                            { amount: unitLabel }
-                          )}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-                {rnPackagePlansSorted.length === 0 ? (
-                  <div className="dashboard-rn-empty-card dashboard-rn-empty-card--plain">
-                    <p className="dashboard-rn-empty-meta">
-                      {packagesLoading
-                        ? t(props.language, {
-                            es: "Cargando paquetes disponibles…",
-                            en: "Loading available packages…",
-                            pt: "Carregando pacotes disponiveis…"
-                          })
-                        : t(props.language, {
-                            es: "Elegí un paquete en la pantalla de compra.",
-                            en: "Choose a package on the purchase screen.",
-                            pt: "Escolha um pacote na tela de compra."
-                          })}
-                    </p>
-                    {!packagesLoading ? (
-                      <button
-                        type="button"
-                        className="dashboard-rn-mcare-inline-cta dashboard-rn-mcare-inline-cta--empty"
-                        onClick={() => openMobilePurchaseFlow()}
-                      >
-                        {t(props.language, {
-                          es: "Ver opciones de compra",
-                          en: "View purchase options",
-                          pt: "Ver opcoes de compra"
-                        })}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="dashboard-rn-mcare-foot">
-                    <button
-                      type="button"
-                      className="dashboard-rn-mcare-inline-cta"
-                      onClick={() => {
-                        startMcarePurchase();
-                      }}
-                    >
-                      {t(props.language, {
-                        es: "Comprar sesiones",
-                        en: "Buy sessions",
-                        pt: "Comprar sessoes"
-                      })}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-          ) : null}
         </div>
-
-        {hasAssignedProfessional && rnPackagePlansSorted.length > 0 ? (
-          <div className="dashboard-rn-mcare-sticky">
-            <button
-              type="button"
-              className="dashboard-rn-mcare-cta"
-              onClick={() => {
-                startMcarePurchase();
-              }}
-            >
-              {rnSelectedPlan
-                ? replaceTemplate(
-                    t(props.language, {
-                      es: "Continuar — {total} total",
-                      en: "Continue — {total} total",
-                      pt: "Continuar — {total} total"
-                    }),
-                    {
-                      total: formatMoney(rnSelectedPlan.priceCents / 100, props.language, rnSelectedPlan.currency, props.currency)
-                    }
-                  )
-                : t(props.language, {
-                    es: "Ver paquetes y comprar",
-                    en: "View packages and buy",
-                    pt: "Ver pacotes e comprar"
-                  })}
-            </button>
-          </div>
-        ) : null}
       </div>
 
       {assignProModalOpen ? (

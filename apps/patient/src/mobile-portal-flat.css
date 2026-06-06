@@ -1028,8 +1028,12 @@
   .portal-main .patient-dashboard-home .dashboard-rn-scroll {
     padding-left: 0;
     padding-right: 0;
-    padding-bottom: 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--mobile-surface);
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-home {
+    padding-bottom: calc(var(--portal-tab-clear, 72px) + 8px);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
