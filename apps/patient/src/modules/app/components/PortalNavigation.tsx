@@ -188,8 +188,9 @@ export function PortalNavigation(props: {
   const dashboardHomeImmersive = location.pathname === "/";
   const sessionsHomeImmersive = location.pathname === "/sessions";
   const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica";
+  const chatImmersive = location.pathname === "/chat";
   const immersivePortalHome =
-    diaryImmersive || dashboardHomeImmersive || sessionsHomeImmersive || wellbeingRelaxImmersive;
+    diaryImmersive || dashboardHomeImmersive || sessionsHomeImmersive || wellbeingRelaxImmersive || chatImmersive;
   const [diaryHeroToolbarMount, setDiaryHeroToolbarMount] = useState<HTMLElement | null>(null);
   const diaryPortalToolbarMount = useDiaryPortalToolbarMountElement();
   const [dashboardHeroToolbarMount, setDashboardHeroToolbarMount] = useState<HTMLElement | null>(null);
@@ -537,7 +538,7 @@ export function PortalNavigation(props: {
       ) : null}
 
       <div
-        className={`portal-main${diaryImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}`}
+        className={`portal-main${diaryImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
       >
         {!immersivePortalHome ? (
           <header className="portal-header">

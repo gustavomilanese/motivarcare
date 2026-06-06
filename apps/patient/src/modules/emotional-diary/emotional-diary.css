@@ -630,6 +630,7 @@
   background: #fff;
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 12px 32px rgba(95, 68, 235, 0.1);
+  overflow: visible;
 }
 
 .diary-hero-card--elevated {
@@ -806,6 +807,88 @@
 
 .diary-mood-row--compact {
   margin-top: 10px;
+  margin-bottom: 0;
+}
+
+/* Horizontal scroll + peek (media carrusel) en mobile */
+.diary-mood-scroll {
+  margin: 10px 0 14px;
+}
+
+.diary-mood-scroll-inner {
+  overflow: visible;
+}
+
+.diary-mood-row--scroll {
+  margin-bottom: 0;
+}
+
+.diary-entry-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.diary-entry-card {
+  width: 100%;
+  display: block;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 14px 0;
+  border-bottom: 1px solid #eef2f7;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.diary-entry-card:hover {
+  background: rgba(95, 68, 235, 0.03);
+}
+
+.diary-entry-cards li:last-child .diary-entry-card {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.diary-entry-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.diary-entry-card-date {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.diary-entry-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.diary-entry-card-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-entry-card-chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: #94a3b8;
 }
 
 .diary-mood-btn {
@@ -2041,8 +2124,42 @@
 }
 
 @media (max-width: 720px) {
-  .diary-mood-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .diary-mood-scroll {
+    margin-inline: -20px;
+  }
+
+  .diary-mood-scroll-inner {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .diary-mood-scroll-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .diary-mood-row--scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: max-content;
+    padding-inline: 20px 30vw;
+  }
+
+  .diary-mood-row--scroll .diary-mood-btn {
+    flex: 0 0 4.6rem;
+    width: 4.6rem;
+    scroll-snap-align: start;
+  }
+
+  .diary-mood-row--scroll .diary-mood-btn-emoji {
+    width: 2.1rem;
+    height: 2.1rem;
+    font-size: 1.2rem;
   }
 
   .diary-stats-row {
@@ -2066,5 +2183,21 @@
   .diary-home-band {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .diary-card--on-band {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding-inline: 0;
+  }
+
+  .diary-card-head--split {
+    padding-inline: 0;
+  }
+
+  .diary-entry-card {
+    padding: 16px 0;
   }
 }

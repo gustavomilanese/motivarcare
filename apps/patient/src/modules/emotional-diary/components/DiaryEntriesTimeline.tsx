@@ -27,40 +27,37 @@ export function DiaryEntriesTimeline(props: DiaryEntriesTimelineProps) {
   }
 
   return (
-    <div className="diary-timeline-table" role="table" aria-label={props.ariaLabel}>
-      <div className="diary-timeline-head" role="row">
-        <span role="columnheader">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-        <span role="columnheader">{t(props.language, { es: "Entrada", en: "Entry", pt: "Entrada" })}</span>
-        <span role="columnheader">{t(props.language, { es: "Estado", en: "Mood", pt: "Estado" })}</span>
-        <span className="sr-only" role="columnheader">
-          {t(props.language, { es: "Acciones", en: "Actions", pt: "Ações" })}
-        </span>
-      </div>
-      <ul className="diary-timeline">
-        {props.entries.map((entry) => {
-          const mood = moodMeta(entry.mood);
-          return (
-            <li key={entry.id} className="diary-timeline-row" role="row">
-              <span className="diary-timeline-col diary-timeline-col--date" role="cell">
-                {formatEntryDate(entry.createdAt, props.language)}
-              </span>
-              <span className="diary-timeline-col diary-timeline-col--title" role="cell" title={entryTimelineTitle(entry)}>
-                {entryTimelineTitle(entry)}
-              </span>
-              <span className="diary-timeline-col diary-timeline-col--mood" role="cell">
-                <span className="diary-mood-pill diary-mood-pill--compact" style={{ backgroundColor: `${mood.tone}22`, color: mood.tone }}>
-                  {mood.emoji} {t(props.language, { es: mood.labelEs, en: mood.labelEn, pt: mood.labelPt })}
+    <ul className="diary-entry-cards" aria-label={props.ariaLabel}>
+      {props.entries.map((entry) => {
+        const mood = moodMeta(entry.mood);
+        const title = entryTimelineTitle(entry);
+        return (
+          <li key={entry.id}>
+            <button type="button" className="diary-entry-card" onClick={() => props.onOpenDetail(entry.id)}>
+              <div className="diary-entry-card-top">
+                <time className="diary-entry-card-date" dateTime={entry.createdAt}>
+                  {formatEntryDate(entry.createdAt, props.language)}
+                </time>
+                <span
+                  className="diary-mood-pill diary-mood-pill--compact"
+                  style={{ backgroundColor: `${mood.tone}22`, color: mood.tone }}
+                >
+                  {mood.emoji}{" "}
+                  {t(props.language, { es: mood.labelEs, en: mood.labelEn, pt: mood.labelPt })}
                 </span>
-              </span>
-              <span className="diary-timeline-col diary-timeline-col--actions" role="cell">
-                <button type="button" className="diary-timeline-link" onClick={() => props.onOpenDetail(entry.id)}>
-                  {t(props.language, { es: "Detalle", en: "Detail", pt: "Detalhe" })}
-                </button>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              </div>
+              <div className="diary-entry-card-bottom">
+                <span className="diary-entry-card-title">{title}</span>
+                <span className="diary-entry-card-chevron" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                  </svg>
+                </span>
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

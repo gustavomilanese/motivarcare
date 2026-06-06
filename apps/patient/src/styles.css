@@ -7803,15 +7803,42 @@ button.sessions-balance {
 }
 
 .wa-main-header {
-  border-bottom: 1px solid #d8dee8;
-  padding: 12px 14px;
+  border-bottom: 1px solid #d1d7db;
+  padding: 10px 14px;
   background: #f0f2f5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+}
+
+.wa-mobile-back {
+  flex-shrink: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 2px 0 -6px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #54656f;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wa-mobile-back:hover {
+  background: rgba(11, 20, 26, 0.06);
 }
 
 .wa-main-profile {
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
+  flex: 1;
 }
 
 .wa-main-profile h3 {
@@ -7866,11 +7893,11 @@ button.sessions-balance {
 .wa-message {
   max-width: min(72%, 740px);
   width: fit-content;
-  border-radius: 8px;
-  padding: 7px 9px 5px;
+  border-radius: 7.5px;
+  padding: 6px 8px 4px;
   display: grid;
-  gap: 3px;
-  box-shadow: 0 1px 1px rgba(17, 27, 33, 0.14);
+  gap: 2px;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
 }
 
 .wa-message p {
@@ -7888,44 +7915,51 @@ button.sessions-balance {
 .wa-message.outgoing {
   margin-left: auto;
   background: #d9fdd3;
-  border: 1px solid #c8f4bf;
+  border: none;
 }
 
 .wa-message.incoming {
   margin-right: auto;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: none;
 }
 
 .wa-composer {
-  border-top: 1px solid #d8dee8;
+  border-top: 1px solid #d1d7db;
   background: #f0f2f5;
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
+  gap: 8px;
+  align-items: flex-end;
 }
 
 .wa-composer textarea {
-  min-height: 44px;
-  max-height: 150px;
+  min-height: 42px;
+  max-height: 120px;
   border-radius: 24px;
-  border: 1px solid #d6dbe1;
+  border: none;
+  background: #fff;
   padding: 10px 14px;
   resize: none;
+  font-size: 15px;
+  line-height: 1.35;
+  color: #111b21;
+}
+
+.wa-composer textarea::placeholder {
+  color: #8696a0;
 }
 
 .wa-composer textarea:focus {
   outline: none;
-  border-color: #8bc4ff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  box-shadow: none;
 }
 
 .wa-send {
   border: 0;
   border-radius: 999px;
-  background: #25d366;
+  background: #00a884;
   color: #fff;
   width: 44px;
   height: 44px;
@@ -7935,7 +7969,8 @@ button.sessions-balance {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  align-self: center;
+  align-self: flex-end;
+  margin-bottom: 1px;
 }
 
 .wa-send svg {
@@ -7945,7 +7980,7 @@ button.sessions-balance {
 }
 
 .wa-send:hover {
-  background: #1db955;
+  background: #008f72;
 }
 
 .wa-send:disabled {
@@ -8538,11 +8573,6 @@ button.sessions-balance {
     min-height: 680px;
   }
 
-  /* Una columna: la lista de conversaciones ya identifica al profesional; evitar doble encabezado */
-  .wa-main-header {
-    display: none;
-  }
-
   .patient-therapist-card {
     grid-template-columns: 96px minmax(0, 1fr);
   }
@@ -8621,10 +8651,6 @@ button.sessions-balance {
   .summary-price-card strong,
   .payment-amount-card strong {
     font-size: 24px;
-  }
-
-  .wa-sidebar {
-    max-height: 240px;
   }
 
   .visual-hero img,
@@ -8829,11 +8855,6 @@ button.sessions-balance {
   .sessions-booking-page .sessions-confirmed-panel.content-card {
     padding: 0 2px;
     gap: 12px;
-  }
-
-  .sessions-booking-page .sessions-panel-head {
-    padding-left: 4px;
-    padding-right: 2px;
   }
 
   .portal-main--sessions-home .sessions-booking-page .sessions-hero-banner {
@@ -9652,10 +9673,6 @@ button.sessions-balance {
 
   .session-detail-meta-grid {
     grid-template-columns: 1fr;
-  }
-
-  .wa-sidebar {
-    max-height: 34vh;
   }
 
   .wa-thread-item {

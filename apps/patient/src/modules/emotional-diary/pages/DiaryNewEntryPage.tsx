@@ -1,8 +1,9 @@
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { EMOTIONAL_DIARY_WHAT_HAPPENED_MAX_LENGTH } from "@therapy/types";
 import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell, useDiaryLeaveConfirm } from "../components/DiaryChrome";
+import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
 import { t } from "../lib/labels";
 import { FEELING_CHIPS, MOOD_OPTIONS, NEED_OPTIONS } from "../lib/moods";
 import { createDiaryEntry, fetchDiarySettings } from "../services/emotionalDiaryApi";
@@ -121,23 +122,16 @@ export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
             <h3 className="diary-field-title">
               {t(props.language, { es: "Hoy me siento:", en: "Today I feel:", pt: "Hoje me sinto:" })}
             </h3>
-            <div className="diary-mood-row diary-mood-row--compact">
-              {MOOD_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`diary-mood-btn ${mood === option.id ? "diary-mood-btn--active" : ""}`}
-                  style={{ "--diary-mood-tone": option.tone } as CSSProperties}
-                  onClick={() => setMood(option.id)}
-                  aria-pressed={mood === option.id}
-                >
-                  <span className="diary-mood-btn-emoji" aria-hidden="true">{option.emoji}</span>
-                  <span className="diary-mood-btn-label">
-                    {t(props.language, { es: option.labelEs, en: option.labelEn, pt: option.labelPt })}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <DiaryMoodPicker
+              language={props.language}
+              activeMood={mood}
+              ariaLabel={t(props.language, {
+                es: "Elegí cómo te sentís hoy",
+                en: "Choose how you feel today",
+                pt: "Escolha como você se sente hoje"
+              })}
+              onSelect={setMood}
+            />
             <p className="diary-selected-mood">
               {moodOption.emoji}{" "}
               {t(props.language, { es: moodOption.labelEs, en: moodOption.labelEn, pt: moodOption.labelPt })}

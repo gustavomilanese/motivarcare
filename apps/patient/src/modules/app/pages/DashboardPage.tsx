@@ -571,9 +571,9 @@ export function DashboardPage(props: {
     pt: "Gerencie seu bem-estar aqui"
   });
   const dashboardIntroBody = t(props.language, {
-    es: "Reservas y sesiones, música relajante, ejercicios guiados y hablar con Maca cuando la necesites (botón flotante del asistente).",
-    en: "Bookings and sessions, relaxing music, guided exercises, and talking to Maca when you need her (floating assistant button).",
-    pt: "Reservas e sessões, música relaxante, exercícios guiados e falar com a Maca quando precisar (botão flutuante da assistente)."
+    es: "Reservá sesiones, explorá bienestar y hablá con Maca.",
+    en: "Book sessions, explore wellness, and chat with Maca.",
+    pt: "Reserve sessões, explore bem-estar e fale com a Maca."
   });
 
   return (
@@ -1504,14 +1504,14 @@ export function DashboardPage(props: {
                 <p className="dashboard-rn-empty-meta">
                   {hasAssignedProfessional
                     ? t(props.language, {
-                        es: "Tocá el + al lado de tu saldo para elegir fecha y horario. Si no tenés créditos, comprá un paquete en MCare Plus más abajo.",
-                        en: "Tap + next to your balance to pick a date and time. If you are out of credits, buy a package in MCare Plus below.",
-                        pt: "Toque no + ao lado do saldo para escolher data e horario. Se nao tiver creditos, compre um pacote no MCare Plus abaixo."
+                        es: "Tocá + para elegir horario. Sin créditos, comprá un paquete abajo.",
+                        en: "Tap + to pick a time. Out of credits? Buy a package below.",
+                        pt: "Toque em + para escolher horario. Sem creditos, compre um pacote abaixo."
                       })
                     : t(props.language, {
-                        es: "Primero elegí un profesional con el botón + (o desde el aviso que apareció al entrar). Después vas a poder agendar y ver opciones de compra.",
-                        en: "First pick a professional using the + button (or the notice when you arrived). Then you can book and see purchase options.",
-                        pt: "Primeiro escolha um profissional com o botao + (ou pelo aviso ao entrar). Depois voce podera agendar e ver opcoes de compra."
+                        es: "Elegí un profesional con + para empezar a agendar.",
+                        en: "Pick a professional with + to start booking.",
+                        pt: "Escolha um profissional com + para comecar a agendar."
                       })}
                 </p>
               </div>
@@ -1544,9 +1544,9 @@ export function DashboardPage(props: {
             <div className="dashboard-rn-mcare-gradient" aria-hidden="true" />
             <div className="dashboard-rn-mcare-inner">
               <div className="dashboard-rn-mcare-head">
-                <span className="dashboard-rn-mcare-title">
+                <h2 className="dashboard-rn-section-title dashboard-rn-mcare-title">
                   {t(props.language, { es: "Sumá sesiones", en: "Add sessions", pt: "Adicione sessoes" })}
-                </span>
+                </h2>
               </div>
               <div className="dashboard-rn-mcare-stack">
                 {rnPackagePlansSorted.map((plan) => {

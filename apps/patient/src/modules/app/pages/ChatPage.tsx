@@ -30,15 +30,12 @@ function getUnreadCount(messages: Message[], professionalId?: string): number {
   return messages.filter((message) => !message.read && (!professionalId || message.professionalId === professionalId)).length;
 }
 
-function formatDateTime(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
+function formatMessageTime(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
   return formatDateWithLocale({
     value: params.isoDate,
     language: params.language,
     timeZone: params.timezone,
     options: {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
       hour: "numeric",
       minute: "2-digit"
     }
@@ -59,6 +56,8 @@ export function ChatPage(props: {
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState("");
+  const [mobileLayout, setMobileLayout] = useState(false);
+  const [mobileInboxOpen, setMobileInboxOpen] = useState(false);
   const [apiThreads, setApiThreads] = useState<ApiChatThread[]>([]);
   const [apiAvailableProfessionalIds, setApiAvailableProfessionalIds] = useState<string[]>([]);
   const [apiMessages, setApiMessages] = useState<ApiChatMessage[]>([]);
@@ -134,6 +133,16 @@ export function ChatPage(props: {
     }
     return map;
   }, [apiThreads]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1080px)");
+    const syncLayout = () => setMobileLayout(media.matches);
+    syncLayout();
+    media.addEventListener("change", syncLayout);
+    return () => media.removeEventListener("change", syncLayout);
+  }, []);
+
+  const showMobileInbox = mobileLayout && availableProfessionals.length > 1 && mobileInboxOpen;
 
   useEffect(() => {
     if (searchParams.get("focus") === "first-unread") {
@@ -298,6 +307,7 @@ export function ChatPage(props: {
     }
 
     props.onSetActiveProfessional(professionalId);
+    setMobileInboxOpen(false);
 
     if (!remoteMode || !props.authToken) {
       return;
@@ -385,7 +395,7 @@ export function ChatPage(props: {
   ]);
 
   return (
-    <div className="wa-shell">
+    <div className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}`}>
       <aside className="wa-sidebar">
         <header className="wa-sidebar-header">
           <h2>{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</h2>
@@ -453,6 +463,18 @@ export function ChatPage(props: {
 
       <section className="wa-main">
         <header className="wa-main-header">
+          {mobileLayout && availableProfessionals.length > 1 ? (
+            <button
+              type="button"
+              className="wa-mobile-back"
+              onClick={() => setMobileInboxOpen(true)}
+              aria-label={t(props.language, { es: "Volver a mensajes", en: "Back to messages", pt: "Voltar para mensagens" })}
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+            </button>
+          ) : null}
           <div className="wa-main-profile">
             {threadProfessional ? (
               <>
@@ -507,7 +529,7 @@ export function ChatPage(props: {
                 >
                   <p>{message.body}</p>
                   <time>
-                    {formatDateTime({
+                    {formatMessageTime({
                       isoDate: message.createdAt,
                       timezone: props.state.profile.timezone,
                       language: props.language
@@ -542,7 +564,7 @@ export function ChatPage(props: {
               >
                 <p>{message.text}</p>
                 <time>
-                  {formatDateTime({
+                  {formatMessageTime({
                     isoDate: message.createdAt,
                     timezone: props.state.profile.timezone,
                     language: props.language

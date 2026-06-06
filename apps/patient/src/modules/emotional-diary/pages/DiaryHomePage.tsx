@@ -1,11 +1,11 @@
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
+import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
 import { DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
 import { t } from "../lib/labels";
-import { MOOD_OPTIONS } from "../lib/moods";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
 import type { DiaryEntry, MoodLevel } from "../types";
 
@@ -147,22 +147,15 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
                 pt: "Escolha um humor ou comece direto. Perguntas curtas na entrada. Escreva no seu diário quando fizer sentido — guiamos você passo a passo em cada seção."
               })}
             </p>
-            <div className="diary-mood-row diary-mood-row--compact">
-              {MOOD_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className="diary-mood-btn"
-                  style={{ "--diary-mood-tone": option.tone } as CSSProperties}
-                  onClick={() => handleMoodQuickPick(option.id)}
-                >
-                  <span className="diary-mood-btn-emoji" aria-hidden="true">{option.emoji}</span>
-                  <span className="diary-mood-btn-label">
-                    {t(props.language, { es: option.labelEs, en: option.labelEn, pt: option.labelPt })}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <DiaryMoodPicker
+              language={props.language}
+              ariaLabel={t(props.language, {
+                es: "Elegí cómo te sentís hoy",
+                en: "Choose how you feel today",
+                pt: "Escolha como você se sente hoje"
+              })}
+              onSelect={handleMoodQuickPick}
+            />
             <div className="diary-hero-actions">
               <Link className="diary-btn diary-btn--primary diary-btn--wide" to="/diario/nueva">
                 <span aria-hidden="true">✏️</span>
