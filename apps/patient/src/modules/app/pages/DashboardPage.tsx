@@ -140,6 +140,8 @@ function DashboardRnUpcomingCard(props: {
   dataTourMeetJoin?: boolean;
   /** Pulso breve tras conectar Calendar (query meet_hint). */
   meetJoinPulse?: boolean;
+  /** Primera del listado = próxima sesión confirmada. */
+  isNextSession?: boolean;
 }) {
   const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
   const isTrialBooking = props.booking.bookingMode === "trial";
@@ -163,8 +165,8 @@ function DashboardRnUpcomingCard(props: {
       type="button"
       data-tour={props.dataTourMeetJoin ? "patient-join-first-meet" : undefined}
       className={`session-rn-card session-management-card dashboard-rn-session-pressable ${isTrialBooking ? "session-rn-card--trial" : ""}${
-        props.meetJoinPulse ? " patient-join-meet--pulse" : ""
-      }`}
+        props.isNextSession ? " session-rn-card--next" : ""
+      }${props.meetJoinPulse ? " patient-join-meet--pulse" : ""}`}
       onClick={handleActivate}
     >
       <div className="session-rn-top">
@@ -1601,7 +1603,7 @@ export function DashboardPage(props: {
               </div>
             ) : (
               <div className="dashboard-rn-session-list">
-                {rnUpcomingSlice.map((booking) => {
+                {rnUpcomingSlice.map((booking, index) => {
                   const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
                   const joinTourTarget = Boolean(joinUrl && firstMeetBookingId === booking.id);
                   return (
@@ -1614,6 +1616,7 @@ export function DashboardPage(props: {
                     language={props.language}
                     onImageFallback={props.onImageFallback}
                     onOpenBookingDetail={props.onOpenBookingDetail}
+                    isNextSession={index === 0}
                     dataTourMeetJoin={joinTourTarget && sessionRnLayout}
                     meetJoinPulse={meetJoinHighlight && joinTourTarget && sessionRnLayout}
                   />

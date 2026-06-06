@@ -180,6 +180,24 @@
   /* —— Sesiones: hero band + booking body —— */
   .portal-main .sessions-booking-page.page-stack {
     gap: 0;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-calendar-tail {
+    scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-collapsible > :not(.sessions-calendar-toggle),
+  .portal-main .sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-card {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-card {
+    margin: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+    border-radius: 14px;
+    border: 1px solid var(--mobile-divider);
+    background: #fafafa;
+    overflow: hidden;
   }
 
   .portal-main .sessions-booking-page .sessions-hero-actions-band {
@@ -524,11 +542,9 @@
     padding-bottom: var(--mobile-section-y);
   }
 
-  /* Session list rows */
+  /* Session list rows (flat; cards destacadas en reglas de --next más abajo) */
   .portal-main .session-rn-root .session-rn-session-list,
-  .portal-main .sessions-confirmed-list--mobile,
-  .portal-main .sessions-confirmed-list--dashboard-mobile,
-  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
+  .portal-main .sessions-confirmed-list--dashboard-mobile {
     gap: 0;
     background: var(--mobile-surface);
   }
@@ -544,8 +560,8 @@
     min-height: var(--mobile-row-min);
   }
 
-  .portal-main .session-rn-root .session-rn-card.session-management-card:last-child,
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child {
+  .portal-main .session-rn-root .session-rn-card.session-management-card:last-child:not(.session-rn-card--next),
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child:not(.session-rn-card--next) {
     border-bottom: none !important;
   }
 
@@ -1119,7 +1135,54 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-session-list {
-    gap: 0;
+    gap: 10px;
+    padding: 4px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    background: var(--mobile-canvas);
+  }
+
+  .portal-main .sessions-booking-page .sessions-confirmed-list--mobile {
+    gap: 10px;
+    padding: 10px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    background: var(--mobile-canvas);
+  }
+
+  /* Próxima sesión: card sobre fondo gris del listado */
+  .portal-main .session-rn-root .session-rn-card.session-rn-card--next,
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card--next {
+    background: #ffffff !important;
+    border: 1px solid rgba(95, 68, 235, 0.16) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(95, 68, 235, 0.1) !important;
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(95, 68, 235, 0.16) !important;
+    min-height: 0;
+  }
+
+  .portal-main .session-rn-root .session-rn-card.session-rn-card--next:active,
+  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card--next:active {
+    background: rgba(95, 68, 235, 0.04) !important;
+    border-color: rgba(95, 68, 235, 0.28) !important;
+  }
+
+  .portal-main .session-rn-root .session-rn-card.session-rn-card--next.session-rn-card--trial {
+    border-left: 3px solid rgba(245, 158, 11, 0.7) !important;
+    padding-left: calc(16px - 3px) !important;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list .dashboard-rn-session-pressable.session-rn-card:not(.session-rn-card--next) {
+    background: #ffffff !important;
+    border: 1px solid var(--mobile-divider) !important;
+    border-radius: 12px !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    padding: 14px 16px !important;
+  }
+
+  .portal-main .sessions-booking-page .sessions-confirmed-list--mobile .session-rn-card:not(.session-rn-card--next) {
+    background: #ffffff !important;
+    border: 1px solid var(--mobile-divider) !important;
+    border-radius: 12px !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    padding: 14px 16px !important;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-google-calendar-button {
@@ -1585,5 +1648,122 @@
     .portal-mobile-nav .mobile-nav-label {
       font-size: 10px;
     }
+  }
+
+  /* Pago simulado (sheet mobile) */
+  .payment-modal-backdrop.matching-flow-backdrop {
+    z-index: 220;
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .payment-modal--wallet.matching-flow-modal {
+    width: 100%;
+    max-height: min(92dvh, 720px);
+    margin: 0;
+    padding: 20px var(--mobile-pad-x-end) calc(20px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    gap: 16px;
+  }
+
+  .payment-modal--wallet .payment-modal-heading {
+    margin: 4px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--mobile-text-primary);
+  }
+
+  .payment-modal--wallet .payment-amount-card {
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 100%);
+    border: 1px solid rgba(95, 68, 235, 0.14);
+  }
+
+  .payment-modal--wallet .payment-wallet-panel {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--mobile-divider);
+    background: #fafafa;
+  }
+
+  .payment-modal--wallet .payment-wallet-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .payment-modal--wallet .payment-wallet-g {
+    color: #4285f4;
+  }
+
+  .payment-modal--wallet .payment-wallet-pay {
+    color: #5f6368;
+  }
+
+  .payment-modal--wallet .payment-wallet-caption {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--mobile-text-secondary);
+  }
+
+  .payment-modal--wallet .payment-modal-footer {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .payment-modal-primary--gpay {
+    min-height: 52px;
+    border-radius: 12px;
+    background: #111111 !important;
+    color: #ffffff !important;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: none !important;
+  }
+
+  .payment-modal--success.matching-flow-modal {
+    text-align: center;
+    padding-top: 28px;
+  }
+
+  .payment-success-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: #166534;
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  .payment-success-title {
+    margin: 16px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--mobile-text-primary);
+  }
+
+  .payment-success-detail {
+    margin: 8px 0 0;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--mobile-text-secondary);
+  }
+
+  .payment-modal--success .payment-modal-footer {
+    margin-top: 8px;
   }
 }

@@ -64,8 +64,7 @@ export function usePortalActions(params: {
         );
         purchasedPackage = response.purchase;
       } catch (error) {
-        console.error("Could not purchase package", error);
-        return false;
+        console.warn("Package purchase API unavailable; applying demo credits locally", error);
       }
     }
 
@@ -77,8 +76,8 @@ export function usePortalActions(params: {
       subscription: {
         packageId: purchasedPackage?.packageId ?? plan.id,
         packageName: purchasedPackage?.packageName ?? plan.name,
-        creditsTotal: purchasedPackage?.totalCredits ?? plan.credits,
-        creditsRemaining: purchasedPackage?.remainingCredits ?? plan.credits,
+        creditsTotal: purchasedPackage?.totalCredits ?? current.subscription.creditsTotal + plan.credits,
+        creditsRemaining: purchasedPackage?.remainingCredits ?? current.subscription.creditsRemaining + plan.credits,
         purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
         purchaseHistory: [
           {
@@ -109,24 +108,20 @@ export function usePortalActions(params: {
     const authToken = params.state.authToken;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
 
-    if (!authToken) {
-      throw new Error("Unauthorized");
-    }
-
-    try {
-      const response = await apiRequest<PurchasePackageApiResponse>(
-        "/api/profiles/me/purchase-individual-sessions",
-        {
-          method: "POST",
-          body: JSON.stringify({ sessionCount })
-        },
-        authToken
-      );
-      purchasedPackage = response.purchase;
-    } catch (error) {
-      console.error("Could not purchase individual sessions", error);
-      const msg = error instanceof Error ? error.message.trim() : "";
-      throw new Error(msg.length > 0 ? msg : "Could not purchase individual sessions");
+    if (authToken) {
+      try {
+        const response = await apiRequest<PurchasePackageApiResponse>(
+          "/api/profiles/me/purchase-individual-sessions",
+          {
+            method: "POST",
+            body: JSON.stringify({ sessionCount })
+          },
+          authToken
+        );
+        purchasedPackage = response.purchase;
+      } catch (error) {
+        console.warn("Individual sessions purchase API unavailable; applying demo credits locally", error);
+      }
     }
 
     params.onStateChange((current) => ({

@@ -16,7 +16,7 @@ import { loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
-import { PaymentMethodModal } from "../../matching/components/PaymentMethodModal";
+import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
@@ -149,8 +149,11 @@ export function BookingPage(props: {
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
+  const [packagePaymentSuccess, setPackagePaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
+  const [individualPaymentSuccess, setIndividualPaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
   const checkoutSectionRef = useRef<HTMLElement | null>(null);
+  const calendarSectionRef = useRef<HTMLElement | null>(null);
   const isCheckoutFlow = searchParams.get("flow") === "checkout";
   const selectedCheckoutPlanId = searchParams.get("plan");
   const checkoutSource = searchParams.get("source");
@@ -378,6 +381,15 @@ export function BookingPage(props: {
       window.cancelAnimationFrame(frame);
     };
   }, [isCheckoutFlow, isMobilePortal, selectedCheckoutPlanId, packagesLoading]);
+
+  useEffect(() => {
+    if (!isCalendarExpanded || !isMobilePortal) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      calendarSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }, [isCalendarExpanded, isMobilePortal]);
 
   useEffect(() => {
     if (
@@ -743,9 +755,27 @@ export function BookingPage(props: {
     setIndividualPaymentLoading(true);
     setIndividualPaymentError("");
     try {
-      await props.onPurchaseIndividualSessions(individualPaymentCount);
-      resetIndividualPurchaseUi();
-      setCheckoutFlow(false);
+      const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
+      if (!purchased) {
+        setIndividualPaymentError(friendlyCheckoutPackageMessage("", props.language));
+        return;
+      }
+      setIndividualPaymentSuccess({
+        title: t(props.language, {
+          es: "¡Sesiones acreditadas!",
+          en: "Sessions credited!",
+          pt: "Sessoes creditadas!"
+        }),
+        detail: replaceTemplate(
+          t(props.language, {
+            es: "Sumaste {count} sesiones a tu cuenta. Ya podés reservar turno.",
+            en: "You added {count} sessions to your account. You can book now.",
+            pt: "Voce adicionou {count} sessoes a sua conta. Ja pode reservar."
+          }),
+          { count: String(individualPaymentCount) }
+        ),
+        primaryLabel: t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessao" })
+      });
     } catch (error) {
       setIndividualPaymentError(
         friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
@@ -768,15 +798,51 @@ export function BookingPage(props: {
         setCheckoutPaymentError(friendlyCheckoutPackageMessage("", props.language));
         return;
       }
-      setCheckoutPaymentPlanId(null);
-      setCheckoutPaymentError("");
-      setCheckoutFlow(false);
+      setPackagePaymentSuccess({
+        title: t(props.language, {
+          es: "¡Compra simulada con éxito!",
+          en: "Simulated purchase successful!",
+          pt: "Compra simulada com sucesso!"
+        }),
+        detail: replaceTemplate(
+          t(props.language, {
+            es: "Acreditamos {count} sesiones de «{name}». Ya podés elegir horario.",
+            en: "We credited {count} sessions from “{name}”. You can pick a time now.",
+            pt: "Creditamos {count} sessoes de «{name}». Ja pode escolher horario."
+          }),
+          { count: String(checkoutPaymentPlan.credits), name: checkoutPaymentPlan.name }
+        ),
+        primaryLabel: t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessao" })
+      });
     } catch (error) {
       setCheckoutPaymentError(
         friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
       );
     } finally {
       setCheckoutPaymentLoading(false);
+    }
+  };
+
+  const dismissPackagePaymentSuccess = () => {
+    setPackagePaymentSuccess(null);
+    setCheckoutPaymentPlanId(null);
+    setCheckoutPaymentError("");
+    setCheckoutFlow(false);
+    if (isMobilePortal) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+  };
+
+  const dismissIndividualPaymentSuccess = () => {
+    setIndividualPaymentSuccess(null);
+    resetIndividualPurchaseUi();
+    setCheckoutFlow(false);
+    if (isMobilePortal) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     }
   };
 
@@ -1112,7 +1178,7 @@ export function BookingPage(props: {
 
             <div className="sessions-booking-mobile-only">
               <div className="sessions-confirmed-list sessions-confirmed-list--mobile">
-                {upcomingConfirmedBookings.map((booking) => {
+                {upcomingConfirmedBookings.map((booking, index) => {
                   const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
                   const isEditing = editingBookingId === booking.id && panelMode === "reschedule";
                   const isTrialBooking = booking.bookingMode === "trial";
@@ -1127,7 +1193,7 @@ export function BookingPage(props: {
 
                   return (
                     <article
-                      className={`session-management-card session-rn-card session-management-card-clickable ${isEditing ? "editing" : ""} ${isTrialBooking ? "session-rn-card--trial" : ""}`}
+                      className={`session-management-card session-rn-card session-management-card-clickable ${isEditing ? "editing" : ""} ${isTrialBooking ? "session-rn-card--trial" : ""}${index === 0 ? " session-rn-card--next" : ""}`}
                       key={`mobile-${booking.id}`}
                       role="button"
                       tabIndex={0}
@@ -1364,7 +1430,7 @@ export function BookingPage(props: {
         ) : null}
       </section>
 
-      <section className="sessions-calendar-collapsible sessions-secondary-section sessions-booking-calendar-tail">
+      <section ref={calendarSectionRef} className="sessions-calendar-collapsible sessions-secondary-section sessions-booking-calendar-tail">
         <button
           type="button"
           className="sessions-calendar-toggle"
@@ -1412,23 +1478,61 @@ export function BookingPage(props: {
         formatDateTime={formatDateTime}
       />
 
-      {isCheckoutFlow && checkoutPaymentPlan ? (
+      {(isCheckoutFlow && checkoutPaymentPlan) || packagePaymentSuccess ? (
         <PaymentMethodModal
           language={props.language}
-          amountMajor={checkoutPaymentPlan.priceCents / 100}
-          displayCurrency={checkoutPaymentPlan.currency || props.currency}
+          amountMajor={checkoutPaymentPlan?.priceCents ? checkoutPaymentPlan.priceCents / 100 : null}
+          displayCurrency={checkoutPaymentPlan?.currency || props.currency}
           loading={checkoutPaymentLoading}
           error={checkoutPaymentError}
+          walletOnly
+          successSummary={packagePaymentSuccess}
           onBack={() => {
             setCheckoutPaymentPlanId(null);
             setCheckoutPaymentError("");
           }}
           onClose={() => {
+            if (packagePaymentSuccess) {
+              dismissPackagePaymentSuccess();
+              return;
+            }
             setCheckoutPaymentPlanId(null);
             setCheckoutPaymentError("");
             setCheckoutFlow(false);
           }}
+          onSuccessDismiss={dismissPackagePaymentSuccess}
           onPay={handleConfirmPackagePayment}
+        />
+      ) : null}
+
+      {(isCheckoutFlow && individualPaymentCount !== null && individualUnitPrice !== null) || individualPaymentSuccess ? (
+        <PaymentMethodModal
+          language={props.language}
+          amountMajor={
+            individualUnitPrice && individualPaymentCount
+              ? individualUnitPrice.amount * individualPaymentCount
+              : null
+          }
+          displayCurrency={individualUnitPrice?.currency || props.currency}
+          loading={individualPaymentLoading}
+          error={individualPaymentError}
+          walletOnly
+          successSummary={individualPaymentSuccess}
+          onBack={() => {
+            setIndividualPaymentCount(null);
+            setIndividualPaymentError("");
+            setIndividualQtyOpen(true);
+          }}
+          onClose={() => {
+            if (individualPaymentSuccess) {
+              dismissIndividualPaymentSuccess();
+              return;
+            }
+            resetIndividualPurchaseUi();
+            setCheckoutFlow(false);
+          }}
+          onSuccessDismiss={dismissIndividualPaymentSuccess}
+          onPay={() => void handleConfirmIndividualPayment()}
         />
       ) : null}
 
@@ -1564,26 +1668,6 @@ export function BookingPage(props: {
             </div>
           </section>
         </div>
-      ) : null}
-
-      {isCheckoutFlow && individualPaymentCount !== null && individualUnitPrice !== null ? (
-        <PaymentMethodModal
-          language={props.language}
-          amountMajor={individualUnitPrice.amount * individualPaymentCount}
-          displayCurrency={individualUnitPrice.currency || props.currency}
-          loading={individualPaymentLoading}
-          error={individualPaymentError}
-          onBack={() => {
-            setIndividualPaymentCount(null);
-            setIndividualPaymentError("");
-            setIndividualQtyOpen(true);
-          }}
-          onClose={() => {
-            resetIndividualPurchaseUi();
-            setCheckoutFlow(false);
-          }}
-          onPay={() => void handleConfirmIndividualPayment()}
-        />
       ) : null}
 
       {acquireSessionsModalOpen ? (
