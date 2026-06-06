@@ -566,10 +566,282 @@
     gap: 0;
   }
 
-  /* Paquetes: panel plano + filas seleccionables */
-  .portal-main .sessions-package-options-grid,
-  .portal-main .deal-grid.sessions-package-options-grid,
-  .portal-main .deal-grid {
+  .portal-main .sessions-package-options-panel.content-card,
+  .portal-main .sessions-package-options-panel.booking-card-minimal {
+    padding: 0 !important;
+    gap: 0 !important;
+    margin: 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  /* Checkout paquetes — jerarquía, márgenes y navegación sticky */
+  .portal-main .checkout-packages-panel-root--mobile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-head {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 18px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-head-inner {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-head-inner h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-head-inner p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-close {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -6px calc(var(--mobile-pad-x-end) * -0.35) -6px 0;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--brand);
+    font-size: 15px;
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-close:active {
+    background: rgba(95, 68, 235, 0.08);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-options-grid,
+  .portal-main .checkout-packages-panel-root--mobile .deal-grid.sessions-package-options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px var(--mobile-pad-x-end) 6px var(--mobile-pad-x);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-package-column {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-card-shell {
+    display: block;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-card-shell .deal-card-roof {
+    display: none;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-card.sessions-package-card,
+  .portal-main .checkout-packages-panel-root--mobile .dashboard-deal-card.sessions-package-card {
+    display: grid;
+    gap: 0;
+    min-height: 0 !important;
+    height: auto;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    background: #fafafa;
+    box-shadow: none;
+    transform: none !important;
+    overflow: hidden;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-card.sessions-package-card.featured,
+  .portal-main .checkout-packages-panel-root--mobile .deal-card.sessions-package-card.selected,
+  .portal-main .checkout-packages-panel-root--mobile .dashboard-deal-card.sessions-package-card.selected {
+    border-color: rgba(95, 68, 235, 0.45);
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 100%);
+    box-shadow: 0 2px 12px rgba(95, 68, 235, 0.08);
+    padding: 16px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-card-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-card-kicker {
+    min-height: 24px;
+    padding: 3px 9px;
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    border-color: rgba(95, 68, 235, 0.25);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-card-saving {
+    min-height: 24px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(34, 197, 94, 0.12);
+    color: #166534;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-card h3,
+  .portal-main .checkout-packages-panel-root--mobile .dashboard-deal-card.sessions-package-card h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-card-description {
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-pricing-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-list-price {
+    font-size: 14px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-decoration: line-through;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-discount-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-main-price {
+    margin: 6px 0 2px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-card-unit {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-benefits {
+    margin: 14px 0 0;
+    padding: 0;
+    gap: 7px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-benefits li {
+    padding-left: 16px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #334155;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .sessions-package-benefits li::before {
+    top: 0.45em;
+    width: 6px;
+    height: 6px;
+    background: var(--brand);
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-select-button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 16px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 12px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .deal-select-button:active {
+    opacity: 0.92;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-mobile-footer {
+    padding: 4px var(--mobile-pad-x-end) 18px var(--mobile-pad-x);
+    border-top: 1px solid var(--mobile-divider);
+    background: var(--mobile-surface);
+    text-align: center;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-footer-link {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-footer-link:disabled {
+    opacity: 0.5;
+  }
+
+  /* Paquetes en dashboard home (Sumá sesiones / legacy) */
+  .portal-main .dashboard-package-options-panel .sessions-package-options-grid,
+  .portal-main .dashboard-package-options-panel .deal-grid {
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -578,13 +850,13 @@
     min-width: 0;
   }
 
-  .portal-main .checkout-package-column {
+  .portal-main .dashboard-package-options-panel .checkout-package-column {
     display: block;
     width: 100%;
     min-width: 0;
   }
 
-  .portal-main .checkout-packages-head {
+  .portal-main .dashboard-package-options-panel .checkout-packages-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -593,21 +865,21 @@
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  .portal-main .checkout-packages-head-inner h3 {
+  .portal-main .dashboard-package-options-panel .checkout-packages-head-inner h3 {
     margin: 0;
     font-size: 17px;
     font-weight: 600;
     color: var(--mobile-text-primary);
   }
 
-  .portal-main .checkout-packages-head-inner p {
+  .portal-main .dashboard-package-options-panel .checkout-packages-head-inner p {
     margin: 4px 0 0;
     font-size: 14px;
     line-height: 1.4;
     color: var(--mobile-text-secondary);
   }
 
-  .portal-main .checkout-packages-head > button {
+  .portal-main .dashboard-package-options-panel .checkout-packages-head > button {
     flex-shrink: 0;
     min-height: 36px;
     padding: 0 10px;
@@ -619,49 +891,22 @@
     font-weight: 600;
   }
 
-  .portal-main .sessions-package-options-grid .deal-card-shell,
-  .portal-main .checkout-package-column .deal-card-shell {
+  .portal-main .dashboard-package-options-panel .deal-card-shell {
     display: block;
     grid-template-rows: none;
-  }
-
-  .portal-main .deal-card-shell {
     border: none;
     background: transparent;
     box-shadow: none;
   }
 
-  .portal-main .sessions-package-options-grid .dashboard-deal-card.sessions-package-card,
-  .portal-main .deal-card.sessions-package-card {
-    min-height: 0 !important;
-    height: auto;
-    overflow: visible;
-    transform: none !important;
-  }
-
-  .portal-main .sessions-package-options-grid .deal-select-button,
-  .portal-main .deal-card .deal-select-button {
-    width: 100%;
-    min-height: var(--mobile-row-min);
-    margin-top: 8px;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .portal-main .sessions-package-options-grid .sessions-package-individual-link,
-  .portal-main .deal-card .sessions-package-individual-link {
-    width: 100%;
-    margin-top: 8px;
-    text-align: left;
-    padding: 8px 0;
-  }
-
-  .portal-main .deal-card-shell .deal-card-roof {
+  .portal-main .dashboard-package-options-panel .deal-card-shell .deal-card-roof {
     display: none;
   }
 
-  .portal-main .deal-card,
-  .portal-main .dashboard-deal-card.sessions-package-card {
+  .portal-main .dashboard-package-options-panel .deal-card,
+  .portal-main .dashboard-package-options-panel .dashboard-deal-card.sessions-package-card {
+    min-height: 0 !important;
+    height: auto;
     border: none;
     border-radius: 0;
     box-shadow: none;
@@ -669,22 +914,38 @@
     padding: 16px 0;
     border-bottom: 1px solid var(--mobile-divider);
     color: var(--mobile-text-primary);
+    transform: none !important;
   }
 
-  .portal-main .deal-card.selected,
-  .portal-main .dashboard-deal-card.sessions-package-card.selected {
+  .portal-main .dashboard-package-options-panel .deal-card.selected,
+  .portal-main .dashboard-package-options-panel .dashboard-deal-card.sessions-package-card.selected {
     background: rgba(95, 68, 235, 0.04);
     box-shadow: inset 3px 0 0 var(--brand);
     padding: 16px 0;
   }
 
-  .portal-main .deal-card h3,
-  .portal-main .dashboard-deal-card.sessions-package-card h3 {
+  .portal-main .dashboard-package-options-panel .deal-select-button {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin-top: 8px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .portal-main .dashboard-package-options-panel .sessions-package-individual-link {
+    width: 100%;
+    margin-top: 8px;
+    text-align: left;
+    padding: 8px 0;
+  }
+
+  .portal-main .dashboard-package-options-panel .deal-card h3,
+  .portal-main .dashboard-package-options-panel .dashboard-deal-card.sessions-package-card h3 {
     color: var(--mobile-text-primary);
   }
 
-  .portal-main .deal-card p,
-  .portal-main .dashboard-deal-card.sessions-package-card p {
+  .portal-main .dashboard-package-options-panel .deal-card p,
+  .portal-main .dashboard-package-options-panel .dashboard-deal-card.sessions-package-card p {
     color: var(--mobile-text-secondary);
   }
 
@@ -898,11 +1159,11 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-inner {
-    padding: var(--mobile-section-y) 0 0;
+    padding: var(--mobile-section-y) 0 calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-head {
-    margin: 0 0 2px;
+    margin: 0 0 10px;
     padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
   }
 
@@ -912,34 +1173,34 @@
     border-radius: 0;
     background: transparent !important;
     color: var(--mobile-text-primary) !important;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     text-transform: none;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-stack {
-    gap: 0;
+    gap: 12px;
+    padding: 0 var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-card {
     position: relative;
     width: 100%;
     margin: 0 !important;
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x) !important;
-    border: none !important;
-    border-radius: 0 !important;
+    padding: 16px !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 14px !important;
     box-shadow: none !important;
-    background: transparent !important;
-    border-bottom: 1px solid var(--mobile-divider) !important;
-    min-height: var(--mobile-row-min);
+    background: #fafafa !important;
+    min-height: 0;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-card--selected {
-    border: none !important;
-    background: rgba(95, 68, 235, 0.04) !important;
-    box-shadow: inset 3px 0 0 var(--brand) !important;
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x) !important;
+    border-color: rgba(95, 68, 235, 0.45) !important;
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 100%) !important;
+    box-shadow: 0 2px 12px rgba(95, 68, 235, 0.08) !important;
+    padding: 16px !important;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-card-top {
@@ -992,7 +1253,7 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-sticky {
-    padding: 10px var(--mobile-pad-x-end) calc(10px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
+    padding: 12px var(--mobile-pad-x-end) calc(12px + env(safe-area-inset-bottom, 0px)) var(--mobile-pad-x);
     background: var(--mobile-surface) !important;
     border-top: 1px solid var(--mobile-divider);
     box-shadow: none !important;
@@ -1001,23 +1262,23 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-cta {
-    min-height: var(--mobile-row-min);
-    border-radius: 0;
+    min-height: 48px;
+    border-radius: 12px;
     box-shadow: none;
     font-size: 15px;
     font-weight: 600;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-foot {
-    padding: 12px var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+    padding: 4px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-mcare-inline-cta {
     width: 100%;
-    min-height: var(--mobile-row-min);
+    min-height: 48px;
     border: none;
-    border-radius: 0;
-    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    border-radius: 12px;
+    background: var(--brand);
     color: #fff;
     font-size: 15px;
     font-weight: 600;
