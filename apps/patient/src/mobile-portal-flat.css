@@ -994,9 +994,16 @@
     border-bottom: 1px solid rgba(109, 86, 255, 0.12);
   }
 
-  /* —— Dashboard home: una sola hoja blanca + divisores —— */
+  /* —— Dashboard home: hero + canvas + bandas —— */
+  .portal-main .patient-dashboard-home.page-stack,
+  .portal-main .patient-dashboard-home .dashboard-legacy-home {
+    gap: 0;
+    background: var(--mobile-canvas);
+  }
+
   .portal-main .patient-dashboard-home .dashboard-hero-immersive {
     margin-bottom: 0;
+    background: var(--mobile-surface);
   }
 
   .portal-main .patient-dashboard-home .dashboard-hero-subtitle-on-photo {
@@ -1008,32 +1015,20 @@
     text-overflow: ellipsis;
   }
 
+  /* Compra: el + del toolbar ya abre checkout — no duplicar banda bajo el hero */
   .portal-main .patient-dashboard-home .dashboard-hero-cta-band {
-    display: block;
-    margin: 0;
-    padding: 0;
-    background: var(--mobile-surface);
-    border-bottom: 1px solid var(--mobile-divider);
-  }
-
-  .portal-main .patient-dashboard-home .dashboard-hero-buy-button {
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x) !important;
-    text-align: left;
+    display: none !important;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-home {
     margin-top: 0;
+    background: var(--mobile-canvas);
+    padding-bottom: calc(var(--portal-tab-clear, 72px) + 8px);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-scroll {
-    padding-left: 0;
-    padding-right: 0;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    background: var(--mobile-surface);
-  }
-
-  .portal-main .patient-dashboard-home .dashboard-rn-home {
-    padding-bottom: calc(var(--portal-tab-clear, 72px) + 8px);
+    padding: 0;
+    background: var(--mobile-canvas);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
@@ -1041,7 +1036,7 @@
     padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
     border: none !important;
     border-radius: 0 !important;
-    background: transparent !important;
+    background: var(--mobile-surface) !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -1094,10 +1089,10 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-section {
-    padding: var(--mobile-section-y) 0;
+    padding: 0 0 12px;
     margin: 0 !important;
-    background: transparent !important;
-    border-bottom: 1px solid var(--mobile-divider);
+    background: var(--mobile-canvas) !important;
+    border-bottom: none;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-section-head {
@@ -1105,8 +1100,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin: 0 0 8px;
-    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+    margin: 0;
+    padding: 14px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+    background: var(--mobile-canvas);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-section-head .dashboard-rn-section-title {
@@ -1114,6 +1110,12 @@
     font-size: 17px;
     font-weight: 600;
     color: var(--brand);
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-link-all {
+    color: var(--brand);
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-google-cta-wrap {
@@ -1124,9 +1126,9 @@
   .portal-main .patient-dashboard-home .dashboard-rn-empty-card--plain {
     border: none !important;
     border-radius: 0 !important;
-    background: transparent !important;
+    background: var(--mobile-canvas) !important;
     box-shadow: none !important;
-    padding: 4px var(--mobile-pad-x-end) 0 var(--mobile-pad-x) !important;
+    padding: 0 var(--mobile-pad-x-end) 8px var(--mobile-pad-x) !important;
     margin: 0;
   }
 
@@ -1140,7 +1142,7 @@
 
   .portal-main .patient-dashboard-home .dashboard-rn-session-list {
     gap: 10px;
-    padding: 4px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    padding: 0 var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
     background: var(--mobile-canvas);
   }
 
