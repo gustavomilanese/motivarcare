@@ -19,6 +19,7 @@ import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../servic
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
+import { useMobilePortal } from "../hooks/useMobilePortal";
 import type {
   Booking,
   PackageId,
@@ -240,6 +241,7 @@ export function DashboardPage(props: {
   onOpenPatientGoogleCalendarConnect?: () => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const isMobilePortal = useMobilePortal();
   const meetHintHandledRef = useRef(false);
   const [meetJoinHighlight, setMeetJoinHighlight] = useState(false);
   const [sessionRnLayout, setSessionRnLayout] = useState(() =>
@@ -268,6 +270,7 @@ export function DashboardPage(props: {
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const [rnMcarePlanId, setRnMcarePlanId] = useState<string | null>(null);
   const packageSectionRef = useRef<HTMLElement | null>(null);
+  const rnMcareSectionRef = useRef<HTMLElement | null>(null);
   const defaultPackagePlan = packagePlans.find((plan) => plan.id === featuredPackageId) ?? packagePlans[0] ?? null;
   const nextBooking = getNextBooking(props.state.bookings);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
@@ -448,6 +451,18 @@ export function DashboardPage(props: {
   const canIndividualCtaHome = individualUnitHome !== null && packagePlans.length > 0;
   const rnSelectedPlan = rnMcarePlanId ? rnPackagePlansSorted.find((plan) => plan.id === rnMcarePlanId) ?? null : null;
   const availableSessions = props.state.subscription.creditsRemaining;
+  const openMobilePurchaseFlow = () => {
+    const plan = defaultPackagePlan ?? rnPackagePlansSorted[0] ?? null;
+    if (plan) {
+      props.onStartPackagePurchase(plan);
+      return;
+    }
+    if (rnMcareSectionRef.current) {
+      rnMcareSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setAcquireSessionsModalOpen(true);
+  };
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
   const showGoogleCalendarCta = Boolean(
     props.showPatientGoogleCalendarReconnectCta && props.onOpenPatientGoogleCalendarConnect
@@ -612,7 +627,13 @@ export function DashboardPage(props: {
               <button
                 className="sessions-hero-buy-button dashboard-hero-buy-button"
                 type="button"
-                onClick={() => setAcquireSessionsModalOpen(true)}
+                onClick={() => {
+                  if (isMobilePortal) {
+                    openMobilePurchaseFlow();
+                    return;
+                  }
+                  setAcquireSessionsModalOpen(true);
+                }}
               >
                 {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
               </button>
@@ -711,6 +732,10 @@ export function DashboardPage(props: {
             type="button"
             onClick={() => {
               const resolvedId = props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
+              if (isMobilePortal && props.state.subscription.creditsRemaining <= 0 && resolvedId) {
+                openMobilePurchaseFlow();
+                return;
+              }
               if (resolvedId) {
                 props.onGoToBooking(resolvedId);
                 return;
@@ -1435,6 +1460,10 @@ export function DashboardPage(props: {
                     props.onNavigateToAssignProfessional();
                     return;
                   }
+                  if (isMobilePortal && availableSessions <= 0) {
+                    openMobilePurchaseFlow();
+                    return;
+                  }
                   if (pricingProfessionalId) {
                     props.onGoToBooking(pricingProfessionalId);
                     return;
@@ -1445,9 +1474,21 @@ export function DashboardPage(props: {
                 }}
                 disabled={hasAssignedProfessional ? !pricingProfessionalId && trialStatus !== "pending" : false}
                 aria-label={t(props.language, {
-                  es: hasAssignedProfessional ? "Agendar una sesión" : "Elegir profesional",
-                  en: hasAssignedProfessional ? "Book a session" : "Choose a professional",
-                  pt: hasAssignedProfessional ? "Agendar uma sessao" : "Escolher profissional"
+                  es: !hasAssignedProfessional
+                    ? "Elegir profesional"
+                    : isMobilePortal && availableSessions <= 0
+                      ? "Comprar sesiones"
+                      : "Agendar una sesión",
+                  en: !hasAssignedProfessional
+                    ? "Choose a professional"
+                    : isMobilePortal && availableSessions <= 0
+                      ? "Buy sessions"
+                      : "Book a session",
+                  pt: !hasAssignedProfessional
+                    ? "Escolher profissional"
+                    : isMobilePortal && availableSessions <= 0
+                      ? "Comprar sessoes"
+                      : "Agendar uma sessao"
                 })}
               >
                 <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
@@ -1482,7 +1523,7 @@ export function DashboardPage(props: {
           >
             <div className="dashboard-rn-section-head">
               <h2 className="dashboard-rn-section-title">
-                {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Proximas sessoes" })}
+                {t(props.language, { es: "Próximas Sesiones", en: "Upcoming Sessions", pt: "Próximas Sessões" })}
               </h2>
               <div className="dashboard-rn-section-actions">
                 {rnUpcomingSlice.length > 0 ? (
@@ -1503,11 +1544,17 @@ export function DashboardPage(props: {
                 </p>
                 <p className="dashboard-rn-empty-meta">
                   {hasAssignedProfessional
-                    ? t(props.language, {
-                        es: "Tocá + para elegir horario. Sin créditos, comprá un paquete abajo.",
-                        en: "Tap + to pick a time. Out of credits? Buy a package below.",
-                        pt: "Toque em + para escolher horario. Sem creditos, compre um pacote abaixo."
-                      })
+                    ? availableSessions > 0
+                      ? t(props.language, {
+                          es: "Tocá + para elegir horario.",
+                          en: "Tap + to pick a time.",
+                          pt: "Toque em + para escolher horario."
+                        })
+                      : t(props.language, {
+                          es: "Tocá + para comprar sesiones o elegí un paquete abajo.",
+                          en: "Tap + to buy sessions or pick a package below.",
+                          pt: "Toque em + para comprar sessoes ou escolha um pacote abaixo."
+                        })
                     : t(props.language, {
                         es: "Elegí un profesional con + para empezar a agendar.",
                         en: "Pick a professional with + to start booking.",
@@ -1540,7 +1587,7 @@ export function DashboardPage(props: {
           </section>
 
           {hasAssignedProfessional ? (
-          <section className="dashboard-rn-mcare-outer">
+          <section className="dashboard-rn-mcare-outer" ref={rnMcareSectionRef}>
             <div className="dashboard-rn-mcare-gradient" aria-hidden="true" />
             <div className="dashboard-rn-mcare-inner">
               <div className="dashboard-rn-mcare-head">

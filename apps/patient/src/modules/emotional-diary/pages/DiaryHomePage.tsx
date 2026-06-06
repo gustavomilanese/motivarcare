@@ -156,50 +156,48 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
               })}
               onSelect={handleMoodQuickPick}
             />
-            <div className="diary-hero-actions">
-              <Link className="diary-btn diary-btn--primary diary-btn--wide" to="/diario/nueva">
-                <span aria-hidden="true">✏️</span>
-                {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
-              </Link>
-              <Link className="diary-soft-link" to="/diario/registros">
-                {t(props.language, {
-                  es: "Ver historial y estadísticas →",
-                  en: "View history and stats →",
-                  pt: "Ver histórico e estatísticas →"
-                })}
-              </Link>
-            </div>
           </article>
+          <div className="diary-checkin-actions">
+            <Link className="diary-btn diary-btn--primary diary-btn--wide" to="/diario/nueva">
+              <span aria-hidden="true">✏️</span>
+              {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
+            </Link>
+            <Link className="diary-soft-link" to="/diario/registros">
+              {t(props.language, {
+                es: "Ver historial y estadísticas →",
+                en: "View history and stats →",
+                pt: "Ver histórico e estatísticas →"
+              })}
+            </Link>
+          </div>
         </section>
 
         <section
           className="diary-home-band diary-home-band--history"
           aria-label={t(props.language, { es: "Historial reciente", en: "Recent history", pt: "Histórico recente" })}
         >
-          <p className="diary-home-eyebrow">{t(props.language, { es: "Tu recorrido", en: "Your journey", pt: "Sua jornada" })}</p>
-          <article className="diary-card diary-card--entries diary-card--on-band">
-            <div className="diary-card-head diary-card-head--split">
-              <div className="diary-card-head">
-                <h3>{t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}</h3>
-              </div>
-              {recent.length > 0 ? (
-                <Link className="diary-link" to="/diario/registros">
-                  {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
-                </Link>
-              ) : null}
-            </div>
-            <DiaryEntriesTimeline
-              language={props.language}
-              entries={recent}
-              onOpenDetail={setDetailEntryId}
-              ariaLabel={t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
-              emptyMessage={t(props.language, {
-                es: "Todavía no tenés entradas. Tu primera puede tomar unos minutos.",
-                en: "No entries yet. Your first one only takes a few minutes.",
-                pt: "Ainda não há entradas. A primeira leva só alguns minutos."
-              })}
-            />
-          </article>
+          <header className="diary-recent-head">
+            <h3 className="diary-recent-title">
+              {t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
+            </h3>
+            {recent.length > 0 ? (
+              <Link className="diary-recent-link" to="/diario/registros">
+                {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
+              </Link>
+            ) : null}
+          </header>
+          <DiaryEntriesTimeline
+            language={props.language}
+            entries={recent}
+            variant="minimal"
+            onOpenDetail={setDetailEntryId}
+            ariaLabel={t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
+            emptyMessage={t(props.language, {
+              es: "Todavía no tenés entradas. Tu primera puede tomar unos minutos.",
+              en: "No entries yet. Your first one only takes a few minutes.",
+              pt: "Ainda não há entradas. A primeira leva só alguns minutos."
+            })}
+          />
         </section>
 
         <section

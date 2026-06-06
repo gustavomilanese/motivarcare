@@ -20,6 +20,7 @@ import { PaymentMethodModal } from "../../matching/components/PaymentMethodModal
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { useMobilePortal } from "../hooks/useMobilePortal";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
@@ -124,6 +125,7 @@ export function BookingPage(props: {
   onNavigateToAssignProfessional: () => void;
 }) {
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
+  const isMobilePortal = useMobilePortal();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [panelMode, setPanelMode] = useState<"new" | "reschedule" | null>(null);
@@ -645,6 +647,18 @@ export function BookingPage(props: {
     setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
   };
 
+  const openMobilePurchaseFlow = () => {
+    if (!hasAssignedProfessional) {
+      props.onNavigateToAssignProfessional();
+      return;
+    }
+    if (packagePlans.length > 0) {
+      handleOpenPackages();
+      return;
+    }
+    setAcquireSessionsModalOpen(true);
+  };
+
   const openIndividualSessionsCheckoutFromModal = () => {
     setShowNoCreditsAlert(false);
     setPanelMode(null);
@@ -681,7 +695,11 @@ export function BookingPage(props: {
         return null;
       }
       if (pendingSessions <= 0) {
-        setShowNoCreditsAlert(true);
+        if (isMobilePortal) {
+          openMobilePurchaseFlow();
+        } else {
+          setShowNoCreditsAlert(true);
+        }
         return null;
       }
       setShowNoCreditsAlert(false);
@@ -819,7 +837,13 @@ export function BookingPage(props: {
               <button
                 className="sessions-hero-buy-button"
                 type="button"
-                onClick={() => setAcquireSessionsModalOpen(true)}
+                onClick={() => {
+                  if (isMobilePortal) {
+                    openMobilePurchaseFlow();
+                    return;
+                  }
+                  setAcquireSessionsModalOpen(true);
+                }}
               >
                 {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
               </button>
@@ -828,9 +852,21 @@ export function BookingPage(props: {
           <button
             type="button"
             className={`sessions-balance sessions-balance--interactive sessions-booking-hero-balance sessions-booking-balance-with-fab ${pendingSessions <= 0 ? "sessions-balance--zero" : ""}`}
-            onClick={toggleNewBookingPanel}
+            onClick={() => {
+              if (isMobilePortal && pendingSessions <= 0) {
+                openMobilePurchaseFlow();
+                return;
+              }
+              toggleNewBookingPanel();
+            }}
             aria-label={
-              pendingSessions > 0
+              isMobilePortal && pendingSessions <= 0
+                ? t(props.language, {
+                    es: "Comprar sesiones para reservar.",
+                    en: "Buy sessions to book.",
+                    pt: "Comprar sessoes para reservar."
+                  })
+                : pendingSessions > 0
                 ? replaceTemplate(
                     t(props.language, {
                       es: "Reservar sesión. Te quedan {count} en tu paquete.",

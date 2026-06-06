@@ -360,6 +360,10 @@
     color: var(--mobile-text-primary);
   }
 
+  .portal-main .sessions-booking-page .sessions-confirmed-panel .sessions-panel-head h2 {
+    color: var(--brand) !important;
+  }
+
   .portal-main .sessions-booking-page .sessions-booking-balance-with-fab .sessions-booking-fab-in-pill {
     flex-shrink: 0;
     margin-left: auto;
@@ -746,11 +750,11 @@
     padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
   }
 
-  .portal-main .patient-dashboard-home .dashboard-rn-section-title {
+  .portal-main .patient-dashboard-home .dashboard-rn-section-head .dashboard-rn-section-title {
     padding: 0;
     font-size: 17px;
     font-weight: 600;
-    color: var(--mobile-text-primary);
+    color: var(--brand);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-google-cta-wrap {
@@ -1081,12 +1085,13 @@
   }
 
   .portal-main .wa-composer {
-    padding: 6px var(--mobile-pad-x-end) 6px var(--mobile-pad-x);
-    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 6px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
     background: #f0f2f5;
     border-top: 1px solid #d1d7db;
     gap: 8px;
     align-items: flex-end;
+    position: relative;
+    z-index: 2;
   }
 
   .portal-main .wa-composer textarea {

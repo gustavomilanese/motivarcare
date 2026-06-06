@@ -6030,7 +6030,7 @@ button.sessions-balance {
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--brand);
 }
 
 .sessions-booking-page .booking-card-minimal {
@@ -11942,11 +11942,11 @@ button.sessions-balance {
     padding-right: 2px;
   }
 
-  .patient-dashboard-home .dashboard-rn-section-title {
+  .patient-dashboard-home .dashboard-rn-section-head .dashboard-rn-section-title {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: #1c1c1e;
+    color: var(--brand);
     letter-spacing: -0.02em;
     flex: 1;
     padding: 0 2px;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { useTreatmentChat } from "../hooks/useTreatmentChat";
 import { TreatmentChatPanel } from "./TreatmentChatPanel";
@@ -21,6 +22,9 @@ interface TreatmentChatFABProps {
  */
 export function TreatmentChatFAB(props: TreatmentChatFABProps) {
   const { authToken, language } = props;
+  const location = useLocation();
+  /** En Chat con el profesional no mostramos Maca: tapa el enviar y es redundante. */
+  const hideFabOnPage = location.pathname === "/chat";
   const [isOpen, setIsOpen] = useState(false);
   /** True una vez que el paciente abrió el panel por primera vez en esta sesión. */
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
@@ -51,9 +55,15 @@ export function TreatmentChatFAB(props: TreatmentChatFABProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (hideFabOnPage && isOpen) {
+      setIsOpen(false);
+    }
+  }, [hideFabOnPage, isOpen]);
+
   return (
     <>
-      {!isOpen ? (
+      {!isOpen && !hideFabOnPage ? (
         <button
           type="button"
           className="treatment-chat-fab"
