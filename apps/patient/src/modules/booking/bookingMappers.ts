@@ -64,3 +64,39 @@ export function mergeRescheduledBooking(current: BookingRecord, updated: Booking
     professionalTimezoneAtBooking: updated.professionalTimezoneAtBooking ?? current.professionalTimezoneAtBooking
   };
 }
+
+export function sortBookingsByStartsAtAsc<T extends { startsAt: string }>(bookings: T[]): T[] {
+  return [...bookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+}
+
+function bookingSlotKey(booking: Pick<BookingRecord, "professionalId" | "startsAt" | "endsAt">): string {
+  return `${booking.professionalId}::${booking.startsAt}::${booking.endsAt}`;
+}
+
+/** Combina reservas del API con reservas locales/demo hasta que el servidor las refleje. */
+export function mergeRemoteWithLocalPatientBookings(
+  remoteBookings: BookingRecord[],
+  localBookings: BookingRecord[]
+): BookingRecord[] {
+  const remoteSlotKeys = new Set(remoteBookings.map(bookingSlotKey));
+  const mergedById = new Map<string, BookingRecord>();
+
+  for (const remote of remoteBookings) {
+    mergedById.set(remote.id, remote);
+  }
+
+  for (const local of localBookings) {
+    if (local.status !== "confirmed") {
+      continue;
+    }
+    if (mergedById.has(local.id)) {
+      continue;
+    }
+    if (remoteSlotKeys.has(bookingSlotKey(local))) {
+      continue;
+    }
+    mergedById.set(local.id, local);
+  }
+
+  return sortBookingsByStartsAtAsc(Array.from(mergedById.values()));
+}

@@ -1,5 +1,5 @@
 import { replaceTemplate, textByLanguage } from "@therapy/i18n-config";
-import { mergeRescheduledBooking, type BookingMutationApiItem } from "../../booking/bookingMappers";
+import { mergeRescheduledBooking, sortBookingsByStartsAtAsc, type BookingMutationApiItem } from "../../booking/bookingMappers";
 import { apiRequest } from "../services/api";
 import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
 import { friendlyBookingFailureMessage } from "../lib/friendlyPatientMessages";
@@ -286,7 +286,7 @@ export function usePortalActions(params: {
         assignedProfessionalId: current.assignedProfessionalId ?? professionalId,
         assignedProfessionalName: professionalName,
         activeChatProfessionalId: professionalId,
-        bookings: [newBooking, ...current.bookings],
+        bookings: sortBookingsByStartsAtAsc([newBooking, ...current.bookings]),
         bookedSlotIds: [...current.bookedSlotIds, slot.id],
         trialUsedProfessionalIds:
           currentBookingAsTrial && !currentTrialAlreadyUsed

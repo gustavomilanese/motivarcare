@@ -14,6 +14,8 @@ import { resolvePatientPortalLanguage } from "../../patientPortalDefaultLanguage
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
+  mergeRemoteWithLocalPatientBookings,
+  sortBookingsByStartsAtAsc
 } from "../booking/bookingMappers";
 import {
   POST_TRIAL_CALENDAR_PENDING_SESSION_KEY,
@@ -60,6 +62,7 @@ import type {
   Professional,
   RiskLevel,
   SessionUser,
+  SubscriptionState,
   SubmitIntakeApiResponse
 } from "./types";
 
@@ -135,9 +138,66 @@ function hasConfirmedTrialBooking(bookings: Booking[]): boolean {
   return bookings.some((booking) => booking.status === "confirmed" && booking.bookingMode === "trial");
 }
 
-function mergeRemoteWithLocalTrialBookings(remoteBookings: Booking[], localBookings: Booking[]): Booking[] {
-  void localBookings;
-  return [...remoteBookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+function mergePurchaseHistory(
+  local: SubscriptionState["purchaseHistory"],
+  remote: SubscriptionState["purchaseHistory"] | undefined
+): SubscriptionState["purchaseHistory"] {
+  if (!remote || remote.length === 0) {
+    return local;
+  }
+
+  const byId = new Map<string, SubscriptionState["purchaseHistory"][number]>();
+  for (const item of remote) {
+    byId.set(item.id, item);
+  }
+  for (const item of local) {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  }
+
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime()
+  );
+}
+
+function mergeSubscriptionFromApi(
+  current: SubscriptionState,
+  latestPackage: {
+    id: string;
+    name: string;
+    remainingCredits: number;
+    totalCredits: number;
+    purchasedAt: string;
+  } | null | undefined,
+  recentPackages: SubscriptionState["purchaseHistory"] | undefined
+): SubscriptionState {
+  const purchaseHistory = mergePurchaseHistory(current.purchaseHistory, recentPackages);
+
+  if (!latestPackage) {
+    return {
+      ...current,
+      purchaseHistory
+    };
+  }
+
+  const remoteRemaining = latestPackage.remainingCredits;
+  if (current.creditsRemaining > remoteRemaining) {
+    return {
+      ...current,
+      creditsTotal: Math.max(current.creditsTotal, latestPackage.totalCredits, current.creditsRemaining),
+      purchaseHistory
+    };
+  }
+
+  return {
+    packageId: latestPackage.id,
+    packageName: latestPackage.name,
+    creditsTotal: latestPackage.totalCredits,
+    creditsRemaining: remoteRemaining,
+    purchasedAt: latestPackage.purchasedAt,
+    purchaseHistory
+  };
 }
 
 function loadState(): PatientAppState {
@@ -149,7 +209,14 @@ function loadState(): PatientAppState {
     }
 
     const parsed = JSON.parse(raw) as PatientAppState;
-    const parsedBookings = Array.isArray(parsed.bookings) ? parsed.bookings : [];
+    const parsedBookings = Array.isArray(parsed.bookings)
+      ? sortBookingsByStartsAtAsc(parsed.bookings.filter((booking): booking is Booking => (
+        typeof booking?.id === "string"
+        && typeof booking?.professionalId === "string"
+        && typeof booking?.startsAt === "string"
+        && typeof booking?.endsAt === "string"
+      )))
+      : [];
     const inferredOnboardingFinalCompleted =
       typeof (parsed as { onboardingFinalCompleted?: unknown }).onboardingFinalCompleted === "boolean"
         ? Boolean((parsed as { onboardingFinalCompleted?: unknown }).onboardingFinalCompleted)
@@ -162,6 +229,7 @@ function loadState(): PatientAppState {
     return {
       ...defaultState,
       ...parsed,
+      bookings: parsedBookings,
       language: resolvePatientPortalLanguage((parsed as { language?: unknown }).language),
       patientMarket: (() => {
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
@@ -974,7 +1042,7 @@ export function App() {
           }
 
           const syncedBookings = bookingsResponse
-            ? mergeRemoteWithLocalTrialBookings(bookingsFromApi, current.bookings)
+            ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, current.bookings)
             : current.bookings;
 
           const hasRemoteConfirmedTrialBooking = hasConfirmedTrialBooking(syncedBookings);
@@ -1093,20 +1161,11 @@ export function App() {
                   answers: current.intake?.answers ?? {}
                 }
               : current.intake,
-            subscription: latestPackage
-              ? {
-                  packageId: latestPackage.id,
-                  packageName: latestPackage.name,
-                  creditsTotal: latestPackage.totalCredits,
-                  creditsRemaining: latestPackage.remainingCredits,
-                  purchasedAt: latestPackage.purchasedAt,
-                  purchaseHistory: profileResponse?.profile?.recentPackages ?? current.subscription.purchaseHistory
-                }
-              : {
-                  ...current.subscription,
-                  purchaseHistory:
-                    profileResponse?.profile?.recentPackages ?? current.subscription.purchaseHistory
-                },
+            subscription: mergeSubscriptionFromApi(
+              current.subscription,
+              latestPackage,
+              profileResponse?.profile?.recentPackages
+            ),
             bookings: syncedBookings
           };
         });
