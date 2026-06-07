@@ -10,6 +10,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
+import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
@@ -32,8 +33,6 @@ import type {
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
-
-const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
 
 const ASSIGN_PRO_MODAL_DISMISS_KEY = "mc.assignProPromptDismissed";
 
@@ -97,19 +96,6 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
   });
 }
 
-function formatSessionCardDateLine(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      weekday: "short",
-      day: "numeric",
-      month: "long"
-    }
-  });
-}
-
 /**
  * El monto ya está en la moneda del paquete (no convertimos en cliente).
  * `fallbackCurrency` se usa sólo si el plan no trae código de moneda.
@@ -128,78 +114,6 @@ function packageUnitPriceMajor(plan: PackagePlan): number {
   return plan.priceCents / 100 / Math.max(1, plan.credits);
 }
 
-function DashboardRnUpcomingCard(props: {
-  booking: Booking;
-  professionals: Professional[];
-  professionalPhotoMap: Record<string, string>;
-  timezone: string;
-  language: AppLanguage;
-  onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
-  onOpenBookingDetail: (bookingId: string) => void;
-  /** Primer enlace Meet del listado: ancla el paso extra del tour guiado. */
-  dataTourMeetJoin?: boolean;
-  /** Pulso breve tras conectar Calendar (query meet_hint). */
-  meetJoinPulse?: boolean;
-  /** Primera del listado = próxima sesión confirmada. */
-  isNextSession?: boolean;
-}) {
-  const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
-  const isTrialBooking = props.booking.bookingMode === "trial";
-  const joinUrl = typeof props.booking.joinUrl === "string" ? props.booking.joinUrl.trim() : "";
-  const statusConfirmed = t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
-  const statusLine = isTrialBooking
-    ? `${statusConfirmed} · ${t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessão de teste" })}`
-    : statusConfirmed;
-  const proPhoto = professionalPhotoSrc(props.professionalPhotoMap[props.booking.professionalId]);
-
-  const handleActivate = () => {
-    if (joinUrl) {
-      window.open(joinUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-    props.onOpenBookingDetail(props.booking.id);
-  };
-
-  return (
-    <button
-      type="button"
-      data-tour={props.dataTourMeetJoin ? "patient-join-first-meet" : undefined}
-      className={`session-rn-card session-management-card dashboard-rn-session-pressable ${isTrialBooking ? "session-rn-card--trial" : ""}${
-        props.isNextSession ? " session-rn-card--next" : ""
-      }${props.meetJoinPulse ? " patient-join-meet--pulse" : ""}`}
-      onClick={handleActivate}
-    >
-      <div className="session-rn-top">
-        <span className="session-rn-time" aria-hidden="true">
-          {formatTimeOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
-        </span>
-        <img className="session-rn-avatar" src={proPhoto} alt="" onError={props.onImageFallback} />
-        <div className="session-rn-body">
-          <div className="session-rn-body-header">
-            <div className="session-rn-body-main">
-              <span className="session-rn-date-line">
-                {formatSessionCardDateLine({
-                  isoDate: props.booking.startsAt,
-                  timezone: props.timezone,
-                  language: props.language
-                })}
-              </span>
-              <strong className="session-rn-name">
-                <ProfessionalNameStack professional={bookingProfessional} as="span" />
-              </strong>
-              <span
-                className={`session-rn-status ${isTrialBooking ? "dashboard-rn-status-pending" : "dashboard-rn-status-ok"}`}
-              >
-                {statusLine}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </button>
-  );
-}
-
 function getNextBooking(bookings: Booking[]): Booking | null {
   const now = Date.now();
 
@@ -208,11 +122,6 @@ function getNextBooking(bookings: Booking[]): Booking | null {
       .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() > now)
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null
   );
-}
-
-function canPatientRescheduleBooking(startsAt: string): boolean {
-  const minimumStartMs = Date.now() + PATIENT_RESCHEDULE_NOTICE_HOURS * 60 * 60 * 1000;
-  return new Date(startsAt).getTime() >= minimumStartMs;
 }
 
 
@@ -903,252 +812,21 @@ export function DashboardPage(props: {
           </div>
         ) : (
           <div className="dashboard-upcoming-lists-root">
-            <div className="dashboard-upcoming-desktop-only">
-              <div className="sessions-confirmed-list sessions-confirmed-list--dashboard-desktop">
-                <div className="sessions-reservations-table-head" aria-hidden="true">
-                  <span>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-                  <span>{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
-                  <span>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                  <span>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-                  <span>{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
-                </div>
-                {upcomingConfirmedBookings.slice(0, 3).map((booking) => {
-                  const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
-                  const canReschedule = canPatientRescheduleBooking(booking.startsAt);
-                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
-                  const joinTourTarget = Boolean(joinUrl && firstMeetBookingId === booking.id);
-                  return (
-                    <article
-                      className="session-management-card session-management-card-clickable"
-                      key={`dash-d-${booking.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => props.onOpenBookingDetail(booking.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          props.onOpenBookingDetail(booking.id);
-                        }
-                      }}
-                    >
-                      <div className="session-management-main">
-                        <div className="session-management-cell session-management-cell-date">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-                          <strong>{formatDateOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
-                        </div>
-                        <div className="session-management-cell session-management-cell-time">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
-                          <span>{formatTimeOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</span>
-                        </div>
-                        <div className="session-management-cell session-management-meta">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                          <strong>
-                            <ProfessionalNameStack professional={bookingProfessional} as="span" />
-                          </strong>
-                        </div>
-                        <div className="session-management-cell session-management-cell-status">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-                          <span className="session-status-pill confirmed">
-                            {booking.bookingMode === "trial"
-                              ? t(props.language, { es: "Prueba confirmada", en: "Trial confirmed", pt: "Teste confirmado" })
-                              : t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" })}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="session-management-actions-wrap">
-                        <span className="session-management-cell-label">{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
-                        {booking.bookingMode === "trial" ? (
-                          <div className="session-management-actions">
-                            <button
-                              type="button"
-                              className="session-detail-button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                props.onOpenBookingDetail(booking.id);
-                              }}
-                            >
-                              {t(props.language, { es: "Ver detalle", en: "View detail", pt: "Ver detalhe" })}
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="session-management-actions">
-                            {joinUrl ? (
-                              <a
-                                className={`session-detail-button session-management-join-link${
-                                  meetJoinHighlight && joinTourTarget && !sessionRnLayout ? " patient-join-meet--pulse" : ""
-                                }`}
-                                data-tour={joinTourTarget && !sessionRnLayout ? "patient-join-first-meet" : undefined}
-                                href={joinUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                }}
-                              >
-                                {t(props.language, {
-                                  es: "Entrar a la sesión",
-                                  en: "Join session",
-                                  pt: "Entrar na sessao"
-                                })}
-                              </a>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="icon-only"
-                              disabled={!canReschedule}
-                              title={canReschedule
-                                ? undefined
-                                : t(props.language, {
-                                    es: "Disponible hasta 24 horas antes de la sesión.",
-                                    en: "Available up to 24 hours before the session.",
-                                    pt: "Disponivel ate 24 horas antes da sessao."
-                                  })}
-                              aria-label={t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                if (!canReschedule) {
-                                  return;
-                                }
-                                props.onGoToReservations();
-                              }}
-                            >
-                              <span className="session-action-icon reschedule" aria-hidden="true" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="dashboard-upcoming-mobile-only">
-              <div className="sessions-confirmed-list sessions-confirmed-list--dashboard-mobile">
-                {upcomingConfirmedBookings.slice(0, 3).map((booking) => {
-                  const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
-                  const isTrialBooking = booking.bookingMode === "trial";
-                  const canReschedule = canPatientRescheduleBooking(booking.startsAt);
-                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
-                  const statusConfirmed = t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
-                  const statusLine = isTrialBooking
-                    ? `${statusConfirmed} · ${t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
-                    : statusConfirmed;
-                  const proPhoto = professionalPhotoSrc(props.professionalPhotoMap[booking.professionalId]);
-
-                  return (
-                    <article
-                      className={`session-management-card session-rn-card session-management-card-clickable ${isTrialBooking ? "session-rn-card--trial" : ""}`}
-                      key={`dash-m-${booking.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => props.onOpenBookingDetail(booking.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          props.onOpenBookingDetail(booking.id);
-                        }
-                      }}
-                    >
-                      <div className="session-rn-top">
-                        <span className="session-rn-time" aria-hidden="true">
-                          {formatTimeOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}
-                        </span>
-                        <img
-                          className="session-rn-avatar"
-                          src={proPhoto}
-                          alt=""
-                          onError={props.onImageFallback}
-                        />
-                        <div className="session-rn-body">
-                          <div className="session-rn-body-header">
-                            <div className="session-rn-body-main">
-                              <span className="session-rn-date-line">
-                                {formatSessionCardDateLine({
-                                  isoDate: booking.startsAt,
-                                  timezone: props.state.profile.timezone,
-                                  language: props.language
-                                })}
-                              </span>
-                              <strong className="session-rn-name">
-                <ProfessionalNameStack professional={bookingProfessional} as="span" />
-              </strong>
-                              <span className="session-rn-status">{statusLine}</span>
-                            </div>
-                            {!isTrialBooking ? (
-                              <button
-                                type="button"
-                                className="session-rn-reschedule"
-                                disabled={!canReschedule}
-                                title={canReschedule
-                                  ? undefined
-                                  : t(props.language, {
-                                      es: "Disponible hasta 24 horas antes de la sesión.",
-                                      en: "Available up to 24 hours before the session.",
-                                      pt: "Disponivel ate 24 horas antes da sessao."
-                                    })}
-                                aria-label={t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  if (!canReschedule) {
-                                    return;
-                                  }
-                                  props.onGoToReservations();
-                                }}
-                              >
-                                <span className="session-action-icon reschedule" aria-hidden="true" />
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="session-rn-footer">
-                        {joinUrl ? (
-                          <a
-                            className="session-rn-join-btn"
-                            href={joinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <svg className="session-rn-join-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                              <path
-                                fill="currentColor"
-                                d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 2.5v-9l-4 2.5z"
-                              />
-                            </svg>
-                            {t(props.language, {
-                              es: "Entrar a la sesión",
-                              en: "Join session",
-                              pt: "Entrar na sessao"
-                            })}
-                          </a>
-                        ) : (
-                          <p className="session-rn-join-pending">
-                            {t(props.language, {
-                              es: "El enlace se generará al confirmar la sesión.",
-                              en: "The link will be available once the session is confirmed.",
-                              pt: "O link ficara disponivel quando a sessao for confirmada."
-                            })}
-                          </p>
-                        )}
-                        {isTrialBooking ? (
-                          <button
-                            type="button"
-                            className="session-rn-detail-ghost"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              props.onOpenBookingDetail(booking.id);
-                            }}
-                          >
-                            {t(props.language, { es: "Ver detalle", en: "View detail", pt: "Ver detalhe" })}
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+            <div className={isMobilePortal ? "dashboard-upcoming-mobile-only" : "dashboard-upcoming-desktop-only"}>
+              <UpcomingBookingsList
+                bookings={upcomingConfirmedBookings.slice(0, 3)}
+                professionals={props.professionals}
+                professionalPhotoMap={props.professionalPhotoMap}
+                timezone={props.state.profile.timezone}
+                language={props.language}
+                layout={isMobilePortal ? "card" : "table"}
+                surface="dashboard"
+                onImageFallback={props.onImageFallback}
+                onOpenBookingDetail={props.onOpenBookingDetail}
+                onReschedule={() => props.onGoToReservations()}
+                firstMeetBookingId={firstMeetBookingId}
+                joinTourPulse={meetJoinHighlight && (isMobilePortal ? sessionRnLayout : !sessionRnLayout)}
+              />
             </div>
           </div>
         )}
@@ -1595,25 +1273,20 @@ export function DashboardPage(props: {
               </div>
             ) : (
               <div className="dashboard-rn-session-list">
-                {rnUpcomingSlice.map((booking, index) => {
-                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
-                  const joinTourTarget = Boolean(joinUrl && firstMeetBookingId === booking.id);
-                  return (
-                  <DashboardRnUpcomingCard
-                    key={`rn-${booking.id}`}
-                    booking={booking}
-                    professionals={props.professionals}
-                    professionalPhotoMap={props.professionalPhotoMap}
-                    timezone={props.state.profile.timezone}
-                    language={props.language}
-                    onImageFallback={props.onImageFallback}
-                    onOpenBookingDetail={props.onOpenBookingDetail}
-                    isNextSession={index === 0}
-                    dataTourMeetJoin={joinTourTarget && sessionRnLayout}
-                    meetJoinPulse={meetJoinHighlight && joinTourTarget && sessionRnLayout}
-                  />
-                  );
-                })}
+                <UpcomingBookingsList
+                  bookings={rnUpcomingSlice}
+                  professionals={props.professionals}
+                  professionalPhotoMap={props.professionalPhotoMap}
+                  timezone={props.state.profile.timezone}
+                  language={props.language}
+                  layout="card"
+                  surface="dashboard"
+                  onImageFallback={props.onImageFallback}
+                  onOpenBookingDetail={props.onOpenBookingDetail}
+                  onReschedule={() => props.onGoToReservations()}
+                  firstMeetBookingId={firstMeetBookingId}
+                  joinTourPulse={meetJoinHighlight && sessionRnLayout}
+                />
               </div>
             )}
           </section>

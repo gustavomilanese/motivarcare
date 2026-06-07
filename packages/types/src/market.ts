@@ -5,16 +5,21 @@ export function isMarket(value: unknown): value is Market {
   return value === "AR" || value === "US" || value === "BR" || value === "ES";
 }
 
-/** Moneda de unidad mayor del listado de sesión para ese mercado (campo API `sessionPriceUsd` = enteros en esta moneda). */
-export function majorCurrencyCodeForMarket(market: Market): "ARS" | "USD" | "BRL" | "EUR" {
+/**
+ * Moneda real de cobro para catálogo y snapshots de compra (minor units).
+ * AR cobra en pesos; BR/US usan USD vía Stripe (sin conversión a BRL todavía).
+ */
+export function billingCurrencyCodeForMarket(market: Market): "ars" | "usd" | "eur" {
   if (market === "AR") {
-    return "ARS";
+    return "ars";
   }
-  if (market === "US") {
-    return "USD";
+  if (market === "ES") {
+    return "eur";
   }
-  if (market === "BR") {
-    return "BRL";
-  }
-  return "EUR";
+  return "usd";
+}
+
+/** Etiqueta ISO mayúscula para UI/admin (precio lista del profesional en `sessionPriceUsd` salvo AR). */
+export function majorCurrencyCodeForMarket(market: Market): "ARS" | "USD" | "EUR" {
+  return billingCurrencyCodeForMarket(market).toUpperCase() as "ARS" | "USD" | "EUR";
 }

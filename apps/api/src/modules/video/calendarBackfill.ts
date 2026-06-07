@@ -324,3 +324,58 @@ export async function backfillMeetForUserAfterCalendarConnect(params: {
 
   return result;
 }
+
+const meetBackfillCooldownUntil = new Map<string, number>();
+const MEET_BACKFILL_COOLDOWN_MS = 5 * 60_000;
+
+function bookingNeedsMeetBackfill(booking: {
+  status: BookingStatus;
+  startsAt: Date;
+  videoSession: { provider: string; joinUrlPatient: string | null } | null;
+}): boolean {
+  if (booking.status !== BookingStatus.CONFIRMED) {
+    return false;
+  }
+  if (booking.startsAt.getTime() <= Date.now()) {
+    return false;
+  }
+  const session = booking.videoSession;
+  if (!session) {
+    return true;
+  }
+  if (session.provider === "daily") {
+    return true;
+  }
+  const joinUrl = session.joinUrlPatient?.trim() ?? "";
+  if (!joinUrl.includes("meet.google.")) {
+    return session.provider !== "google_meet_user" && session.provider !== "google_meet_platform";
+  }
+  return false;
+}
+
+/**
+ * Si el usuario tiene Calendar conectado y hay reservas futuras sin Meet real,
+ * dispara backfill en background (con cooldown) — p. ej. tras reservar en mobile
+ * antes de OAuth o si falló el callback.
+ */
+export function scheduleMeetBackfillIfNeeded(params: {
+  userId: string;
+  bookings: Array<{
+    status: BookingStatus;
+    startsAt: Date;
+    videoSession: { provider: string; joinUrlPatient: string | null } | null;
+  }>;
+}): void {
+  const now = Date.now();
+  if (now < (meetBackfillCooldownUntil.get(params.userId) ?? 0)) {
+    return;
+  }
+  if (!params.bookings.some(bookingNeedsMeetBackfill)) {
+    return;
+  }
+
+  meetBackfillCooldownUntil.set(params.userId, now + MEET_BACKFILL_COOLDOWN_MS);
+  void backfillMeetForUserAfterCalendarConnect({ userId: params.userId }).catch((error) => {
+    console.error("[calendarBackfill] scheduled backfill failed", { userId: params.userId, error });
+  });
+}

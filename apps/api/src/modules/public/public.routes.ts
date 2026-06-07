@@ -226,12 +226,7 @@ publicRouter.get("/check-email", async (req, res) => {
   return res.json({ available: existing === null });
 });
 
-const CURRENCY_FOR_MARKET: Record<Market, string> = {
-  AR: "ars",
-  US: "usd",
-  BR: "brl",
-  ES: "eur"
-};
+import { billingCurrencyCodeForMarket } from "@therapy/types";
 
 function resolvePackageDiscountPercent(params: {
   credits: number;
@@ -287,7 +282,7 @@ function resolvePackagePriceCents(params: {
   }
 
   const sourceCurrency = params.fallbackCurrency.toLowerCase();
-  const targetCurrency = CURRENCY_FOR_MARKET[params.market];
+  const targetCurrency = billingCurrencyCodeForMarket(params.market);
 
   if (sourceCurrency === targetCurrency) {
     return params.fallbackPriceCents;
@@ -436,7 +431,7 @@ publicRouter.get("/session-packages", async (req, res) => {
        * Forzamos `currency` por market para evitar incoherencias con seeds antiguos:
        * lo que el paciente ve siempre debe coincidir con la moneda real del mercado.
        */
-      const normalizedCurrency = CURRENCY_FOR_MARKET[market];
+      const normalizedCurrency = billingCurrencyCodeForMarket(market);
 
       return {
         id: item.id,

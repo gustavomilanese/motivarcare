@@ -277,12 +277,12 @@ export function defaultDisplayCurrencyForMarket(market: string | null | undefine
   switch ((market ?? "").toUpperCase()) {
     case "AR":
       return "ARS";
-    case "BR":
-      return "BRL";
     case "ES":
       return "EUR";
+    case "BR":
     case "US":
     default:
+      // BR cobra en USD hoy; evitar mostrar BRL sobre montos sin conversión FX.
       return "USD";
   }
 }
@@ -304,3 +304,9 @@ export function replaceTemplate(template: string, values: Record<string, string 
     return result.replace(new RegExp(`\\{${key}\\}`, "g"), String(value));
   }, template);
 }
+
+export {
+  PATIENT_RESCHEDULE_NOTICE_HOURS,
+  bookingJoinUrl,
+  canPatientRescheduleBooking
+} from "./patientReschedule";

@@ -2,9 +2,16 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 const API_PORT = 4000;
+const PRODUCTION_API_DEFAULT = "https://api.motivarcare.com";
 
 function trimTrailingSlash(u: string): string {
   return u.replace(/\/$/, "");
+}
+
+function productionApiFromConfig(): string | null {
+  const extra = Constants.expoConfig?.extra as { apiUrl?: string } | undefined;
+  const fromExtra = extra?.apiUrl?.trim();
+  return fromExtra ? trimTrailingSlash(fromExtra) : null;
 }
 
 /** Parsea host desde hostUri / debuggerHost (ej. 192.168.0.12:8190 o exp://192.168.0.12:8081). */
@@ -39,18 +46,18 @@ function isLoopbackHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
-/** URL base del API. Respeta EXPO_PUBLIC_API_URL; en dev en nativo, infiere la máquina desde Metro. */
+/** URL base del API. Respeta EXPO_PUBLIC_API_URL; en prod usa extra.apiUrl o Railway. */
 export function resolveApiBaseUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (fromEnv) {
     return trimTrailingSlash(fromEnv);
   }
 
-  if (Platform.OS === "web") {
-    return `http://localhost:${API_PORT}`;
+  if (!__DEV__) {
+    return productionApiFromConfig() ?? PRODUCTION_API_DEFAULT;
   }
 
-  if (!__DEV__) {
+  if (Platform.OS === "web") {
     return `http://localhost:${API_PORT}`;
   }
 

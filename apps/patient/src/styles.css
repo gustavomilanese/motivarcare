@@ -6126,7 +6126,8 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-booking-desktop-only .session-management-actions button,
-.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-link {
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-link,
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-management-join-link {
   min-height: 36px;
 }
 
@@ -6610,7 +6611,7 @@ button.sessions-balance {
 
 .sessions-reservations-table-head {
   display: grid;
-  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr) 124px;
+  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr) minmax(210px, 1.15fr);
   gap: 12px;
   padding: 0 16px;
   color: #67758f;
@@ -6626,7 +6627,7 @@ button.sessions-balance {
   background: var(--portal-surface-solid);
   padding: 16px 18px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 124px;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 1.15fr);
   gap: 14px;
   align-items: center;
   box-shadow: var(--portal-elev);
@@ -6700,23 +6701,55 @@ button.sessions-balance {
 .session-management-actions-wrap {
   display: grid;
   gap: 6px;
-  justify-items: center;
+  justify-items: end;
 }
 
 .session-management-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
 .session-management-actions button,
-.session-management-actions .session-link {
+.session-management-actions .session-link,
+.session-management-actions .session-management-join-link {
   min-height: 40px;
 }
 
 .session-management-actions .session-detail-button {
   white-space: nowrap;
+}
+
+.session-management-join-link {
+  text-decoration: none;
+  font-weight: 600;
+  color: #5f45ee;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(95, 68, 235, 0.28);
+  background: rgba(95, 68, 235, 0.06);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.session-management-join-link:hover {
+  background: rgba(95, 68, 235, 0.12);
+  border-color: rgba(95, 68, 235, 0.4);
+}
+
+.session-management-actions .session-detail-button:not(.session-management-join-link) {
+  font-weight: 600;
+  color: #5f45ee;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(95, 68, 235, 0.22);
+  background: transparent;
+}
+
+.session-management-actions .session-detail-button:not(.session-management-join-link):hover {
+  background: rgba(95, 68, 235, 0.08);
+  border-color: rgba(95, 68, 235, 0.35);
 }
 
 .session-management-actions .icon-only {
@@ -6728,6 +6761,14 @@ button.sessions-balance {
   align-items: center;
   justify-content: center;
   border-radius: var(--portal-radius-sm);
+  border: 1px solid rgba(95, 68, 235, 0.2);
+  background: rgba(95, 68, 235, 0.04);
+  color: #5f45ee;
+}
+
+.session-management-actions .icon-only:hover:not(:disabled) {
+  background: rgba(95, 68, 235, 0.1);
+  border-color: rgba(95, 68, 235, 0.35);
 }
 
 .session-action-icon {
@@ -6953,11 +6994,22 @@ button.sessions-balance {
 /* Filas solo en Paquetes comprados (lista de compras). */
 .sessions-purchased-history .session-history-list li,
 .dashboard-compact-section.sessions-purchased-history .session-history-list li {
-  border: 1px solid var(--portal-border);
+  border: 1px solid rgba(139, 124, 248, 0.16);
   border-radius: var(--portal-radius-sm);
   padding: 12px 14px;
-  background: var(--portal-surface-solid);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.sessions-purchased-history .session-history-list li:hover,
+.dashboard-compact-section.sessions-purchased-history .session-history-list li:hover {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(139, 124, 248, 0.28);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08);
 }
 
 .sessions-purchased-history .session-history-list li:last-child,
@@ -6990,8 +7042,18 @@ button.sessions-balance {
 }
 
 .sessions-purchased-history .simple-list li {
-  border-color: var(--portal-border);
-  background: var(--portal-surface-solid);
+  border-color: rgba(139, 124, 248, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.sessions-purchased-history .simple-list li:hover {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(139, 124, 248, 0.28);
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08);
 }
 
 .dashboard-compact-section.sessions-purchased-history {
@@ -7054,6 +7116,11 @@ button.sessions-balance {
   outline-offset: 2px;
 }
 
+.sessions-purchased-history .sessions-calendar-toggle:hover,
+.sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+  background: rgba(95, 68, 235, 0.07);
+}
+
 .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
 .sessions-purchased-history .sessions-calendar-toggle:focus-visible .sessions-secondary-title {
   color: #0f172a;
@@ -7099,6 +7166,13 @@ button.sessions-balance {
 
 .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle {
   padding-left: 5px;
+  border-radius: var(--portal-radius-sm);
+  transition: background-color 0.18s ease;
+}
+
+.patient-dashboard-home .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle:hover,
+.patient-dashboard-home .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle:focus-visible {
+  background: rgba(95, 68, 235, 0.07);
 }
 
 .dashboard-compact-section p {
@@ -7242,8 +7316,9 @@ button.sessions-balance {
 }
 
 .sessions-calendar-day:hover:not(:disabled) {
-  background: #f4f6fb;
-  border-color: rgba(189, 170, 255, 0.45);
+  background: rgba(95, 68, 235, 0.07);
+  border-color: rgba(139, 124, 248, 0.42);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.1);
 }
 
 .sessions-calendar-card.dashboard .sessions-calendar-day {
@@ -11728,11 +11803,6 @@ button.sessions-balance {
   animation: patient-google-cta-pulse 1.6s ease-in-out 3;
 }
 
-.patient-dashboard-home .session-management-join-link {
-  text-decoration: none;
-  margin-right: 6px;
-}
-
 .patient-dashboard-home .hero-title-wrap {
   grid-area: text;
 }
@@ -12076,16 +12146,27 @@ button.sessions-balance {
 
   .patient-dashboard-home .sessions-purchased-history .session-history-list li,
   .sessions-booking-page .sessions-purchased-history .session-history-list li {
-    border: 1px solid rgba(226, 232, 240, 0.95) !important;
+    border: 1px solid rgba(139, 124, 248, 0.16) !important;
     border-radius: var(--portal-radius-sm) !important;
     padding: 12px 14px !important;
-    background: #ffffff !important;
+    background: rgba(255, 255, 255, 0.72) !important;
     box-shadow: none !important;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease !important;
+  }
+
+  .patient-dashboard-home .sessions-purchased-history .session-history-list li:hover,
+  .sessions-booking-page .sessions-purchased-history .session-history-list li:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(139, 124, 248, 0.28) !important;
+    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
   }
 
   .patient-dashboard-home .sessions-purchased-history .session-history-list li:last-child,
   .sessions-booking-page .sessions-purchased-history .session-history-list li:last-child {
-    border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
+    border-bottom: 1px solid rgba(139, 124, 248, 0.16) !important;
   }
 
   .patient-dashboard-home .sessions-purchased-history .session-history-list li strong,
@@ -12107,8 +12188,19 @@ button.sessions-balance {
 
   .patient-dashboard-home .sessions-purchased-history .simple-list li,
   .sessions-booking-page .sessions-purchased-history .simple-list li {
-    border-color: rgba(226, 232, 240, 0.95) !important;
-    background: #ffffff !important;
+    border-color: rgba(139, 124, 248, 0.16) !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease !important;
+  }
+
+  .patient-dashboard-home .sessions-purchased-history .simple-list li:hover,
+  .sessions-booking-page .sessions-purchased-history .simple-list li:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(139, 124, 248, 0.28) !important;
+    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
   }
 }
 

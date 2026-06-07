@@ -69,6 +69,11 @@ export function sortBookingsByStartsAtAsc<T extends { startsAt: string }>(bookin
   return [...bookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 }
 
+/** Reservas creadas solo en el navegador sin persistir en API (demo / fallback). */
+export function isEphemeralClientBookingId(bookingId: string): boolean {
+  return bookingId.startsWith("booking-") || bookingId.startsWith("local-");
+}
+
 function bookingSlotKey(booking: Pick<BookingRecord, "professionalId" | "startsAt" | "endsAt">): string {
   return `${booking.professionalId}::${booking.startsAt}::${booking.endsAt}`;
 }

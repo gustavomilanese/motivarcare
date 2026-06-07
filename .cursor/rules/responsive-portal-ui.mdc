@@ -1,0 +1,42 @@
+---
+description: Una sola lógica por feature en portal paciente; responsive solo cambia presentación
+globs: apps/patient/**/*.{tsx,ts,css}
+alwaysApply: false
+---
+
+# Portal paciente: responsive sin duplicar comportamiento
+
+El portal web (`apps/patient`) es **una sola SPA**. El browser mobile (≤1080px) no es otra app: es el mismo código con otro layout.
+
+## Reglas obligatorias
+
+1. **Un map, un componente** — Nunca dos bloques JSX paralelos (`*-desktop-only` + `*-mobile-only`) con la misma feature. Usar un componente con `layout="table" | "card"` (ver `UpcomingBookingsList` / `UpcomingBookingItem`).
+
+2. **`useMobilePortal()` elige presentación** — Breakpoint único: `1080px` (`mobile-portal-flat.css`). El hook decide clases/layout; la lógica (join, reagendar, compra) vive en el componente o en libs compartidas.
+
+3. **Lógica fuera del JSX** — Reglas de negocio en `@therapy/i18n-config` / `packages/types` / `apps/patient/src/modules/**/lib/` (ej. `canPatientRescheduleBooking`, `bookingJoinUrl`). Labels i18n en módulos `*Labels.ts`.
+
+4. **API = fuente de verdad** — Reservas, créditos, join URL vienen del backend. `localStorage` es caché opcional, nunca verdad en producción. Sin fallbacks demo en prod.
+
+5. **CSS oculta, no reimplementa** — `@media (max-width: 1080px)` solo cambia estilos. Si una sección se oculta en mobile (ej. `dashboard-legacy-home`), la alternativa visible **debe usar los mismos componentes de acción**, no una versión recortada.
+
+6. **Breakpoint extra (680px)** — Solo para densidad visual (toolbar RN). No crear una tercera implementación funcional; reutilizar el mismo componente con `layout="card"`.
+
+## Anti-patrones (prohibidos)
+
+- Copiar un `.map()` entero para desktop y otro para mobile.
+- Duplicar helpers (`canPatientRescheduleBooking`, formateo de fechas) en páginas distintas.
+- Card mobile que abre Meet al tocar la fila mientras desktop tiene botón explícito (salvo decisión UX documentada y consistente).
+- Ramas `if (isMobilePortal)` que cambian **qué API se llama** o **si se persiste** — solo pueden cambiar navegación superficial (scroll, modal vs inline).
+
+## Checklist antes de merge (portal paciente)
+
+- [ ] ¿La feature tiene un solo componente/lista compartida?
+- [ ] ¿Join / reagendar / compra funcionan igual en viewport 1280px y 390px?
+- [ ] ¿Probaste redimensionar el browser, no solo devtools device?
+- [ ] ¿Los textos pasan por i18n compartido?
+
+## Referencia
+
+- Lista de sesiones unificada: `apps/patient/src/modules/booking/components/UpcomingBookingsList.tsx`
+- Hook viewport: `apps/patient/src/modules/app/hooks/useMobilePortal.ts`

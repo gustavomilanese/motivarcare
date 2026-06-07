@@ -18,6 +18,9 @@ function t(language: PatientAppState["language"], values: { es: string; en: stri
   return textByLanguage(language, values);
 }
 
+/** Solo en dev local permitimos créditos/reservas ficticias si el API falla. */
+const allowLocalDemoFallback = import.meta.env.DEV;
+
 export function usePortalActions(params: {
   state: PatientAppState;
   sessionTimezone: string;
@@ -64,8 +67,16 @@ export function usePortalActions(params: {
         );
         purchasedPackage = response.purchase;
       } catch (error) {
-        console.warn("Package purchase API unavailable; applying demo credits locally", error);
+        console.warn("Package purchase API unavailable", error);
+        if (!allowLocalDemoFallback) {
+          return false;
+        }
+        console.warn("Applying demo credits locally (dev only)");
       }
+    }
+
+    if (authToken && !purchasedPackage && !allowLocalDemoFallback) {
+      return false;
     }
 
     params.onStateChange((current) => ({
@@ -85,7 +96,8 @@ export function usePortalActions(params: {
             name: purchasedPackage?.packageName ?? plan.name,
             credits: plan.credits,
             purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-            priceCents: purchasedPackage?.packagePriceCents ?? plan.priceCents ?? null
+            priceCents: purchasedPackage?.packagePriceCents ?? plan.priceCents ?? null,
+            currency: purchasedPackage?.packageCurrency ?? plan.currency ?? null
           },
           ...current.subscription.purchaseHistory
         ].slice(0, 20)
@@ -120,8 +132,15 @@ export function usePortalActions(params: {
         );
         purchasedPackage = response.purchase;
       } catch (error) {
-        console.warn("Individual sessions purchase API unavailable; applying demo credits locally", error);
+        console.warn("Individual sessions purchase API unavailable", error);
+        if (!allowLocalDemoFallback) {
+          return false;
+        }
       }
+    }
+
+    if (authToken && !purchasedPackage && !allowLocalDemoFallback) {
+      return false;
     }
 
     params.onStateChange((current) => ({
@@ -141,7 +160,8 @@ export function usePortalActions(params: {
             name: purchasedPackage?.packageName ?? `${sessionCount} sesiones`,
             credits: sessionCount,
             purchasedAt: purchasedPackage?.purchasedAt ?? new Date().toISOString(),
-            priceCents: purchasedPackage?.packagePriceCents ?? null
+            priceCents: purchasedPackage?.packagePriceCents ?? null,
+            currency: purchasedPackage?.packageCurrency ?? null
           },
           ...current.subscription.purchaseHistory
         ].slice(0, 20)
@@ -207,8 +227,18 @@ export function usePortalActions(params: {
           || errorMessage === "No available session credits. Purchase a package to continue.";
 
         if (hasLocalCredits && apiCreditStateMismatch) {
+          if (!allowLocalDemoFallback) {
+            return {
+              ok: false,
+              error: t(params.state.language, {
+                es: "No pudimos confirmar la reserva. Recargá la página para sincronizar tus créditos e intentá de nuevo.",
+                en: "We couldn't confirm the booking. Reload the page to sync your credits and try again.",
+                pt: "Nao foi possivel confirmar a reserva. Recarregue a pagina para sincronizar seus creditos e tente novamente."
+              })
+            };
+          }
           console.warn(
-            "Booking API credits mismatch; creating reservation with local session balance",
+            "Booking API credits mismatch; creating reservation with local session balance (dev only)",
             errorMessage
           );
         } else if (errorMessage === "Trial session already used. Purchase a package to continue.") {
@@ -247,6 +277,17 @@ export function usePortalActions(params: {
       };
     }
 
+    if (authToken && !remoteBooking && !allowLocalDemoFallback) {
+      return {
+        ok: false,
+        error: t(params.state.language, {
+          es: "No pudimos crear la reserva. Intentá de nuevo en unos segundos.",
+          en: "We couldn't create the booking. Please try again in a few seconds.",
+          pt: "Nao foi possivel criar a reserva. Tente novamente em alguns segundos."
+        })
+      };
+    }
+
     if (bookingAsTrial || remoteBooking?.bookingMode === "trial") {
       await syncActiveProfessionalAssignment(professionalId);
     }
@@ -271,7 +312,7 @@ export function usePortalActions(params: {
         startsAt: remoteBooking?.startsAt ?? slot.startsAt,
         endsAt: remoteBooking?.endsAt ?? slot.endsAt,
         status: "confirmed",
-        joinUrl: remoteBooking?.joinUrlPatient ?? `https://video.therapy.local/session/${bookingId}`,
+        joinUrl: remoteBooking?.joinUrlPatient?.trim() ?? "",
         createdAt: new Date().toISOString(),
         patientTimezoneAtBooking: remoteBooking?.patientTimezoneAtBooking,
         professionalTimezoneAtBooking: remoteBooking?.professionalTimezoneAtBooking,

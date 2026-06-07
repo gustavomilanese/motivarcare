@@ -14,6 +14,7 @@ import { resolvePatientPortalLanguage } from "../../patientPortalDefaultLanguage
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   mapBookingFromMineApi,
+  isEphemeralClientBookingId,
   mergeRemoteWithLocalPatientBookings,
   sortBookingsByStartsAtAsc
 } from "../booking/bookingMappers";
@@ -399,14 +400,6 @@ function mergeSubscriptionFromApi(
   }
 
   const remoteRemaining = normalizeCredits(latestPackage.remainingCredits);
-  if (localCredits > remoteRemaining) {
-    return {
-      ...current,
-      creditsRemaining: localCredits,
-      creditsTotal: Math.max(current.creditsTotal, latestPackage.totalCredits, localCredits),
-      purchaseHistory
-    };
-  }
 
   return {
     packageId: latestPackage.id,
@@ -1284,8 +1277,12 @@ export function App() {
             ? pickRicherBookings(current.bookings, persistedSlice.bookings)
             : current.bookings;
 
+          const localOnlyBookings = bookingsBaseline.filter(
+            (booking) => isEphemeralClientBookingId(booking.id)
+          );
+
           const syncedBookings = bookingsResponse
-            ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, bookingsBaseline)
+            ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, localOnlyBookings)
             : bookingsBaseline;
 
           const hasRemoteConfirmedTrialBooking = hasConfirmedTrialBooking(syncedBookings);

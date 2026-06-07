@@ -36,6 +36,9 @@
     },
     "plugins": [
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "apiUrl": "https://api.motivarcare.com"
+    }
   }
 }

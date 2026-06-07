@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
-import { marketFromResidencyCountry } from "@therapy/types";
+import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import {
@@ -29,8 +29,6 @@ import {
   sendPatientEmailForProfessionalAssigned,
   sendPatientEmailForPurchase
 } from "../notifications/patientEmailService.js";
-import { getEmergencyResources } from "@therapy/types";
-
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
@@ -501,21 +499,6 @@ async function loadUsdArsRateOrNull(): Promise<number | null> {
   } catch (error) {
     console.warn("USD/ARS resilient rate unavailable", error);
     return null;
-  }
-}
-
-/** Moneda canónica que se debe registrar/mostrar para un mercado. */
-function currencyForMarket(market: Market): string {
-  switch (market) {
-    case "AR":
-      return "ars";
-    case "BR":
-      return "brl";
-    case "ES":
-      return "eur";
-    case "US":
-    default:
-      return "usd";
   }
 }
 
@@ -1348,7 +1331,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
         packageListPriceCentsSnapshot: pricing.listPriceCents,
         packagePriceCentsSnapshot: pricing.priceCents,
         packageDiscountPercentSnapshot: pricing.discountPercent,
-        packageCurrencySnapshot: currencyForMarket(patient.market),
+        packageCurrencySnapshot: billingCurrencyCodeForMarket(patient.market),
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
         professionalIdSnapshot: pricingProfessional?.id ?? null
@@ -1379,7 +1362,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       packageName: sessionPackage.name,
       packagePriceCents: pricing.priceCents,
       packageDiscountPercent: pricing.discountPercent,
-      packageCurrency: sessionPackage.currency?.toLowerCase() ?? "usd",
+      packageCurrency: billingCurrencyCodeForMarket(patient.market),
       totalCredits: purchase.totalCredits,
       remainingCredits: purchase.remainingCredits,
       purchasedAt: purchase.purchasedAt
@@ -1496,7 +1479,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
         packageListPriceCentsSnapshot: totalListPriceCents,
         packagePriceCentsSnapshot: totalPriceCents,
         packageDiscountPercentSnapshot: pricing.discountPercent,
-        packageCurrencySnapshot: currencyForMarket(patient.market),
+        packageCurrencySnapshot: billingCurrencyCodeForMarket(patient.market),
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
         professionalIdSnapshot: activeProfessional?.id ?? null
@@ -1527,7 +1510,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
       packageName: displayName,
       packagePriceCents: totalPriceCents,
       packageDiscountPercent: pricing.discountPercent,
-      packageCurrency: unitPackage.currency?.toLowerCase() ?? "usd",
+      packageCurrency: billingCurrencyCodeForMarket(patient.market),
       totalCredits: purchase.totalCredits,
       remainingCredits: purchase.remainingCredits,
       purchasedAt: purchase.purchasedAt

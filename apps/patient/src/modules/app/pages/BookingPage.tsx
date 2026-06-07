@@ -17,6 +17,8 @@ import { loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
+import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
+import { canPatientRescheduleBooking } from "@therapy/i18n-config";
 import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
@@ -38,8 +40,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
-/** Evita ráfagas al hidratar (Strict Mode + sync portal): mismo efecto con deps estables en ms. */
 const BOOKING_REMOTE_FETCH_DEBOUNCE_MS = 140;
 
 function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
@@ -84,25 +84,6 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
       minute: "2-digit"
     }
   });
-}
-
-/** Misma idea que patient-mobile `UpcomingSessionCard`: día corto + fecha legible. */
-function formatSessionCardDateLine(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      weekday: "short",
-      day: "numeric",
-      month: "long"
-    }
-  });
-}
-
-function canPatientRescheduleBooking(startsAt: string): boolean {
-  const minimumStartMs = Date.now() + PATIENT_RESCHEDULE_NOTICE_HOURS * 60 * 60 * 1000;
-  return new Date(startsAt).getTime() >= minimumStartMs;
 }
 
 export function BookingPage(props: {
@@ -1092,250 +1073,34 @@ export function BookingPage(props: {
           </div>
         ) : (
           <div className="sessions-confirmed-list-root" ref={reservationsFocusRef} tabIndex={-1}>
-            <div className="sessions-booking-desktop-only">
-              <div className="sessions-confirmed-list sessions-confirmed-list--desktop">
-                <div className="sessions-reservations-table-head" aria-hidden="true">
-                  <span>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-                  <span>{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
-                  <span>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                  <span>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-                  <span>{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
-                </div>
-                {upcomingConfirmedBookings.map((booking) => {
-                  const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
-                  const isEditing = editingBookingId === booking.id && panelMode === "reschedule";
-                  const isTrialBooking = booking.bookingMode === "trial";
-                  const canReschedule = canPatientRescheduleBooking(booking.startsAt);
-                  const openBookingDetail = () => props.onOpenBookingDetail(booking.id);
-
-                  return (
-                    <article
-                      className={`session-management-card session-management-card-clickable ${isEditing ? "editing" : ""}`}
-                      key={`desktop-${booking.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={openBookingDetail}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openBookingDetail();
-                        }
-                      }}
-                    >
-                      <div className="session-management-main">
-                        <div className="session-management-cell session-management-cell-date">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-                          <strong>{formatDateOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
-                        </div>
-                        <div className="session-management-cell session-management-cell-time">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
-                          <span>{formatTimeOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</span>
-                        </div>
-                        <div className="session-management-cell session-management-meta">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-                          <strong>
-                            <ProfessionalNameStack professional={bookingProfessional} as="span" />
-                          </strong>
-                        </div>
-                        <div className="session-management-cell session-management-cell-status">
-                          <span className="session-management-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-                          <span className="session-status-pill confirmed">
-                            {isTrialBooking
-                              ? t(props.language, { es: "Prueba confirmada", en: "Trial confirmed", pt: "Teste confirmado" })
-                              : t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" })}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="session-management-actions-wrap">
-                        <span className="session-management-cell-label">{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
-                        {isTrialBooking ? (
-                          <div className="session-management-actions">
-                            <button
-                              type="button"
-                              className="session-detail-button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openBookingDetail();
-                              }}
-                            >
-                              {t(props.language, { es: "Ver detalle", en: "View detail", pt: "Ver detalhe" })}
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="session-management-actions">
-                            <button
-                              type="button"
-                              className="icon-only"
-                              disabled={!canReschedule}
-                              title={canReschedule
-                                ? undefined
-                                : t(props.language, {
-                                    es: "Disponible hasta 24 horas antes de la sesión.",
-                                    en: "Available up to 24 hours before the session.",
-                                    pt: "Disponivel ate 24 horas antes da sessao."
-                                  })}
-                              aria-label={t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                if (!canReschedule) {
-                                  return;
-                                }
-                                setEditingBookingId(booking.id);
-                                setSelectedSlotId(findSlotIdForBooking(
-                                  booking.professionalId,
-                                  booking.startsAt,
-                                  booking.endsAt,
-                                  props.professionals
-                                ) ?? "");
-                                setPanelMode("reschedule");
-                              }}
-                            >
-                              <span className="session-action-icon reschedule" aria-hidden="true" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </article>
+            <div className={isMobilePortal ? "sessions-booking-mobile-only" : "sessions-booking-desktop-only"}>
+              <UpcomingBookingsList
+                bookings={upcomingConfirmedBookings}
+                professionals={props.professionals}
+                professionalPhotoMap={props.professionalPhotoMap}
+                timezone={props.state.profile.timezone}
+                language={props.language}
+                layout={isMobilePortal ? "card" : "table"}
+                surface="booking"
+                onImageFallback={props.onImageFallback}
+                onOpenBookingDetail={props.onOpenBookingDetail}
+                editingBookingId={panelMode === "reschedule" ? editingBookingId : null}
+                onReschedule={(booking) => {
+                  if (!canPatientRescheduleBooking(booking.startsAt)) {
+                    return;
+                  }
+                  setEditingBookingId(booking.id);
+                  setSelectedSlotId(
+                    findSlotIdForBooking(
+                      booking.professionalId,
+                      booking.startsAt,
+                      booking.endsAt,
+                      props.professionals
+                    ) ?? ""
                   );
-                })}
-              </div>
-            </div>
-
-            <div className="sessions-booking-mobile-only">
-              <div className="sessions-confirmed-list sessions-confirmed-list--mobile">
-                {upcomingConfirmedBookings.map((booking, index) => {
-                  const bookingProfessional = findProfessionalById(booking.professionalId, props.professionals);
-                  const isEditing = editingBookingId === booking.id && panelMode === "reschedule";
-                  const isTrialBooking = booking.bookingMode === "trial";
-                  const canReschedule = canPatientRescheduleBooking(booking.startsAt);
-                  const openBookingDetail = () => props.onOpenBookingDetail(booking.id);
-                  const joinUrl = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
-                  const statusConfirmed = t(props.language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
-                  const statusLine = isTrialBooking
-                    ? `${statusConfirmed} · ${t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
-                    : statusConfirmed;
-                  const proPhoto = professionalPhotoSrc(props.professionalPhotoMap[booking.professionalId]);
-
-                  return (
-                    <article
-                      className={`session-management-card session-rn-card session-management-card-clickable ${isEditing ? "editing" : ""} ${isTrialBooking ? "session-rn-card--trial" : ""}${index === 0 ? " session-rn-card--next" : ""}`}
-                      key={`mobile-${booking.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={openBookingDetail}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openBookingDetail();
-                        }
-                      }}
-                    >
-                      <div className="session-rn-top">
-                        <span className="session-rn-time" aria-hidden="true">
-                          {formatTimeOnly({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}
-                        </span>
-                        <img
-                          className="session-rn-avatar"
-                          src={proPhoto}
-                          alt=""
-                          onError={props.onImageFallback}
-                        />
-                        <div className="session-rn-body">
-                          <div className="session-rn-body-header">
-                            <div className="session-rn-body-main">
-                              <span className="session-rn-date-line">
-                                {formatSessionCardDateLine({
-                                  isoDate: booking.startsAt,
-                                  timezone: props.state.profile.timezone,
-                                  language: props.language
-                                })}
-                              </span>
-                              <strong className="session-rn-name">
-                                <ProfessionalNameStack professional={bookingProfessional} as="span" />
-                              </strong>
-                              <span className="session-rn-status">{statusLine}</span>
-                            </div>
-                            {!isTrialBooking ? (
-                              <button
-                                type="button"
-                                className="session-rn-reschedule"
-                                disabled={!canReschedule}
-                                title={canReschedule
-                                  ? undefined
-                                  : t(props.language, {
-                                      es: "Disponible hasta 24 horas antes de la sesión.",
-                                      en: "Available up to 24 hours before the session.",
-                                      pt: "Disponivel ate 24 horas antes da sessao."
-                                    })}
-                                aria-label={t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  if (!canReschedule) {
-                                    return;
-                                  }
-                                  setEditingBookingId(booking.id);
-                                  setSelectedSlotId(findSlotIdForBooking(
-                                    booking.professionalId,
-                                    booking.startsAt,
-                                    booking.endsAt,
-                                    props.professionals
-                                  ) ?? "");
-                                  setPanelMode("reschedule");
-                                }}
-                              >
-                                <span className="session-action-icon reschedule" aria-hidden="true" />
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="session-rn-footer">
-                        {joinUrl ? (
-                          <a
-                            className="session-rn-join-btn"
-                            href={joinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <svg className="session-rn-join-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                              <path
-                                fill="currentColor"
-                                d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 2.5v-9l-4 2.5z"
-                              />
-                            </svg>
-                            {t(props.language, {
-                              es: "Entrar a la sesión",
-                              en: "Join session",
-                              pt: "Entrar na sessao"
-                            })}
-                          </a>
-                        ) : (
-                          <p className="session-rn-join-pending">
-                            {t(props.language, {
-                              es: "El enlace se generará al confirmar la sesión.",
-                              en: "The link will be available once the session is confirmed.",
-                              pt: "O link ficara disponivel quando a sessao for confirmada."
-                            })}
-                          </p>
-                        )}
-                        {isTrialBooking ? (
-                          <button
-                            type="button"
-                            className="session-rn-detail-ghost"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openBookingDetail();
-                            }}
-                          >
-                            {t(props.language, { es: "Ver detalle", en: "View detail", pt: "Ver detalhe" })}
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                  setPanelMode("reschedule");
+                }}
+              />
             </div>
           </div>
         )}
