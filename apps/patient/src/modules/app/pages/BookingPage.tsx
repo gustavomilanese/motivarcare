@@ -18,6 +18,8 @@ import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurcha
 import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
+import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
+import { pickFirstBundlePlan } from "@therapy/patient-core";
 import { canPatientRescheduleBooking } from "@therapy/i18n-config";
 import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
@@ -640,38 +642,40 @@ export function BookingPage(props: {
     setBookingActionError("");
   };
 
-  const handleOpenPackages = () => {
-    setShowNoCreditsAlert(false);
-    setPanelMode(null);
-    setEditingBookingId(null);
-    setSelectedSlotId("");
-    setBookingActionError("");
-    setCheckoutPaymentLoading(false);
-    setCheckoutPaymentPlanId(null);
-    setCheckoutPaymentError("");
-    resetIndividualPurchaseUi();
-    const firstBundle = packagePlans.find((plan) => plan.credits > 1) ?? null;
-    setCheckoutFlow(true, selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
-  };
-
   const scrollCheckoutIntoView = () => {
     window.requestAnimationFrame(() => {
       checkoutSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
-  const openMobilePurchaseFlow = () => {
-    if (!hasAssignedProfessional) {
-      props.onNavigateToAssignProfessional();
-      return;
-    }
-    handleOpenPackages();
-    if (isMobilePortal) {
-      scrollCheckoutIntoView();
-    }
-  };
+  const openCheckoutCatalog = useCallback(
+    (planId?: string | null) => {
+      setShowNoCreditsAlert(false);
+      setPanelMode(null);
+      setEditingBookingId(null);
+      setSelectedSlotId("");
+      setBookingActionError("");
+      setCheckoutPaymentLoading(false);
+      setCheckoutPaymentPlanId(null);
+      setCheckoutPaymentError("");
+      resetIndividualPurchaseUi();
+      const firstBundle = pickFirstBundlePlan(packagePlans);
+      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
+      if (isMobilePortal) {
+        scrollCheckoutIntoView();
+      }
+    },
+    [
+      featuredPackageId,
+      isMobilePortal,
+      packagePlans,
+      resetIndividualPurchaseUi,
+      selectedCheckoutPlanId,
+      setCheckoutFlow
+    ]
+  );
 
-  const openIndividualSessionsCheckoutFromModal = () => {
+  const openIndividualSessionsCheckoutFromModal = useCallback(() => {
     setShowNoCreditsAlert(false);
     setPanelMode(null);
     setEditingBookingId(null);
@@ -688,7 +692,31 @@ export function BookingPage(props: {
       next.set("purchase", "individual");
       return next;
     });
-  };
+  }, [resetIndividualPurchaseUi, setSearchParams]);
+
+  const acquireSessionsHandlers = useMemo(
+    () => ({
+      onAssignProfessional: () => props.onNavigateToAssignProfessional(),
+      onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
+      onOpenCheckout: openCheckoutCatalog,
+      onOpenIndividualCheckout: openIndividualSessionsCheckoutFromModal,
+      onShowNoCreditsAlert: () => setShowNoCreditsAlert(true),
+      onOpenNewBookingPanel: () => {
+        setShowNoCreditsAlert(false);
+        setPanelMode("new");
+      }
+    }),
+    [openCheckoutCatalog, openIndividualSessionsCheckoutFromModal, props.onNavigateToAssignProfessional]
+  );
+
+  const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
+    isMobilePortal,
+    hasAssignedProfessional,
+    creditsRemaining: pendingSessions,
+    packagePlans,
+    featuredPackageId,
+    handlers: acquireSessionsHandlers
+  });
 
   const toggleNewBookingPanel = () => {
     if (isCheckoutFlow) {
@@ -707,11 +735,7 @@ export function BookingPage(props: {
         return null;
       }
       if (pendingSessions <= 0) {
-        if (isMobilePortal) {
-          openMobilePurchaseFlow();
-        } else {
-          setShowNoCreditsAlert(true);
-        }
+        dispatchAcquireSessions("book_without_credits");
         return null;
       }
       setShowNoCreditsAlert(false);
@@ -903,13 +927,7 @@ export function BookingPage(props: {
               <button
                 className="sessions-hero-buy-button"
                 type="button"
-                onClick={() => {
-                  if (isMobilePortal) {
-                    openMobilePurchaseFlow();
-                    return;
-                  }
-                  setAcquireSessionsModalOpen(true);
-                }}
+                onClick={() => dispatchAcquireSessions("buy_cta")}
               >
                 {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
               </button>
@@ -919,8 +937,8 @@ export function BookingPage(props: {
             type="button"
             className={`sessions-balance sessions-balance--interactive sessions-booking-hero-balance sessions-booking-balance-with-fab ${pendingSessions <= 0 ? "sessions-balance--zero" : ""}`}
             onClick={() => {
-              if (isMobilePortal && pendingSessions <= 0) {
-                openMobilePurchaseFlow();
+              if (pendingSessions <= 0) {
+                dispatchAcquireSessions("book_without_credits");
                 return;
               }
               toggleNewBookingPanel();
@@ -1466,7 +1484,7 @@ export function BookingPage(props: {
           language={props.language}
           onClose={() => setAcquireSessionsModalOpen(false)}
           onChoosePackages={() => {
-            handleOpenPackages();
+            openCheckoutCatalog();
           }}
           onChooseIndividual={openIndividualSessionsCheckoutFromModal}
         />

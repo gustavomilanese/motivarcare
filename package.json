@@ -43,7 +43,7 @@
     "prisma:generate:api": "prisma generate --schema=./apps/api/prisma/schema.prisma",
     "build:api": "npm run build -w @therapy/types && npm run prisma:generate:api && npm run build -w @therapy/api",
     "build:admin": "npm run build -w @therapy/types && npm run build -w @therapy/admin",
-    "build:patient": "npm run build -w @therapy/types && npm run build -w @therapy/patient",
+    "build:patient": "npm run build -w @therapy/types && npm run build -w @therapy/patient-core && npm run build -w @therapy/patient",
     "build:professional": "npm run build -w @therapy/types && npm run build -w @therapy/professional",
     "db:push:remote": "npm run prisma:push -w @therapy/api",
     "db:push:remote:accept-data-loss": "npm run prisma:push -w @therapy/api -- --accept-data-loss"

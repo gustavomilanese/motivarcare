@@ -39,4 +39,6 @@ El portal web (`apps/patient`) es **una sola SPA**. El browser mobile (≤1080px
 ## Referencia
 
 - Lista de sesiones unificada: `apps/patient/src/modules/booking/components/UpcomingBookingsList.tsx`
+- Compra / créditos (lógica compartida web + futuras apps): `packages/patient-core` (`resolveAcquireSessionsIntent`)
+- Hook web que ejecuta intents: `apps/patient/src/modules/booking/hooks/useAcquireSessionsDispatch.ts`
 - Hook viewport: `apps/patient/src/modules/app/hooks/useMobilePortal.ts`

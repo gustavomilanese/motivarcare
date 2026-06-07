@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -9,8 +9,10 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { estimateIndividualUnitPriceMajor } from "@therapy/patient-core";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
+import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
@@ -356,40 +358,57 @@ export function DashboardPage(props: {
     setAssignProModalOpen(true);
   }, [hasAssignedProfessional]);
 
-  const rnPackagePlansSorted = useMemo(
-    () => [...packagePlans].sort((a, b) => a.credits - b.credits),
+  const individualUnitHome = useMemo(
+    () => estimateIndividualUnitPriceMajor(packagePlans),
     [packagePlans]
   );
-  const individualUnitHome = useMemo(() => {
-    const oneCredit = packagePlans.find((plan) => plan.credits === 1);
-    if (oneCredit) {
-      return oneCredit.priceCents / 100;
-    }
-    const bundle = packagePlans.find((plan) => plan.credits > 1);
-    if (!bundle) {
-      return null;
-    }
-    return bundle.priceCents / 100 / bundle.credits;
-  }, [packagePlans]);
   const canIndividualCtaHome = individualUnitHome !== null && packagePlans.length > 0;
   const availableSessions = props.state.subscription.creditsRemaining;
-  const resolveMcarePurchasePlan = () =>
-    rnPackagePlansSorted.find((plan) => plan.id === featuredPackageId)
-    ?? rnPackagePlansSorted[0]
-    ?? null;
 
-  const openMobilePurchaseFlow = () => {
-    if (!hasAssignedProfessional) {
-      props.onNavigateToAssignProfessional();
-      return;
-    }
-    const plan = resolveMcarePurchasePlan();
-    if (plan) {
-      props.onStartPackagePurchase(plan);
-      return;
-    }
-    props.onNavigateToSessionsCheckout();
-  };
+  const acquireSessionsHandlers = useMemo(
+    () => ({
+      onAssignProfessional: () => props.onNavigateToAssignProfessional(),
+      onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
+      onOpenCheckout: (planId?: string | null) => {
+        if (planId) {
+          const plan = packagePlans.find((item) => item.id === planId);
+          if (plan) {
+            props.onStartPackagePurchase(plan);
+            return;
+          }
+        }
+        props.onNavigateToSessionsCheckout();
+      },
+      onOpenIndividualCheckout: () => props.onNavigateToIndividualSessions(),
+      onShowNoCreditsAlert: () => {
+        /* dashboard no usa alerta de créditos; reservar desde home redirige a sesiones */
+      },
+      onOpenNewBookingPanel: () => {
+        if (pricingProfessionalId) {
+          props.onGoToBooking(pricingProfessionalId);
+        }
+      }
+    }),
+    [
+      packagePlans,
+      pricingProfessionalId,
+      props.onGoToBooking,
+      props.onNavigateToAssignProfessional,
+      props.onNavigateToIndividualSessions,
+      props.onNavigateToSessionsCheckout,
+      props.onStartPackagePurchase
+    ]
+  );
+
+  const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
+    isMobilePortal,
+    hasAssignedProfessional,
+    creditsRemaining: availableSessions,
+    packagePlans,
+    featuredPackageId,
+    handlers: acquireSessionsHandlers
+  });
+
   const rnUpcomingSlice = upcomingConfirmedBookings.slice(0, 3);
   const showGoogleCalendarCta = Boolean(
     props.showPatientGoogleCalendarReconnectCta && props.onOpenPatientGoogleCalendarConnect
@@ -554,13 +573,7 @@ export function DashboardPage(props: {
               <button
                 className="sessions-hero-buy-button dashboard-hero-buy-button"
                 type="button"
-                onClick={() => {
-                  if (isMobilePortal) {
-                    openMobilePurchaseFlow();
-                    return;
-                  }
-                  setAcquireSessionsModalOpen(true);
-                }}
+                onClick={() => dispatchAcquireSessions("buy_cta")}
               >
                 {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
               </button>
@@ -660,7 +673,7 @@ export function DashboardPage(props: {
             onClick={() => {
               const resolvedId = props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
               if (isMobilePortal && props.state.subscription.creditsRemaining <= 0 && resolvedId) {
-                openMobilePurchaseFlow();
+                dispatchAcquireSessions("book_without_credits");
                 return;
               }
               if (resolvedId) {
@@ -1156,7 +1169,7 @@ export function DashboardPage(props: {
                     return;
                   }
                   if (isMobilePortal && availableSessions <= 0) {
-                    openMobilePurchaseFlow();
+                    dispatchAcquireSessions("book_without_credits");
                     return;
                   }
                   if (pricingProfessionalId) {

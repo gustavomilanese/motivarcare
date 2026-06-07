@@ -6104,7 +6104,6 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-booking-desktop-only .session-management-card {
-  padding: 11px 14px;
   gap: 10px;
 }
 
@@ -6127,14 +6126,15 @@ button.sessions-balance {
 
 .sessions-booking-page .sessions-booking-desktop-only .session-management-actions button,
 .sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-link,
-.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-management-join-link {
-  min-height: 36px;
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-management-join-link,
+.sessions-booking-page .sessions-booking-desktop-only .session-management-actions .session-detail-button {
+  min-height: 32px;
 }
 
 .sessions-booking-page .sessions-booking-desktop-only .session-management-actions .icon-only {
-  width: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
 }
 
 .sessions-booking-page .sessions-credit-alert {
@@ -6621,6 +6621,42 @@ button.sessions-balance {
   text-transform: uppercase;
 }
 
+/* Filas tabla desktop: mismo grid de 5 columnas que el encabezado (evita desalineación). */
+.sessions-confirmed-list--desktop .session-management-card,
+.sessions-confirmed-list--dashboard-desktop .session-management-card {
+  grid-template-columns: minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(220px, 1.4fr) minmax(120px, 0.9fr) minmax(210px, 1.15fr);
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.sessions-confirmed-list--desktop .session-management-main,
+.sessions-confirmed-list--dashboard-desktop .session-management-main {
+  display: contents;
+}
+
+.sessions-confirmed-list--desktop .session-management-actions-wrap,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions-wrap {
+  grid-column: 5;
+  justify-self: stretch;
+}
+
+.sessions-confirmed-list--desktop .session-management-actions .session-management-join-link,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .session-management-join-link,
+.sessions-confirmed-list--desktop .session-management-actions .session-detail-button,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .session-detail-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.sessions-confirmed-list--desktop .session-management-actions .icon-only,
+.sessions-confirmed-list--dashboard-desktop .session-management-actions .icon-only {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+}
+
 .session-management-card {
   border: 1px solid var(--portal-border);
   border-radius: var(--portal-radius);
@@ -6714,8 +6750,9 @@ button.sessions-balance {
 
 .session-management-actions button,
 .session-management-actions .session-link,
+.session-management-actions .session-detail-button,
 .session-management-actions .session-management-join-link {
-  min-height: 40px;
+  min-height: 32px;
 }
 
 .session-management-actions .session-detail-button {
@@ -6724,9 +6761,14 @@ button.sessions-balance {
 
 .session-management-join-link {
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
   color: #5f45ee;
-  padding: 7px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   border: 1px solid rgba(95, 68, 235, 0.28);
   background: rgba(95, 68, 235, 0.06);
@@ -6740,8 +6782,10 @@ button.sessions-balance {
 
 .session-management-actions .session-detail-button:not(.session-management-join-link) {
   font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
   color: #5f45ee;
-  padding: 7px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   border: 1px solid rgba(95, 68, 235, 0.22);
   background: transparent;
