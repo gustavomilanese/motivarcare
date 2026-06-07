@@ -308,5 +308,7 @@ export function replaceTemplate(template: string, values: Record<string, string 
 export {
   PATIENT_RESCHEDULE_NOTICE_HOURS,
   bookingJoinUrl,
-  canPatientRescheduleBooking
+  canPatientRescheduleBooking,
+  isPatientBookingLiveStatus,
+  isPatientBookingUpcoming
 } from "./patientReschedule.js";

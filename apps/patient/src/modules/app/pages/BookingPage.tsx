@@ -20,7 +20,7 @@ import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
 import { pickFirstBundlePlan } from "@therapy/patient-core";
-import { canPatientRescheduleBooking } from "@therapy/i18n-config";
+import { canPatientRescheduleBooking, isPatientBookingUpcoming } from "@therapy/i18n-config";
 import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
@@ -167,7 +167,7 @@ export function BookingPage(props: {
     .filter(
       (booking) =>
         booking.status === "confirmed" &&
-        new Date(booking.startsAt).getTime() > now
+        isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
     )
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
@@ -176,7 +176,7 @@ export function BookingPage(props: {
       (booking) =>
         booking.status === "confirmed" &&
         booking.bookingMode !== "trial" &&
-        new Date(booking.startsAt).getTime() > now
+        isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
     )
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
@@ -184,7 +184,8 @@ export function BookingPage(props: {
     .filter(
       (booking) =>
         booking.bookingMode !== "trial" &&
-        (booking.status !== "confirmed" || new Date(booking.startsAt).getTime() <= now)
+        (booking.status !== "confirmed" ||
+          !isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now }))
     )
     .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
 

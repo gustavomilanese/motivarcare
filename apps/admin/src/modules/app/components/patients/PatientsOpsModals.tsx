@@ -422,6 +422,9 @@ export function PatientEditModal(props: {
               <h4>Ver sesiones ({props.confirmedSessionsCount} confirmadas)</h4>
               <span>Expandir</span>
             </summary>
+            <p className="admin-booking-refund-hint">
+              Cancelá sesiones de paquete con «Cancelar sesión». Las de prueba futuras requieren la frase exacta. También podés usar Sesiones → buscar paciente.
+            </p>
             {props.loadingEditingBookings ? <p>Cargando sesiones...</p> : null}
             {!props.loadingEditingBookings && props.editingBookings.length === 0 ? <p>No hay sesiones para este paciente.</p> : null}
 

@@ -7,7 +7,8 @@ import {
   formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
-  textByLanguage
+  textByLanguage,
+  isPatientBookingUpcoming
 } from "@therapy/i18n-config";
 import { estimateIndividualUnitPriceMajor } from "@therapy/patient-core";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
@@ -191,7 +192,7 @@ export function DashboardPage(props: {
   const nextBooking = getNextBooking(props.state.bookings);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
   const upcomingConfirmedBookings = confirmedBookings
-    .filter((booking) => new Date(booking.startsAt).getTime() > now)
+    .filter((booking) => isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now }))
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   const trialBookings = confirmedBookings.filter((booking) => booking.bookingMode === "trial");
   const activeTrialBooking = trialBookings
@@ -905,7 +906,9 @@ export function DashboardPage(props: {
         </button>
         {isCalendarExpanded ? (
           <SessionsCalendar
-            bookings={confirmedBookings.filter((booking) => new Date(booking.startsAt).getTime() > now)}
+            bookings={confirmedBookings.filter((booking) =>
+              isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
+            )}
             timezone={props.state.profile.timezone}
             language={props.language}
             onOpenBookingDetail={props.onOpenBookingDetail}

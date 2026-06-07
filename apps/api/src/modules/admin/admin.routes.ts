@@ -2414,7 +2414,7 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
       bookings: {
         where: {
           OR: [
-            { status: "CONFIRMED" },
+            { status: { in: ["CONFIRMED", "REQUESTED"] } },
             {
               status: "CANCELLED",
               OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }],

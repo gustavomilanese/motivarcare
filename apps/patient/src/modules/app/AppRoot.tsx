@@ -193,6 +193,13 @@ function normalizeStoredBooking(raw: unknown): Booking | null {
   };
 }
 
+function ephemeralBookingsForMerge(bookings: Booking[]): Booking[] {
+  if (import.meta.env.PROD) {
+    return [];
+  }
+  return bookings.filter((booking) => isEphemeralClientBookingId(booking.id));
+}
+
 function readPersistedPatientSlice(sessionId: string | undefined): {
   bookings: Booking[];
   subscription: SubscriptionState;
@@ -214,6 +221,7 @@ function readPersistedPatientSlice(sessionId: string | undefined): {
           parsed.bookings
             .map(normalizeStoredBooking)
             .filter((booking): booking is Booking => booking !== null)
+            .filter((booking) => !import.meta.env.PROD || !isEphemeralClientBookingId(booking.id))
         )
       : [];
     return {
@@ -1277,9 +1285,7 @@ export function App() {
             ? pickRicherBookings(current.bookings, persistedSlice.bookings)
             : current.bookings;
 
-          const localOnlyBookings = bookingsBaseline.filter(
-            (booking) => isEphemeralClientBookingId(booking.id)
-          );
+          const localOnlyBookings = ephemeralBookingsForMerge(bookingsBaseline);
 
           const syncedBookings = bookingsResponse
             ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, localOnlyBookings)

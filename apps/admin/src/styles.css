@@ -4586,6 +4586,27 @@ button.primary.finance-hero-search {
   color: #64748b;
 }
 
+.sessions-ops-patient-filter {
+  margin-top: 8px;
+}
+
+.sessions-ops-active-filter {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.admin-booking-session-actions {
+  padding: 0 16px 16px;
+  gap: 10px;
+}
+
+.admin-booking-refund-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
 .ops-session-id {
   margin: 0;
   padding: 0 16px;
