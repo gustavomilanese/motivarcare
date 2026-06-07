@@ -309,4 +309,4 @@ export {
   PATIENT_RESCHEDULE_NOTICE_HOURS,
   bookingJoinUrl,
   canPatientRescheduleBooking
-} from "./patientReschedule";
+} from "./patientReschedule.js";
