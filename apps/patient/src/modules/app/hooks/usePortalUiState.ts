@@ -15,6 +15,9 @@ export function usePortalUiState(params: {
       return;
     }
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") {
         return;
@@ -25,7 +28,10 @@ export function usePortalUiState(params: {
     };
 
     window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
   }, [menuOpen, notificationsOpen, preferencesOpen]);
 
   return {
@@ -36,6 +42,7 @@ export function usePortalUiState(params: {
       setNotificationsOpen(false);
       setMenuOpen((current) => !current);
     },
+    closeMenu: () => setMenuOpen(false),
     toggleNotifications: () => {
       setMenuOpen(false);
       setPreferencesOpen(false);

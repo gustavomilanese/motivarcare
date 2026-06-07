@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
 import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
+import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import type { ProfileTab } from "../types";
 import type { Market } from "@therapy/types";
 
@@ -158,6 +159,7 @@ export function PortalNavigation(props: {
   languageSummary: string;
   currencySummary: string;
   onToggleMenu: () => void;
+  onCloseMenu: () => void;
   onToggleNotifications: () => void;
   onOpenNotificationThread: (professionalId: string) => void;
   onOpenProfileTab: (tab: ProfileTab) => void;
@@ -333,6 +335,19 @@ export function PortalNavigation(props: {
   );
 
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMoreOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMoreOpen]);
   const mobileSecondaryActive =
     (PATIENT_PROFESSIONALS_NAV_ENABLED && location.pathname.startsWith("/profesionales")) ||
     location.pathname.startsWith("/ejercicios") ||
@@ -360,16 +375,18 @@ export function PortalNavigation(props: {
       <div className={`header-actions${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}`}>
         {onImmersiveToolbar ? renderImmersiveMobileGreeting() : null}
         <div className="header-actions-cluster">
-          <NavLink
-            to="/favorites"
-            className={({ isActive }) => `header-favorites-link header-icon-link ${isActive ? "active" : ""}`}
-            aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
-          >
-            <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
-            </svg>
-            {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
-          </NavLink>
+          {PATIENT_FAVORITES_ENABLED ? (
+            <NavLink
+              to="/favorites"
+              className={({ isActive }) => `header-favorites-link header-icon-link ${isActive ? "active" : ""}`}
+              aria-label={t(props.language, { es: "Ver favoritos", en: "View favorites", pt: "Ver favoritos" })}
+            >
+              <svg className="header-heart-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21.1 10.3 19.5C5.2 14.9 2 12 2 8.5A4.5 4.5 0 0 1 6.5 4c2 0 3.1.9 3.9 2 .8-1.1 1.9-2 3.9-2A4.5 4.5 0 0 1 18.8 8.5c0 3.5-3.2 6.4-8.3 11L12 21.1Z" />
+              </svg>
+              {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
+            </NavLink>
+          ) : null}
           <div className="notifications-wrap">
             <button
               type="button"
@@ -421,11 +438,33 @@ export function PortalNavigation(props: {
             <IconMenu className="menu-toggle-icon" />
           </button>
           {props.menuOpen ? (
-            <div className="menu-dropdown">
-              <div className="menu-panel-head">
-                <strong>{props.sessionEmail ?? ""}</strong>
-                <span>{props.sessionFullName ?? ""}</span>
-              </div>
+            <>
+              <button
+                type="button"
+                className="menu-dropdown-backdrop"
+                aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
+                onClick={props.onCloseMenu}
+              />
+              <div
+                className="menu-dropdown"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t(props.language, { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" })}
+              >
+                <div className="menu-panel-head">
+                  <div className="menu-panel-head-copy">
+                    <strong>{props.sessionEmail ?? ""}</strong>
+                    <span>{props.sessionFullName ?? ""}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="menu-dropdown-close"
+                    aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
+                    onClick={props.onCloseMenu}
+                  >
+                    ×
+                  </button>
+                </div>
 
               <section
                 className="menu-dropdown-group menu-dropdown-account"
@@ -467,14 +506,15 @@ export function PortalNavigation(props: {
                 language={props.language}
                 residencyCountry={props.residencyCountry}
                 patientMarket={props.patientMarket}
-                onNavigate={props.onToggleMenu}
+                onNavigate={props.onCloseMenu}
                 onOpenSupport={() => props.onOpenProfileTab("support")}
               />
 
               <button className="menu-item menu-item--danger" type="button" onClick={props.onLogout}>
                 {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
               </button>
-            </div>
+              </div>
+            </>
           ) : null}
         </div>
       </div>
@@ -609,20 +649,30 @@ export function PortalNavigation(props: {
               aria-label={t(props.language, { es: "Explorar el portal", en: "Explore the portal", pt: "Explorar o portal" })}
             >
               <div className="portal-mobile-more-sheet-head">
-                <h2>{t(props.language, { es: "Explorar", en: "Explore", pt: "Explorar" })}</h2>
-                <p>
-                  {PATIENT_PROFESSIONALS_NAV_ENABLED
-                    ? t(props.language, {
-                        es: "Profesionales, bienestar y tu cuenta.",
-                        en: "Therapists, wellbeing and your account.",
-                        pt: "Profissionais, bem-estar e sua conta."
-                      })
-                    : t(props.language, {
-                        es: "Bienestar y tu cuenta.",
-                        en: "Wellbeing and your account.",
-                        pt: "Bem-estar e sua conta."
-                      })}
-                </p>
+                <div className="portal-mobile-more-sheet-head-copy">
+                  <h2>{t(props.language, { es: "Explorar", en: "Explore", pt: "Explorar" })}</h2>
+                  <p>
+                    {PATIENT_PROFESSIONALS_NAV_ENABLED
+                      ? t(props.language, {
+                          es: "Profesionales, bienestar y tu cuenta.",
+                          en: "Therapists, wellbeing and your account.",
+                          pt: "Profissionais, bem-estar e sua conta."
+                        })
+                      : t(props.language, {
+                          es: "Bienestar y tu cuenta.",
+                          en: "Wellbeing and your account.",
+                          pt: "Bem-estar e sua conta."
+                        })}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="portal-mobile-more-close"
+                  aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                  onClick={() => setMobileMoreOpen(false)}
+                >
+                  ×
+                </button>
               </div>
               <nav className="portal-mobile-more-links" aria-label={t(props.language, { es: "Más secciones", en: "More sections", pt: "Mais seções" })}>
                 {PATIENT_PROFESSIONALS_NAV_ENABLED ? (

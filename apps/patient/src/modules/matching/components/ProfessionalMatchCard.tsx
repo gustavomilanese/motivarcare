@@ -8,6 +8,7 @@ import { countryToFlag } from "../utils/countryFlag";
 import { professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
+import { PATIENT_FAVORITES_ENABLED } from "../../app/constants";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -155,27 +156,29 @@ export function ProfessionalMatchCard(props: {
       style={props.cardOpensAvailability ? { cursor: "pointer" } : undefined}
     >
       <div className="patient-therapist-corner">
-        <button
-          type="button"
-          className={`favorite-toggle ${props.isFavorite ? "active" : ""}`}
-          onClick={() => props.onToggleFavorite(professional.id)}
-          aria-label={
-            props.isFavorite
-              ? t(props.language, { es: "Quitar de favoritos", en: "Remove from favorites", pt: "Remover dos favoritos" })
-              : t(props.language, { es: "Guardar en favoritos", en: "Save to favorites", pt: "Salvar nos favoritos" })
-          }
-        >
-          <svg className="favorite-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M12 21.2 10.6 19.9C5.6 15.4 2.4 12.5 2.4 8.9c0-3 2.3-5.3 5.3-5.3 1.8 0 3.5.8 4.6 2.2a6 6 0 0 1 4.6-2.2c3 0 5.3 2.3 5.3 5.3 0 3.6-3.2 6.5-8.2 11L12 21.2z"
-              fill={props.isFavorite ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        {PATIENT_FAVORITES_ENABLED ? (
+          <button
+            type="button"
+            className={`favorite-toggle ${props.isFavorite ? "active" : ""}`}
+            onClick={() => props.onToggleFavorite(professional.id)}
+            aria-label={
+              props.isFavorite
+                ? t(props.language, { es: "Quitar de favoritos", en: "Remove from favorites", pt: "Remover dos favoritos" })
+                : t(props.language, { es: "Guardar en favoritos", en: "Save to favorites", pt: "Salvar nos favoritos" })
+            }
+          >
+            <svg className="favorite-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21.2 10.6 19.9C5.6 15.4 2.4 12.5 2.4 8.9c0-3 2.3-5.3 5.3-5.3 1.8 0 3.5.8 4.6 2.2a6 6 0 0 1 4.6-2.2c3 0 5.3 2.3 5.3 5.3 0 3.6-3.2 6.5-8.2 11L12 21.2z"
+                fill={props.isFavorite ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        ) : null}
         <span className="match-badge">{matchLabel}</span>
       </div>
 

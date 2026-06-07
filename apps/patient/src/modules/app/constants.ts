@@ -14,6 +14,9 @@ export const POST_TRIAL_CALENDAR_PENDING_SESSION_KEY = "mc_post_trial_calendar_p
  */
 export type CalendarOfferContext = "pre-matching" | "post-trial" | "post-login";
 
+/** Ocultar favoritos en header, matching y ruta /favorites hasta reactivarlo. */
+export const PATIENT_FAVORITES_ENABLED = false;
+
 const CALENDAR_OFFER_CONTEXT_SESSION_KEY = "mc_calendar_offer_context";
 
 export function setCalendarOfferContext(ctx: CalendarOfferContext): void {

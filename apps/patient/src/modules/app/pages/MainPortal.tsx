@@ -274,6 +274,7 @@ export function MainPortal(props: {
         currencySummary={currencySymbolOnly(props.state.currency)}
         favoriteCount={favoriteCount}
         onToggleMenu={ui.toggleMenu}
+        onCloseMenu={ui.closeMenu}
         onToggleNotifications={ui.toggleNotifications}
         onOpenNotificationThread={ui.openNotificationThread}
         onOpenProfileTab={ui.openProfileTabFromMenu}

@@ -1639,12 +1639,47 @@ button.danger {
 }
 
 .menu-panel-head {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   border: 1px solid #e2e6f2;
   border-radius: 12px;
   background: #f8f9fd;
   padding: 10px 12px;
+}
+
+.menu-panel-head-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.menu-dropdown-backdrop {
+  display: none;
+}
+
+.menu-dropdown-close,
+.portal-mobile-more-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(95, 68, 235, 0.18);
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.08);
+  color: #5f44eb;
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.menu-dropdown-close:hover,
+.portal-mobile-more-close:hover {
+  background: rgba(95, 68, 235, 0.14);
 }
 
 .menu-panel-head strong {
@@ -7255,6 +7290,128 @@ button.sessions-balance {
   height: 8px;
 }
 
+/* Vista semanal estilo Google Calendar */
+.sessions-calendar-card.week-google .sessions-calendar-grid-wrap {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+
+.sessions-calendar-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid #dadce0;
+  background: #fff;
+}
+
+.sessions-calendar-week-col {
+  min-height: 132px;
+  border-right: 1px solid #dadce0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.sessions-calendar-week-col:last-child {
+  border-right: none;
+}
+
+.sessions-calendar-week-col-head {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  border-bottom: 1px solid #eceff1;
+  background: #fafafa;
+}
+
+.sessions-calendar-week-dayname {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #70757a;
+}
+
+.sessions-calendar-week-date {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3c4043;
+}
+
+.sessions-calendar-week-col.today .sessions-calendar-week-date {
+  background: #1a73e8;
+  color: #fff;
+}
+
+.sessions-calendar-week-events {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 6px 4px 8px;
+}
+
+.sessions-calendar-week-empty {
+  display: block;
+  min-height: 4px;
+}
+
+.sessions-calendar-event {
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px 6px 10px;
+  border: none;
+  border-left: 3px solid #1a73e8;
+  border-radius: 6px;
+  background: #e8f0fe;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sessions-calendar-event:hover {
+  background: #d2e3fc;
+  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.18);
+}
+
+.sessions-calendar-event--trial {
+  border-left-color: #f9ab00;
+  background: #fef7e0;
+}
+
+.sessions-calendar-event--trial:hover {
+  background: #feefc3;
+  box-shadow: 0 1px 3px rgba(249, 171, 0, 0.18);
+}
+
+.sessions-calendar-event-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a73e8;
+  line-height: 1.2;
+}
+
+.sessions-calendar-event--trial .sessions-calendar-event-time {
+  color: #b06000;
+}
+
+.sessions-calendar-event-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #202124;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sessions-calendar-agenda {
   border: 1px solid #dde2ef;
   border-radius: 18px;
@@ -9207,13 +9364,121 @@ button.sessions-balance {
     gap: 0;
   }
 
+  .menu-dropdown-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    cursor: pointer;
+  }
+
+  .menu-wrap .menu-dropdown {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(360px, 92vw);
+    max-height: none;
+    height: 100dvh;
+    margin: 0;
+    border: none;
+    border-left: 1px solid rgba(95, 68, 235, 0.16);
+    border-radius: 0;
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 28%);
+    box-shadow: -10px 0 40px rgba(15, 23, 42, 0.16);
+    z-index: 200;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .menu-dropdown .menu-panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     margin: 0;
     border: none;
     border-radius: 0;
-    background: transparent;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid #e8ecf4;
+    background: rgba(250, 248, 255, 0.96);
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 12px 16px;
+    border-bottom: 1px solid rgba(95, 68, 235, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .portal-mobile-more-sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 20px 10px 16px;
+    border-bottom: 1px solid var(--mobile-divider);
+    background: linear-gradient(180deg, #faf8ff 0%, var(--mobile-surface) 100%);
+  }
+
+  .portal-mobile-more-sheet-head-copy {
+    min-width: 0;
+  }
+
+  .portal-mobile-more-backdrop {
+    z-index: 120;
+  }
+
+  .portal-mobile-more-sheet {
+    z-index: 121;
+    max-height: min(72dvh, 100%);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-top: 3px solid rgba(95, 68, 235, 0.35);
+    background: var(--mobile-surface);
+    box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .sessions-calendar-week-grid {
+    grid-template-columns: 1fr;
+    border-top: none;
+    gap: 0;
+  }
+
+  .sessions-calendar-week-col {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #eceff1;
+  }
+
+  .sessions-calendar-week-col-head {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    justify-items: start;
+    gap: 8px;
+    padding: 10px 20px 8px 16px;
+    background: #f8f9fa;
+  }
+
+  .sessions-calendar-week-events {
+    padding: 8px 20px 12px 16px;
+  }
+
+  .sessions-calendar-event {
+    padding: 10px 12px 10px 14px;
+    border-radius: 10px;
+  }
+
+  .sessions-calendar-event-time {
+    font-size: 12px;
+  }
+
+  .sessions-calendar-event-title {
+    font-size: 13px;
+    white-space: normal;
   }
 
   .menu-dropdown .menu-dropdown-group {

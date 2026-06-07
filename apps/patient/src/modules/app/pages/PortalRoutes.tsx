@@ -19,6 +19,7 @@ import { DiaryHomePage } from "../../emotional-diary/pages/DiaryHomePage";
 import { DiaryNewEntryPage } from "../../emotional-diary/pages/DiaryNewEntryPage";
 import { DiaryRecordsPage } from "../../emotional-diary/pages/DiaryRecordsPage";
 import { API_BASE } from "../services/api";
+import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
 
@@ -276,7 +277,9 @@ export function PortalRoutes(props: {
       <Route
         path="/favorites"
         element={
-          props.lockToTherapistSelection
+          !PATIENT_FAVORITES_ENABLED
+            ? <Navigate replace to="/" />
+            : props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
                 <MatchingPage

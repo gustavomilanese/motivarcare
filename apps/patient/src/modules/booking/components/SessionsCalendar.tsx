@@ -6,7 +6,8 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import type { Booking } from "../../app/types";
+import { findProfessionalById } from "../../app/lib/professionals";
+import type { Booking, Professional } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -32,6 +33,17 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
       minute: "2-digit"
     }
   });
+}
+
+function formatTimeRange(params: {
+  startsAt: string;
+  endsAt: string;
+  timezone: string;
+  language: AppLanguage;
+}): string {
+  const start = formatTimeOnly({ isoDate: params.startsAt, timezone: params.timezone, language: params.language });
+  const end = formatTimeOnly({ isoDate: params.endsAt, timezone: params.timezone, language: params.language });
+  return `${start} – ${end}`;
 }
 
 function getStartOfWeek(date: Date): Date {
@@ -121,6 +133,7 @@ export function SessionsCalendar(props: {
   onOpenBookingDetail: (bookingId: string) => void;
   variant?: "week" | "dashboard";
   hideTitle?: boolean;
+  professionals?: Professional[];
 }) {
   const variant = props.variant ?? "week";
   const [viewDate, setViewDate] = useState(() => {
@@ -143,6 +156,12 @@ export function SessionsCalendar(props: {
       const current = map.get(key) ?? [];
       current.push(booking);
       map.set(key, current);
+    }
+    for (const [key, dayBookings] of map) {
+      map.set(
+        key,
+        [...dayBookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
+      );
     }
     return map;
   }, [props.bookings]);
@@ -170,6 +189,17 @@ export function SessionsCalendar(props: {
     const [year, month, day] = selectedDayKey.split("-").map((value) => Number(value));
     return new Date(year, month - 1, day);
   }, [selectedDayKey]);
+
+  const resolveBookingTitle = (booking: Booking): string => {
+    if (booking.bookingMode === "trial") {
+      return t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" });
+    }
+    if (props.professionals?.length) {
+      const professional = findProfessionalById(booking.professionalId, props.professionals);
+      return professional.fullName;
+    }
+    return t(props.language, { es: "Sesión confirmada", en: "Confirmed session", pt: "Sessao confirmada" });
+  };
 
   useEffect(() => {
     if (variant !== "dashboard") {
@@ -205,7 +235,7 @@ export function SessionsCalendar(props: {
   }, [selectedDate, sortedBookings, todayKey, variant, viewDate]);
 
   return (
-    <section className={`content-card booking-session-card booking-card-minimal sessions-calendar-card ${variant === "dashboard" ? "dashboard" : ""}`}>
+    <section className={`content-card booking-session-card booking-card-minimal sessions-calendar-card ${variant === "dashboard" ? "dashboard" : "week-google"}`}>
       <div className={`sessions-calendar-head ${props.hideTitle ? "no-title" : ""}`}>
         {!props.hideTitle ? (
           <div>
@@ -256,59 +286,95 @@ export function SessionsCalendar(props: {
       </div>
 
       <div className="sessions-calendar-layout">
-        <div className="sessions-calendar-grid-wrap">
-          <div className={`sessions-calendar-grid ${variant === "dashboard" ? "month-grid" : ""}`}>
-            {dayNames.map((day) => (
-              <span className="sessions-calendar-dayname" key={day}>{day}</span>
-            ))}
-            {calendarDays.map((day) => {
+        {variant === "dashboard" ? (
+          <div className="sessions-calendar-grid-wrap">
+            <div className="sessions-calendar-grid month-grid">
+              {dayNames.map((day) => (
+                <span className="sessions-calendar-dayname" key={day}>{day}</span>
+              ))}
+              {calendarDays.map((day) => {
+                const dayKey = getCalendarDayKey(day);
+                const dayBookings = bookingsByDay.get(dayKey) ?? [];
+                const isToday = dayKey === todayKey;
+                const isOutsideMonth = day.getMonth() !== viewDate.getMonth();
+                const isSelected = dayKey === selectedDayKey;
+                const nextDayBooking = dayBookings[0];
+
+                return (
+                  <button
+                    className={`sessions-calendar-day ${isToday ? "today" : ""} ${dayBookings.length > 0 ? "busy" : ""} ${isOutsideMonth ? "outside" : ""} ${isSelected ? "selected" : ""}`}
+                    key={dayKey}
+                    type="button"
+                    onClick={() => setSelectedDayKey(dayKey)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="sessions-calendar-date">{day.getDate()}</span>
+                    {dayBookings.length > 0 ? (
+                      <>
+                        <span className="sessions-calendar-count">
+                          {replaceTemplate(
+                            t(props.language, {
+                              es: "{count} sesión",
+                              en: "{count} session",
+                              pt: "{count} sessao"
+                            }),
+                            { count: String(dayBookings.length) }
+                          )}
+                        </span>
+                        <span className="sessions-calendar-time">
+                          {formatTimeOnly({ isoDate: nextDayBooking.startsAt, timezone: props.timezone, language: props.language })}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="sessions-calendar-empty" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="sessions-calendar-week-grid">
+            {calendarDays.map((day, index) => {
               const dayKey = getCalendarDayKey(day);
               const dayBookings = bookingsByDay.get(dayKey) ?? [];
               const isToday = dayKey === todayKey;
-              const isBusy = dayBookings.length > 0;
-              const isOutsideMonth = variant === "dashboard" && day.getMonth() !== viewDate.getMonth();
-              const isSelected = variant === "dashboard" && dayKey === selectedDayKey;
-              const nextDayBooking = dayBookings[0];
 
               return (
-                <button
-                  className={`sessions-calendar-day ${isToday ? "today" : ""} ${isBusy ? "busy" : ""} ${isOutsideMonth ? "outside" : ""} ${isSelected ? "selected" : ""}`}
-                  key={dayKey}
-                  type="button"
-                  onClick={() => {
-                    if (variant === "dashboard") {
-                      setSelectedDayKey(dayKey);
-                    } else if (nextDayBooking) {
-                      props.onOpenBookingDetail(nextDayBooking.id);
-                    }
-                  }}
-                  aria-pressed={variant === "dashboard" ? isSelected : undefined}
-                >
-                  <span className="sessions-calendar-date">{day.getDate()}</span>
-                  {dayBookings.length > 0 ? (
-                    <>
-                      <span className="sessions-calendar-count">
-                        {replaceTemplate(
-                          t(props.language, {
-                            es: "{count} sesión",
-                            en: "{count} session",
-                            pt: "{count} sessao"
-                          }),
-                          { count: String(dayBookings.length) }
-                        )}
-                      </span>
-                      <span className="sessions-calendar-time">
-                        {formatTimeOnly({ isoDate: nextDayBooking.startsAt, timezone: props.timezone, language: props.language })}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="sessions-calendar-empty" />
-                  )}
-                </button>
+                <div className={`sessions-calendar-week-col ${isToday ? "today" : ""}`} key={dayKey}>
+                  <div className="sessions-calendar-week-col-head">
+                    <span className="sessions-calendar-week-dayname">{dayNames[index]}</span>
+                    <span className="sessions-calendar-week-date">{day.getDate()}</span>
+                  </div>
+                  <div className="sessions-calendar-week-events">
+                    {dayBookings.length === 0 ? (
+                      <span className="sessions-calendar-week-empty" aria-hidden="true" />
+                    ) : (
+                      dayBookings.map((booking) => (
+                        <button
+                          key={booking.id}
+                          type="button"
+                          className={`sessions-calendar-event ${booking.bookingMode === "trial" ? "sessions-calendar-event--trial" : ""}`}
+                          onClick={() => props.onOpenBookingDetail(booking.id)}
+                        >
+                          <span className="sessions-calendar-event-time">
+                            {formatTimeRange({
+                              startsAt: booking.startsAt,
+                              endsAt: booking.endsAt,
+                              timezone: props.timezone,
+                              language: props.language
+                            })}
+                          </span>
+                          <span className="sessions-calendar-event-title">{resolveBookingTitle(booking)}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

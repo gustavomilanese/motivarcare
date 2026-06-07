@@ -1461,6 +1461,7 @@ export function BookingPage(props: {
             timezone={props.state.profile.timezone}
             language={props.language}
             onOpenBookingDetail={props.onOpenBookingDetail}
+            professionals={props.professionals}
             hideTitle
           />
         ) : null}

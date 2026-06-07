@@ -123,6 +123,74 @@
     color: var(--brand);
   }
 
+  /* Menú hamburguesa: panel lateral con jerarquía */
+  .menu-toggle {
+    border-color: rgba(95, 68, 235, 0.24);
+    background: rgba(250, 248, 255, 0.96);
+    color: #5f44eb;
+    box-shadow: 0 2px 8px rgba(95, 68, 235, 0.12);
+  }
+
+  .dashboard-hero-toolbar-mount .menu-toggle,
+  .sessions-hero-toolbar-mount .menu-toggle,
+  .diary-hero-toolbar-mount .menu-toggle,
+  .wellbeing-relax-toolbar-mount .menu-toggle {
+    border-color: rgba(95, 68, 235, 0.28);
+    background: rgba(255, 255, 255, 0.94);
+    color: #5f44eb;
+    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.16);
+  }
+
+  .portal-mobile-more-sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+    border-bottom: 1px solid var(--mobile-divider);
+    background: linear-gradient(180deg, #faf8ff 0%, var(--mobile-surface) 100%);
+  }
+
+  .portal-mobile-more-sheet-head-copy h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--brand);
+  }
+
+  .portal-mobile-more-sheet-head-copy p {
+    margin: 4px 0 0;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-mobile-more-backdrop {
+    z-index: 120;
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .portal-mobile-more-sheet {
+    z-index: 121;
+    max-height: min(72dvh, 100%);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 3px solid rgba(95, 68, 235, 0.35);
+  }
+
+  .portal-main .sessions-booking-page .sessions-calendar-card.week-google {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-card {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: var(--mobile-surface);
+  }
+
   /* Header estándar (no inmersivo): banda plana */
   .portal-header {
     margin: 0;
