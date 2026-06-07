@@ -292,6 +292,10 @@
     right: max(10px, env(safe-area-inset-right, 0px));
     justify-content: stretch;
   }
+
+  .diary-hero-banner {
+    min-height: clamp(208px, 41.6vw, 288px);
+  }
 }
 
 .diary-hero-toolbar-mount .header-actions-cluster,
@@ -2305,10 +2309,6 @@
 
   .diary-entry-row {
     grid-template-columns: 1fr;
-  }
-
-  .diary-hero-banner {
-    min-height: clamp(208px, 41.6vw, 288px);
   }
 
   .diary-hero-banner-copy,

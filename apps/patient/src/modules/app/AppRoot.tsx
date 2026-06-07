@@ -138,6 +138,221 @@ function hasConfirmedTrialBooking(bookings: Booking[]): boolean {
   return bookings.some((booking) => booking.status === "confirmed" && booking.bookingMode === "trial");
 }
 
+function normalizeCredits(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    return 0;
+  }
+  return Math.floor(n);
+}
+
+function isSamePatientSession(
+  a: PatientAppState["session"],
+  b: PatientAppState["session"]
+): boolean {
+  if (!a?.id || !b?.id) {
+    return false;
+  }
+  return String(a.id) === String(b.id);
+}
+
+function normalizeStoredBooking(raw: unknown): Booking | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const booking = raw as Partial<Booking> & { id?: unknown; professionalId?: unknown };
+  const id =
+    typeof booking.id === "string"
+      ? booking.id.trim()
+      : typeof booking.id === "number"
+        ? String(booking.id)
+        : "";
+  const professionalId =
+    typeof booking.professionalId === "string" ? booking.professionalId.trim() : "";
+  const startsAt = typeof booking.startsAt === "string" ? booking.startsAt : "";
+  const endsAt = typeof booking.endsAt === "string" ? booking.endsAt : "";
+  if (!id || !professionalId || !startsAt || !endsAt) {
+    return null;
+  }
+  return {
+    id,
+    professionalId,
+    startsAt,
+    endsAt,
+    status: booking.status === "cancelled" ? "cancelled" : "confirmed",
+    joinUrl: typeof booking.joinUrl === "string" ? booking.joinUrl : "",
+    createdAt: typeof booking.createdAt === "string" ? booking.createdAt : new Date().toISOString(),
+    patientTimezoneAtBooking:
+      typeof booking.patientTimezoneAtBooking === "string" ? booking.patientTimezoneAtBooking : undefined,
+    professionalTimezoneAtBooking:
+      typeof booking.professionalTimezoneAtBooking === "string"
+        ? booking.professionalTimezoneAtBooking
+        : undefined,
+    bookingMode: booking.bookingMode === "trial" ? "trial" : booking.bookingMode === "credit" ? "credit" : undefined
+  };
+}
+
+function readPersistedPatientSlice(sessionId: string | undefined): {
+  bookings: Booking[];
+  subscription: SubscriptionState;
+} | null {
+  if (!sessionId) {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as PatientAppState;
+    if (String(parsed.session?.id ?? "") !== String(sessionId)) {
+      return null;
+    }
+    const bookings = Array.isArray(parsed.bookings)
+      ? sortBookingsByStartsAtAsc(
+          parsed.bookings
+            .map(normalizeStoredBooking)
+            .filter((booking): booking is Booking => booking !== null)
+        )
+      : [];
+    return {
+      bookings,
+      subscription: {
+        ...defaultState.subscription,
+        ...parsed.subscription,
+        creditsRemaining: normalizeCredits(parsed.subscription?.creditsRemaining),
+        creditsTotal: normalizeCredits(parsed.subscription?.creditsTotal),
+        purchaseHistory: Array.isArray(parsed.subscription?.purchaseHistory)
+          ? parsed.subscription.purchaseHistory
+          : []
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
+function pickRicherSubscription(current: SubscriptionState, baseline: SubscriptionState): SubscriptionState {
+  const currentCredits = normalizeCredits(current.creditsRemaining);
+  const baselineCredits = normalizeCredits(baseline.creditsRemaining);
+  if (baselineCredits > currentCredits) {
+    return {
+      ...current,
+      ...baseline,
+      creditsRemaining: baselineCredits,
+      creditsTotal: Math.max(
+        normalizeCredits(current.creditsTotal),
+        normalizeCredits(baseline.creditsTotal),
+        baselineCredits
+      ),
+      purchaseHistory: mergePurchaseHistory(baseline.purchaseHistory, current.purchaseHistory)
+    };
+  }
+  return current;
+}
+
+function pickRicherBookings(current: Booking[], baseline: Booking[]): Booking[] {
+  if (baseline.length > current.length) {
+    return mergeRemoteWithLocalPatientBookings(current, baseline);
+  }
+  return current;
+}
+
+function preventRegressivePatientPortalPersist(
+  incoming: Omit<PatientAppState, "googleCalendarConnected">,
+  existingRaw: string | null
+): Omit<PatientAppState, "googleCalendarConnected"> {
+  if (!existingRaw) {
+    return incoming;
+  }
+  try {
+    const existing = JSON.parse(existingRaw) as PatientAppState;
+    if (!isSamePatientSession(incoming.session, existing.session)) {
+      return incoming;
+    }
+
+    const existingCredits = normalizeCredits(existing.subscription?.creditsRemaining);
+    const incomingCredits = normalizeCredits(incoming.subscription?.creditsRemaining);
+    const existingBookings = Array.isArray(existing.bookings)
+      ? existing.bookings
+          .map(normalizeStoredBooking)
+          .filter((booking): booking is Booking => booking !== null)
+      : [];
+    const incomingBookings = Array.isArray(incoming.bookings) ? incoming.bookings : [];
+
+    let next = incoming;
+
+    if (existingCredits > 0 && incomingCredits === 0) {
+      next = {
+        ...next,
+        subscription: {
+          ...next.subscription,
+          creditsRemaining: existingCredits,
+          creditsTotal: Math.max(
+            normalizeCredits(next.subscription.creditsTotal),
+            normalizeCredits(existing.subscription?.creditsTotal),
+            existingCredits
+          ),
+          purchaseHistory: mergePurchaseHistory(
+            existing.subscription?.purchaseHistory ?? [],
+            next.subscription.purchaseHistory
+          )
+        }
+      };
+    }
+
+    if (existingBookings.length > 0 && incomingBookings.length === 0) {
+      next = {
+        ...next,
+        bookings: mergeRemoteWithLocalPatientBookings(incomingBookings, existingBookings)
+      };
+    }
+
+    return next;
+  } catch {
+    return incoming;
+  }
+}
+
+function readPersistedPortalStateForUser(userId: string): Partial<PatientAppState> | null {
+  const slice = readPersistedPatientSlice(userId);
+  if (!slice) {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return { bookings: slice.bookings, subscription: slice.subscription };
+    }
+    const parsed = JSON.parse(raw) as PatientAppState;
+    if (String(parsed.session?.id ?? "") !== String(userId)) {
+      return null;
+    }
+    return {
+      bookings: slice.bookings,
+      subscription: slice.subscription,
+      trialUsedProfessionalIds: Array.isArray(parsed.trialUsedProfessionalIds)
+        ? parsed.trialUsedProfessionalIds.filter((value): value is string => typeof value === "string")
+        : [],
+      onboardingFinalCompleted:
+        typeof parsed.onboardingFinalCompleted === "boolean"
+          ? parsed.onboardingFinalCompleted
+          : hasConfirmedTrialBooking(slice.bookings),
+      therapistSelectionCompleted:
+        typeof parsed.therapistSelectionCompleted === "boolean"
+          ? parsed.therapistSelectionCompleted
+          : Boolean(parsed.assignedProfessionalId) || slice.bookings.length > 0,
+      assignedProfessionalId: parsed.assignedProfessionalId ?? null,
+      assignedProfessionalName: parsed.assignedProfessionalName ?? null,
+      bookedSlotIds: Array.isArray(parsed.bookedSlotIds)
+        ? parsed.bookedSlotIds.filter((value): value is string => typeof value === "string")
+        : []
+    };
+  } catch {
+    return { bookings: slice.bookings, subscription: slice.subscription };
+  }
+}
+
 function mergePurchaseHistory(
   local: SubscriptionState["purchaseHistory"],
   remote: SubscriptionState["purchaseHistory"] | undefined
@@ -173,19 +388,22 @@ function mergeSubscriptionFromApi(
   recentPackages: SubscriptionState["purchaseHistory"] | undefined
 ): SubscriptionState {
   const purchaseHistory = mergePurchaseHistory(current.purchaseHistory, recentPackages);
+  const localCredits = normalizeCredits(current.creditsRemaining);
 
   if (!latestPackage) {
     return {
       ...current,
+      creditsRemaining: localCredits,
       purchaseHistory
     };
   }
 
-  const remoteRemaining = latestPackage.remainingCredits;
-  if (current.creditsRemaining > remoteRemaining) {
+  const remoteRemaining = normalizeCredits(latestPackage.remainingCredits);
+  if (localCredits > remoteRemaining) {
     return {
       ...current,
-      creditsTotal: Math.max(current.creditsTotal, latestPackage.totalCredits, current.creditsRemaining),
+      creditsRemaining: localCredits,
+      creditsTotal: Math.max(current.creditsTotal, latestPackage.totalCredits, localCredits),
       purchaseHistory
     };
   }
@@ -200,22 +418,21 @@ function mergeSubscriptionFromApi(
   };
 }
 
-function loadState(): PatientAppState {
+function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
   restorePatientPortalAfterCalendarOAuth();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return defaultState;
+      return { state: defaultState, storageParseFailed: false };
     }
 
     const parsed = JSON.parse(raw) as PatientAppState;
     const parsedBookings = Array.isArray(parsed.bookings)
-      ? sortBookingsByStartsAtAsc(parsed.bookings.filter((booking): booking is Booking => (
-        typeof booking?.id === "string"
-        && typeof booking?.professionalId === "string"
-        && typeof booking?.startsAt === "string"
-        && typeof booking?.endsAt === "string"
-      )))
+      ? sortBookingsByStartsAtAsc(
+          parsed.bookings
+            .map(normalizeStoredBooking)
+            .filter((booking): booking is Booking => booking !== null)
+        )
       : [];
     const inferredOnboardingFinalCompleted =
       typeof (parsed as { onboardingFinalCompleted?: unknown }).onboardingFinalCompleted === "boolean"
@@ -226,7 +443,7 @@ function loadState(): PatientAppState {
         ? Boolean((parsed as { therapistSelectionCompleted?: unknown }).therapistSelectionCompleted)
         : Boolean(parsed.assignedProfessionalId) || parsedBookings.length > 0;
 
-    return {
+    const loaded: PatientAppState = {
       ...defaultState,
       ...parsed,
       bookings: parsedBookings,
@@ -275,6 +492,8 @@ function loadState(): PatientAppState {
       subscription: {
         ...defaultState.subscription,
         ...parsed.subscription,
+        creditsRemaining: normalizeCredits(parsed.subscription?.creditsRemaining),
+        creditsTotal: normalizeCredits(parsed.subscription?.creditsTotal),
         purchaseHistory: Array.isArray(parsed.subscription?.purchaseHistory)
           ? parsed.subscription.purchaseHistory.filter((item): item is PatientAppState["subscription"]["purchaseHistory"][number] => (
             typeof item?.id === "string"
@@ -293,15 +512,22 @@ function loadState(): PatientAppState {
       },
       googleCalendarConnected: false
     };
+    return { state: loaded, storageParseFailed: false };
   } catch {
-    return defaultState;
+    return { state: defaultState, storageParseFailed: true };
   }
 }
 
 function saveState(state: PatientAppState): void {
-  const { googleCalendarConnected: _gc, ...persisted } = state;
-  void _gc;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+  try {
+    const { googleCalendarConnected: _gc, ...persisted } = state;
+    void _gc;
+    const existingRaw = window.localStorage.getItem(STORAGE_KEY);
+    const safe = preventRegressivePatientPortalPersist(persisted, existingRaw);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+  } catch {
+    // quota / private mode
+  }
 }
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -429,7 +655,12 @@ function handleHeroFallback(event: SyntheticEvent<HTMLImageElement>): void {
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [state, setState] = useState<PatientAppState>(() => loadState());
+  const skipPersistUntilHydratedRef = useRef(false);
+  const [state, setState] = useState<PatientAppState>(() => {
+    const initial = loadState();
+    skipPersistUntilHydratedRef.current = initial.storageParseFailed;
+    return initial.state;
+  });
   const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(false);
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
@@ -503,6 +734,10 @@ export function App() {
   const isResetPasswordRoute = useMemo(() => location.pathname === "/reset-password", [location.pathname]);
 
   useEffect(() => {
+    if (skipPersistUntilHydratedRef.current) {
+      skipPersistUntilHydratedRef.current = false;
+      return;
+    }
     saveState(state);
   }, [state]);
 
@@ -1041,9 +1276,17 @@ export function App() {
             return current;
           }
 
-          const syncedBookings = bookingsResponse
-            ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, current.bookings)
+          const persistedSlice = readPersistedPatientSlice(liveSid);
+          const subscriptionBaseline = persistedSlice
+            ? pickRicherSubscription(current.subscription, persistedSlice.subscription)
+            : current.subscription;
+          const bookingsBaseline = persistedSlice
+            ? pickRicherBookings(current.bookings, persistedSlice.bookings)
             : current.bookings;
+
+          const syncedBookings = bookingsResponse
+            ? mergeRemoteWithLocalPatientBookings(bookingsFromApi, bookingsBaseline)
+            : bookingsBaseline;
 
           const hasRemoteConfirmedTrialBooking = hasConfirmedTrialBooking(syncedBookings);
           const hasRemoteOnboardingCompletionSignal =
@@ -1135,7 +1378,15 @@ export function App() {
             })(),
             profile: {
               ...current.profile,
-              timezone: profileResponse?.profile?.timezone ?? current.profile.timezone
+              timezone: profileResponse?.profile?.timezone ?? current.profile.timezone,
+              notificationsEmail:
+                typeof profileResponse?.profile?.notificationsEmail === "boolean"
+                  ? profileResponse.profile.notificationsEmail
+                  : current.profile.notificationsEmail,
+              notificationsReminder:
+                typeof profileResponse?.profile?.notificationsReminder === "boolean"
+                  ? profileResponse.profile.notificationsReminder
+                  : current.profile.notificationsReminder
             },
             session: authResponse?.user
               ? sessionUserFromAuthMe(authResponse.user, current.session)
@@ -1162,7 +1413,7 @@ export function App() {
                 }
               : current.intake,
             subscription: mergeSubscriptionFromApi(
-              current.subscription,
+              subscriptionBaseline,
               latestPackage,
               profileResponse?.profile?.recentPackages
             ),
@@ -1544,20 +1795,24 @@ export function App() {
               : readDismissedCalendarPromptUsers();
           writeDismissedCalendarPromptUsers(nextDismissed);
           setCalendarPromptDismissedUserIds(nextDismissed);
-          setState((current) => ({
-            ...defaultState,
-            language: current.language,
-            currency: current.currency,
-            patientMarket: current.patientMarket,
-            profileResidencyCountry: current.profileResidencyCountry,
-            profile: {
-              ...defaultProfile,
-              timezone: sessionTimezone
-            },
-            session: user,
-            authToken: token,
-            emailVerificationRequired
-          }));
+          setState((current) => {
+            const preserved = readPersistedPortalStateForUser(String(user.id));
+            return {
+              ...defaultState,
+              ...(preserved ?? {}),
+              language: current.language,
+              currency: current.currency,
+              patientMarket: current.patientMarket,
+              profileResidencyCountry: current.profileResidencyCountry,
+              profile: {
+                ...defaultProfile,
+                timezone: sessionTimezone
+              },
+              session: user,
+              authToken: token,
+              emailVerificationRequired
+            };
+          });
         }}
       />
     );

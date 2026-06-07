@@ -9,6 +9,7 @@ import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyS
 import { prisma } from "../../lib/prisma.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import { notifyPatientOnProfessionalBookingChange } from "../notifications/bookingLifecycleNotifications.js";
+import { sendPatientEmailForBooking } from "../notifications/patientEmailService.js";
 import { sendProfessionalInAppBookingCancellation } from "../notifications/professionalInAppNotifications.js";
 import {
   cancelGoogleMeetEventForPlatformCalendar,
@@ -912,6 +913,13 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       ttlSeconds: 24 * 60 * 60
     });
   }
+
+  void sendPatientEmailForBooking({
+    bookingId: createdBooking.booking.id,
+    eventType: "booking_confirmed"
+  }).catch((error) => {
+    console.error("Could not send booking confirmation email", error);
+  });
 
   return res.status(201).json({
     policy: {

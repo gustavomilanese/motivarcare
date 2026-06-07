@@ -12,6 +12,7 @@ import {
 import { defaultPackagePlans } from "../constants";
 import { professionalPhotoSrc } from "../services/api";
 import { fetchSharedPatientAvailabilitySlots } from "../lib/fetchPatientAvailabilitySlotsShared";
+import { recordPaymentFailureNotice } from "../notifications/portalNotificationStorage";
 import { loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
@@ -146,6 +147,18 @@ export function BookingPage(props: {
   const [individualPaymentCount, setIndividualPaymentCount] = useState<number | null>(null);
   const [individualPaymentLoading, setIndividualPaymentLoading] = useState(false);
   const [individualPaymentError, setIndividualPaymentError] = useState("");
+  useEffect(() => {
+    const message = checkoutPaymentError.trim();
+    if (message) {
+      recordPaymentFailureNotice(message);
+    }
+  }, [checkoutPaymentError]);
+  useEffect(() => {
+    const message = individualPaymentError.trim();
+    if (message) {
+      recordPaymentFailureNotice(message);
+    }
+  }, [individualPaymentError]);
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);

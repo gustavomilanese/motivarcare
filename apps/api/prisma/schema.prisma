@@ -124,6 +124,8 @@ model PatientProfile {
   timezone       String                   @default("America/New_York")
   lastSeenTimezone String?
   status         String                   @default("active")
+  notificationsEmail    Boolean           @default(true) @map("notifications_email")
+  notificationsReminder Boolean           @default(true) @map("notifications_reminder")
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
   user           User                     @relation(fields: [userId], references: [id])
@@ -139,6 +141,7 @@ model PatientProfile {
   treatmentChat  PatientTreatmentChat?
   emotionalDiarySettings EmotionalDiarySettings?
   emotionalDiaryEntries  EmotionalDiaryEntry[]
+  emailDeliveries PatientEmailDelivery[]
 }
 
 model ProfessionalProfile {
@@ -651,6 +654,21 @@ model OutboxEvent {
 
   @@index([status, availableAt])
   @@index([createdAt])
+}
+
+/// Registro de emails transaccionales enviados al paciente (deduplicación para cron y hooks).
+model PatientEmailDelivery {
+  id        String   @id @default(cuid())
+  patientId String   @map("patient_id")
+  dedupeKey String   @unique @map("dedupe_key") @db.VarChar(191)
+  eventType String   @map("event_type") @db.VarChar(80)
+  bookingId String?  @map("booking_id")
+  sentAt    DateTime @default(now()) @map("sent_at")
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, sentAt])
+  @@map("patient_email_deliveries")
 }
 
 /// Eventos de seguridad legibles desde Admin (complemento a logs de Railway/Vercel).

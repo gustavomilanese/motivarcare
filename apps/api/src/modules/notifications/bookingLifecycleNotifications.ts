@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
-import { sendPatientBookingLifecycleEmail } from "./patientEmailNotifications.js";
 import { sendPatientInAppBookingNotification } from "./patientInAppNotifications.js";
+import { sendPatientEmailForBooking } from "./patientEmailService.js";
 
 type BookingLifecycleEvent = "professional_rescheduled" | "professional_cancelled";
 
@@ -53,11 +53,9 @@ export async function notifyPatientOnProfessionalBookingChange(params: {
       nextStartsAt: params.nextStartsAt,
       reason: params.reason
     }),
-    sendPatientBookingLifecycleEmail({
-      event: params.event,
-      patientEmail: booking.patient.user.email,
-      patientName: booking.patient.user.fullName,
-      professionalName: booking.professional.user.fullName,
+    sendPatientEmailForBooking({
+      bookingId: booking.id,
+      eventType: params.event === "professional_cancelled" ? "booking_cancelled" : "booking_rescheduled",
       previousStartsAt: params.previousStartsAt,
       nextStartsAt: params.nextStartsAt,
       reason: params.reason

@@ -11,6 +11,9 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
 import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
+import { useMobilePortal } from "../hooks/useMobilePortal";
+import { kindLabel } from "../notifications/buildPortalNotifications";
+import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import type { ProfileTab } from "../types";
 import type { Market } from "@therapy/types";
 
@@ -146,21 +149,14 @@ export function PortalNavigation(props: {
   favoriteCount: number;
   notificationsUnreadCount: number;
   notificationsOpen: boolean;
-  notifications: Array<{
-    id: string;
-    title: string;
-    body: string;
-    detail: string;
-    meta: string;
-    unread: boolean;
-    professionalId: string;
-  }>;
+  notifications: PortalNotificationItem[];
   menuOpen: boolean;
   languageSummary: string;
   currencySummary: string;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
   onToggleNotifications: () => void;
+  onOpenNotification: (item: PortalNotificationItem) => void;
   onOpenNotificationThread: (professionalId: string) => void;
   onOpenProfileTab: (tab: ProfileTab) => void;
   onOpenPreferences: () => void;
@@ -334,6 +330,7 @@ export function PortalNavigation(props: {
     { name: mobileFirstName || t(props.language, { es: "paciente", en: "there", pt: "paciente" }) }
   );
 
+  const isMobilePortal = useMobilePortal();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   useEffect(() => {
@@ -363,6 +360,150 @@ export function PortalNavigation(props: {
       <div className="portal-immersive-mobile-greet">
         <span className="portal-immersive-mobile-greet-label">{mobileGreeting}</span>
       </div>
+    );
+  }
+
+  function renderAccountMenuDropdown() {
+    return (
+      <>
+        <button
+          type="button"
+          className="menu-dropdown-backdrop"
+          aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
+          onClick={props.onCloseMenu}
+        />
+        <div
+          className={`menu-dropdown${isMobilePortal ? " menu-dropdown--account-sheet" : ""}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t(props.language, { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" })}
+        >
+          <div className="menu-panel-head">
+            <div className="menu-panel-head-copy">
+              <strong>{props.sessionEmail ?? ""}</strong>
+              <span>{props.sessionFullName ?? ""}</span>
+            </div>
+            <button
+              type="button"
+              className="menu-dropdown-close"
+              aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
+              onClick={props.onCloseMenu}
+            >
+              ×
+            </button>
+          </div>
+
+          <section
+            className="menu-dropdown-group menu-dropdown-account"
+            aria-label={t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
+          >
+            <p className="menu-dropdown-section-label">
+              {t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
+            </p>
+            <button className="menu-item menu-item--primary" type="button" onClick={() => props.onOpenProfileTab("data")}>
+              {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
+            </button>
+            <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
+              {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
+            </button>
+          </section>
+
+          <section
+            className="menu-dropdown-group menu-dropdown-settings"
+            aria-label={t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+          >
+            <p className="menu-dropdown-section-label">
+              {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+            </p>
+            <button className="menu-item menu-item--primary" type="button" onClick={() => props.onOpenProfileTab("settings")}>
+              {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+            </button>
+            <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
+              {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
+            </button>
+            <button className="menu-item menu-item--sub menu-item--value" type="button" onClick={props.onOpenPreferences}>
+              <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
+              <small>
+                {props.languageSummary} · {props.currencySummary}
+              </small>
+            </button>
+          </section>
+
+          <PortalHelpLegalMenuSection
+            language={props.language}
+            residencyCountry={props.residencyCountry}
+            patientMarket={props.patientMarket}
+            onNavigate={props.onCloseMenu}
+            onOpenSupport={() => props.onOpenProfileTab("support")}
+          />
+
+          <button className="menu-item menu-item--danger" type="button" onClick={props.onLogout}>
+            {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
+          </button>
+          {isMobilePortal ? <div className="menu-dropdown-sheet-foot" aria-hidden="true" /> : null}
+        </div>
+      </>
+    );
+  }
+
+  function renderNotificationsPanel() {
+    return (
+      <>
+        {isMobilePortal ? (
+          <button
+            type="button"
+            className="notifications-dropdown-backdrop"
+            aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
+            onClick={props.onToggleNotifications}
+          />
+        ) : null}
+        <div
+          className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : ""}`}
+          role="dialog"
+          aria-modal={isMobilePortal ? "true" : undefined}
+          aria-label={t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}
+        >
+          <div className="notifications-head">
+            <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
+            {isMobilePortal ? (
+              <button
+                type="button"
+                className="menu-dropdown-close"
+                aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
+                onClick={props.onToggleNotifications}
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+          <div className="menu-sep" />
+          {props.notifications.length === 0 ? (
+            <div className="notifications-empty-box" role="status">
+              <p className="notifications-empty">
+                {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
+              </p>
+            </div>
+          ) : (
+            <ul className="notifications-list">
+              {props.notifications.slice(0, 12).map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className={`notification-item ${item.unread ? "unread" : ""}`}
+                    onClick={() => props.onOpenNotification(item)}
+                  >
+                    <span>{kindLabel(props.language, item.kind)}</span>
+                    <strong>{item.title}</strong>
+                    {item.body ? <em className="notification-item-body">{item.body}</em> : null}
+                    {item.detail ? <em>{item.detail}</em> : null}
+                    {item.meta ? <small>{item.meta}</small> : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </>
     );
   }
 
@@ -400,32 +541,11 @@ export function PortalNavigation(props: {
               </svg>
               {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
             </button>
-            {props.notificationsOpen ? (
-              <div className="notifications-dropdown">
-                <div className="notifications-head">
-                  <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
-                </div>
-                <div className="menu-sep" />
-                {props.notifications.length === 0 ? (
-                  <p className="notifications-empty">
-                    {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
-                  </p>
-                ) : (
-                  <ul className="notifications-list">
-                    {props.notifications.slice(0, 8).map((item) => (
-                      <li key={item.id}>
-                        <button type="button" className={`notification-item ${item.unread ? "unread" : ""}`} onClick={() => props.onOpenNotificationThread(item.professionalId)}>
-                          <span>{item.title}</span>
-                          <strong>{item.body}</strong>
-                          {item.detail ? <em>{item.detail}</em> : null}
-                          <small>{item.meta}</small>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : null}
+            {props.notificationsOpen
+              ? isMobilePortal
+                ? createPortal(renderNotificationsPanel(), document.body)
+                : renderNotificationsPanel()
+              : null}
           </div>
         </div>
         <div className="menu-wrap">
@@ -437,85 +557,11 @@ export function PortalNavigation(props: {
           >
             <IconMenu className="menu-toggle-icon" />
           </button>
-          {props.menuOpen ? (
-            <>
-              <button
-                type="button"
-                className="menu-dropdown-backdrop"
-                aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
-                onClick={props.onCloseMenu}
-              />
-              <div
-                className="menu-dropdown"
-                role="dialog"
-                aria-modal="true"
-                aria-label={t(props.language, { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" })}
-              >
-                <div className="menu-panel-head">
-                  <div className="menu-panel-head-copy">
-                    <strong>{props.sessionEmail ?? ""}</strong>
-                    <span>{props.sessionFullName ?? ""}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="menu-dropdown-close"
-                    aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
-                    onClick={props.onCloseMenu}
-                  >
-                    ×
-                  </button>
-                </div>
-
-              <section
-                className="menu-dropdown-group menu-dropdown-account"
-                aria-label={t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
-              >
-                <p className="menu-dropdown-section-label">
-                  {t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}
-                </p>
-                <button className="menu-item menu-item--primary" type="button" onClick={() => props.onOpenProfileTab("data")}>
-                  {t(props.language, { es: "Mi Cuenta", en: "My account", pt: "Minha conta" })}
-                </button>
-                <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
-                  {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
-                </button>
-              </section>
-
-              <section
-                className="menu-dropdown-group menu-dropdown-settings"
-                aria-label={t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-              >
-                <p className="menu-dropdown-section-label">
-                  {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-                </p>
-                <button className="menu-item menu-item--primary" type="button" onClick={() => props.onOpenProfileTab("settings")}>
-                  {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-                </button>
-                <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
-                  {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
-                </button>
-                <button className="menu-item menu-item--sub menu-item--value" type="button" onClick={props.onOpenPreferences}>
-                  <span>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</span>
-                  <small>
-                    {props.languageSummary} · {props.currencySummary}
-                  </small>
-                </button>
-              </section>
-
-              <PortalHelpLegalMenuSection
-                language={props.language}
-                residencyCountry={props.residencyCountry}
-                patientMarket={props.patientMarket}
-                onNavigate={props.onCloseMenu}
-                onOpenSupport={() => props.onOpenProfileTab("support")}
-              />
-
-              <button className="menu-item menu-item--danger" type="button" onClick={props.onLogout}>
-                {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}
-              </button>
-              </div>
-            </>
-          ) : null}
+          {props.menuOpen
+            ? isMobilePortal
+              ? createPortal(renderAccountMenuDropdown(), document.body)
+              : renderAccountMenuDropdown()
+            : null}
         </div>
       </div>
     );

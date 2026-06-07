@@ -34,6 +34,7 @@ const EnvSchema = z.object({
   OUTBOX_BATCH_SIZE: z.coerce.number().int().positive().max(1000).default(100),
   OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().positive().default(12),
   OUTBOX_RETRY_BASE_MS: z.coerce.number().int().positive().default(10000),
+  NOTIFICATION_POLL_MS: z.coerce.number().int().positive().default(300000),
   EMAIL_VERIFICATION_REQUIRED: z.coerce.boolean().optional(),
   EMAIL_VERIFICATION_TOKEN_TTL_HOURS: z.coerce.number().int().positive().default(24),
   PATIENT_APP_URL: z.string().min(1).default("http://localhost:5173"),

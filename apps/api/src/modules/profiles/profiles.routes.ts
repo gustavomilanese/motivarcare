@@ -25,6 +25,10 @@ import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer } from "./intake.shared.js";
 import { sendPatientSafetyReferralEmail } from "../notifications/patientSafetyReferralEmail.js";
 import { sendProfessionalChangeRequestEmail } from "../notifications/patientSupportEmail.js";
+import {
+  sendPatientEmailForProfessionalAssigned,
+  sendPatientEmailForPurchase
+} from "../notifications/patientEmailService.js";
 import { getEmergencyResources } from "@therapy/types";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
@@ -833,6 +837,8 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         residencyCountry: patient?.residencyCountry ?? null,
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
+        notificationsEmail: patient?.notificationsEmail ?? true,
+        notificationsReminder: patient?.notificationsReminder ?? true,
         status: patient?.status,
         intakeRiskLevel,
         intakeTriageDecision,
@@ -1053,6 +1059,50 @@ profilesRouter.patch("/me/market", requireAuth, async (req: AuthenticatedRequest
   return res.json({ role: "PATIENT" as const, profile: updated });
 });
 
+const notificationPreferencesSchema = z.object({
+  notificationsEmail: z.boolean().optional(),
+  notificationsReminder: z.boolean().optional()
+});
+
+profilesRouter.patch("/me/notification-preferences", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = notificationPreferencesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can update notification preferences" });
+  }
+
+  if (parsed.data.notificationsEmail === undefined && parsed.data.notificationsReminder === undefined) {
+    return res.status(400).json({ error: "No preference fields provided" });
+  }
+
+  const updated = await prisma.patientProfile.update({
+    where: { id: actor.patientProfileId },
+    data: {
+      ...(parsed.data.notificationsEmail !== undefined
+        ? { notificationsEmail: parsed.data.notificationsEmail }
+        : {}),
+      ...(parsed.data.notificationsReminder !== undefined
+        ? { notificationsReminder: parsed.data.notificationsReminder }
+        : {})
+    },
+    select: {
+      id: true,
+      notificationsEmail: true,
+      notificationsReminder: true
+    }
+  });
+
+  return res.json({ role: "PATIENT" as const, profile: updated });
+});
+
 profilesRouter.patch("/me/active-professional", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -1126,6 +1176,7 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
 
   const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const previousProfessionalId = assignments[patient.id] ?? null;
 
   if (activeProfessional) {
     assignments[patient.id] = activeProfessional.id;
@@ -1141,6 +1192,15 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
       value: assignments
     }
   });
+
+  if (activeProfessional && activeProfessional.id !== previousProfessionalId) {
+    void sendPatientEmailForProfessionalAssigned({
+      patientId: patient.id,
+      professionalId: activeProfessional.id
+    }).catch((error) => {
+      console.error("Could not send professional assigned email", error);
+    });
+  }
 
   return res.json({
     patientId: patient.id,
@@ -1308,6 +1368,10 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     return createdPurchase;
   });
 
+  void sendPatientEmailForPurchase({ purchaseId: purchase.id }).catch((error) => {
+    console.error("Could not send purchase confirmation email", error);
+  });
+
   return res.status(201).json({
     purchase: {
       id: purchase.id,
@@ -1450,6 +1514,10 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
     });
 
     return createdPurchase;
+  });
+
+  void sendPatientEmailForPurchase({ purchaseId: purchase.id }).catch((error) => {
+    console.error("Could not send purchase confirmation email", error);
   });
 
   return res.status(201).json({

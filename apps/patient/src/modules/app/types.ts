@@ -57,6 +57,8 @@ export interface ProfileMeApiResponse {
     market?: Market;
     timezone?: string;
     lastSeenTimezone?: string | null;
+    notificationsEmail?: boolean;
+    notificationsReminder?: boolean;
     status?: string;
     intakeRiskLevel?: "low" | "medium" | "high" | null;
     intakeTriageDecision?: "pending" | "approved" | "cancelled" | null;

@@ -5679,3 +5679,135 @@ button.primary.finance-hero-search {
 .admin-pro-photo-error {
   margin: 0;
 }
+
+/* —— Email notification settings (Configuración) —— */
+.email-notif-settings {
+  gap: 16px;
+}
+
+.email-notif-settings-toolbar {
+  padding: 16px 18px;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  background: linear-gradient(165deg, #faf8ff 0%, #ffffff 55%);
+}
+
+.email-notif-settings-toolbar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.email-notif-settings-toolbar-head h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.email-notif-master-toggle {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.08);
+  border: 1px solid rgba(95, 68, 235, 0.16);
+}
+
+.email-notif-cron-grid {
+  margin-top: 4px;
+}
+
+.email-notif-field-hint {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.email-notif-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.email-notif-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #f8fafc;
+  color: #334155;
+}
+
+.email-notif-pill.ok {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(22, 163, 74, 0.08);
+  color: #166534;
+}
+
+.email-notif-pill.warn {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+}
+
+.email-notif-pill.muted {
+  font-weight: 500;
+}
+
+.email-notif-event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.email-notif-event-card {
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.email-notif-event-card.is-on {
+  border-color: rgba(95, 68, 235, 0.22);
+  box-shadow: 0 8px 22px rgba(95, 68, 235, 0.06);
+}
+
+.email-notif-event-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.email-notif-event-card-head h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.email-notif-event-card-head p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.email-notif-event-fields {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(15, 23, 42, 0.1);
+}
+
+.email-notif-immediate-tag {
+  margin: 8px 0 0;
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}

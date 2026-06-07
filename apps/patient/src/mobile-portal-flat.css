@@ -27,12 +27,14 @@
 
   .portal-main,
   .portal-main:has(.sessions-booking-page),
-  .portal-main:has(.patient-dashboard-home) {
+  .portal-main:has(.patient-dashboard-home),
+  .portal-main:has(.diary-page--home) {
     background: var(--mobile-canvas);
   }
 
   .portal-main:has(.patient-dashboard-home),
   .portal-main:has(.sessions-booking-page),
+  .portal-main:has(.diary-page--home),
   .portal-main:has(.wa-shell),
   .portal-main:has(.profile-layout),
   .portal-main:has(.wellbeing-relax-page) {
@@ -95,6 +97,104 @@
     color: #fff;
   }
 
+  .portal-mobile-nav .mobile-nav-link,
+  .portal-mobile-nav .mobile-nav-link-inner {
+    overflow: visible;
+  }
+
+  .portal-mobile-nav .mobile-nav-badge {
+    z-index: 2;
+    box-shadow: 0 0 0 2px var(--mobile-surface);
+  }
+
+  /* Immersive home routes: keep bottom tab bar visible (main mobile nav) */
+  .portal-main--diary-home > .portal-mobile-nav,
+  .portal-main--dashboard-home > .portal-mobile-nav,
+  .portal-main--sessions-home > .portal-mobile-nav,
+  .portal-main--wellbeing-relax > .portal-mobile-nav {
+    display: flex !important;
+    height: auto !important;
+    overflow: visible !important;
+    border-top: 1px solid var(--mobile-divider);
+  }
+
+  /* Notifications: bottom sheet on mobile (avoids hero overflow clipping) */
+  .notifications-dropdown-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 279;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.44);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    cursor: pointer;
+  }
+
+  .notifications-dropdown.notifications-dropdown--mobile-sheet {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(72dvh, 520px);
+    margin: 0;
+    padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 0;
+    border: none;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--mobile-divider);
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14);
+    z-index: 280;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 14px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    background: var(--mobile-surface);
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .menu-sep {
+    display: none;
+  }
+
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-list,
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-empty-box {
+    padding: 12px var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+  }
+
+  .notifications-empty-box {
+    margin: 0;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--mobile-divider);
+    background: var(--mobile-canvas);
+    text-align: center;
+  }
+
+  .notifications-empty-box .notifications-empty {
+    margin: 0;
+    color: var(--mobile-text-secondary);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  body.portal-notifications-open .portal-mobile-nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   /* More sheet: flat bottom panel */
   .portal-mobile-more-backdrop {
     backdrop-filter: none;
@@ -139,6 +239,163 @@
     background: rgba(255, 255, 255, 0.94);
     color: #5f44eb;
     box-shadow: 0 4px 14px rgba(95, 68, 235, 0.16);
+  }
+
+  /* Menú cuenta: panel lateral (portaled a body — por encima del tab bar) */
+  body.portal-account-menu-open .portal-mobile-nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .menu-dropdown-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 280;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.44);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    cursor: pointer;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(360px, 92vw);
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    border: none;
+    border-left: 1px solid rgba(95, 68, 235, 0.22);
+    border-radius: 0;
+    background:
+      radial-gradient(ellipse 120% 80% at 100% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(95, 68, 235, 0.07) 0%, transparent 45%),
+      linear-gradient(180deg, #f3efff 0%, #faf8ff 14%, #ffffff 42%, #f8fafc 100%);
+    box-shadow: -14px 0 48px rgba(95, 68, 235, 0.14), -4px 0 28px rgba(15, 23, 42, 0.1);
+    z-index: 281;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand) 0%, #8b5cf6 52%, #c4b5fd 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: rgba(250, 248, 255, 0.94);
+    padding: calc(12px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    border-bottom: 1px solid rgba(95, 68, 235, 0.14);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-dropdown-group {
+    gap: 0;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-dropdown-section-label {
+    margin: 0;
+    padding: 10px var(--mobile-pad-x) 4px;
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    color: var(--mobile-label);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item,
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--help {
+    min-height: var(--mobile-row-min);
+    margin: 0;
+    padding: 13px var(--mobile-pad-x-end) 13px var(--mobile-pad-x);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--mobile-text-primary);
+    text-decoration: none;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--primary {
+    font-weight: 600;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--sub {
+    padding: 11px var(--mobile-pad-x-end) 11px calc(var(--mobile-pad-x) + 12px);
+    border-left: none;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--mobile-text-secondary);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item:hover,
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--help:hover {
+    background: rgba(95, 68, 235, 0.06);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item:active,
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--help:active {
+    background: rgba(95, 68, 235, 0.1);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--danger {
+    margin: 0;
+    border: none;
+    border-top: 1px solid var(--mobile-divider);
+    border-radius: 0;
+    font-weight: 600;
+    color: #b4232e;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-item--danger:hover {
+    background: rgba(180, 35, 46, 0.06);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-dropdown-emergency {
+    padding-bottom: 8px;
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-dropdown-phones-list {
+    padding: 0 var(--mobile-pad-x-end) 4px calc(var(--mobile-pad-x) + 12px);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-dropdown-phones-note {
+    padding: 4px var(--mobile-pad-x-end) 8px calc(var(--mobile-pad-x) + 12px);
+  }
+
+  .menu-dropdown.menu-dropdown--account-sheet .menu-sep {
+    display: none;
+  }
+
+  .menu-dropdown-sheet-foot {
+    flex-shrink: 0;
+    height: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .portal-mobile-more-sheet-head {
@@ -1090,13 +1347,13 @@
 
   .portal-main .patient-dashboard-home .dashboard-rn-home {
     margin-top: 0;
-    background: var(--mobile-canvas);
+    background: var(--mobile-surface);
     padding-bottom: calc(var(--portal-tab-clear, 72px) + 8px);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-scroll {
     padding: 0;
-    background: var(--mobile-canvas);
+    background: var(--mobile-surface);
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-toolbar {
@@ -1161,7 +1418,7 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-rn-section {
-    padding: 0 0 12px;
+    padding: 0 0 14px;
     margin: 0 !important;
     background: var(--mobile-canvas) !important;
     border-bottom: none;
@@ -1214,7 +1471,7 @@
 
   .portal-main .patient-dashboard-home .dashboard-rn-session-list {
     gap: 10px;
-    padding: 0 var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
     background: var(--mobile-canvas);
   }
 
@@ -1843,6 +2100,44 @@
 
   .payment-modal--success .payment-modal-footer {
     margin-top: 8px;
+  }
+
+  /* —— Portrait mobile: unified immersive heroes (match Inicio) —— */
+  .portal-main .patient-dashboard-home .dashboard-hero-banner,
+  .portal-main .patient-dashboard-home .dashboard-hero-banner--loading,
+  .portal-main .diary-hero-banner,
+  .portal-main .sessions-booking-page .sessions-hero-banner {
+    min-height: clamp(208px, 41.6vw, 288px);
+    max-height: none;
+  }
+
+  .portal-main .diary-home-band--intro,
+  .portal-main .diary-section-intro,
+  .portal-main .diary-page-header--hero-banner,
+  .portal-main .diary-hero-banner-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-hero-banner-copy,
+  .portal-main .diary-hero-banner-copy,
+  .portal-main .sessions-booking-page .sessions-hero-banner-copy {
+    padding-left: var(--mobile-pad-x);
+    padding-right: var(--mobile-pad-x-end);
+  }
+
+  .portal-main--diary-home,
+  .portal-main--dashboard-home,
+  .portal-main--sessions-home {
+    gap: 0;
+  }
+
+  .portal-main .sessions-booking-page .sessions-hero-immersive {
+    margin-bottom: 0;
   }
 
   /* —— Landscape / short viewport: shorter heroes, compact tab bar —— */

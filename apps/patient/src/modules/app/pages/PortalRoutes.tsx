@@ -1,4 +1,5 @@
 import { syncUserTimezone } from "@therapy/auth";
+import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
 import { textByLanguage, type LocalizedText } from "@therapy/i18n-config";
 import { Navigate, Route, Routes, type NavigateFunction } from "react-router-dom";
 import type { SyntheticEvent } from "react";
@@ -484,6 +485,13 @@ export function PortalRoutes(props: {
                         persistPreference: true
                       }).catch((error) => {
                         console.error("Could not persist patient timezone preference", error);
+                      });
+                      void syncPatientNotificationPreferences({
+                        token: props.state.authToken,
+                        notificationsEmail: profile.notificationsEmail,
+                        notificationsReminder: profile.notificationsReminder
+                      }).catch((error) => {
+                        console.error("Could not persist patient notification preferences", error);
                       });
                     }}
                     onNavigateHome={() => props.navigate("/")}

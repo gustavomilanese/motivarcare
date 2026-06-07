@@ -1,7 +1,11 @@
-import type { Market, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { computeFxSnapshot } from "../lib/fxSnapshot.js";
 import { prisma } from "../lib/prisma.js";
 import { getFinanceRules } from "../modules/finance/finance.service.js";
+import {
+  sendPatientEmailForPaymentFailed,
+  sendPatientEmailForPurchase
+} from "../modules/notifications/patientEmailService.js";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -32,7 +36,7 @@ async function resolvePackageForCheckout(params: {
   stripePriceId: string | null;
   packageCredits: number | null;
   currency: string;
-  market: Market | null;
+  market: import("@prisma/client").Market | null;
 }) {
   if (params.stripePriceId) {
     if (params.market) {
@@ -90,7 +94,7 @@ async function processStripeCheckoutCompleted(payload: unknown) {
   const packageCredits = parsePackageCredits(metadata?.packageSize);
   const currency = normalizeCurrency(checkoutSession?.currency ?? metadata?.currency);
   const marketRaw = metadata?.market;
-  const market: Market | null =
+  const market: import("@prisma/client").Market | null =
     marketRaw === "AR" || marketRaw === "US" || marketRaw === "BR" || marketRaw === "ES"
       ? marketRaw
       : stripePriceId
@@ -103,16 +107,26 @@ async function processStripeCheckoutCompleted(payload: unknown) {
   }
 
   if (paymentStatus !== "paid") {
+    await sendPatientEmailForPaymentFailed({
+      patientId,
+      checkoutSessionId,
+      failureMessage: `Estado del pago: ${paymentStatus}`
+    }).catch((error) => {
+      console.error("Could not send payment failed email", error);
+    });
     return;
   }
 
   const financeRules = await getFinanceRules();
+
+  let purchaseIdForEmail: string | null = null;
 
   await prisma.$transaction(async (tx) => {
     const existingPurchase = await tx.patientPackagePurchase.findUnique({
       where: { stripeCheckoutSessionId: checkoutSessionId }
     });
     if (existingPurchase) {
+      purchaseIdForEmail = existingPurchase.id;
       return;
     }
 
@@ -193,6 +207,8 @@ async function processStripeCheckoutCompleted(payload: unknown) {
       }
     });
 
+    purchaseIdForEmail = purchase.id;
+
     await tx.creditLedger.create({
       data: {
         patientId: patient.id,
@@ -218,6 +234,23 @@ async function processStripeCheckoutCompleted(payload: unknown) {
       }
     });
   });
+
+  if (purchaseIdForEmail) {
+    await sendPatientEmailForPurchase({ purchaseId: purchaseIdForEmail }).catch((error) => {
+      console.error("Could not send Stripe purchase confirmation email", error);
+    });
+  }
+}
+
+async function processPackagePurchaseRecorded(payload: unknown) {
+  const record = asRecord(payload);
+  const purchaseId = typeof record?.purchaseId === "string" ? record.purchaseId : null;
+  if (!purchaseId) {
+    return;
+  }
+  await sendPatientEmailForPurchase({ purchaseId }).catch((error) => {
+    console.error("Could not send purchase confirmation email from outbox", error);
+  });
 }
 
 export async function processOutboxEvent(params: {
@@ -226,6 +259,11 @@ export async function processOutboxEvent(params: {
 }): Promise<void> {
   if (params.eventType === "stripe.checkout.session.completed") {
     await processStripeCheckoutCompleted(params.payload);
+    return;
+  }
+
+  if (params.eventType === "billing.package_purchase_recorded") {
+    await processPackagePurchaseRecorded(params.payload);
     return;
   }
 

@@ -32,7 +32,12 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 function getUnreadCount(messages: Message[], professionalId?: string): number {
-  return messages.filter((message) => !message.read && (!professionalId || message.professionalId === professionalId)).length;
+  return messages.filter(
+    (message) =>
+      message.sender === "professional" &&
+      !message.read &&
+      (!professionalId || message.professionalId === professionalId)
+  ).length;
 }
 
 function hasConfirmedTrialBooking(bookings: Booking[]): boolean {
@@ -86,12 +91,17 @@ export function MainPortal(props: {
   const ui = usePortalUiState({
     navigate,
     onStateChange: props.onStateChange,
-    onLogout: props.onLogout
+    onLogout: props.onLogout,
+    assignedProfessionalId: props.state.assignedProfessionalId,
+    onOpenBooking: setSelectedBookingId
   });
   const { remoteUnreadMessagesCount, notificationItems, notificationsUnreadCount } = usePortalNotifications({
     authToken: props.state.authToken,
     language: props.state.language,
-    messages: props.state.messages
+    state: props.state,
+    professionals: props.professionalDirectory,
+    sessionTimezone: props.sessionTimezone,
+    showCalendarReconnectCta: Boolean(props.showPatientGoogleCalendarReconnectCta)
   });
   const localUnreadMessagesCount = getUnreadCount(props.state.messages);
   const unreadMessagesCount = props.state.authToken
@@ -276,6 +286,7 @@ export function MainPortal(props: {
         onToggleMenu={ui.toggleMenu}
         onCloseMenu={ui.closeMenu}
         onToggleNotifications={ui.toggleNotifications}
+        onOpenNotification={ui.openNotification}
         onOpenNotificationThread={ui.openNotificationThread}
         onOpenProfileTab={ui.openProfileTabFromMenu}
         onOpenPreferences={ui.openPreferences}

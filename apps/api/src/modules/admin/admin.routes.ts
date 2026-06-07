@@ -25,7 +25,9 @@ import {
   relaxationPlaylistsPutSchema
 } from "../web-content/relaxationPlaylists.defaults.js";
 import { financeRouter } from "../finance/finance.routes.js";
+import { patientEmailSettingsRouter } from "../notifications/patientEmailSettings.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import { sendPatientEmailForProfessionalAssigned } from "../notifications/patientEmailService.js";
 import {
   parseSessionPackagesVisibility,
   sessionPackagesVisibilityPutSchema,
@@ -685,6 +687,7 @@ export const adminRouter = Router();
 
 adminRouter.use(requireAuth, requireRole(["ADMIN"]));
 adminRouter.use("/finance", financeRouter);
+adminRouter.use("/notification-settings", patientEmailSettingsRouter);
 
 function utcMonthRange(reference = new Date()) {
   const start = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), 1, 0, 0, 0, 0));
@@ -2596,6 +2599,7 @@ adminRouter.patch("/patients/:patientId/active-professional", async (req, res) =
 
   const existingConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const currentAssignments = parsePatientAssignments(existingConfig?.value);
+  const previousProfessionalId = currentAssignments[patient.id] ?? null;
 
   if (parsed.data.professionalId) {
     currentAssignments[patient.id] = parsed.data.professionalId;
@@ -2611,6 +2615,15 @@ adminRouter.patch("/patients/:patientId/active-professional", async (req, res) =
       value: currentAssignments
     }
   });
+
+  if (parsed.data.professionalId && parsed.data.professionalId !== previousProfessionalId) {
+    void sendPatientEmailForProfessionalAssigned({
+      patientId: patient.id,
+      professionalId: parsed.data.professionalId
+    }).catch((error) => {
+      console.error("Could not send professional assigned email (admin)", error);
+    });
+  }
 
   return res.json({
     patientId: patient.id,

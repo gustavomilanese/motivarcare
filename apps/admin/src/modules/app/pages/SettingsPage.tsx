@@ -10,6 +10,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
+import { PatientEmailNotificationSettingsSection } from "../components/PatientEmailNotificationSettingsSection";
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { openStickyCollapsibleSection } from "../hooks/useStickySectionNavigation";
 import { SessionPackagesAdminPage } from "./SessionPackagesAdminPage";
@@ -341,6 +342,25 @@ export function SettingsPage(props: {
             </div>
           </>
         ) : null}
+      </CollapsiblePageSection>
+
+      <CollapsiblePageSection
+        sectionId="cfg-email-notifications"
+        summary={t(props.language, {
+          es: "Notificaciones por email (pacientes)",
+          en: "Email notifications (patients)",
+          pt: "Notificacoes por email (pacientes)"
+        })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <p className="settings-section-lead">
+          {t(props.language, {
+            es: "Activa cada tipo de aviso, define cuándo enviar los recordatorios y cada cuánto corre el cron en Railway.",
+            en: "Enable each alert type, set reminder timing, and how often the Railway cron worker runs.",
+            pt: "Ative cada tipo de aviso, defina quando enviar lembretes e a frequencia do cron no Railway."
+          })}
+        </p>
+        <PatientEmailNotificationSettingsSection token={props.token} language={props.language} />
       </CollapsiblePageSection>
 
       <CollapsiblePageSection
