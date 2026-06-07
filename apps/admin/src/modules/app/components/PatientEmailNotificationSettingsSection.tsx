@@ -219,13 +219,15 @@ export function PatientEmailNotificationSettingsSection(props: { token: string; 
           </label>
         </div>
 
-        <div className="grid-form email-notif-cron-grid">
-          <label>
-            {t(props.language, {
-              es: "Frecuencia del cron (minutos)",
-              en: "Cron frequency (minutes)",
-              pt: "Frequencia do cron (minutos)"
-            })}
+        <div className="email-notif-toolbar-controls">
+          <label className="email-notif-cron-field">
+            <span className="email-notif-cron-label">
+              {t(props.language, {
+                es: "Frecuencia del cron (min)",
+                en: "Cron frequency (min)",
+                pt: "Frequencia do cron (min)"
+              })}
+            </span>
             <input
               type="number"
               min={1}
@@ -238,164 +240,160 @@ export function PatientEmailNotificationSettingsSection(props: { token: string; 
                 }))
               }
             />
-            <small className="email-notif-field-hint">
-              {t(props.language, {
-                es: "Cada cuánto el worker busca sesiones para recordatorios programados.",
-                en: "How often the worker scans for scheduled session reminders.",
-                pt: "Com que frequencia o worker busca sessoes para lembretes programados."
-              })}
-            </small>
           </label>
-        </div>
 
-        {meta ? (
-          <div className="email-notif-meta-row">
-            <span className={`email-notif-pill ${meta.resendConfigured ? "ok" : "warn"}`}>
-              {meta.resendConfigured
-                ? t(props.language, { es: "Resend conectado", en: "Resend connected", pt: "Resend conectado" })
-                : t(props.language, { es: "Resend sin API key", en: "Resend missing API key", pt: "Resend sem API key" })}
-            </span>
-            <span className="email-notif-pill muted">{meta.emailFrom}</span>
-          </div>
-        ) : null}
+          {meta ? (
+            <div className="email-notif-meta-row">
+              <span className={`email-notif-pill ${meta.resendConfigured ? "ok" : "warn"}`}>
+                {meta.resendConfigured
+                  ? t(props.language, { es: "Resend conectado", en: "Resend connected", pt: "Resend conectado" })
+                  : t(props.language, { es: "Resend sin API key", en: "Resend missing API key", pt: "Resend sem API key" })}
+              </span>
+              <span className="email-notif-pill muted">{meta.emailFrom}</span>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div className="email-notif-event-grid">
+      <div className="email-notif-list card">
+        <div className="email-notif-list-head" aria-hidden="true">
+          <span>{t(props.language, { es: "Email", en: "Email", pt: "Email" })}</span>
+          <span>{t(props.language, { es: "Programación", en: "Timing", pt: "Programacao" })}</span>
+          <span>{t(props.language, { es: "Activo", en: "On", pt: "Ativo" })}</span>
+        </div>
+
         {(Object.keys(EVENT_LABELS) as EventKey[]).map((eventKey) => {
           const eventConfig = settings.events[eventKey];
           const isScheduled = eventConfig.trigger === "scheduled";
 
           return (
-            <article key={eventKey} className={`email-notif-event-card card stack ${eventConfig.enabled ? "is-on" : ""}`}>
-              <header className="email-notif-event-card-head">
-                <div>
-                  <h4>{t(props.language, EVENT_LABELS[eventKey])}</h4>
-                  <p>{t(props.language, EVENT_HINTS[eventKey])}</p>
-                </div>
-                <label className="inline-toggle">
-                  <input
-                    type="checkbox"
-                    checked={eventConfig.enabled}
-                    onChange={(event) =>
-                      updateSettings((current) => ({
-                        ...current,
-                        events: {
-                          ...current.events,
-                          [eventKey]: { ...current.events[eventKey], enabled: event.target.checked }
+            <article
+              key={eventKey}
+              className={`email-notif-row ${eventConfig.enabled ? "is-on" : "is-off"}`}
+            >
+              <div className="email-notif-row-main">
+                <h4>{t(props.language, EVENT_LABELS[eventKey])}</h4>
+                <p>{t(props.language, EVENT_HINTS[eventKey])}</p>
+              </div>
+
+              <div className="email-notif-row-timing">
+                {isScheduled && eventKey === "booking_reminder_24h" ? (
+                  <div className="email-notif-inline-fields">
+                    <label>
+                      <span>{t(props.language, { es: "Horas antes", en: "Hours before", pt: "Horas antes" })}</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={168}
+                        value={settings.events.booking_reminder_24h.leadTimeHours}
+                        onChange={(event) =>
+                          updateSettings((current) => ({
+                            ...current,
+                            events: {
+                              ...current.events,
+                              booking_reminder_24h: {
+                                ...current.events.booking_reminder_24h,
+                                leadTimeHours: Math.min(168, Math.max(1, Number(event.target.value) || 24))
+                              }
+                            }
+                          }))
                         }
-                      }))
-                    }
-                  />
-                  <span>{t(props.language, { es: "Activo", en: "On", pt: "Ativo" })}</span>
-                </label>
-              </header>
+                      />
+                    </label>
+                    <label>
+                      <span>{t(props.language, { es: "Ventana ± min", en: "Window ± min", pt: "Janela ± min" })}</span>
+                      <input
+                        type="number"
+                        min={5}
+                        max={360}
+                        value={settings.events.booking_reminder_24h.windowMinutes}
+                        onChange={(event) =>
+                          updateSettings((current) => ({
+                            ...current,
+                            events: {
+                              ...current.events,
+                              booking_reminder_24h: {
+                                ...current.events.booking_reminder_24h,
+                                windowMinutes: Math.min(360, Math.max(5, Number(event.target.value) || 120))
+                              }
+                            }
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
 
-              {isScheduled && eventKey === "booking_reminder_24h" ? (
-                <div className="grid-form email-notif-event-fields">
-                  <label>
-                    {t(props.language, { es: "Horas antes del turno", en: "Hours before session", pt: "Horas antes da sessão" })}
-                    <input
-                      type="number"
-                      min={1}
-                      max={168}
-                      value={settings.events.booking_reminder_24h.leadTimeHours}
-                      onChange={(event) =>
-                        updateSettings((current) => ({
-                          ...current,
-                          events: {
-                            ...current.events,
-                            booking_reminder_24h: {
-                              ...current.events.booking_reminder_24h,
-                              leadTimeHours: Math.min(168, Math.max(1, Number(event.target.value) || 24))
+                {isScheduled && eventKey === "booking_reminder_1h" ? (
+                  <div className="email-notif-inline-fields">
+                    <label>
+                      <span>{t(props.language, { es: "Min antes", en: "Min before", pt: "Min antes" })}</span>
+                      <input
+                        type="number"
+                        min={5}
+                        max={1440}
+                        value={settings.events.booking_reminder_1h.leadTimeMinutes}
+                        onChange={(event) =>
+                          updateSettings((current) => ({
+                            ...current,
+                            events: {
+                              ...current.events,
+                              booking_reminder_1h: {
+                                ...current.events.booking_reminder_1h,
+                                leadTimeMinutes: Math.min(1440, Math.max(5, Number(event.target.value) || 60))
+                              }
                             }
-                          }
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    {t(props.language, { es: "Ventana (minutos)", en: "Window (minutes)", pt: "Janela (minutos)" })}
-                    <input
-                      type="number"
-                      min={5}
-                      max={360}
-                      value={settings.events.booking_reminder_24h.windowMinutes}
-                      onChange={(event) =>
-                        updateSettings((current) => ({
-                          ...current,
-                          events: {
-                            ...current.events,
-                            booking_reminder_24h: {
-                              ...current.events.booking_reminder_24h,
-                              windowMinutes: Math.min(360, Math.max(5, Number(event.target.value) || 120))
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>{t(props.language, { es: "Ventana ± min", en: "Window ± min", pt: "Janela ± min" })}</span>
+                      <input
+                        type="number"
+                        min={5}
+                        max={120}
+                        value={settings.events.booking_reminder_1h.windowMinutes}
+                        onChange={(event) =>
+                          updateSettings((current) => ({
+                            ...current,
+                            events: {
+                              ...current.events,
+                              booking_reminder_1h: {
+                                ...current.events.booking_reminder_1h,
+                                windowMinutes: Math.min(120, Math.max(5, Number(event.target.value) || 20))
+                              }
                             }
-                          }
-                        }))
-                      }
-                    />
-                    <small className="email-notif-field-hint">
-                      {t(props.language, {
-                        es: "Tolerancia ± alrededor del momento objetivo (ej. 24 h ± 1 h).",
-                        en: "Tolerance ± around target time (e.g. 24 h ± 1 h).",
-                        pt: "Tolerancia ± em torno do horario alvo (ex.: 24 h ± 1 h)."
-                      })}
-                    </small>
-                  </label>
-                </div>
-              ) : null}
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
 
-              {isScheduled && eventKey === "booking_reminder_1h" ? (
-                <div className="grid-form email-notif-event-fields">
-                  <label>
-                    {t(props.language, { es: "Minutos antes del turno", en: "Minutes before session", pt: "Minutos antes da sessão" })}
-                    <input
-                      type="number"
-                      min={5}
-                      max={1440}
-                      value={settings.events.booking_reminder_1h.leadTimeMinutes}
-                      onChange={(event) =>
-                        updateSettings((current) => ({
-                          ...current,
-                          events: {
-                            ...current.events,
-                            booking_reminder_1h: {
-                              ...current.events.booking_reminder_1h,
-                              leadTimeMinutes: Math.min(1440, Math.max(5, Number(event.target.value) || 60))
-                            }
-                          }
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    {t(props.language, { es: "Ventana (minutos)", en: "Window (minutes)", pt: "Janela (minutos)" })}
-                    <input
-                      type="number"
-                      min={5}
-                      max={120}
-                      value={settings.events.booking_reminder_1h.windowMinutes}
-                      onChange={(event) =>
-                        updateSettings((current) => ({
-                          ...current,
-                          events: {
-                            ...current.events,
-                            booking_reminder_1h: {
-                              ...current.events.booking_reminder_1h,
-                              windowMinutes: Math.min(120, Math.max(5, Number(event.target.value) || 20))
-                            }
-                          }
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-              ) : null}
+                {!isScheduled ? (
+                  <span className="email-notif-immediate-tag">
+                    {t(props.language, { es: "Inmediato", en: "Immediate", pt: "Imediato" })}
+                  </span>
+                ) : null}
+              </div>
 
-              {!isScheduled ? (
-                <p className="email-notif-immediate-tag">
-                  {t(props.language, { es: "Envío inmediato", en: "Immediate send", pt: "Envio imediato" })}
-                </p>
-              ) : null}
+              <label className="inline-toggle email-notif-row-toggle">
+                <input
+                  type="checkbox"
+                  checked={eventConfig.enabled}
+                  onChange={(event) =>
+                    updateSettings((current) => ({
+                      ...current,
+                      events: {
+                        ...current.events,
+                        [eventKey]: { ...current.events[eventKey], enabled: event.target.checked }
+                      }
+                    }))
+                  }
+                />
+                <span>{t(props.language, { es: "Activo", en: "On", pt: "Ativo" })}</span>
+              </label>
             </article>
           );
         })}
