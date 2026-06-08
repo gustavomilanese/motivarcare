@@ -21,6 +21,8 @@ function t(language: PatientAppState["language"], values: { es: string; en: stri
 /** Solo en dev local permitimos créditos/reservas ficticias si el API falla. */
 const allowLocalDemoFallback = import.meta.env.DEV;
 
+export type PortalPurchaseResult = { ok: boolean; error?: string };
+
 export function usePortalActions(params: {
   state: PatientAppState;
   sessionTimezone: string;
@@ -46,14 +48,15 @@ export function usePortalActions(params: {
     }
   };
 
-  const addPackage = async (plan: PackagePlan, source: PackagePurchaseSource): Promise<boolean> => {
+  const addPackage = async (plan: PackagePlan, source: PackagePurchaseSource): Promise<PortalPurchaseResult> => {
     if (source !== "checkout_button") {
-      return false;
+      return { ok: false, error: "Invalid purchase source" };
     }
 
     const selectedProfessionalId = params.state.selectedProfessionalId;
     const authToken = params.state.authToken;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
+    let lastError = "";
 
     if (authToken) {
       try {
@@ -67,16 +70,17 @@ export function usePortalActions(params: {
         );
         purchasedPackage = response.purchase;
       } catch (error) {
-        console.warn("Package purchase API unavailable", error);
+        lastError = error instanceof Error ? error.message : "";
+        console.warn("Package purchase API unavailable", lastError);
         if (!allowLocalDemoFallback) {
-          return false;
+          return { ok: false, error: lastError };
         }
         console.warn("Applying demo credits locally (dev only)");
       }
     }
 
     if (authToken && !purchasedPackage && !allowLocalDemoFallback) {
-      return false;
+      return { ok: false, error: lastError || "Purchase failed" };
     }
 
     params.onStateChange((current) => ({
@@ -108,17 +112,18 @@ export function usePortalActions(params: {
       void syncActiveProfessionalAssignment(selectedProfessionalId);
     }
 
-    return true;
+    return { ok: true };
   };
 
-  const purchaseIndividualSessions = async (sessionCount: number): Promise<boolean> => {
+  const purchaseIndividualSessions = async (sessionCount: number): Promise<PortalPurchaseResult> => {
     if (!Number.isInteger(sessionCount) || sessionCount < 1 || sessionCount > 99) {
-      throw new Error("Invalid session count");
+      return { ok: false, error: "Invalid session count" };
     }
 
     const selectedProfessionalId = params.state.selectedProfessionalId;
     const authToken = params.state.authToken;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
+    let lastError = "";
 
     if (authToken) {
       try {
@@ -132,15 +137,16 @@ export function usePortalActions(params: {
         );
         purchasedPackage = response.purchase;
       } catch (error) {
-        console.warn("Individual sessions purchase API unavailable", error);
+        lastError = error instanceof Error ? error.message : "";
+        console.warn("Individual sessions purchase API unavailable", lastError);
         if (!allowLocalDemoFallback) {
-          return false;
+          return { ok: false, error: lastError };
         }
       }
     }
 
     if (authToken && !purchasedPackage && !allowLocalDemoFallback) {
-      return false;
+      return { ok: false, error: lastError || "Purchase failed" };
     }
 
     params.onStateChange((current) => ({
@@ -172,7 +178,7 @@ export function usePortalActions(params: {
       void syncActiveProfessionalAssignment(selectedProfessionalId);
     }
 
-    return true;
+    return { ok: true };
   };
 
   const confirmBooking = async (

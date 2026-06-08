@@ -379,10 +379,14 @@ publicRouter.get("/session-packages", async (req, res) => {
       : parsed.data.channel === "patient"
         ? patientIdsForMarket
         : [];
-  let orderedPackages =
-    parsed.data.channel
-      ? requestedIds.map((id) => packages.find((item) => item.id === id)).filter((item): item is (typeof packages)[number] => Boolean(item))
-      : packages.slice(0, 3);
+  const packagesFromVisibility = requestedIds
+    .map((id) => packages.find((item) => item.id === id))
+    .filter((item): item is (typeof packages)[number] => Boolean(item));
+  let orderedPackages = parsed.data.channel
+    ? packagesFromVisibility.length > 0
+      ? packagesFromVisibility
+      : packages.filter((item) => item.credits > 1).slice(0, 3)
+    : packages.slice(0, 3);
 
   if (parsed.data.channel === "patient") {
     const singleCredit = packages.find((item) => item.active && item.credits === 1 && item.professionalId === null);
@@ -391,16 +395,20 @@ publicRouter.get("/session-packages", async (req, res) => {
     }
   }
   const featuredPatientForMarket = featuredPatientIdForMarket(visibility, market);
-  const featuredPackageId =
+  const configuredFeaturedPackageId =
     parsed.data.channel === "landing"
       ? featuredLandingIdForSlot(visibility, landingSlot)
       : parsed.data.channel === "patient"
         ? featuredPatientForMarket
         : null;
+  const featuredPackageId =
+    configuredFeaturedPackageId && orderedPackages.some((item) => item.id === configuredFeaturedPackageId)
+      ? configuredFeaturedPackageId
+      : orderedPackages.find((item) => item.credits > 1)?.id ?? orderedPackages[0]?.id ?? null;
 
   return res.json({
     market,
-    featuredPackageId: featuredPackageId && orderedPackages.some((item) => item.id === featuredPackageId) ? featuredPackageId : null,
+    featuredPackageId,
     sessionPackages: orderedPackages.map((item) => {
       const pricingProfile = selectedProfessional ?? item.professional;
       const discountPercent = resolvePackageDiscountPercent({

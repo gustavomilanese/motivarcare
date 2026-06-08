@@ -105,7 +105,12 @@ export function packageBenefitLines(credits: number, t: (values: { es: string; e
   ];
 }
 
-type PublicPackageCatalog = { plans: PackagePlan[]; featuredPackageId: string | null };
+type PublicPackageCatalog = { plans: PackagePlan[]; featuredPackageId: string | null; fromApi: boolean };
+
+/** IDs del fallback local (constants.ts); no existen en la DB — no se puede simular compra con ellos. */
+export function isClientFallbackPackagePlanId(id: string): boolean {
+  return id === "starter" || id === "growth" || id === "intensive";
+}
 
 const publicPackageCatalogInflight = new Map<string, Promise<PublicPackageCatalog>>();
 
@@ -145,6 +150,7 @@ async function loadPublicPackagePlansOnce(params: {
         : topBundles[0]?.id ?? null;
     return {
       featuredPackageId: featured,
+      fromApi: true,
       plans: topBundles.map((item) => ({
         id: item.id,
         name: item.name,
@@ -159,12 +165,10 @@ async function loadPublicPackagePlansOnce(params: {
       }))
     };
   } catch {
-    const raw = params.fallbackPlans ?? [];
-    const bundles = raw.filter((plan) => plan.credits > 1);
-    const top = bundles.slice(0, 3);
     return {
-      featuredPackageId: top[0]?.id ?? null,
-      plans: top
+      featuredPackageId: null,
+      fromApi: false,
+      plans: []
     };
   }
 }

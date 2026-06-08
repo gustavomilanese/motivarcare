@@ -9,11 +9,10 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { defaultPackagePlans } from "../constants";
 import { professionalPhotoSrc } from "../services/api";
 import { fetchSharedPatientAvailabilitySlots } from "../lib/fetchPatientAvailabilitySlotsShared";
 import { recordPaymentFailureNotice } from "../notifications/portalNotificationStorage";
-import { loadPublicPackagePlans } from "../lib/packageCatalog";
+import { loadPublicPackagePlans, isClientFallbackPackagePlanId } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
@@ -26,8 +25,15 @@ import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { useMobilePortal } from "../hooks/useMobilePortal";
+import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
+import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
+import {
+  buildUnpricedBundlePlans,
+  catalogPricingReady,
+  isDisplayOnlyBundlePlanId
+} from "../../booking/lib/packageBundleTemplates";
 import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import type {
@@ -104,8 +110,8 @@ export function BookingPage(props: {
   ) => Promise<{ ok: boolean; error?: string }>;
   onRescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => void;
   onOpenBookingDetail: (bookingId: string) => void;
-  onPurchasePackage: (plan: PackagePlan) => Promise<boolean>;
-  onPurchaseIndividualSessions: (sessionCount: number) => Promise<boolean>;
+  onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
+  onPurchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
   onNavigateToAssignProfessional: () => void;
 }) {
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
@@ -120,6 +126,7 @@ export function BookingPage(props: {
   const [remoteSlots, setRemoteSlots] = useState<TimeSlot[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
+  const [packageCatalogFromApi, setPackageCatalogFromApi] = useState(false);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [checkoutPaymentPlanId, setCheckoutPaymentPlanId] = useState<string | null>(null);
@@ -144,7 +151,7 @@ export function BookingPage(props: {
   }, [individualPaymentError]);
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
-  const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
+  const [assignProfessionalModalOpen, setAssignProfessionalModalOpen] = useState(false);
   const [packagePaymentSuccess, setPackagePaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const [individualPaymentSuccess, setIndividualPaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
@@ -255,9 +262,29 @@ export function BookingPage(props: {
   const canConfirmBooking = panelMode === "reschedule"
     ? Boolean(selectedSlot && editingBooking)
     : Boolean(selectedSlot) && pendingSessions > 0;
-  const checkoutPaymentPlan = checkoutPaymentPlanId
-    ? packagePlans.find((plan) => plan.id === checkoutPaymentPlanId) ?? null
-    : null;
+  const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
+  const hasProfessionalsOnPortal = props.professionals.length > 0;
+  const pricingReady = catalogPricingReady({
+    hasAssignedProfessional,
+    catalogFromApi: packageCatalogFromApi,
+    pricedPlans: packagePlans
+  });
+  const unpricedBundlePlans = useMemo(
+    () => buildUnpricedBundlePlans(props.language),
+    [props.language]
+  );
+  const displayPackagePlans = pricingReady ? packagePlans : unpricedBundlePlans;
+  const openAssignProfessionalPrompt = useCallback(() => {
+    setAssignProfessionalModalOpen(true);
+  }, []);
+  const goChooseProfessional = useCallback(() => {
+    setAssignProfessionalModalOpen(false);
+    props.onNavigateToAssignProfessional();
+  }, [props.onNavigateToAssignProfessional]);
+  const checkoutPaymentPlan =
+    checkoutPaymentPlanId && pricingReady
+      ? packagePlans.find((plan) => plan.id === checkoutPaymentPlanId) ?? null
+      : null;
 
   /**
    * Precio por sesión individual y su moneda nativa. Para pacientes AR el catálogo
@@ -391,19 +418,39 @@ export function BookingPage(props: {
   useEffect(() => {
     if (
       !isCheckoutFlow
-      || checkoutSource !== "dashboard"
       || !selectedCheckoutPlanId
       || checkoutPaymentPlanId
       || searchParams.get("purchase") === "individual"
+      || !pricingReady
+      || packagesLoading
     ) {
+      return;
+    }
+    if (isDisplayOnlyBundlePlanId(selectedCheckoutPlanId)) {
+      return;
+    }
+    const planExists = packagePlans.some((plan) => plan.id === selectedCheckoutPlanId);
+    if (!planExists) {
       return;
     }
     setCheckoutPaymentPlanId(selectedCheckoutPlanId);
 
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete("source");
-    setSearchParams(nextParams, { replace: true });
-  }, [checkoutPaymentPlanId, checkoutSource, isCheckoutFlow, searchParams, selectedCheckoutPlanId, setSearchParams]);
+    if (checkoutSource === "dashboard") {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("source");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [
+    checkoutPaymentPlanId,
+    checkoutSource,
+    isCheckoutFlow,
+    packagePlans,
+    packagesLoading,
+    pricingReady,
+    searchParams,
+    selectedCheckoutPlanId,
+    setSearchParams
+  ]);
 
   const individualPurchaseDeepLinkConsumed = useRef(false);
 
@@ -528,8 +575,7 @@ export function BookingPage(props: {
         language: snap.language,
         professionalId: snap.professionalId,
         market: snap.patientMarket,
-        t: (values) => t(snap.language, values),
-        fallbackPlans: defaultPackagePlans
+        t: (values) => t(snap.language, values)
       })
         .then((catalog) => {
           if (gen !== packagesFetchGenerationRef.current) {
@@ -537,6 +583,7 @@ export function BookingPage(props: {
           }
           setPackagePlans(catalog.plans);
           setFeaturedPackageId(catalog.featuredPackageId);
+          setPackageCatalogFromApi(catalog.fromApi);
         })
         .finally(() => {
           if (gen !== packagesFetchGenerationRef.current) {
@@ -553,22 +600,14 @@ export function BookingPage(props: {
   }, [hasAssignedProfessional, professional.id, props.language, props.state.patientMarket]);
 
   useEffect(() => {
-    if (hasAssignedProfessional || !isCheckoutFlow) {
+    if (pricingReady || !isCheckoutFlow) {
       return;
     }
     setCheckoutPaymentLoading(false);
     setCheckoutPaymentPlanId(null);
     setCheckoutPaymentError("");
     resetIndividualPurchaseUi();
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("flow");
-      next.delete("plan");
-      next.delete("purchase");
-      next.delete("source");
-      return next;
-    });
-  }, [hasAssignedProfessional, isCheckoutFlow, setSearchParams]);
+  }, [isCheckoutFlow, pricingReady]);
 
   useEffect(() => {
     if (!panelMode) {
@@ -660,8 +699,8 @@ export function BookingPage(props: {
       setCheckoutPaymentPlanId(null);
       setCheckoutPaymentError("");
       resetIndividualPurchaseUi();
-      const firstBundle = pickFirstBundlePlan(packagePlans);
-      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? null);
+      const firstBundle = pickFirstBundlePlan(pricingReady ? packagePlans : unpricedBundlePlans);
+      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? "display-bundle-8");
       if (isMobilePortal) {
         scrollCheckoutIntoView();
       }
@@ -670,6 +709,8 @@ export function BookingPage(props: {
       featuredPackageId,
       isMobilePortal,
       packagePlans,
+      pricingReady,
+      unpricedBundlePlans,
       resetIndividualPurchaseUi,
       selectedCheckoutPlanId,
       setCheckoutFlow
@@ -697,7 +738,7 @@ export function BookingPage(props: {
 
   const acquireSessionsHandlers = useMemo(
     () => ({
-      onAssignProfessional: () => props.onNavigateToAssignProfessional(),
+      onAssignProfessional: () => openAssignProfessionalPrompt(),
       onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
       onOpenCheckout: openCheckoutCatalog,
       onOpenIndividualCheckout: openIndividualSessionsCheckoutFromModal,
@@ -707,7 +748,7 @@ export function BookingPage(props: {
         setPanelMode("new");
       }
     }),
-    [openCheckoutCatalog, openIndividualSessionsCheckoutFromModal, props.onNavigateToAssignProfessional]
+    [openAssignProfessionalPrompt, openCheckoutCatalog, openIndividualSessionsCheckoutFromModal]
   );
 
   const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
@@ -751,12 +792,20 @@ export function BookingPage(props: {
   }, [pendingSessions, showNoCreditsAlert]);
 
   const handlePurchasePlan = (plan: PackagePlan) => {
+    if (!pricingReady || isDisplayOnlyBundlePlanId(plan.id)) {
+      openAssignProfessionalPrompt();
+      return;
+    }
     setCheckoutPaymentError("");
     resetIndividualPurchaseUi();
     setCheckoutPaymentPlanId(plan.id);
   };
 
   const proceedIndividualToPayment = () => {
+    if (!pricingReady) {
+      openAssignProfessionalPrompt();
+      return;
+    }
     const n = Number.parseInt(individualQtyDraft.trim(), 10);
     if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceMajor === null) {
       return;
@@ -775,8 +824,10 @@ export function BookingPage(props: {
     setIndividualPaymentError("");
     try {
       const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
-      if (!purchased) {
-        setIndividualPaymentError(friendlyCheckoutPackageMessage("", props.language));
+      if (!purchased.ok) {
+        setIndividualPaymentError(
+          friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
+        );
         return;
       }
       setIndividualPaymentSuccess({
@@ -812,9 +863,18 @@ export function BookingPage(props: {
     setCheckoutPaymentLoading(true);
     setCheckoutPaymentError("");
     try {
+      if (!packageCatalogFromApi || isClientFallbackPackagePlanId(checkoutPaymentPlan.id)) {
+        setCheckoutPaymentError(
+          friendlyCheckoutPackageMessage("Catalog unavailable", props.language)
+        );
+        return;
+      }
+
       const purchased = await props.onPurchasePackage(checkoutPaymentPlan);
-      if (!purchased) {
-        setCheckoutPaymentError(friendlyCheckoutPackageMessage("", props.language));
+      if (!purchased.ok) {
+        setCheckoutPaymentError(
+          friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
+        );
         return;
       }
       setPackagePaymentSuccess({
@@ -923,7 +983,7 @@ export function BookingPage(props: {
 
       <section className="sessions-hero-actions-band">
         <div className="sessions-booking-hero-layout">
-          {hasAssignedProfessional ? (
+          {hasProfessionalsOnPortal ? (
             <div className="sessions-hero-actions sessions-booking-hero-actions">
               <button
                 className="sessions-hero-buy-button"
@@ -1072,7 +1132,7 @@ export function BookingPage(props: {
               className="sessions-credit-alert-action"
               onClick={() => {
                 if (!hasAssignedProfessional) {
-                  props.onNavigateToAssignProfessional();
+                  openAssignProfessionalPrompt();
                   setShowNoCreditsAlert(false);
                   return;
                 }
@@ -1125,16 +1185,17 @@ export function BookingPage(props: {
         )}
       </section>
 
-      {hasAssignedProfessional && isCheckoutFlow ? (
+      {hasProfessionalsOnPortal && isCheckoutFlow ? (
         <section ref={checkoutSectionRef} className="content-card booking-session-card booking-card-minimal sessions-package-options-panel">
           <CheckoutPackagesPanel
             language={props.language}
             currency={props.currency}
-            packagesLoading={packagesLoading}
-            packagePlans={packagePlans}
-            featuredPackageId={featuredPackageId}
+            packagesLoading={packagesLoading && hasAssignedProfessional}
+            packagePlans={displayPackagePlans}
+            featuredPackageId={pricingReady ? featuredPackageId : `display-bundle-8`}
             selectedCheckoutPlanId={selectedCheckoutPlanId}
-            unitPriceMajor={individualUnitPriceMajor}
+            pricingReady={pricingReady}
+            unitPriceMajor={pricingReady ? individualUnitPriceMajor : null}
             onClose={() => {
               setCheckoutPaymentLoading(false);
               setCheckoutPaymentPlanId(null);
@@ -1144,7 +1205,14 @@ export function BookingPage(props: {
             }}
             onSelectCard={(planId) => setCheckoutFlow(true, planId)}
             onSelectPlan={handlePurchasePlan}
-            onIndividualPurchase={openIndividualPurchase}
+            onIndividualPurchase={() => {
+              if (!pricingReady) {
+                openAssignProfessionalPrompt();
+                return;
+              }
+              openIndividualPurchase();
+            }}
+            onRequireProfessional={openAssignProfessionalPrompt}
           />
         </section>
       ) : null}
@@ -1478,6 +1546,14 @@ export function BookingPage(props: {
             </div>
           </section>
         </div>
+      ) : null}
+
+      {assignProfessionalModalOpen ? (
+        <AssignProfessionalPromptModal
+          language={props.language}
+          onClose={() => setAssignProfessionalModalOpen(false)}
+          onChooseProfessional={goChooseProfessional}
+        />
       ) : null}
 
       {acquireSessionsModalOpen ? (

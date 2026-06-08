@@ -35,17 +35,21 @@ export function CheckoutPackagesPanel(props: {
   packagePlans: PackagePlan[];
   featuredPackageId: string | null;
   selectedCheckoutPlanId: string | null;
+  /** Precios calculados con tarifa del profesional asignado. */
+  pricingReady: boolean;
   /** Precio unitario estimado en la moneda del catálogo (1 crédito o proporcional del primer bundle). */
   unitPriceMajor: number | null;
   onClose: () => void;
   onSelectCard: (planId: string) => void;
   onSelectPlan: (plan: PackagePlan) => void;
   onIndividualPurchase: () => void;
+  onRequireProfessional: () => void;
 }) {
   const isMobilePortal = useMobilePortal();
   const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
-  const canIndividualCta = !props.packagesLoading && props.unitPriceMajor !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
+  const canIndividualCta =
+    props.pricingReady && !props.packagesLoading && props.unitPriceMajor !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
 
   const individualLinkLabel = t(props.language, {
     es: "Comprar sesiones individuales",
@@ -59,16 +63,22 @@ export function CheckoutPackagesPanel(props: {
         <div className="checkout-packages-head-inner">
           <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
           <p>
-            {isMobilePortal
-              ? t(props.language, {
-                  es: "Elegí el paquete que mejor se adapte a tu proceso.",
-                  en: "Choose the package that fits your process best.",
-                  pt: "Escolha o pacote que melhor se adapta ao seu processo."
-                })
+            {props.pricingReady
+              ? isMobilePortal
+                ? t(props.language, {
+                    es: "Elegí el paquete que mejor se adapte a tu proceso.",
+                    en: "Choose the package that fits your process best.",
+                    pt: "Escolha o pacote que melhor se adapta ao seu processo."
+                  })
+                : t(props.language, {
+                    es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
+                    en: "Choose a package or buy individual sessions with the link under each plan.",
+                    pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
+                  })
               : t(props.language, {
-                  es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
-                  en: "Choose a package or buy individual sessions with the link under each plan.",
-                  pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
+                  es: "Estos son los formatos disponibles (4, 8 y 12 sesiones). Elegí un profesional para ver precios según su tarifa.",
+                  en: "These are the available formats (4, 8, and 12 sessions). Choose a professional to see prices based on their rate.",
+                  pt: "Estes sao os formatos disponiveis (4, 8 e 12 sessoes). Escolha um profissional para ver precos conforme a tarifa."
                 })}
           </p>
         </div>
@@ -136,10 +146,12 @@ export function CheckoutPackagesPanel(props: {
             const selectedPlan = props.selectedCheckoutPlanId
               ? props.selectedCheckoutPlanId === plan.id
               : (props.featuredPackageId ? props.featuredPackageId === plan.id : bundlePlans[0]?.id === plan.id);
-            const listPriceAmount = Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100));
-            const finalPriceAmount = plan.priceCents / 100;
-            const savingAmount = Math.max(0, listPriceAmount - finalPriceAmount);
-            const pricePerSession = finalPriceAmount / Math.max(1, plan.credits);
+            const listPriceAmount = props.pricingReady
+              ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
+              : 0;
+            const finalPriceAmount = props.pricingReady ? plan.priceCents / 100 : 0;
+            const savingAmount = props.pricingReady ? Math.max(0, listPriceAmount - finalPriceAmount) : 0;
+            const pricePerSession = props.pricingReady ? finalPriceAmount / Math.max(1, plan.credits) : 0;
             const benefitLines = packageBenefitLines(plan.credits, (values) => t(props.language, values));
 
             return (
@@ -157,32 +169,60 @@ export function CheckoutPackagesPanel(props: {
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
                       <span className="sessions-package-card-saving">
-                        {replaceTemplate(
-                          t(props.language, {
-                            es: "Ahorras {amount}",
-                            en: "You save {amount}",
-                            pt: "Voce economiza {amount}"
-                          }),
-                          { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
-                        )}
+                        {props.pricingReady
+                          ? replaceTemplate(
+                              t(props.language, {
+                                es: "Ahorras {amount}",
+                                en: "You save {amount}",
+                                pt: "Voce economiza {amount}"
+                              }),
+                              { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
+                            )
+                          : t(props.language, {
+                              es: "Precio según profesional",
+                              en: "Price based on professional",
+                              pt: "Preco conforme profissional"
+                            })}
                       </span>
                     </div>
                     <h3>{plan.name}</h3>
                     <p className="sessions-package-card-description">{plan.description}</p>
                     <div className="deal-pricing-top">
-                      <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
-                      <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
-                    </div>
-                    <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)}</p>
-                    <p className="sessions-package-card-unit">
-                      {replaceTemplate(
-                        t(props.language, {
-                          es: "Equivale a {amount} por sesión",
-                          en: "Equivalent to {amount} per session",
-                          pt: "Equivale a {amount} por sessao"
-                        }),
-                        { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
+                      {props.pricingReady ? (
+                        <>
+                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
+                          <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                        </>
+                      ) : (
+                        <span className="deal-price-pending">
+                          {t(props.language, {
+                            es: "Precio al elegir profesional",
+                            en: "Price shown after choosing a professional",
+                            pt: "Preco ao escolher profissional"
+                          })}
+                        </span>
                       )}
+                    </div>
+                    <p className="deal-main-price">
+                      {props.pricingReady
+                        ? formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)
+                        : "—"}
+                    </p>
+                    <p className="sessions-package-card-unit">
+                      {props.pricingReady
+                        ? replaceTemplate(
+                            t(props.language, {
+                              es: "Equivale a {amount} por sesión",
+                              en: "Equivalent to {amount} per session",
+                              pt: "Equivale a {amount} por sessao"
+                            }),
+                            { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
+                          )
+                        : t(props.language, {
+                            es: "Tarifa del profesional × sesiones − descuento del paquete",
+                            en: "Professional rate × sessions − package discount",
+                            pt: "Tarifa do profissional × sessoes − desconto do pacote"
+                          })}
                     </p>
                     <ul className="sessions-package-benefits">
                       {benefitLines.map((benefit) => (
@@ -206,10 +246,20 @@ export function CheckoutPackagesPanel(props: {
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
+                        if (!props.pricingReady) {
+                          props.onRequireProfessional();
+                          return;
+                        }
                         props.onSelectPlan(plan);
                       }}
                     >
-                      {t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })}
+                      {props.pricingReady
+                        ? t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })
+                        : t(props.language, {
+                            es: "Elegir profesional",
+                            en: "Choose professional",
+                            pt: "Escolher profissional"
+                          })}
                     </button>
                     {!isMobilePortal ? (
                       <button

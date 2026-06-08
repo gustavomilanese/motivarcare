@@ -393,6 +393,34 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       pt: `${net} O que voce escolheu continua aqui: quando quiser, tente pagar de novo.`
     });
   }
+  if (n === "Session package not found") {
+    return t(language, {
+      es: "El paquete que elegiste no está en el catálogo del servidor. Recargá la página; si sigue igual, avisá a soporte.",
+      en: "The package you chose isn’t on the server catalog. Reload the page; if it persists, contact support.",
+      pt: "O pacote escolhido nao esta no catalogo do servidor. Recarregue a pagina; se persistir, avise o suporte."
+    });
+  }
+  if (n === "Package is not available in this patient's market") {
+    return t(language, {
+      es: "Ese paquete no aplica a tu mercado (país de residencia). Elegí otro plan o contactá a soporte.",
+      en: "That package doesn’t apply to your market (country of residence). Pick another plan or contact support.",
+      pt: "Esse pacote nao se aplica ao seu mercado. Escolha outro plano ou contate o suporte."
+    });
+  }
+  if (n === "Session package is not active") {
+    return t(language, {
+      es: "Ese paquete está desactivado. Elegí otro de la lista o probá más tarde.",
+      en: "That package is inactive. Choose another from the list or try again later.",
+      pt: "Esse pacote esta desativado. Escolha outro da lista ou tente mais tarde."
+    });
+  }
+  if (n === "Catalog unavailable") {
+    return t(language, {
+      es: "No pudimos cargar el catálogo real de paquetes (solo hay datos de respaldo en pantalla). Recargá la página; si persiste, el API puede estar caído o mal configurado.",
+      en: "We couldn’t load the real package catalog (only fallback data is shown). Reload the page; if it persists, the API may be down or misconfigured.",
+      pt: "Nao foi possivel carregar o catalogo real de pacotes. Recarregue a pagina; se persistir, a API pode estar indisponivel."
+    });
+  }
   if (n === "Individual session product is not configured") {
     return t(language, {
       es: "En este entorno no hay cargado el producto de sesión suelta en el catálogo. Pedile a soporte que ejecute el seed o cree un paquete de 1 crédito global (professionalId vacío).",

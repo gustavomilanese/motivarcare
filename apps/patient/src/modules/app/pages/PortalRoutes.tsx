@@ -23,6 +23,7 @@ import { API_BASE } from "../services/api";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
+import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 
 function t(language: PatientAppState["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -136,8 +137,8 @@ export function PortalRoutes(props: {
   confirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => Promise<{ ok: boolean; error?: string }>;
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
-  addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<boolean>;
-  purchaseIndividualSessions: (sessionCount: number) => Promise<boolean>;
+  addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<PortalPurchaseResult>;
+  purchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
   onBookingSelectProfessional: (professionalId: string) => void;
