@@ -6,6 +6,8 @@ export type AcquireSessionsPresentation = "desktop" | "mobile" | "native";
 
 export type AcquireSessionsContext = {
   hasAssignedProfessional: boolean;
+  /** Catálogo con precios reales del profesional asignado (no planes display-only). */
+  pricingReady: boolean;
   creditsRemaining: number;
   plans: SessionPackagePlan[];
   featuredPackageId: string | null;
@@ -34,7 +36,7 @@ export function resolveAcquireSessionsIntent(
   presentation: AcquireSessionsPresentation,
   ctx: AcquireSessionsContext
 ): AcquireSessionsIntent {
-  if (!ctx.hasAssignedProfessional) {
+  if (!ctx.hasAssignedProfessional || !ctx.pricingReady) {
     return { type: "navigate_assign_professional" };
   }
 

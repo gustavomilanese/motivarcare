@@ -1,28 +1,11 @@
 import type { AppLanguage } from "@therapy/i18n-config";
+import { describePackagePlan as describePackagePlanCore } from "@therapy/patient-core";
 import type { Market } from "@therapy/types";
 import type { PackagePlan, PublicSessionPackagesResponse } from "../types";
 import { API_BASE } from "../services/api";
 
 export function describePackagePlan(credits: number, t: (values: { es: string; en: string; pt: string }) => string): string {
-  if (credits >= 12) {
-    return t({
-      es: "Mayor frecuencia para procesos de alta demanda.",
-      en: "Higher frequency for high-demand processes.",
-      pt: "Maior frequencia para processos de alta demanda."
-    });
-  }
-  if (credits >= 8) {
-    return t({
-      es: "Plan recomendado para trabajo mensual sostenido.",
-      en: "Recommended plan for sustained monthly work.",
-      pt: "Plano recomendado para trabalho mensal sustentado."
-    });
-  }
-  return t({
-    es: "Ideal para una primera etapa de trabajo terapéutico.",
-    en: "Ideal for an initial therapy stage.",
-    pt: "Ideal para uma primeira etapa de trabalho terapeutico."
-  });
+  return describePackagePlanCore(credits, t);
 }
 
 export function packageRhythmLabel(credits: number, t: (values: { es: string; en: string; pt: string }) => string): string {

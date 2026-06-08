@@ -18,7 +18,12 @@ import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessio
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
-import { pickFirstBundlePlan } from "@therapy/patient-core";
+import {
+  isDisplayOnlyBundlePlanId,
+  pickFirstBundlePlan,
+  resolvePackageCatalogView,
+  resolvePackagePurchaseGate
+} from "@therapy/patient-core";
 import { canPatientRescheduleBooking, isPatientBookingUpcoming } from "@therapy/i18n-config";
 import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
@@ -29,11 +34,6 @@ import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
-import {
-  buildUnpricedBundlePlans,
-  catalogPricingReady,
-  isDisplayOnlyBundlePlanId
-} from "../../booking/lib/packageBundleTemplates";
 import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import type {
@@ -264,16 +264,33 @@ export function BookingPage(props: {
     : Boolean(selectedSlot) && pendingSessions > 0;
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const hasProfessionalsOnPortal = props.professionals.length > 0;
-  const pricingReady = catalogPricingReady({
-    hasAssignedProfessional,
-    catalogFromApi: packageCatalogFromApi,
-    pricedPlans: packagePlans
-  });
-  const unpricedBundlePlans = useMemo(
-    () => buildUnpricedBundlePlans(props.language),
-    [props.language]
+  const packageCatalogView = useMemo(
+    () =>
+      resolvePackageCatalogView({
+        hasProfessionalsOnPortal,
+        hasAssignedProfessional,
+        catalogFromApi: packageCatalogFromApi,
+        packagesLoading,
+        pricedPlans: packagePlans,
+        featuredPackageIdFromApi: featuredPackageId,
+        language: props.language
+      }),
+    [
+      featuredPackageId,
+      hasAssignedProfessional,
+      hasProfessionalsOnPortal,
+      packageCatalogFromApi,
+      packagePlans,
+      packagesLoading,
+      props.language
+    ]
   );
-  const displayPackagePlans = pricingReady ? packagePlans : unpricedBundlePlans;
+  const {
+    showPackageSection,
+    pricingReady,
+    displayPlans: displayPackagePlans,
+    featuredPackageId: displayFeaturedPackageId
+  } = packageCatalogView;
   const openAssignProfessionalPrompt = useCallback(() => {
     setAssignProfessionalModalOpen(true);
   }, []);
@@ -699,18 +716,16 @@ export function BookingPage(props: {
       setCheckoutPaymentPlanId(null);
       setCheckoutPaymentError("");
       resetIndividualPurchaseUi();
-      const firstBundle = pickFirstBundlePlan(pricingReady ? packagePlans : unpricedBundlePlans);
-      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? featuredPackageId ?? firstBundle?.id ?? "display-bundle-8");
+      const firstBundle = pickFirstBundlePlan(displayPackagePlans);
+      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? displayFeaturedPackageId ?? firstBundle?.id ?? "display-bundle-8");
       if (isMobilePortal) {
         scrollCheckoutIntoView();
       }
     },
     [
-      featuredPackageId,
+      displayFeaturedPackageId,
+      displayPackagePlans,
       isMobilePortal,
-      packagePlans,
-      pricingReady,
-      unpricedBundlePlans,
       resetIndividualPurchaseUi,
       selectedCheckoutPlanId,
       setCheckoutFlow
@@ -754,9 +769,10 @@ export function BookingPage(props: {
   const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
     isMobilePortal,
     hasAssignedProfessional,
+    pricingReady,
     creditsRemaining: pendingSessions,
-    packagePlans,
-    featuredPackageId,
+    packagePlans: displayPackagePlans,
+    featuredPackageId: displayFeaturedPackageId,
     handlers: acquireSessionsHandlers
   });
 
@@ -792,7 +808,8 @@ export function BookingPage(props: {
   }, [pendingSessions, showNoCreditsAlert]);
 
   const handlePurchasePlan = (plan: PackagePlan) => {
-    if (!pricingReady || isDisplayOnlyBundlePlanId(plan.id)) {
+    const gate = resolvePackagePurchaseGate({ pricingReady, planId: plan.id });
+    if (!gate.allowed) {
       openAssignProfessionalPrompt();
       return;
     }
@@ -1185,14 +1202,14 @@ export function BookingPage(props: {
         )}
       </section>
 
-      {hasProfessionalsOnPortal && isCheckoutFlow ? (
+      {showPackageSection && isCheckoutFlow ? (
         <section ref={checkoutSectionRef} className="content-card booking-session-card booking-card-minimal sessions-package-options-panel">
           <CheckoutPackagesPanel
             language={props.language}
             currency={props.currency}
             packagesLoading={packagesLoading && hasAssignedProfessional}
             packagePlans={displayPackagePlans}
-            featuredPackageId={pricingReady ? featuredPackageId : `display-bundle-8`}
+            featuredPackageId={displayFeaturedPackageId}
             selectedCheckoutPlanId={selectedCheckoutPlanId}
             pricingReady={pricingReady}
             unitPriceMajor={pricingReady ? individualUnitPriceMajor : null}

@@ -6,4 +6,5 @@ export type SessionPackagePlan = {
   priceCents: number;
   currency: string;
   discountPercent: number;
+  description: string;
 };

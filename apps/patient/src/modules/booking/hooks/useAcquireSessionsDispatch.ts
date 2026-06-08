@@ -2,9 +2,9 @@ import { useCallback, useMemo } from "react";
 import {
   resolveAcquireSessionsIntent,
   type AcquireSessionsContext,
-  type AcquireSessionsTrigger
+  type AcquireSessionsTrigger,
+  type SessionPackagePlan
 } from "@therapy/patient-core";
-import type { PackagePlan } from "../../app/types";
 import {
   executeAcquireSessionsIntent,
   type AcquireSessionsHandlers
@@ -13,8 +13,9 @@ import {
 export function useAcquireSessionsDispatch(params: {
   isMobilePortal: boolean;
   hasAssignedProfessional: boolean;
+  pricingReady: boolean;
   creditsRemaining: number;
-  packagePlans: PackagePlan[];
+  packagePlans: SessionPackagePlan[];
   featuredPackageId: string | null;
   handlers: AcquireSessionsHandlers;
 }) {
@@ -23,6 +24,7 @@ export function useAcquireSessionsDispatch(params: {
   const context = useMemo<AcquireSessionsContext>(
     () => ({
       hasAssignedProfessional: params.hasAssignedProfessional,
+      pricingReady: params.pricingReady,
       creditsRemaining: params.creditsRemaining,
       plans: params.packagePlans,
       featuredPackageId: params.featuredPackageId
@@ -31,7 +33,8 @@ export function useAcquireSessionsDispatch(params: {
       params.creditsRemaining,
       params.featuredPackageId,
       params.hasAssignedProfessional,
-      params.packagePlans
+      params.packagePlans,
+      params.pricingReady
     ]
   );
 

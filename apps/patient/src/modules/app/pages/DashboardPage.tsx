@@ -10,7 +10,11 @@ import {
   textByLanguage,
   isPatientBookingUpcoming
 } from "@therapy/i18n-config";
-import { estimateIndividualUnitPriceMajor } from "@therapy/patient-core";
+import {
+  estimateIndividualUnitPriceMajor,
+  resolvePackageCatalogView,
+  resolvePackagePurchaseGate
+} from "@therapy/patient-core";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
@@ -21,11 +25,6 @@ import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
-import {
-  buildUnpricedBundlePlans,
-  catalogPricingReady,
-  isDisplayOnlyBundlePlanId
-} from "../../booking/lib/packageBundleTemplates";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import { useMobilePortal } from "../hooks/useMobilePortal";
@@ -194,18 +193,37 @@ export function DashboardPage(props: {
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
   const [featuredPackageId, setFeaturedPackageId] = useState<string | null>(null);
-  const pricingReady = catalogPricingReady({
-    hasAssignedProfessional,
-    catalogFromApi: packageCatalogFromApi,
-    pricedPlans: packagePlans
-  });
-  const unpricedBundlePlans = useMemo(
-    () => buildUnpricedBundlePlans(props.language),
-    [props.language]
+  const packageCatalogView = useMemo(
+    () =>
+      resolvePackageCatalogView({
+        hasProfessionalsOnPortal,
+        hasAssignedProfessional,
+        catalogFromApi: packageCatalogFromApi,
+        packagesLoading,
+        pricedPlans: packagePlans,
+        featuredPackageIdFromApi: featuredPackageId,
+        language: props.language
+      }),
+    [
+      featuredPackageId,
+      hasAssignedProfessional,
+      hasProfessionalsOnPortal,
+      packageCatalogFromApi,
+      packagePlans,
+      packagesLoading,
+      props.language
+    ]
   );
-  const displayPackagePlans = pricingReady ? packagePlans : unpricedBundlePlans;
+  const {
+    showPackageSection,
+    pricingReady,
+    displayPlans: displayPackagePlans,
+    featuredPackageId: displayFeaturedPackageId,
+    packagesLoadingHint
+  } = packageCatalogView;
   const packageSectionRef = useRef<HTMLElement | null>(null);
-  const defaultPackagePlan = displayPackagePlans.find((plan) => plan.id === featuredPackageId) ?? displayPackagePlans[0] ?? null;
+  const defaultPackagePlan =
+    displayPackagePlans.find((plan) => plan.id === displayFeaturedPackageId) ?? displayPackagePlans[0] ?? null;
   const nextBooking = getNextBooking(props.state.bookings);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
   const upcomingConfirmedBookings = confirmedBookings
@@ -321,7 +339,7 @@ export function DashboardPage(props: {
 
     if (!hasAssignedProfessional) {
       setPackagePlans([]);
-      setFeaturedPackageId("display-bundle-8");
+      setFeaturedPackageId(null);
       setPackageCatalogFromApi(false);
       setPackagesLoading(false);
       return () => {
@@ -377,11 +395,12 @@ export function DashboardPage(props: {
 
   const handleStartPackagePurchase = useCallback(
     (plan: PackagePlan) => {
-      if (!pricingReady || isDisplayOnlyBundlePlanId(plan.id)) {
+      const gate = resolvePackagePurchaseGate({ pricingReady, planId: plan.id });
+      if (!gate.allowed) {
         setAssignProModalOpen(true);
         return;
       }
-      props.onStartPackagePurchase(plan);
+      props.onStartPackagePurchase(plan as PackagePlan);
     },
     [pricingReady, props.onStartPackagePurchase]
   );
@@ -441,9 +460,10 @@ export function DashboardPage(props: {
   const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
     isMobilePortal,
     hasAssignedProfessional,
+    pricingReady,
     creditsRemaining: availableSessions,
     packagePlans: displayPackagePlans,
-    featuredPackageId,
+    featuredPackageId: displayFeaturedPackageId,
     handlers: acquireSessionsHandlers
   });
 
@@ -605,9 +625,9 @@ export function DashboardPage(props: {
           </div>
           <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount" />
         </div>
-        {(hasProfessionalsOnPortal && defaultPackagePlan) || showGoogleCalendarCta ? (
+        {(showPackageSection && defaultPackagePlan) || showGoogleCalendarCta ? (
           <div className="dashboard-hero-cta-band">
-            {hasProfessionalsOnPortal && defaultPackagePlan ? (
+            {showPackageSection && defaultPackagePlan ? (
               <button
                 className="sessions-hero-buy-button dashboard-hero-buy-button"
                 type="button"
@@ -955,7 +975,7 @@ export function DashboardPage(props: {
         ) : null}
       </section>
 
-      {hasProfessionalsOnPortal ? (
+      {showPackageSection ? (
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
           <div className={`session-booking-panel-head${showGoogleCalendarCta ? " session-booking-panel-head--split" : ""}`}>
             <div>
@@ -988,9 +1008,28 @@ export function DashboardPage(props: {
               </button>
             ) : null}
           </div>
+          {packagesLoadingHint === "loading" ? (
+            <p>
+              {t(props.language, {
+                es: "Cargando paquetes disponibles...",
+                en: "Loading available packages...",
+                pt: "Carregando pacotes disponiveis..."
+              })}
+            </p>
+          ) : packagesLoadingHint === "empty" ? (
+            <div className="sessions-empty-state">
+              <strong>
+                {t(props.language, {
+                  es: "No hay paquetes publicados por ahora.",
+                  en: "No packages are published right now.",
+                  pt: "Nao ha pacotes publicados no momento."
+                })}
+              </strong>
+            </div>
+          ) : (
           <div className="deal-grid sessions-package-options-grid">
             {displayPackagePlans.slice(0, 3).map((plan) => {
-              const selectedPlan = featuredPackageId ? featuredPackageId === plan.id : displayPackagePlans[0]?.id === plan.id;
+              const selectedPlan = displayFeaturedPackageId ? displayFeaturedPackageId === plan.id : displayPackagePlans[0]?.id === plan.id;
               const listPriceAmount = pricingReady
                 ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
                 : 0;
@@ -1000,14 +1039,14 @@ export function DashboardPage(props: {
               const benefitLines = packageBenefitLines(plan.credits, (values) => t(props.language, values));
 
               return (
-                <div className={`deal-card-shell ${featuredPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
-                  <div className="deal-card-roof" aria-hidden={featuredPackageId !== plan.id}>
-                    {featuredPackageId === plan.id ? (
+                <div className={`deal-card-shell ${displayFeaturedPackageId === plan.id ? "featured" : ""}`} key={plan.id}>
+                  <div className="deal-card-roof" aria-hidden={displayFeaturedPackageId !== plan.id}>
+                    {displayFeaturedPackageId === plan.id ? (
                       <span className="deal-card-featured-kicker">{t(props.language, { es: "Más elegido", en: "Best seller", pt: "Mais escolhido" })}</span>
                     ) : null}
                   </div>
                   <article
-                    className={`deal-card dashboard-deal-card sessions-package-card dashboard-package-card ${featuredPackageId === plan.id ? "featured" : ""} ${selectedPlan ? "selected" : ""}`}
+                    className={`deal-card dashboard-deal-card sessions-package-card dashboard-package-card ${displayFeaturedPackageId === plan.id ? "featured" : ""} ${selectedPlan ? "selected" : ""}`}
                   >
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
@@ -1073,7 +1112,7 @@ export function DashboardPage(props: {
                       )}
                     </p>
                     <button
-                      className={`deal-select-button ${featuredPackageId === plan.id ? "featured" : ""}`}
+                      className={`deal-select-button ${displayFeaturedPackageId === plan.id ? "featured" : ""}`}
                       type="button"
                       onClick={() => handleStartPackagePurchase(plan)}
                     >
@@ -1104,6 +1143,7 @@ export function DashboardPage(props: {
               );
             })}
           </div>
+          )}
         </section>
       ) : null}
 

@@ -36,6 +36,7 @@ export type PatientProfilePayload = {
   id?: string;
   /** Misma que `AuthUser.avatarUrl`; viene del perfil para que RN la tenga tras cargar `/profiles/me`. */
   avatarUrl?: string | null;
+  residencyCountry?: string | null;
   timezone?: string;
   lastSeenTimezone?: string | null;
   status?: string;

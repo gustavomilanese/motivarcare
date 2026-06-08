@@ -14,7 +14,12 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { getBookingsMine, getSessionPackages, purchasePackage } from "../api/client";
+import {
+  resolvePackageCatalogView,
+  resolvePackagePurchaseGate,
+  type SessionPackagePlan
+} from "@therapy/patient-core";
+import { getBookingsMine, getMatchingProfessionals, getSessionPackages, purchasePackage } from "../api/client";
 import type { BookingItem, SessionPackage } from "../api/types";
 import { compareUpcomingBookings, isBookingUpcoming } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
@@ -33,8 +38,37 @@ import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
 
 type HomeNav = BottomTabNavigationProp<PatientTabParamList>;
 
-function packageUnitCents(pkg: SessionPackage): number {
+function packageUnitCents(pkg: Pick<SessionPackage, "priceCents" | "credits">): number {
   return Math.round(pkg.priceCents / Math.max(1, pkg.credits));
+}
+
+function toSessionPackagePlan(pkg: SessionPackage): SessionPackagePlan {
+  return {
+    id: pkg.id,
+    name: pkg.name,
+    credits: pkg.credits,
+    priceCents: pkg.priceCents,
+    currency: pkg.currency,
+    discountPercent: pkg.discountPercent,
+    description: ""
+  };
+}
+
+function pricedPlanToSessionPackage(plan: SessionPackagePlan, source?: SessionPackage | null): SessionPackage {
+  return {
+    id: plan.id,
+    professionalId: source?.professionalId ?? null,
+    professionalName: source?.professionalName ?? null,
+    stripePriceId: source?.stripePriceId ?? "",
+    name: plan.name,
+    credits: plan.credits,
+    priceCents: plan.priceCents,
+    discountPercent: plan.discountPercent,
+    marketingLabel: source?.marketingLabel ?? null,
+    currency: plan.currency,
+    active: true,
+    createdAt: source?.createdAt ?? ""
+  };
 }
 
 const AVATAR_HEADER = 48;
@@ -388,7 +422,11 @@ export function HomeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const mcareSectionY = useRef(0);
   const [bookSessionOpen, setBookSessionOpen] = useState(false);
-  const [sessionPackages, setSessionPackages] = useState<SessionPackage[]>([]);
+  const [pricedPlans, setPricedPlans] = useState<SessionPackage[]>([]);
+  const [featuredPackageIdFromApi, setFeaturedPackageIdFromApi] = useState<string | null>(null);
+  const [catalogFromApi, setCatalogFromApi] = useState(false);
+  const [packagesLoading, setPackagesLoading] = useState(false);
+  const [hasProfessionalsOnPortal, setHasProfessionalsOnPortal] = useState(true);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [mcarePurchasing, setMcarePurchasing] = useState(false);
   const [mcarePurchaseFlow, setMcarePurchaseFlow] = useState<McarePurchaseFlow | null>(null);
@@ -455,12 +493,57 @@ export function HomeScreen() {
     useCallback(() => {
       let active = true;
       if (!token) {
-        setSessionPackages([]);
+        setHasProfessionalsOnPortal(false);
+        return () => {
+          active = false;
+        };
+      }
+      void getMatchingProfessionals(token)
+        .then((response) => {
+          if (!active) {
+            return;
+          }
+          setHasProfessionalsOnPortal((response.professionals ?? []).length > 0);
+        })
+        .catch(() => {
+          if (active) {
+            setHasProfessionalsOnPortal(false);
+          }
+        });
+      return () => {
+        active = false;
+      };
+    }, [token])
+  );
+
+  const hasAssignedProfessional = Boolean(profile?.activeProfessional);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!token) {
+        setPricedPlans([]);
+        setFeaturedPackageIdFromApi(null);
+        setCatalogFromApi(false);
+        setPackagesLoading(false);
         setSelectedPackageId(null);
         return () => {
           active = false;
         };
       }
+
+      if (!hasAssignedProfessional) {
+        setPricedPlans([]);
+        setFeaturedPackageIdFromApi(null);
+        setCatalogFromApi(false);
+        setPackagesLoading(false);
+        setSelectedPackageId(null);
+        return () => {
+          active = false;
+        };
+      }
+
+      setPackagesLoading(true);
       void (async () => {
         try {
           const response = await getSessionPackages({
@@ -470,24 +553,61 @@ export function HomeScreen() {
           if (!active) {
             return;
           }
-          const sorted = (response.sessionPackages ?? [])
-            .filter((pkg) => pkg.active)
+          const bundles = (response.sessionPackages ?? [])
+            .filter((pkg) => pkg.active && pkg.credits > 1)
             .sort((a, b) => a.credits - b.credits);
-          setSessionPackages(sorted);
-          setSelectedPackageId((prev) => (prev && sorted.some((pkg) => pkg.id === prev) ? prev : null));
+          const fromApi = bundles.length > 0 && bundles.some((pkg) => pkg.priceCents > 0);
+          setPricedPlans(bundles);
+          setCatalogFromApi(fromApi);
+          setFeaturedPackageIdFromApi(response.featuredPackageId);
+          setSelectedPackageId((prev) => (prev && bundles.some((pkg) => pkg.id === prev) ? prev : null));
         } catch {
           if (!active) {
             return;
           }
-          setSessionPackages([]);
+          setPricedPlans([]);
+          setCatalogFromApi(false);
+          setFeaturedPackageIdFromApi(null);
           setSelectedPackageId(null);
+        } finally {
+          if (active) {
+            setPackagesLoading(false);
+          }
         }
       })();
       return () => {
         active = false;
       };
-    }, [token, profile?.activeProfessional?.id])
+    }, [hasAssignedProfessional, profile?.activeProfessional?.id, token])
   );
+
+  const packageCatalogView = useMemo(
+    () =>
+      resolvePackageCatalogView({
+        hasProfessionalsOnPortal,
+        hasAssignedProfessional,
+        catalogFromApi,
+        packagesLoading,
+        pricedPlans: pricedPlans.map(toSessionPackagePlan),
+        featuredPackageIdFromApi,
+        language: "es"
+      }),
+    [
+      catalogFromApi,
+      featuredPackageIdFromApi,
+      hasAssignedProfessional,
+      hasProfessionalsOnPortal,
+      packagesLoading,
+      pricedPlans
+    ]
+  );
+
+  const {
+    showPackageSection,
+    pricingReady,
+    displayPlans,
+    packagesLoadingHint
+  } = packageCatalogView;
 
   const upcoming = useMemo(() => bookings, [bookings]);
 
@@ -532,10 +652,21 @@ export function HomeScreen() {
     );
   };
 
-  const selectedPackage = useMemo(
-    () => sessionPackages.find((pkg) => pkg.id === selectedPackageId) ?? null,
-    [sessionPackages, selectedPackageId]
+  const pricedPlansById = useMemo(
+    () => new Map(pricedPlans.map((pkg) => [pkg.id, pkg])),
+    [pricedPlans]
   );
+
+  const selectedPackage = useMemo(() => {
+    if (!selectedPackageId) {
+      return null;
+    }
+    const displayPlan = displayPlans.find((plan: SessionPackagePlan) => plan.id === selectedPackageId);
+    if (!displayPlan) {
+      return null;
+    }
+    return pricedPlanToSessionPackage(displayPlan, pricedPlansById.get(displayPlan.id) ?? null);
+  }, [displayPlans, pricedPlansById, selectedPackageId]);
 
   const runMcarePurchase = useCallback(
     async (pkg: SessionPackage) => {
@@ -560,19 +691,30 @@ export function HomeScreen() {
     [refreshProfile, token]
   );
 
-  const promptMcareCheckout = useCallback((pkg: SessionPackage) => {
-    if (mcarePurchasing) {
-      return;
-    }
-    setMcarePurchaseFlow({ kind: "confirm", pkg });
-  }, [mcarePurchasing]);
+  const promptMcareCheckout = useCallback(
+    (pkg: SessionPackage) => {
+      if (mcarePurchasing) {
+        return;
+      }
+      const gate = resolvePackagePurchaseGate({ pricingReady, planId: pkg.id });
+      if (!gate.allowed) {
+        openProfessionalMatching();
+        return;
+      }
+      setMcarePurchaseFlow({ kind: "confirm", pkg });
+    },
+    [mcarePurchasing, openProfessionalMatching, pricingReady]
+  );
 
   const closeMcarePurchaseFlow = useCallback(() => {
     setMcarePurchaseFlow(null);
   }, []);
-  const selectedMcareTotalLabel = selectedPackage
-    ? formatMoneyFromCents(selectedPackage.priceCents, selectedPackage.currency)
-    : "--";
+  const selectedMcareTotalLabel =
+    selectedPackage && pricingReady
+      ? formatMoneyFromCents(selectedPackage.priceCents, selectedPackage.currency)
+      : pricingReady
+        ? "--"
+        : "Elegí profesional";
 
   if ((loading || profileLoading) && !profile && !user) {
     return (
@@ -724,74 +866,92 @@ export function HomeScreen() {
           )}
         </View>
 
-        <View
-          style={[styles.section, styles.mcarePurchaseOuter]}
-          onLayout={(e) => {
-            mcareSectionY.current = e.nativeEvent.layout.y;
-          }}
-        >
-          <LinearGradient
-            colors={[...gradients.mcarePastel]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
-          <View style={styles.mcarePurchaseContent} pointerEvents="box-none">
-            <View style={styles.mcareSectionHeaderRow}>
-              <Text style={styles.mcareSectionTitle} numberOfLines={1}>
-                Sumá sesiones
-              </Text>
-            </View>
-            <View style={styles.mcareCardStack}>
-              {sessionPackages.map((pkg) => {
-                const selected = selectedPackageId === pkg.id;
-                const unitLabel = formatMoneyFromCents(packageUnitCents(pkg), pkg.currency);
-                return (
-                  <Pressable
-                    key={pkg.id}
-                    onPress={() =>
-                      setSelectedPackageId((current) => (current === pkg.id ? null : pkg.id))
-                    }
-                    style={({ pressed }) => [
-                      styles.mcareOptionCard,
-                      selected && styles.mcareOptionCardSelected,
-                      pressed && styles.mcareOptionCardPressed
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={`${pkg.name}. ${selected ? "Seleccionado" : "Tocar para seleccionar"}.`}
-                  >
-                    <View style={styles.mcareOptionMarketing}>
-                      {pkg.marketingLabel ? (
-                        <Text style={styles.mcareOptionMarketingLabel}>{pkg.marketingLabel}</Text>
-                      ) : (
-                        <View style={styles.mcareOptionMarketingSpacer} />
-                      )}
-                      {pkg.discountPercent > 0 ? (
-                        <View style={styles.mcareSavePill}>
-                          <Text style={styles.mcareSavePillText}>Ahorrá {pkg.discountPercent}%</Text>
+        {showPackageSection ? (
+          <View
+            style={[styles.section, styles.mcarePurchaseOuter]}
+            onLayout={(e) => {
+              mcareSectionY.current = e.nativeEvent.layout.y;
+            }}
+          >
+            <LinearGradient
+              colors={[...gradients.mcarePastel]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+            <View style={styles.mcarePurchaseContent} pointerEvents="box-none">
+              <View style={styles.mcareSectionHeaderRow}>
+                <Text style={styles.mcareSectionTitle} numberOfLines={1}>
+                  Sumá sesiones
+                </Text>
+              </View>
+              <View style={styles.mcareCardStack}>
+                {packagesLoadingHint === "loading" ? (
+                  <View style={styles.emptyCard}>
+                    <ActivityIndicator color={colors.primary} />
+                    <Text style={styles.emptyMeta}>Cargando paquetes disponibles...</Text>
+                  </View>
+                ) : packagesLoadingHint === "empty" ? (
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyMeta}>Todavía no hay paquetes publicados para tu profesional.</Text>
+                  </View>
+                ) : (
+                  displayPlans.map((plan: SessionPackagePlan) => {
+                    const source = pricedPlansById.get(plan.id);
+                    const selected = selectedPackageId === plan.id;
+                    const unitLabel = pricingReady
+                      ? formatMoneyFromCents(packageUnitCents(plan), plan.currency)
+                      : "Precio según profesional";
+                    return (
+                      <Pressable
+                        key={plan.id}
+                        onPress={() => {
+                          const gate = resolvePackagePurchaseGate({ pricingReady, planId: plan.id });
+                          if (!gate.allowed) {
+                            setSelectedPackageId((current) => (current === plan.id ? null : plan.id));
+                            return;
+                          }
+                          setSelectedPackageId((current) => (current === plan.id ? null : plan.id));
+                        }}
+                        style={({ pressed }) => [
+                          styles.mcareOptionCard,
+                          selected && styles.mcareOptionCardSelected,
+                          pressed && styles.mcareOptionCardPressed
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        accessibilityLabel={`${plan.name}. ${selected ? "Seleccionado" : "Tocar para seleccionar"}.`}
+                      >
+                        <View style={styles.mcareOptionMarketing}>
+                          {source?.marketingLabel ? (
+                            <Text style={styles.mcareOptionMarketingLabel}>{source.marketingLabel}</Text>
+                          ) : (
+                            <View style={styles.mcareOptionMarketingSpacer} />
+                          )}
+                          {pricingReady && plan.discountPercent > 0 ? (
+                            <View style={styles.mcareSavePill}>
+                              <Text style={styles.mcareSavePillText}>Ahorrá {plan.discountPercent}%</Text>
+                            </View>
+                          ) : null}
                         </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.mcareOptionDivider} />
-                    <View style={styles.mcareOptionPriceRow}>
-                      <View style={styles.mcareOptionLeft}>
-                        <Text style={styles.mcareOptionTitle}>{pkg.credits} sesiones</Text>
-                      </View>
-                      <Text style={styles.mcareOptionUnit}>{unitLabel} c/u</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-              {sessionPackages.length === 0 ? (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyMeta}>Todavía no hay paquetes disponibles para compra.</Text>
-                </View>
-              ) : null}
+                        <View style={styles.mcareOptionDivider} />
+                        <View style={styles.mcareOptionPriceRow}>
+                          <View style={styles.mcareOptionLeft}>
+                            <Text style={styles.mcareOptionTitle}>{plan.credits} sesiones</Text>
+                          </View>
+                          <Text style={styles.mcareOptionUnit}>
+                            {pricingReady ? `${unitLabel} c/u` : unitLabel}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
             </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.scrollFooter} />
       </ScrollView>
@@ -806,13 +966,21 @@ export function HomeScreen() {
             ]}
           >
             <PrimaryButton
-              label={`Continuar — ${selectedMcareTotalLabel} total`}
+              label={
+                pricingReady
+                  ? `Continuar — ${selectedMcareTotalLabel} total`
+                  : "Elegir profesional"
+              }
               loading={mcarePurchasing}
               onPress={() => {
                 promptMcareCheckout(selectedPackage);
               }}
               style={styles.mcareStickyCta}
-              accessibilityLabel={`Continuar con el pago, ${selectedMcareTotalLabel} en total`}
+              accessibilityLabel={
+                pricingReady
+                  ? `Continuar con el pago, ${selectedMcareTotalLabel} en total`
+                  : "Elegir profesional para ver precios"
+              }
             />
           </View>
         ) : null}
