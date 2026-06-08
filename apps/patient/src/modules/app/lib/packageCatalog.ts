@@ -1,6 +1,6 @@
 import type { AppLanguage } from "@therapy/i18n-config";
 import { describePackagePlan as describePackagePlanCore } from "@therapy/patient-core";
-import type { Market } from "@therapy/types";
+import { isMarket, type Market } from "@therapy/types";
 import type { PackagePlan, PublicSessionPackagesResponse } from "../types";
 import { API_BASE } from "../services/api";
 
@@ -97,8 +97,63 @@ export function isClientFallbackPackagePlanId(id: string): boolean {
 
 const publicPackageCatalogInflight = new Map<string, Promise<PublicPackageCatalog>>();
 
+function resolveCatalogMarket(market: Market | undefined | null): Market {
+  return isMarket(market) ? market : "AR";
+}
+
 function publicPackageCatalogKey(language: AppLanguage, professionalId: string | undefined, market: Market): string {
   return `${language}\0${professionalId ?? ""}\0${market}`;
+}
+
+async function fetchPublicPackageCatalog(params: {
+  market: Market;
+  professionalId?: string;
+}): Promise<PublicSessionPackagesResponse> {
+  const query = new URLSearchParams({ channel: "patient", market: params.market });
+  const professionalId = params.professionalId?.trim();
+  if (professionalId) {
+    query.set("professionalId", professionalId);
+  }
+  const response = await fetch(`${API_BASE}/api/public/session-packages?${query.toString()}`);
+  if (!response.ok) {
+    throw new Error("request_failed");
+  }
+  return (await response.json()) as PublicSessionPackagesResponse;
+}
+
+function mapPublicSessionPackagesToPlans(params: {
+  data: PublicSessionPackagesResponse;
+  t: (values: { es: string; en: string; pt: string }) => string;
+}): PublicPackageCatalog {
+  if (!Array.isArray(params.data.sessionPackages) || params.data.sessionPackages.length === 0) {
+    throw new Error("empty_catalog");
+  }
+  /** El portal solo muestra paquetes multi-sesión; el de 1 crédito es catálogo interno para cobrar sueltas. */
+  const bundlesOnly = params.data.sessionPackages.filter((item) => item.credits > 1);
+  const topBundles = bundlesOnly.slice(0, 3);
+  if (topBundles.length === 0) {
+    throw new Error("empty_catalog");
+  }
+  const featured =
+    params.data.featuredPackageId && topBundles.some((p) => p.id === params.data.featuredPackageId)
+      ? params.data.featuredPackageId
+      : topBundles[0]?.id ?? null;
+  return {
+    featuredPackageId: featured,
+    fromApi: true,
+    plans: topBundles.map((item) => ({
+      id: item.id,
+      name: item.name,
+      credits: item.credits,
+      priceCents: item.priceCents,
+      currency: item.currency,
+      discountPercent: item.discountPercent,
+      description: describePackagePlan(item.credits, params.t),
+      professionalId: item.professionalId,
+      professionalName: item.professionalName,
+      stripePriceId: item.stripePriceId
+    }))
+  };
 }
 
 async function loadPublicPackagePlansOnce(params: {
@@ -108,45 +163,21 @@ async function loadPublicPackagePlansOnce(params: {
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
+  const market = resolveCatalogMarket(params.market);
+  const professionalId = params.professionalId?.trim() || undefined;
+
   try {
-    const query = new URLSearchParams({ channel: "patient", market: params.market });
-    if (params.professionalId) {
-      query.set("professionalId", params.professionalId);
+    let data = await fetchPublicPackageCatalog({ market, professionalId });
+    try {
+      return mapPublicSessionPackagesToPlans({ data, t: params.t });
+    } catch (error) {
+      if (market === "AR") {
+        throw error;
+      }
+      /** Mercados sin bundles publicados reutilizan plantillas AR (IDs reales de compra). */
+      data = await fetchPublicPackageCatalog({ market: "AR", professionalId });
+      return mapPublicSessionPackagesToPlans({ data, t: params.t });
     }
-    const response = await fetch(`${API_BASE}/api/public/session-packages?${query.toString()}`);
-    if (!response.ok) {
-      throw new Error("request_failed");
-    }
-    const data = (await response.json()) as PublicSessionPackagesResponse;
-    if (!Array.isArray(data.sessionPackages) || data.sessionPackages.length === 0) {
-      throw new Error("empty_catalog");
-    }
-    /** El portal solo muestra paquetes multi-sesión; el de 1 crédito es catálogo interno para cobrar sueltas. */
-    const bundlesOnly = data.sessionPackages.filter((item) => item.credits > 1);
-    const topBundles = bundlesOnly.slice(0, 3);
-    if (topBundles.length === 0) {
-      throw new Error("empty_catalog");
-    }
-    const featured =
-      data.featuredPackageId && topBundles.some((p) => p.id === data.featuredPackageId)
-        ? data.featuredPackageId
-        : topBundles[0]?.id ?? null;
-    return {
-      featuredPackageId: featured,
-      fromApi: true,
-      plans: topBundles.map((item) => ({
-        id: item.id,
-        name: item.name,
-        credits: item.credits,
-        priceCents: item.priceCents,
-        currency: item.currency,
-        discountPercent: item.discountPercent,
-        description: describePackagePlan(item.credits, params.t),
-        professionalId: item.professionalId,
-        professionalName: item.professionalName,
-        stripePriceId: item.stripePriceId
-      }))
-    };
   } catch {
     return {
       featuredPackageId: null,
@@ -167,7 +198,8 @@ export function loadPublicPackagePlans(params: {
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
-  const key = publicPackageCatalogKey(params.language, params.professionalId, params.market);
+  const market = resolveCatalogMarket(params.market);
+  const key = publicPackageCatalogKey(params.language, params.professionalId, market);
   const existing = publicPackageCatalogInflight.get(key);
   if (existing) {
     return existing;

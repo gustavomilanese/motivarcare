@@ -95,6 +95,7 @@ export function usePortalUiState(params: {
       setMenuOpen((current) => !current);
     },
     closeMenu: () => setMenuOpen(false),
+    closeNotifications: () => setNotificationsOpen(false),
     toggleNotifications: () => {
       setMenuOpen(false);
       setPreferencesOpen(false);

@@ -155,9 +155,9 @@ export function WebAdminExerciseRoutinesSection(props: {
     setSuccess("");
     const confirmed = window.confirm(
       t(language, {
-        es: "Vas a importar 4 rutinas de ejemplo (requiere ejercicios ya cargados). ¿Continuar?",
-        en: "You will import 4 sample routines (requires exercises already loaded). Continue?",
-        pt: "Vai importar 4 rotinas de exemplo (requer exercícios já carregados). Continuar?"
+        es: "Vas a importar 14 rutinas de ejemplo (requiere ejercicios ya cargados). ¿Continuar?",
+        en: "You will import 14 sample routines (requires exercises already loaded). Continue?",
+        pt: "Vai importar 14 rotinas de exemplo (requer exercícios já carregados). Continuar?"
       })
     );
     if (!confirmed) return;

@@ -93,12 +93,18 @@ export function resolvePackageCatalogView(input: PackageCatalogViewInput): Packa
     };
   }
 
+  /**
+   * Hay profesional de referencia pero el catálogo no trajo precios reales
+   * (fetch falló, mercado sin bundles publicados o tarifa del pro aún en cero).
+   * Mostramos formatos 4/8/12 sin precio en lugar de un error bloqueante.
+   */
+  const displayPlans = buildUnpricedBundlePlans(input.language);
   return {
     showPackageSection: true,
     pricingReady: false,
-    displayPlans: [],
-    featuredPackageId: null,
-    packagesLoadingHint: "empty"
+    displayPlans,
+    featuredPackageId: `display-bundle-${DEFAULT_DISPLAY_FEATURED_BUNDLE_CREDITS}`,
+    packagesLoadingHint: "unpriced_formats"
   };
 }
 

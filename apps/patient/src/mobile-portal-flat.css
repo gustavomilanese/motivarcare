@@ -141,37 +141,49 @@
     left: 0;
     width: 100%;
     max-width: none;
-    max-height: min(72dvh, 520px);
+    max-height: min(78dvh, 560px);
     margin: 0;
     padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
     gap: 0;
     border: none;
-    border-radius: 16px 16px 0 0;
+    border-radius: 20px 20px 0 0;
     border-top: 1px solid var(--mobile-divider);
-    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.16);
     z-index: 280;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+    animation: notifications-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .notifications-dropdown.notifications-dropdown--mobile-sheet::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.55);
+    margin: 8px auto 0;
   }
 
   .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-head {
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 14px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
-    background: var(--mobile-surface);
+    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 100%);
     border-bottom: 1px solid var(--mobile-divider);
   }
 
-  .notifications-dropdown.notifications-dropdown--mobile-sheet .menu-sep {
-    display: none;
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-body {
+    max-height: none;
+    padding: 10px var(--mobile-pad-x-end) 6px var(--mobile-pad-x);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-list,
-  .notifications-dropdown.notifications-dropdown--mobile-sheet .notifications-empty-box {
-    padding: 12px var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notification-dismiss {
+    opacity: 1;
+    transform: scale(1);
   }
 
   .notifications-empty-box {

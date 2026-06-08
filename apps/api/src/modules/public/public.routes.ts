@@ -373,6 +373,65 @@ function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Conti
   return "Intensivo";
 }
 
+const sessionPackageCatalogInclude = {
+  professional: {
+    select: {
+      id: true,
+      market: true,
+      sessionPriceArs: true,
+      sessionPriceUsd: true,
+      discount4: true,
+      discount8: true,
+      discount12: true,
+      user: { select: { fullName: true } }
+    }
+  }
+} as const;
+
+function bundleSessionPackages<T extends { credits: number }>(items: T[]): T[] {
+  return items.filter((item) => item.credits > 1);
+}
+
+function orderPatientSessionPackages<T extends {
+  id: string;
+  active: boolean;
+  credits: number;
+  professionalId: string | null;
+}>(params: {
+  channel: "landing" | "patient" | undefined;
+  market: Market;
+  packages: T[];
+  visibility: ReturnType<typeof parseSessionPackagesVisibility>;
+  landingSlot: "patient_main" | "patient_v2" | "professional";
+}): T[] {
+  const patientIdsForMarket = patientVisibilityIdsForMarket(params.visibility, params.market);
+  const requestedIds =
+    params.channel === "landing"
+      ? landingVisibilityIdsForSlot(params.visibility, params.landingSlot)
+      : params.channel === "patient"
+        ? patientIdsForMarket
+        : [];
+  const packagesFromVisibility = requestedIds
+    .map((id) => params.packages.find((item) => item.id === id))
+    .filter((item): item is T => Boolean(item));
+  let orderedPackages = params.channel
+    ? packagesFromVisibility.length > 0
+      ? packagesFromVisibility
+      : bundleSessionPackages(params.packages).slice(0, 3)
+    : params.packages.slice(0, 3);
+
+  if (params.channel === "patient") {
+    const singleCredit = params.packages.find(
+      (item) => item.active && item.credits === 1 && item.professionalId === null
+    );
+    if (singleCredit && !orderedPackages.some((item) => item.id === singleCredit.id)) {
+      orderedPackages = [singleCredit, ...orderedPackages];
+    }
+  }
+
+  return orderedPackages;
+}
+
 publicRouter.get("/session-packages", async (req, res) => {
   const parsed = sessionPackagesChannelSchema.safeParse(req.query);
   if (!parsed.success) {
@@ -393,24 +452,12 @@ publicRouter.get("/session-packages", async (req, res) => {
    * un rate operativo (live → memory → DB snapshot → env → hardcoded).
    */
   const arsPerUsd: number | null = market === "AR" ? await getResilientUsdArsRate() : null;
+  const landingSlot = parsed.data.landingSlot ?? "patient_main";
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
       where: { active: true, market },
-      include: {
-        professional: {
-          select: {
-            id: true,
-            market: true,
-            sessionPriceArs: true,
-            sessionPriceUsd: true,
-            discount4: true,
-            discount8: true,
-            discount12: true,
-            user: { select: { fullName: true } }
-          }
-        }
-      },
+      include: sessionPackageCatalogInclude,
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     }),
     prisma.systemConfig.findUnique({ where: { key: SESSION_PACKAGES_VISIBILITY_KEY } }),
@@ -431,27 +478,28 @@ publicRouter.get("/session-packages", async (req, res) => {
       : Promise.resolve(null)
   ]);
   const visibility = parseSessionPackagesVisibility(visibilityConfig?.value);
-  const patientIdsForMarket = patientVisibilityIdsForMarket(visibility, market);
-  const landingSlot = parsed.data.landingSlot ?? "patient_main";
-  const requestedIds =
-    parsed.data.channel === "landing"
-      ? landingVisibilityIdsForSlot(visibility, landingSlot)
-      : parsed.data.channel === "patient"
-        ? patientIdsForMarket
-        : [];
-  const packagesFromVisibility = requestedIds
-    .map((id) => packages.find((item) => item.id === id))
-    .filter((item): item is (typeof packages)[number] => Boolean(item));
-  let orderedPackages = parsed.data.channel
-    ? packagesFromVisibility.length > 0
-      ? packagesFromVisibility
-      : packages.filter((item) => item.credits > 1).slice(0, 3)
-    : packages.slice(0, 3);
+  let orderedPackages = orderPatientSessionPackages({
+    channel: parsed.data.channel,
+    market,
+    packages,
+    visibility,
+    landingSlot
+  });
 
-  if (parsed.data.channel === "patient") {
-    const singleCredit = packages.find((item) => item.active && item.credits === 1 && item.professionalId === null);
-    if (singleCredit && !orderedPackages.some((item) => item.id === singleCredit.id)) {
-      orderedPackages = [singleCredit, ...orderedPackages];
+  if (parsed.data.channel === "patient" && bundleSessionPackages(orderedPackages).length === 0 && market !== "AR") {
+    const arPackages = await prisma.sessionPackage.findMany({
+      where: { active: true, market: "AR" },
+      include: sessionPackageCatalogInclude,
+      orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
+    });
+    if (bundleSessionPackages(arPackages).length > 0) {
+      orderedPackages = orderPatientSessionPackages({
+        channel: "patient",
+        market: "AR",
+        packages: arPackages,
+        visibility,
+        landingSlot
+      });
     }
   }
   const featuredPatientForMarket = featuredPatientIdForMarket(visibility, market);

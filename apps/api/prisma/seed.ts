@@ -3,6 +3,7 @@ import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@th
 import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/auth.js";
 import { DEFAULT_LANDING_WEB_REVIEWS } from "../src/modules/web-content/reviews.defaults.js";
+import { seedPatientWebContentIfEmpty } from "../src/lib/seedPatientWebContent.js";
 
 type AppRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 type SeedContext = {
@@ -725,6 +726,12 @@ async function main() {
   await seedBookingAndChat(context);
   await seedExtraDemoPatientsWithEmma(context);
   await seedLandingWebReviews();
+  const webContent = await seedPatientWebContentIfEmpty();
+  if (webContent.exercisesImported > 0 || webContent.routinesImported > 0) {
+    console.log(
+      `Patient web content: ${webContent.exercisesImported} exercises, ${webContent.routinesImported} routines imported.`
+    );
+  }
 
   console.log("Seed completed. Demo credentials (avatares de prueba Unsplash; reemplazar en producción):");
   console.log("- Patient: alex@example.com / SecurePass123");

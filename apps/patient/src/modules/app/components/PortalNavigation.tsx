@@ -13,6 +13,7 @@ import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { kindLabel } from "../notifications/buildPortalNotifications";
+import { notificationKindVisual } from "../notifications/notificationKindVisual";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import type { ProfileTab } from "../types";
 import type { Market } from "@therapy/types";
@@ -156,6 +157,7 @@ export function PortalNavigation(props: {
   onToggleMenu: () => void;
   onCloseMenu: () => void;
   onToggleNotifications: () => void;
+  onCloseNotifications: () => void;
   onOpenNotification: (item: PortalNotificationItem) => void;
   onDismissNotification: (item: PortalNotificationItem, event?: { stopPropagation: () => void }) => void;
   onOpenNotificationThread: (professionalId: string) => void;
@@ -447,72 +449,131 @@ export function PortalNavigation(props: {
     );
   }
 
-  function renderNotificationsPanel() {
+  function renderNotificationsDropdown() {
+    const unreadInList = props.notifications.filter((item) => item.unread).length;
+
     return (
-      <>
-        {isMobilePortal ? (
+      <div
+        className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : ""}`}
+        role="dialog"
+        aria-modal={isMobilePortal ? "true" : undefined}
+        aria-label={t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}
+      >
+        <div className="notifications-head">
+          <div className="notifications-head-copy">
+            <span className="notifications-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="notifications-head-text">
+              <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
+              <span className="notifications-head-sub">
+                {unreadInList > 0
+                  ? t(props.language, {
+                      es: `${unreadInList} sin leer`,
+                      en: `${unreadInList} unread`,
+                      pt: `${unreadInList} não lidas`
+                    })
+                  : t(props.language, {
+                      es: "Estás al día",
+                      en: "You're all caught up",
+                      pt: "Você está em dia"
+                    })}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
-            className="notifications-dropdown-backdrop"
+            className="notifications-head-close"
             aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
-            onClick={props.onToggleNotifications}
-          />
-        ) : null}
-        <div
-          className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : ""}`}
-          role="dialog"
-          aria-modal={isMobilePortal ? "true" : undefined}
-          aria-label={t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}
-        >
-          <div className="notifications-head">
-            <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
-            {isMobilePortal ? (
-              <button
-                type="button"
-                className="menu-dropdown-close"
-                aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
-                onClick={props.onToggleNotifications}
-              >
-                ×
-              </button>
-            ) : null}
-          </div>
-          <div className="menu-sep" />
+            onClick={props.onCloseNotifications}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="notifications-body">
           {props.notifications.length === 0 ? (
             <div className="notifications-empty-box" role="status">
+              <span className="notifications-empty-icon" aria-hidden="true">
+                ✨
+              </span>
+              <p className="notifications-empty-title">
+                {t(props.language, { es: "Sin novedades por ahora", en: "No updates for now", pt: "Sem novidades por agora" })}
+              </p>
               <p className="notifications-empty">
-                {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
+                {t(props.language, {
+                  es: "Te avisamos acá cuando haya algo importante.",
+                  en: "We'll notify you here when something important happens.",
+                  pt: "Avisaremos aqui quando houver algo importante."
+                })}
               </p>
             </div>
           ) : (
             <ul className="notifications-list">
-              {props.notifications.slice(0, 12).map((item) => (
-                <li key={item.id} className="notification-row">
-                  <button
-                    type="button"
-                    className={`notification-item ${item.unread ? "unread" : ""}`}
-                    onClick={() => props.onOpenNotification(item)}
-                  >
-                    <span>{kindLabel(props.language, item.kind)}</span>
-                    <strong>{item.title}</strong>
-                    {item.body ? <em className="notification-item-body">{item.body}</em> : null}
-                    {item.detail ? <em>{item.detail}</em> : null}
-                    {item.meta ? <small>{item.meta}</small> : null}
-                  </button>
-                  <button
-                    type="button"
-                    className="notification-dismiss"
-                    aria-label={t(props.language, { es: "Descartar", en: "Dismiss", pt: "Descartar" })}
-                    onClick={(event) => props.onDismissNotification(item, event)}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
+              {props.notifications.slice(0, 12).map((item) => {
+                const visual = notificationKindVisual(item.kind);
+                return (
+                  <li key={item.id} className="notification-row">
+                    <button
+                      type="button"
+                      className={`notification-item ${item.unread ? "unread" : ""}`}
+                      onClick={() => props.onOpenNotification(item)}
+                      style={
+                        {
+                          "--notification-kind": visual.accent,
+                          "--notification-kind-soft": visual.accentSoft
+                        } as React.CSSProperties
+                      }
+                    >
+                      <span className="notification-item-icon" aria-hidden="true">
+                        {visual.icon}
+                      </span>
+                      <span className="notification-item-content">
+                        <span className="notification-item-top">
+                          <span className="notification-item-kind">{kindLabel(props.language, item.kind)}</span>
+                          {item.unread ? <span className="notification-item-unread-dot" aria-hidden="true" /> : null}
+                          {item.meta ? <small className="notification-item-meta">{item.meta}</small> : null}
+                        </span>
+                        <strong className="notification-item-title">{item.title}</strong>
+                        {item.body ? <em className="notification-item-body">{item.body}</em> : null}
+                        {item.detail ? <em className="notification-item-detail">{item.detail}</em> : null}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="notification-dismiss"
+                      aria-label={t(props.language, { es: "Descartar", en: "Dismiss", pt: "Descartar" })}
+                      onClick={(event) => props.onDismissNotification(item, event)}
+                    >
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
-      </>
+      </div>
+    );
+  }
+
+  function renderNotificationsBackdrop() {
+    return (
+      <button
+        type="button"
+        className="notifications-dropdown-backdrop"
+        aria-label={t(props.language, { es: "Cerrar notificaciones", en: "Close notifications", pt: "Fechar notificacoes" })}
+        onClick={props.onCloseNotifications}
+      />
     );
   }
 
@@ -537,7 +598,7 @@ export function PortalNavigation(props: {
               {props.favoriteCount > 0 ? <small>{props.favoriteCount}</small> : null}
             </NavLink>
           ) : null}
-          <div className="notifications-wrap">
+          <div className={`notifications-wrap${props.notificationsOpen ? " notifications-wrap--open" : ""}`}>
             <button
               type="button"
               className={`header-icon-link ${props.notificationsOpen ? "active" : ""}`}
@@ -550,11 +611,14 @@ export function PortalNavigation(props: {
               </svg>
               {props.notificationsUnreadCount > 0 ? <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small> : null}
             </button>
-            {props.notificationsOpen
-              ? isMobilePortal
-                ? createPortal(renderNotificationsPanel(), document.body)
-                : renderNotificationsPanel()
-              : null}
+            {props.notificationsOpen ? (
+              <>
+                {createPortal(renderNotificationsBackdrop(), document.body)}
+                {isMobilePortal
+                  ? createPortal(renderNotificationsDropdown(), document.body)
+                  : renderNotificationsDropdown()}
+              </>
+            ) : null}
           </div>
         </div>
         <div className="menu-wrap">

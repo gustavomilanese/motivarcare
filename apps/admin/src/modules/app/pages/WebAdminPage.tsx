@@ -867,9 +867,9 @@ export function WebAdminPage({
     setSuccess("");
     const confirmed = window.confirm(
       t(language, {
-        es: "Vas a importar 10 ejercicios de plantilla al catálogo. Después podés editarlos o borrarlos. ¿Continuar?",
-        en: "You will import 10 template exercises. You can edit or delete them afterwards. Continue?",
-        pt: "Vai importar 10 exercícios modelo. Depois pode editá-los ou removê-los. Continuar?"
+        es: "Vas a importar 60 ejercicios de plantilla al catálogo. Después podés editarlos o borrarlos. ¿Continuar?",
+        en: "You will import 60 template exercises. You can edit or delete them afterwards. Continue?",
+        pt: "Vai importar 60 exercícios modelo. Depois pode editá-los ou removê-los. Continuar?"
       })
     );
     if (!confirmed) {
@@ -1386,9 +1386,9 @@ export function WebAdminPage({
         </p>
         <p className="web-admin-helper-note">
           {t(language, {
-            es: "El portal solo muestra lo que publiques acá. Podés importar una plantilla de 10 ejercicios o crear los tuyos desde cero.",
-            en: "The portal only shows what you publish here. Import a 10-exercise template or create your own from scratch.",
-            pt: "O portal só mostra o que você publicar aqui. Importe um modelo de 10 exercícios ou crie os seus."
+            es: "El portal solo muestra lo que publiques acá. Podés importar una plantilla de 60 ejercicios o crear los tuyos desde cero.",
+            en: "The portal only shows what you publish here. Import a 60-exercise template or create your own from scratch.",
+            pt: "O portal só mostra o que você publicar aqui. Importe um modelo de 60 exercícios ou crie os seus."
           })}
         </p>
         <div className="web-admin-list-toolbar">

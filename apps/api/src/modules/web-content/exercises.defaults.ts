@@ -1,11 +1,16 @@
 /**
- * Catálogo de ejercicios de cortesía (10) que se usa cuando el admin todavía no
- * cargó nada en `SystemConfig` (key `landing-web-exercises`).
- * Si el admin guarda al menos un ejercicio, este fallback deja de aplicarse.
+ * Catálogo inicial de 60 ejercicios para importar desde Admin o `prisma db seed`.
+ * Se persiste en `SystemConfig` bajo la key `patient-web-exercises`.
  *
  * El contenido fue revisado para ser seguro y útil entre sesiones, pero NO sustituye
  * tratamiento profesional: cada ejercicio incluye contraindicaciones cuando corresponde.
  */
+import { GROUNDING_EXERCISES } from "./exercises/groundingExercises.js";
+import { MINDFULNESS_EXERCISES } from "./exercises/mindfulnessExercises.js";
+import { MOVIMIENTO_EXERCISES } from "./exercises/movimientoExercises.js";
+import { POSTURA_EXERCISES } from "./exercises/posturaExercises.js";
+import { RELAJACION_EXERCISES } from "./exercises/relajacionExercises.js";
+import { RESPIRACION_EXERCISES } from "./exercises/respiracionExercises.js";
 export type ExerciseCategory =
   | "respiracion"
   | "postura"
@@ -38,9 +43,9 @@ export interface ExercisePost {
   sortOrder: number;
 }
 
-const TODAY = "2026-04-26";
+const TODAY = "2026-06-03";
 
-export const DEFAULT_EXERCISES: ExercisePost[] = [
+const BASE_EXERCISES: ExercisePost[] = [
   {
     id: "ex-respiracion-4-7-8",
     slug: "respiracion-4-7-8",
@@ -409,4 +414,15 @@ export const DEFAULT_EXERCISES: ExercisePost[] = [
     publishedAt: TODAY,
     sortOrder: 100
   }
+];
+
+/** 60 ejercicios publicados: 10 base + 50 por categoría terapéutica. */
+export const DEFAULT_EXERCISES: ExercisePost[] = [
+  ...BASE_EXERCISES,
+  ...RESPIRACION_EXERCISES,
+  ...POSTURA_EXERCISES,
+  ...GROUNDING_EXERCISES,
+  ...MOVIMIENTO_EXERCISES,
+  ...RELAJACION_EXERCISES,
+  ...MINDFULNESS_EXERCISES
 ];

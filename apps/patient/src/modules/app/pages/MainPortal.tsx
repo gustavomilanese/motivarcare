@@ -288,6 +288,7 @@ export function MainPortal(props: {
         onToggleMenu={ui.toggleMenu}
         onCloseMenu={ui.closeMenu}
         onToggleNotifications={ui.toggleNotifications}
+        onCloseNotifications={ui.closeNotifications}
         onOpenNotification={ui.openNotification}
         onDismissNotification={ui.dismissNotification}
         onOpenNotificationThread={ui.openNotificationThread}
