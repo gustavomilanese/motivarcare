@@ -8,6 +8,11 @@ import {
 } from "@therapy/i18n-config";
 import { useMobilePortal } from "../../hooks/useMobilePortal";
 import { packageBenefitLines, packageRhythmLabel } from "../../lib/packageCatalog";
+import {
+  PackageCatalogError,
+  PackageCatalogLoading,
+  PackageChooseProfessionalCta
+} from "./PackageCatalogSectionExtras";
 import type { PackagePlan } from "../../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -50,6 +55,7 @@ export function CheckoutPackagesPanel(props: {
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
   const canIndividualCta =
     props.pricingReady && !props.packagesLoading && props.unitPriceMajor !== null && (singleSessionPlan !== null || bundlePlans.length > 0);
+  const showChooseProfessionalCta = !props.pricingReady;
 
   const individualLinkLabel = t(props.language, {
     es: "Comprar sesiones individuales",
@@ -60,7 +66,7 @@ export function CheckoutPackagesPanel(props: {
   return (
     <div className={`checkout-packages-panel-root${isMobilePortal ? " checkout-packages-panel-root--mobile" : ""}`}>
       <div className="session-booking-panel-head checkout-packages-head">
-        <div className="checkout-packages-head-inner">
+        <div className="checkout-packages-head-inner sessions-package-panel-head-copy">
           <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
           <p>
             {props.pricingReady
@@ -76,11 +82,14 @@ export function CheckoutPackagesPanel(props: {
                     pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
                   })
               : t(props.language, {
-                  es: "Estos son los formatos disponibles (4, 8 y 12 sesiones). Elegí un profesional para ver precios según su tarifa.",
-                  en: "These are the available formats (4, 8, and 12 sessions). Choose a professional to see prices based on their rate.",
-                  pt: "Estes sao os formatos disponiveis (4, 8 e 12 sessoes). Escolha um profissional para ver precos conforme a tarifa."
+                  es: "Formatos de 4, 8 y 12 sesiones. Elegí un profesional para ver precios según su tarifa.",
+                  en: "4, 8, and 12 session formats. Choose a professional to see prices based on their rate.",
+                  pt: "Formatos de 4, 8 e 12 sessoes. Escolha um profissional para ver precos conforme a tarifa."
                 })}
           </p>
+          {showChooseProfessionalCta ? (
+            <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
+          ) : null}
         </div>
         <button type="button" className="checkout-packages-close" onClick={props.onClose}>
           {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
@@ -88,24 +97,12 @@ export function CheckoutPackagesPanel(props: {
       </div>
 
       {props.packagesLoading ? (
-        <p>
-          {t(props.language, {
-            es: "Cargando paquetes disponibles...",
-            en: "Loading available packages...",
-            pt: "Carregando pacotes disponiveis..."
-          })}
-        </p>
+        <PackageCatalogLoading language={props.language} />
       ) : props.packagePlans.length === 0 ? (
-        <div className="sessions-empty-state">
-          <strong>{t(props.language, { es: "No hay paquetes publicados por ahora.", en: "No packages are published right now.", pt: "Nao ha pacotes publicados no momento." })}</strong>
-          <p>
-            {t(props.language, {
-              es: "Prueba nuevamente en unos minutos o contacta al equipo de soporte.",
-              en: "Try again in a few minutes or contact support.",
-              pt: "Tente novamente em alguns minutos ou entre em contato com o suporte."
-            })}
-          </p>
-        </div>
+        <PackageCatalogError
+          language={props.language}
+          variant={props.pricingReady ? "published" : "catalog"}
+        />
       ) : bundlePlans.length === 0 ? (
         singleSessionPlan ? (
           <div className="checkout-individual-only-wrap">
@@ -194,7 +191,7 @@ export function CheckoutPackagesPanel(props: {
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </>
                       ) : (
-                        <span className="deal-price-pending">
+                        <span className="deal-price-pending-label">
                           {t(props.language, {
                             es: "Precio al elegir profesional",
                             en: "Price shown after choosing a professional",
@@ -203,7 +200,7 @@ export function CheckoutPackagesPanel(props: {
                         </span>
                       )}
                     </div>
-                    <p className="deal-main-price">
+                    <p className={`deal-main-price${props.pricingReady ? "" : " deal-main-price--placeholder"}`}>
                       {props.pricingReady
                         ? formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)
                         : "—"}

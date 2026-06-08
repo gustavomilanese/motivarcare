@@ -15,8 +15,10 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
+  patientHasPricingProfessional,
   resolvePackageCatalogView,
   resolvePackagePurchaseGate,
+  resolvePatientPricingProfessionalId,
   type SessionPackagePlan
 } from "@therapy/patient-core";
 import { getBookingsMine, getMatchingProfessionals, getSessionPackages, purchasePackage } from "../api/client";
@@ -512,7 +514,18 @@ export function HomeScreen() {
     }, [token])
   );
 
-  const hasAssignedProfessional = Boolean(profile?.activeProfessional);
+  const upcomingBookingProfessionalIds = useMemo(
+    () => bookings.map((booking) => booking.professionalId ?? ""),
+    [bookings]
+  );
+  const pricingProfessionalId = resolvePatientPricingProfessionalId({
+    assignedProfessionalId: profile?.activeProfessional?.id ?? null,
+    bookingProfessionalIds: upcomingBookingProfessionalIds
+  });
+  const hasPricingProfessional = patientHasPricingProfessional({
+    assignedProfessionalId: profile?.activeProfessional?.id ?? null,
+    bookingProfessionalIds: upcomingBookingProfessionalIds
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -528,7 +541,7 @@ export function HomeScreen() {
         };
       }
 
-      if (!hasAssignedProfessional) {
+      if (!hasPricingProfessional || !pricingProfessionalId) {
         setPricedPlans([]);
         setFeaturedPackageIdFromApi(null);
         setCatalogFromApi(false);
@@ -544,7 +557,7 @@ export function HomeScreen() {
         try {
           const response = await getSessionPackages({
             token,
-            professionalId: profile?.activeProfessional?.id ?? null
+            professionalId: pricingProfessionalId
           });
           if (!active) {
             return;
@@ -574,14 +587,14 @@ export function HomeScreen() {
       return () => {
         active = false;
       };
-    }, [hasAssignedProfessional, profile?.activeProfessional?.id, token])
+    }, [hasPricingProfessional, pricingProfessionalId, token])
   );
 
   const packageCatalogView = useMemo(
     () =>
       resolvePackageCatalogView({
         hasProfessionalsOnPortal,
-        hasAssignedProfessional,
+        hasAssignedProfessional: hasPricingProfessional,
         catalogFromApi,
         packagesLoading,
         pricedPlans: pricedPlans.map(toSessionPackagePlan),
@@ -591,7 +604,7 @@ export function HomeScreen() {
     [
       catalogFromApi,
       featuredPackageIdFromApi,
-      hasAssignedProfessional,
+      hasPricingProfessional,
       hasProfessionalsOnPortal,
       packagesLoading,
       pricedPlans

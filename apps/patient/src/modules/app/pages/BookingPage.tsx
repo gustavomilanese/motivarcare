@@ -14,7 +14,11 @@ import { fetchSharedPatientAvailabilitySlots } from "../lib/fetchPatientAvailabi
 import { recordPaymentFailureNotice } from "../notifications/portalNotificationStorage";
 import { loadPublicPackagePlans, isClientFallbackPackagePlanId } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
-import { findProfessionalById, findSlotIdForBooking, patientHasAssignedProfessional } from "../lib/professionals";
+import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
+import {
+  portalHasPricingProfessional,
+  resolvePortalPricingProfessionalId
+} from "../lib/patientPricingProfessional";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
@@ -115,7 +119,6 @@ export function BookingPage(props: {
   onPurchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
   onNavigateToAssignProfessional: () => void;
 }) {
-  const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const isMobilePortal = useMobilePortal();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSlotId, setSelectedSlotId] = useState("");
@@ -168,10 +171,26 @@ export function BookingPage(props: {
   const effectiveProfessionalId = canChangeProfessionalForNewPackage
     ? selectedProfessionalId || assignedProfessionalId
     : assignedProfessionalId || selectedProfessionalId;
-  const professional = findProfessionalById(effectiveProfessionalId, props.professionals);
   const now = Date.now();
 
   const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
+  const upcomingBookingProfessionalIds = upcomingConfirmedBookings.map((booking) => booking.professionalId);
+  const hasPricingProfessional = portalHasPricingProfessional({
+    assignedProfessionalId: props.state.assignedProfessionalId,
+    selectedProfessionalId: props.state.selectedProfessionalId,
+    bookings: props.state.bookings,
+    upcomingBookingProfessionalIds
+  });
+  const pricingProfessionalId =
+    resolvePortalPricingProfessionalId({
+      assignedProfessionalId: props.state.assignedProfessionalId,
+      selectedProfessionalId: props.state.selectedProfessionalId,
+      bookings: props.state.bookings,
+      upcomingBookingProfessionalIds
+    }) ?? "";
+  const professional = pricingProfessionalId
+    ? findProfessionalById(pricingProfessionalId, props.professionals)
+    : findProfessionalById(effectiveProfessionalId, props.professionals);
 
   const upcomingRegularBookings = upcomingConfirmedBookings
     .filter((booking) => booking.bookingMode !== "trial");
@@ -214,14 +233,14 @@ export function BookingPage(props: {
   };
 
   const packageCatalogDepsRef = useRef({
-    hasAssignedProfessional,
-    professionalId: professional.id,
+    hasPricingProfessional,
+    professionalId: pricingProfessionalId,
     language: props.language,
     patientMarket: props.state.patientMarket
   });
   packageCatalogDepsRef.current = {
-    hasAssignedProfessional,
-    professionalId: professional.id,
+    hasPricingProfessional,
+    professionalId: pricingProfessionalId,
     language: props.language,
     patientMarket: props.state.patientMarket
   };
@@ -256,7 +275,7 @@ export function BookingPage(props: {
     () =>
       resolvePackageCatalogView({
         hasProfessionalsOnPortal,
-        hasAssignedProfessional,
+        hasAssignedProfessional: hasPricingProfessional,
         catalogFromApi: packageCatalogFromApi,
         packagesLoading,
         pricedPlans: packagePlans,
@@ -265,7 +284,7 @@ export function BookingPage(props: {
       }),
     [
       featuredPackageId,
-      hasAssignedProfessional,
+      hasPricingProfessional,
       hasProfessionalsOnPortal,
       packageCatalogFromApi,
       packagePlans,
@@ -558,7 +577,7 @@ export function BookingPage(props: {
   useEffect(() => {
     setPackagesLoading(true);
 
-    if (!hasAssignedProfessional) {
+    if (!hasPricingProfessional) {
       setPackagePlans([]);
       setFeaturedPackageId(null);
       setPackagesLoading(false);
@@ -571,7 +590,7 @@ export function BookingPage(props: {
         return;
       }
       const snap = packageCatalogDepsRef.current;
-      if (!snap.hasAssignedProfessional) {
+      if (!snap.hasPricingProfessional) {
         setPackagesLoading(false);
         return;
       }
@@ -602,7 +621,7 @@ export function BookingPage(props: {
       packagesFetchGenerationRef.current += 1;
       window.clearTimeout(timer);
     };
-  }, [hasAssignedProfessional, professional.id, props.language, props.state.patientMarket]);
+  }, [hasPricingProfessional, pricingProfessionalId, props.language, props.state.patientMarket]);
 
   useEffect(() => {
     if (pricingReady || !isCheckoutFlow) {
@@ -756,7 +775,7 @@ export function BookingPage(props: {
 
   const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
     isMobilePortal,
-    hasAssignedProfessional,
+    hasAssignedProfessional: hasPricingProfessional,
     pricingReady,
     creditsRemaining: pendingSessions,
     packagePlans: displayPackagePlans,
@@ -1118,7 +1137,7 @@ export function BookingPage(props: {
               <div>
                 <strong>{t(props.language, { es: "No tienes sesiones disponibles", en: "You have no available sessions", pt: "Voce nao tem sessoes disponiveis" })}</strong>
                 <p>
-                  {hasAssignedProfessional
+                  {hasPricingProfessional
                     ? t(props.language, {
                         es: "Compra un paquete para reservar una nueva sesión.",
                         en: "Buy a package to reserve a new session.",
@@ -1136,7 +1155,7 @@ export function BookingPage(props: {
               type="button"
               className="sessions-credit-alert-action"
               onClick={() => {
-                if (!hasAssignedProfessional) {
+                if (!hasPricingProfessional) {
                   openAssignProfessionalPrompt();
                   setShowNoCreditsAlert(false);
                   return;
@@ -1144,7 +1163,7 @@ export function BookingPage(props: {
                 setAcquireSessionsModalOpen(true);
               }}
             >
-              {hasAssignedProfessional
+              {hasPricingProfessional
                 ? t(props.language, { es: "Ir a comprar", en: "Go to buy", pt: "Ir para compra" })
                 : t(props.language, { es: "Elegir profesional", en: "Choose professional", pt: "Escolher profissional" })}
             </button>
@@ -1195,7 +1214,7 @@ export function BookingPage(props: {
           <CheckoutPackagesPanel
             language={props.language}
             currency={props.currency}
-            packagesLoading={packagesLoading && hasAssignedProfessional}
+            packagesLoading={packagesLoading && hasPricingProfessional}
             packagePlans={displayPackagePlans}
             featuredPackageId={displayFeaturedPackageId}
             selectedCheckoutPlanId={selectedCheckoutPlanId}

@@ -776,7 +776,7 @@
     gap: 12px;
     width: 100%;
     min-height: var(--mobile-row-min);
-    margin: 0;
+    margin: 0 !important;
     padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x);
     border: none;
     border-radius: 0;
@@ -785,6 +785,13 @@
     cursor: pointer;
     text-align: left;
     color: var(--mobile-text-primary);
+  }
+
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-toggle:hover,
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-toggle:focus-visible,
+  .portal-main .patient-dashboard-home .sessions-calendar-toggle:hover,
+  .portal-main .patient-dashboard-home .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.06);
   }
 
   .portal-main .sessions-booking-page .sessions-booking-body .sessions-calendar-toggle .sessions-secondary-title,
@@ -1278,6 +1285,74 @@
     margin-top: 8px;
     text-align: left;
     padding: 8px 0;
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-choose-professional-cta {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    border-radius: 12px;
+    margin-top: 4px;
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-skeleton-grid,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-skeleton-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-skeleton-card,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-skeleton-card {
+    min-height: 220px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-error,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-error {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--mobile-surface);
+    padding: 16px 0;
+    border-bottom: 1px solid var(--mobile-divider);
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-copy strong,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-error-copy strong {
+    font-size: 15px;
+    color: var(--mobile-text-primary);
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-copy p,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-error-copy p {
+    color: var(--mobile-text-secondary);
+  }
+
+  .portal-main .dashboard-package-options-panel .packages-catalog-error-retry,
+  .portal-main .checkout-packages-panel-root--mobile .packages-catalog-error-retry {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+  }
+
+  .portal-main .dashboard-package-options-panel .deal-price-pending-label,
+  .portal-main .checkout-packages-panel-root--mobile .deal-price-pending-label {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .portal-main .dashboard-package-options-panel .deal-main-price--placeholder,
+  .portal-main .checkout-packages-panel-root--mobile .deal-main-price--placeholder {
+    font-size: 22px;
+  }
+
+  .portal-main .checkout-packages-panel-root--mobile .packages-choose-professional-cta {
+    width: 100%;
+    min-height: var(--mobile-row-min);
+    margin-top: 4px;
   }
 
   .portal-main .dashboard-package-options-panel .deal-card h3,

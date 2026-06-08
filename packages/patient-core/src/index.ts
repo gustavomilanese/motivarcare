@@ -29,6 +29,12 @@ export type {
   AcquireSessionsPresentation,
   AcquireSessionsTrigger
 } from "./acquireSessions.js";
+export {
+  collectPatientBookingProfessionalIds,
+  patientHasPricingProfessional,
+  resolvePatientPricingProfessionalId
+} from "./resolvePatientPricingProfessional.js";
+export type { PatientPricingProfessionalInput } from "./resolvePatientPricingProfessional.js";
 export { resolveAcquireSessionsIntent } from "./acquireSessions.js";
 export type { PatientPortalBooking } from "./patientPortalBookings.js";
 export {

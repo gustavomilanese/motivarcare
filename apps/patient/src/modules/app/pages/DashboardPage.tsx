@@ -19,6 +19,11 @@ import {
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
+import {
+  PackageCatalogError,
+  PackageCatalogLoading,
+  PackageChooseProfessionalCta
+} from "../components/booking/PackageCatalogSectionExtras";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
@@ -27,6 +32,10 @@ import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
+import {
+  portalHasPricingProfessional,
+  resolvePortalPricingProfessionalId
+} from "../lib/patientPricingProfessional";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type {
@@ -160,13 +169,25 @@ export function DashboardPage(props: {
   const [firstUpcomingSpotlight, setFirstUpcomingSpotlight] = useState(false);
   const [googleCalendarCtaPulse, setGoogleCalendarCtaPulse] = useState(false);
   const now = Date.now();
-  const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
   const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
+  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
+  const upcomingBookingProfessionalIds = upcomingConfirmedBookings.map((booking) => booking.professionalId);
+  const hasPricingProfessional = portalHasPricingProfessional({
+    assignedProfessionalId: props.state.assignedProfessionalId,
+    selectedProfessionalId: props.state.selectedProfessionalId,
+    bookings: props.state.bookings,
+    upcomingBookingProfessionalIds
+  });
+  const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
-  const pricingProfessionalId = canChangeProfessionalForNewPackage
-    ? selectedProfessionalId || assignedProfessionalId
-    : assignedProfessionalId || selectedProfessionalId;
+  const pricingProfessionalId =
+    resolvePortalPricingProfessionalId({
+      assignedProfessionalId: props.state.assignedProfessionalId,
+      selectedProfessionalId: props.state.selectedProfessionalId,
+      bookings: props.state.bookings,
+      upcomingBookingProfessionalIds
+    }) ?? "";
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [trialProfessionalId, setTrialProfessionalId] = useState(props.state.assignedProfessionalId ?? props.state.selectedProfessionalId);
   const [trialSlotId, setTrialSlotId] = useState("");
@@ -187,7 +208,7 @@ export function DashboardPage(props: {
     () =>
       resolvePackageCatalogView({
         hasProfessionalsOnPortal,
-        hasAssignedProfessional,
+        hasAssignedProfessional: hasPricingProfessional,
         catalogFromApi: packageCatalogFromApi,
         packagesLoading,
         pricedPlans: packagePlans,
@@ -196,7 +217,7 @@ export function DashboardPage(props: {
       }),
     [
       featuredPackageId,
-      hasAssignedProfessional,
+      hasPricingProfessional,
       hasProfessionalsOnPortal,
       packageCatalogFromApi,
       packagePlans,
@@ -211,12 +232,15 @@ export function DashboardPage(props: {
     featuredPackageId: displayFeaturedPackageId,
     packagesLoadingHint
   } = packageCatalogView;
+  const showChooseProfessionalCta = !hasPricingProfessional || packagesLoadingHint === "unpriced_formats";
+  const openChooseProfessional = useCallback(() => {
+    setAssignProModalOpen(true);
+  }, []);
   const packageSectionRef = useRef<HTMLElement | null>(null);
   const defaultPackagePlan =
     displayPackagePlans.find((plan) => plan.id === displayFeaturedPackageId) ?? displayPackagePlans[0] ?? null;
   const nextBooking = pickNextPatientBooking(props.state.bookings, now);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
-  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
   const trialBookings = confirmedBookings.filter((booking) => booking.bookingMode === "trial");
   const activeTrialBooking = trialBookings
     .filter((booking) => new Date(booking.endsAt).getTime() >= now)
@@ -325,7 +349,7 @@ export function DashboardPage(props: {
   useEffect(() => {
     let active = true;
 
-    if (!hasAssignedProfessional) {
+    if (!hasPricingProfessional) {
       setPackagePlans([]);
       setFeaturedPackageId(null);
       setPackageCatalogFromApi(false);
@@ -358,10 +382,10 @@ export function DashboardPage(props: {
     return () => {
       active = false;
     };
-  }, [hasAssignedProfessional, pricingProfessionalId, props.language, props.state.patientMarket]);
+  }, [hasPricingProfessional, pricingProfessionalId, props.language, props.state.patientMarket]);
 
   useEffect(() => {
-    if (hasAssignedProfessional) {
+    if (hasPricingProfessional) {
       try {
         window.sessionStorage.removeItem(ASSIGN_PRO_MODAL_DISMISS_KEY);
       } catch {
@@ -379,7 +403,7 @@ export function DashboardPage(props: {
       // ignore
     }
     setAssignProModalOpen(true);
-  }, [hasAssignedProfessional]);
+  }, [hasPricingProfessional]);
 
   const handleStartPackagePurchase = useCallback(
     (plan: PackagePlan) => {
@@ -447,7 +471,7 @@ export function DashboardPage(props: {
 
   const { dispatchAcquireSessions } = useAcquireSessionsDispatch({
     isMobilePortal,
-    hasAssignedProfessional,
+    hasAssignedProfessional: hasPricingProfessional,
     pricingReady,
     creditsRemaining: availableSessions,
     packagePlans: displayPackagePlans,
@@ -964,7 +988,7 @@ export function DashboardPage(props: {
       {showPackageSection ? (
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
           <div className={`session-booking-panel-head${showGoogleCalendarCta ? " session-booking-panel-head--split" : ""}`}>
-            <div>
+            <div className="sessions-package-panel-head-copy">
               <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
               <p>
                 {pricingReady
@@ -973,12 +997,21 @@ export function DashboardPage(props: {
                       en: "Choose a package or buy individual sessions with the link under each plan.",
                       pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
                     })
-                  : t(props.language, {
-                      es: "Formatos de 4, 8 y 12 sesiones. Elegí un profesional para ver precios según su tarifa.",
-                      en: "4, 8, and 12 session formats. Choose a professional to see prices based on their rate.",
-                      pt: "Formatos de 4, 8 e 12 sessoes. Escolha um profissional para ver precos conforme a tarifa."
-                    })}
+                  : packagesLoadingHint === "unpriced_formats"
+                    ? t(props.language, {
+                        es: "Formatos de 4, 8 y 12 sesiones. Elegí un profesional para ver precios según su tarifa.",
+                        en: "4, 8, and 12 session formats. Choose a professional to see prices based on their rate.",
+                        pt: "Formatos de 4, 8 e 12 sessoes. Escolha um profissional para ver precos conforme a tarifa."
+                      })
+                    : t(props.language, {
+                        es: "Formatos de 4, 8 y 12 sesiones según la tarifa de tu profesional.",
+                        en: "4, 8, and 12 session formats based on your professional's rate.",
+                        pt: "Formatos de 4, 8 e 12 sessoes conforme a tarifa do seu profissional."
+                      })}
               </p>
+              {showChooseProfessionalCta ? (
+                <PackageChooseProfessionalCta language={props.language} onClick={openChooseProfessional} />
+              ) : null}
             </div>
             {showGoogleCalendarCta ? (
               <button
@@ -995,23 +1028,9 @@ export function DashboardPage(props: {
             ) : null}
           </div>
           {packagesLoadingHint === "loading" ? (
-            <p>
-              {t(props.language, {
-                es: "Cargando paquetes disponibles...",
-                en: "Loading available packages...",
-                pt: "Carregando pacotes disponiveis..."
-              })}
-            </p>
+            <PackageCatalogLoading language={props.language} />
           ) : packagesLoadingHint === "empty" ? (
-            <div className="sessions-empty-state">
-              <strong>
-                {t(props.language, {
-                  es: "No hay paquetes publicados por ahora.",
-                  en: "No packages are published right now.",
-                  pt: "Nao ha pacotes publicados no momento."
-                })}
-              </strong>
-            </div>
+            <PackageCatalogError language={props.language} />
           ) : (
           <div className="deal-grid sessions-package-options-grid">
             {displayPackagePlans.slice(0, 3).map((plan) => {
@@ -1047,9 +1066,9 @@ export function DashboardPage(props: {
                               { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
                             )
                           : t(props.language, {
-                              es: "Precio según tu profesional",
-                              en: "Price based on your professional",
-                              pt: "Preco conforme seu profissional"
+                              es: "Precio según profesional",
+                              en: "Price based on professional",
+                              pt: "Preco conforme profissional"
                             })}
                       </span>
                     </div>
@@ -1074,13 +1093,27 @@ export function DashboardPage(props: {
                         </p>
                       </>
                     ) : (
-                      <p className="deal-main-price deal-price-pending">
-                        {t(props.language, {
-                          es: "Elegí un profesional para ver el precio",
-                          en: "Choose a professional to see the price",
-                          pt: "Escolha um profissional para ver o preco"
-                        })}
-                      </p>
+                      <>
+                        <div className="deal-pricing-top">
+                          <span className="deal-price-pending-label">
+                            {t(props.language, {
+                              es: "Precio al elegir profesional",
+                              en: "Price shown after choosing a professional",
+                              pt: "Preco ao escolher profissional"
+                            })}
+                          </span>
+                        </div>
+                        <p className="deal-main-price deal-main-price--placeholder" aria-hidden="true">
+                          —
+                        </p>
+                        <p className="sessions-package-card-unit">
+                          {t(props.language, {
+                            es: "Tarifa del profesional × sesiones − descuento del paquete",
+                            en: "Professional rate × sessions − package discount",
+                            pt: "Tarifa do profissional × sessoes − desconto do pacote"
+                          })}
+                        </p>
+                      </>
                     )}
                     <ul className="sessions-package-benefits">
                       {benefitLines.map((benefit) => (
