@@ -1,6 +1,7 @@
 import type { Market } from "@prisma/client";
 import type { FinanceRules } from "../modules/finance/finance.service.js";
 import { roundSessionPriceArsFromUsd } from "./usdArsExchange.js";
+import { listPriceUsdMajorUnits } from "./resolveSessionPackagePrice.js";
 
 type PriceProfile = {
   market: Market;
@@ -9,45 +10,20 @@ type PriceProfile = {
 };
 
 /**
- * Precio de lista en unidades mayores (ARS o USD) según el mercado del paquete de catálogo.
- *
- * Para `packageMarket === "AR"`:
- *   1. Usa `sessionPriceArs` si está cargado.
- *   2. Si no, deriva desde `sessionPriceUsd` con la cotización USD/ARS actual
- *      (redondeo al múltiplo de $1.000 para una vista limpia al paciente).
- *   3. Devuelve `null` si tampoco hay USD.
- *
- * Para mercados no-AR, se usa `sessionPriceUsd`.
+ * Precio de lista en USD (enteros mayores). Fuente canónica para catálogo y compras.
  */
 export function listPriceMajorUnitsForPackageMarket(
   profile: PriceProfile,
-  packageMarket: Market,
+  _packageMarket: Market,
   arsPerUsd?: number | null
 ): number | null {
-  if (packageMarket === "AR") {
-    if (profile.sessionPriceArs != null && profile.sessionPriceArs > 0) {
-      return profile.sessionPriceArs;
-    }
-    if (
-      arsPerUsd != null
-      && Number.isFinite(arsPerUsd)
-      && arsPerUsd > 0
-      && profile.sessionPriceUsd != null
-      && profile.sessionPriceUsd > 0
-    ) {
-      return roundSessionPriceArsFromUsd(profile.sessionPriceUsd, arsPerUsd);
-    }
-    return null;
-  }
-  if (profile.sessionPriceUsd != null && profile.sessionPriceUsd > 0) {
-    return profile.sessionPriceUsd;
-  }
-  return null;
+  return listPriceUsdMajorUnits(profile, arsPerUsd);
 }
 
+export { listPriceUsdMajorUnits };
+
 /**
- * Devuelve el precio en ARS efectivo (cargado o derivado del USD con FX vigente).
- * Útil para enriquecer la lista pública de profesionales para pacientes AR.
+ * ARS derivado para vistas locales futuras (directorio, admin). No usar para cobro.
  */
 export function effectiveSessionPriceArs(profile: PriceProfile, arsPerUsd: number | null): number | null {
   if (profile.sessionPriceArs != null && profile.sessionPriceArs > 0) {

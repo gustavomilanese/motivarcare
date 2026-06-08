@@ -270,21 +270,10 @@ export function formatCurrencyMinor(params: {
 }
 
 /**
- * Devuelve la moneda mostrada por defecto para un mercado dado
- * (residencia del paciente). Mantiene la regla "residencia marca el mercado".
+ * Moneda mostrada al paciente. Hoy USD en todos los mercados; más adelante AR→ARS con FX.
  */
-export function defaultDisplayCurrencyForMarket(market: string | null | undefined): SupportedCurrency {
-  switch ((market ?? "").toUpperCase()) {
-    case "AR":
-      return "ARS";
-    case "ES":
-      return "EUR";
-    case "BR":
-    case "US":
-    default:
-      // BR cobra en USD hoy; evitar mostrar BRL sobre montos sin conversión FX.
-      return "USD";
-  }
+export function defaultDisplayCurrencyForMarket(_market: string | null | undefined): SupportedCurrency {
+  return "USD";
 }
 
 export function formatDateWithLocale(params: {

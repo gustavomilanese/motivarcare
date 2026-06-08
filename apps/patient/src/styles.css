@@ -6412,12 +6412,13 @@ button.sessions-balance {
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section {
     margin-top: 0;
     margin-left: 0;
-    padding: 16px 18px 18px;
+    padding: 0;
     border-top: 0;
     border-radius: 18px;
     background: #fff;
     border: 1px solid #e4e8f0;
     box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
   }
 
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section.sessions-purchased-history {
@@ -6428,19 +6429,25 @@ button.sessions-balance {
 
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle,
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle {
-    margin: -16px -18px 0;
+    margin: 0;
+    width: 100%;
     padding: 16px 18px;
-    border-radius: 18px 18px 0 0;
+    border-radius: 0;
     align-items: center;
+    box-sizing: border-box;
     transition: background-color 0.18s ease;
   }
 
-  .sessions-booking-page .sessions-booking-body .sessions-secondary-section
-    .sessions-calendar-toggle[aria-expanded="false"],
-  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible
-    .sessions-calendar-toggle[aria-expanded="false"] {
-    margin-bottom: -18px;
-    border-radius: 18px;
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle:focus-visible,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.07);
+  }
+
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + *,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + * {
+    padding: 0 18px 18px;
   }
 }
 
@@ -6460,23 +6467,6 @@ button.sessions-balance {
 
 .sessions-booking-page .sessions-booking-body .sessions-purchased-history .sessions-secondary-toggle-label {
   color: #5f45ee;
-}
-
-.sessions-booking-page .sessions-booking-body .sessions-calendar-toggle {
-  padding: 0;
-  border-radius: 0;
-}
-
-.sessions-booking-page .sessions-booking-body .sessions-purchased-history .sessions-calendar-toggle {
-  margin: -14px -16px 0;
-  padding: 14px 16px;
-  border-radius: 14px 14px 0 0;
-}
-
-.sessions-booking-page .sessions-booking-body .sessions-purchased-history
-  .sessions-calendar-toggle[aria-expanded="false"] {
-  margin-bottom: -16px;
-  border-radius: 14px;
 }
 
 .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible {
@@ -7508,18 +7498,12 @@ button.sessions-balance {
 /** Solo Paquetes comprados: fondo violeta muy suave (resto de secciones = estilo calendario). */
 .sessions-secondary-section.sessions-purchased-history {
   margin-top: min(10%, 28px);
-  padding: 14px 16px 16px;
+  padding: 0;
   border-radius: 14px;
   background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%);
   border: 1px solid rgba(139, 92, 246, 0.14);
   box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07);
-  transition: box-shadow 0.22s ease, border-color 0.22s ease;
-}
-
-.sessions-secondary-section.sessions-purchased-history:hover,
-.sessions-secondary-section.sessions-purchased-history:focus-within {
-  border-color: rgba(139, 92, 246, 0.22);
-  box-shadow: 0 10px 28px rgba(95, 68, 235, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
 
 .sessions-purchased-history .sessions-secondary-title {
@@ -7537,7 +7521,8 @@ button.sessions-balance {
 
 .sessions-purchased-history .sessions-calendar-toggle + ul,
 .sessions-purchased-history .sessions-calendar-toggle + p {
-  margin-top: 16px;
+  margin-top: 0;
+  padding: 0 16px 16px;
 }
 
 /* Filas solo en Paquetes comprados (lista de compras). */
@@ -7607,8 +7592,8 @@ button.sessions-balance {
 
 .dashboard-compact-section.sessions-purchased-history {
   margin-left: 0 !important;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .sessions-secondary-title {
@@ -7654,17 +7639,18 @@ button.sessions-balance {
 
 .sessions-secondary-section.sessions-purchased-history .sessions-calendar-toggle {
   align-items: center;
-  margin: -14px -16px 0;
+  margin: 0;
+  width: 100%;
   padding: 14px 16px;
-  border-radius: 14px 14px 0 0;
+  border-radius: 0;
   box-sizing: border-box;
   transition: background-color 0.18s ease;
 }
 
 .sessions-secondary-section.sessions-purchased-history
   .sessions-calendar-toggle[aria-expanded="false"] {
-  margin-bottom: -16px;
-  border-radius: 14px;
+  margin-bottom: 0;
+  border-radius: 0;
 }
 
 .sessions-purchased-history .sessions-calendar-toggle:focus-visible {
@@ -7721,27 +7707,32 @@ button.sessions-balance {
 }
 
 .patient-dashboard-home .sessions-calendar-collapsible.dashboard-compact-section.sessions-secondary-section {
-  padding: 14px 16px 16px;
+  padding: 0;
   border-radius: 14px;
   border: 1px solid rgba(139, 92, 246, 0.1);
   background: #fefefe;
   border-top: 1px solid rgba(139, 92, 246, 0.1);
+  overflow: hidden;
 }
 
 .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle {
-  margin: -14px -16px 0;
+  margin: 0;
   padding: 14px 16px;
-  width: auto;
+  width: 100%;
   max-width: none;
-  border-radius: 14px 14px 0 0;
+  border-radius: 0;
   box-sizing: border-box;
   transition: background-color 0.18s ease;
 }
 
 .dashboard-compact-section:not(.sessions-purchased-history)
   .sessions-calendar-toggle[aria-expanded="false"] {
-  margin-bottom: -16px;
-  border-radius: 14px;
+  margin-bottom: 0;
+  border-radius: 0;
+}
+
+.dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle + * {
+  padding: 0 16px 16px;
 }
 
 .patient-dashboard-home .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle:hover,
@@ -7812,19 +7803,12 @@ button.sessions-balance {
   margin-bottom: clamp(24px, 5vh, 40px);
 }
 
-/* Historial y Calendario: hover en toda la banda del encabezado. */
+/* Historial y Calendario: hover en toda la banda del encabezado (desktop booking). */
 .sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle,
 .sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle {
   align-items: center;
   box-sizing: border-box;
   transition: background-color 0.18s ease;
-}
-
-.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover,
-.sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:focus-visible,
-.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:hover,
-.sessions-booking-page .sessions-booking-calendar-tail .sessions-calendar-toggle:focus-visible {
-  background: rgba(95, 68, 235, 0.08);
 }
 
 .sessions-booking-page .sessions-calendar-collapsible.sessions-history-section .sessions-calendar-toggle:hover .sessions-secondary-title,
@@ -12689,15 +12673,7 @@ button.sessions-balance {
     background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%) !important;
     border: 1px solid rgba(139, 92, 246, 0.14) !important;
     box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07) !important;
-    transition: box-shadow 0.22s ease, border-color 0.22s ease !important;
-  }
-
-  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:hover,
-  .sessions-booking-page .sessions-secondary-section.sessions-purchased-history:hover,
-  .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history:focus-within,
-  .sessions-booking-page .sessions-secondary-section.sessions-purchased-history:focus-within {
-    border-color: rgba(139, 92, 246, 0.22) !important;
-    box-shadow: 0 10px 28px rgba(95, 68, 235, 0.1), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+    overflow: hidden !important;
   }
 
   .patient-dashboard-home .sessions-purchased-history .sessions-secondary-title,

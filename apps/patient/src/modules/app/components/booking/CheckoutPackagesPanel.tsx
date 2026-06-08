@@ -21,7 +21,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 /**
  * Formatea un monto que YA está expresado en la moneda del paquete (no convierte).
- * El backend devuelve `priceCents` en la moneda nativa del market del paciente.
+ * El backend devuelve `priceCents` en USD (moneda canónica de cobro).
  */
 function formatMoney(amountMajor: number, language: AppLanguage, planCurrency: string, fallbackCurrency: SupportedCurrency): string {
   return formatCurrencyMajor({

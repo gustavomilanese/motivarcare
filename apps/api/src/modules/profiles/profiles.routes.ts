@@ -16,10 +16,15 @@ import {
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
+import {
+  normalizeCatalogFallbackToUsdCents,
+  resolvePackagePricingFromUsd
+} from "../../lib/resolveSessionPackagePrice.js";
 import { roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
+import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackageMarketAccess.js";
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer } from "./intake.shared.js";
@@ -213,67 +218,12 @@ function compatibilityScore(professionalId: string): number {
   return 80 + (seed % 18);
 }
 
-function resolvePackageDiscountPercent(params: {
-  credits: number;
-  fallbackDiscountPercent: number;
-  profileDiscount4: number | null | undefined;
-  profileDiscount8: number | null | undefined;
-  profileDiscount12: number | null | undefined;
-}): number {
-  if (params.credits === 1) {
-    return 0;
-  }
-  if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
-    return params.profileDiscount4;
-  }
-  if (params.credits === 8 && params.profileDiscount8 !== null && params.profileDiscount8 !== undefined) {
-    return params.profileDiscount8;
-  }
-  if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
-    return params.profileDiscount12;
-  }
-  return params.fallbackDiscountPercent;
-}
-
-function resolvePackagePricing(params: {
-  credits: number;
-  fallbackPriceCents: number;
-  fallbackDiscountPercent: number;
-  sessionListPriceMajor: number | null | undefined;
-  profileDiscount4: number | null | undefined;
-  profileDiscount8: number | null | undefined;
-  profileDiscount12: number | null | undefined;
-}) {
-  const discountPercent = resolvePackageDiscountPercent({
-    credits: params.credits,
-    fallbackDiscountPercent: params.fallbackDiscountPercent,
-    profileDiscount4: params.profileDiscount4,
-    profileDiscount8: params.profileDiscount8,
-    profileDiscount12: params.profileDiscount12
-  });
-
-  if (!params.sessionListPriceMajor || params.sessionListPriceMajor <= 0) {
-    return {
-      discountPercent,
-      listPriceCents: params.fallbackPriceCents,
-      priceCents: params.fallbackPriceCents
-    };
-  }
-
-  const listPriceCents = params.sessionListPriceMajor * params.credits * 100;
-  const priceCents = Math.max(0, Math.round(listPriceCents * (1 - discountPercent / 100)));
-  return {
-    discountPercent,
-    listPriceCents,
-    priceCents
-  };
-}
-
 /**
  * En producción a veces no se ejecuta el seed del paquete de 1 crédito global.
  * Idempotente: reutiliza cualquier paquete activo credits=1 sin profesional, o hace upsert por stripePriceId fijo.
  */
 const AUTO_INDIVIDUAL_SESSION_STRIPE_ID = "motivar-auto-catalog-individual-1";
+const DEFAULT_INDIVIDUAL_SESSION_USD_CENTS = 6500;
 
 async function getOrCreateGlobalIndividualSessionPackage(market: Market): Promise<{
   id: string;
@@ -309,26 +259,18 @@ async function getOrCreateGlobalIndividualSessionPackage(market: Market): Promis
     select: { priceCents: true, credits: true, currency: true }
   });
 
+  const arsPerUsd = await loadUsdArsRateOrNull();
   const priceCents = referenceBundle
-    ? Math.max(100, Math.round(referenceBundle.priceCents / referenceBundle.credits))
-    : market === "US"
-      ? 12_000
-      : market === "AR"
-        ? 120_000
-        : market === "BR"
-          ? 350_000
-          : market === "ES"
-            ? 9_900
-            : 12_000;
-  const currency =
-    referenceBundle?.currency
-    ?? (market === "AR"
-      ? "ars"
-      : market === "BR"
-        ? "brl"
-        : market === "ES"
-          ? "eur"
-          : "usd");
+    ? Math.max(
+        100,
+        normalizeCatalogFallbackToUsdCents({
+          fallbackPriceCents: Math.round(referenceBundle.priceCents / referenceBundle.credits),
+          fallbackCurrency: referenceBundle.currency ?? "usd",
+          arsPerUsd
+        })
+      )
+    : DEFAULT_INDIVIDUAL_SESSION_USD_CENTS;
+  const currency = "usd";
   const paymentProvider = market === "AR" ? "MERCADOPAGO" : "STRIPE";
 
   return prisma.sessionPackage.upsert({
@@ -1231,7 +1173,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
   if (!sessionPackage) {
     return res.status(404).json({ error: "Session package not found" });
   }
-  if (sessionPackage.market !== patient.market) {
+  if (!sessionPackageAvailableForPatientMarket(sessionPackage, patient.market)) {
     return res.status(403).json({ error: "Package is not available in this patient's market" });
   }
   if (!sessionPackage.active) {
@@ -1275,19 +1217,21 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     : null;
 
   const pricingProfessional = activeProfessional ?? packageProfessional;
-  const arsPerUsdForPurchase = patient.market === "AR" ? await loadUsdArsRateOrNull() : null;
-  const sessionListPriceMajor =
+  const arsPerUsdForPurchase = await loadUsdArsRateOrNull();
+  const sessionListPriceUsdMajor =
     pricingProfessional != null
       ? listPriceMajorUnitsForPackageMarket(pricingProfessional, patient.market, arsPerUsdForPurchase)
       : null;
-  const pricing = resolvePackagePricing({
+  const pricing = resolvePackagePricingFromUsd({
     credits: sessionPackage.credits,
     fallbackPriceCents: sessionPackage.priceCents,
+    fallbackCurrency: sessionPackage.currency ?? "usd",
     fallbackDiscountPercent: sessionPackage.discountPercent,
-    sessionListPriceMajor,
+    sessionListPriceUsdMajor,
     profileDiscount4: pricingProfessional?.discount4,
     profileDiscount8: pricingProfessional?.discount8,
-    profileDiscount12: pricingProfessional?.discount12
+    profileDiscount12: pricingProfessional?.discount12,
+    arsPerUsd: arsPerUsdForPurchase
   });
 
   const purchase = await prisma.$transaction(async (tx) => {
@@ -1419,19 +1363,21 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
       })
     : null;
 
-  const arsPerUsdForIndividual = patient.market === "AR" ? await loadUsdArsRateOrNull() : null;
-  const sessionListPriceMajor =
+  const arsPerUsdForIndividual = await loadUsdArsRateOrNull();
+  const sessionListPriceUsdMajor =
     activeProfessional != null
       ? listPriceMajorUnitsForPackageMarket(activeProfessional, patient.market, arsPerUsdForIndividual)
       : null;
-  const pricing = resolvePackagePricing({
+  const pricing = resolvePackagePricingFromUsd({
     credits: 1,
     fallbackPriceCents: unitPackage.priceCents,
+    fallbackCurrency: unitPackage.currency ?? "usd",
     fallbackDiscountPercent: unitPackage.discountPercent,
-    sessionListPriceMajor,
+    sessionListPriceUsdMajor,
     profileDiscount4: activeProfessional?.discount4,
     profileDiscount8: activeProfessional?.discount8,
-    profileDiscount12: activeProfessional?.discount12
+    profileDiscount12: activeProfessional?.discount12,
+    arsPerUsd: arsPerUsdForIndividual
   });
 
   const totalListPriceCents = pricing.listPriceCents * sessionCount;

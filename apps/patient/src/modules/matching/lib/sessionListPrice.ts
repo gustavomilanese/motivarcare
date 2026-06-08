@@ -7,22 +7,13 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 /**
- * Precio de lista por sesión en la moneda del market del paciente (unidades mayores).
- *
- * Para AR el backend ya populates `sessionPriceArs` derivado del precio USD del
- * profesional con el FX vigente; este helper sólo lo lee. Si no hay precio en pesos,
- * devolvemos `null` (no convertimos en cliente con tasas hardcodeadas).
+ * Precio de lista por sesión en USD (unidades mayores). Fuente canónica para matching/UI.
+ * La conversión a ARS u otra moneda local queda para la capa de presentación.
  */
 export function effectiveSessionListMajorUnits(
   p: { sessionPriceArs: number | null; sessionPriceUsd: number | null },
-  patientMarket: Market
+  _patientMarket: Market
 ): number | null {
-  if (patientMarket === "AR") {
-    if (p.sessionPriceArs != null && p.sessionPriceArs > 0) {
-      return p.sessionPriceArs;
-    }
-    return null;
-  }
   if (p.sessionPriceUsd != null && p.sessionPriceUsd > 0) {
     return p.sessionPriceUsd;
   }

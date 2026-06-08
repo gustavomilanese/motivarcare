@@ -287,81 +287,10 @@ publicRouter.get("/check-email", async (req, res) => {
 });
 
 import { billingCurrencyCodeForMarket } from "@therapy/types";
-
-function resolvePackageDiscountPercent(params: {
-  credits: number;
-  fallbackDiscountPercent: number;
-  profileDiscount4: number | null | undefined;
-  profileDiscount8: number | null | undefined;
-  profileDiscount12: number | null | undefined;
-}): number {
-  if (params.credits === 1) {
-    return 0;
-  }
-  if (params.credits === 4 && params.profileDiscount4 !== null && params.profileDiscount4 !== undefined) {
-    return params.profileDiscount4;
-  }
-  if (params.credits === 8 && params.profileDiscount8 !== null && params.profileDiscount8 !== undefined) {
-    return params.profileDiscount8;
-  }
-  if (params.credits === 12 && params.profileDiscount12 !== null && params.profileDiscount12 !== undefined) {
-    return params.profileDiscount12;
-  }
-  return params.fallbackDiscountPercent;
-}
-
-/**
- * Calcula `priceCents` final para devolver al cliente, ya en la moneda canónica
- * del `market`. Cubre tres caminos en orden de preferencia:
- *
- *   1. Hay precio de sesión derivado del profesional (`sessionListPriceMajor`,
- *      ya en la moneda del market) → multiplicar por créditos y aplicar descuento.
- *
- *   2. No hay precio de profesional (paquete global del catálogo): usar el
- *      `priceCents` seedeado en la row, **convirtiendo de USD a ARS** cuando
- *      hace falta. Sin esta conversión, packages seedeados con currency=usd
- *      terminan servidos como ARS y el paciente argentino ve "$ 380" en vez
- *      de "$ 380.000".
- *
- *   3. Como último recurso, si nada se puede normalizar, devolver el priceCents
- *      tal cual (mejor que romper la UI; el guard de moneda de arriba evita el
- *      caso patológico AR).
- */
-function resolvePackagePriceCents(params: {
-  credits: number;
-  fallbackPriceCents: number;
-  fallbackCurrency: string;
-  sessionListPriceMajor: number | null | undefined;
-  discountPercent: number;
-  market: Market;
-  arsPerUsd: number | null;
-}): number {
-  if (params.sessionListPriceMajor && params.sessionListPriceMajor > 0) {
-    const listPriceCents = params.sessionListPriceMajor * params.credits * 100;
-    return Math.max(0, Math.round(listPriceCents * (1 - params.discountPercent / 100)));
-  }
-
-  const sourceCurrency = params.fallbackCurrency.toLowerCase();
-  const targetCurrency = billingCurrencyCodeForMarket(params.market);
-
-  if (sourceCurrency === targetCurrency) {
-    return params.fallbackPriceCents;
-  }
-
-  if (
-    params.market === "AR"
-    && sourceCurrency === "usd"
-    && params.arsPerUsd
-    && params.arsPerUsd > 0
-  ) {
-    const usdMajor = params.fallbackPriceCents / 100;
-    const arsMajor = usdMajor * params.arsPerUsd;
-    const roundedArsMajor = Math.ceil(arsMajor / 1000) * 1000;
-    return Math.max(0, Math.round(roundedArsMajor * 100));
-  }
-
-  return params.fallbackPriceCents;
-}
+import {
+  resolvePackageDiscountPercent,
+  resolvePackagePriceUsdCents
+} from "../../lib/resolveSessionPackagePrice.js";
 
 function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Continuidad" | "Intensivo" {
   if (credits <= 4) {
@@ -444,14 +373,9 @@ publicRouter.get("/session-packages", async (req, res) => {
       : "AR";
 
   /**
-   * Para market=AR, obtenemos cotización USD/ARS para derivar precio cuando el
-   * profesional sólo tiene `sessionPriceUsd`. Usamos el wrapper resiliente para
-   * que aunque los proveedores externos fallen (timeouts en Railway, etc.) no
-   * caigamos al `sessionPackage.priceCents` que históricamente vino seedeado en
-   * USD-cents y serviríamos USD disfrazado de ARS. El wrapper *siempre* devuelve
-   * un rate operativo (live → memory → DB snapshot → env → hardcoded).
+   * Cotización USD/ARS para normalizar filas legacy del catálogo (ARS → USD).
    */
-  const arsPerUsd: number | null = market === "AR" ? await getResilientUsdArsRate() : null;
+  const arsPerUsd = await getResilientUsdArsRate();
   const landingSlot = parsed.data.landingSlot ?? "patient_main";
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
@@ -526,27 +450,16 @@ publicRouter.get("/session-packages", async (req, res) => {
         profileDiscount8: pricingProfile?.discount8,
         profileDiscount12: pricingProfile?.discount12
       });
-      const sessionListPriceMajor =
-        pricingProfile
-          ? listPriceMajorUnitsForPackageMarket(
-              pricingProfile,
-              market,
-              market === "AR" ? arsPerUsd : null
-            )
-          : null;
-      const priceCents = resolvePackagePriceCents({
+      const sessionListPriceUsdMajor =
+        pricingProfile ? listPriceMajorUnitsForPackageMarket(pricingProfile, market, arsPerUsd) : null;
+      const priceCents = resolvePackagePriceUsdCents({
         credits: item.credits,
         fallbackPriceCents: item.priceCents,
         fallbackCurrency: item.currency,
-        sessionListPriceMajor,
+        sessionListPriceUsdMajor,
         discountPercent,
-        market,
-        arsPerUsd: market === "AR" ? arsPerUsd : null
+        arsPerUsd
       });
-      /**
-       * Forzamos `currency` por market para evitar incoherencias con seeds antiguos:
-       * lo que el paciente ve siempre debe coincidir con la moneda real del mercado.
-       */
       const normalizedCurrency = billingCurrencyCodeForMarket(market);
 
       return {
