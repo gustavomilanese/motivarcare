@@ -2,9 +2,9 @@ import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState 
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
+  type DisplayFxRates,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
   textByLanguage
@@ -14,6 +14,7 @@ import { fetchSharedPatientAvailabilitySlots } from "../lib/fetchPatientAvailabi
 import { recordPaymentFailureNotice } from "../notifications/portalNotificationStorage";
 import { loadPublicPackagePlans, isClientFallbackPackagePlanId } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
+import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import {
   portalHasPricingProfessional,
@@ -106,6 +107,7 @@ export function BookingPage(props: {
   sessionTimezone: string;
   language: AppLanguage;
   currency: SupportedCurrency;
+  fxRates?: DisplayFxRates;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onSelectProfessional: (professionalId: string) => void;
   onConfirmBooking: (
@@ -1214,6 +1216,7 @@ export function BookingPage(props: {
           <CheckoutPackagesPanel
             language={props.language}
             currency={props.currency}
+            fxRates={props.fxRates}
             packagesLoading={packagesLoading && hasPricingProfessional}
             packagePlans={displayPackagePlans}
             featuredPackageId={displayFeaturedPackageId}
@@ -1264,7 +1267,8 @@ export function BookingPage(props: {
                   priceCents: item.priceCents,
                   language: props.language,
                   displayCurrency: props.currency,
-                  purchaseCurrency: item.currency ?? null
+                  purchaseCurrency: item.currency ?? null,
+                  fxRates: props.fxRates
                 });
                 return (
                   <li key={item.id}>
@@ -1384,7 +1388,8 @@ export function BookingPage(props: {
         <PaymentMethodModal
           language={props.language}
           amountMajor={checkoutPaymentPlan?.priceCents ? checkoutPaymentPlan.priceCents / 100 : null}
-          displayCurrency={checkoutPaymentPlan?.currency || props.currency}
+          displayCurrency={props.currency}
+          fxRates={props.fxRates}
           loading={checkoutPaymentLoading}
           error={checkoutPaymentError}
           walletOnly
@@ -1415,7 +1420,8 @@ export function BookingPage(props: {
               ? individualUnitPrice.amount * individualPaymentCount
               : null
           }
-          displayCurrency={individualUnitPrice?.currency || props.currency}
+          displayCurrency={props.currency}
+          fxRates={props.fxRates}
           loading={individualPaymentLoading}
           error={individualPaymentError}
           walletOnly
@@ -1524,12 +1530,12 @@ export function BookingPage(props: {
                           pt: "Total estimado: {amount}"
                         }),
                         {
-                          amount: formatCurrencyMajor({
-                            amountMajor: totalMajor,
-                            currency: individualUnitPrice.currency,
+                          amount: formatPatientUsdPrice({
+                            usdMajor: totalMajor,
+                            displayCurrency: props.currency,
                             language: props.language,
-                            maximumFractionDigits: 0,
-                            fallbackCurrency: props.currency
+                            fxRates: props.fxRates,
+                            maximumFractionDigits: 0
                           })
                         }
                       )

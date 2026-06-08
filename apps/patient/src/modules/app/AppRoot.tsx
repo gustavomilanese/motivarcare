@@ -52,6 +52,7 @@ import {
 } from "../intake/services/intakeChatApi";
 import { TreatmentChatFAB } from "../treatment-chat/components/TreatmentChatFAB";
 import { usePublicFeatures } from "./hooks/usePublicFeatures";
+import { useDisplayFxRates } from "./hooks/useDisplayFxRates";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
@@ -661,6 +662,7 @@ export function App() {
   /** `true` cuando ya hicimos el lookup de sesión activa (evita parpadear el chooser durante el fetch). */
   const [chatSessionLookupDone, setChatSessionLookupDone] = useState(false);
   const { flags: publicFeatures } = usePublicFeatures();
+  const { fxRates } = useDisplayFxRates(state.patientMarket, state.currency);
   /**
    * Cada incremento invalida el lote de `syncFromApi` en vuelo (p. ej. verificación de email completada).
    * Así una respuesta vieja de GET /me no pisa estado ya actualizado.
@@ -2133,6 +2135,7 @@ export function App() {
         professionalDirectory={professionalDirectory}
         professionalPhotoMap={professionalPhotoMap}
         sessionTimezone={sessionTimezone}
+        fxRates={fxRates}
         onStateChange={updateState}
         showPatientGoogleCalendarReconnectCta={showPatientGoogleCalendarReconnectCta}
         onOpenPatientGoogleCalendarConnect={openPatientGoogleCalendarFromDashboard}

@@ -2,6 +2,7 @@ import { type ChangeEvent, type SyntheticEvent, useCallback, useEffect, useMemo,
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
+  type DisplayFxRates,
   type LocalizedText,
   type SupportedCurrency,
   textByLanguage
@@ -79,6 +80,7 @@ export function MainPortal(props: {
   professionalDirectory: Professional[];
   professionalPhotoMap: Record<string, string>;
   sessionTimezone: string;
+  fxRates?: DisplayFxRates;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   onLogout: () => void;
   /** Postergó el modal de Calendar: mostrar CTA en dashboard para volver al flujo OAuth. */
@@ -326,6 +328,7 @@ export function MainPortal(props: {
           <PortalRoutes
             state={props.state}
             stateForDisplay={stateForDisplay}
+            fxRates={props.fxRates}
             lockToTherapistSelection={lockToTherapistSelection}
             needsInitialTherapistSelection={needsInitialTherapistSelection}
             sessionTimezone={props.sessionTimezone}

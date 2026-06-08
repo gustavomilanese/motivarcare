@@ -1,5 +1,5 @@
 import { type SyntheticEvent } from "react";
-import { formatDateWithLocale, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { formatDateWithLocale, textByLanguage, type AppLanguage, type DisplayFxRates, type LocalizedText, type SupportedCurrency } from "@therapy/i18n-config";
 import type { Market } from "@therapy/types";
 import { professionalPhotoSrc } from "../../app/services/api";
 import { effectiveSessionListMajorUnits, formatSessionListMajorPrice } from "../lib/sessionListPrice";
@@ -12,6 +12,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function BookingSummaryModal(props: {
   language: AppLanguage;
   patientMarket: Market;
+  displayCurrency: SupportedCurrency;
+  fxRates?: DisplayFxRates;
   timezone: string;
   professional: MatchCardProfessional;
   slot: MatchTimeSlot;
@@ -87,7 +89,7 @@ export function BookingSummaryModal(props: {
 
           <div className="summary-compact-row total">
             <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
-            <strong>{formatSessionListMajorPrice(props.patientMarket, listMajor, props.language)}</strong>
+            <strong>{formatSessionListMajorPrice(props.displayCurrency, listMajor, props.language, props.fxRates)}</strong>
           </div>
         </section>
 

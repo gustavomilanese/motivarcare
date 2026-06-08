@@ -1,4 +1,4 @@
-import type { AppLanguage, LocalizedText } from "@therapy/i18n-config";
+import type { AppLanguage, DisplayFxRates, LocalizedText, SupportedCurrency } from "@therapy/i18n-config";
 import type { SyntheticEvent } from "react";
 import type { Market } from "@therapy/types";
 
@@ -110,6 +110,9 @@ export interface MatchingPageProps {
   language: AppLanguage;
   /** Mercado del paciente (precio mostrado / ordenación por lista). */
   patientMarket: Market;
+  /** Moneda local de display (preferencia del paciente). */
+  displayCurrency: SupportedCurrency;
+  fxRates?: DisplayFxRates;
   authToken?: string | null;
   mode?: "portal" | "onboarding-final";
   intakeAnswers: Record<string, string>;

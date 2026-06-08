@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { defaultDisplayCurrencyForMarket, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
 import { MatchingStickyAction } from "../components/MatchingStickyAction";
@@ -312,7 +312,9 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                 key={item.professional.id}
                 item={item}
                 patientMarket={props.patientMarket}
+                displayCurrency={props.displayCurrency}
                 language={props.language}
+                fxRates={props.fxRates}
                 isFavorite={favoriteIds.has(item.professional.id)}
                 selected={item.professional.id === props.selectedProfessionalId}
                 onSelect={props.onSelectProfessional}
@@ -405,6 +407,8 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         <BookingSummaryModal
           language={props.language}
           patientMarket={props.patientMarket}
+          displayCurrency={props.displayCurrency}
+          fxRates={props.fxRates}
           timezone={viewerTimezone}
           professional={bookingProfessional}
           slot={bookingSlot}
@@ -419,7 +423,8 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         <PaymentMethodModal
           language={props.language}
           amountMajor={bookingListMajor}
-          displayCurrency={defaultDisplayCurrencyForMarket(props.patientMarket)}
+          displayCurrency={props.displayCurrency}
+          fxRates={props.fxRates}
           loading={paymentLoading}
           error={paymentError}
           onBack={() => setBookingStep("summary")}

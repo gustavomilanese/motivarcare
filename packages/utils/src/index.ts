@@ -4,6 +4,8 @@ export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "BRL", "ARS"] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
+import { displayCurrencyForMarket } from "./displayFx.js";
+
 export type LocalizedText = Record<AppLanguage, string>;
 
 const LANGUAGE_LOCALE: Record<AppLanguage, string> = {
@@ -270,10 +272,10 @@ export function formatCurrencyMinor(params: {
 }
 
 /**
- * Moneda mostrada al paciente. Hoy USD en todos los mercados; más adelante AR→ARS con FX.
+ * Moneda mostrada al paciente según mercado (display-only; cobro interno sigue en USD).
  */
-export function defaultDisplayCurrencyForMarket(_market: string | null | undefined): SupportedCurrency {
-  return "USD";
+export function defaultDisplayCurrencyForMarket(market: string | null | undefined): SupportedCurrency {
+  return displayCurrencyForMarket(market);
 }
 
 export function formatDateWithLocale(params: {
@@ -301,3 +303,13 @@ export {
   isPatientBookingLiveStatus,
   isPatientBookingUpcoming
 } from "./patientReschedule.js";
+
+export {
+  STATIC_FX_RATE_FROM_USD,
+  convertUsdMajorToDisplayMajor,
+  displayCurrencyForMarket,
+  formatUsdMajorForPatientDisplay,
+  resolveFxRatePerUsd,
+  roundDisplayMajorFromUsd,
+  type DisplayFxRates
+} from "./displayFx.js";

@@ -1,6 +1,7 @@
-import type { AppLanguage } from "@therapy/i18n-config";
-import { defaultDisplayCurrencyForMarket, formatCurrencyMajor, textByLanguage, type LocalizedText } from "@therapy/i18n-config";
+import type { AppLanguage, DisplayFxRates, SupportedCurrency } from "@therapy/i18n-config";
+import { textByLanguage, type LocalizedText } from "@therapy/i18n-config";
 import type { Market } from "@therapy/types";
+import { formatPatientUsdPrice } from "../../app/lib/formatPatientUsdPrice";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -21,18 +22,18 @@ export function effectiveSessionListMajorUnits(
 }
 
 export function formatSessionListMajorPrice(
-  patientMarket: Market,
+  displayCurrency: SupportedCurrency,
   major: number | null,
-  language: AppLanguage
+  language: AppLanguage,
+  fxRates?: DisplayFxRates
 ): string {
   if (major === null) {
     return t(language, { es: "Precio a confirmar", en: "Price on request", pt: "Preco sob consulta" });
   }
-  return formatCurrencyMajor({
-    amountMajor: major,
-    currency: defaultDisplayCurrencyForMarket(patientMarket),
+  return formatPatientUsdPrice({
+    usdMajor: major,
+    displayCurrency,
     language,
-    maximumFractionDigits: 0,
-    fallbackCurrency: "USD"
+    fxRates
   });
 }

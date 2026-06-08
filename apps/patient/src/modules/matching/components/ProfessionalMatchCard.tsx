@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type SyntheticEvent, type UIEvent, type WheelEvent } from "react";
-import { formatDateWithLocale, type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { formatDateWithLocale, type AppLanguage, type DisplayFxRates, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import type { Market } from "@therapy/types";
 import type { RankedProfessional } from "../matchingEngine";
 import { effectiveSessionListMajorUnits, formatSessionListMajorPrice } from "../lib/sessionListPrice";
@@ -60,7 +60,9 @@ function formatSlotDate(slotIso: string, language: AppLanguage): string {
 export function ProfessionalMatchCard(props: {
   item: RankedProfessional;
   patientMarket: Market;
+  displayCurrency: SupportedCurrency;
   language: AppLanguage;
+  fxRates?: DisplayFxRates;
   isFavorite: boolean;
   selected: boolean;
   onSelect: (professionalId: string) => void;
@@ -89,7 +91,7 @@ export function ProfessionalMatchCard(props: {
     : t(props.language, { es: "Sin opiniones", en: "No reviews yet", pt: "Sem avaliacoes" });
   const ratingValue = professional.ratingAverage ?? 5;
   const listMajor = effectiveSessionListMajorUnits(professional, props.patientMarket);
-  const priceLabel = formatSessionListMajorPrice(props.patientMarket, listMajor, props.language);
+  const priceLabel = formatSessionListMajorPrice(props.displayCurrency, listMajor, props.language, props.fxRates);
 
   const suggested = props.item.suggestedSlots.slice(0, 6);
 

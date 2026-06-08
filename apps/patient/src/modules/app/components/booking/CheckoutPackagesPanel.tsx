@@ -1,11 +1,12 @@
 import {
-  formatCurrencyMajor,
   replaceTemplate,
   textByLanguage,
   type AppLanguage,
+  type DisplayFxRates,
   type LocalizedText,
   type SupportedCurrency
 } from "@therapy/i18n-config";
+import { formatPatientUsdPrice } from "../../lib/formatPatientUsdPrice";
 import { useMobilePortal } from "../../hooks/useMobilePortal";
 import { packageBenefitLines, packageRhythmLabel } from "../../lib/packageCatalog";
 import {
@@ -20,22 +21,27 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 /**
- * Formatea un monto que YA está expresado en la moneda del paquete (no convierte).
- * El backend devuelve `priceCents` en USD (moneda canónica de cobro).
+ * `amountMajor` está en USD (priceCents/100). Convierte a moneda local de display.
  */
-function formatMoney(amountMajor: number, language: AppLanguage, planCurrency: string, fallbackCurrency: SupportedCurrency): string {
-  return formatCurrencyMajor({
-    amountMajor,
-    currency: planCurrency,
+function formatMoney(
+  amountMajor: number,
+  language: AppLanguage,
+  displayCurrency: SupportedCurrency,
+  fxRates?: DisplayFxRates
+): string {
+  return formatPatientUsdPrice({
+    usdMajor: amountMajor,
+    displayCurrency,
     language,
-    maximumFractionDigits: 0,
-    fallbackCurrency
+    fxRates,
+    maximumFractionDigits: 0
   });
 }
 
 export function CheckoutPackagesPanel(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
+  fxRates?: DisplayFxRates;
   packagesLoading: boolean;
   packagePlans: PackagePlan[];
   featuredPackageId: string | null;
@@ -173,7 +179,7 @@ export function CheckoutPackagesPanel(props: {
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
+                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -187,7 +193,7 @@ export function CheckoutPackagesPanel(props: {
                     <div className="deal-pricing-top">
                       {props.pricingReady ? (
                         <>
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
+                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates)}</span>
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </>
                       ) : (
@@ -202,7 +208,7 @@ export function CheckoutPackagesPanel(props: {
                     </div>
                     <p className={`deal-main-price${props.pricingReady ? "" : " deal-main-price--placeholder"}`}>
                       {props.pricingReady
-                        ? formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)
+                        ? formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates)
                         : "—"}
                     </p>
                     <p className="sessions-package-card-unit">
@@ -213,7 +219,7 @@ export function CheckoutPackagesPanel(props: {
                               en: "Equivalent to {amount} per session",
                               pt: "Equivale a {amount} por sessao"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
+                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates) }
                           )
                         : t(props.language, {
                             es: "Tarifa del profesional × sesiones − descuento del paquete",

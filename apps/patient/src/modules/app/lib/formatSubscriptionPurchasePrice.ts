@@ -1,41 +1,27 @@
-import type { SupportedCurrency } from "@therapy/i18n-config";
-import { formatCurrencyMinor, type AppLanguage } from "@therapy/i18n-config";
-
-function resolvePurchaseDisplayCurrency(
-  purchaseCurrency: string | null | undefined,
-  displayCurrency: SupportedCurrency
-): SupportedCurrency {
-  const raw = (purchaseCurrency ?? displayCurrency).toLowerCase();
-  // Compras BR históricas: snapshot `brl` con centavos USD (sin FX). Mostrar USD.
-  if (raw === "brl") {
-    return "USD";
-  }
-  if (raw === "usd" || raw === "ars" || raw === "eur" || raw === "gbp") {
-    return raw.toUpperCase() as SupportedCurrency;
-  }
-  return displayCurrency;
-}
+import type { AppLanguage, DisplayFxRates, SupportedCurrency } from "@therapy/i18n-config";
+import { formatUsdMajorForPatientDisplay } from "@therapy/i18n-config";
 
 /**
- * Formatea el monto de una compra usando la moneda en la que fue cobrada (snapshot del
- * backend), sin convertir. Si la compra no trae moneda (legacy), cae a `displayCurrency`.
+ * Formatea el monto de una compra para historial UI. Snapshots del backend están en USD;
+ * se convierte a moneda local de display (no altera datos de cobro).
  */
 export function formatSubscriptionPurchasePrice(params: {
   priceCents: number | null | undefined;
   language: AppLanguage;
   displayCurrency: SupportedCurrency;
-  /** Moneda en la que se cobró la compra (snapshot). */
+  /** Ignorado para display: snapshots son USD canónico. */
   purchaseCurrency?: string | null;
+  fxRates?: DisplayFxRates;
 }): string | null {
   if (params.priceCents == null || !Number.isFinite(params.priceCents)) {
     return null;
   }
-  const currency = resolvePurchaseDisplayCurrency(params.purchaseCurrency, params.displayCurrency);
-  return formatCurrencyMinor({
-    amountMinor: Math.round(params.priceCents),
-    currency,
+  const usdMajor = Math.round(params.priceCents) / 100;
+  return formatUsdMajorForPatientDisplay({
+    usdMajor,
+    displayCurrency: params.displayCurrency,
     language: params.language,
-    maximumFractionDigits: 0,
-    fallbackCurrency: params.displayCurrency
+    fxRates: params.fxRates,
+    maximumFractionDigits: 0
   });
 }

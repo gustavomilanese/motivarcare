@@ -2,9 +2,9 @@ import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState 
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
+  type DisplayFxRates,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
   textByLanguage
@@ -32,6 +32,7 @@ import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
+import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
 import {
   portalHasPricingProfessional,
   resolvePortalPricingProfessionalId
@@ -114,16 +115,20 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
 }
 
 /**
- * El monto ya está en la moneda del paquete (no convertimos en cliente).
- * `fallbackCurrency` se usa sólo si el plan no trae código de moneda.
+ * `amountMajor` está en USD (priceCents/100). Convierte a moneda local de display.
  */
-function formatMoney(amountMajor: number, language: AppLanguage, planCurrency: string, fallbackCurrency: SupportedCurrency): string {
-  return formatCurrencyMajor({
-    amountMajor,
-    currency: planCurrency,
+function formatMoney(
+  amountMajor: number,
+  language: AppLanguage,
+  displayCurrency: SupportedCurrency,
+  fxRates?: DisplayFxRates
+): string {
+  return formatPatientUsdPrice({
+    usdMajor: amountMajor,
+    displayCurrency,
     language,
-    maximumFractionDigits: 0,
-    fallbackCurrency
+    fxRates,
+    maximumFractionDigits: 0
   });
 }
 
@@ -138,6 +143,7 @@ export function DashboardPage(props: {
   professionalPhotoMap: Record<string, string>;
   language: AppLanguage;
   currency: SupportedCurrency;
+  fxRates?: DisplayFxRates;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onGoToReservations: () => void;
@@ -938,7 +944,8 @@ export function DashboardPage(props: {
                   priceCents: item.priceCents,
                   language: props.language,
                   displayCurrency: props.currency,
-                  purchaseCurrency: item.currency ?? null
+                  purchaseCurrency: item.currency ?? null,
+                  fxRates: props.fxRates
                 });
                 return (
                   <li key={item.id}>
@@ -1063,7 +1070,7 @@ export function DashboardPage(props: {
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, plan.currency, props.currency) }
+                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -1077,10 +1084,10 @@ export function DashboardPage(props: {
                     {pricingReady ? (
                       <>
                         <div className="deal-pricing-top">
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, plan.currency, props.currency)}</span>
+                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates)}</span>
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </div>
-                        <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, plan.currency, props.currency)}</p>
+                        <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates)}</p>
                         <p className="sessions-package-card-unit">
                           {replaceTemplate(
                             t(props.language, {
@@ -1088,7 +1095,7 @@ export function DashboardPage(props: {
                               en: "Equivalent to {amount} per session",
                               pt: "Equivale a {amount} por sessao"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, plan.currency, props.currency) }
+                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates) }
                           )}
                         </p>
                       </>

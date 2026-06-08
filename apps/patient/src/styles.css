@@ -6069,7 +6069,7 @@ button.sessions-balance {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 20px 18px 18px;
+  padding: 20px max(20px, env(safe-area-inset-right, 0px)) 18px max(20px, env(safe-area-inset-left, 0px));
   display: grid;
   gap: 8px;
 }
@@ -7625,7 +7625,8 @@ button.sessions-balance {
   border: 0;
   border-radius: 0;
   background: transparent;
-  padding: 0;
+  padding: 14px 16px;
+  box-sizing: border-box;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -7690,12 +7691,12 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-secondary-section {
-  margin-left: 5px;
+  margin-left: 0;
 }
 
 .dashboard-compact-section {
-  margin-left: 5px !important;
-  padding-left: 5px;
+  margin-left: 0 !important;
+  padding-left: 0;
 }
 
 .dashboard-compact-section .sessions-secondary-title {
@@ -7745,7 +7746,7 @@ button.sessions-balance {
 }
 
 .dashboard-compact-section .session-history-list li {
-  padding-left: 5px;
+  padding-left: 16px;
 }
 
 .dashboard-compact-section .session-history-list li strong {
@@ -9039,8 +9040,8 @@ button.sessions-balance {
 
     .patient-dashboard-home .dashboard-hero-banner-copy,
     .patient-dashboard-home .dashboard-hero-cta-band {
-      padding-left: 14px;
-      padding-right: 14px;
+      padding-left: max(20px, env(safe-area-inset-left, 0px));
+      padding-right: max(20px, env(safe-area-inset-right, 0px));
     }
 
     .patient-dashboard-home .dashboard-hero-title-on-photo {
@@ -9063,7 +9064,7 @@ button.sessions-balance {
     }
 
     .sessions-booking-page .sessions-hero-banner-copy {
-      padding: 10px 14px;
+      padding: 10px max(20px, env(safe-area-inset-right, 0px)) 10px max(20px, env(safe-area-inset-left, 0px));
       gap: 4px;
     }
 
@@ -9689,7 +9690,7 @@ button.sessions-balance {
   }
 
   .sessions-booking-page .sessions-hero-banner-copy {
-    padding: 16px 16px 14px;
+    padding: 16px max(20px, env(safe-area-inset-right, 0px)) 14px max(20px, env(safe-area-inset-left, 0px));
   }
 
   .sessions-booking-hero-layout .sessions-booking-hero-actions {
@@ -9729,7 +9730,7 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .sessions-confirmed-panel.content-card {
-    padding: 0 2px;
+    padding: 0;
     gap: 12px;
     background: transparent;
     border: 0;
@@ -9758,7 +9759,7 @@ button.sessions-balance {
   }
 
   .sessions-booking-page .sessions-confirmed-panel.content-card {
-    padding: 0 2px;
+    padding: 0;
     gap: 12px;
   }
 
@@ -12144,7 +12145,7 @@ button.sessions-balance {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 20px 18px 18px;
+  padding: 20px max(20px, env(safe-area-inset-right, 0px)) 18px max(20px, env(safe-area-inset-left, 0px));
   display: grid;
   gap: 8px;
 }
@@ -12624,8 +12625,8 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-hero-banner-copy,
   .patient-dashboard-home .dashboard-hero-cta-band {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
   }
 
   .patient-dashboard-home .hero-composite {

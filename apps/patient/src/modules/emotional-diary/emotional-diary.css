@@ -2313,13 +2313,13 @@
 
   .diary-hero-banner-copy,
   .diary-home-band--intro .diary-subnav {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
   }
 
   .diary-home-band {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
   }
 
   .diary-card--on-band {

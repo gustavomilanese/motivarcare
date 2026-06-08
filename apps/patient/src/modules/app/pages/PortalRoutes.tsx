@@ -1,6 +1,6 @@
 import { syncUserTimezone } from "@therapy/auth";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
-import { textByLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { textByLanguage, type DisplayFxRates, type LocalizedText } from "@therapy/i18n-config";
 import { Navigate, Route, Routes, type NavigateFunction } from "react-router-dom";
 import type { SyntheticEvent } from "react";
 import { DashboardPage } from "./DashboardPage";
@@ -34,6 +34,7 @@ function t(language: PatientAppState["language"], values: LocalizedText): string
 function OnboardingFinalMatching(p: {
   favoritesReturnPath: string;
   state: PatientAppState;
+  fxRates?: DisplayFxRates;
   needsInitialTherapistSelection: boolean;
   navigate: NavigateFunction;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
@@ -48,6 +49,8 @@ function OnboardingFinalMatching(p: {
     <MatchingPage
       language={p.state.language}
       patientMarket={p.state.patientMarket}
+      displayCurrency={p.state.currency}
+      fxRates={p.fxRates}
       authToken={p.state.authToken}
       mode="onboarding-final"
       intakeAnswers={p.state.intake?.answers ?? {}}
@@ -118,6 +121,7 @@ function OnboardingFinalMatching(p: {
 export function PortalRoutes(props: {
   state: PatientAppState;
   stateForDisplay: PatientAppState;
+  fxRates?: DisplayFxRates;
   /** True solo antes de elegir terapeuta: el resto de rutas redirigen a matching. */
   lockToTherapistSelection: boolean;
   needsInitialTherapistSelection: boolean;
@@ -177,6 +181,7 @@ export function PortalRoutes(props: {
                   professionalPhotoMap={props.professionalPhotoMap}
                   language={props.state.language}
                   currency={props.state.currency}
+                  fxRates={props.fxRates}
                   onImageFallback={props.onImageFallback}
                   onHeroFallback={props.onHeroFallback}
                   onGoToReservations={props.handleGoToReservations}
@@ -205,6 +210,8 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
+                  displayCurrency={props.state.currency}
+                  fxRates={props.fxRates}
                   authToken={props.state.authToken}
                   mode="portal"
                   intakeAnswers={props.state.intake?.answers ?? {}}
@@ -237,6 +244,7 @@ export function PortalRoutes(props: {
                 <OnboardingFinalMatching
                   favoritesReturnPath="/onboarding/final/matching"
                   state={props.state}
+                  fxRates={props.fxRates}
                   needsInitialTherapistSelection={
                     props.lockToTherapistSelection ? props.needsInitialTherapistSelection : false
                   }
@@ -264,6 +272,7 @@ export function PortalRoutes(props: {
                   <OnboardingFinalMatching
                     favoritesReturnPath="/book/trial"
                     state={props.state}
+                    fxRates={props.fxRates}
                     needsInitialTherapistSelection={props.needsInitialTherapistSelection}
                     navigate={props.navigate}
                     onStateChange={props.onStateChange}
@@ -288,6 +297,8 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
+                  displayCurrency={props.state.currency}
+                  fxRates={props.fxRates}
                   authToken={props.state.authToken}
                   mode="portal"
                   intakeAnswers={props.state.intake?.answers ?? {}}
@@ -324,6 +335,7 @@ export function PortalRoutes(props: {
                   sessionTimezone={props.sessionTimezone}
                   language={props.state.language}
                   currency={props.state.currency}
+                  fxRates={props.fxRates}
                   onImageFallback={props.onImageFallback}
                   onSelectProfessional={props.onBookingSelectProfessional}
                   onConfirmBooking={props.confirmBooking}

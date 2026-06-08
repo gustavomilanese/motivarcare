@@ -1,26 +1,42 @@
 import { useEffect, useState } from "react";
-import { formatCurrencyMajor, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import {
+  textByLanguage,
+  type AppLanguage,
+  type DisplayFxRates,
+  type LocalizedText,
+  type SupportedCurrency
+} from "@therapy/i18n-config";
+import { formatPatientUsdPrice } from "../../app/lib/formatPatientUsdPrice";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-/**
- * Formatea el monto en la moneda en la que se cobrará (no convierte). Acepta cualquier
- * código ISO; si no es soportado, cae a USD para no romper el render.
- */
-function formatAmount(value: number | null, language: AppLanguage, currency: string): string {
+function normalizeDisplayCurrency(currency: string | undefined): SupportedCurrency {
+  const upper = (currency ?? "USD").trim().toUpperCase();
+  if (upper === "ARS" || upper === "BRL" || upper === "EUR" || upper === "GBP" || upper === "USD") {
+    return upper;
+  }
+  return "USD";
+}
+
+/** `amountMajor` está en USD; se muestra convertido a moneda local (máscara de display). */
+function formatAmount(
+  value: number | null,
+  language: AppLanguage,
+  displayCurrency: string | undefined,
+  fxRates?: DisplayFxRates
+): string {
   if (value === null) {
     return t(language, { es: "A confirmar", en: "To be confirmed", pt: "A confirmar" });
   }
-  const upper = currency.toUpperCase();
-  const isWholeUnitsCurrency = upper === "ARS";
-  return formatCurrencyMajor({
-    amountMajor: isWholeUnitsCurrency ? Math.round(value) : value,
-    currency: upper,
+  const currency = normalizeDisplayCurrency(displayCurrency);
+  return formatPatientUsdPrice({
+    usdMajor: value,
+    displayCurrency: currency,
     language,
-    maximumFractionDigits: isWholeUnitsCurrency ? 0 : 2,
-    fallbackCurrency: "USD"
+    fxRates,
+    maximumFractionDigits: currency === "USD" ? 2 : 0
   });
 }
 
@@ -32,10 +48,11 @@ export type PaymentSuccessSummary = {
 
 export function PaymentMethodModal(props: {
   language: AppLanguage;
-  /** Monto en unidad mayor de la moneda indicada (p. ej. USD con decimales desde centavos, ARS entero). */
+  /** Monto en USD (unidades mayores). */
   amountMajor: number | null;
-  /** Código ISO de la moneda (USD/ARS/BRL/EUR…); default USD por compat. */
+  /** Moneda local a mostrar (ARS/BRL/EUR/USD). */
   displayCurrency?: string;
+  fxRates?: DisplayFxRates;
   loading: boolean;
   error: string;
   /** Solo billetera simulada (GPay); sin formulario de tarjeta. */
@@ -132,7 +149,7 @@ export function PaymentMethodModal(props: {
 
             <section className="payment-amount-card">
               <span>{t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}</span>
-              <strong>{formatAmount(props.amountMajor, props.language, props.displayCurrency ?? "USD")}</strong>
+              <strong>{formatAmount(props.amountMajor, props.language, props.displayCurrency, props.fxRates)}</strong>
             </section>
 
             {props.walletOnly ? (
