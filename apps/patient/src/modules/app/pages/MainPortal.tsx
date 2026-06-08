@@ -88,20 +88,22 @@ export function MainPortal(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
-  const ui = usePortalUiState({
-    navigate,
-    onStateChange: props.onStateChange,
-    onLogout: props.onLogout,
-    assignedProfessionalId: props.state.assignedProfessionalId,
-    onOpenBooking: setSelectedBookingId
-  });
-  const { remoteUnreadMessagesCount, notificationItems, notificationsUnreadCount } = usePortalNotifications({
+  const { remoteUnreadMessagesCount, notificationItems, notificationsUnreadCount, acknowledgeNotificationBadge, dismissNotification } = usePortalNotifications({
     authToken: props.state.authToken,
     language: props.state.language,
     state: props.state,
     professionals: props.professionalDirectory,
     sessionTimezone: props.sessionTimezone,
     showCalendarReconnectCta: Boolean(props.showPatientGoogleCalendarReconnectCta)
+  });
+  const ui = usePortalUiState({
+    navigate,
+    onStateChange: props.onStateChange,
+    onLogout: props.onLogout,
+    assignedProfessionalId: props.state.assignedProfessionalId,
+    onOpenBooking: setSelectedBookingId,
+    onNotificationsPanelOpen: acknowledgeNotificationBadge,
+    onDismissNotification: dismissNotification
   });
   const localUnreadMessagesCount = getUnreadCount(props.state.messages);
   const unreadMessagesCount = props.state.authToken
@@ -287,6 +289,7 @@ export function MainPortal(props: {
         onCloseMenu={ui.closeMenu}
         onToggleNotifications={ui.toggleNotifications}
         onOpenNotification={ui.openNotification}
+        onDismissNotification={ui.dismissNotification}
         onOpenNotificationThread={ui.openNotificationThread}
         onOpenProfileTab={ui.openProfileTabFromMenu}
         onOpenPreferences={ui.openPreferences}

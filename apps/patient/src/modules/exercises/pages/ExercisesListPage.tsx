@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
-import { fetchPublishedExercises, type ExerciseCategory, type ExercisePost } from "../services/exercisesApi";
+import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
 import {
   ALL_CATEGORIES,
   categoryAccent,
@@ -19,6 +19,7 @@ type CategoryFilter = "all" | ExerciseCategory;
 
 export function ExercisesListPage(props: ExercisesListPageProps) {
   const [exercises, setExercises] = useState<ExercisePost[]>([]);
+  const [routines, setRoutines] = useState<ExerciseRoutine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<CategoryFilter>("all");
@@ -27,10 +28,11 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
     let active = true;
     setLoading(true);
     setError(null);
-    fetchPublishedExercises()
+    fetchPublishedExercisesContent()
       .then((data) => {
         if (!active) return;
-        setExercises(data);
+        setExercises(data.exercises);
+        setRoutines(data.routines);
         setLoading(false);
       })
       .catch(() => {
@@ -81,6 +83,43 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
         </p>
       </header>
 
+      {!loading && !error && routines.length > 0 ? (
+        <section className="exercise-routines-section" aria-labelledby="exercise-routines-title">
+          <div className="exercise-routines-section-head">
+            <h3 id="exercise-routines-title">
+              {t(props.language, { es: "Rutinas guiadas", en: "Guided routines", pt: "Rotinas guiadas" })}
+            </h3>
+            <p>
+              {t(props.language, {
+                es: "Secuencias ordenadas de ejercicios para practicar de punta a punta.",
+                en: "Ordered sequences of exercises to practice start to finish.",
+                pt: "Sequências ordenadas de exercícios para praticar do início ao fim."
+              })}
+            </p>
+          </div>
+          <ul className="exercise-routines-grid">
+            {routines.map((routine) => (
+              <li key={routine.id}>
+                <Link className="exercise-routine-card" to={`/ejercicios/rutinas/${encodeURIComponent(routine.slug)}`}>
+                  <span className="exercise-routine-card-emoji" aria-hidden="true">
+                    {routine.emoji}
+                  </span>
+                  <div className="exercise-routine-card-body">
+                    <h4>{routine.title}</h4>
+                    <p>{routine.summary}</p>
+                    <small>
+                      {routine.exercises.length}{" "}
+                      {t(props.language, { es: "ejercicios", en: "exercises", pt: "exercícios" })} · ⏱{" "}
+                      {durationLabel(props.language, routine.totalDurationMinutes)}
+                    </small>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {!loading && !error && exercises.length > 0 ? (
         <div className="exercises-filters" role="tablist" aria-label={t(props.language, { es: "Filtrar por categoría", en: "Filter by category", pt: "Filtrar por categoria" })}>
           <button
@@ -127,7 +166,17 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
 
       {error ? <p className="exercises-page-error" role="alert">{error}</p> : null}
 
-      {!loading && !error && filtered.length === 0 ? (
+      {!loading && !error && filtered.length === 0 && routines.length === 0 ? (
+        <p className="exercises-page-empty">
+          {t(props.language, {
+            es: "Todavía no hay ejercicios publicados. El equipo los cargará desde el admin.",
+            en: "No exercises published yet. The team will load them from admin.",
+            pt: "Ainda não há exercícios publicados. A equipe carregará pelo admin."
+          })}
+        </p>
+      ) : null}
+
+      {!loading && !error && filtered.length === 0 && routines.length > 0 && filter !== "all" ? (
         <p className="exercises-page-empty">
           {t(props.language, {
             es: "Todavía no hay ejercicios publicados en esta categoría.",

@@ -1,105 +1,45 @@
-const DISMISSALS_KEY = "motivarcare-portal-notification-dismissals";
-const SEEN_PROFESSIONAL_KEY = "motivarcare-portal-seen-assigned-professional";
-const SEEN_EXERCISES_KEY = "motivarcare-portal-seen-exercises-published-at";
-const PAYMENT_FAILURE_KEY = "motivarcare-portal-payment-failure-notice";
+import { createNotificationStore, type PaymentFailureNotice } from "@therapy/patient-core";
 
-export interface PaymentFailureNotice {
-  id: string;
-  message: string;
-  createdAt: string;
-}
+export type { PaymentFailureNotice };
 
-function readDismissals(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DISMISSALS_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((item): item is string => typeof item === "string"));
-  } catch {
-    return new Set();
-  }
-}
-
-function writeDismissals(ids: Set<string>): void {
-  try {
-    localStorage.setItem(DISMISSALS_KEY, JSON.stringify(Array.from(ids).slice(-200)));
-  } catch {
-    // ignore quota errors
-  }
-}
+export const portalNotificationStore = createNotificationStore({
+  getItem: (key) => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+  removeItem: (key) => localStorage.removeItem(key)
+});
 
 export function isNotificationDismissed(id: string): boolean {
-  return readDismissals().has(id);
+  return portalNotificationStore.isDismissed(id);
 }
 
 export function markNotificationDismissed(id: string): void {
-  const next = readDismissals();
-  next.add(id);
-  writeDismissals(next);
+  portalNotificationStore.dismiss(id);
 }
 
 export function readSeenAssignedProfessionalId(): string | null {
-  try {
-    return localStorage.getItem(SEEN_PROFESSIONAL_KEY);
-  } catch {
-    return null;
-  }
+  return portalNotificationStore.readSeenAssignedProfessionalId();
 }
 
 export function markAssignedProfessionalSeen(professionalId: string): void {
-  try {
-    localStorage.setItem(SEEN_PROFESSIONAL_KEY, professionalId);
-  } catch {
-    // ignore
-  }
+  portalNotificationStore.markAssignedProfessionalSeen(professionalId);
 }
 
 export function readSeenExercisesPublishedAt(): string | null {
-  try {
-    return localStorage.getItem(SEEN_EXERCISES_KEY);
-  } catch {
-    return null;
-  }
+  return portalNotificationStore.readSeenExercisesPublishedAt();
 }
 
 export function markExercisesPublishedAtSeen(isoDate: string): void {
-  try {
-    localStorage.setItem(SEEN_EXERCISES_KEY, isoDate);
-  } catch {
-    // ignore
-  }
+  portalNotificationStore.markExercisesPublishedAtSeen(isoDate);
 }
 
 export function readPaymentFailureNotice(): PaymentFailureNotice | null {
-  try {
-    const raw = localStorage.getItem(PAYMENT_FAILURE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as PaymentFailureNotice;
-    if (!parsed?.id || !parsed.createdAt) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  return portalNotificationStore.readPaymentFailureNotice();
 }
 
 export function recordPaymentFailureNotice(message: string): void {
-  try {
-    const notice: PaymentFailureNotice = {
-      id: `payment-failed-${Date.now()}`,
-      message: message.trim().slice(0, 280),
-      createdAt: new Date().toISOString()
-    };
-    localStorage.setItem(PAYMENT_FAILURE_KEY, JSON.stringify(notice));
-  } catch {
-    // ignore
-  }
+  portalNotificationStore.recordPaymentFailureNotice(message);
 }
 
 export function clearPaymentFailureNotice(): void {
-  try {
-    localStorage.removeItem(PAYMENT_FAILURE_KEY);
-  } catch {
-    // ignore
-  }
+  portalNotificationStore.clearPaymentFailureNotice();
 }

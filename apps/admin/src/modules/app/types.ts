@@ -230,6 +230,21 @@ export interface AdminExercise {
   sortOrder: number;
 }
 
+export interface AdminExerciseRoutine {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  emoji: string;
+  exerciseIds: string[];
+  tags: string[];
+  status: "draft" | "published";
+  featured: boolean;
+  publishedAt: string;
+  sortOrder: number;
+}
+
 export interface AdminRelaxationPlaylist {
   id: string;
   categoryId: string;
@@ -246,6 +261,7 @@ export interface WebContentResponse {
   reviews: AdminReview[];
   blogPosts: AdminBlogPost[];
   exercises: AdminExercise[];
+  exerciseRoutines: AdminExerciseRoutine[];
   relaxationPlaylists?: AdminRelaxationPlaylist[];
   relaxationPlaylistsBundledDefaults?: AdminRelaxationPlaylist[];
   updatedAt: {
@@ -253,6 +269,7 @@ export interface WebContentResponse {
     reviews: string | null;
     blogPosts: string | null;
     exercises: string | null;
+    exerciseRoutines?: string | null;
     relaxationPlaylists?: string | null;
   };
 }

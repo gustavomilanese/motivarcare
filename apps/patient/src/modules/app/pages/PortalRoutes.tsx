@@ -13,6 +13,7 @@ import { ArticlesListPage } from "../../articles/pages/ArticlesListPage";
 import { ArticleReaderPage } from "../../articles/pages/ArticleReaderPage";
 import { ExercisesListPage } from "../../exercises/pages/ExercisesListPage";
 import { ExerciseDetailPage } from "../../exercises/pages/ExerciseDetailPage";
+import { ExerciseRoutinePage } from "../../exercises/pages/ExerciseRoutinePage";
 import { RelaxationMusicPage } from "../../wellbeing/pages/RelaxationMusicPage";
 import { PatientFaqPage } from "../../help/pages/PatientFaqPage";
 import { PatientManualPage } from "../../help/pages/PatientManualPage";
@@ -410,6 +411,14 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : <ExercisesListPage language={props.state.language} />
+        }
+      />
+      <Route
+        path="/ejercicios/rutinas/:slug"
+        element={
+          props.lockToTherapistSelection
+            ? <Navigate replace to="/onboarding/final/matching" />
+            : <ExerciseRoutinePage language={props.state.language} />
         }
       />
       <Route

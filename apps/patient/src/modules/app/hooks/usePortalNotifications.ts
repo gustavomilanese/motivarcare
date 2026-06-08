@@ -1,15 +1,19 @@
 import { subscribeDocumentVisibleInterval } from "@therapy/auth";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  applyNotificationDismissSideEffects,
+  buildPortalNotifications,
+  countNotificationBadge,
+  filterVisibleNotifications,
+  markNotificationsBadgeSeen
+} from "@therapy/patient-core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercises, type ExercisePost } from "../../exercises/services/exercisesApi";
 import { fetchDiaryEntries } from "../../emotional-diary/services/emotionalDiaryApi";
 import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
 import type { ApiChatThread, PatientAppState, Professional } from "../types";
-import {
-  buildPortalNotifications,
-  countUnreadNotifications
-} from "../notifications/buildPortalNotifications";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
+import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 
 export function usePortalNotifications(params: {
   authToken: string | null;
@@ -23,7 +27,12 @@ export function usePortalNotifications(params: {
   const [remoteNotificationThreads, setRemoteNotificationThreads] = useState<ApiChatThread[]>([]);
   const [exercises, setExercises] = useState<ExercisePost[]>([]);
   const [lastDiaryEntryAt, setLastDiaryEntryAt] = useState<string | null>(null);
+  const [storageRevision, setStorageRevision] = useState(0);
   const threadsPollInFlight = useRef(false);
+
+  const bumpStorageRevision = useCallback(() => {
+    setStorageRevision((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     const authToken = params.authToken ?? undefined;
@@ -126,7 +135,7 @@ export function usePortalNotifications(params: {
     return map;
   }, [params.professionals, params.state.assignedProfessionalId, params.state.assignedProfessionalName]);
 
-  const notificationItems = useMemo((): PortalNotificationItem[] => {
+  const builtNotifications = useMemo((): PortalNotificationItem[] => {
     return buildPortalNotifications({
       language: params.language,
       state: params.state,
@@ -135,7 +144,8 @@ export function usePortalNotifications(params: {
       showCalendarReconnectCta: params.showCalendarReconnectCta,
       professionalNameById,
       exercises,
-      lastDiaryEntryAt
+      lastDiaryEntryAt,
+      store: portalNotificationStore
     });
   }, [
     exercises,
@@ -145,17 +155,38 @@ export function usePortalNotifications(params: {
     params.showCalendarReconnectCta,
     params.state,
     professionalNameById,
-    remoteNotificationThreads
+    remoteNotificationThreads,
+    storageRevision
   ]);
 
+  const notificationItems = useMemo(
+    () => filterVisibleNotifications(builtNotifications, portalNotificationStore),
+    [builtNotifications, storageRevision]
+  );
+
   const notificationsUnreadCount = useMemo(
-    () => countUnreadNotifications(notificationItems),
-    [notificationItems]
+    () => countNotificationBadge(builtNotifications, portalNotificationStore),
+    [builtNotifications, storageRevision]
+  );
+
+  const acknowledgeNotificationBadge = useCallback(() => {
+    markNotificationsBadgeSeen(builtNotifications, portalNotificationStore);
+    bumpStorageRevision();
+  }, [builtNotifications, bumpStorageRevision]);
+
+  const dismissNotification = useCallback(
+    (item: PortalNotificationItem) => {
+      applyNotificationDismissSideEffects(item, portalNotificationStore);
+      bumpStorageRevision();
+    },
+    [bumpStorageRevision]
   );
 
   return {
     remoteUnreadMessagesCount,
     notificationItems,
-    notificationsUnreadCount
+    notificationsUnreadCount,
+    acknowledgeNotificationBadge,
+    dismissNotification
   };
 }

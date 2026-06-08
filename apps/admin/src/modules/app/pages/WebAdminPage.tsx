@@ -1,6 +1,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { CollapsiblePageSection } from "../components/CollapsiblePageSection";
+import { WebAdminExerciseRoutinesSection } from "../components/WebAdminExerciseRoutinesSection";
 import { LandingSitePackagesSection } from "../components/LandingSitePackagesSection";
 import {
   WEB_ADMIN_SCROLL_SECTION_IDS,
@@ -15,6 +16,7 @@ import type {
   AdminExercise,
   AdminExerciseCategory,
   AdminExerciseDifficulty,
+  AdminExerciseRoutine,
   AdminRelaxationPlaylist,
   AdminReview,
   WebContentResponse,
@@ -209,6 +211,7 @@ export function WebAdminPage({
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
   const [exercises, setExercises] = useState<AdminExercise[]>([]);
+  const [exerciseRoutines, setExerciseRoutines] = useState<AdminExerciseRoutine[]>([]);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [reviewForm, setReviewForm] = useState<Omit<AdminReview, "id">>(emptyReview);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -314,6 +317,28 @@ export function WebAdminPage({
                 tips: Array.isArray(item.tips) ? item.tips.map((tip) => String(tip)) : [],
                 benefits: Array.isArray(item.benefits) ? item.benefits.map((b) => String(b)) : [],
                 contraindications: String(item.contraindications ?? ""),
+                tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : [],
+                status: (item.status === "draft" ? "draft" : "published") as "draft" | "published",
+                featured: Boolean(item.featured),
+                publishedAt: String(item.publishedAt ?? new Date().toISOString().slice(0, 10)),
+                sortOrder: Number(item.sortOrder ?? 100)
+              }))
+              .filter((item) => item.id.length > 0)
+          : []
+      );
+      setExerciseRoutines(
+        Array.isArray(data.exerciseRoutines)
+          ? data.exerciseRoutines
+              .filter((item): item is AdminExerciseRoutine => Boolean(item && typeof item === "object"))
+              .map((item) => ({
+                ...item,
+                id: String(item.id ?? ""),
+                slug: String(item.slug ?? ""),
+                title: String(item.title ?? "Sin título"),
+                summary: String(item.summary ?? ""),
+                description: String(item.description ?? ""),
+                emoji: String(item.emoji ?? "🧭"),
+                exerciseIds: Array.isArray(item.exerciseIds) ? item.exerciseIds.map((id) => String(id)) : [],
                 tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag)) : [],
                 status: (item.status === "draft" ? "draft" : "published") as "draft" | "published",
                 featured: Boolean(item.featured),
@@ -837,6 +862,39 @@ export function WebAdminPage({
     }
   }
 
+  async function seedDefaultExercises() {
+    setError("");
+    setSuccess("");
+    const confirmed = window.confirm(
+      t(language, {
+        es: "Vas a importar 10 ejercicios de plantilla al catálogo. Después podés editarlos o borrarlos. ¿Continuar?",
+        en: "You will import 10 template exercises. You can edit or delete them afterwards. Continue?",
+        pt: "Vai importar 10 exercícios modelo. Depois pode editá-los ou removê-los. Continuar?"
+      })
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      const response = await apiRequest<{ imported: number }>(
+        "/api/admin/web-content/exercises/seed-defaults",
+        { method: "POST", body: JSON.stringify({}) },
+        token
+      );
+      setSuccess(
+        t(language, {
+          es: `Ejercicios importados: ${response.imported}.`,
+          en: `Exercises imported: ${response.imported}.`,
+          pt: `Exercícios importados: ${response.imported}.`
+        })
+      );
+      await loadWebContent();
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("web-admin-exercise-save", language, raw));
+    }
+  }
+
   async function saveExercise(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -1328,9 +1386,9 @@ export function WebAdminPage({
         </p>
         <p className="web-admin-helper-note">
           {t(language, {
-            es: "Si no cargás ninguno, el portal muestra una selección por defecto de 10 ejercicios. En cuanto guardes uno propio, esa selección por defecto deja de aplicarse.",
-            en: "If none are loaded, the portal shows a default selection of 10 exercises. As soon as you save your own, the default selection stops applying.",
-            pt: "Se nenhum for carregado, o portal exibe uma seleção padrão de 10 exercícios. Assim que você salvar um, a seleção padrão deixa de ser aplicada."
+            es: "El portal solo muestra lo que publiques acá. Podés importar una plantilla de 10 ejercicios o crear los tuyos desde cero.",
+            en: "The portal only shows what you publish here. Import a 10-exercise template or create your own from scratch.",
+            pt: "O portal só mostra o que você publicar aqui. Importe um modelo de 10 exercícios ou crie os seus."
           })}
         </p>
         <div className="web-admin-list-toolbar">
@@ -1344,6 +1402,9 @@ export function WebAdminPage({
             value={exerciseSearch}
             onChange={(event) => setExerciseSearch(event.target.value)}
           />
+          <button className="secondary" type="button" onClick={() => void seedDefaultExercises()} disabled={exercises.length > 0}>
+            {t(language, { es: "Importar plantilla", en: "Import template", pt: "Importar modelo" })}
+          </button>
           <button className="primary" type="button" onClick={openCreateExerciseModal}>
             {t(language, { es: "Nuevo ejercicio", en: "New exercise", pt: "Novo exercício" })}
           </button>
@@ -1401,6 +1462,16 @@ export function WebAdminPage({
           )}
         </div>
       </CollapsiblePageSection>
+
+      <WebAdminExerciseRoutinesSection
+        language={language}
+        token={token}
+        exercises={exercises}
+        routines={exerciseRoutines}
+        onReload={loadWebContent}
+        setError={setError}
+        setSuccess={setSuccess}
+      />
 
       <CollapsiblePageSection
         sectionId="web-musica-relax"

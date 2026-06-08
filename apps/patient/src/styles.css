@@ -1517,6 +1517,32 @@ button.danger {
   gap: 8px;
 }
 
+.notification-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: start;
+}
+
+.notification-dismiss {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e5e8f2;
+  border-radius: 8px;
+  background: #fff;
+  color: #68748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.notification-dismiss:hover {
+  background: #f3f5fc;
+  color: #1a263d;
+  border-color: #dbe1f2;
+}
+
 .notification-item {
   width: 100%;
   text-align: left;
@@ -15237,6 +15263,243 @@ button.sessions-balance {
 
 .exercises-grid-item {
   display: block;
+}
+
+.exercise-routines-section {
+  margin-bottom: 28px;
+}
+
+.exercise-routines-section-head h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  color: #1a263d;
+}
+
+.exercise-routines-section-head p {
+  margin: 0 0 14px;
+  color: #55647e;
+  font-size: 14px;
+}
+
+.exercise-routines-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.exercise-routine-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--portal-radius);
+  border: 1px solid #dbe1f2;
+  background: linear-gradient(135deg, rgba(95, 68, 235, 0.06), #fff);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.exercise-routine-card:hover,
+.exercise-routine-card:focus-visible {
+  border-color: #5f44eb;
+  transform: translateY(-1px);
+}
+
+.exercise-routine-card-emoji {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(95, 68, 235, 0.12);
+  font-size: 28px;
+}
+
+.exercise-routine-card-body h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #1a263d;
+}
+
+.exercise-routine-card-body p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #55647e;
+  line-height: 1.35;
+}
+
+.exercise-routine-card-body small {
+  color: #68748b;
+  font-size: 12px;
+}
+
+.exercise-routine-page {
+  max-width: 1120px;
+}
+
+.exercise-routine-header {
+  margin: 12px 0 20px;
+}
+
+.exercise-routine-header-main {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.exercise-routine-emoji {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--exercise-accent-soft);
+  font-size: 36px;
+}
+
+.exercise-routine-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f44eb;
+}
+
+.exercise-routine-summary {
+  margin: 6px 0;
+  color: #55647e;
+}
+
+.exercise-routine-meta {
+  margin: 0;
+  color: #68748b;
+  font-size: 13px;
+}
+
+.exercise-routine-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.exercise-routine-sidebar {
+  position: sticky;
+  top: 88px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-surface-solid);
+  padding: 14px;
+}
+
+.exercise-routine-sidebar h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #1a263d;
+}
+
+.exercise-routine-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-routine-step {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px 32px 1fr;
+  gap: 8px;
+  align-items: start;
+  text-align: left;
+  border: 1px solid #e5e8f2;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.exercise-routine-step.active {
+  border-color: #5f44eb;
+  background: rgba(95, 68, 235, 0.06);
+}
+
+.exercise-routine-step.done {
+  opacity: 0.72;
+}
+
+.exercise-routine-step-index {
+  font-size: 12px;
+  font-weight: 700;
+  color: #68748b;
+  padding-top: 4px;
+}
+
+.exercise-routine-step-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.exercise-routine-step-body strong {
+  display: block;
+  font-size: 13px;
+  color: #1a263d;
+}
+
+.exercise-routine-step-body small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #68748b;
+}
+
+.exercise-routine-main {
+  min-width: 0;
+}
+
+.exercise-routine-active-card {
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  padding: 18px;
+  background: var(--portal-surface-solid);
+}
+
+.exercise-routine-nav {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.exercise-routine-next {
+  width: 100%;
+  justify-content: center;
+}
+
+.exercise-routine-complete {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .exercise-routine-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-routine-sidebar {
+    position: static;
+  }
 }
 
 .exercise-card {

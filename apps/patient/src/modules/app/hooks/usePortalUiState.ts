@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
-import {
-  clearPaymentFailureNotice,
-  markAssignedProfessionalSeen,
-  markExercisesPublishedAtSeen,
-  markNotificationDismissed
-} from "../notifications/portalNotificationStorage";
 import type { PatientAppState, ProfileTab } from "../types";
 
 export function usePortalUiState(params: {
@@ -14,6 +8,8 @@ export function usePortalUiState(params: {
   onLogout: () => void;
   assignedProfessionalId: string | null;
   onOpenBooking: (bookingId: string) => void;
+  onNotificationsPanelOpen?: () => void;
+  onDismissNotification?: (item: PortalNotificationItem) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -59,19 +55,6 @@ export function usePortalUiState(params: {
 
   function openNotification(item: PortalNotificationItem) {
     setNotificationsOpen(false);
-    markNotificationDismissed(item.id);
-
-    if (item.kind === "payment-failed") {
-      clearPaymentFailureNotice();
-    }
-
-    if (item.kind === "professional-assigned" && params.assignedProfessionalId) {
-      markAssignedProfessionalSeen(params.assignedProfessionalId);
-    }
-
-    if (item.kind === "exercise-new") {
-      markExercisesPublishedAtSeen(item.sortAt);
-    }
 
     switch (item.action.type) {
       case "chat": {
@@ -98,6 +81,11 @@ export function usePortalUiState(params: {
     }
   }
 
+  function dismissNotification(item: PortalNotificationItem, event?: { stopPropagation: () => void }) {
+    event?.stopPropagation();
+    params.onDismissNotification?.(item);
+  }
+
   return {
     menuOpen,
     notificationsOpen,
@@ -110,9 +98,15 @@ export function usePortalUiState(params: {
     toggleNotifications: () => {
       setMenuOpen(false);
       setPreferencesOpen(false);
-      setNotificationsOpen((current) => !current);
+      setNotificationsOpen((current) => {
+        if (!current) {
+          params.onNotificationsPanelOpen?.();
+        }
+        return !current;
+      });
     },
     openNotification,
+    dismissNotification,
     openNotificationThread: (professionalId: string) => {
       openNotification({
         id: `chat-fallback-${professionalId}`,

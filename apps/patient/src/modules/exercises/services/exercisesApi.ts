@@ -32,27 +32,88 @@ export interface ExercisePost {
   sortOrder: number;
 }
 
-interface WebContentResponse {
-  exercises?: ExercisePost[];
-  updatedAt?: { exercises?: string | null };
+export interface ExerciseRoutineStep {
+  id: string;
+  slug: string;
+  title: string;
+  emoji: string;
+  durationMinutes: number;
+  category: ExerciseCategory;
+  summary: string;
 }
 
-let inflight: Promise<ExercisePost[]> | null = null;
+export interface ExerciseRoutine {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  emoji: string;
+  exerciseIds: string[];
+  exercises: ExerciseRoutineStep[];
+  totalDurationMinutes: number;
+  tags: string[];
+  status: "published" | "draft";
+  featured: boolean;
+  publishedAt: string;
+  sortOrder: number;
+}
 
-/**
- * Lista de ejercicios publicados (mismo origen `/api/public/web-content` que la landing).
- * El backend ya filtra `status === "published"` y ordena por featured + sortOrder + publishedAt.
- */
-export async function fetchPublishedExercises(): Promise<ExercisePost[]> {
-  if (inflight) {
-    return inflight;
+interface WebContentResponse {
+  exercises?: ExercisePost[];
+  exerciseRoutines?: ExerciseRoutine[];
+}
+
+let inflightExercises: Promise<ExercisePost[]> | null = null;
+let inflightRoutines: Promise<ExerciseRoutine[]> | null = null;
+let inflightBundle: Promise<{ exercises: ExercisePost[]; routines: ExerciseRoutine[] }> | null = null;
+
+async function fetchWebContentBundle(): Promise<{ exercises: ExercisePost[]; routines: ExerciseRoutine[] }> {
+  if (inflightBundle) {
+    return inflightBundle;
   }
-  const pending = (async (): Promise<ExercisePost[]> => {
+  const pending = (async () => {
     const response = await apiRequest<WebContentResponse>("/api/public/web-content", {});
-    return Array.isArray(response.exercises) ? response.exercises : [];
+    return {
+      exercises: Array.isArray(response.exercises) ? response.exercises : [],
+      routines: Array.isArray(response.exerciseRoutines) ? response.exerciseRoutines : []
+    };
   })().finally(() => {
-    inflight = null;
+    inflightBundle = null;
   });
-  inflight = pending;
+  inflightBundle = pending;
   return pending;
+}
+
+export async function fetchPublishedExercises(): Promise<ExercisePost[]> {
+  if (inflightExercises) {
+    return inflightExercises;
+  }
+  const pending = fetchWebContentBundle()
+    .then((bundle) => bundle.exercises)
+    .finally(() => {
+      inflightExercises = null;
+    });
+  inflightExercises = pending;
+  return pending;
+}
+
+export async function fetchPublishedExerciseRoutines(): Promise<ExerciseRoutine[]> {
+  if (inflightRoutines) {
+    return inflightRoutines;
+  }
+  const pending = fetchWebContentBundle()
+    .then((bundle) => bundle.routines)
+    .finally(() => {
+      inflightRoutines = null;
+    });
+  inflightRoutines = pending;
+  return pending;
+}
+
+export async function fetchPublishedExercisesContent(): Promise<{
+  exercises: ExercisePost[];
+  routines: ExerciseRoutine[];
+}> {
+  return fetchWebContentBundle();
 }

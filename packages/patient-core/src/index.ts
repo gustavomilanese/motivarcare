@@ -44,3 +44,33 @@ export {
   isLivePatientBookingStatus,
   pickNextPatientBooking
 } from "./patientPortalBookings.js";
+export type {
+  BuildPortalNotificationsParams,
+  PatientNotificationBooking,
+  PatientNotificationChatThread,
+  PatientNotificationExercise,
+  PatientNotificationMessage,
+  PatientNotificationStateSlice,
+  PatientProfileTab,
+  PaymentFailureNotice,
+  PortalNotificationAction,
+  PortalNotificationItem,
+  PortalNotificationKind
+} from "./notifications/types.js";
+export {
+  buildDiaryCheckinNotification,
+  buildExerciseNotification,
+  buildPortalNotifications,
+  formatNotificationMeta,
+  formatSessionWhen,
+  kindLabel
+} from "./notifications/buildPortalNotifications.js";
+export type { KeyValueStorage, NotificationStore } from "./notifications/storage.js";
+export { createNotificationStore } from "./notifications/storage.js";
+export {
+  countNotificationBadge,
+  filterVisibleNotifications,
+  markNotificationsBadgeSeen
+} from "./notifications/badge.js";
+export { applyNotificationDismissSideEffects } from "./notifications/dismissSideEffects.js";
+export { filterPushEligibleNotifications, isPushEligibleKind } from "./notifications/pushPolicy.js";

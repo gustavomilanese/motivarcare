@@ -7,6 +7,7 @@ export const WEB_ADMIN_SCROLL_SECTION_IDS = [
   "web-reviews",
   "web-articulos",
   "web-ejercicios",
+  "web-rutinas-ejercicios",
   "web-musica-relax"
 ] as const;
 
@@ -18,6 +19,7 @@ const SECTION_LINKS: Array<{ id: WebAdminScrollSectionId; label: LocalizedText }
   { id: "web-reviews", label: { es: "Reviews", en: "Reviews", pt: "Reviews" } },
   { id: "web-articulos", label: { es: "Artículos", en: "Articles", pt: "Artigos" } },
   { id: "web-ejercicios", label: { es: "Ejercicios", en: "Exercises", pt: "Exercícios" } },
+  { id: "web-rutinas-ejercicios", label: { es: "Rutinas", en: "Routines", pt: "Rotinas" } },
   { id: "web-musica-relax", label: { es: "Música relax", en: "Relax music", pt: "Música relax" } }
 ];
 

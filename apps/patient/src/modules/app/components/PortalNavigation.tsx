@@ -157,6 +157,7 @@ export function PortalNavigation(props: {
   onCloseMenu: () => void;
   onToggleNotifications: () => void;
   onOpenNotification: (item: PortalNotificationItem) => void;
+  onDismissNotification: (item: PortalNotificationItem, event?: { stopPropagation: () => void }) => void;
   onOpenNotificationThread: (professionalId: string) => void;
   onOpenProfileTab: (tab: ProfileTab) => void;
   onOpenPreferences: () => void;
@@ -486,7 +487,7 @@ export function PortalNavigation(props: {
           ) : (
             <ul className="notifications-list">
               {props.notifications.slice(0, 12).map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="notification-row">
                   <button
                     type="button"
                     className={`notification-item ${item.unread ? "unread" : ""}`}
@@ -497,6 +498,14 @@ export function PortalNavigation(props: {
                     {item.body ? <em className="notification-item-body">{item.body}</em> : null}
                     {item.detail ? <em>{item.detail}</em> : null}
                     {item.meta ? <small>{item.meta}</small> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className="notification-dismiss"
+                    aria-label={t(props.language, { es: "Descartar", en: "Dismiss", pt: "Descartar" })}
+                    onClick={(event) => props.onDismissNotification(item, event)}
+                  >
+                    ×
                   </button>
                 </li>
               ))}

@@ -20,7 +20,12 @@ import { getFinanceRules } from "../finance/finance.service.js";
 import { getUsdArsRate } from "../../lib/usdArsExchange.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { env } from "../../config/env.js";
-import { DEFAULT_EXERCISES, type ExercisePost } from "../web-content/exercises.defaults.js";
+import { type ExercisePost } from "../web-content/exercises.defaults.js";
+import {
+  WEB_EXERCISE_ROUTINES_KEY,
+  exerciseRoutinesCollectionSchema,
+  type ExerciseRoutine
+} from "../web-content/exerciseRoutines.defaults.js";
 import { DEFAULT_BLOG_POSTS, type BlogPostDefault } from "../web-content/blogPosts.defaults.js";
 import {
   WEB_RELAXATION_PLAYLISTS_KEY,
@@ -150,6 +155,61 @@ const exerciseSchema = z.object({
   publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sortOrder: z.number().int().min(0).max(100_000)
 });
+
+type PublicExerciseRoutineStep = Pick<
+  ExercisePost,
+  "id" | "slug" | "title" | "emoji" | "durationMinutes" | "category" | "summary"
+>;
+
+interface PublicExerciseRoutine extends Omit<ExerciseRoutine, "exerciseIds"> {
+  exerciseIds: string[];
+  exercises: PublicExerciseRoutineStep[];
+  totalDurationMinutes: number;
+}
+
+function resolvePublishedExerciseRoutines(
+  storedRoutines: ExerciseRoutine[],
+  publishedExercises: ExercisePost[]
+): PublicExerciseRoutine[] {
+  const exerciseById = new Map(publishedExercises.map((exercise) => [exercise.id, exercise]));
+
+  return storedRoutines
+    .filter((routine) => routine.status === "published")
+    .map((routine) => {
+      const exercises = routine.exerciseIds
+        .map((id) => exerciseById.get(id))
+        .filter((exercise): exercise is ExercisePost => Boolean(exercise))
+        .map((exercise) => ({
+          id: exercise.id,
+          slug: exercise.slug,
+          title: exercise.title,
+          emoji: exercise.emoji,
+          durationMinutes: exercise.durationMinutes,
+          category: exercise.category,
+          summary: exercise.summary
+        }));
+
+      if (exercises.length < 2) {
+        return null;
+      }
+
+      return {
+        ...routine,
+        exercises,
+        totalDurationMinutes: exercises.reduce((total, exercise) => total + exercise.durationMinutes, 0)
+      } satisfies PublicExerciseRoutine;
+    })
+    .filter((routine): routine is PublicExerciseRoutine => routine !== null)
+    .sort((a, b) => {
+      if (a.featured !== b.featured) {
+        return Number(b.featured) - Number(a.featured);
+      }
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
+}
 
 function parseLandingSettings(value: unknown) {
   const parsed = landingSettingsSchema.safeParse(value);
@@ -484,11 +544,12 @@ publicRouter.get("/web-content", async (req, res) => {
   const audienceParsed = blogAudienceSchema.safeParse(req.query.audience);
   const audience = audienceParsed.success ? audienceParsed.data : null;
 
-  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, relaxationConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, routinesConfig, relaxationConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } })
   ]);
 
@@ -496,6 +557,7 @@ publicRouter.get("/web-content", async (req, res) => {
   const reviewsForPublic = storedReviews.length > 0 ? storedReviews : [...DEFAULT_LANDING_WEB_REVIEWS];
   const postsParsed = z.array(blogPostSchema).safeParse(blogConfig?.value);
   const exercisesParsed = z.array(exerciseSchema).safeParse(exercisesConfig?.value);
+  const routinesParsed = exerciseRoutinesCollectionSchema.safeParse(routinesConfig?.value);
   const relaxationParsed = relaxationPlaylistsCollectionSchema.safeParse(relaxationConfig?.value);
 
   // Si admin todavía no cargó ninguna nota, devolvemos el catálogo de cortesía (publicadas).
@@ -521,11 +583,8 @@ publicRouter.get("/web-content", async (req, res) => {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
-  // Si admin todavía no cargó ninguno, devolvemos los 10 ejercicios de fallback (publicados).
-  // En cuanto el admin guarde aunque sea uno, solo se usan los suyos.
   const storedExercises = exercisesParsed.success ? exercisesParsed.data : [];
-  const exercisesSource: ExercisePost[] = storedExercises.length > 0 ? storedExercises : DEFAULT_EXERCISES;
-  const publishedExercises = exercisesSource
+  const publishedExercises = storedExercises
     .filter((exercise) => exercise.status === "published")
     .sort((a, b) => {
       if (a.featured !== b.featured) {
@@ -537,6 +596,9 @@ publicRouter.get("/web-content", async (req, res) => {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
+  const storedRoutines = routinesParsed.success ? routinesParsed.data : [];
+  const publishedExerciseRoutines = resolvePublishedExerciseRoutines(storedRoutines, publishedExercises);
+
   const storedRelaxation = relaxationParsed.success ? relaxationParsed.data : [];
   const relaxationPlaylists = resolvePublicRelaxationPlaylists(storedRelaxation);
 
@@ -545,12 +607,14 @@ publicRouter.get("/web-content", async (req, res) => {
     reviews: reviewsForPublic,
     blogPosts: publishedPosts,
     exercises: publishedExercises,
+    exerciseRoutines: publishedExerciseRoutines,
     relaxationPlaylists,
     updatedAt: {
       settings: settingsConfig?.updatedAt ?? null,
       reviews: reviewsConfig?.updatedAt ?? null,
       blogPosts: blogConfig?.updatedAt ?? null,
       exercises: exercisesConfig?.updatedAt ?? null,
+      exerciseRoutines: routinesConfig?.updatedAt ?? null,
       relaxationPlaylists: relaxationConfig?.updatedAt ?? null
     }
   });

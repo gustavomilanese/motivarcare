@@ -18,6 +18,15 @@ import {
 } from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { DEFAULT_BLOG_POSTS } from "../web-content/blogPosts.defaults.js";
+import { DEFAULT_EXERCISES } from "../web-content/exercises.defaults.js";
+import {
+  DEFAULT_EXERCISE_ROUTINES,
+  WEB_EXERCISE_ROUTINES_KEY,
+  exerciseRoutineCreateSchema,
+  exerciseRoutineUpdateSchema,
+  exerciseRoutinesCollectionSchema,
+  resolveRoutineExerciseIdsBySlug
+} from "../web-content/exerciseRoutines.defaults.js";
 import {
   DEFAULT_RELAXATION_PLAYLISTS,
   WEB_RELAXATION_PLAYLISTS_KEY,
@@ -2822,17 +2831,19 @@ adminRouter.put("/landing-settings", async (req, res) => {
 });
 
 adminRouter.get("/web-content", async (_req, res) => {
-  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, relaxationConfig] = await Promise.all([
+  const [settingsConfig, reviewsConfig, blogConfig, exercisesConfig, routinesConfig, relaxationConfig] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: LANDING_SETTINGS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_REVIEWS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_BLOG_POSTS_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } }),
+    prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } }),
     prisma.systemConfig.findUnique({ where: { key: WEB_RELAXATION_PLAYLISTS_KEY } })
   ]);
 
   const reviewsParsed = reviewsCollectionSchema.safeParse(reviewsConfig?.value);
   const postsParsed = blogPostsCollectionSchema.safeParse(blogConfig?.value);
   const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
+  const routinesParsed = exerciseRoutinesCollectionSchema.safeParse(routinesConfig?.value);
   const relaxationParsed = relaxationPlaylistsCollectionSchema.safeParse(relaxationConfig?.value);
 
   return res.json({
@@ -2840,6 +2851,7 @@ adminRouter.get("/web-content", async (_req, res) => {
     reviews: reviewsParsed.success ? reviewsParsed.data : [],
     blogPosts: postsParsed.success ? postsParsed.data : [],
     exercises: exercisesParsed.success ? exercisesParsed.data : [],
+    exerciseRoutines: routinesParsed.success ? routinesParsed.data : [],
     relaxationPlaylists: relaxationParsed.success ? relaxationParsed.data : [],
     relaxationPlaylistsBundledDefaults: DEFAULT_RELAXATION_PLAYLISTS,
     updatedAt: {
@@ -2847,6 +2859,7 @@ adminRouter.get("/web-content", async (_req, res) => {
       reviews: reviewsConfig?.updatedAt ?? null,
       blogPosts: blogConfig?.updatedAt ?? null,
       exercises: exercisesConfig?.updatedAt ?? null,
+      exerciseRoutines: routinesConfig?.updatedAt ?? null,
       relaxationPlaylists: relaxationConfig?.updatedAt ?? null
     }
   });
@@ -3139,4 +3152,184 @@ adminRouter.delete("/web-content/exercises/:exerciseId", async (req, res) => {
   });
 
   return res.json({ success: true, updatedAt: saved.updatedAt });
+});
+
+adminRouter.post("/web-content/exercises/seed-defaults", async (_req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const current = exercisesCollectionSchema.safeParse(config?.value);
+  const existing = current.success ? current.data : [];
+
+  if (existing.length > 0) {
+    return res.status(409).json({
+      error: "Ya hay ejercicios cargados. Eliminá los existentes antes de importar el catálogo inicial."
+    });
+  }
+
+  const seeded = DEFAULT_EXERCISES.map((exercise) => ({ ...exercise }));
+  const validated = exercisesCollectionSchema.safeParse(seeded);
+  if (!validated.success) {
+    return res.status(500).json({ error: "Default catalog failed validation", details: validated.error.flatten() });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISES_KEY },
+    update: { value: validated.data },
+    create: { key: WEB_EXERCISES_KEY, value: validated.data }
+  });
+
+  return res.status(201).json({
+    exercises: validated.data,
+    imported: validated.data.length,
+    updatedAt: saved.updatedAt
+  });
+});
+
+adminRouter.get("/web-content/exercise-routines", async (_req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } });
+  const parsed = exerciseRoutinesCollectionSchema.safeParse(config?.value);
+  return res.json({
+    exerciseRoutines: parsed.success ? parsed.data : [],
+    updatedAt: config?.updatedAt ?? null
+  });
+});
+
+adminRouter.post("/web-content/exercise-routines", async (req, res) => {
+  const parsed = exerciseRoutineCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const exercisesConfig = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
+  const exercises = exercisesParsed.success ? exercisesParsed.data : [];
+  const exerciseIds = new Set(exercises.map((exercise) => exercise.id));
+  const missing = parsed.data.exerciseIds.filter((id) => !exerciseIds.has(id));
+  if (missing.length > 0) {
+    return res.status(400).json({ error: "Unknown exercise ids", missing });
+  }
+
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } });
+  const current = exerciseRoutinesCollectionSchema.safeParse(config?.value);
+  const routines = current.success ? current.data : [];
+  const createdRoutine = { id: buildId("exercise-routine"), ...parsed.data };
+
+  const next = [createdRoutine, ...routines];
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISE_ROUTINES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISE_ROUTINES_KEY, value: next }
+  });
+
+  return res.status(201).json({ exerciseRoutine: createdRoutine, updatedAt: saved.updatedAt });
+});
+
+adminRouter.put("/web-content/exercise-routines/:routineId", async (req, res) => {
+  const parsed = exerciseRoutineUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } });
+  const current = exerciseRoutinesCollectionSchema.safeParse(config?.value);
+  const routines = current.success ? current.data : [];
+  const targetIndex = routines.findIndex((routine) => routine.id === req.params.routineId);
+
+  if (targetIndex < 0) {
+    return res.status(404).json({ error: "Exercise routine not found" });
+  }
+
+  const merged = { ...routines[targetIndex], ...parsed.data };
+  if (parsed.data.exerciseIds) {
+    const exercisesConfig = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+    const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
+    const exercises = exercisesParsed.success ? exercisesParsed.data : [];
+    const exerciseIds = new Set(exercises.map((exercise) => exercise.id));
+    const missing = parsed.data.exerciseIds.filter((id) => !exerciseIds.has(id));
+    if (missing.length > 0) {
+      return res.status(400).json({ error: "Unknown exercise ids", missing });
+    }
+  }
+
+  const next = [...routines];
+  next[targetIndex] = merged;
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISE_ROUTINES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISE_ROUTINES_KEY, value: next }
+  });
+
+  return res.json({ exerciseRoutine: merged, updatedAt: saved.updatedAt });
+});
+
+adminRouter.delete("/web-content/exercise-routines/:routineId", async (req, res) => {
+  const config = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } });
+  const current = exerciseRoutinesCollectionSchema.safeParse(config?.value);
+  const routines = current.success ? current.data : [];
+  const next = routines.filter((routine) => routine.id !== req.params.routineId);
+
+  if (next.length === routines.length) {
+    return res.status(404).json({ error: "Exercise routine not found" });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISE_ROUTINES_KEY },
+    update: { value: next },
+    create: { key: WEB_EXERCISE_ROUTINES_KEY, value: next }
+  });
+
+  return res.json({ success: true, updatedAt: saved.updatedAt });
+});
+
+adminRouter.post("/web-content/exercise-routines/seed-defaults", async (_req, res) => {
+  const routinesConfig = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISE_ROUTINES_KEY } });
+  const currentRoutines = exerciseRoutinesCollectionSchema.safeParse(routinesConfig?.value);
+  const existingRoutines = currentRoutines.success ? currentRoutines.data : [];
+
+  if (existingRoutines.length > 0) {
+    return res.status(409).json({
+      error: "Ya hay rutinas cargadas. Eliminá las existentes antes de importar el catálogo inicial."
+    });
+  }
+
+  const exercisesConfig = await prisma.systemConfig.findUnique({ where: { key: WEB_EXERCISES_KEY } });
+  const exercisesParsed = exercisesCollectionSchema.safeParse(exercisesConfig?.value);
+  const exercises = exercisesParsed.success ? exercisesParsed.data : [];
+
+  if (exercises.length === 0) {
+    return res.status(409).json({
+      error: "Primero importá o creá ejercicios. Las rutinas referencian ejercicios del catálogo."
+    });
+  }
+
+  const seeded = resolveRoutineExerciseIdsBySlug(
+    DEFAULT_EXERCISE_ROUTINES.map((routine) => ({ ...routine })),
+    exercises.map((exercise) => ({ id: exercise.id, slug: exercise.slug }))
+  );
+
+  const exerciseIdSet = new Set(exercises.map((exercise) => exercise.id));
+  const invalid = seeded.filter((routine) => routine.exerciseIds.some((id) => !exerciseIdSet.has(id)));
+  if (invalid.length > 0) {
+    return res.status(409).json({
+      error: "No se pudieron resolver todos los ejercicios de la plantilla. Verificá que el catálogo incluya los slugs esperados.",
+      invalidRoutineIds: invalid.map((routine) => routine.id)
+    });
+  }
+
+  const validated = exerciseRoutinesCollectionSchema.safeParse(seeded);
+  if (!validated.success) {
+    return res.status(500).json({ error: "Default routines failed validation", details: validated.error.flatten() });
+  }
+
+  const saved = await prisma.systemConfig.upsert({
+    where: { key: WEB_EXERCISE_ROUTINES_KEY },
+    update: { value: validated.data },
+    create: { key: WEB_EXERCISE_ROUTINES_KEY, value: validated.data }
+  });
+
+  return res.status(201).json({
+    exerciseRoutines: validated.data,
+    imported: validated.data.length,
+    updatedAt: saved.updatedAt
+  });
 });

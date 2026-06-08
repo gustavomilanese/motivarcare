@@ -37,6 +37,9 @@ import type { ThemeMode } from "../theme/ThemeContext";
 import { useThemeMode } from "../theme/ThemeContext";
 import { formatMoneyFromCents } from "../utils/date";
 import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
+import { NotificationsSheet } from "../components/NotificationsSheet";
+import { usePatientNotifications } from "../notifications/usePatientNotifications";
+import type { PortalNotificationItem } from "@therapy/patient-core";
 
 type HomeNav = BottomTabNavigationProp<PatientTabParamList>;
 
@@ -204,10 +207,28 @@ function buildHomeStyles(c: AppThemeColors, mode: ThemeMode) {
       borderRadius: 12,
       backgroundColor: c.primarySoft,
       alignItems: "center",
-      justifyContent: "center"
+      justifyContent: "center",
+      position: "relative"
     },
     headerIconButtonPressed: {
       opacity: 0.88
+    },
+    notificationBadge: {
+      position: "absolute",
+      top: 4,
+      right: 4,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 999,
+      paddingHorizontal: 4,
+      backgroundColor: "#5F44EB",
+      alignItems: "center",
+      justifyContent: "center"
+    },
+    notificationBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 10,
+      fontWeight: "700"
     },
     section: {
       marginTop: 5,
@@ -420,6 +441,8 @@ export function HomeScreen() {
   const { profile, loading: profileLoading, refresh: refreshProfile } = usePatientProfile();
   const { bookingsEpoch } = useBookingsRefresh();
   const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [notificationBookings, setNotificationBookings] = useState<BookingItem[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
   const mcareSectionY = useRef(0);
@@ -440,13 +463,64 @@ export function HomeScreen() {
   );
   const availableSessions = profile?.latestPackage?.remainingCredits ?? 0;
 
+  const {
+    notificationItems,
+    badgeCount: notificationBadgeCount,
+    acknowledgeBadge,
+    dismissNotification
+  } = usePatientNotifications({
+    token,
+    profile,
+    bookings: notificationBookings
+  });
+
+  const openNotification = useCallback(
+    (item: PortalNotificationItem) => {
+      setNotificationsOpen(false);
+      switch (item.action.type) {
+        case "chat":
+          navigation.navigate("chat");
+          return;
+        case "navigate":
+          if (item.action.path.includes("sessions")) {
+            navigation.navigate("sessions");
+          } else if (item.action.path.includes("profile")) {
+            navigation.navigate("profile");
+          } else {
+            navigation.navigate("home");
+          }
+          return;
+        case "booking":
+          navigation.navigate("sessions");
+          return;
+        case "profile":
+          navigation.navigate("profile");
+          return;
+        default:
+          return;
+      }
+    },
+    [navigation]
+  );
+
+  const toggleNotifications = useCallback(() => {
+    setNotificationsOpen((current) => {
+      if (!current) {
+        acknowledgeBadge();
+      }
+      return !current;
+    });
+  }, [acknowledgeBadge]);
+
   const loadBookings = useCallback(async () => {
     if (!token) {
       setBookings([]);
+      setNotificationBookings([]);
       return;
     }
     try {
       const bookingsRes = await getBookingsMine(token);
+      setNotificationBookings(bookingsRes.bookings ?? []);
       const live = filterUpcomingPatientBookings(bookingsRes.bookings).slice(0, 3);
       setBookings(live);
     } catch {
@@ -459,6 +533,7 @@ export function HomeScreen() {
       let active = true;
       if (!token) {
         setBookings([]);
+        setNotificationBookings([]);
         setLoading(false);
         return () => {
           active = false;
@@ -805,6 +880,22 @@ export function HomeScreen() {
           </View>
           <View style={styles.profileHeaderActions}>
             <Pressable
+              onPress={toggleNotifications}
+              style={({ pressed }) => [styles.headerIconButton, pressed && styles.headerIconButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Ver notificaciones"
+              hitSlop={8}
+            >
+              <Ionicons name="notifications-outline" size={26} color={colors.primary} />
+              {notificationBadgeCount > 0 ? (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {notificationBadgeCount > 99 ? "99+" : notificationBadgeCount}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+            <Pressable
               onPress={() => setBookSessionOpen(true)}
               style={({ pressed }) => [styles.headerIconButton, pressed && styles.headerIconButtonPressed]}
               accessibilityRole="button"
@@ -998,6 +1089,13 @@ export function HomeScreen() {
         visible={bookSessionOpen}
         onClose={() => setBookSessionOpen(false)}
         onFocusPurchase={focusMcareSection}
+      />
+      <NotificationsSheet
+        visible={notificationsOpen}
+        items={notificationItems}
+        onClose={() => setNotificationsOpen(false)}
+        onOpen={openNotification}
+        onDismiss={dismissNotification}
       />
       <McarePurchaseSheets
         flow={mcarePurchaseFlow}
