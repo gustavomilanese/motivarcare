@@ -30,3 +30,11 @@ export type {
   AcquireSessionsTrigger
 } from "./acquireSessions.js";
 export { resolveAcquireSessionsIntent } from "./acquireSessions.js";
+export type { PatientPortalBooking } from "./patientPortalBookings.js";
+export {
+  compareUpcomingPatientBookings,
+  countUpcomingPatientBookings,
+  filterUpcomingPatientBookings,
+  isLivePatientBookingStatus,
+  pickNextPatientBooking
+} from "./patientPortalBookings.js";

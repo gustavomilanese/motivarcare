@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { getBookingsMine } from "../api/client";
 import type { BookingItem } from "../api/types";
-import { compareUpcomingBookings, isBookingUpcoming } from "../utils/bookingUpcoming";
+import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
 import { useBookingsRefresh } from "../context/BookingsRefreshContext";
 import type { AppThemeColors } from "../theme/colors";
@@ -138,9 +138,7 @@ export function SessionsScreen() {
     setError("");
     try {
       const response = await getBookingsMine(token);
-      const live = response.bookings
-        .filter((item) => ["confirmed", "requested"].includes(item.status) && isBookingUpcoming(item))
-        .sort(compareUpcomingBookings);
+      const live = filterUpcomingPatientBookings(response.bookings);
       setBookings(live);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "No se pudo cargar sesiones");

@@ -6,6 +6,7 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
+import { pickNextPatientBooking } from "@therapy/patient-core";
 import { findProfessionalById } from "../../app/lib/professionals";
 import type { Booking, Professional } from "../../app/types";
 
@@ -14,13 +15,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 function getNextBooking(bookings: Booking[]): Booking | null {
-  const now = Date.now();
-
-  return (
-    bookings
-      .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() > now)
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null
-  );
+  return pickNextPatientBooking(bookings);
 }
 
 function formatTimeOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {

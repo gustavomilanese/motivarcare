@@ -280,8 +280,6 @@ function preventRegressivePatientPortalPersist(
       return incoming;
     }
 
-    const existingCredits = normalizeCredits(existing.subscription?.creditsRemaining);
-    const incomingCredits = normalizeCredits(incoming.subscription?.creditsRemaining);
     const existingBookings = Array.isArray(existing.bookings)
       ? existing.bookings
           .map(normalizeStoredBooking)
@@ -290,25 +288,6 @@ function preventRegressivePatientPortalPersist(
     const incomingBookings = Array.isArray(incoming.bookings) ? incoming.bookings : [];
 
     let next = incoming;
-
-    if (existingCredits > 0 && incomingCredits === 0) {
-      next = {
-        ...next,
-        subscription: {
-          ...next.subscription,
-          creditsRemaining: existingCredits,
-          creditsTotal: Math.max(
-            normalizeCredits(next.subscription.creditsTotal),
-            normalizeCredits(existing.subscription?.creditsTotal),
-            existingCredits
-          ),
-          purchaseHistory: mergePurchaseHistory(
-            existing.subscription?.purchaseHistory ?? [],
-            next.subscription.purchaseHistory
-          )
-        }
-      };
-    }
 
     if (existingBookings.length > 0 && incomingBookings.length === 0) {
       next = {

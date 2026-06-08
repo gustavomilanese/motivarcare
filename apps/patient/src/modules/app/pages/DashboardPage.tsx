@@ -7,11 +7,12 @@ import {
   formatCurrencyMajor,
   formatDateWithLocale,
   replaceTemplate,
-  textByLanguage,
-  isPatientBookingUpcoming
+  textByLanguage
 } from "@therapy/i18n-config";
 import {
   estimateIndividualUnitPriceMajor,
+  filterUpcomingPatientBookings,
+  pickNextPatientBooking,
   resolvePackageCatalogView,
   resolvePackagePurchaseGate
 } from "@therapy/patient-core";
@@ -121,17 +122,6 @@ function packageUnitPriceMajor(plan: PackagePlan): number {
   return plan.priceCents / 100 / Math.max(1, plan.credits);
 }
 
-function getNextBooking(bookings: Booking[]): Booking | null {
-  const now = Date.now();
-
-  return (
-    bookings
-      .filter((booking) => booking.status === "confirmed" && new Date(booking.startsAt).getTime() > now)
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null
-  );
-}
-
-
 export function DashboardPage(props: {
   state: PatientAppState;
   authToken: string | null;
@@ -224,11 +214,9 @@ export function DashboardPage(props: {
   const packageSectionRef = useRef<HTMLElement | null>(null);
   const defaultPackagePlan =
     displayPackagePlans.find((plan) => plan.id === displayFeaturedPackageId) ?? displayPackagePlans[0] ?? null;
-  const nextBooking = getNextBooking(props.state.bookings);
+  const nextBooking = pickNextPatientBooking(props.state.bookings, now);
   const confirmedBookings = props.state.bookings.filter((booking) => booking.status === "confirmed");
-  const upcomingConfirmedBookings = confirmedBookings
-    .filter((booking) => isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now }))
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
   const trialBookings = confirmedBookings.filter((booking) => booking.bookingMode === "trial");
   const activeTrialBooking = trialBookings
     .filter((booking) => new Date(booking.endsAt).getTime() >= now)
@@ -704,7 +692,7 @@ export function DashboardPage(props: {
             onClick={props.onGoToReservations}
           >
             <span className="label">{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</span>
-            <strong>{props.state.bookings.filter((booking) => booking.status === "confirmed").length}</strong>
+            <strong>{upcomingConfirmedBookings.length}</strong>
             <p>
               {nextBooking
                 ? `${t(props.language, { es: "Próxima", en: "Next", pt: "Proxima" })}: ${formatDateTime({
@@ -963,9 +951,7 @@ export function DashboardPage(props: {
         </button>
         {isCalendarExpanded ? (
           <SessionsCalendar
-            bookings={confirmedBookings.filter((booking) =>
-              isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
-            )}
+            bookings={upcomingConfirmedBookings}
             timezone={props.state.profile.timezone}
             language={props.language}
             onOpenBookingDetail={props.onOpenBookingDetail}

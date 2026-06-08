@@ -20,11 +20,12 @@ import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsL
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
 import {
   isDisplayOnlyBundlePlanId,
+  filterUpcomingPatientBookings,
   pickFirstBundlePlan,
   resolvePackageCatalogView,
   resolvePackagePurchaseGate
 } from "@therapy/patient-core";
-import { canPatientRescheduleBooking, isPatientBookingUpcoming } from "@therapy/i18n-config";
+import { canPatientRescheduleBooking } from "@therapy/i18n-config";
 import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
 import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
 import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
@@ -170,29 +171,16 @@ export function BookingPage(props: {
   const professional = findProfessionalById(effectiveProfessionalId, props.professionals);
   const now = Date.now();
 
-  const upcomingConfirmedBookings = props.state.bookings
-    .filter(
-      (booking) =>
-        booking.status === "confirmed" &&
-        isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
-    )
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
 
-  const upcomingRegularBookings = props.state.bookings
-    .filter(
-      (booking) =>
-        booking.status === "confirmed" &&
-        booking.bookingMode !== "trial" &&
-        isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now })
-    )
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const upcomingRegularBookings = upcomingConfirmedBookings
+    .filter((booking) => booking.bookingMode !== "trial");
 
   const historyRegularBookings = props.state.bookings
     .filter(
       (booking) =>
-        booking.bookingMode !== "trial" &&
-        (booking.status !== "confirmed" ||
-          !isPatientBookingUpcoming({ startsAt: booking.startsAt, endsAt: booking.endsAt, nowMs: now }))
+        booking.bookingMode !== "trial"
+        && !upcomingRegularBookings.some((upcoming) => upcoming.id === booking.id)
     )
     .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
 

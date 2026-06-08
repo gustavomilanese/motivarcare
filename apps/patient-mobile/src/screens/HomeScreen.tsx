@@ -21,7 +21,7 @@ import {
 } from "@therapy/patient-core";
 import { getBookingsMine, getMatchingProfessionals, getSessionPackages, purchasePackage } from "../api/client";
 import type { BookingItem, SessionPackage } from "../api/types";
-import { compareUpcomingBookings, isBookingUpcoming } from "../utils/bookingUpcoming";
+import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
 import { BookSessionModal } from "../components/BookSessionModal";
 import { McarePurchaseSheets, type McarePurchaseFlow } from "../components/McarePurchaseSheets";
@@ -445,12 +445,8 @@ export function HomeScreen() {
     }
     try {
       const bookingsRes = await getBookingsMine(token);
-      const live = bookingsRes.bookings
-        .filter(
-          (item) => ["confirmed", "requested"].includes(item.status) && isBookingUpcoming(item)
-        )
-        .sort(compareUpcomingBookings);
-      setBookings(live.slice(0, 3));
+      const live = filterUpcomingPatientBookings(bookingsRes.bookings).slice(0, 3);
+      setBookings(live);
     } catch {
       setBookings([]);
     }
