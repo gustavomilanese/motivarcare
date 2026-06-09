@@ -139,13 +139,19 @@ export async function createEmailVerificationToken(params: { userId: string; rep
   };
 }
 
+export type EmailVerificationDeliveryResult = {
+  delivered: boolean;
+  link?: string;
+  deliveryError?: string;
+};
+
 export async function dispatchEmailVerificationForUser(params: {
   userId: string;
   fullName: string;
   email: string;
   role: Role;
   replaceExisting?: boolean;
-}): Promise<{ delivered: boolean; link?: string }> {
+}): Promise<EmailVerificationDeliveryResult> {
   const verificationToken = await createEmailVerificationToken({
     userId: params.userId,
     replaceExisting: params.replaceExisting ?? true
@@ -184,16 +190,42 @@ export async function sendEmailVerificationEmail(params: {
       `Este enlace vence en ${env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS} horas.`
     ].join("\n");
 
-    await sendResendEmail({
-      to: params.email,
-      subject,
-      text,
-      html: buildVerificationEmailHtml({
-        fullName: params.fullName,
+    try {
+      await sendResendEmail({
+        to: params.email,
+        subject,
+        text,
+        html: buildVerificationEmailHtml({
+          fullName: params.fullName,
+          link,
+          ttlHours: env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS
+        })
+      });
+    } catch (sendError) {
+      const deliveryError = sendError instanceof Error ? sendError.message : String(sendError);
+      console.error(
+        JSON.stringify({
+          level: "error",
+          event: "email_verification_send_failed",
+          email: params.email,
+          role: params.role,
+          deliveryError,
+          linkHost: (() => {
+            try {
+              return new URL(link).host;
+            } catch {
+              return "invalid";
+            }
+          })(),
+          timestamp: new Date().toISOString()
+        })
+      );
+      return {
+        delivered: false,
         link,
-        ttlHours: env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS
-      })
-    });
+        deliveryError
+      };
+    }
 
     console.log(
       JSON.stringify({

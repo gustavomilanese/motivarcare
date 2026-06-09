@@ -297,7 +297,23 @@ const verifyEmailQuerySchema = z.object({
 function authResponseMeta(role: "PATIENT" | "PROFESSIONAL" | "ADMIN") {
   return {
     emailVerificationRequired: isEmailVerificationRequiredForRole(role),
-    devEmailVerificationBypassEnabled: env.NODE_ENV === "development"
+    devEmailVerificationBypassEnabled: env.NODE_ENV === "development",
+    emailDeliveryConfigured: Boolean(env.RESEND_API_KEY?.trim())
+  };
+}
+
+function verificationEmailAuthFields(params: {
+  role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+  emailVerified: boolean;
+  deliveryResult: { delivered: boolean; deliveryError?: string };
+}): { verificationEmailSent: boolean; verificationEmailError?: "NOT_CONFIGURED" | "DELIVERY_FAILED" } {
+  return {
+    verificationEmailSent: params.deliveryResult.delivered,
+    ...(params.deliveryResult.delivered
+      ? {}
+      : {
+          verificationEmailError: params.deliveryResult.deliveryError ? "DELIVERY_FAILED" : "NOT_CONFIGURED"
+        })
   };
 }
 
@@ -610,7 +626,8 @@ authRouter.post("/register", async (req, res) => {
 
   const resolvedUser = userForResponse ?? created;
 
-  let verificationEmailSent = false;
+  let verificationEmailFields: { verificationEmailSent?: boolean; verificationEmailError?: "NOT_CONFIGURED" | "DELIVERY_FAILED" } =
+    {};
   if (
     isEmailVerificationSupportedRole(resolvedUser.role)
     && isEmailVerificationRequiredForRole(resolvedUser.role)
@@ -623,7 +640,11 @@ authRouter.post("/register", async (req, res) => {
         email: resolvedUser.email,
         role: resolvedUser.role
       });
-      verificationEmailSent = deliveryResult.delivered;
+      verificationEmailFields = verificationEmailAuthFields({
+        role: resolvedUser.role,
+        emailVerified: resolvedUser.emailVerified,
+        deliveryResult
+      });
       if (!deliveryResult.delivered) {
         console.warn(
           JSON.stringify({
@@ -632,6 +653,8 @@ authRouter.post("/register", async (req, res) => {
             userId: resolvedUser.id,
             role: resolvedUser.role,
             email: resolvedUser.email,
+            verificationEmailError: verificationEmailFields.verificationEmailError,
+            deliveryError: deliveryResult.deliveryError,
             timestamp: new Date().toISOString()
           })
         );
@@ -656,7 +679,7 @@ authRouter.post("/register", async (req, res) => {
   return res.status(201).json({
     token,
     user: shapeUserResponse(resolvedUser),
-    verificationEmailSent,
+    ...verificationEmailFields,
     ...authResponseMeta(resolvedUser.role),
     googleCalendarConnected: Boolean(googleCalendarConnectionAtRegister)
   });
@@ -1153,7 +1176,10 @@ authRouter.post("/login", async (req, res) => {
       select: { id: true }
     });
 
-    let verificationEmailSent = false;
+    let verificationEmailFields: {
+      verificationEmailSent?: boolean;
+      verificationEmailError?: "NOT_CONFIGURED" | "DELIVERY_FAILED";
+    } = {};
     if (
       isEmailVerificationSupportedRole(loginResponseUser.role)
       && isEmailVerificationRequiredForRole(loginResponseUser.role)
@@ -1166,7 +1192,25 @@ authRouter.post("/login", async (req, res) => {
           email: loginResponseUser.email,
           role: loginResponseUser.role
         });
-        verificationEmailSent = deliveryResult.delivered;
+        verificationEmailFields = verificationEmailAuthFields({
+          role: loginResponseUser.role,
+          emailVerified: loginResponseUser.emailVerified,
+          deliveryResult
+        });
+        if (!deliveryResult.delivered) {
+          console.warn(
+            JSON.stringify({
+              level: "warn",
+              event: "email_verification_not_delivered_on_login",
+              userId: loginResponseUser.id,
+              role: loginResponseUser.role,
+              email: loginResponseUser.email,
+              verificationEmailError: verificationEmailFields.verificationEmailError,
+              deliveryError: deliveryResult.deliveryError,
+              timestamp: new Date().toISOString()
+            })
+          );
+        }
       } catch (verificationError) {
         console.error("Could not send email verification link on login", verificationError);
       }
@@ -1188,7 +1232,7 @@ authRouter.post("/login", async (req, res) => {
       user: shapeUserResponse(loginResponseUser),
       ...authResponseMeta(user.role),
       googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin),
-      ...(verificationEmailSent ? { verificationEmailSent: true } : {})
+      ...verificationEmailFields
     });
   } catch (err) {
     console.error("[api] POST /auth/login failed", err);
@@ -1458,7 +1502,7 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
       role: user.role
     });
   } catch (sendError) {
-    console.error("Could not send email verification link", sendError);
+    console.error("Could not prepare email verification link", sendError);
     return sendApiError({
       res,
       status: 502,
@@ -1468,6 +1512,14 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
   }
 
   if (!deliveryResult.delivered) {
+    if (deliveryResult.deliveryError) {
+      return sendApiError({
+        res,
+        status: 502,
+        code: "INTERNAL_ERROR",
+        message: deliveryResult.deliveryError
+      });
+    }
     return sendApiError({
       res,
       status: 503,

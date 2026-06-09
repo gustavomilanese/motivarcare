@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
@@ -11,25 +11,94 @@ export function VerifyEmailRequiredScreen(props: {
   language: AppLanguage;
   token: string;
   email: string;
+  emailDeliveryConfigured?: boolean;
   onLogout: () => void;
 }) {
+  const [loadingInitialSend, setLoadingInitialSend] = useState(true);
   const [loadingResend, setLoadingResend] = useState(false);
+  const [initialSendSucceeded, setInitialSendSucceeded] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const initialSendStarted = useRef(false);
 
-  const handleResend = async () => {
-    setLoadingResend(true);
-    setError("");
-    setMessage("");
+  const runResend = async (isInitial: boolean) => {
+    if (isInitial) {
+      setLoadingInitialSend(true);
+    } else {
+      setLoadingResend(true);
+    }
+    if (!isInitial) {
+      setError("");
+      setMessage("");
+    }
 
     const result = await resendVerificationEmail(props.token);
     if (result.ok) {
-      setMessage(result.message);
+      setInitialSendSucceeded(true);
+      setMessage(
+        isInitial
+          ? t(props.language, {
+              es: "Te enviamos un enlace de verificación.",
+              en: "We sent you a verification link.",
+              pt: "Enviamos um link de verificacao."
+            })
+          : result.message
+      );
+      setError("");
     } else {
       setError(professionalSurfaceMessage("verify-resend", props.language, result.raw));
     }
-    setLoadingResend(false);
+
+    if (isInitial) {
+      setLoadingInitialSend(false);
+    } else {
+      setLoadingResend(false);
+    }
   };
+
+  useEffect(() => {
+    if (initialSendStarted.current) {
+      return;
+    }
+    initialSendStarted.current = true;
+
+    void (async () => {
+      setLoadingInitialSend(true);
+      const result = await resendVerificationEmail(props.token);
+      if (result.ok) {
+        setInitialSendSucceeded(true);
+        setMessage(
+          t(props.language, {
+            es: "Te enviamos un enlace de verificación.",
+            en: "We sent you a verification link.",
+            pt: "Enviamos um link de verificacao."
+          })
+        );
+        setError("");
+      } else {
+        setError(professionalSurfaceMessage("verify-resend", props.language, result.raw));
+      }
+      setLoadingInitialSend(false);
+    })();
+  }, [props.token, props.language]);
+
+  const deliveryKnownUnavailable = props.emailDeliveryConfigured === false;
+  const showSentLead =
+    !loadingInitialSend && initialSendSucceeded && !deliveryKnownUnavailable && !error;
+
+  const leadCopy = showSentLead
+    ? t(props.language, {
+        es: "Te enviamos un enlace a",
+        en: "We sent a link to",
+        pt: "Enviamos um link para"
+      })
+    : t(props.language, {
+        es: "Necesitamos enviarte un enlace a",
+        en: "We need to send a link to",
+        pt: "Precisamos enviar um link para"
+      });
+
+  const busy = loadingInitialSend || loadingResend;
 
   return (
     <div className="pro-auth-shell">
@@ -61,18 +130,20 @@ export function VerifyEmailRequiredScreen(props: {
             })}
           </span>
           <h1 id="pro-verify-email-title">
-            {t(props.language, {
-              es: "Revisa tu correo para continuar",
-              en: "Check your email to continue",
-              pt: "Verifique seu e-mail para continuar"
-            })}
+            {loadingInitialSend
+              ? t(props.language, {
+                  es: "Enviando enlace de verificación…",
+                  en: "Sending verification link…",
+                  pt: "Enviando link de verificacao…"
+                })
+              : t(props.language, {
+                  es: "Revisa tu correo para continuar",
+                  en: "Check your email to continue",
+                  pt: "Verifique seu e-mail para continuar"
+                })}
           </h1>
           <p className="pro-verify-email-lead">
-            {t(props.language, {
-              es: "Te enviamos un enlace a",
-              en: "We sent a link to",
-              pt: "Enviamos um link para"
-            })}{" "}
+            {leadCopy}{" "}
             <span className="pro-verify-email-address">{props.email}</span>
           </p>
           <p className="pro-verify-email-hint">
@@ -83,7 +154,12 @@ export function VerifyEmailRequiredScreen(props: {
             })}
           </p>
           <div className="pro-stack pro-verify-email-actions">
-            <button className="pro-primary" type="button" onClick={handleResend} disabled={loadingResend}>
+            <button
+              className="pro-primary"
+              type="button"
+              onClick={() => void runResend(false)}
+              disabled={busy}
+            >
               {loadingResend
                 ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
                 : t(props.language, { es: "Reenviar email", en: "Resend email", pt: "Reenviar e-mail" })}
@@ -93,7 +169,7 @@ export function VerifyEmailRequiredScreen(props: {
               type="button"
               className="pro-verify-email-secondary"
               onClick={props.onLogout}
-              disabled={loadingResend}
+              disabled={busy}
             >
               {t(props.language, { es: "Salir", en: "Log out", pt: "Sair" })}
             </button>

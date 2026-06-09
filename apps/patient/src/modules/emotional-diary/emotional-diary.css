@@ -491,6 +491,17 @@
 /* Home — bandas con jerarquía visual */
 .diary-page--home {
   padding-bottom: 88px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.diary-home-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .diary-home-stack {
@@ -784,13 +795,12 @@
   color: var(--text-soft);
   font-size: 0.9rem;
   line-height: 1.45;
-  white-space: nowrap;
+  white-space: normal;
 }
 
-@media (max-width: 479px) {
+@media (min-width: 1081px) {
   .diary-hero-card > p {
-    white-space: normal;
-    font-size: 0.82rem;
+    white-space: nowrap;
   }
 }
 
@@ -939,13 +949,42 @@
 }
 
 .diary-mood-scroll-inner {
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+}
+
+.diary-mood-scroll-inner::-webkit-scrollbar {
+  display: none;
 }
 
 .diary-mood-row--scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  width: max-content;
+  min-width: min(100%, max-content);
+  padding-right: 2.75rem;
   margin-bottom: 0;
+  grid-template-columns: unset;
+}
+
+.diary-mood-row--scroll .diary-mood-btn {
+  flex: 0 0 4.6rem;
+  width: 4.6rem;
+  scroll-snap-align: start;
+}
+
+.diary-mood-row--scroll .diary-mood-btn-emoji {
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.2rem;
 }
 
 .diary-checkin-actions {
@@ -2264,41 +2303,6 @@
 
   .diary-mood-scroll {
     margin-inline: 0;
-  }
-
-  .diary-mood-scroll-inner {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    overscroll-behavior-x: contain;
-  }
-
-  .diary-mood-scroll-inner::-webkit-scrollbar {
-    display: none;
-  }
-
-  .diary-mood-row--scroll {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 10px;
-    width: max-content;
-    min-width: min(100%, max-content);
-    padding-right: 2.75rem;
-  }
-
-  .diary-mood-row--scroll .diary-mood-btn {
-    flex: 0 0 4.6rem;
-    width: 4.6rem;
-    scroll-snap-align: start;
-  }
-
-  .diary-mood-row--scroll .diary-mood-btn-emoji {
-    width: 2.1rem;
-    height: 2.1rem;
-    font-size: 1.2rem;
   }
 
   .diary-checkin-actions {

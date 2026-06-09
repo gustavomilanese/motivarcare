@@ -379,6 +379,37 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
   }
 };
 
+function verifyResendDeliveryIssueMessage(language: AppLanguage, raw: string): string | null {
+  const n = raw.trim();
+  if (
+    /503/.test(n)
+    || /RESEND_API_KEY/i.test(n)
+    || /not configured/i.test(n)
+    || /EMAIL_NOT_CONFIGURED/i.test(n)
+    || /SERVICE_UNAVAILABLE/i.test(n)
+  ) {
+    return t(language, {
+      es: "El envío de correos no está configurado en el servidor. Avisá al equipo técnico para que configure Resend (RESEND_API_KEY y EMAIL_FROM) en Railway.",
+      en: "Email delivery isn’t configured on the server. Ask your tech team to set up Resend (RESEND_API_KEY and EMAIL_FROM) on Railway.",
+      pt: "O envio de e-mails nao esta configurado no servidor. Avise a equipe tecnica para configurar Resend (RESEND_API_KEY e EMAIL_FROM) no Railway."
+    });
+  }
+  if (
+    /502/.test(n)
+    || /403/.test(n)
+    || /Domain not verified/i.test(n)
+    || /EMAIL_DELIVERY_FAILED/i.test(n)
+    || /Resend HTTP/i.test(n)
+  ) {
+    return t(language, {
+      es: "Resend rechazó el envío: el dominio de EMAIL_FROM no está verificado en Resend (revisá Domains y los DNS, o usá un remitente ya verificado). Avisá al equipo técnico.",
+      en: "Resend rejected the send: the EMAIL_FROM domain isn’t verified in Resend (check Domains and DNS, or use a verified sender). Contact your tech team.",
+      pt: "O Resend rejeitou o envio: o dominio de EMAIL_FROM nao esta verificado no Resend (confira Domains e DNS). Avise a equipe tecnica."
+    });
+  }
+  return null;
+}
+
 export function professionalSurfaceMessage(
   context: ProfessionalSurfaceContext,
   language: AppLanguage,
@@ -388,6 +419,12 @@ export function professionalSurfaceMessage(
     const net = softNetworkOrHttp(language, raw);
     if (net) {
       return net;
+    }
+    if (context === "verify-resend") {
+      const delivery = verifyResendDeliveryIssueMessage(language, raw);
+      if (delivery) {
+        return delivery;
+      }
     }
   }
   return t(language, SURFACE[context]);

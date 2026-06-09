@@ -3847,6 +3847,28 @@ button.danger {
   font-weight: 600;
 }
 
+.session-pro-rating-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.session-pro-rating-compact-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-pro-rating-compact .professional-review-stars-row--md .professional-review-stars-row-star {
+  font-size: 0.72rem;
+}
+
+.session-pro-rating-compact--table {
+  margin-top: 4px;
+}
+
 .session-history-professional-link {
   display: inline;
   font-size: inherit;
@@ -10150,6 +10172,18 @@ button.sessions-balance {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .session-rn-root .session-pro-rating-compact {
+    margin-top: 1px;
+  }
+
+  .session-rn-root .session-pro-rating-compact-value {
+    font-size: 11px;
+  }
+
+  .session-rn-root .session-pro-rating-compact .professional-review-stars-row--md .professional-review-stars-row-star {
+    font-size: 0.68rem;
   }
 
   .session-rn-root .session-rn-status {

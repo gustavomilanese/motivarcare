@@ -126,6 +126,7 @@ export function ProfessionalAuthFlow(props: {
     token: string;
     user: AuthUser;
     emailVerificationRequired: boolean;
+    emailDeliveryConfigured?: boolean;
     googleCalendarConnected?: boolean;
   }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;

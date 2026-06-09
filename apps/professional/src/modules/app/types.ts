@@ -43,7 +43,9 @@ export interface AuthResponse {
   };
   emailVerificationRequired: boolean;
   devEmailVerificationBypassEnabled?: boolean;
+  emailDeliveryConfigured?: boolean;
   verificationEmailSent?: boolean;
+  verificationEmailError?: "NOT_CONFIGURED" | "DELIVERY_FAILED";
   /** Presente en login/registro API; alinea el modal de Calendar antes del primer GET /me. */
   googleCalendarConnected?: boolean;
 }

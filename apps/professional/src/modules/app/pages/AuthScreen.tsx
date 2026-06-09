@@ -74,6 +74,7 @@ export function AuthScreen(props: {
     token: string;
     user: AuthUser;
     emailVerificationRequired: boolean;
+    emailDeliveryConfigured?: boolean;
     googleCalendarConnected?: boolean;
   }) => void;
   initialMode?: "login" | "register";
@@ -159,6 +160,7 @@ export function AuthScreen(props: {
         avatarUrl: response.user.avatarUrl ?? null
       },
       emailVerificationRequired: response.emailVerificationRequired,
+      emailDeliveryConfigured: response.emailDeliveryConfigured,
       googleCalendarConnected:
         typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : undefined
     });
@@ -338,7 +340,7 @@ export function AuthScreen(props: {
             </div>
           ) : null}
 
-          <form className="stack auth-form pro-auth-simple-form" onSubmit={handleSubmit}>
+          <form className="auth-form pro-auth-simple-form" onSubmit={handleSubmit}>
             {mode === "register" ? (
               <div className="auth-field-stack">
                 <span className="auth-field-label">{t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}</span>

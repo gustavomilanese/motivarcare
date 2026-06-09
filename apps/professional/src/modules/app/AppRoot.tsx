@@ -169,6 +169,7 @@ export function App() {
   const [token, setToken] = useState<string>(() => window.localStorage.getItem(TOKEN_KEY) ?? "");
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(readStoredEmailVerificationRequired);
+  const [emailDeliveryConfigured, setEmailDeliveryConfigured] = useState<boolean | undefined>(undefined);
   const [authSyncReady, setAuthSyncReady] = useState(() => !window.localStorage.getItem(TOKEN_KEY) || !readStoredUser());
   const [pendingOnboardingSync, setPendingOnboardingSync] = useState(false);
   /** Nombre legible desde onboarding (no el placeholder de registro); se persiste con PATCH /api/auth/me. */
@@ -257,6 +258,7 @@ export function App() {
     token: string;
     user: AuthUser;
     emailVerificationRequired: boolean;
+    emailDeliveryConfigured?: boolean;
     googleCalendarConnected?: boolean;
   }) => {
     const uid = String(params.user.id).trim();
@@ -294,6 +296,9 @@ export function App() {
     setToken(params.token);
     setUser(params.user);
     setEmailVerificationRequired(params.emailVerificationRequired);
+    if (typeof params.emailDeliveryConfigured === "boolean") {
+      setEmailDeliveryConfigured(params.emailDeliveryConfigured);
+    }
   };
 
   const handleUserChange = (nextUser: AuthUser) => {
@@ -315,6 +320,7 @@ export function App() {
     setToken("");
     setUser(null);
     setEmailVerificationRequired(false);
+    setEmailDeliveryConfigured(undefined);
     setAuthSyncReady(true);
     setShowCalendarOnboarding(false);
     setGoogleCalendarConnected(null);
@@ -416,6 +422,7 @@ export function App() {
               avatarUrl?: string | null;
             };
             emailVerificationRequired: boolean;
+            emailDeliveryConfigured?: boolean;
             googleCalendarConnected?: boolean;
           }>("/api/auth/me", token),
           rejectAfterMs(PRO_AUTH_ME_SYNC_TIMEOUT_MS, "Professional auth sync timed out waiting for API")
@@ -446,6 +453,9 @@ export function App() {
         setUser(nextUser);
         setEmailVerificationRequired(response.emailVerificationRequired);
         persistEmailVerificationRequired(response.emailVerificationRequired);
+        if (typeof response.emailDeliveryConfigured === "boolean") {
+          setEmailDeliveryConfigured(response.emailDeliveryConfigured);
+        }
 
         const calConnected =
           typeof response.googleCalendarConnected === "boolean" ? response.googleCalendarConnected : false;
@@ -859,7 +869,13 @@ export function App() {
   /** Antes de Calendar: verificación de email primero (evita que /verify-email-required quede tapada). */
   if (emailVerificationRequired && !user.emailVerified) {
     return (
-      <VerifyEmailRequiredScreen language={language} token={token} email={user.email} onLogout={handleLogout} />
+      <VerifyEmailRequiredScreen
+        language={language}
+        token={token}
+        email={user.email}
+        emailDeliveryConfigured={emailDeliveryConfigured}
+        onLogout={handleLogout}
+      />
     );
   }
 

@@ -8,6 +8,8 @@ import { findProfessionalById } from "../../app/lib/professionals";
 import { ProfessionalNameStack } from "../../app/components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
+import { ProfessionalReviewStarsRow } from "../../reviews/components/ProfessionalReviewStarsRow";
+import { resolveProfessionalDisplayRating } from "../../reviews/lib/professionalReviewsDisplay";
 import type { Booking, Professional } from "../../app/types";
 import {
   formatSessionCardDateTimeLine,
@@ -46,6 +48,25 @@ type UpcomingBookingItemProps = {
 
 function stopActivation(event: MouseEvent | KeyboardEvent) {
   event.stopPropagation();
+}
+
+function ProfessionalRatingCompact(props: {
+  professional: Professional;
+  className?: string;
+}) {
+  const reviewCount = props.professional.reviewsCount ?? 0;
+  const averageRating = props.professional.rating ?? null;
+  const displayRating = resolveProfessionalDisplayRating(averageRating, reviewCount);
+
+  return (
+    <span
+      className={`session-pro-rating-compact${props.className ? ` ${props.className}` : ""}`}
+      aria-label={`${displayRating.toFixed(1)} / 5`}
+    >
+      <ProfessionalReviewStarsRow averageRating={averageRating} reviewCount={reviewCount} size="md" />
+      <span className="session-pro-rating-compact-value">{displayRating.toFixed(1)}</span>
+    </span>
+  );
 }
 
 function ProfessionalNameLink(props: {
@@ -299,6 +320,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
               language={props.language}
               onOpenProfessionalReviews={props.onOpenProfessionalReviews}
             />
+            <ProfessionalRatingCompact professional={bookingProfessional} className="session-pro-rating-compact--table" />
           </div>
           <div className="session-management-cell session-management-cell-status">
             <span className="session-management-cell-label">{headLabels.status}</span>
@@ -376,6 +398,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                 onOpenProfessionalReviews={props.onOpenProfessionalReviews}
                 singleLine
               />
+              <ProfessionalRatingCompact professional={bookingProfessional} />
               <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
                 {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
               </span>
