@@ -35,6 +35,22 @@ function readProRememberFlag(): boolean {
   }
 }
 
+function useProAuthMobileCompact(): boolean {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 900px)").matches : false
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const onChange = () => setCompact(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return compact;
+}
+
 function persistProRemember(remember: boolean, emailLower: string): void {
   try {
     if (remember && emailLower) {
@@ -68,6 +84,7 @@ export function AuthScreen(props: {
   onCreateAccount?: () => void;
 }) {
   const navigate = useNavigate();
+  const isMobileCompact = useProAuthMobileCompact();
   const [mode, setMode] = useState<"login" | "register">(() =>
     props.initialMode === "register" ? "register" : "login"
   );
@@ -175,25 +192,47 @@ export function AuthScreen(props: {
     }
   };
 
+  const loginTitle = isMobileCompact
+    ? t(props.language, { es: "Accede a tu cuenta", en: "Sign in to your account", pt: "Acesse sua conta" })
+    : t(props.language, {
+        es: "Accede a tu cuenta profesional",
+        en: "Access your professional account",
+        pt: "Acesse sua conta profissional"
+      });
+
+  const loginLead = isMobileCompact
+    ? t(props.language, {
+        es: "Pacientes, agenda, disponibilidad.",
+        en: "Patients, schedule, availability.",
+        pt: "Pacientes, agenda, disponibilidade."
+      })
+    : t(props.language, {
+        es: "Pacientes, agenda, disponibilidad e ingresos en un solo lugar.",
+        en: "Patients, schedule, availability, and earnings in one place.",
+        pt: "Pacientes, agenda, disponibilidade e receitas em um so lugar."
+      });
+
   return (
-    <div className="pro-auth-shell">
+    <div className={`pro-auth-shell${isMobileCompact ? " pro-auth-shell--compact" : ""}`}>
       <section className="auth-card pro-auth-split-card">
-        <div className="auth-media">
-          <div className="visual-hero">
-            <img
-              src={props.heroImage}
-              alt={t(props.language, {
-                es: "Laptop frente al mar, trabajo remoto desde la costa",
-                en: "Laptop by the sea, remote work from the coast",
-                pt: "Notebook de frente para o mar, trabalho remoto na costa"
-              })}
-              loading="eager"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              onError={props.onHeroFallback}
-            />
+        {!isMobileCompact ? (
+          <div className="auth-media">
+            <div className="visual-hero">
+              <img
+                src={props.heroImage}
+                alt={t(props.language, {
+                  es: "Laptop frente al mar, trabajo remoto desde la costa",
+                  en: "Laptop by the sea, remote work from the coast",
+                  pt: "Notebook de frente para o mar, trabalho remoto na costa"
+                })}
+                loading="eager"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                onError={props.onHeroFallback}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
         <div className="auth-form-panel">
           <div className="auth-header-copy">
             <div className="auth-brand-mark">
@@ -205,14 +244,16 @@ export function AuthScreen(props: {
                 height={148}
               />
             </div>
-            <div className="pro-auth-head pro-auth-head--in-panel">
-              <span className="pro-chip">{t(props.language, { es: "Acceso profesional", en: "Professional access", pt: "Acesso profissional" })}</span>
-              {props.onBack ? (
-                <button className="pro-auth-back" type="button" onClick={props.onBack}>
-                  {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
-                </button>
-              ) : null}
-            </div>
+            {!isMobileCompact ? (
+              <div className="pro-auth-head pro-auth-head--in-panel">
+                <span className="pro-chip">{t(props.language, { es: "Acceso profesional", en: "Professional access", pt: "Acesso profissional" })}</span>
+                {props.onBack ? (
+                  <button className="pro-auth-back" type="button" onClick={props.onBack}>
+                    {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <h1>
               {mode === "register"
                 ? t(props.language, {
@@ -220,11 +261,7 @@ export function AuthScreen(props: {
                     en: "Create your professional account",
                     pt: "Crie sua conta profissional"
                   })
-                : t(props.language, {
-                    es: "Accede a tu cuenta profesional",
-                    en: "Access your professional account",
-                    pt: "Acesse sua conta profissional"
-                  })}
+                : loginTitle}
             </h1>
             <p className="auth-lead">
               {mode === "register"
@@ -233,21 +270,19 @@ export function AuthScreen(props: {
                     en: "Confirm your details to register. Then continue with email verification and your schedule.",
                     pt: "Confirme seus dados para registrar. Depois siga com a verificacao de e-mail e sua agenda."
                   })
-                : t(props.language, {
-                    es: "Pacientes, agenda, disponibilidad e ingresos en un solo lugar.",
-                    en: "Patients, schedule, availability, and earnings in one place.",
-                    pt: "Pacientes, agenda, disponibilidade e receitas em um so lugar."
-                  })}
+                : loginLead}
             </p>
           </div>
 
-          <div className="auth-divider" aria-hidden="true">
-            <span />
-            <span className="auth-divider-label">
-              {t(props.language, { es: "Continuar con email", en: "Continue with email", pt: "Continuar com email" })}
-            </span>
-            <span />
-          </div>
+          {!isMobileCompact ? (
+            <div className="auth-divider" aria-hidden="true">
+              <span />
+              <span className="auth-divider-label">
+                {t(props.language, { es: "Continuar con email", en: "Continue with email", pt: "Continuar com email" })}
+              </span>
+              <span />
+            </div>
+          ) : null}
 
           <form className="stack auth-form pro-auth-simple-form" onSubmit={handleSubmit}>
             {mode === "register" ? (

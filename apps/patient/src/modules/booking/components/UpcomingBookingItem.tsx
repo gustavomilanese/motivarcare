@@ -6,10 +6,11 @@ import {
 } from "@therapy/i18n-config";
 import { findProfessionalById } from "../../app/lib/professionals";
 import { ProfessionalNameStack } from "../../app/components/ProfessionalNameStack";
+import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
 import type { Booking, Professional } from "../../app/types";
 import {
-  formatSessionCardDateLine,
+  formatSessionCardDateTimeLine,
   formatSessionDateOnly,
   formatSessionTimeOnly
 } from "../lib/sessionDateFormat";
@@ -53,11 +54,20 @@ function ProfessionalNameLink(props: {
   className?: string;
   onOpenProfessionalReviews?: (professionalId: string) => void;
   professionalId: string;
+  singleLine?: boolean;
 }) {
+  const displayName = props.singleLine
+    ? professionalAccessibleName(props.professional)
+    : null;
+
   if (!props.onOpenProfessionalReviews) {
     return (
       <span className={props.className}>
-        <ProfessionalNameStack professional={props.professional} as="span" />
+        {displayName ? (
+          <span className="session-rn-name-line">{displayName}</span>
+        ) : (
+          <ProfessionalNameStack professional={props.professional} as="span" />
+        )}
       </span>
     );
   }
@@ -76,7 +86,11 @@ function ProfessionalNameLink(props: {
         props.onOpenProfessionalReviews?.(props.professionalId);
       }}
     >
-      <ProfessionalNameStack professional={props.professional} as="span" />
+      {displayName ? (
+        <span className="session-rn-name-line">{displayName}</span>
+      ) : (
+        <ProfessionalNameStack professional={props.professional} as="span" />
+      )}
     </button>
   );
 }
@@ -211,19 +225,50 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     "session-management-card",
     "session-management-card-clickable",
     props.layout === "card" ? "session-rn-card" : "",
+    props.layout === "card" && joinUrl ? "session-rn-card--joinable" : "",
     props.isEditing ? "editing" : "",
     isTrialBooking ? "session-rn-card--trial" : "",
-    props.isNextInList ? "session-rn-card--next" : ""
+    props.isNextInList ? "session-rn-card--next" : "",
+    props.joinTourPulse ? "patient-join-meet--pulse" : ""
   ]
     .filter(Boolean)
     .join(" ");
 
+  const activateCard = () => {
+    if (props.layout === "card" && joinUrl) {
+      window.open(joinUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    props.onOpenDetail();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      props.onOpenDetail();
+      activateCard();
     }
   };
+
+  const cardAriaLabel =
+    props.layout === "card" && joinUrl
+      ? textByLanguage(props.language, {
+          es: `Entrar a la sesión con ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+            isoDate: props.booking.startsAt,
+            timezone: props.timezone,
+            language: props.language
+          })}`,
+          en: `Join session with ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+            isoDate: props.booking.startsAt,
+            timezone: props.timezone,
+            language: props.language
+          })}`,
+          pt: `Entrar na sessão com ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+            isoDate: props.booking.startsAt,
+            timezone: props.timezone,
+            language: props.language
+          })}`
+        })
+      : undefined;
 
   if (props.layout === "table") {
     const headLabels = upcomingBookingsTableHeadLabels(props.language);
@@ -301,13 +346,12 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
       className={cardClassName}
       role="button"
       tabIndex={0}
-      onClick={props.onOpenDetail}
+      aria-label={cardAriaLabel}
+      data-tour={props.joinTourTarget && joinUrl ? "patient-join-first-meet" : undefined}
+      onClick={activateCard}
       onKeyDown={handleKeyDown}
     >
       <div className="session-rn-top">
-        <span className="session-rn-time" aria-hidden="true">
-          {formatSessionTimeOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}
-        </span>
         <img
           className="session-rn-avatar"
           src={proPhoto}
@@ -318,7 +362,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           <div className="session-rn-body-header">
             <div className="session-rn-body-main">
               <span className="session-rn-date-line">
-                {formatSessionCardDateLine({
+                {formatSessionCardDateTimeLine({
                   isoDate: props.booking.startsAt,
                   timezone: props.timezone,
                   language: props.language
@@ -330,6 +374,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                 professionalId={props.booking.professionalId}
                 language={props.language}
                 onOpenProfessionalReviews={props.onOpenProfessionalReviews}
+                singleLine
               />
               <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
                 {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
@@ -346,20 +391,9 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
         </div>
       </div>
-      <div className="session-rn-footer">
-        {!isTrialBooking ? (
-          <SessionJoinLink joinUrl={joinUrl} language={props.language} layout="card" />
-        ) : (
-          <>
-            <SessionJoinLink joinUrl={joinUrl} language={props.language} layout="card" />
-            <SessionViewDetailButton
-              language={props.language}
-              layout="card"
-              onOpenDetail={props.onOpenDetail}
-            />
-          </>
-        )}
-      </div>
+      {!joinUrl && props.layout === "card" ? (
+        <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p>
+      ) : null}
     </article>
   );
 }

@@ -396,6 +396,39 @@ ul {
   .pro-auth-shell .auth-form-panel {
     padding: 24px 22px 22px;
   }
+
+  .pro-auth-shell.pro-auth-shell--compact {
+    padding-top: max(12px, var(--safe-top));
+    padding-bottom: max(16px, var(--safe-bottom));
+    align-content: start;
+  }
+
+  .pro-auth-shell.pro-auth-shell--compact .auth-card.pro-auth-split-card {
+    width: 100%;
+    border-radius: 20px;
+    box-shadow:
+      0 16px 36px rgba(15, 23, 42, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  }
+
+  .pro-auth-shell.pro-auth-shell--compact .auth-form-panel {
+    padding: 20px 18px 18px;
+    gap: 16px;
+  }
+
+  .pro-auth-shell.pro-auth-shell--compact .auth-header-copy {
+    gap: 14px;
+  }
+
+  .pro-auth-shell.pro-auth-shell--compact .auth-header-copy h1 {
+    font-size: 26px;
+  }
+
+  .pro-auth-shell.pro-auth-shell--compact .auth-lead {
+    font-size: 15px;
+    line-height: 1.35;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 680px) {

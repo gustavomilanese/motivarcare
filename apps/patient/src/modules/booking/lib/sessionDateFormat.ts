@@ -40,3 +40,10 @@ export function formatSessionCardDateLine(params: SessionDateParams): string {
     }
   });
 }
+
+/** Día + hora en una línea para cards mobile (ej. «Mié, 24 de junio, 9:00 a. m.»). */
+export function formatSessionCardDateTimeLine(params: SessionDateParams): string {
+  const datePart = formatSessionCardDateLine(params);
+  const timePart = formatSessionTimeOnly(params);
+  return `${datePart}, ${timePart}`;
+}

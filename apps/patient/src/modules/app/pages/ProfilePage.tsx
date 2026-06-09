@@ -499,6 +499,34 @@ export function ProfilePage(props: {
                 pt: "Defina como deseja receber notificacoes da plataforma."
               })}
             </p>
+            <div className="profile-settings-stack">
+              <label className="inline-toggle">
+                <input
+                  checked={localProfile.notificationsEmail}
+                  type="checkbox"
+                  onChange={(event) =>
+                    setLocalProfile((current) => ({
+                      ...current,
+                      notificationsEmail: event.target.checked
+                    }))
+                  }
+                />
+                {t(props.language, { es: "Notificaciones por email", en: "Email notifications", pt: "Notificacoes por email" })}
+              </label>
+              <label className="inline-toggle">
+                <input
+                  checked={localProfile.notificationsReminder}
+                  type="checkbox"
+                  onChange={(event) =>
+                    setLocalProfile((current) => ({
+                      ...current,
+                      notificationsReminder: event.target.checked
+                    }))
+                  }
+                />
+                {t(props.language, { es: "Recordatorios de sesión", en: "Session reminders", pt: "Lembretes de sessão" })}
+              </label>
+            </div>
             <div id="profile-notifications-panel" className="profile-settings-stack profile-notification-kinds">
               <strong>
                 {t(props.language, {
@@ -536,34 +564,6 @@ export function ProfilePage(props: {
                   {kindLabel(props.language, kind)}
                 </label>
               ))}
-            </div>
-            <div className="profile-settings-stack">
-              <label className="inline-toggle">
-                <input
-                  checked={localProfile.notificationsEmail}
-                  type="checkbox"
-                  onChange={(event) =>
-                    setLocalProfile((current) => ({
-                      ...current,
-                      notificationsEmail: event.target.checked
-                    }))
-                  }
-                />
-                {t(props.language, { es: "Notificaciones por email", en: "Email notifications", pt: "Notificacoes por email" })}
-              </label>
-              <label className="inline-toggle">
-                <input
-                  checked={localProfile.notificationsReminder}
-                  type="checkbox"
-                  onChange={(event) =>
-                    setLocalProfile((current) => ({
-                      ...current,
-                      notificationsReminder: event.target.checked
-                    }))
-                  }
-                />
-                {t(props.language, { es: "Recordatorios de sesión", en: "Session reminders", pt: "Lembretes de sessão" })}
-              </label>
             </div>
             <div className="profile-settings-stack">
               <strong>{t(props.language, { es: "Google Calendar", en: "Google Calendar", pt: "Google Calendar" })}</strong>

@@ -213,9 +213,9 @@ function buildDashboardTourSteps(
             pt: "Entrar na sessao (Meet)"
           }),
           description: t(language, {
-            es: "Tocá <strong>Entrar a la sesión</strong> cuando llegue el horario. Se abre Google Meet en una pestaña nueva.",
-            en: "Tap <strong>Join session</strong> when it is time. Google Meet opens in a new tab.",
-            pt: "Toque <strong>Entrar na sessao</strong> na hora. O Google Meet abre numa nova aba."
+            es: "Tocá la reserva cuando llegue el horario para entrar. Se abre Google Meet en una pestaña nueva.",
+            en: "Tap the booking when it is time to join. Google Meet opens in a new tab.",
+            pt: "Toque a reserva na hora para entrar. O Google Meet abre numa nova aba."
           }),
           side: "bottom",
           align: "center"
