@@ -39,8 +39,7 @@ import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
-import { ProfessionalReviewsSection } from "../../reviews/components/ProfessionalReviewsSection";
-import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
+import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import type {
   Booking,
@@ -158,6 +157,7 @@ export function BookingPage(props: {
   const [bookingActionError, setBookingActionError] = useState("");
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
   const [assignProfessionalModalOpen, setAssignProfessionalModalOpen] = useState(false);
+  const [reviewsModalProfessionalId, setReviewsModalProfessionalId] = useState<string | null>(null);
   const [packagePaymentSuccess, setPackagePaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const [individualPaymentSuccess, setIndividualPaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
@@ -193,6 +193,17 @@ export function BookingPage(props: {
   const professional = pricingProfessionalId
     ? findProfessionalById(pricingProfessionalId, props.professionals)
     : findProfessionalById(effectiveProfessionalId, props.professionals);
+
+  const reviewsModalProfessional = useMemo(() => {
+    if (!reviewsModalProfessionalId) {
+      return null;
+    }
+    return findProfessionalById(reviewsModalProfessionalId, props.professionals);
+  }, [reviewsModalProfessionalId, props.professionals]);
+
+  const openProfessionalReviews = useCallback((professionalId: string) => {
+    setReviewsModalProfessionalId(professionalId);
+  }, []);
 
   const upcomingRegularBookings = upcomingConfirmedBookings
     .filter((booking) => booking.bookingMode !== "trial");
@@ -1202,6 +1213,7 @@ export function BookingPage(props: {
                   );
                   setPanelMode("reschedule");
                 }}
+                onOpenProfessionalReviews={openProfessionalReviews}
               />
             </div>
           </div>
@@ -1321,7 +1333,13 @@ export function BookingPage(props: {
                   <li key={booking.id}>
                     <div>
                       <strong>{formatDateTime({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
-                      <span>{professionalAccessibleName(bookingProfessional)}</span>
+                      <button
+                        type="button"
+                        className="professional-name-link session-history-professional-link"
+                        onClick={() => openProfessionalReviews(booking.professionalId)}
+                      >
+                        {professionalAccessibleName(bookingProfessional)}
+                      </button>
                     </div>
                     <span className={`session-status-pill ${booking.status}`}>{statusLabel}</span>
                   </li>
@@ -1331,15 +1349,6 @@ export function BookingPage(props: {
           )
         ) : null}
       </section>
-
-      {hasPricingProfessional ? (
-        <ProfessionalReviewsSection
-          language={props.language}
-          professionalId={professional.id}
-          fallbackRating={professional.rating ?? null}
-          fallbackReviewCount={professional.reviewsCount ?? 0}
-        />
-      ) : null}
 
       <section ref={calendarSectionRef} className="sessions-calendar-collapsible sessions-secondary-section sessions-booking-calendar-tail">
         <button
@@ -1366,6 +1375,24 @@ export function BookingPage(props: {
         ) : null}
       </section>
       </div>
+
+      <ProfessionalReviewsModal
+        open={reviewsModalProfessional != null}
+        language={props.language}
+        professional={
+          reviewsModalProfessional
+            ? {
+                id: reviewsModalProfessional.id,
+                fullName: reviewsModalProfessional.fullName,
+                firstName: reviewsModalProfessional.firstName,
+                lastName: reviewsModalProfessional.lastName,
+                rating: reviewsModalProfessional.rating ?? null,
+                reviewsCount: reviewsModalProfessional.reviewsCount ?? 0
+              }
+            : null
+        }
+        onClose={() => setReviewsModalProfessionalId(null)}
+      />
 
       <BookingActionModal
         panelMode={panelMode}

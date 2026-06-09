@@ -1,7 +1,10 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
-import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
+import { professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
+import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
+import { ProfessionalReviewStarsRow } from "../../reviews/components/ProfessionalReviewStarsRow";
+import { resolveProfessionalDisplayRating } from "../../reviews/lib/professionalReviewsDisplay";
 import type { Booking } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -59,8 +62,11 @@ export function SessionDetailModal(props: {
     title: string;
     approach: string;
     photoUrl?: string;
+    rating?: number | null;
+    reviewsCount?: number;
   };
   onClose: () => void;
+  onOpenProfessionalReviews?: () => void;
   onImageFallback?: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -71,6 +77,10 @@ export function SessionDetailModal(props: {
     Boolean(joinUrl)
     && !isGoogleMeet
     && (/\bdaily\.co\b/i.test(joinUrl) || /\bvideo\.therapy\.local\b/i.test(joinUrl));
+  const reviewCount = props.professional.reviewsCount ?? 0;
+  const averageRating = props.professional.rating ?? null;
+  const displayRating = resolveProfessionalDisplayRating(averageRating, reviewCount);
+  const professionalName = professionalAccessibleName(props.professional);
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -134,11 +144,42 @@ export function SessionDetailModal(props: {
               alt={professionalPhotoAlt(props.professional)}
               onError={props.onImageFallback}
             />
-            <div>
-              <h3>
-                <ProfessionalNameStack professional={props.professional} as="span" />
-              </h3>
-              <p>{props.professional.title}</p>
+            <div className="session-detail-pro-copy">
+              {props.onOpenProfessionalReviews ? (
+                <button
+                  type="button"
+                  className="session-detail-pro-reviews-trigger"
+                  aria-label={t(props.language, {
+                    es: `Ver opiniones de ${professionalName}`,
+                    en: `View reviews for ${professionalName}`,
+                    pt: `Ver avaliações de ${professionalName}`
+                  })}
+                  onClick={props.onOpenProfessionalReviews}
+                >
+                  <span className="session-detail-pro-name">{professionalName}</span>
+                  <span className="session-detail-pro-rating">
+                    <ProfessionalReviewStarsRow
+                      averageRating={averageRating}
+                      reviewCount={reviewCount}
+                      size="md"
+                    />
+                    <span className="session-detail-pro-rating-value">{displayRating.toFixed(1)}</span>
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <p className="session-detail-pro-name">{professionalName}</p>
+                  <span className="session-detail-pro-rating session-detail-pro-rating--static">
+                    <ProfessionalReviewStarsRow
+                      averageRating={averageRating}
+                      reviewCount={reviewCount}
+                      size="md"
+                    />
+                    <span className="session-detail-pro-rating-value">{displayRating.toFixed(1)}</span>
+                  </span>
+                </>
+              )}
+              <p className="session-detail-pro-title">{props.professional.title}</p>
             </div>
           </div>
         </section>

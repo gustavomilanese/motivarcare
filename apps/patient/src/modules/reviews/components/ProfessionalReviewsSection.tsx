@@ -1,26 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { useProfessionalReviews } from "../hooks/useProfessionalReviews";
 import {
-  type AppLanguage,
-  type LocalizedText,
-  textByLanguage
-} from "@therapy/i18n-config";
-import type { ProfessionalReviewPublicItem, ProfessionalReviewStats } from "@therapy/types";
-import { fetchProfessionalReviews } from "../services/professionalReviewsApi";
+  buildProfessionalReviewsSummaryLabel,
+  formatProfessionalReviewDate,
+  renderProfessionalReviewStars
+} from "../lib/professionalReviewsDisplay";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function formatReviewDate(language: AppLanguage, isoDate: string): string {
-  return new Intl.DateTimeFormat(language === "es" ? "es-AR" : language === "pt" ? "pt-BR" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(isoDate));
-}
-
-function renderStars(rating: number): string {
-  return "★".repeat(Math.max(0, Math.min(5, rating))) + "☆".repeat(Math.max(0, 5 - Math.min(5, rating)));
 }
 
 export function ProfessionalReviewsSection(props: {
@@ -29,56 +17,15 @@ export function ProfessionalReviewsSection(props: {
   fallbackRating?: number | null;
   fallbackReviewCount?: number;
 }) {
-  const [reviews, setReviews] = useState<ProfessionalReviewPublicItem[]>([]);
-  const [stats, setStats] = useState<ProfessionalReviewStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(false);
-    void fetchProfessionalReviews(props.professionalId, { limit: 6 })
-      .then((response) => {
-        if (!active) {
-          return;
-        }
-        setReviews(response.reviews ?? []);
-        setStats(response.stats ?? null);
-      })
-      .catch(() => {
-        if (active) {
-          setError(true);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [props.professionalId]);
+  const { reviews, stats, loading, error } = useProfessionalReviews(props.professionalId, { limit: 6 });
 
   const averageRating = stats?.averageRating ?? props.fallbackRating ?? null;
   const reviewCount = stats?.reviewCount ?? props.fallbackReviewCount ?? 0;
 
-  const summaryLabel = useMemo(() => {
-    if (averageRating == null || reviewCount <= 0) {
-      return t(props.language, {
-        es: "Sin opiniones todavía",
-        en: "No reviews yet",
-        pt: "Sem avaliações ainda"
-      });
-    }
-    const reviewsWord =
-      reviewCount === 1
-        ? t(props.language, { es: "opinión", en: "review", pt: "avaliação" })
-        : t(props.language, { es: "opiniones", en: "reviews", pt: "avaliações" });
-    return `${averageRating.toFixed(1)} · ${reviewCount} ${reviewsWord}`;
-  }, [averageRating, props.language, reviewCount]);
+  const summaryLabel = useMemo(
+    () => buildProfessionalReviewsSummaryLabel(props.language, averageRating, reviewCount),
+    [averageRating, props.language, reviewCount]
+  );
 
   if (loading) {
     return (
@@ -98,7 +45,7 @@ export function ProfessionalReviewsSection(props: {
         <h2>{t(props.language, { es: "Opiniones", en: "Reviews", pt: "Avaliações" })}</h2>
         <p className="professional-reviews-summary">
           <span className="professional-reviews-summary-stars" aria-hidden="true">
-            {averageRating != null ? renderStars(Math.round(averageRating)) : "—"}
+            {averageRating != null ? renderProfessionalReviewStars(Math.round(averageRating)) : "—"}
           </span>
           <span>{summaryLabel}</span>
         </p>
@@ -119,11 +66,11 @@ export function ProfessionalReviewsSection(props: {
               <div className="professional-review-item-head">
                 <strong>{review.patientLabel}</strong>
                 <span className="professional-review-item-stars" aria-label={`${review.rating} / 5`}>
-                  {renderStars(review.rating)}
+                  {renderProfessionalReviewStars(review.rating)}
                 </span>
               </div>
               {review.comment ? <p>{review.comment}</p> : null}
-              <small>{formatReviewDate(props.language, review.createdAt)}</small>
+              <small>{formatProfessionalReviewDate(props.language, review.createdAt)}</small>
             </li>
           ))}
         </ul>

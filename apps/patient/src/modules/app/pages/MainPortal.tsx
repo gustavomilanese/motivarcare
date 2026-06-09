@@ -21,6 +21,7 @@ import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 import { ProfessionalReviewModal } from "../../reviews/components/ProfessionalReviewModal";
+import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { usePendingProfessionalReview } from "../../reviews/hooks/usePendingProfessionalReview";
 import { apiRequest, resolvePublicAssetUrl } from "../services/api";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
@@ -93,6 +94,7 @@ export function MainPortal(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [browseReviewsProfessionalId, setBrowseReviewsProfessionalId] = useState<string | null>(null);
   const {
     pending: pendingProfessionalReview,
     modalOpen: reviewModalOpen,
@@ -241,6 +243,18 @@ export function MainPortal(props: {
   const selectedBooking = selectedBookingId
     ? props.state.bookings.find((booking) => booking.id === selectedBookingId) ?? null
     : null;
+  const sessionDetailProfessional = useMemo(() => {
+    if (!selectedBooking) {
+      return null;
+    }
+    return findProfessionalById(selectedBooking.professionalId, props.professionalDirectory);
+  }, [selectedBooking, props.professionalDirectory]);
+  const browseReviewsProfessional = useMemo(() => {
+    if (!browseReviewsProfessionalId) {
+      return null;
+    }
+    return findProfessionalById(browseReviewsProfessionalId, props.professionalDirectory);
+  }, [browseReviewsProfessionalId, props.professionalDirectory]);
   const languageChoices: LanguageChoice[] = [
     { value: "es", nativeLabel: "Espanol", englishLabel: "Spanish" },
     { value: "en", nativeLabel: "English", englishLabel: "English" },
@@ -394,19 +408,37 @@ export function MainPortal(props: {
         />
       ) : null}
       </DiaryPortalToolbarMountProvider>
-      {selectedBooking ? (
+      {selectedBooking && sessionDetailProfessional ? (
         <SessionDetailModal
           booking={selectedBooking}
           timezone={props.sessionTimezone}
           language={props.state.language}
           professional={{
-            ...findProfessionalById(selectedBooking.professionalId, props.professionalDirectory),
+            ...sessionDetailProfessional,
             photoUrl: props.professionalPhotoMap[selectedBooking.professionalId]
           }}
           onClose={() => setSelectedBookingId("")}
+          onOpenProfessionalReviews={() => setBrowseReviewsProfessionalId(selectedBooking.professionalId)}
           onImageFallback={handleImageFallback}
         />
       ) : null}
+      <ProfessionalReviewsModal
+        open={browseReviewsProfessional != null}
+        language={props.state.language}
+        professional={
+          browseReviewsProfessional
+            ? {
+                id: browseReviewsProfessional.id,
+                fullName: browseReviewsProfessional.fullName,
+                firstName: browseReviewsProfessional.firstName,
+                lastName: browseReviewsProfessional.lastName,
+                rating: browseReviewsProfessional.rating ?? null,
+                reviewsCount: browseReviewsProfessional.reviewsCount ?? 0
+              }
+            : null
+        }
+        onClose={() => setBrowseReviewsProfessionalId(null)}
+      />
       <ProfessionalReviewModal
         open={reviewModalOpen}
         language={props.state.language}

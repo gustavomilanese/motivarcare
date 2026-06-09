@@ -3747,6 +3747,48 @@ button.danger {
   text-align: inherit;
 }
 
+.professional-name-link {
+  display: inline-flex;
+  align-items: baseline;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.professional-name-link .professional-name-line1 {
+  transition: color 0.14s ease, text-decoration-color 0.14s ease;
+}
+
+.professional-name-link:hover .professional-name-line1,
+.professional-name-link:focus-visible .professional-name-line1 {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.professional-name-link:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.session-management-professional-link,
+.session-rn-name.professional-name-link {
+  font-weight: 600;
+}
+
+.session-history-professional-link {
+  display: inline;
+  font-size: inherit;
+  font-weight: 500;
+  color: #475569;
+}
+
 .professional-name-stack .professional-name-line1 {
   display: block;
 }
@@ -5423,15 +5465,66 @@ button.danger {
   gap: 10px;
 }
 
-.session-detail-pro h3 {
-  margin: 0;
-  font-size: clamp(20px, 2.3vw, 25px);
-  line-height: 1;
-  letter-spacing: -0.015em;
+.session-detail-pro-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
-.session-detail-pro p {
-  margin: 3px 0 0;
+.session-detail-pro-name {
+  margin: 0;
+  font-size: clamp(18px, 2.1vw, 22px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: #1a263d;
+}
+
+.session-detail-pro-reviews-trigger {
+  display: grid;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.session-detail-pro-reviews-trigger:hover .session-detail-pro-name,
+.session-detail-pro-reviews-trigger:focus-visible .session-detail-pro-name {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.session-detail-pro-reviews-trigger:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.session-detail-pro-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-detail-pro-rating--static {
+  display: inline-flex;
+}
+
+.session-detail-pro-rating-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-detail-pro-title {
+  margin: 0;
   color: #5d6c85;
   font-size: 13px;
 }
@@ -17379,6 +17472,100 @@ body.driver-active .driver-overlay {
 
 .professional-review-error {
   margin-top: 8px;
+}
+
+.professional-reviews-modal {
+  width: min(520px, calc(100vw - 28px));
+  max-height: min(82vh, 680px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.professional-reviews-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e8ecf4;
+}
+
+.professional-reviews-modal-head-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.professional-reviews-modal-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.professional-reviews-modal-head h3.professional-reviews-modal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #1a263d;
+}
+
+.professional-reviews-modal-rating-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 10px;
+}
+
+.professional-reviews-modal-rating-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a263d;
+  font-variant-numeric: tabular-nums;
+}
+
+.professional-reviews-modal-rating-meta {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.professional-review-stars-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+}
+
+.professional-review-stars-row--md .professional-review-stars-row-star {
+  font-size: 0.95rem;
+}
+
+.professional-review-stars-row--lg .professional-review-stars-row-star {
+  font-size: 1.2rem;
+}
+
+.professional-review-stars-row-star {
+  color: #e2e8f0;
+}
+
+.professional-review-stars-row-star.filled {
+  color: #f59e0b;
+}
+
+.professional-reviews-modal-body {
+  overflow-y: auto;
+  padding: 4px 0 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.professional-reviews-modal-status {
+  margin: 16px 0 8px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .professional-reviews-section {

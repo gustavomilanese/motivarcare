@@ -18,6 +18,7 @@ type UpcomingBookingsListProps = {
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onReschedule: (booking: Booking) => void;
+  onOpenProfessionalReviews?: (professionalId: string) => void;
   editingBookingId?: string | null;
   firstMeetBookingId?: string | null;
   joinTourPulse?: boolean;
@@ -65,6 +66,7 @@ export function UpcomingBookingsList(props: UpcomingBookingsListProps) {
             onImageFallback={props.onImageFallback}
             onOpenDetail={() => props.onOpenBookingDetail(booking.id)}
             onReschedule={() => props.onReschedule(booking)}
+            onOpenProfessionalReviews={props.onOpenProfessionalReviews}
             isEditing={props.editingBookingId === booking.id}
             isNextInList={props.layout === "card" && index === 0}
             joinTourTarget={joinTourTarget}

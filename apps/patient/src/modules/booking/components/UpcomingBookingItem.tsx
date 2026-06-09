@@ -1,5 +1,5 @@
 import { type KeyboardEvent, type MouseEvent, type SyntheticEvent } from "react";
-import { type AppLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, textByLanguage } from "@therapy/i18n-config";
 import {
   bookingJoinUrl,
   canPatientRescheduleBooking
@@ -36,6 +36,7 @@ type UpcomingBookingItemProps = {
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onOpenDetail: () => void;
   onReschedule: () => void;
+  onOpenProfessionalReviews?: (professionalId: string) => void;
   isEditing?: boolean;
   isNextInList?: boolean;
   joinTourTarget?: boolean;
@@ -44,6 +45,40 @@ type UpcomingBookingItemProps = {
 
 function stopActivation(event: MouseEvent | KeyboardEvent) {
   event.stopPropagation();
+}
+
+function ProfessionalNameLink(props: {
+  professional: Parameters<typeof ProfessionalNameStack>[0]["professional"];
+  language: AppLanguage;
+  className?: string;
+  onOpenProfessionalReviews?: (professionalId: string) => void;
+  professionalId: string;
+}) {
+  if (!props.onOpenProfessionalReviews) {
+    return (
+      <span className={props.className}>
+        <ProfessionalNameStack professional={props.professional} as="span" />
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`professional-name-link${props.className ? ` ${props.className}` : ""}`}
+      aria-label={textByLanguage(props.language, {
+        es: "Ver opiniones del profesional",
+        en: "View therapist reviews",
+        pt: "Ver avaliações do profissional"
+      })}
+      onClick={(event) => {
+        stopActivation(event);
+        props.onOpenProfessionalReviews?.(props.professionalId);
+      }}
+    >
+      <ProfessionalNameStack professional={props.professional} as="span" />
+    </button>
+  );
 }
 
 function SessionJoinLink(props: {
@@ -212,9 +247,13 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
           <div className="session-management-cell session-management-meta">
             <span className="session-management-cell-label">{headLabels.professional}</span>
-            <strong>
-              <ProfessionalNameStack professional={bookingProfessional} as="span" />
-            </strong>
+            <ProfessionalNameLink
+              className="session-management-professional-link"
+              professional={bookingProfessional}
+              professionalId={props.booking.professionalId}
+              language={props.language}
+              onOpenProfessionalReviews={props.onOpenProfessionalReviews}
+            />
           </div>
           <div className="session-management-cell session-management-cell-status">
             <span className="session-management-cell-label">{headLabels.status}</span>
@@ -285,9 +324,13 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                   language: props.language
                 })}
               </span>
-              <strong className="session-rn-name">
-                <ProfessionalNameStack professional={bookingProfessional} as="span" />
-              </strong>
+              <ProfessionalNameLink
+                className="session-rn-name"
+                professional={bookingProfessional}
+                professionalId={props.booking.professionalId}
+                language={props.language}
+                onOpenProfessionalReviews={props.onOpenProfessionalReviews}
+              />
               <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
                 {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
               </span>
