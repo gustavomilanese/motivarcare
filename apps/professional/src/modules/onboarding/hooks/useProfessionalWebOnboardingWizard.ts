@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { detectBrowserTimezone } from "@therapy/auth";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { resendVerificationEmail as requestVerificationEmailResend } from "../../app/lib/ensureVerificationEmailSent";
 import {
   professionalAuthSurfaceMessage,
   professionalSurfaceMessage
@@ -645,6 +646,9 @@ export function useProfessionalWebOnboardingWizard(input: {
           };
           setWebOnboardingSession(session);
           if (response.emailVerificationRequired && !response.user.emailVerified) {
+            if (!response.verificationEmailSent) {
+              await requestVerificationEmailResend(session.token);
+            }
             input.onAfterRegisterPendingAuth?.({
               token: session.token,
               emailVerificationRequired: session.emailVerificationRequired,

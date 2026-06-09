@@ -13,10 +13,10 @@ import { env } from "../../config/env.js";
 import {
   consumeEmailVerificationToken,
   createEmailVerificationToken,
+  dispatchEmailVerificationForUser,
   EMAIL_VERIFICATION_TOKEN_TYPE,
   isEmailVerificationRequiredForRole,
-  isEmailVerificationSupportedRole,
-  sendEmailVerificationEmail
+  isEmailVerificationSupportedRole
 } from "./emailVerification.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 import { verifyTurnstileResponse } from "../../lib/turnstile.js";
@@ -68,7 +68,8 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   /** Opcional: si el paciente elige país en el login, actualizamos `PatientProfile`. */
-  residencyCountry: residencyCountryIso2Schema.optional()
+  residencyCountry: residencyCountryIso2Schema.optional(),
+  turnstileToken: z.string().trim().max(4096).optional()
 });
 
 const forgotPasswordSchema = z.object({
@@ -616,19 +617,25 @@ authRouter.post("/register", async (req, res) => {
     && !resolvedUser.emailVerified
   ) {
     try {
-      const verificationToken = await createEmailVerificationToken({
+      const deliveryResult = await dispatchEmailVerificationForUser({
         userId: resolvedUser.id,
-        replaceExisting: true
-      });
-
-      const deliveryResult = await sendEmailVerificationEmail({
         fullName: resolvedUser.fullName,
         email: resolvedUser.email,
-        role: resolvedUser.role,
-        token: verificationToken.token
+        role: resolvedUser.role
       });
-
       verificationEmailSent = deliveryResult.delivered;
+      if (!deliveryResult.delivered) {
+        console.warn(
+          JSON.stringify({
+            level: "warn",
+            event: "email_verification_not_delivered_on_register",
+            userId: resolvedUser.id,
+            role: resolvedUser.role,
+            email: resolvedUser.email,
+            timestamp: new Date().toISOString()
+          })
+        );
+      }
     } catch (verificationError) {
       console.error("Could not send email verification link", verificationError);
     }
@@ -1074,6 +1081,41 @@ authRouter.post("/login", async (req, res) => {
       return res.status(403).json({ error: "User account is disabled" });
     }
 
+    const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
+    if (turnstileSecret && user.role === "PROFESSIONAL") {
+      const turnstileToken = (parsed.data.turnstileToken ?? "").trim();
+      if (!turnstileToken) {
+        writeSecurityAuditLog({
+          category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_TURNSTILE_MISSING,
+          message: "Turnstile token missing on professional login",
+          ip: requestIp,
+          userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+          metadata: { emailMask: maskEmailHint(email) }
+        });
+        return res.status(400).json({ error: "Security verification required" });
+      }
+      const turnstileOk = await verifyTurnstileResponse({
+        secret: turnstileSecret,
+        token: turnstileToken,
+        remoteip:
+          typeof req.headers["cf-connecting-ip"] === "string" && req.headers["cf-connecting-ip"].trim()
+            ? req.headers["cf-connecting-ip"].trim()
+            : typeof req.ip === "string"
+              ? req.ip
+              : undefined
+      });
+      if (!turnstileOk) {
+        writeSecurityAuditLog({
+          category: SECURITY_AUDIT_CATEGORY.AUTH_LOGIN_TURNSTILE_FAILED,
+          message: "Turnstile verification failed on professional login",
+          ip: requestIp,
+          userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+          metadata: { emailMask: maskEmailHint(email) }
+        });
+        return res.status(400).json({ error: "Security verification failed" });
+      }
+    }
+
     if (user.role === "PATIENT") {
       await maybeApplyStagingReviewerPatientPrep({
         id: user.id,
@@ -1111,6 +1153,25 @@ authRouter.post("/login", async (req, res) => {
       select: { id: true }
     });
 
+    let verificationEmailSent = false;
+    if (
+      isEmailVerificationSupportedRole(loginResponseUser.role)
+      && isEmailVerificationRequiredForRole(loginResponseUser.role)
+      && !loginResponseUser.emailVerified
+    ) {
+      try {
+        const deliveryResult = await dispatchEmailVerificationForUser({
+          userId: loginResponseUser.id,
+          fullName: loginResponseUser.fullName,
+          email: loginResponseUser.email,
+          role: loginResponseUser.role
+        });
+        verificationEmailSent = deliveryResult.delivered;
+      } catch (verificationError) {
+        console.error("Could not send email verification link on login", verificationError);
+      }
+    }
+
     if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
       await prisma.patientProfile.update({
         where: { id: user.patient.id },
@@ -1126,7 +1187,8 @@ authRouter.post("/login", async (req, res) => {
       token,
       user: shapeUserResponse(loginResponseUser),
       ...authResponseMeta(user.role),
-      googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin)
+      googleCalendarConnected: Boolean(googleCalendarConnectionAtLogin),
+      ...(verificationEmailSent ? { verificationEmailSent: true } : {})
     });
   } catch (err) {
     console.error("[api] POST /auth/login failed", err);
@@ -1387,18 +1449,13 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
     });
   }
 
-  const verificationToken = await createEmailVerificationToken({
-    userId: user.id,
-    replaceExisting: true
-  });
-
-  let deliveryResult: Awaited<ReturnType<typeof sendEmailVerificationEmail>>;
+  let deliveryResult: Awaited<ReturnType<typeof dispatchEmailVerificationForUser>>;
   try {
-    deliveryResult = await sendEmailVerificationEmail({
+    deliveryResult = await dispatchEmailVerificationForUser({
+      userId: user.id,
       fullName: user.fullName,
       email: user.email,
-      role: user.role,
-      token: verificationToken.token
+      role: user.role
     });
   } catch (sendError) {
     console.error("Could not send email verification link", sendError);
@@ -1420,9 +1477,18 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
     });
   }
 
+  const storedToken = await prisma.verificationToken.findFirst({
+    where: {
+      userId: user.id,
+      type: EMAIL_VERIFICATION_TOKEN_TYPE
+    },
+    orderBy: { expiresAt: "desc" },
+    select: { expiresAt: true }
+  });
+
   return res.json({
     message: "Verification email sent",
-    expiresAt: verificationToken.expiresAt.toISOString(),
+    expiresAt: storedToken?.expiresAt.toISOString() ?? new Date(Date.now() + env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS * 60 * 60 * 1000).toISOString(),
     user: shapeUserResponse(user),
     ...authResponseMeta(user.role)
   });

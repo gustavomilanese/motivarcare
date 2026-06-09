@@ -60,14 +60,38 @@ function stripTrailingSlash(url: string): string {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
+/** Dominios públicos en producción cuando `*_APP_URL` sigue apuntando a localhost. */
+const PRODUCTION_CANONICAL_APP_URLS: Partial<Record<Role, string>> = {
+  PATIENT: "https://app.motivarcare.com",
+  PROFESSIONAL: "https://pro.motivarcare.com",
+  ADMIN: "https://admin.motivarcare.com"
+};
+
+function resolveRoleAppBaseUrl(role: Role, configuredUrl: string): string {
+  const trimmed = stripTrailingSlash(configuredUrl);
+  const canonical = PRODUCTION_CANONICAL_APP_URLS[role];
+  if (env.NODE_ENV !== "production" || !canonical) {
+    return trimmed;
+  }
+  try {
+    const host = new URL(trimmed).hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return canonical;
+    }
+  } catch {
+    return canonical;
+  }
+  return trimmed;
+}
+
 function getVerificationBaseUrl(role: Role): string {
   if (role === "PROFESSIONAL") {
-    return stripTrailingSlash(env.PROFESSIONAL_APP_URL);
+    return resolveRoleAppBaseUrl(role, env.PROFESSIONAL_APP_URL);
   }
   if (role === "ADMIN") {
-    return stripTrailingSlash(env.ADMIN_APP_URL);
+    return resolveRoleAppBaseUrl(role, env.ADMIN_APP_URL);
   }
-  return stripTrailingSlash(env.PATIENT_APP_URL);
+  return resolveRoleAppBaseUrl(role, env.PATIENT_APP_URL);
 }
 
 export function buildEmailVerificationLink(params: { role: Role; token: string }): string {
@@ -115,6 +139,28 @@ export async function createEmailVerificationToken(params: { userId: string; rep
   };
 }
 
+export async function dispatchEmailVerificationForUser(params: {
+  userId: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  replaceExisting?: boolean;
+}): Promise<{ delivered: boolean; link?: string }> {
+  const verificationToken = await createEmailVerificationToken({
+    userId: params.userId,
+    replaceExisting: params.replaceExisting ?? true
+  });
+
+  const deliveryResult = await sendEmailVerificationEmail({
+    fullName: params.fullName,
+    email: params.email,
+    role: params.role,
+    token: verificationToken.token
+  });
+
+  return deliveryResult;
+}
+
 export async function sendEmailVerificationEmail(params: {
   fullName: string;
   email: string;
@@ -148,6 +194,23 @@ export async function sendEmailVerificationEmail(params: {
         ttlHours: env.EMAIL_VERIFICATION_TOKEN_TTL_HOURS
       })
     });
+
+    console.log(
+      JSON.stringify({
+        level: "info",
+        event: "email_verification_sent",
+        email: params.email,
+        role: params.role,
+        linkHost: (() => {
+          try {
+            return new URL(link).host;
+          } catch {
+            return "invalid";
+          }
+        })(),
+        timestamp: new Date().toISOString()
+      })
+    );
 
     return {
       delivered: true,

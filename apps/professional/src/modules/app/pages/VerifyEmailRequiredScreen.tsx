@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
-import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -22,17 +22,13 @@ export function VerifyEmailRequiredScreen(props: {
     setError("");
     setMessage("");
 
-    try {
-      const response = await apiRequest<{ message: string }>("/api/auth/email-verification/resend", props.token, {
-        method: "POST"
-      });
-      setMessage(response.message);
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(professionalSurfaceMessage("verify-resend", props.language, raw));
-    } finally {
-      setLoadingResend(false);
+    const result = await resendVerificationEmail(props.token);
+    if (result.ok) {
+      setMessage(result.message);
+    } else {
+      setError(professionalSurfaceMessage("verify-resend", props.language, result.raw));
     }
+    setLoadingResend(false);
   };
 
   return (

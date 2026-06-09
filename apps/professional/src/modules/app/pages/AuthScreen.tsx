@@ -1,4 +1,6 @@
-import { FormEvent, SyntheticEvent, useEffect, useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
+import { FormEvent, SyntheticEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
@@ -6,6 +8,7 @@ import {
   professionalAuthSurfaceMessage,
   professionalAuthValidationMessage
 } from "../lib/friendlyProfessionalSurfaceMessages";
+import { resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
 import { apiRequest } from "../services/api";
 import type { AuthResponse, AuthUser } from "../types";
 
@@ -99,6 +102,25 @@ export function AuthScreen(props: {
   const [rememberMe, setRememberMe] = useState(readProRememberFlag);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileSiteKey =
+    typeof import.meta !== "undefined" && import.meta.env?.VITE_TURNSTILE_SITE_KEY
+      ? String(import.meta.env.VITE_TURNSTILE_SITE_KEY).trim()
+      : "";
+  const requiresTurnstileWidget = turnstileSiteKey.length > 0;
+  const [turnstileToken, setTurnstileToken] = useState("");
+
+  const onTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+
+  const onTurnstileExpire = useCallback(() => {
+    setTurnstileToken("");
+  }, []);
+
+  useEffect(() => {
+    setTurnstileToken("");
+  }, [mode, email]);
 
   useEffect(() => {
     if (props.initialEmail) {
@@ -157,6 +179,29 @@ export function AuthScreen(props: {
       return;
     }
 
+    let resolvedTurnstileToken: string | undefined;
+    if (requiresTurnstileWidget) {
+      let resolved = turnstileRef.current?.getResponse()?.trim() ?? turnstileToken.trim();
+      if (!resolved && turnstileRef.current) {
+        try {
+          resolved = (await turnstileRef.current.getResponsePromise(8000)).trim();
+        } catch {
+          resolved = "";
+        }
+      }
+      if (!resolved) {
+        setError(
+          t(props.language, {
+            es: "Completá la verificación de seguridad e intentá de nuevo.",
+            en: "Complete the security verification and try again.",
+            pt: "Complete a verificacao de seguranca e tente de novo."
+          })
+        );
+        return;
+      }
+      resolvedTurnstileToken = resolved;
+    }
+
     setLoading(true);
 
     try {
@@ -168,9 +213,17 @@ export function AuthScreen(props: {
             password,
             fullName: fullName.trim(),
             role: "PROFESSIONAL",
-            timezone: detectBrowserTimezone()
+            timezone: detectBrowserTimezone(),
+            ...(resolvedTurnstileToken ? { turnstileToken: resolvedTurnstileToken } : {})
           })
         });
+        if (
+          response.emailVerificationRequired
+          && !response.user.emailVerified
+          && !response.verificationEmailSent
+        ) {
+          await resendVerificationEmail(response.token);
+        }
         completeAuth(response);
         return;
       }
@@ -179,7 +232,8 @@ export function AuthScreen(props: {
         method: "POST",
         body: JSON.stringify({
           email: trimmedEmail,
-          password
+          password,
+          ...(resolvedTurnstileToken ? { turnstileToken: resolvedTurnstileToken } : {})
         })
       });
       persistProRemember(rememberMe, trimmedEmail);
@@ -311,7 +365,10 @@ export function AuthScreen(props: {
                   value={email}
                   autoComplete="email"
                   inputMode="email"
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setTurnstileToken("");
+                  }}
                 />
               </div>
             </div>
@@ -357,6 +414,33 @@ export function AuthScreen(props: {
                   })}
                 </span>
               </label>
+            ) : null}
+
+            {requiresTurnstileWidget ? (
+              <div className="auth-turnstile-wrap">
+                <span className="auth-field-label">
+                  {t(props.language, {
+                    es: "Verificación de seguridad",
+                    en: "Security check",
+                    pt: "Verificacao de seguranca"
+                  })}
+                </span>
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={turnstileSiteKey}
+                  rerenderOnCallbackChange
+                  onSuccess={onTurnstileSuccess}
+                  onExpire={onTurnstileExpire}
+                  options={{
+                    appearance: "always",
+                    theme: "light",
+                    language: props.language === "es" ? "es" : props.language === "pt" ? "pt-BR" : "en",
+                    size: "flexible",
+                    retry: "auto",
+                    refreshExpired: "auto"
+                  }}
+                />
+              </div>
             ) : null}
 
             {error ? (

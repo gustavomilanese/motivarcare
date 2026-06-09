@@ -59,6 +59,7 @@ import {
   readPendingWebOnboardingAuth,
   savePendingWebOnboardingAuth
 } from "../../onboarding/webOnboardingResumeStorage.js";
+import { resendVerificationEmail } from "../lib/ensureVerificationEmailSent";
 import { professionalAuthSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import { checkProfessionalEmailAvailable } from "../services/checkProfessionalEmail";
@@ -297,6 +298,9 @@ export function ProfessionalAuthFlow(props: {
       }
 
       if (response.emailVerificationRequired && !response.user.emailVerified) {
+        if (!response.verificationEmailSent) {
+          await resendVerificationEmail(response.token);
+        }
         setAuthEntryMode("register-email-verify");
         return;
       }

@@ -296,10 +296,13 @@ ul {
   background: #f3f0ff;
 }
 
-.pro-auth-shell .auth-remember {
+.pro-auth-shell label.auth-remember {
   display: flex;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
   gap: 10px;
+  width: 100%;
+  margin: 0;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -307,14 +310,37 @@ ul {
   line-height: 1.35;
 }
 
-.pro-auth-shell .auth-remember input[type="checkbox"] {
+.pro-auth-shell label.auth-remember input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  margin-top: 1px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
   flex-shrink: 0;
   border-radius: 4px;
   accent-color: #5f44eb;
   cursor: pointer;
+  box-shadow: none;
+}
+
+.pro-auth-shell label.auth-remember input[type="checkbox"]:focus {
+  border-color: #9b8af5;
+  box-shadow: 0 0 0 3px rgba(122, 99, 244, 0.2);
+}
+
+.pro-auth-shell label.auth-remember > span {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.pro-auth-shell .auth-turnstile-wrap {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+  width: 100%;
+  min-height: 72px;
 }
 
 .pro-auth-shell .auth-card-footer {
