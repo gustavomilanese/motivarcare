@@ -1,6 +1,7 @@
 import type { PaymentFailureNotice } from "./types.js";
 
 const DISMISSALS_KEY = "motivarcare-portal-notification-dismissals";
+const MUTED_KINDS_KEY = "motivarcare-portal-notification-muted-kinds";
 const BADGE_SEEN_IDS_KEY = "motivarcare-portal-notification-badge-seen-ids";
 const SEEN_PROFESSIONAL_KEY = "motivarcare-portal-seen-assigned-professional";
 const SEEN_EXERCISES_KEY = "motivarcare-portal-seen-exercises-published-at";
@@ -15,6 +16,10 @@ export interface KeyValueStorage {
 export interface NotificationStore {
   isDismissed(id: string): boolean;
   dismiss(id: string): void;
+  isKindMuted(kind: string): boolean;
+  readMutedKinds(): string[];
+  setKindMuted(kind: string, muted: boolean): void;
+  muteKind(kind: string): void;
   readBadgeSeenIds(): Set<string>;
   markBadgeSeen(ids: string[]): void;
   readSeenAssignedProfessionalId(): string | null;
@@ -85,6 +90,32 @@ export function createNotificationStore(storage: KeyValueStorage): NotificationS
       const next = readDismissals();
       next.add(id);
       writeDismissals(next);
+    },
+
+    isKindMuted(kind: string): boolean {
+      return readJsonStringArray(syncStorage.getItem(MUTED_KINDS_KEY)).includes(kind);
+    },
+
+    readMutedKinds(): string[] {
+      return readJsonStringArray(syncStorage.getItem(MUTED_KINDS_KEY));
+    },
+
+    setKindMuted(kind: string, muted: boolean): void {
+      try {
+        const next = new Set(readJsonStringArray(syncStorage.getItem(MUTED_KINDS_KEY)));
+        if (muted) {
+          next.add(kind);
+        } else {
+          next.delete(kind);
+        }
+        syncStorage.setItem(MUTED_KINDS_KEY, JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore quota errors
+      }
+    },
+
+    muteKind(kind: string): void {
+      this.setKindMuted(kind, true);
     },
 
     readBadgeSeenIds(): Set<string> {

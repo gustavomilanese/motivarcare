@@ -15,6 +15,23 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+/** Portal notification kinds the patient can show or hide in Ajustes. */
+export const PATIENT_CONFIGURABLE_NOTIFICATION_KINDS: readonly PortalNotificationKind[] = [
+  "chat",
+  "session-soon",
+  "session-upcoming",
+  "session-cancelled",
+  "credits-low",
+  "credits-empty",
+  "payment-failed",
+  "professional-assigned",
+  "exercise-new",
+  "diary-checkin",
+  "email-verify",
+  "calendar-connect",
+  "professional-review"
+] as const;
+
 export function formatNotificationMeta(params: { isoDate: string; language: AppLanguage }): string {
   return new Intl.DateTimeFormat(params.language === "es" ? "es-AR" : params.language === "pt" ? "pt-BR" : "en-US", {
     day: "numeric",
@@ -41,8 +58,8 @@ export function kindLabel(language: AppLanguage, kind: PortalNotificationKind): 
     "session-soon": { es: "Sesión pronto", en: "Session soon", pt: "Sessão em breve" },
     "session-upcoming": { es: "Próxima sesión", en: "Upcoming session", pt: "Próxima sessão" },
     "session-cancelled": { es: "Sesión cancelada", en: "Session cancelled", pt: "Sessão cancelada" },
-    "credits-low": { es: "Créditos", en: "Credits", pt: "Créditos" },
-    "credits-empty": { es: "Créditos", en: "Credits", pt: "Créditos" },
+    "credits-low": { es: "Créditos bajos", en: "Low credits", pt: "Créditos baixos" },
+    "credits-empty": { es: "Sin créditos", en: "No credits", pt: "Sem créditos" },
     "payment-failed": { es: "Pago", en: "Payment", pt: "Pagamento" },
     "professional-assigned": { es: "Profesional", en: "Therapist", pt: "Profissional" },
     "exercise-new": { es: "Ejercicio", en: "Exercise", pt: "Exercício" },

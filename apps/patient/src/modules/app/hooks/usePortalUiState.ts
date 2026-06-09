@@ -131,6 +131,11 @@ export function usePortalUiState(params: {
       setMenuOpen(false);
       params.navigate(`/profile?tab=${tab}`);
     },
+    openNotificationSettings: () => {
+      setMenuOpen(false);
+      setNotificationsOpen(false);
+      params.navigate("/profile?tab=settings#notificaciones");
+    },
     openPreferences: () => {
       setMenuOpen(false);
       setNotificationsOpen(false);

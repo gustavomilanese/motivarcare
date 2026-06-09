@@ -13,7 +13,11 @@ import { fetchDiaryEntries } from "../../emotional-diary/services/emotionalDiary
 import { fetchSharedPatientChatThreads } from "../lib/fetchPatientChatThreadsShared";
 import type { ApiChatThread, PatientAppState, Professional } from "../types";
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
-import { portalNotificationStore } from "../notifications/portalNotificationStorage";
+import {
+  muteNotificationKind as muteStoredNotificationKind,
+  PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT,
+  portalNotificationStore
+} from "../notifications/portalNotificationStorage";
 
 export function usePortalNotifications(params: {
   authToken: string | null;
@@ -37,6 +41,12 @@ export function usePortalNotifications(params: {
   const bumpStorageRevision = useCallback(() => {
     setStorageRevision((current) => current + 1);
   }, []);
+
+  useEffect(() => {
+    const onPrefsChanged = () => bumpStorageRevision();
+    window.addEventListener(PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT, onPrefsChanged);
+    return () => window.removeEventListener(PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT, onPrefsChanged);
+  }, [bumpStorageRevision]);
 
   useEffect(() => {
     const authToken = params.authToken ?? undefined;
@@ -188,11 +198,21 @@ export function usePortalNotifications(params: {
     [bumpStorageRevision]
   );
 
+  const muteNotificationKind = useCallback(
+    (item: PortalNotificationItem) => {
+      muteStoredNotificationKind(item.kind);
+      applyNotificationDismissSideEffects(item, portalNotificationStore);
+      bumpStorageRevision();
+    },
+    [bumpStorageRevision]
+  );
+
   return {
     remoteUnreadMessagesCount,
     notificationItems,
     notificationsUnreadCount,
     acknowledgeNotificationBadge,
-    dismissNotification
+    dismissNotification,
+    muteNotificationKind
   };
 }

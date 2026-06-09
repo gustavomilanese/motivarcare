@@ -1,5 +1,6 @@
+import { kindLabel, PATIENT_CONFIGURABLE_NOTIFICATION_KINDS } from "@therapy/patient-core";
 import { type ChangeEvent, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -15,6 +16,11 @@ import {
 import { apiRequest, DEFAULT_PROFESSIONAL_AVATAR_SRC, resolvePublicAssetUrl } from "../services/api";
 import { ProfessionalChangeSupportPanel } from "../components/ProfessionalChangeSupportPanel";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
+import {
+  PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT,
+  readMutedNotificationKinds,
+  setNotificationKindMuted
+} from "../notifications/portalNotificationStorage";
 import type {
   PackageId,
   PatientProfile,
@@ -64,7 +70,11 @@ export function ProfilePage(props: {
   onNavigateHome: () => void;
 }) {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [localProfile, setLocalProfile] = useState<PatientProfile>(props.profile);
+  const [mutedNotificationKinds, setMutedNotificationKinds] = useState<Set<string>>(
+    () => new Set(readMutedNotificationKinds())
+  );
   const [cardBrand, setCardBrand] = useState("Visa");
   const [cardLast4, setCardLast4] = useState("");
   const [cardExpMonth, setCardExpMonth] = useState("");
@@ -84,6 +94,21 @@ export function ProfilePage(props: {
   useEffect(() => {
     setLocalProfile(props.profile);
   }, [props.profile]);
+
+  useEffect(() => {
+    const syncMutedKinds = () => setMutedNotificationKinds(new Set(readMutedNotificationKinds()));
+    syncMutedKinds();
+    window.addEventListener(PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT, syncMutedKinds);
+    return () => window.removeEventListener(PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT, syncMutedKinds);
+  }, []);
+
+  useEffect(() => {
+    if (tab !== "settings" || location.hash !== "#notificaciones") {
+      return;
+    }
+    const panel = document.getElementById("profile-notifications-panel");
+    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [tab, location.hash]);
 
   useEffect(() => {
     if (!props.authToken) {
@@ -474,6 +499,44 @@ export function ProfilePage(props: {
                 pt: "Defina como deseja receber notificacoes da plataforma."
               })}
             </p>
+            <div id="profile-notifications-panel" className="profile-settings-stack profile-notification-kinds">
+              <strong>
+                {t(props.language, {
+                  es: "Notificaciones en el portal",
+                  en: "Portal notifications",
+                  pt: "Notificacoes no portal"
+                })}
+              </strong>
+              <p className="profile-panel-lead profile-notification-kinds-lead">
+                {t(props.language, {
+                  es: "Elegí qué avisos querés ver en el panel de notificaciones.",
+                  en: "Choose which alerts you want in the notification panel.",
+                  pt: "Escolha quais avisos deseja ver no painel de notificacoes."
+                })}
+              </p>
+              {PATIENT_CONFIGURABLE_NOTIFICATION_KINDS.map((kind) => (
+                <label key={kind} className="inline-toggle">
+                  <input
+                    checked={!mutedNotificationKinds.has(kind)}
+                    type="checkbox"
+                    onChange={(event) => {
+                      const shown = event.target.checked;
+                      setNotificationKindMuted(kind, !shown);
+                      setMutedNotificationKinds((current) => {
+                        const next = new Set(current);
+                        if (shown) {
+                          next.delete(kind);
+                        } else {
+                          next.add(kind);
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                  {kindLabel(props.language, kind)}
+                </label>
+              ))}
+            </div>
             <div className="profile-settings-stack">
               <label className="inline-toggle">
                 <input

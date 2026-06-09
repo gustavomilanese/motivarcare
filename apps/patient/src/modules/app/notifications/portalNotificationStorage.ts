@@ -2,11 +2,31 @@ import { createNotificationStore, type PaymentFailureNotice } from "@therapy/pat
 
 export type { PaymentFailureNotice };
 
+export const PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT = "portal-notification-prefs-changed";
+
 export const portalNotificationStore = createNotificationStore({
   getItem: (key) => localStorage.getItem(key),
   setItem: (key, value) => localStorage.setItem(key, value),
   removeItem: (key) => localStorage.removeItem(key)
 });
+
+function dispatchNotificationPrefsChanged(): void {
+  window.dispatchEvent(new CustomEvent(PORTAL_NOTIFICATION_PREFS_CHANGED_EVENT));
+}
+
+export function readMutedNotificationKinds(): string[] {
+  return portalNotificationStore.readMutedKinds();
+}
+
+export function setNotificationKindMuted(kind: string, muted: boolean): void {
+  portalNotificationStore.setKindMuted(kind, muted);
+  dispatchNotificationPrefsChanged();
+}
+
+export function muteNotificationKind(kind: string): void {
+  portalNotificationStore.muteKind(kind);
+  dispatchNotificationPrefsChanged();
+}
 
 export function isNotificationDismissed(id: string): boolean {
   return portalNotificationStore.isDismissed(id);

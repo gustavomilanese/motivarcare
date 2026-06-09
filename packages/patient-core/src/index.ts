@@ -63,7 +63,8 @@ export {
   buildPortalNotifications,
   formatNotificationMeta,
   formatSessionWhen,
-  kindLabel
+  kindLabel,
+  PATIENT_CONFIGURABLE_NOTIFICATION_KINDS
 } from "./notifications/buildPortalNotifications.js";
 export type { KeyValueStorage, NotificationStore } from "./notifications/storage.js";
 export { createNotificationStore } from "./notifications/storage.js";

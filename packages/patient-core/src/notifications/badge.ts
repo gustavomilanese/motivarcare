@@ -5,7 +5,7 @@ export function filterVisibleNotifications(
   items: PortalNotificationItem[],
   store: NotificationStore
 ): PortalNotificationItem[] {
-  return items.filter((item) => !store.isDismissed(item.id));
+  return items.filter((item) => !store.isDismissed(item.id) && !store.isKindMuted(item.kind));
 }
 
 export function countNotificationBadge(
@@ -13,7 +13,9 @@ export function countNotificationBadge(
   store: NotificationStore
 ): number {
   const badgeSeenIds = store.readBadgeSeenIds();
-  return items.filter((item) => item.unread && !store.isDismissed(item.id) && !badgeSeenIds.has(item.id)).length;
+  return items.filter(
+    (item) => item.unread && !store.isDismissed(item.id) && !store.isKindMuted(item.kind) && !badgeSeenIds.has(item.id)
+  ).length;
 }
 
 export function markNotificationsBadgeSeen(

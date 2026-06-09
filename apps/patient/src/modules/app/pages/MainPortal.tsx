@@ -20,6 +20,7 @@ import { usePortalNavigation } from "../hooks/usePortalNavigation";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
+import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
 import { ProfessionalReviewModal } from "../../reviews/components/ProfessionalReviewModal";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { usePendingProfessionalReview } from "../../reviews/hooks/usePendingProfessionalReview";
@@ -109,7 +110,14 @@ export function MainPortal(props: {
         professionalName: pendingProfessionalReview.professionalName
       }
     : null;
-  const { remoteUnreadMessagesCount, notificationItems, notificationsUnreadCount, acknowledgeNotificationBadge, dismissNotification } = usePortalNotifications({
+  const {
+    remoteUnreadMessagesCount,
+    notificationItems,
+    notificationsUnreadCount,
+    acknowledgeNotificationBadge,
+    dismissNotification,
+    muteNotificationKind
+  } = usePortalNotifications({
     authToken: props.state.authToken,
     language: props.state.language,
     state: props.state,
@@ -118,6 +126,27 @@ export function MainPortal(props: {
     showCalendarReconnectCta: Boolean(props.showPatientGoogleCalendarReconnectCta),
     pendingProfessionalReview: pendingReviewNotification
   });
+  const disableSessionReminders = useCallback(() => {
+    props.onStateChange((current) => {
+      if (current.authToken) {
+        void syncPatientNotificationPreferences({
+          token: current.authToken,
+          notificationsEmail: current.profile.notificationsEmail,
+          notificationsReminder: false
+        }).catch((error) => {
+          console.error("Could not disable session reminders", error);
+        });
+      }
+      return {
+        ...current,
+        profile: {
+          ...current.profile,
+          notificationsReminder: false
+        }
+      };
+    });
+  }, [props.onStateChange]);
+
   const ui = usePortalUiState({
     navigate,
     onStateChange: props.onStateChange,
@@ -334,6 +363,9 @@ export function MainPortal(props: {
         onCloseNotifications={ui.closeNotifications}
         onOpenNotification={ui.openNotification}
         onDismissNotification={ui.dismissNotification}
+        onMuteNotificationKind={muteNotificationKind}
+        onDisableSessionReminders={disableSessionReminders}
+        onOpenNotificationSettings={ui.openNotificationSettings}
         onOpenNotificationThread={ui.openNotificationThread}
         onOpenProfileTab={ui.openProfileTabFromMenu}
         onOpenPreferences={ui.openPreferences}

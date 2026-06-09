@@ -179,9 +179,8 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .notifications-dropdown.notifications-dropdown--mobile-sheet .notification-dismiss {
+  .notifications-dropdown.notifications-dropdown--mobile-sheet .notification-actions-trigger {
     opacity: 1;
-    transform: scale(1);
   }
 
   .notifications-empty-box {
