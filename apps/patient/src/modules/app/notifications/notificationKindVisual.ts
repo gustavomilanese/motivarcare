@@ -29,6 +29,8 @@ export function notificationKindVisual(kind: PortalNotificationKind): {
       return { icon: "✉️", accent: "#4f46e5", accentSoft: "rgba(79, 70, 229, 0.12)" };
     case "calendar-connect":
       return { icon: "📆", accent: "#0d9488", accentSoft: "rgba(13, 148, 136, 0.12)" };
+    case "professional-review":
+      return { icon: "⭐", accent: "#ca8a04", accentSoft: "rgba(202, 138, 4, 0.12)" };
     default:
       return { icon: "🔔", accent: "#5f44eb", accentSoft: "rgba(95, 68, 235, 0.12)" };
   }

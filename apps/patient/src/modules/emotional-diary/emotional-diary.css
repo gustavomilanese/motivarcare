@@ -471,6 +471,7 @@
   }
 
   .portal-main--diary-home .diary-page--home,
+  .portal-main--diary-home .diary-home-page,
   .portal-main--diary-home .diary-home-stack,
   .portal-main--dashboard-home .page-stack.patient-dashboard-home,
   .portal-main--sessions-home .sessions-booking-page,
@@ -479,6 +480,7 @@
     padding-top: 0;
   }
 
+  .portal-main--diary-home .diary-home-page .sessions-hero-immersive,
   .portal-main--diary-home .diary-home-band--intro,
   .portal-main--dashboard-home .dashboard-hero-immersive,
   .portal-main--sessions-home .sessions-hero-immersive {

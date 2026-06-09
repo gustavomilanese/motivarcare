@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry } from "@therapy/types";
 import { z } from "zod";
@@ -34,6 +34,17 @@ import {
   sendPatientEmailForProfessionalAssigned,
   sendPatientEmailForPurchase
 } from "../notifications/patientEmailService.js";
+import {
+  createProfessionalReviewSchema,
+  listProfessionalReviewsQuerySchema
+} from "./professionalReviews.schemas.js";
+import {
+  ProfessionalReviewError,
+  createProfessionalReview,
+  getPendingProfessionalReviewForPatient,
+  getReviewStatsByProfessionalIds,
+  listProfessionalReviews
+} from "./professionalReviews.service.js";
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
@@ -468,7 +479,7 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     rangeStart: vacationRangeStart,
     rangeEnd: vacationRangeEnd
   });
-  const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig] = await Promise.all([
+  const [sessionsByProfessional, completedByProfessional, activePatientPairs, displayConfig, reviewStatsByProfessional] = await Promise.all([
     prisma.booking.groupBy({
       by: ["professionalId"],
       where: {
@@ -496,7 +507,8 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
       },
       distinct: ["professionalId", "patientId"]
     }),
-    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
+    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } }),
+    getReviewStatsByProfessionalIds(professionalIds)
   ]);
 
   const displayOverrides = parseProfessionalDisplayOverrides(displayConfig?.value);
@@ -561,8 +573,14 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     activePatientsCount: displayOverrides[professional.id]?.activePatientsCount ?? (activePatientsByProfessional.get(professional.id) ?? 0),
     completedSessionsCount: displayOverrides[professional.id]?.completedSessionsCount ?? (completedCountByProfessional.get(professional.id) ?? 0),
     sessionsCount: displayOverrides[professional.id]?.sessionsCount ?? (sessionsCountByProfessional.get(professional.id) ?? 0),
-    ratingAverage: displayOverrides[professional.id]?.ratingAverage ?? null,
-    reviewsCount: displayOverrides[professional.id]?.reviewsCount ?? 0,
+    ratingAverage:
+      (reviewStatsByProfessional.get(professional.id)?.reviewCount ?? 0) > 0
+        ? reviewStatsByProfessional.get(professional.id)?.averageRating ?? null
+        : (displayOverrides[professional.id]?.ratingAverage ?? null),
+    reviewsCount:
+      (reviewStatsByProfessional.get(professional.id)?.reviewCount ?? 0) > 0
+        ? reviewStatsByProfessional.get(professional.id)?.reviewCount ?? 0
+        : (displayOverrides[professional.id]?.reviewsCount ?? 0),
     slots: professional.availabilitySlots
       .filter((slot) => {
         const blockedDays = vacationDaysByPro.get(professional.id);
@@ -1883,4 +1901,96 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
     message: "Public profile updated",
     profile: updated
   });
+});
+
+function handleProfessionalReviewError(res: Response, error: unknown): void {
+  if (error instanceof ProfessionalReviewError) {
+    const status =
+      error.code === "NOT_FOUND"
+        ? 404
+        : error.code === "FORBIDDEN"
+          ? 403
+          : error.code === "CONFLICT"
+            ? 409
+            : 400;
+    res.status(status).json({ error: error.message, code: error.code });
+    return;
+  }
+  console.error("[profiles] professional review error", error);
+  res.status(500).json({ error: prismaErrorUserMessage(error) });
+}
+
+profilesRouter.get("/professionals/:professionalId/reviews", async (req, res) => {
+  const parsed = listProfessionalReviewsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid reviews query", details: parsed.error.flatten() });
+  }
+
+  try {
+    const payload = await listProfessionalReviews({
+      professionalId: req.params.professionalId,
+      limit: parsed.data.limit,
+      offset: parsed.data.offset
+    });
+    return res.json(payload);
+  } catch (error) {
+    handleProfessionalReviewError(res, error);
+    return;
+  }
+});
+
+profilesRouter.get("/me/pending-professional-review", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can access review prompts" });
+  }
+
+  const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
+  const assignments = parsePatientAssignments(assignmentConfig?.value);
+  const assignedProfessionalId = assignments[actor.patientProfileId] ?? null;
+
+  try {
+    const pending = await getPendingProfessionalReviewForPatient({
+      patientId: actor.patientProfileId,
+      assignedProfessionalId
+    });
+    return res.json({ pending });
+  } catch (error) {
+    handleProfessionalReviewError(res, error);
+    return;
+  }
+});
+
+profilesRouter.post("/me/professional-reviews", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = createProfessionalReviewSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid review payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can submit reviews" });
+  }
+
+  try {
+    const review = await createProfessionalReview({
+      patientId: actor.patientProfileId,
+      professionalId: parsed.data.professionalId,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
+      bookingId: parsed.data.bookingId
+    });
+    return res.status(201).json({ review });
+  } catch (error) {
+    handleProfessionalReviewError(res, error);
+    return;
+  }
 });

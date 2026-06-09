@@ -22,6 +22,10 @@ export function usePortalNotifications(params: {
   professionals: Professional[];
   sessionTimezone: string;
   showCalendarReconnectCta: boolean;
+  pendingProfessionalReview?: {
+    professionalId: string;
+    professionalName: string;
+  } | null;
 }) {
   const [remoteUnreadMessagesCount, setRemoteUnreadMessagesCount] = useState<number | null>(null);
   const [remoteNotificationThreads, setRemoteNotificationThreads] = useState<ApiChatThread[]>([]);
@@ -145,11 +149,13 @@ export function usePortalNotifications(params: {
       professionalNameById,
       exercises,
       lastDiaryEntryAt,
+      pendingProfessionalReview: params.pendingProfessionalReview ?? null,
       store: portalNotificationStore
     });
   }, [
     exercises,
     lastDiaryEntryAt,
+    params.pendingProfessionalReview,
     params.language,
     params.sessionTimezone,
     params.showCalendarReconnectCta,

@@ -19,6 +19,9 @@ import { usePortalUiState } from "../hooks/usePortalUiState";
 import { usePortalNavigation } from "../hooks/usePortalNavigation";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
+import { portalNotificationStore } from "../notifications/portalNotificationStorage";
+import { ProfessionalReviewModal } from "../../reviews/components/ProfessionalReviewModal";
+import { usePendingProfessionalReview } from "../../reviews/hooks/usePendingProfessionalReview";
 import { apiRequest, resolvePublicAssetUrl } from "../services/api";
 import { compressPatientAvatarDataUrl, fileToDataUrl } from "../utils/imageAvatar";
 import type {
@@ -90,13 +93,28 @@ export function MainPortal(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
+  const {
+    pending: pendingProfessionalReview,
+    modalOpen: reviewModalOpen,
+    openReviewModal,
+    closeReviewModal,
+    clearPendingAfterSubmit,
+    refreshPending: refreshPendingProfessionalReview
+  } = usePendingProfessionalReview(props.state.authToken);
+  const pendingReviewNotification = pendingProfessionalReview
+    ? {
+        professionalId: pendingProfessionalReview.professionalId,
+        professionalName: pendingProfessionalReview.professionalName
+      }
+    : null;
   const { remoteUnreadMessagesCount, notificationItems, notificationsUnreadCount, acknowledgeNotificationBadge, dismissNotification } = usePortalNotifications({
     authToken: props.state.authToken,
     language: props.state.language,
     state: props.state,
     professionals: props.professionalDirectory,
     sessionTimezone: props.sessionTimezone,
-    showCalendarReconnectCta: Boolean(props.showPatientGoogleCalendarReconnectCta)
+    showCalendarReconnectCta: Boolean(props.showPatientGoogleCalendarReconnectCta),
+    pendingProfessionalReview: pendingReviewNotification
   });
   const ui = usePortalUiState({
     navigate,
@@ -105,7 +123,12 @@ export function MainPortal(props: {
     assignedProfessionalId: props.state.assignedProfessionalId,
     onOpenBooking: setSelectedBookingId,
     onNotificationsPanelOpen: acknowledgeNotificationBadge,
-    onDismissNotification: dismissNotification
+    onDismissNotification: dismissNotification,
+    onOpenProfessionalReview: () => {
+      void refreshPendingProfessionalReview().finally(() => {
+        openReviewModal();
+      });
+    }
   });
   const localUnreadMessagesCount = getUnreadCount(props.state.messages);
   const unreadMessagesCount = props.state.authToken
@@ -114,6 +137,10 @@ export function MainPortal(props: {
   const favoriteCount = props.state.favoriteProfessionalIds.length;
   const [headerAvatarBusy, setHeaderAvatarBusy] = useState(false);
   const [headerAvatarError, setHeaderAvatarError] = useState("");
+
+  useEffect(() => {
+    void refreshPendingProfessionalReview();
+  }, [props.state.bookings, refreshPendingProfessionalReview]);
 
   const handlePatientHeaderAvatarFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -380,6 +407,19 @@ export function MainPortal(props: {
           onImageFallback={handleImageFallback}
         />
       ) : null}
+      <ProfessionalReviewModal
+        open={reviewModalOpen}
+        language={props.state.language}
+        authToken={props.state.authToken}
+        pending={pendingProfessionalReview}
+        onClose={closeReviewModal}
+        onSubmitted={() => {
+          if (pendingProfessionalReview) {
+            portalNotificationStore.dismiss(`professional-review-${pendingProfessionalReview.professionalId}`);
+          }
+          clearPendingAfterSubmit();
+        }}
+      />
       <PortalPreferencesModal
         open={ui.preferencesOpen}
         language={props.state.language}

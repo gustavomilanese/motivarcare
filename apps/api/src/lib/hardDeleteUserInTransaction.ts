@@ -133,6 +133,7 @@ export async function hardDeleteUserInTransaction(
       });
     }
     await tx.patientPackagePurchase.deleteMany({ where: { patientId } });
+    await tx.professionalReview.deleteMany({ where: { patientId } });
     await tx.consent.deleteMany({ where: { patientId } });
     await tx.aIAuditJob.deleteMany({ where: { patientId } });
     /**
@@ -236,6 +237,7 @@ export async function hardDeleteUserInTransaction(
     });
     await tx.aIAuditJob.deleteMany({ where: { professionalId } });
     await tx.availabilitySlot.deleteMany({ where: { professionalId } });
+    await tx.professionalReview.deleteMany({ where: { professionalId } });
     await tx.professionalDiploma.deleteMany({ where: { professionalId } });
     await tx.sessionPackage.updateMany({
       where: { professionalId },

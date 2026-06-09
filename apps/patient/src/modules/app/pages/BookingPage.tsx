@@ -39,6 +39,7 @@ import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
+import { ProfessionalReviewsSection } from "../../reviews/components/ProfessionalReviewsSection";
 import { ProfessionalNameStack } from "../components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import type {
@@ -1330,6 +1331,15 @@ export function BookingPage(props: {
           )
         ) : null}
       </section>
+
+      {hasPricingProfessional ? (
+        <ProfessionalReviewsSection
+          language={props.language}
+          professionalId={professional.id}
+          fallbackRating={professional.rating ?? null}
+          fallbackReviewCount={professional.reviewsCount ?? 0}
+        />
+      ) : null}
 
       <section ref={calendarSectionRef} className="sessions-calendar-collapsible sessions-secondary-section sessions-booking-calendar-tail">
         <button

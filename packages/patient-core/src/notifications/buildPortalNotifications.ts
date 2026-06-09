@@ -48,9 +48,14 @@ export function kindLabel(language: AppLanguage, kind: PortalNotificationKind): 
     "exercise-new": { es: "Ejercicio", en: "Exercise", pt: "Exercício" },
     "diary-checkin": { es: "Diario", en: "Diary", pt: "Diário" },
     "email-verify": { es: "Cuenta", en: "Account", pt: "Conta" },
-    "calendar-connect": { es: "Calendario", en: "Calendar", pt: "Calendário" }
+    "calendar-connect": { es: "Calendario", en: "Calendar", pt: "Calendário" },
+    "professional-review": { es: "Opinión", en: "Review", pt: "Avaliação" }
   };
-  return t(language, labels[kind]);
+  const label = labels[kind];
+  if (!label) {
+    return t(language, { es: "Aviso", en: "Notice", pt: "Aviso" });
+  }
+  return t(language, label);
 }
 
 function parseChatNotificationContent(params: { rawBody: string; language: AppLanguage }): {
@@ -415,6 +420,45 @@ function buildCreditNotifications(params: {
   return items;
 }
 
+function buildProfessionalReviewNotification(params: {
+  language: AppLanguage;
+  pending?: BuildPortalNotificationsParams["pendingProfessionalReview"];
+  store: NotificationStore;
+}): PortalNotificationItem | null {
+  const pending = params.pending;
+  if (!pending?.professionalId) {
+    return null;
+  }
+
+  const id = `professional-review-${pending.professionalId}`;
+  if (params.store.isDismissed(id)) {
+    return null;
+  }
+
+  return {
+    id,
+    kind: "professional-review",
+    title: t(params.language, {
+      es: "Contanos tu experiencia",
+      en: "Share your experience",
+      pt: "Conte sua experiência"
+    }),
+    body: replaceTemplate(
+      t(params.language, {
+        es: "Ya completaste sesiones con {name}. ¿Querés dejar una opinión?",
+        en: "You completed sessions with {name}. Would you like to leave a review?",
+        pt: "Você concluiu sessões com {name}. Quer deixar uma avaliação?"
+      }),
+      { name: pending.professionalName }
+    ),
+    detail: "",
+    meta: "",
+    unread: true,
+    sortAt: new Date().toISOString(),
+    action: { type: "professional-review", professionalId: pending.professionalId }
+  };
+}
+
 function buildAccountNotifications(params: {
   language: AppLanguage;
   state: Pick<
@@ -655,6 +699,15 @@ export function buildPortalNotifications(
   });
   if (diaryItem) {
     merged.push(diaryItem);
+  }
+
+  const reviewItem = buildProfessionalReviewNotification({
+    language: params.language,
+    pending: params.pendingProfessionalReview,
+    store: params.store
+  });
+  if (reviewItem) {
+    merged.push(reviewItem);
   }
 
   const deduped = new Map<string, PortalNotificationItem>();

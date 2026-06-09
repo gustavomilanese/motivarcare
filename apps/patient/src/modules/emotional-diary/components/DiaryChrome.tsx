@@ -158,6 +158,38 @@ export function DiaryBreadcrumb(props: {
   );
 }
 
+/** Hero inmersivo del home — mismas clases que Inicio / Sesiones (full-bleed, sin marco). */
+export function DiaryHomeHero(props: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <section className="sessions-hero-immersive" aria-label={props.title}>
+      <div className="sessions-hero-banner-wrap">
+        <div className="sessions-hero-banner">
+          <img
+            className="sessions-hero-banner-photo"
+            src={DIARY_HEADER_IMAGE_SRC}
+            alt=""
+            width={1200}
+            height={520}
+            loading="eager"
+            decoding="async"
+          />
+          <div className="sessions-hero-banner-scrim" aria-hidden="true" />
+          <div className="sessions-hero-banner-copy">
+            <h1 className="sessions-hero-title-on-photo">{props.title}</h1>
+            {props.subtitle ? (
+              <p className="sessions-hero-subtitle-on-photo">{props.subtitle}</p>
+            ) : null}
+          </div>
+        </div>
+        <div id="diary-hero-toolbar-mount" className="sessions-hero-toolbar-mount" />
+      </div>
+    </section>
+  );
+}
+
 export function DiaryPageHeader(props: {
   language: AppLanguage;
   title: string;
@@ -167,28 +199,10 @@ export function DiaryPageHeader(props: {
 }) {
   if (props.showHeroImage) {
     return (
-      <header className="diary-page-header diary-page-header--hero-banner">
-        <div className="diary-hero-banner-wrap">
-          <div className="diary-hero-banner">
-          <img
-            className="diary-hero-banner-photo"
-            src={DIARY_HEADER_IMAGE_SRC}
-            alt=""
-            width={1200}
-            height={520}
-            loading="eager"
-            decoding="async"
-          />
-          <div className="diary-hero-banner-scrim" aria-hidden="true" />
-          <div className="diary-hero-banner-copy">
-            {props.breadcrumb ? <DiaryBreadcrumb language={props.language} items={props.breadcrumb} /> : null}
-            <h2 className="diary-page-title diary-page-title--on-hero">{props.title}</h2>
-            {props.subtitle ? <p className="diary-page-subtitle diary-page-subtitle--on-hero">{props.subtitle}</p> : null}
-          </div>
-          </div>
-          <div id="diary-hero-toolbar-mount" className="diary-hero-toolbar-mount" />
-        </div>
-      </header>
+      <DiaryHomeHero
+        title={props.title}
+        subtitle={props.subtitle}
+      />
     );
   }
 

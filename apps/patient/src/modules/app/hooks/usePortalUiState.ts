@@ -10,6 +10,7 @@ export function usePortalUiState(params: {
   onOpenBooking: (bookingId: string) => void;
   onNotificationsPanelOpen?: () => void;
   onDismissNotification?: (item: PortalNotificationItem) => void;
+  onOpenProfessionalReview?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -75,6 +76,11 @@ export function usePortalUiState(params: {
         return;
       case "profile":
         params.navigate(`/profile?tab=${item.action.tab}`);
+        return;
+      case "professional-review":
+        if (item.action.type === "professional-review") {
+          params.onOpenProfessionalReview?.();
+        }
         return;
       default:
         return;

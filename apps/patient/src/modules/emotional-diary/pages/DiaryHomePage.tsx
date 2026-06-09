@@ -4,7 +4,7 @@ import { type AppLanguage } from "@therapy/i18n-config";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
-import { DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
+import { DiaryHomeHero, DiaryShell, DiarySubNav } from "../components/DiaryChrome";
 import { t } from "../lib/labels";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
 import type { DiaryEntry, MoodLevel } from "../types";
@@ -94,24 +94,21 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
     navigate(`/diario/nueva?mood=${mood}`);
   }
 
-  const intro = (
-    <DiarySectionIntro
-      language={props.language}
-      showHeroImage
-      title={t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" })}
-      subtitle={t(props.language, {
-        es: "Un check-in rápido entre sesiones. Te guiamos paso a paso al escribir.",
-        en: "A quick check-in between sessions. We guide you step by step as you write.",
-        pt: "Um check-in rápido entre sessões. Guiamos você passo a passo ao escrever."
-      })}
-    />
-  );
+  const heroTitle = t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" });
+  const heroSubtitle = t(props.language, {
+    es: "Un check-in rápido entre sesiones. Te guiamos paso a paso al escribir.",
+    en: "A quick check-in between sessions. We guide you step by step as you write.",
+    pt: "Um check-in rápido entre sessões. Guiamos você passo a passo ao escrever."
+  });
 
   if (loading) {
     return (
       <DiaryShell language={props.language} className="diary-page--home">
-        <div className="diary-home-stack">
-          <section className="diary-home-band diary-home-band--intro">{intro}</section>
+        <div className="page-stack diary-home-page">
+          <DiaryHomeHero title={heroTitle} subtitle={heroSubtitle} />
+          <section className="sessions-hero-actions-band diary-home-subnav-band" aria-label={t(props.language, { es: "Secciones del diario", en: "Diary sections", pt: "Seções do diário" })}>
+            <DiarySubNav language={props.language} />
+          </section>
           <p className="diary-muted diary-home-band-pad">{t(props.language, { es: "Cargando diario…", en: "Loading diary…", pt: "Carregando diário…" })}</p>
         </div>
       </DiaryShell>
@@ -120,9 +117,10 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
 
   return (
     <DiaryShell language={props.language} className="diary-page--home">
-      <div className="diary-home-stack">
-        <section className="diary-home-band diary-home-band--intro" aria-label={t(props.language, { es: "Presentación", en: "Overview", pt: "Apresentação" })}>
-          {intro}
+      <div className="page-stack diary-home-page">
+        <DiaryHomeHero title={heroTitle} subtitle={heroSubtitle} />
+        <section className="sessions-hero-actions-band diary-home-subnav-band" aria-label={t(props.language, { es: "Secciones del diario", en: "Diary sections", pt: "Seções do diário" })}>
+          <DiarySubNav language={props.language} />
         </section>
 
         {error ? <p className="diary-error diary-home-band-pad">{error}</p> : null}

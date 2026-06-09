@@ -142,6 +142,7 @@ model PatientProfile {
   emotionalDiarySettings EmotionalDiarySettings?
   emotionalDiaryEntries  EmotionalDiaryEntry[]
   emailDeliveries PatientEmailDelivery[]
+  professionalReviews ProfessionalReview[]
 }
 
 model ProfessionalProfile {
@@ -197,6 +198,25 @@ model ProfessionalProfile {
   diplomas              ProfessionalDiploma[]
   financeRecords        FinanceSessionRecord[]
   payoutLines           FinancePayoutLine[]
+  patientReviews        ProfessionalReview[]
+}
+
+model ProfessionalReview {
+  id             String              @id @default(cuid())
+  patientId      String              @map("patient_id")
+  professionalId String              @map("professional_id")
+  /// Sesión completada que disparó el prompt (opcional, referencia).
+  bookingId      String?             @map("booking_id")
+  rating         Int
+  comment        String?             @db.Text
+  createdAt      DateTime            @default(now()) @map("created_at")
+  patient        PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  booking        Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@unique([patientId, professionalId])
+  @@index([professionalId, createdAt])
+  @@map("professional_reviews")
 }
 
 model ProfessionalDiploma {
@@ -473,6 +493,7 @@ model Booking {
   videoSession       VideoSession?
   creditMovements    CreditLedger[]
   financeRecord      FinanceSessionRecord?
+  professionalReviews ProfessionalReview[]
 
   @@index([patientId, startsAt])
   @@index([professionalId, startsAt])

@@ -127,9 +127,7 @@
     border: none;
     margin: 0;
     padding: 0;
-    background: rgba(15, 23, 42, 0.44);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    background: rgba(15, 23, 42, 0.4);
     cursor: pointer;
   }
 
@@ -2192,12 +2190,13 @@
   /* —— Portrait mobile: unified immersive heroes (match Inicio) —— */
   .portal-main .patient-dashboard-home .dashboard-hero-banner,
   .portal-main .patient-dashboard-home .dashboard-hero-banner--loading,
-  .portal-main .diary-hero-banner,
+  .portal-main .diary-home-page .sessions-hero-banner,
   .portal-main .sessions-booking-page .sessions-hero-banner {
     min-height: clamp(208px, 41.6vw, 288px);
     max-height: none;
   }
 
+  .portal-main .diary-home-page .sessions-hero-immersive,
   .portal-main .diary-home-band--intro,
   .portal-main .diary-section-intro,
   .portal-main .diary-page-header--hero-banner,
@@ -2211,6 +2210,7 @@
   }
 
   .portal-main .patient-dashboard-home .dashboard-hero-banner-copy,
+  .portal-main .diary-home-page .sessions-hero-banner-copy,
   .portal-main .diary-hero-banner-copy,
   .portal-main .sessions-booking-page .sessions-hero-banner-copy {
     padding-left: var(--mobile-pad-x);
@@ -2223,6 +2223,7 @@
     gap: 0;
   }
 
+  .portal-main .diary-home-page .sessions-hero-immersive,
   .portal-main .sessions-booking-page .sessions-hero-immersive {
     margin-bottom: 0;
   }

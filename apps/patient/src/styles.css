@@ -1490,9 +1490,7 @@ button.danger {
   border: none;
   margin: 0;
   padding: 0;
-  background: rgba(15, 23, 42, 0.22);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(15, 23, 42, 0.32);
   cursor: default;
   animation: notifications-backdrop-in 0.2s ease;
 }
@@ -1534,6 +1532,16 @@ button.danger {
   z-index: 200;
   overflow: hidden;
   animation: notifications-panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Desktop/web: panel portaled a body (queda sobre el backdrop; evita quedar tapado en heroes inmersivos) */
+.notifications-dropdown.notifications-dropdown--portaled {
+  position: fixed;
+  top: max(66px, calc(env(safe-area-inset-top, 0px) + 56px));
+  right: max(18px, env(safe-area-inset-right, 0px));
+  left: auto;
+  bottom: auto;
+  z-index: 200;
 }
 
 .notifications-head {
@@ -5980,19 +5988,22 @@ button.sessions-balance {
   display: none;
 }
 
-/* Sesiones — hero inmersivo (foto ancha; título sobre la foto como Inicio) */
-.sessions-booking-page .sessions-hero-immersive {
+/* Sesiones / Diario home — hero inmersivo (foto ancha; título sobre la foto como Inicio) */
+.sessions-booking-page .sessions-hero-immersive,
+.diary-home-page .sessions-hero-immersive {
   margin: 0 0 18px;
   padding: 0;
   width: 100%;
 }
 
-.sessions-booking-page .sessions-hero-banner-wrap {
+.sessions-booking-page .sessions-hero-banner-wrap,
+.diary-home-page .sessions-hero-banner-wrap {
   position: relative;
   width: 100%;
 }
 
-.sessions-booking-page .sessions-hero-toolbar-mount {
+.sessions-booking-page .sessions-hero-toolbar-mount,
+.diary-home-page .sessions-hero-toolbar-mount {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -6004,7 +6015,8 @@ button.sessions-balance {
   pointer-events: none;
 }
 
-.sessions-booking-page .sessions-hero-toolbar-mount .header-actions {
+.sessions-booking-page .sessions-hero-toolbar-mount .header-actions,
+.diary-home-page .sessions-hero-toolbar-mount .header-actions {
   position: static;
   margin: 0;
   padding: 0;
@@ -6012,7 +6024,9 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-hero-toolbar-mount .header-icon-link,
-.sessions-booking-page .sessions-hero-toolbar-mount .menu-toggle {
+.sessions-booking-page .sessions-hero-toolbar-mount .menu-toggle,
+.diary-home-page .sessions-hero-toolbar-mount .header-icon-link,
+.diary-home-page .sessions-hero-toolbar-mount .menu-toggle {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -6026,13 +6040,16 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-hero-toolbar-mount .header-actions-cluster,
-.sessions-booking-page .sessions-hero-toolbar-mount .menu-wrap {
+.sessions-booking-page .sessions-hero-toolbar-mount .menu-wrap,
+.diary-home-page .sessions-hero-toolbar-mount .header-actions-cluster,
+.diary-home-page .sessions-hero-toolbar-mount .menu-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.sessions-booking-page .sessions-hero-banner {
+.sessions-booking-page .sessions-hero-banner,
+.diary-home-page .sessions-hero-banner {
   position: relative;
   width: 100%;
   min-height: clamp(240px, 37vh, 352px);
@@ -6040,7 +6057,8 @@ button.sessions-balance {
   background: #1a2234;
 }
 
-.sessions-booking-page .sessions-hero-banner-photo {
+.sessions-booking-page .sessions-hero-banner-photo,
+.diary-home-page .sessions-hero-banner-photo {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -6049,7 +6067,12 @@ button.sessions-balance {
   object-position: center 48%;
 }
 
-.sessions-booking-page .sessions-hero-banner-scrim {
+.diary-home-page .sessions-hero-banner-photo {
+  object-position: center 62%;
+}
+
+.sessions-booking-page .sessions-hero-banner-scrim,
+.diary-home-page .sessions-hero-banner-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -6063,7 +6086,8 @@ button.sessions-balance {
   );
 }
 
-.sessions-booking-page .sessions-hero-banner-copy {
+.sessions-booking-page .sessions-hero-banner-copy,
+.diary-home-page .sessions-hero-banner-copy {
   position: absolute;
   left: 0;
   right: 0;
@@ -6074,7 +6098,8 @@ button.sessions-balance {
   gap: 8px;
 }
 
-.sessions-booking-page .sessions-hero-title-on-photo {
+.sessions-booking-page .sessions-hero-title-on-photo,
+.diary-home-page .sessions-hero-title-on-photo {
   margin: 0;
   color: #fff;
   font-size: clamp(1.45rem, 3vw, 2rem);
@@ -6084,7 +6109,8 @@ button.sessions-balance {
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
 }
 
-.sessions-booking-page .sessions-hero-subtitle-on-photo {
+.sessions-booking-page .sessions-hero-subtitle-on-photo,
+.diary-home-page .sessions-hero-subtitle-on-photo {
   margin: 0;
   max-width: 52ch;
   color: rgba(255, 255, 255, 0.92);
@@ -6116,7 +6142,8 @@ button.sessions-balance {
   margin-bottom: 0;
 }
 
-.sessions-booking-page .sessions-hero-actions-band {
+.sessions-booking-page .sessions-hero-actions-band,
+.diary-home-page .sessions-hero-actions-band {
   width: 100%;
   max-width: none;
   box-sizing: border-box;
@@ -6130,6 +6157,48 @@ button.sessions-balance {
   width: 100%;
   max-width: none;
   margin-inline: 0;
+  box-sizing: border-box;
+}
+
+/* Diario home — mismo layout full-bleed que Sesiones / Inicio */
+.portal-main-content:has(.diary-home-page) {
+  width: 100%;
+  max-width: none;
+}
+
+.portal-main--diary-home .portal-main-content:has(.diary-home-page) {
+  padding-top: 0;
+  gap: 0;
+}
+
+.diary-home-page.page-stack {
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
+.portal-main--diary-home .diary-home-page .sessions-hero-immersive {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0;
+}
+
+.diary-home-page .diary-home-subnav-band .diary-subnav {
+  margin: 0;
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.diary-home-page .diary-home-subnav-band {
+  padding-bottom: 12px;
+}
+
+.portal-main--diary-home .diary-home-page > :not(.sessions-hero-immersive):not(.sessions-hero-actions-band):not(.diary-home-band) {
+  padding-left: clamp(12px, 2.4vw, 22px);
+  padding-right: clamp(12px, 2.4vw, 22px);
   box-sizing: border-box;
 }
 
@@ -9711,7 +9780,8 @@ button.sessions-balance {
   }
 
   .portal-main:has(.sessions-booking-page),
-  .portal-main:has(.patient-dashboard-home) {
+  .portal-main:has(.patient-dashboard-home),
+  .portal-main:has(.diary-home-page) {
     background: #f1eef9;
   }
 
@@ -11681,6 +11751,7 @@ button.sessions-balance {
 
   .dashboard-hero-toolbar-mount,
   .sessions-booking-page .sessions-hero-toolbar-mount,
+  .diary-home-page .sessions-hero-toolbar-mount,
   .wellbeing-relax-toolbar-mount {
     left: max(10px, env(safe-area-inset-left, 0px));
     right: max(10px, env(safe-area-inset-right, 0px));
@@ -11689,6 +11760,7 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions,
   .sessions-booking-page .sessions-hero-toolbar-mount .header-actions,
+  .diary-home-page .sessions-hero-toolbar-mount .header-actions,
   .wellbeing-relax-toolbar-mount .header-actions {
     width: 100%;
   }
@@ -17199,5 +17271,139 @@ body.driver-active .driver-overlay {
   font-size: 0.9rem;
   line-height: 1.5;
   color: #475569;
+}
+
+.professional-review-modal {
+  max-width: 520px;
+}
+
+.professional-review-subtitle {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.professional-review-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0 16px;
+}
+
+.professional-review-star {
+  border: 0;
+  background: transparent;
+  font-size: 2rem;
+  line-height: 1;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.professional-review-star.active,
+.professional-review-star:hover,
+.professional-review-star:focus-visible {
+  color: #f59e0b;
+}
+
+.professional-review-comment-label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.professional-review-comment-label textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+}
+
+.professional-review-footer {
+  margin-top: 16px;
+}
+
+.professional-review-error {
+  margin-top: 8px;
+}
+
+.professional-reviews-section {
+  margin-top: 16px;
+}
+
+.professional-reviews-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.professional-reviews-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.professional-reviews-summary-stars {
+  color: #f59e0b;
+  letter-spacing: 0.04em;
+}
+
+.professional-reviews-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.professional-review-item {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.professional-review-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.professional-review-item-stars {
+  color: #f59e0b;
+  letter-spacing: 0.04em;
+}
+
+.professional-review-item p {
+  margin: 0 0 6px;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.professional-review-item small {
+  color: #94a3b8;
+}
+
+.active-professional-rating {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  color: #64748b;
+}
+
+.active-professional-rating span {
+  color: #f59e0b;
 }
 

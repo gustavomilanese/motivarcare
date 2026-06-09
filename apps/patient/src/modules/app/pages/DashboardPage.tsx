@@ -814,6 +814,17 @@ export function DashboardPage(props: {
                     <ProfessionalNameStack professional={activeProfessional} as="span" />
                   </h3>
                   <p>{activeProfessional.title}</p>
+                  {(activeProfessional.rating ?? 0) > 0 || (activeProfessional.reviewsCount ?? 0) > 0 ? (
+                    <p className="active-professional-rating">
+                      <span aria-hidden="true">★</span>{" "}
+                      {(activeProfessional.rating ?? 0).toFixed(1)} · {activeProfessional.reviewsCount ?? 0}{" "}
+                      {t(props.language, {
+                        es: (activeProfessional.reviewsCount ?? 0) === 1 ? "opinión" : "opiniones",
+                        en: (activeProfessional.reviewsCount ?? 0) === 1 ? "review" : "reviews",
+                        pt: (activeProfessional.reviewsCount ?? 0) === 1 ? "avaliação" : "avaliações"
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <p>

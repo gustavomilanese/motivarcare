@@ -12,14 +12,16 @@ export type PortalNotificationKind =
   | "exercise-new"
   | "diary-checkin"
   | "email-verify"
-  | "calendar-connect";
+  | "calendar-connect"
+  | "professional-review";
 
 export type PortalNotificationAction =
   | { type: "chat"; professionalId: string }
   | { type: "navigate"; path: string }
   | { type: "booking"; bookingId: string }
   | { type: "exercise"; slug: string }
-  | { type: "profile"; tab: PatientProfileTab };
+  | { type: "profile"; tab: PatientProfileTab }
+  | { type: "professional-review"; professionalId: string };
 
 export interface PortalNotificationItem {
   id: string;
@@ -99,4 +101,8 @@ export interface BuildPortalNotificationsParams {
   professionalNameById: Map<string, string>;
   exercises: PatientNotificationExercise[];
   lastDiaryEntryAt: string | null;
+  pendingProfessionalReview?: {
+    professionalId: string;
+    professionalName: string;
+  } | null;
 }

@@ -454,7 +454,7 @@ export function PortalNavigation(props: {
 
     return (
       <div
-        className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : ""}`}
+        className={`notifications-dropdown${isMobilePortal ? " notifications-dropdown--mobile-sheet" : " notifications-dropdown--portaled"}`}
         role="dialog"
         aria-modal={isMobilePortal ? "true" : undefined}
         aria-label={t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}
@@ -614,9 +614,7 @@ export function PortalNavigation(props: {
             {props.notificationsOpen ? (
               <>
                 {createPortal(renderNotificationsBackdrop(), document.body)}
-                {isMobilePortal
-                  ? createPortal(renderNotificationsDropdown(), document.body)
-                  : renderNotificationsDropdown()}
+                {createPortal(renderNotificationsDropdown(), document.body)}
               </>
             ) : null}
           </div>
@@ -697,7 +695,7 @@ export function PortalNavigation(props: {
       ) : null}
 
       <div
-        className={`portal-main${diaryImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
+        className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
       >
         {!immersivePortalHome ? (
           <header className="portal-header">

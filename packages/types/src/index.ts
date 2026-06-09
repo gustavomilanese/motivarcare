@@ -58,6 +58,16 @@ export type {
   EmotionalDiaryStats
 } from "./emotionalDiary.js";
 
+export {
+  MIN_COMPLETED_SESSIONS_FOR_PROFESSIONAL_REVIEW
+} from "./professionalReviews.js";
+export type {
+  CreateProfessionalReviewPayload,
+  PendingProfessionalReviewPrompt,
+  ProfessionalReviewPublicItem,
+  ProfessionalReviewStats
+} from "./professionalReviews.js";
+
 export interface CancellationPolicy {
   freeCancellationHours: number;
   lateCancellationPenalty: "none" | "partial_credit" | "full_credit";
