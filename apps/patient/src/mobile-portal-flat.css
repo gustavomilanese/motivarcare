@@ -909,7 +909,8 @@
 
   .portal-main .session-rn-root .session-rn-card--trial.session-management-card {
     border: none !important;
-    border-left: 3px solid rgba(245, 158, 11, 0.65) !important;
+    border-left: 3px solid var(--brand-2) !important;
+    background: linear-gradient(90deg, rgba(95, 68, 235, 0.06) 0%, #ffffff 28%) !important;
     padding-left: calc(var(--mobile-pad-x) - 3px) !important;
   }
 
@@ -1400,8 +1401,8 @@
     border: none;
     border-radius: 0;
     box-shadow: none;
-    background: linear-gradient(180deg, #dce4ff 0%, #eef2ff 100%);
-    border-bottom: 1px solid rgba(109, 86, 255, 0.12);
+    background: linear-gradient(180deg, #f3edff 0%, #faf8ff 100%);
+    border-bottom: 1px solid rgba(95, 68, 235, 0.12);
   }
 
   /* —— Dashboard home: hero + canvas + bandas —— */
@@ -1585,7 +1586,7 @@
   }
 
   .portal-main .session-rn-root .session-rn-card.session-rn-card--next.session-rn-card--trial {
-    border-left: 3px solid rgba(245, 158, 11, 0.7) !important;
+    border-left: 3px solid var(--brand-2) !important;
     padding-left: calc(16px - 3px) !important;
   }
 

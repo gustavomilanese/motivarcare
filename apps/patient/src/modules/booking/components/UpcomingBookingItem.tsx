@@ -218,7 +218,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
           <div className="session-management-cell session-management-cell-status">
             <span className="session-management-cell-label">{headLabels.status}</span>
-            <span className="session-status-pill confirmed">
+            <span className={`session-status-pill confirmed${isTrialBooking ? " session-status-pill--trial" : ""}`}>
               {upcomingBookingStatusPillLabel(props.language, isTrialBooking)}
             </span>
           </div>
@@ -288,7 +288,9 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
               <strong className="session-rn-name">
                 <ProfessionalNameStack professional={bookingProfessional} as="span" />
               </strong>
-              <span className="session-rn-status">{upcomingBookingCardStatusLine(props.language, isTrialBooking)}</span>
+              <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
+                {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
+              </span>
             </div>
             {!isTrialBooking ? (
               <SessionRescheduleButton

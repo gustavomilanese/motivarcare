@@ -1873,17 +1873,19 @@ button.danger {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: min(470px, calc(100vw - 28px));
-  background: var(--portal-surface-solid);
-  border: 1px solid var(--portal-border);
+  width: min(340px, calc(100vw - 28px));
+  background: linear-gradient(180deg, #faf8ff 0%, #ffffff 18%);
+  border: 1px solid rgba(95, 68, 235, 0.12);
   border-radius: var(--portal-radius);
-  box-shadow: var(--portal-elev-lg);
-  padding: 16px;
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.12),
+    0 4px 12px rgba(95, 68, 235, 0.08);
+  padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 0;
   z-index: 200;
   max-height: min(85vh, 640px);
-  overflow-y: auto;
+  overflow: hidden auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1892,10 +1894,11 @@ button.danger {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  border: 1px solid #e2e6f2;
-  border-radius: 12px;
-  background: #f8f9fd;
-  padding: 10px 12px;
+  border: none;
+  border-radius: 0;
+  background: rgba(250, 248, 255, 0.96);
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(95, 68, 235, 0.1);
 }
 
 .menu-panel-head-copy {
@@ -1942,22 +1945,32 @@ button.danger {
 }
 
 .menu-sep {
-  height: 1px;
-  background: #e5e8ef;
-  margin: 4px 0;
+  display: none;
+}
+
+.menu-dropdown .menu-dropdown-group {
+  gap: 0;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.menu-dropdown .menu-dropdown-section-label {
+  margin: 0;
+  padding: 10px 16px 4px;
 }
 
 .menu-item {
   min-height: var(--touch-min);
   text-align: left;
   justify-content: flex-start;
-  border-radius: var(--portal-radius-sm);
-  border: 1px solid #e8ecf4;
-  background: #ffffff;
-  padding: 12px 14px;
-  font-weight: 600;
-  font-size: 14px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 16px;
+  font-weight: 500;
+  font-size: 15px;
   color: #1e293b;
+  transition: background 0.14s ease;
 }
 
 .menu-item-split {
@@ -1973,9 +1986,14 @@ button.danger {
   font-weight: 600;
 }
 
-.menu-item:hover {
-  background: #f3f5fc;
-  border-color: #dbe1f2;
+.menu-dropdown .menu-item:hover,
+.menu-dropdown .menu-item--help:hover {
+  background: rgba(95, 68, 235, 0.06);
+}
+
+.menu-dropdown .menu-item:active,
+.menu-dropdown .menu-item--help:active {
+  background: rgba(95, 68, 235, 0.1);
 }
 
 .menu-item.danger {
@@ -2011,35 +2029,28 @@ button.danger {
 }
 
 .menu-item.danger:hover {
-  background: #fff1f3;
-  border-color: #ffc8cf;
+  background: rgba(180, 35, 46, 0.06);
 }
 
 .menu-dropdown-account {
   display: grid;
-  gap: 6px;
 }
 
 .menu-dropdown-group {
   display: grid;
-  gap: 6px;
 }
 
 .menu-item--primary {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .menu-item--sub {
-  margin-left: 4px;
-  padding-left: 16px;
-  border-left: 3px solid rgba(95, 68, 235, 0.28);
-  font-weight: 500;
-  font-size: 13px;
-  color: #475569;
-}
-
-.menu-item--sub:hover {
-  border-left-color: rgba(95, 68, 235, 0.55);
+  margin: 0;
+  padding: 10px 16px 10px 28px;
+  border-left: none;
+  font-weight: 400;
+  font-size: 14px;
+  color: #64748b;
 }
 
 .menu-item--value {
@@ -2056,13 +2067,20 @@ button.danger {
   flex-shrink: 0;
 }
 
+.menu-dropdown > .menu-item--danger {
+  margin: 0;
+  border: none;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 0;
+  font-weight: 600;
+}
+
 .menu-item--danger {
   color: #b4232e;
 }
 
 .menu-item--danger:hover {
-  background: #fff1f3;
-  border-color: #ffc8cf;
+  background: rgba(180, 35, 46, 0.06);
 }
 
 .menu-dropdown-section-country {
@@ -2077,24 +2095,20 @@ button.danger {
 }
 
 .menu-item--account-sub {
-  margin-left: 4px;
-  padding-left: 16px;
-  border-left: 3px solid rgba(95, 68, 235, 0.28);
-  font-weight: 500;
-  font-size: 13px;
-  color: #475569;
-}
-
-.menu-item--account-sub:hover {
-  border-left-color: rgba(95, 68, 235, 0.55);
+  margin: 0;
+  padding: 10px 16px 10px 28px;
+  border-left: none;
+  font-weight: 400;
+  font-size: 14px;
+  color: #64748b;
 }
 
 .menu-dropdown-section-label {
-  margin: 0 0 6px;
-  padding: 0 2px;
+  margin: 0;
+  padding: 10px 16px 4px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: #64748b;
 }
@@ -2108,8 +2122,8 @@ button.danger {
   display: grid;
   gap: 2px;
   min-height: 44px;
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 12px 16px;
+  font-size: 14px;
 }
 
 .menu-item--help-email small {
@@ -2120,11 +2134,11 @@ button.danger {
 }
 
 .menu-dropdown-phones {
-  margin-top: 2px;
-  padding: 10px 12px;
-  border: 1px solid #e8ecf4;
-  border-radius: 12px;
-  background: #f8fafc;
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .menu-dropdown-phones-title {
@@ -2146,9 +2160,9 @@ button.danger {
 .menu-dropdown-phones-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 16px 4px 28px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .menu-dropdown-phones-list li {
@@ -2167,7 +2181,8 @@ button.danger {
 }
 
 .menu-dropdown-phones-note {
-  margin: 8px 0 0;
+  margin: 0;
+  padding: 4px 16px 8px 28px;
   font-size: 11px;
   line-height: 1.35;
   color: #94a3b8;
@@ -2250,12 +2265,12 @@ button.danger {
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  border: 1px solid rgba(72, 88, 220, 0.42);
+  border: 1px solid rgba(95, 68, 235, 0.2);
   border-radius: var(--portal-radius-sm);
-  background: linear-gradient(145deg, #cdd8ff 0%, #b0c2ff 38%, #93a8ff 72%, #7b8ef5 100%);
+  background: linear-gradient(145deg, #faf8ff 0%, #f3edff 38%, #ebe4ff 72%, #e8e0ff 100%);
   box-shadow:
-    0 6px 22px rgba(79, 98, 235, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    0 8px 24px rgba(95, 68, 235, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .trial-priority-inline {
@@ -2268,14 +2283,18 @@ button.danger {
   min-width: 120px;
   padding: 9px 16px;
   justify-self: end;
-  border: 1px solid rgba(72, 88, 220, 0.45);
-  color: #312e81;
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(95, 68, 235, 0.32);
+  color: #4c31d8;
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
+  font-weight: 600;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .trial-inline-action:hover {
-  background: #eef2ff;
+  background: #f5f0ff;
+  border-color: rgba(95, 68, 235, 0.45);
+  color: #4328c4;
 }
 
 .trial-priority-banner h2 {
@@ -2292,6 +2311,7 @@ button.danger {
   margin: 0;
   font-size: 14px;
   line-height: 1.25;
+  color: #5b5580;
 }
 
 .trial-inline-icon {
@@ -2300,9 +2320,9 @@ button.danger {
   border-radius: 10px;
   display: inline-grid;
   place-items: center;
-  background: linear-gradient(145deg, #eef1ff 0%, #d0dcff 100%);
-  border: 1px solid rgba(72, 88, 220, 0.38);
-  box-shadow: none;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(237, 229, 255, 0.95) 100%);
+  border: 1px solid rgba(95, 68, 235, 0.22);
+  box-shadow: 0 2px 8px rgba(95, 68, 235, 0.08);
 }
 
 .trial-inline-icon::before {
@@ -2310,7 +2330,7 @@ button.danger {
   width: 13px;
   height: 13px;
   border-radius: 4px;
-  border: 2px solid #4f46e5;
+  border: 2px solid var(--brand);
   border-top-color: transparent;
   transform: rotate(-45deg);
 }
@@ -8088,13 +8108,13 @@ button.sessions-balance {
 }
 
 .sessions-calendar-event--trial {
-  border-left-color: #f9ab00;
-  background: #fef7e0;
+  border-left-color: var(--brand-2);
+  background: linear-gradient(90deg, rgba(95, 68, 235, 0.1) 0%, rgba(95, 68, 235, 0.03) 100%);
 }
 
 .sessions-calendar-event--trial:hover {
-  background: #feefc3;
-  box-shadow: 0 1px 3px rgba(249, 171, 0, 0.18);
+  background: linear-gradient(90deg, rgba(95, 68, 235, 0.14) 0%, rgba(95, 68, 235, 0.05) 100%);
+  box-shadow: 0 1px 3px rgba(95, 68, 235, 0.14);
 }
 
 .sessions-calendar-event-time {
@@ -8105,7 +8125,7 @@ button.sessions-balance {
 }
 
 .sessions-calendar-event--trial .sessions-calendar-event-time {
-  color: #b06000;
+  color: #5f44eb;
 }
 
 .sessions-calendar-event-title {
@@ -8276,6 +8296,22 @@ button.sessions-balance {
   color: #2e7d46;
 }
 
+.session-management-card.session-rn-card--trial,
+.session-rn-card--trial.session-management-card {
+  border-color: rgba(95, 68, 235, 0.22);
+  background: linear-gradient(180deg, #fdfcff 0%, #faf8ff 100%);
+  box-shadow:
+    0 6px 18px rgba(95, 68, 235, 0.08),
+    inset 3px 0 0 var(--brand-2);
+}
+
+.session-rn-card--trial .session-status-pill.confirmed,
+.session-status-pill.session-status-pill--trial {
+  background: rgba(95, 68, 235, 0.1);
+  border-color: rgba(95, 68, 235, 0.24);
+  color: #4c31d8;
+}
+
 .booking-inline-fields label {
   display: grid;
   grid-template-columns: minmax(136px, 38%) minmax(0, 1fr);
@@ -8442,7 +8478,7 @@ button.sessions-balance {
 }
 
 .trial-rule {
-  color: #243f66;
+  color: #5b4a8a;
   font-size: 12px;
   font-style: italic;
   font-weight: 500;
@@ -8474,16 +8510,21 @@ button.sessions-balance {
 }
 
 .trial-status-line.reserved {
-  border-color: rgba(37, 99, 235, 0.3);
-  background: rgba(239, 246, 255, 0.78);
+  border-color: rgba(95, 68, 235, 0.28);
+  background: rgba(243, 237, 255, 0.82);
 }
 
 .trial-status-line.reserved .trial-status-dot {
-  background: #2563eb;
+  background: var(--brand);
 }
 
 .trial-status-line.pending {
-  border-color: rgba(148, 163, 184, 0.42);
+  border-color: rgba(95, 68, 235, 0.16);
+  background: rgba(250, 248, 255, 0.72);
+}
+
+.trial-status-line.pending .trial-status-dot {
+  background: rgba(115, 89, 245, 0.55);
 }
 
 .trial-status-line.completed {
@@ -9857,7 +9898,11 @@ button.sessions-balance {
   }
 
   .session-rn-root .session-rn-card--trial.session-management-card {
-    border: 1.5px solid rgba(245, 158, 11, 0.5);
+    border: 1px solid rgba(95, 68, 235, 0.22);
+    background: linear-gradient(180deg, #fdfcff 0%, #faf8ff 100%);
+    box-shadow:
+      0 6px 18px rgba(95, 68, 235, 0.08),
+      inset 3px 0 0 var(--brand-2);
   }
 
   .session-rn-root .session-rn-top {
@@ -9929,6 +9974,10 @@ button.sessions-balance {
     font-weight: 600;
     color: #248a3d;
     margin-top: 2px;
+  }
+
+  .session-rn-root .session-rn-status.session-rn-status--trial {
+    color: var(--brand);
   }
 
   .session-rn-root .session-rn-reschedule {
