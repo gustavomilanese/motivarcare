@@ -26,7 +26,6 @@ import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessio
 import {
   isDisplayOnlyBundlePlanId,
   filterUpcomingPatientBookings,
-  pickFirstBundlePlan,
   resolvePackageCatalogView,
   resolvePackagePurchaseGate
 } from "@therapy/patient-core";
@@ -444,6 +443,7 @@ export function BookingPage(props: {
   useEffect(() => {
     if (
       !isCheckoutFlow
+      || checkoutSource !== "dashboard"
       || !selectedCheckoutPlanId
       || checkoutPaymentPlanId
       || searchParams.get("purchase") === "individual"
@@ -725,18 +725,14 @@ export function BookingPage(props: {
       setCheckoutPaymentPlanId(null);
       setCheckoutPaymentError("");
       resetIndividualPurchaseUi();
-      const firstBundle = pickFirstBundlePlan(displayPackagePlans);
-      setCheckoutFlow(true, planId ?? selectedCheckoutPlanId ?? displayFeaturedPackageId ?? firstBundle?.id ?? "display-bundle-8");
+      setCheckoutFlow(true, typeof planId === "string" ? planId : null);
       if (isMobilePortal) {
         scrollCheckoutIntoView();
       }
     },
     [
-      displayFeaturedPackageId,
-      displayPackagePlans,
       isMobilePortal,
       resetIndividualPurchaseUi,
-      selectedCheckoutPlanId,
       setCheckoutFlow
     ]
   );
