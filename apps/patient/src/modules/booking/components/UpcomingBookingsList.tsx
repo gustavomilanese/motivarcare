@@ -31,9 +31,12 @@ function listClassName(layout: UpcomingBookingLayout, surface: UpcomingBookingsS
       : "sessions-confirmed-list sessions-confirmed-list--desktop";
   }
 
-  return surface === "dashboard"
-    ? "sessions-confirmed-list sessions-confirmed-list--dashboard-mobile"
-    : "sessions-confirmed-list sessions-confirmed-list--mobile";
+  const surfaceClass =
+    surface === "dashboard"
+      ? "sessions-confirmed-list sessions-confirmed-list--dashboard-mobile"
+      : "sessions-confirmed-list sessions-confirmed-list--mobile";
+
+  return `${surfaceClass} sessions-confirmed-list--cards`;
 }
 
 export function UpcomingBookingsList(props: UpcomingBookingsListProps) {

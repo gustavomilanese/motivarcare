@@ -883,37 +883,71 @@
     padding-bottom: var(--mobile-section-y);
   }
 
-  /* Session list rows (flat; cards destacadas en reglas de --next más abajo) */
-  .portal-main .session-rn-root .session-rn-session-list,
-  .portal-main .sessions-confirmed-list--dashboard-mobile {
+  /* Session cards (Inicio + Sesiones): espaciadas, nombre alineado a la izquierda */
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list,
+  .portal-main .sessions-confirmed-list--cards {
+    display: flex;
+    flex-direction: column;
     gap: 0;
-    background: var(--mobile-surface);
+    background: var(--mobile-canvas);
   }
 
-  .portal-main .session-rn-root .session-rn-card.session-management-card,
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
-    border: none !important;
-    border-radius: 0 !important;
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
+    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+  }
+
+  .portal-main .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards,
+  .portal-main .sessions-booking-page .sessions-confirmed-list--cards {
+    width: 100%;
+  }
+
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 10px !important;
+  }
+
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card.session-management-card {
+    border: 1px solid var(--mobile-divider) !important;
+    border-radius: 12px !important;
     box-shadow: none !important;
-    background: var(--mobile-surface) !important;
-    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+    background: #ffffff !important;
+    padding: 14px 16px !important;
     border-bottom: 1px solid var(--mobile-divider) !important;
-    min-height: var(--mobile-row-min);
+    min-height: 0;
+    text-align: left;
   }
 
-  .portal-main .session-rn-root .session-rn-card.session-management-card:last-child:not(.session-rn-card--next),
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:last-child:not(.session-rn-card--next) {
-    border-bottom: none !important;
+  .portal-main .sessions-confirmed-list--cards .session-rn-top,
+  .portal-main .sessions-confirmed-list--cards .session-rn-body,
+  .portal-main .sessions-confirmed-list--cards .session-rn-body-header,
+  .portal-main .sessions-confirmed-list--cards .session-rn-body-main {
+    justify-items: start;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
   }
 
-  .portal-main .session-rn-root .session-rn-card--trial.session-management-card {
-    border: none !important;
+  .portal-main .sessions-confirmed-list--cards .session-rn-name,
+  .portal-main .sessions-confirmed-list--cards .session-rn-name.professional-name-link,
+  .portal-main .sessions-confirmed-list--cards .professional-name-stack,
+  .portal-main .sessions-confirmed-list--cards .professional-name-link {
+    text-align: left;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .portal-main .sessions-confirmed-list--cards .professional-name-link {
+    display: block;
+  }
+
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card--trial.session-management-card {
+    border: 1px solid rgba(95, 68, 235, 0.16) !important;
     border-left: 3px solid var(--brand-2) !important;
     background: linear-gradient(90deg, rgba(95, 68, 235, 0.06) 0%, #ffffff 28%) !important;
-    padding-left: calc(var(--mobile-pad-x) - 3px) !important;
+    padding-left: calc(16px - 3px) !important;
   }
 
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card:active {
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card.session-management-card:active {
     background: rgba(95, 68, 235, 0.04) !important;
     border-color: var(--mobile-divider) !important;
   }
@@ -1554,21 +1588,13 @@
     color: var(--mobile-text-secondary);
   }
 
-  .portal-main .patient-dashboard-home .dashboard-rn-session-list {
-    gap: 10px;
-    padding: 0 var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
-    background: var(--mobile-canvas);
-  }
-
-  .portal-main .sessions-booking-page .sessions-confirmed-list--mobile {
-    gap: 10px;
+  .portal-main .sessions-booking-page .sessions-confirmed-list--mobile.sessions-confirmed-list--cards {
     padding: 10px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
-    background: var(--mobile-canvas);
   }
 
   /* Próxima sesión: card sobre fondo gris del listado */
   .portal-main .session-rn-root .session-rn-card.session-rn-card--next,
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card--next {
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card.session-rn-card--next {
     background: #ffffff !important;
     border: 1px solid rgba(95, 68, 235, 0.16) !important;
     border-radius: 14px !important;
@@ -1579,7 +1605,7 @@
   }
 
   .portal-main .session-rn-root .session-rn-card.session-rn-card--next:active,
-  .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card--next:active {
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card.session-rn-card--next:active {
     background: rgba(95, 68, 235, 0.04) !important;
     border-color: rgba(95, 68, 235, 0.28) !important;
   }
@@ -1589,15 +1615,7 @@
     padding-left: calc(16px - 3px) !important;
   }
 
-  .portal-main .patient-dashboard-home .dashboard-rn-session-list .dashboard-rn-session-pressable.session-rn-card:not(.session-rn-card--next) {
-    background: #ffffff !important;
-    border: 1px solid var(--mobile-divider) !important;
-    border-radius: 12px !important;
-    border-bottom: 1px solid var(--mobile-divider) !important;
-    padding: 14px 16px !important;
-  }
-
-  .portal-main .sessions-booking-page .sessions-confirmed-list--mobile .session-rn-card:not(.session-rn-card--next) {
+  .portal-main .sessions-confirmed-list--cards > .session-rn-card:not(.session-rn-card--next) {
     background: #ffffff !important;
     border: 1px solid var(--mobile-divider) !important;
     border-radius: 12px !important;
@@ -2435,8 +2453,7 @@
       min-height: 44px;
     }
 
-    .portal-main .session-rn-root .session-rn-card.session-management-card,
-    .portal-main .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
+    .portal-main .sessions-confirmed-list--cards > .session-rn-card.session-management-card {
       padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x) !important;
     }
 

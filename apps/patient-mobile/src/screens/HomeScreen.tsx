@@ -277,7 +277,8 @@ function buildHomeStyles(c: AppThemeColors, mode: ThemeMode) {
       color: c.primary
     },
     sessionCards: {
-      gap: 18
+      flexDirection: "column",
+      gap: 12
     },
     emptyCard: {
       backgroundColor: c.surface,
@@ -694,6 +695,7 @@ export function HomeScreen() {
   } = packageCatalogView;
 
   const upcoming = useMemo(() => bookings, [bookings]);
+  const homeUpcoming = useMemo(() => upcoming.slice(0, 3), [upcoming]);
 
   const goToSessions = () => {
     navigation.navigate("sessions");
@@ -959,7 +961,7 @@ export function HomeScreen() {
             </View>
           ) : (
             <View style={styles.sessionCards}>
-              {upcoming.map((b) => (
+              {homeUpcoming.map((b) => (
                 <UpcomingSessionCard key={b.id} booking={b} onPress={() => onUpcomingPress(b)} />
               ))}
             </View>

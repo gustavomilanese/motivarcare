@@ -10032,9 +10032,16 @@ button.sessions-balance {
     gap: 0;
   }
 
-  .patient-dashboard-home .dashboard-upcoming-mobile-only .sessions-confirmed-list--dashboard-mobile {
-    display: grid;
-    gap: 12px;
+  .patient-dashboard-home .dashboard-upcoming-mobile-only .sessions-confirmed-list--dashboard-mobile.sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 12px;
   }
 
   .patient-dashboard-home .dashboard-upcoming-desktop-only {
@@ -10079,9 +10086,11 @@ button.sessions-balance {
     min-height: clamp(208px, 41.6vw, 288px);
   }
 
-  .sessions-booking-page .sessions-booking-mobile-only .sessions-confirmed-list--mobile {
-    display: grid;
-    gap: 12px;
+  .sessions-booking-page .sessions-booking-mobile-only .sessions-confirmed-list--mobile.sessions-confirmed-list--cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
   }
 
   /* Tarjetas tipo patient-mobile `UpcomingSessionCard` (solo ≤680px) */
@@ -10149,6 +10158,10 @@ button.sessions-balance {
     min-width: 0;
     display: grid;
     gap: 3px;
+    justify-items: start;
+    align-items: start;
+    text-align: left;
+    width: 100%;
   }
 
   .session-rn-root .session-rn-date-line {
@@ -10165,6 +10178,21 @@ button.sessions-balance {
     letter-spacing: -0.02em;
     line-height: 1.25;
     color: #1c1c1e;
+    text-align: left;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-stack,
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-link {
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+  }
+
+  .session-rn-root .sessions-confirmed-list--cards .professional-name-link {
+    display: block;
   }
 
   .session-rn-root .session-rn-name-line {
@@ -13363,14 +13391,19 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-rn-session-list {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 0;
+    width: 100%;
+  }
+
+  .patient-dashboard-home .dashboard-rn-session-list .sessions-confirmed-list--cards {
+    gap: 0;
   }
 
   .session-rn-root .session-rn-status.dashboard-rn-status-pending {
     color: #b45309;
   }
 
-  .session-rn-root .dashboard-rn-session-pressable.session-rn-card {
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
@@ -13380,7 +13413,7 @@ button.sessions-balance {
     -webkit-tap-highlight-color: transparent;
   }
 
-  .session-rn-root .dashboard-rn-session-pressable.session-rn-card:active {
+  .session-rn-root .sessions-confirmed-list--cards > .session-rn-card:active {
     opacity: 0.96;
     background: #f8fafc;
     border-color: rgba(95, 68, 235, 0.35);
