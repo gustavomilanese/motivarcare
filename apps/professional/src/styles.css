@@ -3864,6 +3864,7 @@ ul {
 }
 
 .pro-web-fields--identity {
+  overflow-anchor: none;
   scroll-padding-top: 72px;
 }
 
@@ -9621,6 +9622,7 @@ button:disabled {
 .pro-web-identity-section.pro-web-focus-areas,
 .pro-web-identity-section.pro-web-therapy-block {
   gap: 10px;
+  scroll-margin-top: 88px;
 }
 
 .pro-web-identity-confirm {

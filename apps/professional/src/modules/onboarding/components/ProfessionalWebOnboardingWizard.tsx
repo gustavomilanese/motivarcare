@@ -52,6 +52,8 @@ export function ProfessionalWebOnboardingWizard(props: {
   const [identityStepConfirmOpen, setIdentityStepConfirmOpen] = useState(false);
   const [identityTherapyUnlocked, setIdentityTherapyUnlocked] = useState(false);
   const therapySectionRef = useRef<HTMLDivElement | null>(null);
+  const focusAreasSectionRef = useRef<HTMLDivElement | null>(null);
+  const focusAreasWereVisibleRef = useRef(false);
 
   const {
     step,
@@ -190,6 +192,15 @@ export function ProfessionalWebOnboardingWizard(props: {
       setIdentityTherapyUnlocked(false);
     }
   }, [form.focusAreas.length]);
+
+  useEffect(() => {
+    if (identityReveal.showFocusAreas && !focusAreasWereVisibleRef.current) {
+      window.requestAnimationFrame(() => {
+        focusAreasSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    focusAreasWereVisibleRef.current = identityReveal.showFocusAreas;
+  }, [identityReveal.showFocusAreas]);
 
   useEffect(() => {
     if (!identityStepConfirmOpen) {
@@ -663,7 +674,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 </div>
               ) : null}
               {identityReveal.showFocusAreas ? (
-                <div className="pro-web-identity-section">
+                <div className="pro-web-identity-section pro-web-focus-areas" ref={focusAreasSectionRef}>
                   <ProfessionalFocusAreasPicker
                     language={props.language}
                     selected={form.focusAreas}
