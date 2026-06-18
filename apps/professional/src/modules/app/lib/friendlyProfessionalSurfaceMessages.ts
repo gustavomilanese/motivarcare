@@ -432,9 +432,30 @@ export function friendlyCalendarOAuthReturnMessage(
   }
   if (r === "oauth_exchange_failed") {
     return t(language, {
-      es: "No pudimos cerrar la conexión con Google (credenciales o URI de redirección del API). Si administrás el entorno, revisá GOOGLE_CLIENT_ID/SECRET y que la URI de callback sea exactamente la de api.motivarcare.com en Google Cloud. Podés seguir sin calendario con «Lo hago después».",
-      en: "We couldn’t finish the Google connection (credentials or API redirect URI). If you manage this environment, check GOOGLE_CLIENT_ID/SECRET and the exact api.motivarcare.com callback URI in Google Cloud. You can continue without calendar via “I’ll do it later”.",
-      pt: "Nao foi possivel concluir a conexao com o Google (credenciais ou URI de callback da API). Se voce administra o ambiente, confira GOOGLE_CLIENT_ID/SECRET e a URI exata de api.motivarcare.com na Google Cloud. Pode seguir sem calendario com «Depois eu faco»."
+      es: "No pudimos cerrar la conexión con Google (credenciales o URI de redirección del API). Si administrás el entorno, revisá GOOGLE_CLIENT_ID/SECRET y que la URI de callback sea exactamente https://api.motivarcare.com/api/auth/google/calendar/callback en Google Cloud. Podés seguir sin calendario con «Lo hago después».",
+      en: "We couldn’t finish the Google connection (credentials or API redirect URI). If you manage this environment, check GOOGLE_CLIENT_ID/SECRET and set the callback URI to exactly https://api.motivarcare.com/api/auth/google/calendar/callback in Google Cloud. You can continue without calendar via “I’ll do it later”.",
+      pt: "Nao foi possivel concluir a conexao com o Google (credenciais ou URI de callback da API). Se voce administra o ambiente, confira GOOGLE_CLIENT_ID/SECRET e a URI https://api.motivarcare.com/api/auth/google/calendar/callback na Google Cloud. Pode seguir sem calendario com «Depois eu faco»."
+    });
+  }
+  if (r === "redirect_uri_mismatch") {
+    return t(language, {
+      es: "Google rechazó la URI de redirección. En Google Cloud → Credenciales OAuth, agregá exactamente: https://api.motivarcare.com/api/auth/google/calendar/callback (no uses app.motivarcare.com). Luego probá «Conectar ahora» de nuevo.",
+      en: "Google rejected the redirect URI. In Google Cloud → OAuth credentials, add exactly: https://api.motivarcare.com/api/auth/google/calendar/callback (not app.motivarcare.com). Then try “Connect now” again.",
+      pt: "O Google rejeitou a URI de redirecionamento. Em Google Cloud → credenciais OAuth, adicione exatamente: https://api.motivarcare.com/api/auth/google/calendar/callback (nao use app.motivarcare.com). Depois tente «Conectar agora»."
+    });
+  }
+  if (r === "invalid_client") {
+    return t(language, {
+      es: "Las credenciales OAuth de Google no son válidas en el servidor (GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en Railway). Revisá que coincidan con Google Cloud y redeployá el API.",
+      en: "Google OAuth credentials on the server are invalid (GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET on Railway). Match them to Google Cloud and redeploy the API.",
+      pt: "As credenciais OAuth do Google no servidor sao invalidas (GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET no Railway). Confira no Google Cloud e redeploy da API."
+    });
+  }
+  if (r === "invalid_grant") {
+    return t(language, {
+      es: "El código de autorización de Google expiró o ya se usó. Probá «Conectar ahora» de nuevo en una sola pestaña.",
+      en: "Google’s authorization code expired or was already used. Try “Connect now” again in a single tab.",
+      pt: "O codigo de autorizacao do Google expirou ou ja foi usado. Tente «Conectar agora» de novo em uma unica aba."
     });
   }
   if (r === "missing_code") {
