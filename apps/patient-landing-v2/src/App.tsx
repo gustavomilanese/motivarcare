@@ -48,7 +48,7 @@ const IMG = {
   /** Videollamada terapia desde casa (¿Quiénes somos? — banda full width). */
   quienesSomosStrip: "/photos/quienes-somos.jpg",
   /** Precios — equipo de profesionales (banner full-bleed). */
-  preciosEquipo: "/photos/precios-profesionales-equipo.jpg"
+  preciosEquipo: "/photos/precios-sesion-escritorio.jpg"
 } as const;
 
 /** Card ilustrativo del hero (`aria-label="Ejemplo de match"`). Datos de ejemplo, no persona real. */

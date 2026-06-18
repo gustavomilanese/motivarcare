@@ -10,9 +10,9 @@ export function PreciosPanel({ imageSrc, patientPortalUrl }: Props) {
         <div className="plv2-precios-bg">
           <img
             src={imageSrc}
-            alt="Dos profesionales sonriendo en un entorno de trabajo"
-            width={2048}
-            height={1364}
+            alt="Persona tomando notas en un escritorio con laptop, en un espacio de trabajo luminoso"
+            width={1024}
+            height={682}
             loading="lazy"
             decoding="async"
             sizes="(min-width: 961px) 54vw, 100vw"
