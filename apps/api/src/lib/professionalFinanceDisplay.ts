@@ -12,7 +12,7 @@ export type FinanceRecordForDisplay = {
   sessionPriceCents: number;
   platformFeeCents: number;
   professionalNetCents: number;
-  fxArsPerUsdSnapshot?: number | null;
+  fxArsPerUsdSnapshot?: unknown;
 };
 
 export type ProfessionalFinanceDisplaySummary = {

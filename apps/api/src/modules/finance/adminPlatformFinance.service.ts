@@ -72,12 +72,12 @@ function buildPurchasesWhere(input: {
             {
               patient: {
                 user: {
-                  fullName: { contains: input.purchases.search, mode: "insensitive" as const }
+                  fullName: { contains: input.purchases.search }
                 }
               }
             },
             {
-              packageNameSnapshot: { contains: input.purchases.search, mode: "insensitive" as const }
+              packageNameSnapshot: { contains: input.purchases.search }
             },
             ...(input.searchProfessionalIds && input.searchProfessionalIds.length > 0
               ? [{ professionalIdSnapshot: { in: input.searchProfessionalIds } }]
@@ -244,7 +244,7 @@ export async function getAdminPlatformPackagePurchases(query: Record<string, unk
           await prisma.professionalProfile.findMany({
             where: {
               user: {
-                fullName: { contains: purchasesQuery.search, mode: "insensitive" }
+                fullName: { contains: purchasesQuery.search }
               }
             },
             select: { id: true }
