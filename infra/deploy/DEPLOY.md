@@ -50,7 +50,7 @@ En el servicio de la **API**, agregá variables (o usá **Reference** para enlaz
 | `TRUST_PROXY` | `true` |
 | `API_PUBLIC_URL` | URL pública HTTPS del API (sin barra final), ej. `https://app.motivarcare.com` si el dominio apunta al servicio Railway. Usada para OAuth Calendar, enlaces en mails, URLs de assets. |
 | `BASE_URL` / `BACKEND_URL` | (Opcional) Alias de la URL pública del API; si `API_PUBLIC_URL` no conviene tocar, el OAuth Calendar puede resolver desde estos (misma prioridad que en código). |
-| `GOOGLE_REDIRECT_URI` | (Opcional) URI completa del callback de Google Calendar si querés fijarla aparte; si vacío, es `{origen público}/api/auth/google/calendar/callback`. En **producción**, si el origen sigue siendo `*.railway.app`, el código usa **`https://app.motivarcare.com`** para ese callback. Debe coincidir con Google Cloud Console → URIs autorizadas. |
+| `GOOGLE_REDIRECT_URI` | (Opcional) URI completa del callback de Google Calendar si querés fijarla aparte; si vacío, es `{origen público}/api/auth/google/calendar/callback`. En **producción**, si el origen sigue siendo `*.railway.app`, el código usa **`https://api.motivarcare.com`** para ese callback. Debe coincidir con Google Cloud Console → URIs autorizadas. |
 | `PATIENT_APP_URL` | URL del portal paciente en prod |
 | `PROFESSIONAL_APP_URL` | URL portal profesional |
 | `ADMIN_APP_URL` | URL portal admin |

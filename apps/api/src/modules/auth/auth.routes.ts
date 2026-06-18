@@ -321,7 +321,7 @@ function hasGoogleCalendarOauthConfig(): boolean {
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 }
 
-const PRODUCTION_OAUTH_CANONICAL_ORIGIN = "https://app.motivarcare.com";
+const PRODUCTION_OAUTH_CANONICAL_ORIGIN = "https://api.motivarcare.com";
 
 function trimTrailingSlash(u: string): string {
   return u.replace(/\/+$/, "");

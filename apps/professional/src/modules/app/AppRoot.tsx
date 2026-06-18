@@ -30,7 +30,7 @@ import { ProfessionalPortal } from "./pages/ProfessionalPortal";
 import { ResetPasswordScreen } from "./pages/ResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
-import { professionalSurfaceMessage } from "./lib/friendlyProfessionalSurfaceMessages";
+import { professionalSurfaceMessage, friendlyCalendarOAuthReturnMessage } from "./lib/friendlyProfessionalSurfaceMessages";
 import { ProPageLoader } from "./components/ProPageLoader";
 import {
   API_BASE,
@@ -727,24 +727,69 @@ export function App() {
     };
   }, [showCalendarOnboarding, token, user]);
 
-  /**
-   * Al volver del callback OAuth (`?calendar_sync=connected`), reflejamos la
-   * conexión recién hecha para que el efecto post-login NO vuelva a abrir el
-   * modal mientras se limpia la URL.
-   */
   useEffect(() => {
-    if (!token || !user) {
+    if (!user?.id) {
       return;
     }
-    try {
-      const params = new URLSearchParams(location.search);
-      if (params.get("calendar_sync") === "connected") {
-        setGoogleCalendarConnected(true);
-      }
-    } catch {
-      // ignore
+
+    const query = new URLSearchParams(location.search);
+    const calendarSync = query.get("calendar_sync");
+    if (!calendarSync) {
+      return;
     }
-  }, [token, user, location.search]);
+
+    const callbackUserId = query.get("calendar_user_id");
+    const calendarReason = query.get("calendar_reason");
+
+    const stripCalendarQuery = (extraSearch?: string) => {
+      navigate(
+        {
+          pathname: location.pathname || "/",
+          search: extraSearch ?? ""
+        },
+        { replace: true }
+      );
+    };
+
+    if (callbackUserId && callbackUserId !== user.id) {
+      setCalendarOnboardingLoading(false);
+      setShowCalendarOnboarding(true);
+      setCalendarOnboardingError(
+        friendlyCalendarOAuthReturnMessage(language, { status: "error", reason: "session_mismatch" })
+      );
+      stripCalendarQuery();
+      return;
+    }
+
+    if (calendarSync === "connected" && (!callbackUserId || callbackUserId === user.id)) {
+      setGoogleCalendarConnected(true);
+      rememberProfessionalAuthCalendarConnectedSession(user.id, true);
+      setCalendarOnboardingLoading(false);
+      setCalendarOnboardingError("");
+      clearCalendarOnboardingPending();
+      setShowCalendarOnboarding(false);
+      stripCalendarQuery(location.pathname === "/" ? "?meet_hint=1" : "");
+      return;
+    }
+
+    if (
+      (calendarSync === "error" || calendarSync === "cancelled")
+      && (!callbackUserId || callbackUserId === user.id)
+    ) {
+      setCalendarOnboardingLoading(false);
+      setShowCalendarOnboarding(true);
+      setCalendarOnboardingError(
+        friendlyCalendarOAuthReturnMessage(language, {
+          status: calendarSync === "cancelled" ? "cancelled" : "error",
+          reason: calendarReason
+        })
+      );
+      stripCalendarQuery();
+      return;
+    }
+
+    stripCalendarQuery();
+  }, [location.pathname, location.search, navigate, language, user?.id]);
 
   /**
    * Post-login: si el profesional entra al portal con cuenta activa pero sin
