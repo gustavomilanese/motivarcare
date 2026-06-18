@@ -5,6 +5,7 @@ import type { EmotionalDiaryStats } from "@therapy/types";
 import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { buildWeeklyMoodLineSegments, buildWeeklyMoodSeries, moodLabelForStats } from "../lib/analytics";
 import { t } from "../lib/labels";
 import { moodMeta, MOOD_OPTIONS } from "../lib/moods";
@@ -120,7 +121,7 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
           language={props.language}
           title={t(props.language, { es: "Mis registros", en: "My records", pt: "Meus registros" })}
         />
-        <p className="diary-muted">{t(props.language, { es: "Cargando registros…", en: "Loading records…", pt: "Carregando registros…" })}</p>
+        <MotivarCarePageLoader language={props.language} layout="block" />
       </DiaryShell>
     );
   }

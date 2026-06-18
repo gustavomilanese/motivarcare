@@ -4,12 +4,13 @@ import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyCents,
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
 import { majorCurrencyCodeForMarket } from "@therapy/types";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
+import { formatAdminFinanceUsd } from "../../finance/lib/formatAdminFinanceUsd";
+import { AdminUnpaidProfessionalsPanel } from "../../finance/components/AdminUnpaidProfessionalsPanel";
 import { apiRequest } from "../services/api";
 import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
 
@@ -23,13 +24,8 @@ function utcMonthKeyFromDate(d: Date): string {
   return `${y}-${m}`;
 }
 
-function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyCents({
-    centsInUsd: cents,
-    language,
-    currency,
-    maximumFractionDigits: 0
-  });
+function formatMoneyCents(cents: number, language: AppLanguage): string {
+  return formatAdminFinanceUsd(cents, language);
 }
 
 function StatCard(props: {
@@ -341,6 +337,7 @@ function OverviewPage(props: OverviewPageProps) {
   const [response, setResponse] = useState<KpisResponse | null>(null);
   const [error, setError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(() => utcMonthKeyFromDate(new Date()));
+  const [refreshToken, setRefreshToken] = useState(0);
   const maxMonth = utcMonthKeyFromDate(new Date());
   const viewingPastMonth = selectedMonth !== maxMonth;
 
@@ -371,9 +368,10 @@ function OverviewPage(props: OverviewPageProps) {
     return () => {
       active = false;
     };
-  }, [props.token, selectedMonth]);
+  }, [props.token, selectedMonth, refreshToken]);
 
   const k = response?.kpis;
+  const unpaidRows = response?.unpaidByProfessional ?? [];
   const loadBars =
     k !== undefined
       ? [
@@ -524,9 +522,9 @@ function OverviewPage(props: OverviewPageProps) {
         </h2>
         <p className="dashboard-section-asof" style={{ marginTop: 0 }}>
           {t(props.language, {
-            es: "Las pruebas usan el precio de sesión del profesional y el % de comisión de prueba configurado en finanzas (p. ej. 100% plataforma).",
-            en: "Trial rows use the professional session price and the trial commission percent from finance settings (e.g. 100% platform).",
-            pt: "Trials usam o preco da sessao do profissional e o percentual de trial em financas."
+            es: "Montos en USD (valor original). Las pruebas usan el precio de sesión del profesional y el % de comisión de prueba configurado en finanzas.",
+            en: "Amounts in USD (original value). Trials use the professional session price and trial commission from finance settings.",
+            pt: "Valores em USD (original). Testes usam preco da sessao e % trial das regras."
           })}
         </p>
         <div className="dashboard-stat-grid dashboard-stat-grid--4">
@@ -544,7 +542,7 @@ function OverviewPage(props: OverviewPageProps) {
           />
           <StatCard
             label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
-            value={formatMoneyCents(grossPkgAndTrial, props.language, props.currency)}
+            value={formatMoneyCents(grossPkgAndTrial, props.language)}
             hint={replaceTemplate(
               t(props.language, {
                 es: "Paquetes {p} + pruebas {t}",
@@ -552,15 +550,15 @@ function OverviewPage(props: OverviewPageProps) {
                 pt: "Pacotes {p} + provas {t}"
               }),
               {
-                p: formatMoneyCents(grossPkg, props.language, props.currency),
-                t: formatMoneyCents(trialGross, props.language, props.currency)
+                p: formatMoneyCents(grossPkg, props.language),
+                t: formatMoneyCents(trialGross, props.language)
               }
             )}
           />
           <StatCard
             variant="accent"
             label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
-            value={formatMoneyCents(feePkgAndTrial, props.language, props.currency)}
+            value={formatMoneyCents(feePkgAndTrial, props.language)}
             hint={t(props.language, {
               es: "Sobre paquetes vendidos + pruebas del mes",
               en: "On packages sold + trials in month",
@@ -569,7 +567,7 @@ function OverviewPage(props: OverviewPageProps) {
           />
           <StatCard
             label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
-            value={formatMoneyCents(proNetPkgAndTrial, props.language, props.currency)}
+            value={formatMoneyCents(proNetPkgAndTrial, props.language)}
             hint={t(props.language, {
               es: "Reparto paquetes + neto pruebas (según % prueba)",
               en: "Package split + trial net (per trial %)",
@@ -603,21 +601,21 @@ function OverviewPage(props: OverviewPageProps) {
               key: "pkg",
               label: t(props.language, { es: "Ventas paquetes", en: "Package sales", pt: "Vendas pacotes" }),
               value: grossPkg,
-              display: formatMoneyCents(grossPkg, props.language, props.currency),
+              display: formatMoneyCents(grossPkg, props.language),
               color: "var(--brand)"
             },
             {
               key: "trial",
               label: t(props.language, { es: "Sesiones de prueba", en: "Trial sessions", pt: "Sessoes de teste" }),
               value: trialGross,
-              display: formatMoneyCents(trialGross, props.language, props.currency),
+              display: formatMoneyCents(trialGross, props.language),
               color: "#7c6ae8"
             },
             {
               key: "sess",
               label: t(props.language, { es: "Sesiones completadas", en: "Completed sessions", pt: "Sessoes concluidas" }),
               value: grossSess,
-              display: formatMoneyCents(grossSess, props.language, props.currency),
+              display: formatMoneyCents(grossSess, props.language),
               color: "#c9c0fd"
             }
           ]}
@@ -638,21 +636,21 @@ function OverviewPage(props: OverviewPageProps) {
               key: "pf",
               label: t(props.language, { es: "Por compra de paquete", en: "From package purchase", pt: "Na compra do pacote" }),
               value: pkgFee,
-              display: formatMoneyCents(pkgFee, props.language, props.currency),
+              display: formatMoneyCents(pkgFee, props.language),
               color: "var(--brand)"
             },
             {
               key: "tf",
               label: t(props.language, { es: "Por sesión de prueba", en: "From trial session", pt: "Por sessao de teste" }),
               value: trialFee,
-              display: formatMoneyCents(trialFee, props.language, props.currency),
+              display: formatMoneyCents(trialFee, props.language),
               color: "#7c6ae8"
             },
             {
               key: "sf",
               label: t(props.language, { es: "Por sesión completada", en: "From completed session", pt: "Por sessao feita" }),
               value: feeSess,
-              display: formatMoneyCents(feeSess, props.language, props.currency),
+              display: formatMoneyCents(feeSess, props.language),
               color: "#c9c0fd"
             }
           ]}
@@ -684,10 +682,22 @@ function OverviewPage(props: OverviewPageProps) {
 
       <section
         className="dashboard-section dashboard-section--raised dashboard-section--tone-sess"
+        aria-labelledby="dash-unpaid"
+      >
+        <AdminUnpaidProfessionalsPanel
+          token={props.token}
+          language={props.language}
+          initialRows={unpaidRows}
+          onChanged={() => setRefreshToken((value) => value + 1)}
+        />
+      </section>
+
+      <section
+        className="dashboard-section dashboard-section--raised dashboard-section--tone-sess"
         aria-labelledby="dash-sess-mo"
       >
         <h2 id="dash-sess-mo" className="dashboard-section-title">
-          {t(props.language, { es: "Por sesiones completadas (mes)", en: "From completed sessions (month)", pt: "Por sessoes concluidas (mes)" })}
+          {t(props.language, { es: "Por sesiones completadas (mes · USD)", en: "From completed sessions (month · USD)", pt: "Por sessoes concluidas (mes · USD)" })}
         </h2>
         <div className="dashboard-stat-grid dashboard-stat-grid--4">
           <StatCard
@@ -696,15 +706,15 @@ function OverviewPage(props: OverviewPageProps) {
           />
           <StatCard
             label={t(props.language, { es: "Bruto (sesiones)", en: "Gross (sessions)", pt: "Bruto (sessoes)" })}
-            value={formatMoneyCents(grossSess, props.language, props.currency)}
+            value={formatMoneyCents(grossSess, props.language)}
           />
           <StatCard
             label={t(props.language, { es: "Comisión (sesiones)", en: "Fee (sessions)", pt: "Comissao (sessoes)" })}
-            value={formatMoneyCents(feeSess, props.language, props.currency)}
+            value={formatMoneyCents(feeSess, props.language)}
           />
           <StatCard
             label={t(props.language, { es: "Neto prof. (sesiones)", en: "Pro net (sessions)", pt: "Liquido pro (sessoes)" })}
-            value={formatMoneyCents(k.professionalNetMonthCents ?? 0, props.language, props.currency)}
+            value={formatMoneyCents(k.professionalNetMonthCents ?? 0, props.language)}
           />
         </div>
       </section>

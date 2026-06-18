@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { PatientAvatarImage } from "../components/PatientAvatarImage";
+import { ProPageLoader } from "../components/ProPageLoader";
+import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest, resolveApiAssetUrl } from "../services/api";
@@ -41,6 +43,8 @@ function formatDateOnly(value: string | null, language: AppLanguage): string {
 
 export function PatientDetailPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
+  const highlightBookingId = searchParams.get("bookingId")?.trim() || "";
   const navigate = useNavigate();
   const [data, setData] = useState<PatientDetailResponse | null>(null);
   const [error, setError] = useState("");
@@ -59,6 +63,21 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
         setError(professionalSurfaceMessage("patient-detail-load", props.language, raw));
       });
   }, [props.token, patientId, props.language]);
+
+  useEffect(() => {
+    if (!highlightBookingId || !data) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(`pro-booking-${highlightBookingId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [highlightBookingId, data]);
+
+  useProPortalChrome({
+    title:
+      data?.patient.patientName
+      ?? t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })
+  });
 
   if (!patientId) {
     return (
@@ -80,15 +99,22 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
   }
 
   if (!data) {
-    return (
-      <section className="pro-card">
-        <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p>
-      </section>
-    );
+    return <ProPageLoader language={props.language} layout="block" />;
   }
 
   const { patient, paymentMovements } = data;
   const avatarSrc = resolveApiAssetUrl(patient.avatarUrl ?? null);
+  const visiblePaymentMovements = (() => {
+    const preview = paymentMovements.slice(0, 8);
+    if (!highlightBookingId) {
+      return preview;
+    }
+    if (preview.some((movement) => movement.bookingId === highlightBookingId)) {
+      return preview;
+    }
+    const highlighted = paymentMovements.find((movement) => movement.bookingId === highlightBookingId);
+    return highlighted ? [...preview, highlighted] : preview;
+  })();
 
   return (
     <div className="pro-grid-stack pro-patient-detail-page">
@@ -103,7 +129,7 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
             emptyClassName="pro-patient-avatar pro-patient-avatar--large pro-patient-avatar--empty"
           />
           <div>
-            <h1>{patient.patientName}</h1>
+            <p className="pro-patient-detail-name">{patient.patientName}</p>
             <span className={`pro-status-pill pro-status-pill--${patient.status}`}>
               {patientStatusLabel(patient.status, props.language)}
             </span>
@@ -220,8 +246,12 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
           </p>
         ) : (
           <ul className="pro-list pro-list--income pro-list--compact">
-            {paymentMovements.slice(0, 8).map((movement) => (
-              <li key={movement.bookingId}>
+            {visiblePaymentMovements.map((movement) => (
+              <li
+                key={movement.bookingId}
+                id={`pro-booking-${movement.bookingId}`}
+                className={highlightBookingId === movement.bookingId ? "pro-booking-highlight" : undefined}
+              >
                 <div className="pro-income-movement-meta">
                   <strong>{formatDateWithLocale({ value: movement.startsAt, language: props.language, options: { dateStyle: "medium" } })}</strong>
                   <span className="pro-income-movement-dateline">

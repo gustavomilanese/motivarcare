@@ -12,6 +12,7 @@ import {
   youtubeThumbnailUrl,
   youtubeWatchUrl
 } from "../utils/relaxationYoutube";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 export interface RelaxationMusicPageProps {
   language: AppLanguage;
@@ -135,11 +136,7 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
         </p>
       </header>
 
-      {loading ? (
-        <p className="wellbeing-relax-lead" aria-live="polite">
-          {t(language, { es: "Cargando biblioteca…", en: "Loading library…", pt: "Carregando biblioteca…" })}
-        </p>
-      ) : (
+      {loading ? <MotivarCarePageLoader language={language} layout="block" /> : (
         <>
           <nav className="wellbeing-relax-categories" aria-label={t(language, { es: "Categorías", en: "Categories", pt: "Categorias" })}>
             <button

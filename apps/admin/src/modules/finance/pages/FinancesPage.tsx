@@ -3,7 +3,6 @@ import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyCents,
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
@@ -12,8 +11,11 @@ import { useStickySectionNavigation } from "../../app/hooks/useStickySectionNavi
 import { apiRequest } from "../../app/services/api";
 import type { KpisResponse } from "../../app/types";
 import { FinanceBreakdownTable } from "../components/FinanceBreakdownTable";
+import { AdminPlatformFinanceSection } from "../components/AdminPlatformFinanceSection";
 import { FinanceCommissionRulesPanel } from "../components/FinanceCommissionRulesPanel";
 import { FinanceMonetizedSessionsPanel } from "../components/FinanceMonetizedSessionsPanel";
+import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
+import { AdminUnpaidProfessionalsPanel } from "../components/AdminUnpaidProfessionalsPanel";
 import { FinanceMonthOverviewSection } from "../components/FinanceMonthOverviewSection";
 import { FinanceOverviewFiltersPanel } from "../components/FinanceOverviewFiltersPanel";
 import { FINANCE_SCROLL_SECTION_IDS, FinancePageSubnav } from "../components/FinancePageSubnav";
@@ -54,13 +56,8 @@ function formatDate(value: string, language: AppLanguage): string {
   });
 }
 
-function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyCents({
-    centsInUsd: cents,
-    language,
-    currency,
-    maximumFractionDigits: 0
-  });
+function formatMoneyCents(cents: number, language: AppLanguage, _currency?: SupportedCurrency): string {
+  return formatAdminFinanceUsd(cents, language);
 }
 
 function utcMonthKeyFromDate(d: Date): string {
@@ -82,6 +79,7 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
   const [kpisResponse, setKpisResponse] = useState<KpisResponse | null>(null);
   const [kpisLoading, setKpisLoading] = useState(false);
   const [kpisError, setKpisError] = useState("");
+  const [kpisRefreshToken, setKpisRefreshToken] = useState(0);
 
   useEffect(() => {
     void model.loadAll();
@@ -109,7 +107,7 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
     } finally {
       setKpisLoading(false);
     }
-  }, [props.token, kpisMonth, props.language, model.filters.professionalId, model.filters.patientId]);
+  }, [props.token, kpisMonth, props.language, model.filters.professionalId, model.filters.patientId, kpisRefreshToken]);
 
   useEffect(() => {
     void loadKpis();
@@ -179,6 +177,18 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
       </FinanceSearchRecordsModal>
 
       <CollapsiblePageSection
+        sectionId="fin-plataforma"
+        summary={t(props.language, { es: "Ingresos de la plataforma (USD)", en: "Platform earnings (USD)", pt: "Receitas da plataforma (USD)" })}
+        bodyExtraClass="finance-collapsible-body--stack"
+      >
+        <AdminPlatformFinanceSection
+          token={props.token}
+          language={props.language}
+          professionals={model.professionals}
+        />
+      </CollapsiblePageSection>
+
+      <CollapsiblePageSection
         sectionId="fin-resumen"
         summary={t(props.language, { es: "Resumen", en: "Overview", pt: "Resumo" })}
         summaryEnd={
@@ -215,12 +225,20 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
       >
         <FinanceMonthOverviewSection
           language={props.language}
-          currency={props.currency}
           viewingPastMonth={kpisMonth !== maxKpisMonth}
           scopedToEntity={Boolean(model.filters.professionalId || model.filters.patientId)}
           kpis={kpisResponse?.kpis ?? null}
           loading={kpisLoading}
           error={kpisError || null}
+        />
+        <AdminUnpaidProfessionalsPanel
+          token={props.token}
+          language={props.language}
+          initialRows={kpisResponse?.unpaidByProfessional}
+          onChanged={() => {
+            setKpisRefreshToken((value) => value + 1);
+            void model.loadAll();
+          }}
         />
         {kpisResponse?.kpis ? (
           <FinanceSimulatedCashflowCard

@@ -1,9 +1,20 @@
 import { Turnstile } from "@marsidev/react-turnstile";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import { mediaPreviewFromFile } from "../../app/utils/mediaPreview";
+import { compressImageDataUrl, fileToDataUrl, mediaPreviewFromFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
-import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
+import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
+import { focusAreasIncludeCouplesTherapy } from "../constants/professionalAttentionAreas";
+import { ProfessionalFocusAreasPicker } from "./ProfessionalFocusAreasPicker";
+import {
+  ProfessionalIdentityStepProgress,
+  type IdentityStepSegment
+} from "./ProfessionalIdentityStepProgress";
+import { ProfessionalPayoutSetupPanel } from "./ProfessionalPayoutSetupPanel";
+import {
+  PROFESSIONAL_VIDEO_MAX_DURATION_SEC
+} from "../constants/professionalProfileGuidanceCopy";
+import { ProfessionalIdentityStepConfirmDialog } from "./ProfessionalIdentityStepConfirmDialog";
 import { PROFESSIONAL_THERAPY_MODALITY_ROWS } from "../constants/professionalTherapyModalityOptions";
 import { WEB_PROFESSIONAL_TITLE_OPTIONS_ES } from "../constants/webProfessionalTitleOptions";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
@@ -21,7 +32,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function ProfessionalWebOnboardingWizard(props: {
   language: AppLanguage;
   onBack: () => void;
-  onSwitchToMobile: () => void;
   onFinish: (payload: ProfessionalWebOnboardingPayload, meta: ProfessionalWebOnboardingFinishMeta) => void;
   initialWizardStep?: number;
   initialWebSession?: WebOnboardingSessionState | null;
@@ -38,6 +48,10 @@ export function ProfessionalWebOnboardingWizard(props: {
   });
 
   const interstitialByStep = wizard.interstitialByStep;
+  const [mediaStepError, setMediaStepError] = useState("");
+  const [identityStepConfirmOpen, setIdentityStepConfirmOpen] = useState(false);
+  const [identityTherapyUnlocked, setIdentityTherapyUnlocked] = useState(false);
+  const therapySectionRef = useRef<HTMLDivElement | null>(null);
 
   const {
     step,
@@ -90,6 +104,106 @@ export function ProfessionalWebOnboardingWizard(props: {
     setShowCompletionCelebration,
     finishWebOnboarding
   } = wizard;
+
+  const identityReveal = useMemo(() => {
+    const hasNames = Boolean(form.firstName.trim() && form.lastName.trim());
+    const hasTitle = Boolean(form.professionalTitle.trim());
+    const hasCareerBasics = Boolean(form.experienceBand && form.practiceBand && form.gender);
+    const hasResidency = form.residencyCountry.trim().length === 2;
+
+    return {
+      showCareer: hasNames && hasTitle,
+      showLocation: hasNames && hasTitle && hasCareerBasics,
+      showLanguages: hasResidency,
+      showFocusAreas: hasResidency && form.languages.length > 0,
+      showTherapyModalities: hasResidency && form.focusAreas.length > 0 && identityTherapyUnlocked
+    };
+  }, [form, identityTherapyUnlocked]);
+
+  const identitySegments = useMemo(() => {
+    const hasNames = Boolean(form.firstName.trim() && form.lastName.trim());
+    const hasTitle = Boolean(form.professionalTitle.trim());
+    const hasCareerBasics = Boolean(form.experienceBand && form.practiceBand && form.gender);
+    const hasResidency = form.residencyCountry.trim().length === 2;
+
+    let reached: IdentityStepSegment = "basic";
+    if (hasNames && hasTitle && hasCareerBasics && hasResidency && form.languages.length > 0) {
+      reached = identityTherapyUnlocked ? "therapy" : "focus";
+    } else if (hasNames && hasTitle && hasCareerBasics && hasResidency) {
+      reached = "languages";
+    } else if (hasNames && hasTitle && hasCareerBasics) {
+      reached = "location";
+    } else if (hasNames && hasTitle) {
+      reached = "basic";
+    }
+
+    let active: IdentityStepSegment = "basic";
+    if (identityReveal.showFocusAreas && !identityTherapyUnlocked) {
+      active = "focus";
+    } else if (identityTherapyUnlocked) {
+      active = "therapy";
+    } else if (identityReveal.showLanguages) {
+      active = "languages";
+    } else if (identityReveal.showLocation) {
+      active = "location";
+    } else if (identityReveal.showCareer) {
+      active = "location";
+    } else if (hasNames && hasTitle) {
+      active = "basic";
+    }
+
+    return { active, reached };
+  }, [form, identityReveal, identityTherapyUnlocked]);
+
+  const unlockIdentityTherapySection = () => {
+    if (form.focusAreas.length === 0) {
+      return;
+    }
+    setIdentityTherapyUnlocked(true);
+    window.requestAnimationFrame(() => {
+      therapySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const tryAdvanceFromFooter = () => {
+    if (step === 2 && canContinue) {
+      setIdentityStepConfirmOpen(true);
+      return;
+    }
+    void handleContinue();
+  };
+
+  const confirmIdentityStepAdvance = () => {
+    setIdentityStepConfirmOpen(false);
+    void handleContinue();
+  };
+
+  useEffect(() => {
+    if (step !== 2) {
+      setIdentityStepConfirmOpen(false);
+      setIdentityTherapyUnlocked(false);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (form.focusAreas.length === 0) {
+      setIdentityTherapyUnlocked(false);
+    }
+  }, [form.focusAreas.length]);
+
+  useEffect(() => {
+    if (!identityStepConfirmOpen) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIdentityStepConfirmOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [identityStepConfirmOpen]);
 
   const genderWebOptions = useMemo(
     () =>
@@ -201,9 +315,6 @@ export function ProfessionalWebOnboardingWizard(props: {
         <aside className="pro-web-steps">
           <button className="pro-register-intro-back" type="button" onClick={props.onBack} aria-label="Back">←</button>
           <h2>{t(props.language, { es: "Onboarding profesional", en: "Professional onboarding", pt: "Onboarding profissional" })}</h2>
-          <button type="button" className="pro-web-mobile-switch" onClick={props.onSwitchToMobile}>
-            {t(props.language, { es: "Probar version mobile", en: "Try mobile version", pt: "Testar versao mobile" })}
-          </button>
           <ol>
             {labels.map((label, index) => (
               <li
@@ -411,7 +522,12 @@ export function ProfessionalWebOnboardingWizard(props: {
           ) : null}
 
           {step === 2 ? (
-            <div className="pro-web-fields">
+            <div className="pro-web-fields pro-web-fields--identity">
+              <ProfessionalIdentityStepProgress
+                language={props.language}
+                active={identitySegments.active}
+                reached={identitySegments.reached}
+              />
               <div className="pro-web-grid-2">
                 <label>
                   <span>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</span>
@@ -445,30 +561,31 @@ export function ProfessionalWebOnboardingWizard(props: {
                   ))}
                 </select>
               </label>
-              <div className="pro-web-identity-rest">
+              {identityReveal.showCareer ? (
+                <div className="pro-web-identity-section">
                   <div className="pro-web-grid-3">
                     <label>
-                      <span>Experiencia (rango)</span>
+                      <span>{t(props.language, { es: "Experiencia (rango)", en: "Experience (range)", pt: "Experiencia (faixa)" })}</span>
                       <select value={form.experienceBand} onChange={(event) => update({ experienceBand: event.target.value })}>
-                        <option value="">Seleccionar</option>
-                        <option value="Menos de 1 ano">Menos de 1 año</option>
-                        <option value="1-3 anos">1-3 años</option>
-                        <option value="3-6 anos">3-6 años</option>
-                        <option value="6-10 anos">6-10 años</option>
-                        <option value="10-15 anos">10-15 años</option>
-                        <option value="15-20 anos">15-20 años</option>
-                        <option value="Mas de 20 anos">Más de 20 años</option>
+                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                        <option value="Menos de 1 ano">{t(props.language, { es: "Menos de 1 año", en: "Less than 1 year", pt: "Menos de 1 ano" })}</option>
+                        <option value="1-3 anos">{t(props.language, { es: "1-3 años", en: "1-3 years", pt: "1-3 anos" })}</option>
+                        <option value="3-6 anos">{t(props.language, { es: "3-6 años", en: "3-6 years", pt: "3-6 anos" })}</option>
+                        <option value="6-10 anos">{t(props.language, { es: "6-10 años", en: "6-10 years", pt: "6-10 anos" })}</option>
+                        <option value="10-15 anos">{t(props.language, { es: "10-15 años", en: "10-15 years", pt: "10-15 anos" })}</option>
+                        <option value="15-20 anos">{t(props.language, { es: "15-20 años", en: "15-20 years", pt: "15-20 anos" })}</option>
+                        <option value="Mas de 20 anos">{t(props.language, { es: "Más de 20 años", en: "More than 20 years", pt: "Mais de 20 anos" })}</option>
                       </select>
                     </label>
                     <label>
-                      <span>Horas de práctica</span>
+                      <span>{t(props.language, { es: "Horas de práctica", en: "Practice hours", pt: "Horas de pratica" })}</span>
                       <select value={form.practiceBand} onChange={(event) => update({ practiceBand: event.target.value })}>
-                        <option value="">Seleccionar</option>
-                        <option value="Menos de 500 horas">Menos de 500 horas</option>
-                        <option value="500-1000 horas">500-1000 horas</option>
-                        <option value="1000-3000 horas">1000-3000 horas</option>
-                        <option value="3000-5000 horas">3000-5000 horas</option>
-                        <option value="Mas de 5000 horas">Más de 5000 horas</option>
+                        <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                        <option value="Menos de 500 horas">{t(props.language, { es: "Menos de 500 horas", en: "Less than 500 hours", pt: "Menos de 500 horas" })}</option>
+                        <option value="500-1000 horas">{t(props.language, { es: "500-1000 horas", en: "500-1000 hours", pt: "500-1000 horas" })}</option>
+                        <option value="1000-3000 horas">{t(props.language, { es: "1000-3000 horas", en: "1000-3000 hours", pt: "1000-3000 horas" })}</option>
+                        <option value="3000-5000 horas">{t(props.language, { es: "3000-5000 horas", en: "3000-5000 hours", pt: "3000-5000 horas" })}</option>
+                        <option value="Mas de 5000 horas">{t(props.language, { es: "Más de 5000 horas", en: "More than 5000 hours", pt: "Mais de 5000 horas" })}</option>
                       </select>
                     </label>
                     <label>
@@ -481,98 +598,102 @@ export function ProfessionalWebOnboardingWizard(props: {
                       </select>
                     </label>
                   </div>
-                  <label>
-                    <span>País de nacimiento</span>
-                    <select value={form.birthCountry} onChange={(event) => update({ birthCountry: event.target.value })}>
-                      <option value="">Seleccionar</option>
-                      {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>
-                      {t(props.language, {
-                        es: "País de residencia habitual",
-                        en: "Country of residence",
-                        pt: "Pais de residencia habitual"
-                      })}
-                    </span>
-                    <select
-                      value={form.residencyCountry}
-                      onChange={(event) => update({ residencyCountry: event.target.value })}
-                    >
-                      <option value="">
-                        {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
-                      </option>
-                      {RESIDENCY_COUNTRY_OPTIONS.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.names[props.language]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <div>
-                    <span>Idiomas</span>
-                    <div className="pro-web-checks">
-                      {["Espanol", "Ingles", "Portugues"].map((lang) => (
-                        <button key={lang} type="button" className={form.languages.includes(lang) ? "active" : ""} onClick={() => toggleLanguage(lang)}>
-                          {lang}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="pro-web-focus-areas">
-                    <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
-                    <div className="pro-web-checks">
-                      {ATTENTION_AREA_OPTIONS_ES.map((area) => (
-                        <button
-                          key={area}
-                          type="button"
-                          className={form.focusAreas.includes(area) ? "active" : ""}
-                          onClick={() => toggleFocusArea(area)}
+                  {identityReveal.showLocation ? (
+                    <div className="pro-web-identity-subfields">
+                      <label>
+                        <span>{t(props.language, { es: "País de nacimiento", en: "Country of birth", pt: "Pais de nascimento" })}</span>
+                        <select value={form.birthCountry} onChange={(event) => update({ birthCountry: event.target.value })}>
+                          <option value="">{t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}</option>
+                          {LATIN_AMERICA_COUNTRY_OPTIONS.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>
+                          {t(props.language, {
+                            es: "País de residencia habitual",
+                            en: "Country of residence",
+                            pt: "Pais de residencia habitual"
+                          })}
+                        </span>
+                        <select
+                          value={form.residencyCountry}
+                          onChange={(event) => update({ residencyCountry: event.target.value })}
                         >
-                          {area}
+                          <option value="">
+                            {t(props.language, { es: "Seleccionar", en: "Select", pt: "Selecionar" })}
+                          </option>
+                          {RESIDENCY_COUNTRY_OPTIONS.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.names[props.language]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              {identityReveal.showLanguages ? (
+                <div className="pro-web-identity-section">
+                  <div className="pro-web-lang-chips" role="group" aria-label={t(props.language, { es: "Idiomas", en: "Languages", pt: "Idiomas" })}>
+                    {[
+                      { value: "Espanol", label: t(props.language, { es: "Español", en: "Spanish", pt: "Espanhol" }) },
+                      { value: "Ingles", label: t(props.language, { es: "Inglés", en: "English", pt: "Ingles" }) },
+                      { value: "Portugues", label: t(props.language, { es: "Portugués", en: "Portuguese", pt: "Portugues" }) }
+                    ].map((lang) => {
+                      const active = form.languages.includes(lang.value);
+                      return (
+                        <button
+                          key={lang.value}
+                          type="button"
+                          className={`pro-web-lang-chip${active ? " active" : ""}`}
+                          aria-pressed={active}
+                          onClick={() => toggleLanguage(lang.value)}
+                        >
+                          {active ? <span className="pro-web-lang-chip-check" aria-hidden="true">✓</span> : null}
+                          <span>{lang.label}</span>
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                  <div className="pro-web-therapy-block">
-                    <span>
-                      {t(props.language, {
-                        es: "Tipo de terapia",
-                        en: "Type of therapy",
-                        pt: "Tipo de terapia"
-                      })}
-                    </span>
-                    <p className="pro-web-therapy-hint">
-                      {t(props.language, {
-                        es: "Marcá una o varias. Coincide con los enfoques que ofrecés en tu práctica.",
-                        en: "Select one or more approaches you offer in your practice.",
-                        pt: "Marque uma ou mais abordagens que voce oferece na sua pratica."
-                      })}
-                    </p>
-                    <div className="pro-web-therapy-grid" role="group">
-                      {PROFESSIONAL_THERAPY_MODALITY_ROWS.map((row) => {
-                        const selected = form.therapyModalities.includes(row.valueEs);
-                        return (
-                          <button
-                            key={row.valueEs}
-                            type="button"
-                            className={`pro-web-therapy-card ${selected ? "active" : ""}`}
-                            aria-pressed={selected}
-                            onClick={() => toggleTherapyModality(row.valueEs)}
-                          >
-                            <span className="pro-web-therapy-card-title">{t(props.language, row.title)}</span>
-                            <span className="pro-web-therapy-card-sub">{t(props.language, row.subtext)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                </div>
+              ) : null}
+              {identityReveal.showFocusAreas ? (
+                <div className="pro-web-identity-section">
+                  <ProfessionalFocusAreasPicker
+                    language={props.language}
+                    selected={form.focusAreas}
+                    onToggle={toggleFocusArea}
+                    isCurrentStep={identitySegments.active === "focus"}
+                    onContinueToTherapy={unlockIdentityTherapySection}
+                  />
+                </div>
+              ) : null}
+              {identityReveal.showTherapyModalities ? (
+                <div className="pro-web-identity-section pro-web-therapy-block" ref={therapySectionRef}>
+                  <div className="pro-web-therapy-grid" role="group">
+                    {PROFESSIONAL_THERAPY_MODALITY_ROWS.map((row) => {
+                      const selected = form.therapyModalities.includes(row.valueEs);
+                      return (
+                        <button
+                          key={row.valueEs}
+                          type="button"
+                          className={`pro-web-therapy-card ${selected ? "active" : ""}`}
+                          aria-pressed={selected}
+                          onClick={() => toggleTherapyModality(row.valueEs)}
+                        >
+                          <span className="pro-web-therapy-card-title">{t(props.language, row.title)}</span>
+                          <span className="pro-web-therapy-card-sub">{t(props.language, row.subtext)}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-              </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -641,9 +762,9 @@ export function ProfessionalWebOnboardingWizard(props: {
               {computedSessionPriceArs !== null ? (
                 <p className="pro-web-price-ars-preview">
                   {t(props.language, {
-                    es: `Equivalente orientativo en pesos: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS (tipo de cambio oficial, redondeado a 1.000 ARS).`,
-                    en: `Indicative ARS equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS (official rate, rounded up to ARS 1,000).`,
-                    pt: `Equivalente indicativo em pesos: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS (cotacao oficial, arredondado a 1.000 ARS).`
+                    es: `Equivalente orientativo en pesos: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS (tipo de cambio oficial, redondeado al múltiplo de 2.000 más cercano).`,
+                    en: `Indicative ARS equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS (official rate, rounded to the nearest ARS 2,000).`,
+                    pt: `Equivalente indicativo em pesos: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS (cotacao oficial, arredondado ao multiplo de 2.000 mais proximo).`
                   })}
                 </p>
               ) : null}
@@ -707,7 +828,8 @@ export function ProfessionalWebOnboardingWizard(props: {
           ) : null}
 
           {step === 5 ? (
-            <div className="pro-web-fields">
+            <div className="pro-web-fields pro-web-fields--media">
+              {mediaStepError ? <p className="pro-web-field-error" role="alert">{mediaStepError}</p> : null}
               <input
                 ref={webPhotoInputRef}
                 type="file"
@@ -715,11 +837,24 @@ export function ProfessionalWebOnboardingWizard(props: {
                 style={{ display: "none" }}
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
+                  event.target.value = "";
                   if (!file) {
                     return;
                   }
-                  const preview = await mediaPreviewFromFile(file);
-                  update({ profilePhotoReady: true, profilePhotoPreview: preview ?? "" });
+                  try {
+                    setMediaStepError("");
+                    const raw = await fileToDataUrl(file);
+                    const preview = await compressImageDataUrl(raw, 1600, 0.82);
+                    update({ profilePhotoReady: true, profilePhotoPreview: preview });
+                  } catch {
+                    setMediaStepError(
+                      t(props.language, {
+                        es: "No pudimos cargar la foto. Probá con otra imagen.",
+                        en: "We could not load the photo. Try another image.",
+                        pt: "Nao foi possivel carregar a foto. Tente outra imagem."
+                      })
+                    );
+                  }
                 }}
               />
               <input
@@ -729,62 +864,84 @@ export function ProfessionalWebOnboardingWizard(props: {
                 style={{ display: "none" }}
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
+                  event.target.value = "";
                   if (!file) {
                     return;
                   }
-                  const preview = await mediaPreviewFromFile(file);
-                  update({ videoReady: true, videoPreview: preview ?? "" });
+                  try {
+                    setMediaStepError("");
+                    const uploaded = await readVideoFileForUpload(file, {
+                      maxDurationSec: PROFESSIONAL_VIDEO_MAX_DURATION_SEC
+                    });
+                    update({
+                      videoReady: true,
+                      videoFileUrl: uploaded.dataUrl,
+                      videoPreview: uploaded.previewDataUrl
+                    });
+                  } catch {
+                    setMediaStepError(
+                      t(props.language, {
+                        es: `El video debe ser MP4/MOV/WebM, hasta 30 MB y máximo ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`,
+                        en: `Video must be MP4/MOV/WebM, up to 30 MB and at most ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} seconds.`,
+                        pt: `O video deve ser MP4/MOV/WebM, ate 30 MB e no maximo ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`
+                      })
+                    );
+                  }
                 }}
               />
-              <div className="pro-web-media-row">
-                <div className="pro-web-media-row-main">
-                  <strong>Foto de perfil</strong>
+              <div className="pro-web-media-field">
+                <span>{t(props.language, { es: "Foto de perfil", en: "Profile photo", pt: "Foto de perfil" })}</span>
+                <div className="pro-web-media-upload">
                   {form.profilePhotoPreview ? (
                     <span className="pro-web-media-preview" aria-hidden="true">
                       <img src={form.profilePhotoPreview} alt="" />
                     </span>
                   ) : null}
+                  <button type="button" className={form.profilePhotoReady ? "done" : ""} onClick={() => webPhotoInputRef.current?.click()}>
+                    {form.profilePhotoReady
+                      ? t(props.language, { es: "Cambiar foto", en: "Change photo", pt: "Alterar foto" })
+                      : t(props.language, { es: "Cargar foto", en: "Upload photo", pt: "Enviar foto" })}
+                  </button>
                 </div>
-                <button type="button" className={form.profilePhotoReady ? "done" : ""} onClick={() => webPhotoInputRef.current?.click()}>
-                  {form.profilePhotoReady ? "Cargada" : "Cargar"}
-                </button>
               </div>
-              <div className="pro-web-media-row">
-                <div className="pro-web-media-row-main">
-                  <strong>Video de presentación</strong>
+              <div className="pro-web-media-field">
+                <span>{t(props.language, { es: "Video de presentación", en: "Intro video", pt: "Video de apresentacao" })}</span>
+                <div className="pro-web-media-upload">
                   {form.videoPreview ? (
                     <span className="pro-web-media-preview" aria-hidden="true">
                       <img src={form.videoPreview} alt="" />
                     </span>
                   ) : null}
+                  <button type="button" className={form.videoReady ? "done" : ""} onClick={() => webVideoInputRef.current?.click()}>
+                    {form.videoReady
+                      ? t(props.language, { es: "Cambiar video", en: "Change video", pt: "Alterar video" })
+                      : t(props.language, { es: "Cargar video", en: "Upload video", pt: "Enviar video" })}
+                  </button>
                 </div>
-                <button type="button" className={form.videoReady ? "done" : ""} onClick={() => webVideoInputRef.current?.click()}>
-                  {form.videoReady ? "Cargado" : "Cargar"}
-                </button>
-              </div>
-              <div className="pro-web-video-script">
-                <strong>
+                <small className="pro-web-field-hint">
                   {t(props.language, {
-                    es: "Texto orientativo para tu video",
-                    en: "Suggested script for your video",
-                    pt: "Texto orientativo para seu video"
+                    es: `Hasta ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} s · MP4, MOV o WebM`,
+                    en: `Up to ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC}s · MP4, MOV, or WebM`,
+                    pt: `Ate ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} s · MP4, MOV ou WebM`
                   })}
-                </strong>
+                </small>
+              </div>
+              <details className="pro-web-video-script-details">
+                <summary>
+                  {t(props.language, {
+                    es: "Ver guion sugerido",
+                    en: "View suggested script",
+                    pt: "Ver roteiro sugerido"
+                  })}
+                </summary>
                 <p>
                   {t(props.language, {
-                    es: "Te dejamos un texto orientativo para dar un mensaje claro en el video:",
-                    en: "Here is a suggested outline for a clear message in your video:",
-                    pt: "Deixamos um texto orientativo para uma mensagem clara no video:"
+                    es: "«Hola, soy [Nombre], psicólogo/a y especialista de Motivar Care. Trabajo acompañando a personas en [área principal]. Mi enfoque principal es [breve mención]. Podés agendar una sesión conmigo a través de la plataforma cuando lo necesites.»",
+                    en: "“Hello, I’m [Name], a psychologist and Motivar Care specialist. I support people with [main area]. My main approach is [brief mention]. You can book a session with me on the platform whenever you need.”",
+                    pt: "“Ola, sou [Nome], psicologo/a e especialista da Motivar Care. Acompanho pessoas em [area principal]. Meu enfoque principal e [breve mencao]. Voce pode agendar uma sessao comigo pela plataforma quando precisar.”"
                   })}
                 </p>
-                <blockquote>
-                  {t(props.language, {
-                    es: "«Hola, soy [Nombre], psicólogo/a y especialista de Motivar Care. Trabajo acompañando a personas en [área principal: ansiedad, estrés, relaciones, adicciones, etc.] Mi enfoque principal es [breve mención: cognitivo-conductual, integrador, humanista, etc.] Podés agendar una sesión conmigo a través de la plataforma cuando lo necesites»",
-                    en: "“Hello, I’m [Name], a psychologist and Motivar Care specialist. I support people with [main area: anxiety, stress, relationships, addictions, etc.] My main approach is [brief mention: CBT, integrative, humanistic, etc.] You can book a session with me on the platform whenever you need.”",
-                    pt: "“Ola, sou [Nome], psicologo/a e especialista da Motivar Care. Acompanho pessoas em [area principal: ansiedade, estresse, relacionamentos, dependencias, etc.] Meu enfoque principal e [breve mencao: cognitivo-comportamental, integrador, humanista, etc.] Voce pode agendar uma sessao comigo pela plataforma quando precisar.”"
-                  })}
-                </blockquote>
-              </div>
+              </details>
             </div>
           ) : null}
 
@@ -850,75 +1007,31 @@ export function ProfessionalWebOnboardingWizard(props: {
           ) : null}
 
           {step === 7 ? (
-            <div className="pro-web-fields pro-web-stripe-fields">
-              <input
-                ref={webStripeDocInputRef}
-                type="file"
-                accept="image/*,.pdf"
-                style={{ display: "none" }}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) {
-                    return;
-                  }
+            <div className="pro-web-fields pro-web-fields--payout">
+              <ProfessionalPayoutSetupPanel
+                language={props.language}
+                provider={form.payoutProvider}
+                providerLocked
+                taxId={form.taxId}
+                onTaxIdChange={(taxId) => update({ taxId })}
+                docPreview={form.stripeDocPreview}
+                docInputRef={webStripeDocInputRef}
+                onDocSelected={async (file) => {
                   const preview = await mediaPreviewFromFile(file);
                   update({ stripeDocPreview: preview ?? "" });
                 }}
+                verificationStarted={form.stripeVerificationStarted}
+                verified={form.stripeVerified}
+                onStartVerification={() => {
+                  const url =
+                    form.payoutProvider === "dlocal"
+                      ? "https://www.dlocal.com"
+                      : "https://dashboard.stripe.com";
+                  window.open(url, "_blank", "noopener,noreferrer");
+                  update({ stripeVerificationStarted: true });
+                }}
+                onMarkVerified={() => update({ stripeVerified: true })}
               />
-              <div className="pro-web-education-copy">
-                <h3>{t(props.language, { es: "Integración con Stripe", en: "Stripe integration", pt: "Integracao com Stripe" })}</h3>
-                <p>
-                  {t(props.language, {
-                    es: "Valide su identidad y documentos para activar cobros. Este paso suele tardar entre 3 y 5 minutos.",
-                    en: "Validate your identity and documents to activate payouts. This step usually takes 3 to 5 minutes.",
-                    pt: "Valide sua identidade e documentos para ativar pagamentos. Esta etapa costuma levar de 3 a 5 minutos."
-                  })}
-                </p>
-                <p className="pro-web-price-bounds-hint">
-                  {t(props.language, {
-                    es: "El enlace a Stripe se abre en una pestaña nueva: volvé a esta ventana para marcar «Ya validé» y seguir al registro de cuenta.",
-                    en: "Stripe opens in a new tab—return here to click “I already validated” and continue to account signup.",
-                    pt: "O Stripe abre em nova aba: volte a esta janela para marcar «Ja validei» e seguir para criar a conta."
-                  })}
-                </p>
-              </div>
-              <div className="pro-web-media-row pro-web-stripe-doc-row">
-                <div className="pro-web-media-row-main">
-                  <strong>{t(props.language, { es: "Documento para verificación", en: "Verification document", pt: "Documento para verificacao" })}</strong>
-                  {form.stripeDocPreview ? (
-                    <span className="pro-web-media-preview" aria-hidden="true">
-                      <img src={form.stripeDocPreview} alt="" />
-                    </span>
-                  ) : null}
-                </div>
-                <button type="button" className="pro-web-stripe-doc-btn" onClick={() => webStripeDocInputRef.current?.click()}>
-                  {form.stripeDocPreview
-                    ? t(props.language, { es: "Cambiar", en: "Change", pt: "Alterar" })
-                    : t(props.language, { es: "Cargar", en: "Upload", pt: "Enviar" })}
-                </button>
-              </div>
-              <div className="pro-web-grid-2 pro-web-stripe-actions">
-                <button
-                  type="button"
-                  className="pro-web-stripe-connect"
-                  onClick={() => {
-                    window.open("https://dashboard.stripe.com", "_blank", "noopener,noreferrer");
-                    update({ stripeVerificationStarted: true });
-                  }}
-                >
-                  {t(props.language, { es: "Continuar con Stripe", en: "Continue with Stripe", pt: "Continuar com Stripe" })}
-                </button>
-                <button
-                  type="button"
-                  className={`pro-web-stripe-verify ${form.stripeVerified ? "done" : ""}`}
-                  disabled={!form.stripeVerificationStarted}
-                  onClick={() => update({ stripeVerified: true })}
-                >
-                  {form.stripeVerified
-                    ? t(props.language, { es: "Documentos verificados", en: "Documents verified", pt: "Documentos verificados" })
-                    : t(props.language, { es: "Ya validé en Stripe", en: "I already validated on Stripe", pt: "Ja validei no Stripe" })}
-                </button>
-              </div>
             </div>
           ) : null}
 
@@ -946,7 +1059,7 @@ export function ProfessionalWebOnboardingWizard(props: {
               type="button"
               className="pro-primary"
               disabled={!canContinue || credentialsChecking || registerInFlight}
-              onClick={() => void handleContinue()}
+              onClick={() => tryAdvanceFromFooter()}
             >
               {registerInFlight && step === 0
                 ? t(props.language, { es: "Creando cuenta…", en: "Creating account…", pt: "Criando conta…" })
@@ -959,6 +1072,15 @@ export function ProfessionalWebOnboardingWizard(props: {
           </footer>
         </div>
       </section>
+
+      {identityStepConfirmOpen ? (
+        <ProfessionalIdentityStepConfirmDialog
+          language={props.language}
+          showCouplesNotice={focusAreasIncludeCouplesTherapy(form.focusAreas)}
+          onGoBack={() => setIdentityStepConfirmOpen(false)}
+          onContinue={confirmIdentityStepAdvance}
+        />
+      ) : null}
 
       {activeInterstitialStep !== null && interstitialByStep[activeInterstitialStep] ? (
         <div className="pro-web-interstitial" role="dialog" aria-modal="true">

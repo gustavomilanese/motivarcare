@@ -274,6 +274,9 @@ export function IntakeScreen(props: {
   onCancel?: () => void;
   /** Sin guardar intake: cierra sesión / estado del portal (respuesta de riesgo en seguridad). */
   onSafetyReferralExit?: () => void;
+  /** Opción conversacional con Maca (solo paso intro). */
+  onChooseMacaChat?: () => void;
+  hasActiveMacaChatSession?: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -724,6 +727,41 @@ export function IntakeScreen(props: {
                   ))}
                 </div>
               </div>
+              {props.onChooseMacaChat ? (
+                <div className="intake-intro-maca-offer">
+                  <p className="intake-intro-maca-offer-lead">
+                    {t(props.language, {
+                      es: "¿Necesitás ayuda con Maca?",
+                      en: "Need help from Maca?",
+                      pt: "Precisa de ajuda com a Maca?"
+                    })}
+                  </p>
+                  <p className="intake-intro-maca-offer-hint">
+                    {t(props.language, {
+                      es: "Podés completar la entrevista conversando con Maca: las mismas preguntas, a tu ritmo y con tus palabras.",
+                      en: "You can complete the intake by chatting with Maca: the same questions, at your pace, in your own words.",
+                      pt: "Voce pode completar a entrevista conversando com a Maca: as mesmas perguntas, no seu ritmo e com suas palavras."
+                    })}
+                  </p>
+                  <button
+                    type="button"
+                    className="intake-intro-maca-btn"
+                    onClick={props.onChooseMacaChat}
+                  >
+                    {props.hasActiveMacaChatSession
+                      ? t(props.language, {
+                          es: "Continuar con Maca",
+                          en: "Continue with Maca",
+                          pt: "Continuar com Maca"
+                        })
+                      : t(props.language, {
+                          es: "Chatear con Maca",
+                          en: "Chat with Maca",
+                          pt: "Conversar com Maca"
+                        })}
+                  </button>
+                </div>
+              ) : null}
             </article>
           ) : stepIndex === 1 && countryStepEnabled ? (
             <article className="question-card question-card--wizard" key="intake-residency">

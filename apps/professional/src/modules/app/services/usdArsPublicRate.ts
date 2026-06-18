@@ -1,11 +1,9 @@
+import { roundSessionPriceArsFromUsd } from "@therapy/i18n-config";
 import { API_BASE } from "./api";
 
-/** Coherente con `GET /api/public/fx/usd-ars` y el redondeo del API al persistir perfil. */
-export function roundSessionPriceArsFromUsd(usdMajor: number, arsPerUsd: number): number {
-  const raw = usdMajor * arsPerUsd;
-  return Math.ceil(raw / 1000) * 1000;
-}
+export { roundSessionPriceArsFromUsd };
 
+/** Coherente con `GET /api/public/fx/usd-ars` y el redondeo del API al persistir perfil. */
 export async function fetchPublicUsdArsRate(): Promise<number> {
   const base = API_BASE.replace(/\/$/, "");
   const path = "/api/public/fx/usd-ars";

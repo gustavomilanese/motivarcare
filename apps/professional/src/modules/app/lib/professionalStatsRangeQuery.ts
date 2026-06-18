@@ -30,6 +30,65 @@ function endOfWeekSunday(d: Date): Date {
   return new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6, 23, 59, 59, 999);
 }
 
+function resolveRevenueDateBounds(
+  preset: RevenuePreset,
+  dayStr: string,
+  monthStr: string,
+  yearStr: string
+): { from: Date; to: Date } {
+  if (preset === "all") {
+    const to = new Date();
+    to.setHours(23, 59, 59, 999);
+    return { from: new Date(2020, 0, 1, 0, 0, 0, 0), to };
+  }
+
+  if (preset === "day") {
+    const base = parseYmdLocal(dayStr);
+    return {
+      from: new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0),
+      to: new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999)
+    };
+  }
+
+  if (preset === "week") {
+    const base = parseYmdLocal(dayStr);
+    return { from: startOfWeekMonday(base), to: endOfWeekSunday(base) };
+  }
+
+  if (preset === "month") {
+    const [y, m] = monthStr.split("-").map(Number);
+    return {
+      from: new Date(y, m - 1, 1, 0, 0, 0, 0),
+      to: new Date(y, m, 0, 23, 59, 59, 999)
+    };
+  }
+
+  const y = Number(yearStr) || new Date().getFullYear();
+  return {
+    from: new Date(y, 0, 1, 0, 0, 0, 0),
+    to: new Date(y, 11, 31, 23, 59, 59, 999)
+  };
+}
+
+/** Rango YMD para inputs type=date (p. ej. modal de exportación). */
+export function resolveRevenueDateRangeYmd(
+  preset: RevenuePreset,
+  dayStr: string,
+  monthStr: string,
+  yearStr: string
+): { dateFrom: string; dateTo: string } {
+  const { from, to } = resolveRevenueDateBounds(preset, dayStr, monthStr, yearStr);
+  return { dateFrom: ymdLocal(from), dateTo: ymdLocal(to) };
+}
+
+export function buildProfessionalStatsQueryFromYmd(dateFrom: string, dateTo: string): string {
+  const from = parseYmdLocal(dateFrom);
+  from.setHours(0, 0, 0, 0);
+  const to = parseYmdLocal(dateTo);
+  to.setHours(23, 59, 59, 999);
+  return `?statsFrom=${encodeURIComponent(from.toISOString())}&statsTo=${encodeURIComponent(to.toISOString())}`;
+}
+
 /** Query string for GET /dashboard y GET /earnings (statsFrom, statsTo, statsAll). */
 export function buildProfessionalStatsQuery(
   preset: RevenuePreset,
@@ -43,26 +102,6 @@ export function buildProfessionalStatsQuery(
     return `?statsAll=1&statsTo=${encodeURIComponent(end.toISOString())}`;
   }
 
-  let from: Date;
-  let to: Date;
-
-  if (preset === "day") {
-    const base = parseYmdLocal(dayStr);
-    from = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
-    to = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
-  } else if (preset === "week") {
-    const base = parseYmdLocal(dayStr);
-    from = startOfWeekMonday(base);
-    to = endOfWeekSunday(base);
-  } else if (preset === "month") {
-    const [y, m] = monthStr.split("-").map(Number);
-    from = new Date(y, m - 1, 1, 0, 0, 0, 0);
-    to = new Date(y, m, 0, 23, 59, 59, 999);
-  } else {
-    const y = Number(yearStr) || new Date().getFullYear();
-    from = new Date(y, 0, 1, 0, 0, 0, 0);
-    to = new Date(y, 11, 31, 23, 59, 59, 999);
-  }
-
+  const { from, to } = resolveRevenueDateBounds(preset, dayStr, monthStr, yearStr);
   return `?statsFrom=${encodeURIComponent(from.toISOString())}&statsTo=${encodeURIComponent(to.toISOString())}`;
 }

@@ -36,40 +36,8 @@ export const LATIN_AMERICA_COUNTRY_OPTIONS: { value: string; label: string }[] =
   { value: "Venezuela", label: "Venezuela" }
 ].sort((a, b) => a.label.localeCompare(b.label, "es"));
 
-/**
- * Áreas de atención (onboarding web y edición de perfil). Valores canónicos en español.
- * Alineado con motivos de consulta del paciente hasta "Crecimiento personal", con LGBTIQ+ y Psicosomáticos.
- */
-export const ATTENTION_AREA_OPTIONS_ES: string[] = [
-  "Ansiedad",
-  "Autoestima",
-  "Pareja",
-  "Duelo",
-  "Depresión",
-  "Adicciones",
-  "Trauma",
-  "Infancia y adolescencia",
-  "Estrés laboral",
-  "LGBTIQ+",
-  "Alimentación",
-  "Dolor crónico",
-  "TOC",
-  "Mindfulness",
-  "Ataques de pánico",
-  "Estrés",
-  "Problemas de autoestima",
-  "Dificultad en relaciones",
-  "Rupturas amorosas o duelos",
-  "Problemas laborales o burnout",
-  "Toma de decisiones importantes",
-  "Falta de motivación o propósito",
-  "Problemas de sueño",
-  "Manejo de emociones",
-  "Consumo o conductas adictivas",
-  "Experiencias difíciles del pasado",
-  "Crisis personales",
-  "Soledad",
-  "Dificultad para controlar impulsos",
-  "Crecimiento personal",
-  "Psicosomáticos"
-];
+export {
+  PROFESSIONAL_ATTENTION_AREA_COUPLES_ES,
+  PROFESSIONAL_ATTENTION_AREA_OPTIONS_ES,
+  PROFESSIONAL_ATTENTION_AREA_OPTIONS_ES as ATTENTION_AREA_OPTIONS_ES
+} from "./professionalAttentionAreas";

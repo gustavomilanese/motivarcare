@@ -177,10 +177,10 @@ export function ChatPage(props: {
   };
 
   return (
-    <section className="pro-chat-shell">
-      <aside className="pro-chat-sidebar">
+    <section className="pro-chat-shell" data-tour="pro-tour-chat-shell">
+      <aside className="pro-chat-sidebar" data-tour="pro-tour-chat-threads">
         <header>
-          <h2>{t(props.language, { es: "Conversaciones", en: "Conversations", pt: "Conversas" })}</h2>
+          <h3>{t(props.language, { es: "Conversaciones", en: "Conversations", pt: "Conversas" })}</h3>
         </header>
         <div className="pro-chat-thread-list">
           {threads.length === 0 ? (
@@ -223,7 +223,7 @@ export function ChatPage(props: {
           ))}
         </div>
 
-        <footer className="pro-chat-composer">
+        <footer className="pro-chat-composer" data-tour="pro-tour-chat-composer">
           <textarea
             value={draft}
             placeholder={t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })}

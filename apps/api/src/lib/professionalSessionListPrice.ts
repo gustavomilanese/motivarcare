@@ -23,12 +23,10 @@ export function listPriceMajorUnitsForPackageMarket(
 export { listPriceUsdMajorUnits };
 
 /**
- * ARS derivado para vistas locales futuras (directorio, admin). No usar para cobro.
+ * ARS derivado para vistas locales (directorio, admin). No usar para cobro.
+ * Si hay USD canónico, siempre se deriva del TC; `sessionPriceArs` almacenado es legacy.
  */
 export function effectiveSessionPriceArs(profile: PriceProfile, arsPerUsd: number | null): number | null {
-  if (profile.sessionPriceArs != null && profile.sessionPriceArs > 0) {
-    return profile.sessionPriceArs;
-  }
   if (
     arsPerUsd != null
     && Number.isFinite(arsPerUsd)
@@ -37,6 +35,9 @@ export function effectiveSessionPriceArs(profile: PriceProfile, arsPerUsd: numbe
     && profile.sessionPriceUsd > 0
   ) {
     return roundSessionPriceArsFromUsd(profile.sessionPriceUsd, arsPerUsd);
+  }
+  if (profile.sessionPriceArs != null && profile.sessionPriceArs > 0) {
+    return profile.sessionPriceArs;
   }
   return null;
 }

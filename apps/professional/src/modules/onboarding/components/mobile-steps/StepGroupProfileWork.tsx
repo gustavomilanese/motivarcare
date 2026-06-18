@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { PROFESSIONAL_FOCUS_AREAS_AI_NOTICE } from "../../constants/professionalProfileGuidanceCopy";
+import { focusAreasIncludeCouplesTherapy } from "../../constants/professionalAttentionAreas";
 import {
   PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE,
   professionalProblemSelectionIsComplete,
   type ProblemQuestionBlock
 } from "../../constants/professionalClientProblemQuestionnaire";
+import { ProfessionalFocusAreasPicker } from "../ProfessionalFocusAreasPicker";
+import { ProfessionalGuidanceBanner } from "../ProfessionalGuidanceBanner";
+import { ProfessionalIdentityStepConfirmDialog } from "../ProfessionalIdentityStepConfirmDialog";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -219,12 +224,29 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
   onContinue: () => void;
 }) {
   const [otherForcedOpen, setOtherForcedOpen] = useState<Partial<Record<ProblemQuestionBlock["id"], boolean>>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const motivosBlock = PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE.find((block) => block.id === "motivos");
+  const motivoValues = useMemo(
+    () => new Set(motivosBlock?.options.map((option) => option.valueEs) ?? []),
+    [motivosBlock]
+  );
+  const selectedMotivos = props.values.filter((value) => motivoValues.has(value));
+  const followUpBlocks = PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE.filter((block) => block.id !== "motivos");
 
   useEffect(() => {
     if (props.values.length === 0) {
       setOtherForcedOpen({});
     }
   }, [props.values.length]);
+
+  const toggleMotivo = (area: string) => {
+    const withoutMotivos = props.values.filter((value) => !motivoValues.has(value));
+    const nextMotivos = selectedMotivos.includes(area)
+      ? selectedMotivos.filter((item) => item !== area)
+      : [...selectedMotivos, area];
+    props.onChange([...withoutMotivos, ...nextMotivos]);
+  };
 
   const otherDrafts = useMemo(() => {
     const drafts: Record<string, string> = {};
@@ -271,6 +293,17 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
   const otherChipSelected = (block: ProblemQuestionBlock) =>
     Boolean(otherForcedOpen[block.id] || otherHasSavedText(block));
 
+  const tryContinue = () => {
+    if (!professionalProblemSelectionIsComplete(props.values)) {
+      return;
+    }
+    if (focusAreasIncludeCouplesTherapy(selectedMotivos)) {
+      setConfirmOpen(true);
+      return;
+    }
+    props.onContinue();
+  };
+
   return (
     <div className="pro-register-intro-shell">
       <section className="pro-profile-select-card pro-problem-select-card">
@@ -288,16 +321,16 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
           <div className="pro-profile-select-copy">
             <h1>
               {t(props.language, {
-                es: "Cuestionario de enfoque clínico",
-                en: "Clinical focus questionnaire",
-                pt: "Questionario de foco clinico"
+                es: "Áreas de atención",
+                en: "Areas of focus",
+                pt: "Areas de atencao"
               })}
             </h1>
             <p>
               {t(props.language, {
-                es: "Indicá con qué motivos, objetivos y preferencias trabajás en la práctica.",
-                en: "Indicate which motives, goals, and preferences you work with in practice.",
-                pt: "Indique com quais motivos, objetivos e preferencias voce trabalha na pratica."
+                es: "Elegí los motivos que atendés y completá objetivos y preferencias de tu práctica.",
+                en: "Choose the reasons you work with and complete goals and preferences for your practice.",
+                pt: "Escolha os motivos que voce atende e complete objetivos e preferencias da sua pratica."
               })}
             </p>
           </div>
@@ -312,8 +345,26 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
           </button>
         </div>
 
+        {props.values.length > 0 ? (
+          <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_FOCUS_AREAS_AI_NOTICE} />
+        ) : null}
+
         <div className="pro-problem-sections">
-          {PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE.map((block) => (
+          <section className="pro-problem-section" aria-labelledby="pro-q-motivos">
+            <h2 id="pro-q-motivos">
+              {motivosBlock ? t(props.language, motivosBlock.title) : null}
+            </h2>
+            {motivosBlock?.hint ? (
+              <p className="pro-problem-section-hint">{t(props.language, motivosBlock.hint)}</p>
+            ) : null}
+            <ProfessionalFocusAreasPicker
+              language={props.language}
+              selected={selectedMotivos}
+              onToggle={toggleMotivo}
+            />
+          </section>
+
+          {followUpBlocks.map((block) => (
             <section key={block.id} className="pro-problem-section" aria-labelledby={`pro-q-${block.id}`}>
               <h2 id={`pro-q-${block.id}`}>{t(props.language, block.title)}</h2>
               {block.hint ? <p className="pro-problem-section-hint">{t(props.language, block.hint)}</p> : null}
@@ -367,11 +418,23 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
           className="pro-primary pro-register-intro-cta"
           type="button"
           disabled={!professionalProblemSelectionIsComplete(props.values)}
-          onClick={props.onContinue}
+          onClick={tryContinue}
         >
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>
+
+      {confirmOpen ? (
+        <ProfessionalIdentityStepConfirmDialog
+          language={props.language}
+          showCouplesNotice={focusAreasIncludeCouplesTherapy(selectedMotivos)}
+          onGoBack={() => setConfirmOpen(false)}
+          onContinue={() => {
+            setConfirmOpen(false);
+            props.onContinue();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

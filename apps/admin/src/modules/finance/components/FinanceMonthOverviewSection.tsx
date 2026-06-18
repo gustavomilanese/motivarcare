@@ -1,24 +1,13 @@
-import {
-  type AppLanguage,
-  type LocalizedText,
-  type SupportedCurrency,
-  formatCurrencyCents,
-  replaceTemplate,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import type { KpisResponse } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyCents({
-    centsInUsd: cents,
-    language,
-    currency,
-    maximumFractionDigits: 0
-  });
+function formatMoneyCents(cents: number, language: AppLanguage): string {
+  return formatAdminFinanceUsd(cents, language);
 }
 
 function StatCard(props: {
@@ -70,7 +59,6 @@ function BarCompare(props: {
 
 export function FinanceMonthOverviewSection(props: {
   language: AppLanguage;
-  currency: SupportedCurrency;
   viewingPastMonth: boolean;
   /** KPIs mensuales acotados por profesional/paciente (filtros de la lupa). */
   scopedToEntity?: boolean;
@@ -213,7 +201,7 @@ export function FinanceMonthOverviewSection(props: {
               />
               <StatCard
                 label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
-                value={formatMoneyCents(grossPkgAndTrial, props.language, props.currency)}
+                value={formatMoneyCents(grossPkgAndTrial, props.language)}
                 hint={replaceTemplate(
                   t(props.language, {
                     es: "Paquetes {p} + pruebas {t}",
@@ -221,15 +209,15 @@ export function FinanceMonthOverviewSection(props: {
                     pt: "Pacotes {p} + provas {t}"
                   }),
                   {
-                    p: formatMoneyCents(grossPkg, props.language, props.currency),
-                    t: formatMoneyCents(trialGross, props.language, props.currency)
+                    p: formatMoneyCents(grossPkg, props.language),
+                    t: formatMoneyCents(trialGross, props.language)
                   }
                 )}
               />
               <StatCard
                 variant="accent"
                 label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
-                value={formatMoneyCents(feePkgAndTrial, props.language, props.currency)}
+                value={formatMoneyCents(feePkgAndTrial, props.language)}
                 hint={t(props.language, {
                   es: "Paquetes + pruebas del mes",
                   en: "Packages + trials in month",
@@ -238,7 +226,7 @@ export function FinanceMonthOverviewSection(props: {
               />
               <StatCard
                 label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
-                value={formatMoneyCents(proNetPkgAndTrial, props.language, props.currency)}
+                value={formatMoneyCents(proNetPkgAndTrial, props.language)}
                 hint={t(props.language, {
                   es: "Reparto paquetes + neto pruebas",
                   en: "Package split + trial net",
@@ -269,21 +257,21 @@ export function FinanceMonthOverviewSection(props: {
                     key: "pkg",
                     label: t(props.language, { es: "Ventas paquetes", en: "Package sales", pt: "Vendas pacotes" }),
                     value: grossPkg,
-                    display: formatMoneyCents(grossPkg, props.language, props.currency),
+                    display: formatMoneyCents(grossPkg, props.language),
                     color: "var(--brand)"
                   },
                   {
                     key: "trial",
                     label: t(props.language, { es: "Sesiones de prueba", en: "Trial sessions", pt: "Sessoes de teste" }),
                     value: trialGross,
-                    display: formatMoneyCents(trialGross, props.language, props.currency),
+                    display: formatMoneyCents(trialGross, props.language),
                     color: "#7c6ae8"
                   },
                   {
                     key: "sess",
                     label: t(props.language, { es: "Sesiones completadas", en: "Completed sessions", pt: "Sessoes concluidas" }),
                     value: grossSess,
-                    display: formatMoneyCents(grossSess, props.language, props.currency),
+                    display: formatMoneyCents(grossSess, props.language),
                     color: "#c9c0fd"
                   }
                 ]}
@@ -304,21 +292,21 @@ export function FinanceMonthOverviewSection(props: {
                     key: "pf",
                     label: t(props.language, { es: "Por compra de paquete", en: "From package purchase", pt: "Na compra do pacote" }),
                     value: pkgFee,
-                    display: formatMoneyCents(pkgFee, props.language, props.currency),
+                    display: formatMoneyCents(pkgFee, props.language),
                     color: "var(--brand)"
                   },
                   {
                     key: "tf",
                     label: t(props.language, { es: "Por sesión de prueba", en: "From trial session", pt: "Por sessao de teste" }),
                     value: trialFee,
-                    display: formatMoneyCents(trialFee, props.language, props.currency),
+                    display: formatMoneyCents(trialFee, props.language),
                     color: "#7c6ae8"
                   },
                   {
                     key: "sf",
                     label: t(props.language, { es: "Por sesión completada", en: "From completed session", pt: "Por sessao feita" }),
                     value: feeSess,
-                    display: formatMoneyCents(feeSess, props.language, props.currency),
+                    display: formatMoneyCents(feeSess, props.language),
                     color: "#c9c0fd"
                   }
                 ]}
@@ -365,15 +353,15 @@ export function FinanceMonthOverviewSection(props: {
                 />
                 <StatCard
                   label={t(props.language, { es: "Bruto (sesiones)", en: "Gross (sessions)", pt: "Bruto (sessoes)" })}
-                  value={formatMoneyCents(grossSess, props.language, props.currency)}
+                  value={formatMoneyCents(grossSess, props.language)}
                 />
                 <StatCard
                   label={t(props.language, { es: "Comisión (sesiones)", en: "Fee (sessions)", pt: "Comissao (sessoes)" })}
-                  value={formatMoneyCents(feeSess, props.language, props.currency)}
+                  value={formatMoneyCents(feeSess, props.language)}
                 />
                 <StatCard
                   label={t(props.language, { es: "Neto prof. (sesiones)", en: "Pro net (sessions)", pt: "Liquido pro (sessoes)" })}
-                  value={formatMoneyCents(k.professionalNetMonthCents ?? 0, props.language, props.currency)}
+                  value={formatMoneyCents(k.professionalNetMonthCents ?? 0, props.language)}
                 />
               </div>
             </div>

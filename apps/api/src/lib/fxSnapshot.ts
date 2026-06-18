@@ -5,7 +5,8 @@ import { getUsdArsQuote } from "./usdArsExchange.js";
  * al rate del momento de la transacción independientemente de cómo se mueva
  * el dólar después. Provider-agnostic (Stripe / Mercado Pago).
  *
- * - currency = "usd" → equivalente USD = priceCents, sin FX.
+ * - currency = "usd" → equivalente USD = priceCents; además persiste cotización ARS/USD
+ *   del momento del cobro (para liquidación/display al profesional sin re-tasas vivas).
  * - currency = "ars" → consulta cotización oficial y persiste rate + provider + timestamp.
  *   Si el provider FX falla, NO bloquea la creación de la compra (el paciente ya pagó);
  *   se persiste con campos en null y se loguea para reconciliación manual posterior.
@@ -25,12 +26,23 @@ export async function computeFxSnapshot(params: {
   const currency = params.currency.toLowerCase();
 
   if (currency === "usd") {
-    return {
-      packagePriceUsdCentsSnapshot: params.priceCents,
-      fxArsPerUsdSnapshot: null,
-      fxProviderSnapshot: "n/a",
-      fxFetchedAt: new Date()
-    };
+    try {
+      const quote = await getUsdArsQuote();
+      return {
+        packagePriceUsdCentsSnapshot: params.priceCents,
+        fxArsPerUsdSnapshot: quote.rate.toFixed(4),
+        fxProviderSnapshot: quote.provider,
+        fxFetchedAt: quote.fetchedAt
+      };
+    } catch (error) {
+      console.warn("[fxSnapshot] FX unavailable for USD purchase snapshot", error);
+      return {
+        packagePriceUsdCentsSnapshot: params.priceCents,
+        fxArsPerUsdSnapshot: null,
+        fxProviderSnapshot: null,
+        fxFetchedAt: null
+      };
+    }
   }
 
   if (currency === "ars") {

@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
+import { PROFESSIONAL_PAYOUT_FISCAL_NOTICE, PROFESSIONAL_PAYOUT_SETUP_LEAD } from "../../constants/professionalProfileGuidanceCopy";
+import { inferPayoutProviderFromResidencyCountry } from "../../lib/inferPayoutProvider";
+import { ProfessionalGuidanceBanner } from "../ProfessionalGuidanceBanner";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -165,15 +168,25 @@ export function ProfessionalEducationStep(props: {
   );
 }
 
-export function ProfessionalStripeVerificationStep(props: { language: AppLanguage; onBack: () => void; onContinue: () => void }) {
-  const [stripeStatus, setStripeStatus] = useState<"unverified" | "pending" | "verified">("unverified");
+export function ProfessionalStripeVerificationStep(props: {
+  language: AppLanguage;
+  residencyCountry: string;
+  taxId: string;
+  onTaxIdChange: (value: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const [verificationStatus, setVerificationStatus] = useState<"unverified" | "pending" | "verified">("unverified");
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
   const [documentLoaded, setDocumentLoaded] = useState(false);
-  const stripeDocInputRef = useRef<HTMLInputElement | null>(null);
+  const payoutDocInputRef = useRef<HTMLInputElement | null>(null);
+  const payoutProvider = inferPayoutProviderFromResidencyCountry(props.residencyCountry);
+  const isDlocal = payoutProvider === "dlocal";
 
-  const handleStripeContinue = () => {
-    window.open("https://dashboard.stripe.com", "_blank", "noopener,noreferrer");
-    setStripeStatus("pending");
+  const handleVerificationContinue = () => {
+    const url = isDlocal ? "https://www.dlocal.com" : "https://dashboard.stripe.com";
+    window.open(url, "_blank", "noopener,noreferrer");
+    setVerificationStatus("pending");
   };
 
   return (
@@ -190,18 +203,32 @@ export function ProfessionalStripeVerificationStep(props: { language: AppLanguag
         </header>
 
         <div className="pro-price-copy">
-          <h1>{t(props.language, { es: "Verificación con Stripe", en: "Stripe verification", pt: "Verificacao com Stripe" })}</h1>
-          <p>
-            {t(props.language, {
-              es: "Para recibir pagos y validar documentos de forma segura, necesitamos completar la verificación con Stripe. Este proceso suele tardar entre 3 y 5 minutos.",
-              en: "To receive payouts and validate documents securely, we need to complete Stripe verification. It usually takes 3 to 5 minutes.",
-              pt: "Para receber pagamentos e validar documentos com seguranca, precisamos concluir a verificacao com Stripe. Geralmente leva de 3 a 5 minutos."
-            })}
+          <h1>{t(props.language, { es: "Recibir pagos", en: "Receive payments", pt: "Receber pagamentos" })}</h1>
+          <p>{t(props.language, PROFESSIONAL_PAYOUT_SETUP_LEAD)}</p>
+          <p className="pro-mobile-payout-region">
+            {isDlocal
+              ? t(props.language, {
+                  es: "Configuración para Argentina y Latam",
+                  en: "Setup for Argentina and Latin America",
+                  pt: "Configuracao para Argentina e Latam"
+                })
+              : t(props.language, {
+                  es: "Configuración internacional",
+                  en: "International setup",
+                  pt: "Configuracao internacional"
+                })}
           </p>
+          <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_PAYOUT_FISCAL_NOTICE} />
         </div>
 
         <input
-          ref={stripeDocInputRef}
+          value={props.taxId}
+          placeholder={t(props.language, { es: "DNI / CUIT / identificador fiscal", en: "National ID / tax number", pt: "Documento / numero fiscal" })}
+          onChange={(event) => props.onTaxIdChange(event.target.value)}
+        />
+
+        <input
+          ref={payoutDocInputRef}
           type="file"
           accept="image/*,.pdf"
           style={{ display: "none" }}
@@ -225,7 +252,7 @@ export function ProfessionalStripeVerificationStep(props: { language: AppLanguag
               </span>
             ) : null}
           </div>
-          <button type="button" onClick={() => stripeDocInputRef.current?.click()}>
+          <button type="button" onClick={() => payoutDocInputRef.current?.click()}>
             {documentLoaded
               ? t(props.language, { es: "Cambiar", en: "Change", pt: "Alterar" })
               : t(props.language, { es: "Cargar", en: "Upload", pt: "Enviar" })}
@@ -233,22 +260,30 @@ export function ProfessionalStripeVerificationStep(props: { language: AppLanguag
         </div>
 
         <div className="pro-price-discounts">
-          <button type="button" className="pro-photo-upload-main" onClick={handleStripeContinue}>
-            {t(props.language, { es: "Continuar con Stripe", en: "Continue with Stripe", pt: "Continuar com Stripe" })}
+          <button type="button" className="pro-photo-upload-main" onClick={handleVerificationContinue}>
+            {t(props.language, {
+              es: "Continuar con la verificación",
+              en: "Continue to verification",
+              pt: "Continuar com a verificacao"
+            })}
           </button>
           <button
             type="button"
             className="pro-photo-secondary"
-            disabled={!documentLoaded || stripeStatus === "verified"}
-            onClick={() => setStripeStatus("verified")}
+            disabled={!documentLoaded || verificationStatus === "verified"}
+            onClick={() => setVerificationStatus("verified")}
           >
-            {stripeStatus === "verified"
-              ? t(props.language, { es: "Documentos verificados", en: "Documents verified", pt: "Documentos verificados" })
-              : t(props.language, { es: "Ya validé mis documentos", en: "I already validated my documents", pt: "Ja validei meus documentos" })}
+            {verificationStatus === "verified"
+              ? t(props.language, { es: "Verificación lista", en: "Verification done", pt: "Verificacao concluida" })
+              : t(props.language, {
+                  es: "Ya completé la verificación",
+                  en: "I completed verification",
+                  pt: "Ja conclui a verificacao"
+                })}
           </button>
         </div>
 
-        <button className="pro-primary pro-register-intro-cta" type="button" disabled={stripeStatus !== "verified"} onClick={props.onContinue}>
+        <button className="pro-primary pro-register-intro-cta" type="button" disabled={verificationStatus !== "verified" || props.taxId.trim().length < 6 || !documentLoaded} onClick={props.onContinue}>
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>

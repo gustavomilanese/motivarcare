@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createPayoutRunSchema,
+  adminPlatformFinanceQuerySchema,
   financeDailyAggregateQuerySchema,
   financeOverviewQuerySchema,
   financeStripeEventsQuerySchema,
@@ -23,6 +24,10 @@ import {
   retryStripeOutboxEvent,
   saveFinanceRules
 } from "./finance.service.js";
+import {
+  getAdminPlatformExecutedEarnings,
+  getAdminPlatformPackagePurchases
+} from "./adminPlatformFinance.service.js";
 import { sendApiError } from "../../lib/http.js";
 import { requireAuth, requireRole } from "../../lib/auth.js";
 
@@ -82,6 +87,24 @@ financeRouter.get("/overview", async (req, res) => {
     return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid query params", details: parsed.error.flatten() });
   }
   const result = await getFinanceOverview(parsed.data);
+  return res.json(result);
+});
+
+financeRouter.get("/platform/executed", async (req, res) => {
+  const parsed = adminPlatformFinanceQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid query params", details: parsed.error.flatten() });
+  }
+  const result = await getAdminPlatformExecutedEarnings(req.query as Record<string, unknown>);
+  return res.json(result);
+});
+
+financeRouter.get("/platform/purchases", async (req, res) => {
+  const parsed = adminPlatformFinanceQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid query params", details: parsed.error.flatten() });
+  }
+  const result = await getAdminPlatformPackagePurchases(req.query as Record<string, unknown>);
   return res.json(result);
 });
 
@@ -251,4 +274,33 @@ financeRouter.post("/payouts/runs/:runId/close", async (req, res) => {
     });
   }
   return res.json({ message: "Payout run closed", run: closed.run });
+});
+
+financeRouter.get("/unpaid-professionals", async (_req, res) => {
+  const { getAdminUnpaidProfessionalsUsd } = await import("../admin/adminKpis.service.js");
+  const rows = await getAdminUnpaidProfessionalsUsd();
+  return res.json({ currency: "usd", professionals: rows });
+});
+
+financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res) => {
+  const parsed = markPayoutLinePaidSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid payload", details: parsed.error.flatten() });
+  }
+  const { payProfessionalUnpaidBalance } = await import("./finance.service.js");
+  const result = await payProfessionalUnpaidBalance(req.params.professionalId, parsed.data.payoutReference);
+  if ("notFound" in result) {
+    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
+  }
+  if ("noRecords" in result) {
+    return sendApiError({ res, status: 409, code: "CONFLICT", message: "No unpaid sessions for this professional" });
+  }
+  return res.json({
+    message: "Professional payout recorded",
+    currency: "usd",
+    payoutRunId: result.payoutRunId,
+    payoutLineId: result.payoutLineId,
+    sessionsCount: result.sessionsCount,
+    professionalNetCents: result.professionalNetCents
+  });
 });

@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "main": "src/index.tsx",
+  "exports": {
+    ".": "./src/index.tsx",
+    "./motivarCareLoader.css": "./src/motivarCareLoader.css"
+  },
+  "dependencies": {
+    "@therapy/i18n-config": "0.1.0"
+  },
   "peerDependencies": {
     "react": "^19.0.0"
   }

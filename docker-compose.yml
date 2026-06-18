@@ -3,6 +3,7 @@ services:
   mysql:
     image: mysql:8.4
     container_name: therapy-mysql
+    command: --disable-log-bin
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: therapy_platform

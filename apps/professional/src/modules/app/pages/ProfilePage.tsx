@@ -1,11 +1,20 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage, roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { ATTENTION_AREA_OPTIONS_ES, LATIN_AMERICA_COUNTRY_OPTIONS } from "../../onboarding/constants/latinAmericaCountries";
+import {
+  PROFESSIONAL_CANCELLATION_POLICY_NOTICE,
+  PROFESSIONAL_FOCUS_AREAS_AI_NOTICE,
+  PROFESSIONAL_PUBLIC_PROFILE_PREFILL_NOTICE,
+  PROFESSIONAL_VIDEO_MAX_DURATION_SEC
+} from "../../onboarding/constants/professionalProfileGuidanceCopy";
+import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
+import { ProPageLoader } from "../components/ProPageLoader";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
-import { compressImageDataUrl, fileToDataUrl } from "../utils/mediaPreview";
+import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
+import { compressImageDataUrl, fileToDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
 import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
@@ -26,7 +35,17 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isReadingPhoto, setIsReadingPhoto] = useState(false);
+  const [isReadingVideo, setIsReadingVideo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
+
+  const computedSessionPriceArs = useMemo(() => {
+    const usd = Math.round(Number(profile?.sessionPriceUsd ?? 0));
+    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
+      return null;
+    }
+    return roundSessionPriceArsFromUsd(usd, usdArsRate);
+  }, [profile?.sessionPriceUsd, usdArsRate]);
 
   const loadProfile = async () => {
     try {
@@ -67,6 +86,24 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   useEffect(() => {
     loadProfile();
   }, [props.token]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPublicUsdArsRate()
+      .then((rate) => {
+        if (!cancelled) {
+          setUsdArsRate(rate);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsdArsRate(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const birthCountryOptions = useMemo(() => {
     const current = profile?.birthCountry?.trim();
@@ -198,13 +235,82 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     }
   };
 
+  const handleVideoSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    setIsReadingVideo(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const uploaded = await readVideoFileForUpload(file, { maxDurationSec: PROFESSIONAL_VIDEO_MAX_DURATION_SEC });
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              videoUrl: uploaded.dataUrl,
+              videoCoverUrl: uploaded.previewDataUrl
+            }
+          : current
+      );
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(
+        raw
+          ? professionalSurfaceMessage("profile-image-read", props.language, raw)
+          : t(props.language, {
+              es: `Video inválido: máximo 30 MB y ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`,
+              en: `Invalid video: max 30 MB and ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} seconds.`,
+              pt: `Video invalido: maximo 30 MB e ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`
+            })
+      );
+    } finally {
+      setIsReadingVideo(false);
+    }
+  };
+
+  if (!profile && !error) {
+    return <ProPageLoader language={props.language} layout="block" />;
+  }
+
   return (
     <section className="pro-card">
-      <h2>{t(props.language, { es: "Perfil público", en: "Public profile", pt: "Perfil publico" })}</h2>
       {error ? <p className="pro-error">{error}</p> : null}
-      {!profile ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
       {profile ? (
         <div className="pro-stack pro-profile-editor">
+          <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_PUBLIC_PROFILE_PREFILL_NOTICE} />
+
+          <section className="pro-card pro-profile-public-preview" aria-label={t(props.language, { es: "Vista previa del perfil", en: "Profile preview", pt: "Previa do perfil" })}>
+            <h3>{t(props.language, { es: "Vista previa", en: "Preview", pt: "Previa" })}</h3>
+            <dl className="pro-profile-preview-grid">
+              <div>
+                <dt>{t(props.language, { es: "Nombre", en: "Name", pt: "Nome" })}</dt>
+                <dd>{[profile.firstName, profile.lastName].filter(Boolean).join(" ") || props.user.fullName}</dd>
+              </div>
+              <div>
+                <dt>{t(props.language, { es: "Título", en: "Title", pt: "Titulo" })}</dt>
+                <dd>{profile.professionalTitle?.trim() || "—"}</dd>
+              </div>
+              <div>
+                <dt>{t(props.language, { es: "Áreas", en: "Areas", pt: "Areas" })}</dt>
+                <dd>{(profile.focusAreas ?? []).length > 0 ? (profile.focusAreas ?? []).join(", ") : "—"}</dd>
+              </div>
+              <div>
+                <dt>{t(props.language, { es: "Foto", en: "Photo", pt: "Foto" })}</dt>
+                <dd>{profile.photoUrl ? "✓" : "—"}</dd>
+              </div>
+              <div>
+                <dt>{t(props.language, { es: "Video", en: "Video", pt: "Video" })}</dt>
+                <dd>{profile.videoUrl ? "✓" : "—"}</dd>
+              </div>
+            </dl>
+          </section>
+
           <section className="pro-card pro-profile-section">
             <h3>{t(props.language, { es: "Identidad profesional", en: "Professional identity", pt: "Identidade profissional" })}</h3>
             <div className="pro-grid-form">
@@ -294,6 +400,9 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
               </label>
               <div className="pro-profile-focus-areas">
                 <span>{t(props.language, { es: "Áreas de atención", en: "Areas of focus", pt: "Areas de atencao" })}</span>
+                {(profile.focusAreas ?? []).length > 0 ? (
+                  <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_FOCUS_AREAS_AI_NOTICE} />
+                ) : null}
                 <div className="pro-web-checks">
                   {ATTENTION_AREA_OPTIONS_ES.map((area) => (
                     <button
@@ -374,36 +483,11 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
           <section className="pro-card pro-profile-section">
             <h3>{t(props.language, { es: "Precios y descuentos", en: "Pricing and discounts", pt: "Precos e descontos" })}</h3>
             <div className="pro-grid-form">
-              <label>
+              <label className="pro-grid-form-full">
                 {t(props.language, {
-                  es: "Precio por sesión (ARS, lista Argentina)",
-                  en: "Per-session list price (ARS, Argentina catalog)",
-                  pt: "Preco por sessao (ARS, catalogo Argentina)"
-                })}
-                <input
-                  type="number"
-                  min={0}
-                  max={10_000_000}
-                  value={profile.sessionPriceArs == null ? "" : profile.sessionPriceArs}
-                  onChange={(event) =>
-                    setProfile((current) => {
-                      if (!current) {
-                        return current;
-                      }
-                      const raw = event.target.value;
-                      if (raw.trim() === "") {
-                        return { ...current, sessionPriceArs: null };
-                      }
-                      return { ...current, sessionPriceArs: clampInt(Number(raw), 0, 10_000_000) };
-                    })
-                  }
-                />
-              </label>
-              <label>
-                {t(props.language, {
-                  es: "Precio por sesión (USD, otros mercados)",
-                  en: "Per-session list price (USD, other markets)",
-                  pt: "Preco por sessao (USD, outros mercados)"
+                  es: "Precio de referencia por sesión (USD)",
+                  en: "Reference price per session (USD)",
+                  pt: "Preco de referencia por sessao (USD)"
                 })}
                 <input
                   type="number"
@@ -413,6 +497,23 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                   onChange={(event) => setProfile((current) => (current ? { ...current, sessionPriceUsd: Number(event.target.value || 0) } : current))}
                 />
               </label>
+              {computedSessionPriceArs !== null ? (
+                <p className="pro-muted pro-grid-form-full">
+                  {t(props.language, {
+                    es: `Equivalente orientativo: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS (tipo de cambio oficial, redondeado al múltiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("es-AR")} más cercano).`,
+                    en: `Indicative equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS (official rate, rounded to the nearest ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("en-US")}).`,
+                    pt: `Equivalente indicativo: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS (cotacao oficial, arredondado ao multiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("pt-BR")} mais proximo).`
+                  })}
+                </p>
+              ) : (
+                <p className="pro-muted pro-grid-form-full">
+                  {t(props.language, {
+                    es: "El precio en pesos se calcula automáticamente al guardar, según el tipo de cambio oficial.",
+                    en: "The peso price is computed automatically on save using the official exchange rate.",
+                    pt: "O preco em pesos e calculado automaticamente ao salvar, conforme a cotacao oficial."
+                  })}
+                </p>
+              )}
               <label>
                 {t(props.language, { es: "Descuento 4 sesiones (máx. 5%)", en: "4-session discount (max 5%)", pt: "Desconto 4 sessoes (max. 5%)" })}
                 <input
@@ -523,13 +624,56 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             </div>
           </div>
 
-          <label>
-            {t(props.language, { es: "URL video presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
-            <input
-              value={profile.videoUrl ?? ""}
-              onChange={(event) => setProfile((current) => (current ? { ...current, videoUrl: event.target.value } : current))}
-            />
-          </label>
+          <div className="pro-photo-field pro-video-field">
+            <span>{t(props.language, { es: "Video de presentación", en: "Presentation video", pt: "Video de apresentacao" })}</span>
+            <div className="pro-photo-picker">
+              <div className="pro-photo-preview pro-video-preview" aria-hidden={!profile.videoCoverUrl && !profile.videoUrl}>
+                {profile.videoCoverUrl ? (
+                  <img
+                    src={profile.videoCoverUrl}
+                    alt={t(props.language, {
+                      es: "Vista previa del video de presentación",
+                      en: "Presentation video preview",
+                      pt: "Previa do video de apresentacao"
+                    })}
+                  />
+                ) : profile.videoUrl ? (
+                  <strong>{t(props.language, { es: "Video cargado", en: "Video uploaded", pt: "Video enviado" })}</strong>
+                ) : null}
+              </div>
+              <div className="pro-photo-actions">
+                <label className="pro-photo-upload">
+                  <input type="file" accept="video/*" onChange={handleVideoSelected} />
+                  <span>
+                    {isReadingVideo
+                      ? t(props.language, { es: "Cargando video...", en: "Loading video...", pt: "Carregando video..." })
+                      : profile.videoUrl
+                        ? t(props.language, { es: "Cambiar video", en: "Change video", pt: "Alterar video" })
+                        : t(props.language, { es: "Subir video", en: "Upload video", pt: "Enviar video" })}
+                  </span>
+                </label>
+                {profile.videoUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfile((current) => (current ? { ...current, videoUrl: null, videoCoverUrl: null } : current));
+                      setMessage("");
+                      setError("");
+                    }}
+                  >
+                    {t(props.language, { es: "Quitar video", en: "Remove video", pt: "Remover video" })}
+                  </button>
+                ) : null}
+                <small>
+                  {t(props.language, {
+                    es: `Máximo 30 MB y ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`,
+                    en: `Max 30 MB and ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} seconds.`,
+                    pt: `Maximo 30 MB e ${PROFESSIONAL_VIDEO_MAX_DURATION_SEC} segundos.`
+                  })}
+                </small>
+              </div>
+            </div>
+          </div>
 
           <section className="pro-card pro-profile-section">
             <h3>{t(props.language, { es: "Formación", en: "Education", pt: "Formacao" })}</h3>
@@ -706,6 +850,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
               }
             />
           </label>
+          <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_CANCELLATION_POLICY_NOTICE} />
 
           <button className="pro-primary" type="button" onClick={handleSave} disabled={isSaving}>
             {isSaving

@@ -1,14 +1,16 @@
 import { subscribeDocumentVisibleInterval } from "@therapy/auth";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
   type SupportedCurrency,
-  formatCurrencyCents,
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
+import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
+import { ProPageLoader } from "../components/ProPageLoader";
+import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import {
@@ -64,16 +66,27 @@ function firstProUpcomingSpotlightStorageKey(userId: string): string {
   return `motivarcare.pro.firstUpcomingSpotlight.v1.${userId}`;
 }
 
-function formatMoneyCents(cents: number, language: AppLanguage, currency: SupportedCurrency): string {
-  return formatCurrencyCents({
-    centsInUsd: cents,
-    language,
-    currency,
-    maximumFractionDigits: 0
-  });
+function KpiWithTooltip(props: { tipId: string; tooltip: string; focusable?: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={`pro-dashboard-kpi-tip-wrap${props.focusable ? " pro-dashboard-kpi-tip-wrap--focusable" : ""}`}
+      tabIndex={props.focusable ? 0 : undefined}
+      aria-describedby={props.tipId}
+    >
+      {props.children}
+      <div id={props.tipId} role="tooltip" className="pro-dashboard-kpi-tooltip">
+        <p>{props.tooltip}</p>
+      </div>
+    </div>
+  );
 }
 
-export function DashboardPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency; user: AuthUser }) {
+export function DashboardPage(props: {
+  token: string;
+  language: AppLanguage;
+  currency: SupportedCurrency;
+  user: AuthUser;
+}) {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [upcomingReservations, setUpcomingReservations] = useState<UpcomingReservationItem[]>([]);
   const [error, setError] = useState("");
@@ -91,8 +104,8 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
   const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
-  /** Solo la card «Dinero ejecutado»: ARS (pesos) por defecto; USD = moneda dura del período. */
-  const [executedDisplayCurrency, setExecutedDisplayCurrency] = useState<"ars" | "usd">("ars");
+  const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
+  /** Solo la card «Dinero ejecutado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -131,6 +144,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       } catch (requestError) {
         if (active) {
           const raw = requestError instanceof Error ? requestError.message : "";
+          setData(null);
           setError(professionalSurfaceMessage("dashboard-load", props.language, raw));
         }
       }
@@ -145,7 +159,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       active = false;
       unsubscribe();
     };
-  }, [props.language, props.token, revenueQuery]);
+  }, [props.language, props.token, revenueQuery, dashboardReloadKey]);
 
   useEffect(() => {
     const state = location.state as DashboardLocationState | null;
@@ -292,37 +306,81 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     };
   }, [props.user.id, upcomingTourDependency, isRescheduleModalOpen, isCancelModalOpen]);
 
+
   const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
   const highlightJoinPulseBookingId = meetJoinHighlight && firstMeetBookingId ? firstMeetBookingId : null;
 
+  const periodGroupLabel = t(props.language, { es: "Periodo de ingresos", en: "Revenue period", pt: "Periodo de receita" });
+
+  const periodFilters = useMemo(
+    () => (
+      <DashboardRevenuePeriodControl
+        language={props.language}
+        preset={revenuePreset}
+        day={revenueDay}
+        month={revenueMonth}
+        year={revenueYear}
+        groupLabel={periodGroupLabel}
+        onPresetChange={setRevenuePreset}
+        onDayChange={setRevenueDay}
+        onMonthChange={setRevenueMonth}
+        onYearChange={setRevenueYear}
+      />
+    ),
+    [props.language, periodGroupLabel, revenuePreset, revenueDay, revenueMonth, revenueYear]
+  );
+
+  useProPortalChrome({
+    title: t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" }),
+    toolbar: periodFilters
+  });
+
   if (error) {
-    return <section className="pro-card"><p className="pro-error">{error}</p></section>;
+    return (
+      <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
+        <div className="pro-dashboard-overview">
+          <section
+            className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
+          >
+            <div className="pro-dashboard-state-panel pro-dashboard-error-card">
+              <p className="pro-error">{error}</p>
+              <button
+                type="button"
+                className="pro-btn pro-btn--secondary"
+                onClick={() => {
+                  setError("");
+                  setData(null);
+                  setDashboardReloadKey((n) => n + 1);
+                }}
+              >
+                {t(props.language, { es: "Reintentar", en: "Try again", pt: "Tentar de novo" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
   }
 
   if (!data) {
     return (
-      <section className="pro-card">
-        <p>{t(props.language, { es: "Cargando dashboard...", en: "Loading dashboard...", pt: "Carregando dashboard..." })}</p>
-      </section>
+      <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
+        <ProPageLoader language={props.language} layout="block" />
+      </div>
     );
   }
 
-  const byCurrency = data.revenueStats.byCurrency ?? [];
-  const fallbackArs =
-    byCurrency.find((row) => row.currency.toLowerCase() === "ars")?.grossCents
-    ?? (props.currency.toLowerCase() === "ars" ? data.revenueStats.grossCents : 0);
-  const executedArsCents = data.revenueStats.executedDisplay?.arsGrossCents ?? fallbackArs;
-  const executedUsdCents = data.revenueStats.executedDisplay?.usdHardCents ?? 0;
-  const executedAmountLabel =
-    executedDisplayCurrency === "ars"
-      ? formatRecordedFinanceMinor(executedArsCents, "ars", props.language)
-      : formatRecordedFinanceMinor(executedUsdCents, "usd", props.language);
-  const executedCurrencyAria = t(props.language, {
-    es: "Moneda del monto ejecutado",
-    en: "Currency for executed revenue",
-    pt: "Moeda da receita executada"
-  });
-
+  const displayCurrency = data.display?.currency ?? props.currency.toLowerCase();
+  const executedAmountLabel = formatRecordedFinanceMinor(
+    data.display?.executedGrossCents ?? data.revenueStats.grossCents,
+    displayCurrency,
+    props.language
+  );
+  const pendingCollectLabel = formatRecordedFinanceMinor(
+    data.display?.pendingToCollectCents ?? data.kpis.pendingPayoutCents,
+    displayCurrency,
+    props.language
+  );
   const openRescheduleModal = async (booking: UpcomingReservationItem) => {
     setBookingActionError("");
     setBookingActionInProgressId(booking.id);
@@ -457,28 +515,29 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
     }
   };
 
-  const periodGroupLabel = t(props.language, { es: "Periodo de ingresos", en: "Revenue period", pt: "Periodo de receita" });
-  const presetAria = t(props.language, { es: "Intervalo del resumen", en: "Summary range", pt: "Intervalo do resumo" });
-  const dateAria =
-    revenuePreset === "week"
-      ? t(props.language, { es: "Fecha en la semana a mostrar", en: "Date within week to show", pt: "Data na semana a exibir" })
-      : t(props.language, { es: "Dia a mostrar", en: "Day to show", pt: "Dia a exibir" });
-  const monthAria = t(props.language, { es: "Mes a mostrar", en: "Month to show", pt: "Mes a exibir" });
-  const yearAria = t(props.language, { es: "Año a mostrar", en: "Year to show", pt: "Ano a exibir" });
-
   const executedMoneyTooltip = t(props.language, {
     es: "Total de Ingreso bruto de sesiones ya realizadas, en el periodo definido en los filtros.",
     en: "Total gross revenue from sessions already completed, in the period set by the filters above.",
     pt: "Total de receita bruta de sessoes ja realizadas, no periodo definido nos filtros."
   });
   const pendingCollectTooltip = t(props.language, {
-    es: "Total de Ingreso neto a cobrar",
-    en: "Total net revenue to collect",
-    pt: "Total de receita liquida a receber"
+    es: "Total de ingreso neto pendiente de cobro por sesiones ya ejecutadas.",
+    en: "Total net revenue still pending payout for completed sessions.",
+    pt: "Total de receita liquida pendente de recebimento por sessoes ja executadas."
+  });
+  const scheduledSessionsTooltip = t(props.language, {
+    es: "Sesiones confirmadas con inicio en el período elegido arriba. Tocá para ver la lista de próximas reservas.",
+    en: "Confirmed sessions starting in the period selected above. Tap to view upcoming bookings.",
+    pt: "Sessoes confirmadas no periodo escolhido acima. Toque para ver as proximas reservas."
+  });
+  const activePatientsTooltip = t(props.language, {
+    es: "Cantidad de pacientes con estado activo en tu consultorio. Tocá para ver el listado completo.",
+    en: "Number of patients with active status in your practice. Tap to open the full list.",
+    pt: "Quantidade de pacientes com status ativo. Toque para ver a lista completa."
   });
 
   return (
-    <div className="pro-grid-stack pro-dashboard-stack">
+    <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
       {profileSavedNotice ? (
         <p className="pro-success pro-dashboard-flash" role="status">
           {profileSavedNotice}
@@ -486,122 +545,53 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
       ) : null}
       <div className="pro-dashboard-overview">
         <section
-          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero"
-          aria-labelledby="pro-dashboard-heading"
+          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
+          data-tour="pro-tour-hero"
         >
-          <div className="pro-dashboard-revenue-top-row">
-            <div className="pro-dashboard-revenue-head pro-dashboard-revenue-head--compact">
-              <h2 id="pro-dashboard-heading" className="pro-dashboard-revenue-title pro-dashboard-revenue-title--page">
-                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-              </h2>
-            </div>
-            <div
-              className="pro-dashboard-revenue-toolbar pro-dashboard-revenue-toolbar--minimal"
-              role="group"
-              aria-label={periodGroupLabel}
-            >
-              <select
-                className="pro-dashboard-revenue-control"
-                value={revenuePreset}
-                aria-label={presetAria}
-                onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
-              >
-                <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
-                <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
-                <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
-                <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
-                <option value="all">{t(props.language, { es: "Todo", en: "All", pt: "Todo" })}</option>
-              </select>
-              {revenuePreset === "day" || revenuePreset === "week" ? (
-                <input
-                  className="pro-dashboard-revenue-control"
-                  type="date"
-                  value={revenueDay}
-                  aria-label={dateAria}
-                  onChange={(event) => setRevenueDay(event.target.value)}
-                />
-              ) : null}
-              {revenuePreset === "month" ? (
-                <input
-                  className="pro-dashboard-revenue-control"
-                  type="month"
-                  value={revenueMonth}
-                  aria-label={monthAria}
-                  onChange={(event) => setRevenueMonth(event.target.value)}
-                />
-              ) : null}
-              {revenuePreset === "year" ? (
-                <input
-                  className="pro-dashboard-revenue-control pro-dashboard-revenue-control--year"
-                  type="number"
-                  min={2020}
-                  max={2035}
-                  value={revenueYear}
-                  aria-label={yearAria}
-                  onChange={(event) => setRevenueYear(event.target.value)}
-                />
-              ) : null}
-            </div>
-          </div>
 
           <div
             className="pro-dashboard-kpi-row"
             role="group"
             aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}
+            data-tour="pro-tour-kpis"
           >
-          <div
-            className="pro-dashboard-kpi-tip-wrap pro-dashboard-kpi-tip-wrap--focusable"
-            tabIndex={0}
-            aria-describedby="pro-dashboard-tip-ejecutado"
-          >
-            <article className="pro-kpi-card pro-kpi-card--executed-revenue">
-              <div className="pro-kpi-executed-head">
-                <span className="pro-executed-revenue-label">
-                  {t(props.language, { es: "Dinero ejecutado", en: "Executed revenue", pt: "Receita executada" })}
-                </span>
-                <select
-                  className="pro-dashboard-revenue-control pro-kpi-executed-currency"
-                  aria-label={executedCurrencyAria}
-                  value={executedDisplayCurrency}
-                  onChange={(event) => setExecutedDisplayCurrency(event.target.value as "ars" | "usd")}
-                >
-                  <option value="ars">{t(props.language, { es: "Pesos (ARS)", en: "ARS", pt: "ARS" })}</option>
-                  <option value="usd">{t(props.language, { es: "Dólares (USD)", en: "USD", pt: "USD" })}</option>
-                </select>
-              </div>
+          <KpiWithTooltip tipId="pro-dashboard-tip-ejecutado" tooltip={executedMoneyTooltip} focusable>
+            <NavLink className="pro-kpi-card pro-kpi-card-link pro-kpi-card--executed-revenue" to="/ingresos#sesiones-ejecutadas">
+              <span className="pro-executed-revenue-label">
+                {t(props.language, { es: "Dinero ejecutado", en: "Executed revenue", pt: "Receita executada" })}
+              </span>
               <strong className="pro-kpi-executed-amount">{executedAmountLabel}</strong>
               <small className="pro-kpi-executed-meta">
                 {t(props.language, {
-                  es: `${data.revenueStats.completedSessions} sesiones en el período`,
-                  en: `${data.revenueStats.completedSessions} sessions in period`,
-                  pt: `${data.revenueStats.completedSessions} sessoes no periodo`
+                  es: `${data.revenueStats.completedSessions} sesiones · ver detalle`,
+                  en: `${data.revenueStats.completedSessions} sessions · view detail`,
+                  pt: `${data.revenueStats.completedSessions} sessoes · ver detalhe`
                 })}
               </small>
-            </article>
-            <div id="pro-dashboard-tip-ejecutado" role="tooltip" className="pro-dashboard-kpi-tooltip">
-              <p>{executedMoneyTooltip}</p>
-            </div>
-          </div>
-          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
-            <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
-            <strong>{data.kpis.sessionsScheduled}</strong>
-            <em>{t(props.language, { es: "Ver próximas reservas", en: "View upcoming bookings", pt: "Ver próximas reservas" })}</em>
-          </NavLink>
-          <NavLink className="pro-kpi-card pro-kpi-card-link" to="/pacientes">
-            <span>{t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}</span>
-            <strong>{data.kpis.activePatients}</strong>
-            <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
-          </NavLink>
-          <div className="pro-dashboard-kpi-tip-wrap">
-            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos" aria-describedby="pro-dashboard-tip-cobrar">
+              <em>{t(props.language, { es: "Ver sesiones ejecutadas", en: "View completed sessions", pt: "Ver sessoes executadas" })}</em>
+            </NavLink>
+          </KpiWithTooltip>
+          <KpiWithTooltip tipId="pro-dashboard-tip-agendadas" tooltip={scheduledSessionsTooltip}>
+            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/#sesiones-agendadas">
+              <span>{t(props.language, { es: "Sesiones agendadas", en: "Scheduled sessions", pt: "Sessoes agendadas" })}</span>
+              <strong>{data.kpis.sessionsScheduled}</strong>
+              <em>{t(props.language, { es: "Ver próximas reservas", en: "View upcoming bookings", pt: "Ver próximas reservas" })}</em>
+            </NavLink>
+          </KpiWithTooltip>
+          <KpiWithTooltip tipId="pro-dashboard-tip-pacientes" tooltip={activePatientsTooltip}>
+            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/pacientes">
+              <span>{t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}</span>
+              <strong>{data.kpis.activePatients}</strong>
+              <em>{t(props.language, { es: "Ver pacientes", en: "View patients", pt: "Ver pacientes" })}</em>
+            </NavLink>
+          </KpiWithTooltip>
+          <KpiWithTooltip tipId="pro-dashboard-tip-cobrar" tooltip={pendingCollectTooltip}>
+            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
               <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
-              <strong>{formatMoneyCents(data.kpis.pendingPayoutCents, props.language, props.currency)}</strong>
+              <strong>{pendingCollectLabel}</strong>
               <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
             </NavLink>
-            <div id="pro-dashboard-tip-cobrar" role="tooltip" className="pro-dashboard-kpi-tooltip">
-              <p>{pendingCollectTooltip}</p>
-            </div>
-          </div>
+          </KpiWithTooltip>
           </div>
         </section>
       </div>
@@ -619,6 +609,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
         id="sesiones-agendadas"
         ref={upcomingSectionRef}
         tabIndex={-1}
+        data-tour="pro-tour-bookings"
       >
         <div className="agenda-upcoming-head">
           <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
@@ -630,6 +621,7 @@ export function DashboardPage(props: { token: string; language: AppLanguage; cur
           onRequestReschedule={openRescheduleModal}
           onRequestCancel={openCancelModal}
           highlightJoinPulseBookingId={highlightJoinPulseBookingId}
+          joinTourTargetBookingId={firstMeetBookingId}
         />
         {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
       </section>

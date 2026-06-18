@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
 
+export {
+  MotivarCareLoader,
+  MotivarCarePageLoader,
+  ProPageLoader
+} from "./MotivarCarePageLoader";
+
 export function PageShell(props: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <section

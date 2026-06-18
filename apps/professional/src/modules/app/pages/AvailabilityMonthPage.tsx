@@ -12,6 +12,7 @@ import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 import { AvailabilityMonthHeader } from "../components/availability/AvailabilityMonthHeader";
 import { AvailabilityBulkSticky } from "../components/availability/AvailabilityBulkSticky";
 import { AvailabilityRemoveModal } from "../components/availability/AvailabilityRemoveModal";
+import { ProPageLoader } from "../components/ProPageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -574,7 +575,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
           onNextMonth={() => setMonthDate((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
         />
 
-        {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+        {loading ? <ProPageLoader language={props.language} layout="inline" /> : null}
         {error ? <p className="pro-error">{error}</p> : null}
         {message ? <p className="pro-success">{message}</p> : null}
 

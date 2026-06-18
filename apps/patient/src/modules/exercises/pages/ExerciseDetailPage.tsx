@@ -4,6 +4,7 @@ import { type AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercises, type ExercisePost } from "../services/exercisesApi";
 import { categoryAccent, categoryLabel, difficultyLabel, durationLabel, t } from "../lib/labels";
 import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 export interface ExerciseDetailPageProps {
   language: AppLanguage;
@@ -58,9 +59,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
-        <p className="exercises-page-loading">
-          {t(props.language, { es: "Cargando ejercicio…", en: "Loading exercise…", pt: "Carregando exercício…" })}
-        </p>
+        <MotivarCarePageLoader language={props.language} layout="block" />
       </section>
     );
   }

@@ -6,6 +6,7 @@ import {
   formatProfessionalReviewDate,
   renderProfessionalReviewStars
 } from "../lib/professionalReviewsDisplay";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -30,7 +31,7 @@ export function ProfessionalReviewsSection(props: {
   if (loading) {
     return (
       <section className="content-card professional-reviews-section" aria-busy="true">
-        <p>{t(props.language, { es: "Cargando opiniones…", en: "Loading reviews…", pt: "Carregando avaliações…" })}</p>
+        <MotivarCarePageLoader language={props.language} layout="inline" />
       </section>
     );
   }

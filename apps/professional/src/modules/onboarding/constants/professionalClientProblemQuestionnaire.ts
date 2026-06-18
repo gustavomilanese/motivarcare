@@ -56,7 +56,11 @@ export const PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE: ProblemQuestionBlock[] =
       { valueEs: "Crisis personales", label: { es: "Crisis personales", en: "Personal crises", pt: "Crises pessoais" } },
       { valueEs: "Soledad", label: { es: "Soledad", en: "Loneliness", pt: "Solidao" } },
       { valueEs: "Dificultad para controlar impulsos", label: { es: "Dificultad para controlar impulsos", en: "Difficulty controlling impulses", pt: "Dificuldade para controlar impulsos" } },
-      { valueEs: "Crecimiento personal", label: { es: "Crecimiento personal", en: "Personal growth", pt: "Crescimento pessoal" } }
+      { valueEs: "Crecimiento personal", label: { es: "Crecimiento personal", en: "Personal growth", pt: "Crescimento pessoal" } },
+      {
+        valueEs: "Terapia de pareja",
+        label: { es: "Terapia de pareja", en: "Couples therapy", pt: "Terapia de casal" }
+      }
     ]
   },
   {

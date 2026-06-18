@@ -59,7 +59,7 @@ type TopicKey =
 const TOPIC_KEYWORDS: Record<TopicKey, string[]> = {
   anxiety: ["ansiedad", "anxiety", "panico", "panic", "nervios", "ansioso", "ansiosa"],
   depression: ["depresion", "depression", "triste", "tristeza", "animo bajo", "apatia"],
-  relationships: ["pareja", "vinculo", "vinculos", "relaciones", "relationship", "familia"],
+  relationships: ["pareja", "vinculo", "vinculos", "relaciones", "relationship", "familia", "terapia de pareja", "couples"],
   burnout: ["estres", "stress", "burnout", "trabajo", "laboral", "agotamiento", "sobrepasado"],
   trauma: ["trauma", "abuso", "violencia", "duelo", "perdida", "ptsd"],
   "emotional-regulation": ["regulacion emocional", "emocional", "impulsividad", "reactividad"],
@@ -90,6 +90,8 @@ const MAIN_REASON_TO_TOPIC: Record<string, TopicKey | null> = {
   "estres / burnout": "burnout",
   "estresse / burnout": "burnout",
   "stress / burnout": "burnout",
+  "terapia de pareja": "relationships",
+  "couples therapy": "relationships",
   otro: null,
   outro: null,
   other: null

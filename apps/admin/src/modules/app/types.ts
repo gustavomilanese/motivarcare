@@ -101,6 +101,7 @@ export interface UsersResponse {
 }
 
 export interface KpisResponse {
+  currency?: "usd";
   kpis: {
     activePatients: number;
     activeProfessionals: number;
@@ -136,6 +137,14 @@ export interface KpisResponse {
     plannedPlatformFeeMonthCents?: number;
     plannedProfessionalNetMonthCents?: number;
   };
+  unpaidByProfessional?: Array<{
+    professionalId: string;
+    professionalName: string;
+    sessionsCount: number;
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+  }>;
   period?: {
     /** YYYY-MM (calendario UTC) */
     month?: string;

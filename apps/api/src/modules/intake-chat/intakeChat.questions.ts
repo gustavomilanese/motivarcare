@@ -56,6 +56,7 @@ export const INTAKE_CHAT_QUESTIONS: readonly IntakeChatQuestionDef[] = [
       "Soledad",
       "Dificultad para controlar impulsos",
       "Crecimiento personal",
+      "Terapia de pareja",
       "Otro"
     ],
     allowsOther: true,

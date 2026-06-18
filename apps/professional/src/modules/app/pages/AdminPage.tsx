@@ -57,7 +57,6 @@ export function AdminPage(props: { token: string; language: AppLanguage }) {
 
   return (
     <section className="pro-card">
-      <h2>{t(props.language, { es: "Solapa administrativa", en: "Administrative tab", pt: "Aba administrativa" })}</h2>
       <div className="pro-grid-form">
         <label>
           {t(props.language, { es: "Datos fiscales (Tax ID)", en: "Tax data (Tax ID)", pt: "Dados fiscais (Tax ID)" })}

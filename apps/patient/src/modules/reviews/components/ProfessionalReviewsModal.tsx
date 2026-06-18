@@ -9,6 +9,7 @@ import {
   renderProfessionalReviewStars,
   resolveProfessionalDisplayRating
 } from "../lib/professionalReviewsDisplay";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -94,9 +95,7 @@ export function ProfessionalReviewsModal(props: {
 
         <div className="professional-reviews-modal-body" aria-busy={loading}>
           {loading ? (
-            <p className="professional-reviews-modal-status">
-              {t(props.language, { es: "Cargando opiniones…", en: "Loading reviews…", pt: "Carregando avaliações…" })}
-            </p>
+            <MotivarCarePageLoader language={props.language} layout="inline" />
           ) : error && reviewCount <= 0 ? (
             <p className="professional-reviews-modal-status">
               {t(props.language, {

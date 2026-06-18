@@ -117,7 +117,7 @@ export function ProfessionalRegisterIntro(props: { language: AppLanguage; onCont
               <div className="pro-register-phone-pill">
                 {t(props.language, { es: "Estimado mensual", en: "Monthly estimate", pt: "Estimativa mensal" })}
               </div>
-              <strong className="pro-register-phone-amount">USD 5.173,75</strong>
+              <strong className="pro-register-phone-amount">USD 3.760</strong>
               <p className="pro-register-phone-subtitle">
                 {t(props.language, { es: "Ganancia proyectada", en: "Projected earnings", pt: "Ganhos projetados" })}
               </p>

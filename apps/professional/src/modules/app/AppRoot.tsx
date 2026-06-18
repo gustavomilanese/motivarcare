@@ -31,6 +31,7 @@ import { ResetPasswordScreen } from "./pages/ResetPasswordScreen";
 import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { professionalSurfaceMessage } from "./lib/friendlyProfessionalSurfaceMessages";
+import { ProPageLoader } from "./components/ProPageLoader";
 import {
   API_BASE,
   CALENDAR_ONBOARDING_PENDING_USER_ID_KEY,
@@ -47,6 +48,10 @@ import {
   setProfessionalApiUnauthorizedHandler
 } from "./services/api";
 import { resolveProfessionalPortalLanguage } from "../../professionalPortalDefaultLanguage";
+import {
+  PROFESSIONAL_GOOGLE_CALENDAR_SCOPE_POINTS
+} from "../onboarding/constants/professionalProfileGuidanceCopy";
+import { ProfessionalGuidanceList } from "../onboarding/components/ProfessionalGuidanceBanner";
 import type { AuthUser } from "./types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -179,6 +184,7 @@ export function App() {
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
     createDefaultOnboardingPatchDraft()
   );
+  const [pendingOnboardingTaxId, setPendingOnboardingTaxId] = useState<string | null>(null);
   const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(() =>
     readCalendarOnboardingPendingForSession(
       readStoredUser(),
@@ -328,7 +334,7 @@ export function App() {
 
   const handlePrepareOnboardingSync = (
     draft: OnboardingPatchDraft,
-    meta?: { displayFullName?: string }
+    meta?: { displayFullName?: string; taxId?: string }
   ) => {
     const trimmed = meta?.displayFullName?.trim() ?? "";
     if (trimmed.length >= 2) {
@@ -337,6 +343,8 @@ export function App() {
     } else {
       setPendingOnboardingDisplayFullName(null);
     }
+    const taxTrimmed = meta?.taxId?.trim() ?? "";
+    setPendingOnboardingTaxId(taxTrimmed.length >= 6 ? taxTrimmed : null);
     setOnboardingPatchDraft(draft);
     setPendingOnboardingSync(true);
   };
@@ -519,6 +527,17 @@ export function App() {
         return null;
       });
 
+      const taxPromise =
+        pendingOnboardingTaxId
+          ? apiRequest("/api/professional/admin", token, {
+              method: "PUT",
+              body: JSON.stringify({ taxId: pendingOnboardingTaxId })
+            }).catch((error) => {
+              console.error("Could not sync onboarding tax id", error);
+              return null;
+            })
+          : Promise.resolve(null);
+
       const namePromise =
         displayFullName && displayFullName.length >= 2
           ? apiRequest<{
@@ -566,10 +585,11 @@ export function App() {
               })
           : Promise.resolve(true);
 
-      const [, nameOk] = await Promise.all([profilePromise, namePromise]);
+      const [, , nameOk] = await Promise.all([profilePromise, taxPromise, namePromise]);
 
       if (!ignore) {
         setPendingOnboardingSync(false);
+        setPendingOnboardingTaxId(null);
         if (nameOk) {
           setPendingOnboardingDisplayFullName(null);
           clearPendingOnboardingDisplayFullName();
@@ -587,7 +607,8 @@ export function App() {
     pendingOnboardingDisplayFullName,
     token,
     user?.professionalProfileId,
-    onboardingPatchDraft
+    onboardingPatchDraft,
+    pendingOnboardingTaxId
   ]);
 
   /**
@@ -858,10 +879,8 @@ export function App() {
 
   if (!authSyncReady) {
     return (
-      <div className="pro-auth-shell">
-        <section className="pro-auth-card">
-          <p>Cargando tu perfil...</p>
-        </section>
+      <div className="pro-auth-shell pro-auth-shell--loader">
+        <ProPageLoader language={language} layout="block" />
       </div>
     );
   }
@@ -909,6 +928,7 @@ export function App() {
                 pt: "Quando confirmar ou reagendar uma sessao, voce pode manter lembretes e disponibilidade num so lugar, com menos passos manuais."
               })}
             </p>
+            <ProfessionalGuidanceList language={language} items={PROFESSIONAL_GOOGLE_CALENDAR_SCOPE_POINTS} />
             {calendarOnboardingError ? (
               <p className="calendar-consent-error" role="alert">
                 {calendarOnboardingError}

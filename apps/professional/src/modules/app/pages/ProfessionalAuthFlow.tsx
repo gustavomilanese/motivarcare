@@ -47,6 +47,7 @@ import {
   ProfessionalTherapyDescriptionInfoStep,
   ProfessionalTherapyDescriptionStep,
   ProfessionalVideoInfoStep,
+  ProfessionalVideoUploadStep,
   ProfessionalWelcomeGate,
   ProfessionalWorkAreasByClientProblemStep,
   ProfessionalWorkAreasStep,
@@ -109,6 +110,7 @@ type AuthEntryMode =
   | "register-photo-upload"
   | "register-avatar-adjust"
   | "register-video-info"
+  | "register-video-upload"
   | "register-education-info"
   | "register-education"
   | "register-stripe"
@@ -130,7 +132,7 @@ export function ProfessionalAuthFlow(props: {
     googleCalendarConnected?: boolean;
   }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
-  onPrepareOnboardingSync: (draft: OnboardingPatchDraft, meta?: { displayFullName?: string }) => void;
+  onPrepareOnboardingSync: (draft: OnboardingPatchDraft, meta?: { displayFullName?: string; taxId?: string }) => void;
   /** Reanudar onboarding web tras verificar el mail (mismo navegador). */
   webOnboardingResume?: {
     initialWizardStep: number;
@@ -165,6 +167,9 @@ export function ProfessionalAuthFlow(props: {
   const [mobileUsdArsRate, setMobileUsdArsRate] = useState<number | null>(null);
   const [profilePhotoLoaded, setProfilePhotoLoaded] = useState(false);
   const [registerProfilePhotoDataUrl, setRegisterProfilePhotoDataUrl] = useState<string | null>(null);
+  const [registerProfileVideoDataUrl, setRegisterProfileVideoDataUrl] = useState<string | null>(null);
+  const [registerProfileVideoPreview, setRegisterProfileVideoPreview] = useState<string | null>(null);
+  const [registerTaxId, setRegisterTaxId] = useState("");
   const [educationData, setEducationData] = useState({
     institution: "",
     specialty: "",
@@ -192,8 +197,14 @@ export function ProfessionalAuthFlow(props: {
     }
     const displayName =
       joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim() || mobilePreAuthSession.user.fullName;
+    const taxIdTrimmed = registerTaxId.trim();
     const nameMeta =
-      displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : undefined;
+      displayName.trim().length >= 2 || taxIdTrimmed.length >= 6
+        ? {
+            ...(displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : {}),
+            ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+          }
+        : undefined;
     props.onPrepareOnboardingSync(buildMobileDraft(), nameMeta);
     props.onAuthSuccess({
       token: mobilePreAuthSession.token,
@@ -342,7 +353,9 @@ export function ProfessionalAuthFlow(props: {
           startYear: educationData.startYear,
           graduationYear: educationData.graduationYear
         },
-        photoUrl: registerProfilePhotoDataUrl
+        photoUrl: registerProfilePhotoDataUrl,
+        videoUrl: registerProfileVideoDataUrl,
+        taxId: registerTaxId.trim() || undefined
       },
       { usdArsRate: mobileUsdArsRate }
     );
@@ -398,10 +411,6 @@ export function ProfessionalAuthFlow(props: {
           }
           setAuthEntryMode("welcome");
         }}
-        onSwitchToMobile={() => {
-          setRegisterBackMode("register-profile-full");
-          setAuthEntryMode("register-intro");
-        }}
         onFinish={(payload, meta) => {
           clearPendingWebOnboardingAuth();
           clearResumeWebOnboardingStep();
@@ -413,7 +422,8 @@ export function ProfessionalAuthFlow(props: {
             return { ...current, firstName: parts.firstName, lastName: parts.lastName };
           });
           props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload), {
-            displayFullName: payload.fullName.trim()
+            displayFullName: payload.fullName.trim(),
+            taxId: payload.taxId
           });
           setRegisterBackMode("register-web");
           const displayName = payload.fullName.trim() || meta.user.fullName;
@@ -786,6 +796,22 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalVideoInfoStep
         language={props.language}
         onBack={() => setAuthEntryMode("register-avatar-adjust")}
+        onContinue={() => setAuthEntryMode("register-video-upload")}
+      />
+    );
+  }
+
+  if (authEntryMode === "register-video-upload") {
+    return (
+      <ProfessionalVideoUploadStep
+        language={props.language}
+        hasVideo={Boolean(registerProfileVideoDataUrl)}
+        videoPreview={registerProfileVideoPreview}
+        onVideoDataUrl={(url, previewUrl) => {
+          setRegisterProfileVideoDataUrl(url);
+          setRegisterProfileVideoPreview(previewUrl);
+        }}
+        onBack={() => setAuthEntryMode("register-video-info")}
         onContinue={() => setAuthEntryMode("register-education-info")}
       />
     );
@@ -795,7 +821,7 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalEducationInfoStep
         language={props.language}
-        onBack={() => setAuthEntryMode("register-video-info")}
+        onBack={() => setAuthEntryMode("register-video-upload")}
         onContinue={() => setAuthEntryMode("register-education")}
       />
     );
@@ -817,6 +843,9 @@ export function ProfessionalAuthFlow(props: {
     return (
       <ProfessionalStripeVerificationStep
         language={props.language}
+        residencyCountry={personalData.residencyCountry}
+        taxId={registerTaxId}
+        onTaxIdChange={setRegisterTaxId}
         onBack={() => setAuthEntryMode("register-education")}
         onContinue={() => setAuthEntryMode("register-success-info")}
       />
@@ -834,9 +863,15 @@ export function ProfessionalAuthFlow(props: {
             completeMobileOnboardingWithSession();
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
+            const taxIdTrimmed = registerTaxId.trim();
             props.onPrepareOnboardingSync(
               buildMobileDraft(),
-              mobileName.length >= 2 ? { displayFullName: mobileName } : undefined
+              mobileName.length >= 2 || taxIdTrimmed.length >= 6
+                ? {
+                    ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
+                    ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+                  }
+                : undefined
             );
             setAuthEntryMode("register");
           }
@@ -865,9 +900,15 @@ export function ProfessionalAuthFlow(props: {
             completeMobileOnboardingWithSession();
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
+            const taxIdTrimmed = registerTaxId.trim();
             props.onPrepareOnboardingSync(
               buildMobileDraft(),
-              mobileName.length >= 2 ? { displayFullName: mobileName } : undefined
+              mobileName.length >= 2 || taxIdTrimmed.length >= 6
+                ? {
+                    ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
+                    ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+                  }
+                : undefined
             );
             setAuthEntryMode("register");
           }

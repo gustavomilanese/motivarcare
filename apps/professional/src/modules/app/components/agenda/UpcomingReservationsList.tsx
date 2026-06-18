@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { PatientAvatarImage } from "../PatientAvatarImage";
+import { ProPageLoader } from "../ProPageLoader";
 import { resolveApiAssetUrl } from "../../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -67,12 +68,35 @@ export function UpcomingReservationsList(props: {
   onRequestCancel?: (booking: UpcomingReservationItem) => void;
   /** Primera reserva con Meet: pulso breve (p. ej. `?meet_hint=1` tras OAuth Calendar). */
   highlightJoinPulseBookingId?: string | null;
+  /** Primera reserva con Meet: target del tour guiado Maca. */
+  joinTourTargetBookingId?: string | null;
 }) {
   const loading = Boolean(props.loading);
   const error = props.error ?? "";
 
+  const joinSessionTooltip = t(props.language, {
+    es: "Abrir la videollamada de Google Meet con tu paciente.",
+    en: "Open the Google Meet video call with your patient.",
+    pt: "Abrir a videochamada do Google Meet com seu paciente."
+  });
+  const noLinkTooltip = t(props.language, {
+    es: "Sin enlace de Meet. Conectá Google Calendar en Ajustes para generarlo automáticamente.",
+    en: "No Meet link yet. Connect Google Calendar in Settings to generate it automatically.",
+    pt: "Sem link do Meet. Conecte o Google Calendar em Ajustes para gerar automaticamente."
+  });
+  const rescheduleTooltip = t(props.language, {
+    es: "Reagendar esta sesión con el paciente.",
+    en: "Reschedule this session with the patient.",
+    pt: "Reagendar esta sessao com o paciente."
+  });
+  const cancelTooltip = t(props.language, {
+    es: "Cancelar esta reserva.",
+    en: "Cancel this booking.",
+    pt: "Cancelar esta reserva."
+  });
+
   if (loading) {
-    return <p>{t(props.language, { es: "Cargando reservas...", en: "Loading bookings...", pt: "Carregando reservas..." })}</p>;
+    return <ProPageLoader language={props.language} layout="inline" />;
   }
 
   if (error) {
@@ -103,6 +127,8 @@ export function UpcomingReservationsList(props: {
           const joinTrim = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
           const pulseJoin =
             Boolean(props.highlightJoinPulseBookingId && props.highlightJoinPulseBookingId === booking.id && joinTrim);
+          const joinTourTarget =
+            Boolean(props.joinTourTargetBookingId && props.joinTourTargetBookingId === booking.id && joinTrim);
           return (
           <article className="agenda-upcoming-row" key={booking.id}>
             <div className="agenda-upcoming-cell">
@@ -140,17 +166,22 @@ export function UpcomingReservationsList(props: {
                     target="_blank"
                     rel="noreferrer"
                     className={`agenda-join-button${pulseJoin ? " pro-join-session--pulse" : ""}`}
+                    title={joinSessionTooltip}
+                    data-tour={joinTourTarget ? "pro-join-first-meet" : undefined}
                   >
                     {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}
                   </a>
                 ) : (
-                  <span className="agenda-no-link">{t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}</span>
+                  <span className="agenda-no-link" title={noLinkTooltip}>
+                    {t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}
+                  </span>
                 )}
                 {props.onRequestReschedule && (booking.status === "confirmed" || booking.status === "requested") ? (
                   <button
                     type="button"
                     className="icon-only"
                     aria-label={t(props.language, { es: "Reagendar", en: "Reschedule", pt: "Reagendar" })}
+                    title={rescheduleTooltip}
                     onClick={() => props.onRequestReschedule?.(booking)}
                     disabled={props.busyBookingId === booking.id}
                   >
@@ -162,6 +193,7 @@ export function UpcomingReservationsList(props: {
                     type="button"
                     className="danger icon-only"
                     aria-label={t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                    title={cancelTooltip}
                     onClick={() => props.onRequestCancel?.(booking)}
                     disabled={props.busyBookingId === booking.id}
                   >

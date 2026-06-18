@@ -88,6 +88,10 @@ export interface ProfessionalWebOnboardingPayload {
   stripeVerified: boolean;
   stripeVerificationStarted: boolean;
   diplomas: OnboardingDiplomaDraft[];
+  /** DNI / identificador fiscal (admin config). */
+  taxId?: string;
+  /** Proveedor de cobros elegido en onboarding. */
+  payoutMethod?: string;
 }
 
 export interface ProfessionalMobileOnboardingInputs {
@@ -123,4 +127,8 @@ export interface ProfessionalMobileOnboardingInputs {
   };
   /** Foto de perfil (p. ej. data URL) capturada en el paso de carga móvil. */
   photoUrl?: string | null;
+  /** Video de presentación (data URL). */
+  videoUrl?: string | null;
+  /** DNI / identificador fiscal (Stripe). */
+  taxId?: string;
 }

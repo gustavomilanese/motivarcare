@@ -12,7 +12,7 @@ import {
   fetchPublicUsdArsRate,
   roundSessionPriceArsFromUsd
 } from "../../../app/services/usdArsPublicRate";
-import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
+import { mediaPreviewFromFile, readVideoFileForUpload } from "../../../app/utils/mediaPreview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -179,9 +179,9 @@ export function ProfessionalPriceStep(props: {
           <h1>{t(props.language, { es: "Precios por sesión", en: "Session prices", pt: "Precos por sessao" })}</h1>
           <p>
             {t(props.language, {
-              es: "Acá definís el valor de referencia de tu sesión en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al siguiente múltiplo de 1.000 ARS.",
-              en: "Set your reference session price in US dollars (USD). The peso price uses the official exchange rate and rounds up to the next ARS 1,000.",
-              pt: "Defina aqui o valor de referencia da sessao em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o proximo ARS 1.000."
+              es: "Acá definís el valor de referencia de tu sesión en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al múltiplo de 2.000 ARS más cercano.",
+              en: "Set your reference session price in US dollars (USD). The peso price uses the official exchange rate and rounds to the nearest ARS 2,000.",
+              pt: "Defina aqui o valor de referencia da sessao em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o multiplo de 2.000 ARS mais proximo."
             })}
           </p>
         </div>
@@ -691,7 +691,7 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
           <ul>
             <li>{t(props.language, { es: "No mencione su apellido, solo su nombre.", en: "Mention only your first name, not your surname.", pt: "Nao mencione o sobrenome, apenas o nome." })}</li>
             <li>{t(props.language, { es: "Indique desde qué año ejerce práctica privada.", en: "Say since which year you have been in private practice.", pt: "Diga desde que ano atua em pratica privada." })}</li>
-            <li>{t(props.language, { es: "Grabe con buena iluminacion y sin ruido de fondo.", en: "Record with good lighting and no background noise.", pt: "Grave com boa iluminacao e sem ruido de fundo." })}</li>
+            <li>{t(props.language, { es: "Grabe con buena iluminacion y sin ruido de fondo.", en: "Record with good lighting and no background noise.", pt: "Grave com boa iluminacao e sem ruido de fondo." })}</li>
             <li>{t(props.language, { es: "Duracion entre 1 y 2 minutos.", en: "Duration between 1 and 2 minutes.", pt: "Duracao entre 1 e 2 minutos." })}</li>
             <li>{t(props.language, { es: "Tamano maximo de archivo: 30 MB.", en: "Maximum file size: 30 MB.", pt: "Tamanho maximo do arquivo: 30 MB." })}</li>
           </ul>
@@ -699,6 +699,90 @@ export function ProfessionalVideoInfoStep(props: { language: AppLanguage; onBack
 
         <button className="pro-primary pro-register-intro-cta" type="button" onClick={props.onContinue}>
           {t(props.language, { es: "Seguimos", en: "Continue", pt: "Continuar" })}
+        </button>
+      </section>
+    </div>
+  );
+}
+
+export function ProfessionalVideoUploadStep(props: {
+  language: AppLanguage;
+  hasVideo: boolean;
+  videoPreview: string | null;
+  onVideoDataUrl: (url: string, previewUrl: string) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const [error, setError] = useState("");
+
+  return (
+    <div className="pro-register-intro-shell">
+      <section className="pro-form-step-card">
+        <header className="pro-form-step-head">
+          <button className="pro-register-intro-back" type="button" onClick={props.onBack} aria-label="Back">
+            ←
+          </button>
+          <div className="pro-form-step-progress" aria-hidden="true">
+            <span className="active progress-photo" />
+          </div>
+          <span className="pro-register-intro-info" aria-hidden="true">i</span>
+        </header>
+
+        <div className="pro-price-copy">
+          <h1>{t(props.language, { es: "Subí tu video", en: "Upload your video", pt: "Envie seu video" })}</h1>
+          <p>
+            {t(props.language, {
+              es: "Necesitamos foto y video para publicar tu perfil. Si te equivocaste, podés cambiar el archivo antes de continuar.",
+              en: "We need both a photo and video to publish your profile. If you picked the wrong file, replace it before continuing.",
+              pt: "Precisamos de foto e video para publicar seu perfil. Se errou o arquivo, substitua antes de continuar."
+            })}
+          </p>
+        </div>
+
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
+          style={{ display: "none" }}
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file) {
+              return;
+            }
+            try {
+              setError("");
+              const uploaded = await readVideoFileForUpload(file, { maxDurationSec: 120 });
+              props.onVideoDataUrl(uploaded.dataUrl, uploaded.previewDataUrl);
+            } catch {
+              setError(
+                t(props.language, {
+                  es: "Video inválido: máximo 30 MB y 120 segundos.",
+                  en: "Invalid video: max 30 MB and 120 seconds.",
+                  pt: "Video invalido: maximo 30 MB e 120 segundos."
+                })
+              );
+            }
+          }}
+        />
+
+        {props.videoPreview ? (
+          <div className="pro-media-mini-preview" aria-hidden="true">
+            <img src={props.videoPreview} alt="" />
+          </div>
+        ) : null}
+
+        {error ? <p className="pro-web-field-error" role="alert">{error}</p> : null}
+
+        <button type="button" className="pro-photo-upload-main" onClick={() => videoInputRef.current?.click()}>
+          {props.hasVideo
+            ? t(props.language, { es: "Cambiar video", en: "Change video", pt: "Alterar video" })
+            : t(props.language, { es: "Agregar video", en: "Add video", pt: "Adicionar video" })}
+        </button>
+
+        <button className="pro-primary pro-register-intro-cta" type="button" disabled={!props.hasVideo} onClick={props.onContinue}>
+          {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>
     </div>

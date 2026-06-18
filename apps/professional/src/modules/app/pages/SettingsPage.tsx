@@ -6,6 +6,10 @@ import {
   apiRequest,
   backupProfessionalLocalStorageForCalendarOAuth
 } from "../services/api";
+import {
+  PROFESSIONAL_GOOGLE_CALENDAR_SCOPE_POINTS
+} from "../../onboarding/constants/professionalProfileGuidanceCopy";
+import { ProfessionalGuidanceList } from "../../onboarding/components/ProfessionalGuidanceBanner";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -139,7 +143,6 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
 
   return (
     <section className="pro-card">
-      <h2>{t(props.language, { es: "Ajustes generales", en: "General settings", pt: "Configuracoes gerais" })}</h2>
       <label className="pro-inline">
         <input type="checkbox" checked={emailNotifications} onChange={(event) => setEmailNotifications(event.target.checked)} />
         {t(props.language, { es: "Notificaciones por email", en: "Email notifications", pt: "Notificacoes por email" })}
@@ -158,6 +161,7 @@ export function SettingsPage(props: { token: string; onLogout: () => void; langu
               ? replaceCalendarConnectedLabel(props.language, calendarEmail)
               : t(props.language, { es: "No conectado.", en: "Not connected.", pt: "Nao conectado." })}
         </p>
+        <ProfessionalGuidanceList language={props.language} items={PROFESSIONAL_GOOGLE_CALENDAR_SCOPE_POINTS} />
         <div className="button-row">
           {!calendarConnected ? (
             <button type="button" onClick={() => void handleConnectCalendar()}>

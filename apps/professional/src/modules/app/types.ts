@@ -98,6 +98,12 @@ export interface DashboardResponse {
       usdHardCents: number;
     };
   };
+  /** Totales en moneda del mercado del profesional (sin selector manual). */
+  display?: {
+    currency: string;
+    executedGrossCents: number;
+    pendingToCollectCents: number;
+  };
   trialSession: {
     id: string;
     patientId: string;
@@ -217,22 +223,62 @@ export interface EarningsResponse {
     professionalNetCents: number;
     sessions: number;
   }>;
+  /** Totales convertidos a la moneda local del profesional (según mercado / residencia). */
+  display?: {
+    currency: string;
+    market: string;
+    fxRates?: { arsPerUsd?: number | null; brlPerUsd?: number | null; eurPerUsd?: number | null };
+    summary: {
+      grossCents: number;
+      platformFeeCents: number;
+      professionalNetCents: number;
+      completedSessions: number;
+      averageNetPerSessionCents: number;
+      collectedNetCents?: number;
+      pendingToCollectCents?: number;
+      platformCommissionPercent?: number;
+    };
+    lifetime: {
+      professionalNetCents: number;
+      completedSessions: number;
+    };
+  };
   range: {
     from: string | null;
     to: string;
     allTime: boolean;
   };
-  movements: Array<{
-    bookingId: string;
-    patientName: string;
-    startsAt: string;
-    grossCents: number;
-    platformFeeCents: number;
-    amountCents: number;
-    status: string;
-    currency: string;
-  }>;
+  movements: Array<EarningsMovement>;
+  movementsPagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 }
+
+export type EarningsMovement = {
+  bookingId: string;
+  patientId?: string;
+  patientName: string;
+  startsAt: string;
+  endsAt?: string;
+  completedAt?: string;
+  isTrial?: boolean;
+  pricingSource?: "package" | "list";
+  packageId?: string | null;
+  packageName?: string | null;
+  packageCredits?: number | null;
+  packagePriceCents?: number | null;
+  packageSessionNumber?: number | null;
+  fxArsPerUsdUsed?: number | null;
+  grossCents: number;
+  platformFeeCents: number;
+  amountCents: number;
+  status: string;
+  currency: string;
+  sourceCurrency?: string;
+};
 
 export interface ThreadSummary {
   id: string;

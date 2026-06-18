@@ -8,6 +8,7 @@ import {
 import { ArticleBody } from "../components/ArticleBody";
 import { findRelatedArticles } from "../lib/related";
 import { fetchPublishedArticles, type ArticlePost } from "../services/articlesApi";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -164,11 +165,7 @@ export function ArticleReaderPage(props: ArticleReaderPageProps) {
         <span>{t(props.language, { es: "Volver a notas", en: "Back to articles", pt: "Voltar para notas" })}</span>
       </Link>
 
-      {loading ? (
-        <p className="articles-page-loading">
-          {t(props.language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
-        </p>
-      ) : null}
+      {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
 
       {error ? <p className="articles-page-error" role="alert">{error}</p> : null}
 

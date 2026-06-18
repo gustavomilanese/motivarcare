@@ -6,6 +6,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { fetchPublishedArticles, type ArticlePost } from "../services/articlesApi";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -94,11 +95,7 @@ export function ArticlesListPage(props: ArticlesListPageProps) {
         </p>
       </header>
 
-      {loading ? (
-        <p className="articles-page-loading">
-          {t(props.language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
-        </p>
-      ) : null}
+      {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
 
       {error ? <p className="articles-page-error" role="alert">{error}</p> : null}
 

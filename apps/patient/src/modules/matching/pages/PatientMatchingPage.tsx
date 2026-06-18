@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
 import { MatchingStickyAction } from "../components/MatchingStickyAction";
 import { AvailabilityPickerModal } from "../components/AvailabilityPickerModal";
@@ -292,11 +293,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }
       />
 
-      {loading ? (
-        <section className="content-card">
-          <p>{t(props.language, { es: "Cargando especialistas...", en: "Loading specialists...", pt: "Carregando especialistas..." })}</p>
-        </section>
-      ) : null}
+      {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
 
       {!loading && error ? (
         <section className="content-card">

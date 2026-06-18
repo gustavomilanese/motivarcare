@@ -1,0 +1,142 @@
+/* MotivarCare mark spinner — compartido entre portales */
+
+.mc-page-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.mc-page-loader--block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: min(56vh, calc(var(--viewport-h, 100vh) - 220px));
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.mc-page-loader--inline {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.mc-page-loader--compact {
+  display: inline-flex;
+}
+
+.auth-shell > .mc-page-loader--block,
+.intake-shell > .mc-page-loader--block,
+.pro-auth-shell--loader > .mc-page-loader--block {
+  min-height: 0;
+  flex: none;
+}
+
+.mc-loader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mc-loader-label {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--text-soft, #94a3b8);
+}
+
+.mc-mark-spinner {
+  display: block;
+  overflow: visible;
+  background: none;
+}
+
+.mc-mark-spinner-track {
+  stroke: rgba(100, 116, 139, 0.15);
+  stroke-width: 2.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mc-mark-spinner-arc {
+  stroke-width: 2.55;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 10 90;
+  animation: mc-mark-spinner-travel 1.75s cubic-bezier(0.55, 0, 0.45, 1) infinite;
+}
+
+@keyframes mc-mark-spinner-travel {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-mark-spinner-arc {
+    stroke-dasharray: none;
+    animation: mc-mark-spinner-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes mc-mark-spinner-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Compat portal profesional (clases legacy) */
+.pro-page-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.pro-page-loader--block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: min(56vh, calc(var(--viewport-h, 100vh) - 220px));
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.pro-page-loader--inline {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.pro-page-loader--compact {
+  display: inline-flex;
+}
+
+.pro-auth-shell--loader > .pro-page-loader--block {
+  min-height: 0;
+  flex: none;
+}

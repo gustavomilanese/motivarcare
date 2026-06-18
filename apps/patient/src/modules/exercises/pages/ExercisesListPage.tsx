@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import {
   ALL_CATEGORIES,
   categoryAccent,
@@ -158,11 +159,7 @@ export function ExercisesListPage(props: ExercisesListPageProps) {
         </div>
       ) : null}
 
-      {loading ? (
-        <p className="exercises-page-loading">
-          {t(props.language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
-        </p>
-      ) : null}
+      {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
 
       {error ? <p className="exercises-page-error" role="alert">{error}</p> : null}
 

@@ -5,6 +5,16 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
+import { buildProfessionalPracticeHealth } from "../../lib/professionalPracticeHealth.js";
+import {
+  buildProfessionalFinanceDisplay,
+  convertFinanceMinorToDisplayMinor,
+  mapFinanceRecordForDisplay,
+  readSessionFxArsPerUsdSnapshot,
+  resolveFxForFinanceRecord
+} from "../../lib/professionalFinanceDisplay.js";
+import { getFinanceRules } from "../finance/finance.service.js";
+import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import {
   ProfessionalReportError,
   getOrGenerateProfessionalReport
@@ -104,6 +114,135 @@ function parseProfessionalStatsRange(query: Record<string, unknown>): {
   return { statsFrom, statsTo, statsAll };
 }
 
+type MovementsPricingFilter = "all" | "package" | "list";
+type MovementsSortKey = "date_desc" | "date_asc" | "gross_desc" | "gross_asc";
+
+function parseMovementsListQuery(query: Record<string, unknown>): {
+  page: number;
+  pageSize: number;
+  search: string;
+  pricing: MovementsPricingFilter;
+  sort: MovementsSortKey;
+} {
+  const pageRaw = Number.parseInt(firstQueryString(query.movementsPage) ?? "1", 10);
+  const pageSizeRaw = Number.parseInt(firstQueryString(query.movementsPageSize) ?? "25", 10);
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+  const pageSize =
+    Number.isFinite(pageSizeRaw) && pageSizeRaw > 0 ? Math.min(100, pageSizeRaw) : 25;
+
+  const pricingRaw = firstQueryString(query.movementsPricing);
+  const pricing: MovementsPricingFilter =
+    pricingRaw === "package" || pricingRaw === "list" ? pricingRaw : "all";
+
+  const sortRaw = firstQueryString(query.movementsSort);
+  const sort: MovementsSortKey =
+    sortRaw === "date_asc" || sortRaw === "gross_desc" || sortRaw === "gross_asc"
+      ? sortRaw
+      : "date_desc";
+
+  return {
+    page,
+    pageSize,
+    search: firstQueryString(query.movementsSearch)?.trim() ?? "",
+    pricing,
+    sort
+  };
+}
+
+function buildMovementsWhere(
+  baseCompleted: Record<string, unknown>,
+  statsFrom: Date | null,
+  statsTo: Date,
+  movements: ReturnType<typeof parseMovementsListQuery>
+) {
+  const rangeWhere = {
+    ...baseCompleted,
+    ...financeCompletedReferenceWhere(statsFrom, statsTo),
+    ...(movements.pricing === "package"
+      ? { packageId: { not: null } }
+      : movements.pricing === "list"
+        ? { packageId: null }
+        : {}),
+    ...(movements.search
+      ? {
+          OR: [
+            {
+              patient: {
+                user: {
+                  fullName: { contains: movements.search, mode: "insensitive" as const }
+                }
+              }
+            },
+            {
+              package: {
+                name: { contains: movements.search, mode: "insensitive" as const }
+              }
+            }
+          ]
+        }
+      : {})
+  };
+
+  return rangeWhere;
+}
+
+function movementsOrderBy(sort: MovementsSortKey) {
+  switch (sort) {
+    case "date_asc":
+      return [{ bookingCompletedAt: "asc" as const }, { bookingStartsAt: "asc" as const }];
+    case "gross_desc":
+      return [{ sessionPriceCents: "desc" as const }, { bookingCompletedAt: "desc" as const }];
+    case "gross_asc":
+      return [{ sessionPriceCents: "asc" as const }, { bookingCompletedAt: "desc" as const }];
+    default:
+      return [{ bookingCompletedAt: "desc" as const }, { bookingStartsAt: "desc" as const }];
+  }
+}
+
+async function buildPackageSessionIndexByBookingId(
+  professionalProfileId: string,
+  purchaseIds: string[]
+): Promise<Map<string, number>> {
+  const indexByBookingId = new Map<string, number>();
+  const uniquePurchaseIds = [...new Set(purchaseIds)];
+  if (uniquePurchaseIds.length === 0) {
+    return indexByBookingId;
+  }
+
+  const records = await prisma.financeSessionRecord.findMany({
+    where: {
+      professionalId: professionalProfileId,
+      purchaseId: { in: uniquePurchaseIds },
+      bookingStatus: "COMPLETED"
+    },
+    select: {
+      bookingId: true,
+      purchaseId: true,
+      bookingStartsAt: true,
+      bookingCompletedAt: true
+    },
+    orderBy: [{ bookingStartsAt: "asc" }, { bookingCompletedAt: "asc" }]
+  });
+
+  const byPurchase = new Map<string, string[]>();
+  for (const record of records) {
+    if (!record.purchaseId) {
+      continue;
+    }
+    const bookingIds = byPurchase.get(record.purchaseId) ?? [];
+    bookingIds.push(record.bookingId);
+    byPurchase.set(record.purchaseId, bookingIds);
+  }
+
+  for (const bookingIds of byPurchase.values()) {
+    bookingIds.forEach((bookingId, index) => {
+      indexByBookingId.set(bookingId, index + 1);
+    });
+  }
+
+  return indexByBookingId;
+}
+
 type PatientStatus = "active" | "pause" | "cancelled" | "trial";
 
 type BookingForPatientRollup = {
@@ -171,7 +310,7 @@ function buildPatientRollup(bookings: BookingForPatientRollup[]) {
     const daysSinceLastSession = Math.floor((now - patient.lastSessionAt.getTime()) / (1000 * 60 * 60 * 24));
 
     let status: PatientStatus = "active";
-    if (patient.totalSessions <= 1) {
+    if (patient.totalSessions <= 1 && patient.completedSessions === 0) {
       status = "trial";
     } else if (patient.cancelledSessions >= patient.totalSessions) {
       status = "cancelled";
@@ -222,6 +361,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     allBookings,
     futureSlots,
     pendingPayoutSummary,
+    pendingPayoutRows,
     revenueStats,
     revenueStatsByCurrency,
     revenueFxRows,
@@ -291,6 +431,22 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         professionalNetCents: true
       }
     }),
+    prisma.financeSessionRecord.findMany({
+      where: {
+        professionalId: actor.professionalProfileId,
+        bookingStatus: BOOKING_STATUS.COMPLETED,
+        payoutLineId: null
+      },
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
     prisma.financeSessionRecord.aggregate({
       where: revenueWhere,
       _sum: {
@@ -329,7 +485,9 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         professionalTitle: true,
         sessionPriceUsd: true,
         sessionPriceArs: true,
-        photoUrl: true
+        photoUrl: true,
+        market: true,
+        residencyCountry: true
       }
     })
   ]);
@@ -361,6 +519,46 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   const weeklySessions = weeklySessionsCount;
 
   const pendingPayoutCents = pendingPayoutSummary._sum.professionalNetCents ?? 0;
+  const liveArsPerUsd = await getResilientUsdArsRate().catch(() => null);
+  const liveFx = liveArsPerUsd != null && liveArsPerUsd > 0 ? { arsPerUsd: liveArsPerUsd } : {};
+  const displayMarket =
+    professionalProfileSnippet?.market
+    ?? professionalProfileSnippet?.residencyCountry
+    ?? "US";
+  const financeDisplay = buildProfessionalFinanceDisplay({
+    market: displayMarket,
+    liveFx,
+    rangeRecords: revenueFxRows.map((row) =>
+      mapFinanceRecordForDisplay({
+        currency: row.currency,
+        sessionPriceCents: row.sessionPriceCents,
+        platformFeeCents: 0,
+        professionalNetCents: 0,
+        purchase: row.purchase
+      })
+    ),
+    lifetimeRecords: []
+  });
+
+  let pendingToCollectDisplayCents = 0;
+  for (const row of pendingPayoutRows) {
+    const mapped = mapFinanceRecordForDisplay({
+      currency: row.currency,
+      sessionPriceCents: 0,
+      platformFeeCents: 0,
+      professionalNetCents: row.professionalNetCents,
+      purchase: row.purchase
+    });
+    const fx = resolveFxForFinanceRecord(mapped, financeDisplay.currency, liveFx);
+    pendingToCollectDisplayCents += convertFinanceMinorToDisplayMinor(
+      row.professionalNetCents,
+      row.currency,
+      financeDisplay.currency,
+      fx,
+      liveFx
+    );
+  }
+
   let usdHardCents = 0;
   for (const row of revenueFxRows) {
     const currency = (row.currency ?? "usd").toLowerCase();
@@ -402,62 +600,32 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   }
 
   const weekAheadMs = now.getTime() + 7 * 24 * 60 * 60 * 1000;
-  const hasAvailabilityThisWeek = futureSlots.some((slot: { startsAt: Date }) => slot.startsAt.getTime() <= weekAheadMs);
   const slotsNext7Days = futureSlots.filter(
     (slot: { startsAt: Date }) => slot.startsAt.getTime() <= weekAheadMs
   ).length;
   const listingVisible = Boolean(professionalProfileSnippet?.visible);
   const listingHasTitle = Boolean(professionalProfileSnippet?.professionalTitle?.trim());
-  const listingHasPriceUsd = professionalProfileSnippet?.sessionPriceUsd != null;
-  const listingHasPriceArs = professionalProfileSnippet?.sessionPriceArs != null;
-  const listingLive =
-    listingVisible &&
-    (listingHasTitle || listingHasPriceUsd || listingHasPriceArs);
+  const sessionPriceUsd = professionalProfileSnippet?.sessionPriceUsd ?? 0;
+  const listingHasPriceUsd = sessionPriceUsd > 0;
+  const listingMarketIsAr = displayMarket === "AR";
+  const listingHasFxForArs = liveArsPerUsd != null && liveArsPerUsd > 0;
 
-  const practiceHealthItems: Array<{
-    id: string;
-    ok: boolean;
-    detail: Record<string, number | boolean>;
-  }> = [
-    {
-      id: "listing_live",
-      ok: listingLive,
-      detail: {
-        visible: listingVisible,
-        hasTitle: listingHasTitle,
-        hasPriceUsd: listingHasPriceUsd,
-        hasPriceArs: listingHasPriceArs
-      }
-    },
-    {
-      id: "availability_week",
-      ok: hasAvailabilityThisWeek,
-      detail: { slotsNext7Days }
-    },
-    {
-      id: "agenda_active",
-      ok: weeklySessionsCount > 0 || upcomingBookingsCount > 0,
-      detail: {
-        weeklySessions: weeklySessionsCount,
-        upcomingBookings: upcomingBookingsCount
-      }
-    },
-    {
-      id: "conversion_sound",
-      ok: conversionBase < 4 ? true : conversionRate >= 32,
-      detail: {
-        conversionRate,
-        nonCancelledBookings: conversionBase,
-        completedSessions: sessionsCompleted,
-        minBaseForRule: 4,
-        thresholdPercent: 32
-      }
-    },
-    { id: "active_caseload", ok: activePatients >= 1, detail: { activePatients } }
-  ];
-  const practiceHealthOkCount = practiceHealthItems.filter((item) => item.ok).length;
-  const practiceHealthVariant =
-    practiceHealthOkCount >= 5 ? "strong" : practiceHealthOkCount >= 3 ? "balanced" : "growth";
+  const practiceHealth = buildProfessionalPracticeHealth({
+    listingVisible,
+    listingHasTitle,
+    listingHasPriceUsd,
+    listingMarketIsAr,
+    listingHasFxForArs,
+    sessionPriceUsd,
+    arsPerUsd: liveArsPerUsd,
+    slotsNext7Days,
+    weeklySessionsCount,
+    upcomingBookingsCount,
+    conversionRate,
+    conversionBase,
+    sessionsCompleted,
+    activePatients
+  });
 
   return res.json({
     kpis: {
@@ -470,10 +638,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       pendingPayoutCents
     },
     patientStatusCounts,
-    practiceHealth: {
-      variant: practiceHealthVariant,
-      items: practiceHealthItems
-    },
+    practiceHealth,
     revenueStats: {
       grossCents: revenueStats._sum.sessionPriceCents ?? 0,
       platformFeeCents: revenueStats._sum.platformFeeCents ?? 0,
@@ -495,6 +660,11 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         arsGrossCents,
         usdHardCents
       }
+    },
+    display: {
+      currency: financeDisplay.currency,
+      executedGrossCents: financeDisplay.grossCents,
+      pendingToCollectCents: pendingToCollectDisplayCents
     },
     trialSession: trialBooking
       ? {
@@ -789,6 +959,7 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
 
   const { statsFrom, statsTo, statsAll } = parseProfessionalStatsRange(req.query as Record<string, unknown>);
   const earningsPatientId = firstQueryString(req.query.patientId);
+  const movementsQuery = parseMovementsListQuery(req.query as Record<string, unknown>);
 
   const baseCompleted = {
     professionalId: actor.professionalProfileId,
@@ -801,7 +972,34 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
     ...financeCompletedReferenceWhere(statsFrom, statsTo)
   };
 
-  const [rangeAgg, movementRows, lifetimeAgg, rangeByCurrency, lifetimeByCurrencyGroup] = await Promise.all([
+  const movementsWhere = buildMovementsWhere(baseCompleted, statsFrom, statsTo, movementsQuery);
+  const movementsSkip = (movementsQuery.page - 1) * movementsQuery.pageSize;
+
+  const financeRecordSelect = {
+    currency: true,
+    sessionPriceCents: true,
+    platformFeeCents: true,
+    professionalNetCents: true,
+    purchase: {
+      select: {
+        fxArsPerUsdSnapshot: true
+      }
+    }
+  } as const;
+
+  const [
+    rangeAgg,
+    movementRows,
+    movementsTotal,
+    lifetimeAgg,
+    rangeByCurrency,
+    lifetimeByCurrencyGroup,
+    rangeDisplayRows,
+    lifetimeDisplayRows,
+    collectedDisplayRows,
+    professionalProfileMarket,
+    financeRules
+  ] = await Promise.all([
     prisma.financeSessionRecord.aggregate({
       where: rangeWhere,
       _sum: {
@@ -812,17 +1010,37 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       _count: true
     }),
     prisma.financeSessionRecord.findMany({
-      where: rangeWhere,
+      where: movementsWhere,
       include: {
         patient: {
           include: {
             user: { select: { fullName: true } }
           }
+        },
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true,
+            packagePriceCentsSnapshot: true,
+            packageCreditsSnapshot: true
+          }
+        },
+        package: {
+          select: {
+            name: true,
+            credits: true
+          }
+        },
+        booking: {
+          select: {
+            endsAt: true
+          }
         }
       },
-      orderBy: [{ bookingCompletedAt: "desc" }, { bookingStartsAt: "desc" }],
-      take: 50
+      orderBy: movementsOrderBy(movementsQuery.sort),
+      skip: movementsSkip,
+      take: movementsQuery.pageSize
     }),
+    prisma.financeSessionRecord.count({ where: movementsWhere }),
     prisma.financeSessionRecord.aggregate({
       where: baseCompleted,
       _sum: { professionalNetCents: true },
@@ -843,8 +1061,66 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       where: baseCompleted,
       _sum: { professionalNetCents: true },
       _count: true
-    })
+    }),
+    prisma.financeSessionRecord.findMany({
+      where: rangeWhere,
+      select: financeRecordSelect
+    }),
+    prisma.financeSessionRecord.findMany({
+      where: baseCompleted,
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
+    prisma.financeSessionRecord.findMany({
+      where: {
+        ...rangeWhere,
+        payoutLine: { status: "PAID" }
+      },
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
+    prisma.professionalProfile.findUnique({
+      where: { id: actor.professionalProfileId },
+      select: { market: true, residencyCountry: true }
+    }),
+    getFinanceRules()
   ]);
+
+  const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
+    actor.professionalProfileId,
+    movementRows.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
+  );
+
+  const liveArsPerUsd = await getResilientUsdArsRate().catch(() => null);
+  const liveFx = liveArsPerUsd != null && liveArsPerUsd > 0 ? { arsPerUsd: liveArsPerUsd } : {};
+  const displayMarket =
+    professionalProfileMarket?.market
+    ?? professionalProfileMarket?.residencyCountry
+    ?? "US";
+  const display = buildProfessionalFinanceDisplay({
+    market: displayMarket,
+    liveFx,
+    rangeRecords: rangeDisplayRows.map(mapFinanceRecordForDisplay),
+    lifetimeRecords: lifetimeDisplayRows.map((row) => mapFinanceRecordForDisplay({
+      ...row,
+      sessionPriceCents: 0,
+      platformFeeCents: 0
+    }))
+  });
 
   const grossCents = rangeAgg._sum.sessionPriceCents ?? 0;
   const platformFeeCents = rangeAgg._sum.platformFeeCents ?? 0;
@@ -872,6 +1148,24 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
     sessions: row._count
   }));
 
+  let collectedNetDisplayCents = 0;
+  for (const row of collectedDisplayRows) {
+    const mapped = mapFinanceRecordForDisplay({
+      ...row,
+      sessionPriceCents: 0,
+      platformFeeCents: 0
+    });
+    const fx = resolveFxForFinanceRecord(mapped, display.currency, liveFx);
+    collectedNetDisplayCents += convertFinanceMinorToDisplayMinor(
+      row.professionalNetCents,
+      row.currency,
+      display.currency,
+      fx,
+      liveFx
+    );
+  }
+  const pendingToCollectCents = Math.max(0, display.professionalNetCents - collectedNetDisplayCents);
+
   return res.json({
     summary: {
       grossCents,
@@ -894,16 +1188,84 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       to: statsTo.toISOString(),
       allTime: statsAll || statsFrom === null
     },
-    movements: movementRows.map((record) => ({
-      bookingId: record.bookingId,
-      patientName: record.patient.user.fullName,
-      startsAt: record.bookingStartsAt.toISOString(),
-      grossCents: record.sessionPriceCents,
-      platformFeeCents: record.platformFeeCents,
-      amountCents: record.professionalNetCents,
-      status: record.bookingStatus.toLowerCase(),
-      currency: record.currency
-    }))
+    movements: movementRows.map((record) => {
+      const mapped = mapFinanceRecordForDisplay(record);
+      const fx = resolveFxForFinanceRecord(mapped, display.currency, liveFx);
+      const packageCredits =
+        record.purchase?.packageCreditsSnapshot ?? record.package?.credits ?? null;
+      const packagePriceCents = record.purchase?.packagePriceCentsSnapshot ?? null;
+      const fromPackage = Boolean(record.packageId);
+      return {
+        bookingId: record.bookingId,
+        patientId: record.patientId,
+        patientName: record.patient.user.fullName,
+        startsAt: record.bookingStartsAt.toISOString(),
+        endsAt: record.booking.endsAt.toISOString(),
+        completedAt: record.bookingCompletedAt?.toISOString() ?? record.bookingStartsAt.toISOString(),
+        isTrial: record.isTrial,
+        pricingSource: fromPackage ? "package" : "list",
+        packageId: record.packageId,
+        packageName: record.package?.name ?? null,
+        packageCredits,
+        packagePriceCents,
+        packageSessionNumber: record.purchaseId
+          ? packageSessionIndexByBookingId.get(record.bookingId) ?? null
+          : null,
+        fxArsPerUsdUsed:
+          display.currency === "ARS" && record.currency.toLowerCase() === "usd"
+            ? fx
+            : readSessionFxArsPerUsdSnapshot(mapped),
+        grossCents: convertFinanceMinorToDisplayMinor(
+          record.sessionPriceCents,
+          record.currency,
+          display.currency,
+          fx,
+          liveFx
+        ),
+        platformFeeCents: convertFinanceMinorToDisplayMinor(
+          record.platformFeeCents,
+          record.currency,
+          display.currency,
+          fx,
+          liveFx
+        ),
+        amountCents: convertFinanceMinorToDisplayMinor(
+          record.professionalNetCents,
+          record.currency,
+          display.currency,
+          fx,
+          liveFx
+        ),
+        status: record.bookingStatus.toLowerCase(),
+        currency: display.currency.toLowerCase(),
+        sourceCurrency: record.currency
+      };
+    }),
+    movementsPagination: {
+      page: movementsQuery.page,
+      pageSize: movementsQuery.pageSize,
+      total: movementsTotal,
+      totalPages: Math.max(1, Math.ceil(movementsTotal / movementsQuery.pageSize))
+    },
+    display: {
+      currency: display.currency,
+      market: display.market,
+      fxRates: display.fxRates,
+      summary: {
+        grossCents: display.grossCents,
+        platformFeeCents: display.platformFeeCents,
+        professionalNetCents: display.professionalNetCents,
+        completedSessions: display.sessions,
+        averageNetPerSessionCents: display.averageNetPerSessionCents,
+        collectedNetCents: collectedNetDisplayCents,
+        pendingToCollectCents,
+        platformCommissionPercent: financeRules.platformCommissionPercent
+      },
+      lifetime: {
+        professionalNetCents: display.lifetimeProfessionalNetCents,
+        completedSessions: display.lifetimeCompletedSessions
+      }
+    }
   });
 });
 

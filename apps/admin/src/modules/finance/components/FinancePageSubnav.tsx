@@ -3,6 +3,7 @@ import { StickyPageSubnav } from "../../app/components/StickyPageSubnav";
 
 /** Secciones con ancla en la página (scroll). */
 export const FINANCE_SCROLL_SECTION_IDS = [
+  "fin-plataforma",
   "fin-resumen",
   "fin-desglose",
   "fin-reglas",
@@ -14,6 +15,7 @@ export const FINANCE_SCROLL_SECTION_IDS = [
 export type FinanceScrollSectionId = (typeof FINANCE_SCROLL_SECTION_IDS)[number];
 
 const SECTION_LINKS: Array<{ id: FinanceScrollSectionId; label: LocalizedText }> = [
+  { id: "fin-plataforma", label: { es: "Ingresos USD", en: "USD earnings", pt: "Receitas USD" } },
   { id: "fin-resumen", label: { es: "Resumen", en: "Overview", pt: "Resumo" } },
   { id: "fin-desglose", label: { es: "Desglose", en: "Breakdown", pt: "Detalhe" } },
   { id: "fin-reglas", label: { es: "Reglas", en: "Rules", pt: "Regras" } },

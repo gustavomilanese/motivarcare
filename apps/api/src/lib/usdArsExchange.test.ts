@@ -2,31 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import {
   __resetUsdArsCacheForTests,
   getUsdArsQuote,
-  getUsdArsRate,
-  roundSessionPriceArsFromUsd
+  getUsdArsRate
 } from "./usdArsExchange.js";
+import { roundSessionPriceArsFromUsd } from "@therapy/i18n-config";
 
 type FetchSpy = MockInstance<typeof globalThis.fetch>;
 
-describe("roundSessionPriceArsFromUsd", () => {
-  it("multiplica USD por la cotización", () => {
+describe("roundSessionPriceArsFromUsd (shared)", () => {
+  it("re-exporta la regla canónica de @therapy/i18n-config", () => {
     expect(roundSessionPriceArsFromUsd(50, 1400)).toBe(70_000);
-  });
-
-  it("redondea hacia arriba al próximo múltiplo de 1.000", () => {
-    // 50 * 1392.50 = 69_625 → ceil al 70_000
-    expect(roundSessionPriceArsFromUsd(50, 1392.5)).toBe(70_000);
-    // 80 * 1418 = 113_440 → ceil al 114_000
-    expect(roundSessionPriceArsFromUsd(80, 1418)).toBe(114_000);
-    // 30 * 1000 = 30_000 → ya es múltiplo
-    expect(roundSessionPriceArsFromUsd(30, 1000)).toBe(30_000);
-    // 1 * 1 = 1 → ceil(0.001) * 1000 = 1_000
-    expect(roundSessionPriceArsFromUsd(1, 1)).toBe(1_000);
-  });
-
-  it("aplica el redondeo aún si el resultado es exactamente múltiplo + 1", () => {
-    // 50 * 1400.02 = 70_001 → ceil al 71_000
-    expect(roundSessionPriceArsFromUsd(50, 1400.02)).toBe(71_000);
+    expect(roundSessionPriceArsFromUsd(40, 1275)).toBe(52_000);
   });
 });
 

@@ -27,10 +27,9 @@ function parseEnvOverride(): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function roundSessionPriceArsFromUsd(usdMajor: number, arsPerUsd: number): number {
-  const raw = usdMajor * arsPerUsd;
-  return Math.ceil(raw / 1000) * 1000;
-}
+import { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP } from "@therapy/i18n-config";
+
+export { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP };
 
 async function fetchBluelyticsOfficial(): Promise<number | null> {
   const response = await fetch("https://api.bluelytics.com.ar/v2/latest", {

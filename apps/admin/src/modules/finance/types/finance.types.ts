@@ -222,3 +222,89 @@ export const EMPTY_STRIPE_FILTERS: FinanceStripeFilters = {
   dateTo: "",
   search: ""
 };
+
+export type AdminPlatformMovement = {
+  bookingId: string;
+  patientId: string;
+  patientName: string;
+  professionalId: string;
+  professionalName: string;
+  startsAt: string;
+  endsAt: string;
+  isTrial?: boolean;
+  pricingSource?: "package" | "list";
+  packageName?: string | null;
+  packageCredits?: number | null;
+  packageSessionNumber?: number | null;
+  grossCents: number;
+  platformFeeCents: number;
+  amountCents: number;
+  currency: string;
+};
+
+export type AdminUnpaidProfessional = {
+  professionalId: string;
+  professionalName: string;
+  sessionsCount: number;
+  grossCents: number;
+  platformFeeCents: number;
+  professionalNetCents: number;
+};
+
+export type AdminUnpaidProfessionalsResponse = {
+  currency: "usd";
+  professionals: AdminUnpaidProfessional[];
+};
+
+export type AdminPlatformPurchase = {
+  purchaseId: string;
+  purchasedAt: string;
+  patientId: string;
+  patientName: string;
+  professionalId: string | null;
+  professionalName: string;
+  packageName: string;
+  packageCredits: number;
+  totalCredits: number;
+  remainingCredits: number;
+  grossCents: number;
+  platformFeeCents: number;
+  professionalNetCents: number;
+  currency: string;
+};
+
+export type AdminPlatformExecutedResponse = {
+  currency: string;
+  summary: {
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    completedSessions: number;
+    platformCommissionPercent: number;
+  };
+  movements: AdminPlatformMovement[];
+  movementsPagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export type AdminPlatformPurchasesResponse = {
+  currency: string;
+  summary: {
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    purchaseCount: number;
+    platformCommissionPercent: number;
+  };
+  purchases: AdminPlatformPurchase[];
+  purchasesPagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};

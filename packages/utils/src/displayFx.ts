@@ -1,3 +1,5 @@
+import { roundSessionPriceArsFromUsd } from "./sessionPriceArs.js";
+
 type AppLanguage = "es" | "en" | "pt";
 type SupportedCurrency = "USD" | "EUR" | "GBP" | "BRL" | "ARS";
 
@@ -66,16 +68,16 @@ export function resolveFxRatePerUsd(
   }
 }
 
-/** Coherente con `roundSessionPriceArsFromUsd` del API. */
+/** Coherente con `roundSessionPriceArsFromUsd` (misma regla para ARS). */
 export function roundDisplayMajorFromUsd(
   usdMajor: number,
   displayCurrency: SupportedCurrency,
   ratePerUsd: number
 ): number {
-  const raw = usdMajor * ratePerUsd;
   if (displayCurrency === "ARS") {
-    return Math.ceil(raw / 1000) * 1000;
+    return roundSessionPriceArsFromUsd(usdMajor, ratePerUsd);
   }
+  const raw = usdMajor * ratePerUsd;
   return Math.round(raw);
 }
 

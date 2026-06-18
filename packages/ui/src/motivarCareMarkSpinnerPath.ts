@@ -1,0 +1,8 @@
+/**
+ * Mark MotivarCare — trazo continuo pulido (viewBox 0 0 48 48).
+ * Anclajes sobre el centerline del logo oficial; curvas Catmull-Rom.
+ */
+export const MOTIVAR_CARE_MARK_SPINNER_PATH =
+  "M 12.2 23.0 C 12.9 21.9 14.3 16.3 16.5 16.2 C 18.7 16.1 22.5 22.2 25.5 22.2 C 28.5 22.2 32.4 15.6 34.3 16.2 C 36.1 16.8 37.2 22.6 36.6 25.7 C 36.0 28.8 33.0 32.8 30.4 34.9 C 27.8 37.0 23.9 38.7 21.1 38.1 C 18.3 37.5 16.6 33.9 13.8 31.1 C 11.1 28.3 6.3 24.4 4.6 21.1 C 2.9 17.8 2.4 14.0 3.6 11.1 C 4.8 8.2 8.7 4.4 11.7 3.5 C 14.7 2.6 18.4 5.6 21.7 5.6 C 25.0 5.5 28.4 3.1 31.7 3.2 C 35.0 3.3 39.5 4.2 41.7 6.4 C 43.9 8.6 45.0 13.0 44.9 16.4 C 44.8 19.8 41.5 24.8 40.8 26.5";
+
+export const MOTIVAR_CARE_MARK_VIEWBOX = 48;

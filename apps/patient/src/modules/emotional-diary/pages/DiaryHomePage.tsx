@@ -5,6 +5,7 @@ import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
 import { DiaryHomeHero, DiaryShell, DiarySubNav } from "../components/DiaryChrome";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { t } from "../lib/labels";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
 import type { DiaryEntry, MoodLevel } from "../types";
@@ -109,7 +110,7 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
           <section className="sessions-hero-actions-band diary-home-subnav-band" aria-label={t(props.language, { es: "Secciones del diario", en: "Diary sections", pt: "Seções do diário" })}>
             <DiarySubNav language={props.language} />
           </section>
-          <p className="diary-muted diary-home-band-pad">{t(props.language, { es: "Cargando diario…", en: "Loading diary…", pt: "Carregando diário…" })}</p>
+          <MotivarCarePageLoader language={props.language} layout="block" />
         </div>
       </DiaryShell>
     );

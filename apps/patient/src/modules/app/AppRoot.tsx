@@ -44,7 +44,6 @@ import {
 import { sessionUserFromAuthMe } from "./lib/sessionFromAuthMe";
 import { IntakeScreen } from "../intake/pages/IntakeScreen";
 import { SafetyReferralScreen } from "../intake/pages/SafetyReferralScreen";
-import { IntakeMethodChooserScreen } from "../intake/pages/IntakeMethodChooserScreen";
 import { IntakeChatScreen } from "../intake/pages/IntakeChatScreen";
 import {
   fetchActiveIntakeChatSession,
@@ -52,6 +51,7 @@ import {
 } from "../intake/services/intakeChatApi";
 import { TreatmentChatFAB } from "../treatment-chat/components/TreatmentChatFAB";
 import { usePublicFeatures } from "./hooks/usePublicFeatures";
+import { MotivarCarePageLoader } from "./components/MotivarCarePageLoader";
 import { useDisplayFxRates } from "./hooks/useDisplayFxRates";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
@@ -651,12 +651,11 @@ export function App() {
   const [profileSyncReady, setProfileSyncReady] = useState(false);
   /**
    * Modo seleccionado por el paciente para hacer el intake.
-   * - `chooser`: vemos la pantalla split (clásico vs chat IA).
-   * - `classic`: wizard tradicional paso a paso.
-   * - `chat`: conversación con asistente IA (PR2 detrás de feature flag).
+   * - `classic`: wizard tradicional paso a paso (por defecto tras verificar email).
+   * - `chat`: conversación con Maca (desde el paso intro o retomando sesión activa).
    * Solo aplica cuando el paciente todavía no completó el intake.
    */
-  const [intakeMethod, setIntakeMethod] = useState<"chooser" | "classic" | "chat">("chooser");
+  const [intakeMethod, setIntakeMethod] = useState<"classic" | "chat">("classic");
   /** Sesión activa del chat detectada al entrar; nos permite "retomar" sin pasar por el chooser. */
   const [activeChatSession, setActiveChatSession] = useState<IntakeChatSessionDto | null>(null);
   /** `true` cuando ya hicimos el lookup de sesión activa (evita parpadear el chooser durante el fetch). */
@@ -932,13 +931,13 @@ export function App() {
   const portalLanguageBootstrapRef = useRef(false);
 
   /**
-   * En logout (o reset a defaultState) volvemos al chooser y descartamos cualquier
+   * En logout (o reset a defaultState) volvemos al formulario y descartamos cualquier
    * sesión activa de chat detectada para el usuario anterior — así un nuevo login
    * no hereda la elección "chat" o una sesión que no le corresponde.
    */
   useEffect(() => {
     if (!state.session) {
-      setIntakeMethod("chooser");
+      setIntakeMethod("classic");
       setActiveChatSession(null);
       setChatSessionLookupDone(false);
     }
@@ -952,7 +951,7 @@ export function App() {
    *  - no hicimos el lookup en este montaje (`chatSessionLookupDone === false`).
    *
    * Si encontramos una sesión activa, ponemos `intakeMethod = "chat"` para retomar
-   * directamente la conversación, evitando re-mostrar el chooser cada vez.
+   * directamente la conversación con Maca desde el paso intro o al retomar.
    */
   useEffect(() => {
     if (!state.authToken || !sessionId) return;
@@ -975,7 +974,7 @@ export function App() {
           setIntakeMethod("chat");
         }
       } catch (err) {
-        // No bloqueamos el flujo: si falla, el chooser se muestra y el paciente decide.
+        // No bloqueamos el flujo: si falla, el paciente sigue con el formulario.
         console.warn("[intake-chat] lookup falló:", err instanceof Error ? err.message : err);
       } finally {
         if (!cancelled) setChatSessionLookupDone(true);
@@ -1906,9 +1905,7 @@ export function App() {
   if (!profileSyncReady) {
     return (
       <div className="intake-shell">
-        <section className="intake-card">
-          <p>{t(state.language, { es: "Cargando tu perfil...", en: "Loading your profile...", pt: "Carregando seu perfil..." })}</p>
-        </section>
+        <MotivarCarePageLoader language={state.language} layout="block" />
       </div>
     );
   }
@@ -1987,7 +1984,7 @@ export function App() {
 
     /**
      * Mientras el lookup de la sesión activa del chat está en vuelo, mostramos un
-     * loading neutro: evita "parpadear" el chooser solo para saltar al chat un
+     * loading neutro: evita parpadear el formulario solo para saltar al chat un
      * instante después cuando hay sesión retomable.
      */
     const intakeChatGateActive =
@@ -1996,9 +1993,7 @@ export function App() {
     if (intakeChatGateActive) {
       return (
         <div className="intake-shell">
-          <section className="intake-card">
-            <p>{t(state.language, { es: "Cargando entrevista...", en: "Loading intake...", pt: "Carregando entrevista..." })}</p>
-          </section>
+          <MotivarCarePageLoader language={state.language} layout="block" />
         </div>
       );
     }
@@ -2039,24 +2034,20 @@ export function App() {
       );
     }
 
-    if (publicFeatures.intakeChatEnabled && intakeMethod === "chooser") {
-      return (
-        <IntakeMethodChooserScreen
-          language={state.language}
-          hasActiveChatSession={Boolean(activeChatSession)}
-          onChooseClassic={() => setIntakeMethod("classic")}
-          onChooseChat={() => setIntakeMethod("chat")}
-          onBack={cleanupAndLogout}
-        />
-      );
-    }
-
     return (
       <IntakeScreen
         user={state.session}
         language={state.language}
         authToken={state.authToken!}
         profileResidencyCountryIso={state.profileResidencyCountry}
+        onChooseMacaChat={
+          publicFeatures.intakeChatEnabled
+            ? () => {
+                setIntakeMethod("chat");
+              }
+            : undefined
+        }
+        hasActiveMacaChatSession={Boolean(activeChatSession)}
         onBack={cleanupAndLogout}
         onCancel={cleanupAndLogout}
         onSafetyReferralExit={cleanupAndLogout}

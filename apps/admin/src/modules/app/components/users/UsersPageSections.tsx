@@ -1,4 +1,4 @@
-import type { FormEvent, Dispatch, SetStateAction } from "react";
+import { memo, type FormEvent, type Dispatch, type SetStateAction } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { TIMEZONE_OPTIONS } from "../../constants";
@@ -246,7 +246,7 @@ export function UsersCreateSection(props: {
   );
 }
 
-export function UsersListSection(props: {
+function UsersListSectionComponent(props: {
   language: AppLanguage;
   roleFilter: RoleFilter;
   searchInput: string;
@@ -1208,3 +1208,5 @@ export function UsersListSection(props: {
     </div>
   );
 }
+
+export const UsersListSection = memo(UsersListSectionComponent);

@@ -97,3 +97,54 @@ export async function mediaPreviewFromFile(file: File): Promise<string | null> {
   }
   return null;
 }
+
+export function readVideoDurationSeconds(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = objectUrl;
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.removeAttribute("src");
+      video.load();
+    };
+
+    video.onloadedmetadata = () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      cleanup();
+      resolve(duration);
+    };
+
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("Could not read video metadata"));
+    };
+  });
+}
+
+export async function readVideoFileForUpload(
+  file: File,
+  options?: { maxBytes?: number; maxDurationSec?: number }
+): Promise<{ dataUrl: string; previewDataUrl: string; durationSec: number }> {
+  const maxBytes = options?.maxBytes ?? 30 * 1024 * 1024;
+  const maxDurationSec = options?.maxDurationSec ?? 120;
+
+  if (!file.type.startsWith("video/")) {
+    throw new Error("Invalid video file");
+  }
+  if (file.size > maxBytes) {
+    throw new Error("Video file is too large");
+  }
+
+  const durationSec = await readVideoDurationSeconds(file);
+  if (durationSec > maxDurationSec) {
+    throw new Error("Video is too long");
+  }
+
+  const [dataUrl, previewDataUrl] = await Promise.all([fileToDataUrl(file), videoToPreviewDataUrl(file)]);
+  return { dataUrl, previewDataUrl, durationSec };
+}

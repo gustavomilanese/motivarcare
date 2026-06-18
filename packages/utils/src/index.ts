@@ -313,3 +313,8 @@ export {
   roundDisplayMajorFromUsd,
   type DisplayFxRates
 } from "./displayFx.js";
+
+export {
+  SESSION_PRICE_ARS_ROUND_STEP,
+  roundSessionPriceArsFromUsd
+} from "./sessionPriceArs.js";

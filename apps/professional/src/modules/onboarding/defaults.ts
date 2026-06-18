@@ -144,7 +144,7 @@ export function buildPatchDraftFromMobileInputs(
     discount8: parseNumericOrNull(inputs.priceData.discount8),
     discount12: parseNumericOrNull(inputs.priceData.discount12),
     photoUrl: inputs.photoUrl?.trim() ? inputs.photoUrl.trim() : null,
-    videoUrl: null,
+    videoUrl: inputs.videoUrl?.trim() ? inputs.videoUrl.trim() : null,
     videoCoverUrl: null,
     stripeDocUrl: null,
     stripeVerified: false,

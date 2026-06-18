@@ -23,6 +23,11 @@ import {
 } from "../../app/services/usdArsPublicRate";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { PROFESSIONAL_THERAPY_MODALITY_EXCLUSIVE_ES } from "../constants/professionalTherapyModalityOptions";
+import type { PayoutProvider } from "../components/ProfessionalPayoutSetupPanel";
+import {
+  inferPayoutProviderFromBrowser,
+  inferPayoutProviderFromResidencyCountry
+} from "../lib/inferPayoutProvider";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
 import type { PendingWebOnboardingAuth } from "../webOnboardingResumeStorage.js";
 import {
@@ -164,6 +169,8 @@ export function useProfessionalWebOnboardingWizard(input: {
     profilePhotoPreview: "",
     videoReady: false,
     videoPreview: "",
+    videoFileUrl: "",
+    taxId: "",
     diplomas: [
       {
         institution: "",
@@ -177,6 +184,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     stripeVerified: false,
     stripeDocPreview: "",
     stripeVerificationStarted: false,
+    payoutProvider: inferPayoutProviderFromBrowser(),
     email: "",
     emailConfirm: "",
     password: "",
@@ -205,34 +213,22 @@ export function useProfessionalWebOnboardingWizard(input: {
     t(input.language, { es: "Servicios y precios", en: "Services and pricing", pt: "Servicos e precos" }),
     t(input.language, { es: "Multimedia", en: "Media", pt: "Midia" }),
     t(input.language, { es: "Formación", en: "Education", pt: "Formacao" }),
-    t(input.language, { es: "Stripe y verificación", en: "Stripe and verification", pt: "Stripe e verificacao" })
+    t(input.language, { es: "Recibir pagos", en: "Receive payments", pt: "Receber pagamentos" })
   ];
 
   const stepSubtitles = [
     null,
     null,
-    t(input.language, {
-      es: "Complete sus datos principales para definir como se mostrara su perfil profesional.",
-      en: "Complete your core data to define how your professional profile will appear.",
-      pt: "Preencha seus dados principais para definir como seu perfil profissional sera exibido."
-    }),
+    null,
     null,
     t(input.language, {
       es: "Precio por sesión y descuentos por paquetes de 4, 8 y 12 sesiones.",
       en: "Per-session price and discounts for 4, 8, and 12 session bundles.",
       pt: "Preco por sessao e descontos para pacotes de 4, 8 e 12 sessoes."
     }),
-    t(input.language, {
-      es: "Cargue los recursos visuales que refuerzan confianza en su perfil.",
-      en: "Upload visual assets that reinforce trust in your profile.",
-      pt: "Envie os recursos visuais que reforcam a confianca no seu perfil."
-    }),
     null,
-    t(input.language, {
-      es: "Conecte Stripe para validar documentos y activar cobros.",
-      en: "Connect Stripe to validate documents and activate payouts.",
-      pt: "Conecte o Stripe para validar documentos e ativar pagamentos."
-    })
+    null,
+    null
   ] as const;
 
   const interstitialByStep: Partial<Record<number, WebInterstitialContent>> = {
@@ -247,9 +243,9 @@ export function useProfessionalWebOnboardingWizard(input: {
       cta: t(input.language, { es: "Vamos", en: "Let's go", pt: "Vamos" }),
       visual: "earnings",
       metric: t(input.language, {
-        es: "USD 5.173,75",
-        en: "USD 5,173.75",
-        pt: "USD 5.173,75"
+        es: "USD 3.760",
+        en: "USD 3,760",
+        pt: "USD 3.760"
       }),
       metricCaption: t(input.language, { es: "ganancia proyectada", en: "projected earnings", pt: "ganho projetado" })
     },
@@ -359,6 +355,13 @@ export function useProfessionalWebOnboardingWizard(input: {
   useEffect(() => {
     setCredentialsStepError("");
   }, [form.email, form.emailConfirm, form.password, form.passwordConfirm, form.turnstileToken]);
+
+  useEffect(() => {
+    const iso = form.residencyCountry.trim();
+    const next =
+      iso.length === 2 ? inferPayoutProviderFromResidencyCountry(iso) : inferPayoutProviderFromBrowser();
+    setForm((current) => (current.payoutProvider === next ? current : { ...current, payoutProvider: next }));
+  }, [form.residencyCountry]);
 
   const turnstileSiteKey =
     typeof import.meta !== "undefined" && import.meta.env?.VITE_TURNSTILE_SITE_KEY
@@ -515,7 +518,7 @@ export function useProfessionalWebOnboardingWizard(input: {
         return true;
       })()
     ),
-    true,
+    Boolean(form.profilePhotoReady && form.profilePhotoPreview.trim() && form.videoReady && form.videoFileUrl.trim()),
     Boolean(
       form.diplomas.length
       && form.diplomas.every((diploma) =>
@@ -923,8 +926,8 @@ export function useProfessionalWebOnboardingWizard(input: {
       discount8: form.discount8.trim() ? Number(form.discount8) : null,
       discount12: form.discount12.trim() ? Number(form.discount12) : null,
       photoUrl: form.profilePhotoPreview || null,
-      videoUrl: form.videoPreview || null,
-      videoCoverUrl: null,
+      videoUrl: form.videoFileUrl || null,
+      videoCoverUrl: form.videoPreview || null,
       stripeDocUrl: form.stripeDocPreview || null,
       stripeVerified: form.stripeVerified,
       stripeVerificationStarted: form.stripeVerificationStarted,
@@ -936,7 +939,9 @@ export function useProfessionalWebOnboardingWizard(input: {
           startYear: Number(diploma.startYear),
           graduationYear: Number(diploma.graduationYear),
           documentUrl: diploma.diplomaPreview || null
-        }))
+        })),
+      taxId: form.taxId.trim() || undefined,
+      payoutMethod: form.payoutProvider
     };
 
     const meta: ProfessionalWebOnboardingFinishMeta = {

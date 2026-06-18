@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatDateWithLocale, textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
 import type { MatchTimeSlot } from "../types";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -166,11 +167,7 @@ export function AvailabilityPickerModal(props: {
           })}: {props.timezone}
         </p>
 
-        {props.loading ? (
-          <p className="availability-status-message">
-            {t(props.language, { es: "Cargando horarios...", en: "Loading slots...", pt: "Carregando horarios..." })}
-          </p>
-        ) : null}
+        {props.loading ? <MotivarCarePageLoader language={props.language} layout="inline" /> : null}
 
         {!props.loading && props.error ? (
           <p className="availability-status-message booking-soft-notice" role="status">

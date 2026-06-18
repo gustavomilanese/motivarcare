@@ -7,6 +7,7 @@ import {
   fetchPatientEmotionalDiaryEntries,
   fetchPatientEmotionalDiarySummary
 } from "../services/emotionalDiaryApi";
+import { ProPageLoader } from "../../app/components/ProPageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -59,11 +60,7 @@ export function PatientEmotionalDiaryPanel(props: PatientEmotionalDiaryPanelProp
   }
 
   if (entries === null && !error) {
-    return (
-      <section className="pro-card">
-        <p>{t(props.language, { es: "Cargando diario emocional…", en: "Loading emotional diary…", pt: "Carregando diário emocional…" })}</p>
-      </section>
-    );
+    return <ProPageLoader language={props.language} layout="inline" />;
   }
 
   const recent = entries?.slice(0, 5) ?? [];

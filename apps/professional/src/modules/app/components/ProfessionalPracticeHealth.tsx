@@ -13,16 +13,101 @@ function yn(language: AppLanguage, value: boolean): string {
 
 type PracticeHealthItem = { id: string; ok: boolean; detail?: Record<string, number | boolean> };
 
+function practiceHealthItemMetric(language: AppLanguage, item: PracticeHealthItem): string {
+  const d = item.detail ?? {};
+  switch (item.id) {
+    case "listing_live": {
+      const met = Number(d.requirementsMet) || 0;
+      const total = Number(d.requirementsTotal) || 0;
+      return t(language, {
+        es: `${met}/${total} requisitos`,
+        en: `${met}/${total} requirements`,
+        pt: `${met}/${total} requisitos`
+      });
+    }
+    case "availability_week": {
+      const n = Number(d.slotsNext7Days) || 0;
+      return t(language, {
+        es: `${n} ${n === 1 ? "franja" : "franjas"}`,
+        en: `${n} ${n === 1 ? "slot" : "slots"}`,
+        pt: `${n} ${n === 1 ? "janela" : "janelas"}`
+      });
+    }
+    case "agenda_active": {
+      const week = Number(d.weeklySessions) || 0;
+      const upcoming = Number(d.upcomingBookings) || 0;
+      return t(language, {
+        es: `${week} sem. · ${upcoming} próx.`,
+        en: `${week} wk · ${upcoming} upcoming`,
+        pt: `${week} sem. · ${upcoming} prox.`
+      });
+    }
+    case "conversion_sound": {
+      const base = Number(d.nonCancelledBookings) || 0;
+      const minBase = Number(d.minBaseForRule) || 4;
+      if (base < minBase) {
+        return t(language, {
+          es: `${Number(d.completedSessions) || 0} compl. · pocos datos`,
+          en: `${Number(d.completedSessions) || 0} done · low sample`,
+          pt: `${Number(d.completedSessions) || 0} concl. · poucos dados`
+        });
+      }
+      return `${Number(d.conversionRate) || 0}%`;
+    }
+    case "active_caseload": {
+      const n = Number(d.activePatients) || 0;
+      return t(language, {
+        es: `${n} ${n === 1 ? "activo" : "activos"}`,
+        en: `${n} active`,
+        pt: `${n} ${n === 1 ? "ativo" : "ativos"}`
+      });
+    }
+    default:
+      return item.ok ? "OK" : "—";
+  }
+}
+
 function practiceHealthTooltipLines(language: AppLanguage, item: PracticeHealthItem): string[] {
   const d = item.detail ?? {};
   switch (item.id) {
-    case "listing_live":
-      return [
+    case "listing_live": {
+      const usd = Number(d.sessionPriceUsd) || 0;
+      const fx = Number(d.arsPerUsd) || 0;
+      const lines = [
         `${t(language, { es: "Visible en directorio", en: "Visible in directory", pt: "Visivel no diretorio" })}: ${yn(language, Boolean(d.visible))}`,
         `${t(language, { es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}: ${yn(language, Boolean(d.hasTitle))}`,
-        `${t(language, { es: "Precio en USD", en: "USD price", pt: "Preco em USD" })}: ${yn(language, Boolean(d.hasPriceUsd))}`,
-        `${t(language, { es: "Precio en ARS", en: "ARS price", pt: "Preco em ARS" })}: ${yn(language, Boolean(d.hasPriceArs))}`
+        `${t(language, { es: "Precio en USD", en: "USD price", pt: "Preco em USD" })}: ${
+          Boolean(d.hasPriceUsd)
+            ? t(language, { es: `Sí (USD ${usd})`, en: `Yes (USD ${usd})`, pt: `Sim (USD ${usd})` })
+            : yn(language, false)
+        }`
       ];
+      if (Boolean(d.marketIsAr)) {
+        lines.push(
+          `${t(language, {
+            es: "Tipo de cambio USD/ARS",
+            en: "USD/ARS exchange rate",
+            pt: "Taxa de cambio USD/ARS"
+          })}: ${
+            Boolean(d.hasFxForArs)
+              ? t(language, {
+                  es: `Sí ($${fx.toLocaleString("es-AR")} ARS/USD)`,
+                  en: `Yes ($${fx.toLocaleString("en-US")} ARS/USD)`,
+                  pt: `Sim ($${fx.toLocaleString("pt-BR")} ARS/USD)`
+                })
+              : yn(language, false)
+          }`
+        );
+        lines.push(
+          t(language, {
+            es: "El precio en pesos se deriva del USD × tipo de cambio oficial.",
+            en: "The peso price is derived from USD × official exchange rate.",
+            pt: "O preco em pesos e derivado do USD × taxa de cambio oficial."
+          })
+        );
+      }
+      return lines;
+    }
     case "availability_week": {
       const n = Number(d.slotsNext7Days) || 0;
       return [
@@ -100,8 +185,8 @@ const GAUGE_R = 17;
 const GAUGE_C = 2 * Math.PI * GAUGE_R;
 
 /** Medidor circular compacto (mobile-friendly): lectura rápida ok vs atención. */
-function PracticeSignalGauge(props: { ok: boolean; label: string }) {
-  const { ok, label } = props;
+function PracticeSignalGauge(props: { ok: boolean; label: string; metric: string }) {
+  const { ok, label, metric } = props;
   const arcLen = ok ? GAUGE_C : GAUGE_C * 0.38;
   return (
     <div className="pro-signal-gauge">
@@ -144,6 +229,7 @@ function PracticeSignalGauge(props: { ok: boolean; label: string }) {
         </svg>
       </div>
       <span className="pro-signal-gauge-label">{label}</span>
+      <span className={`pro-signal-gauge-metric${ok ? "" : " pro-signal-gauge-metric--warn"}`}>{metric}</span>
     </div>
   );
 }
@@ -241,12 +327,20 @@ export function ProfessionalPracticeHealth(props: {
           <p className="pro-practice-health-lead">
             <strong>{title}</strong> — {subtitle}
           </p>
+          <p className="pro-practice-health-live-note">
+            {t(props.language, {
+              es: "Valores calculados en tiempo real con tu perfil, agenda y reservas.",
+              en: "Values computed live from your profile, schedule, and bookings.",
+              pt: "Valores calculados em tempo real com seu perfil, agenda e reservas."
+            })}
+          </p>
         </div>
       </div>
       <div className="pro-practice-health-gauges" role="list" aria-label={t(props.language, { es: "Señales", en: "Signals", pt: "Sinais" })}>
         {props.items.map((item) => {
           const tipId = `pro-ph-tip-${item.id}`;
           const lines = practiceHealthTooltipLines(props.language, item);
+          const metric = practiceHealthItemMetric(props.language, item);
           return (
             <div
               key={item.id}
@@ -258,6 +352,7 @@ export function ProfessionalPracticeHealth(props: {
               <PracticeSignalGauge
                 ok={item.ok}
                 label={ITEM_LABELS[item.id] ? t(props.language, ITEM_LABELS[item.id]) : item.id}
+                metric={metric}
               />
               <div id={tipId} role="tooltip" className="pro-practice-health-tooltip">
                 <ul className="pro-practice-health-tooltip-list">

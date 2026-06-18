@@ -8,6 +8,7 @@ import {
 } from "../services/exercisesApi";
 import { categoryAccent, categoryLabel, durationLabel, t } from "../lib/labels";
 import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
+import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 export interface ExerciseRoutinePageProps {
   language: AppLanguage;
@@ -98,9 +99,7 @@ export function ExerciseRoutinePage(props: ExerciseRoutinePageProps) {
         <Link to="/ejercicios" className="exercise-reader-back">
           ← {t(props.language, { es: "Volver a ejercicios", en: "Back to exercises", pt: "Voltar aos exercícios" })}
         </Link>
-        <p className="exercises-page-loading">
-          {t(props.language, { es: "Cargando rutina…", en: "Loading routine…", pt: "Carregando rotina…" })}
-        </p>
+        <MotivarCarePageLoader language={props.language} layout="block" />
       </section>
     );
   }

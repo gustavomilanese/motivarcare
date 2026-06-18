@@ -58,3 +58,21 @@ export const financeStripeEventsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).optional()
 });
+
+/** Mismos parámetros de rango que ingresos profesional + filtros admin. */
+export const adminPlatformFinanceQuerySchema = z.object({
+  statsFrom: z.string().datetime().optional(),
+  statsTo: z.string().datetime().optional(),
+  statsAll: z.enum(["1", "true"]).optional(),
+  professionalId: z.string().min(1).optional(),
+  patientId: z.string().min(1).optional(),
+  movementsPage: z.coerce.number().int().min(1).optional(),
+  movementsPageSize: z.coerce.number().int().min(1).max(100).optional(),
+  movementsSearch: z.string().trim().max(120).optional(),
+  movementsPricing: z.enum(["all", "package", "list"]).optional(),
+  movementsSort: z.enum(["date_desc", "date_asc", "gross_desc", "gross_asc"]).optional(),
+  purchasesPage: z.coerce.number().int().min(1).optional(),
+  purchasesPageSize: z.coerce.number().int().min(1).max(100).optional(),
+  purchasesSearch: z.string().trim().max(120).optional(),
+  purchasesSort: z.enum(["date_desc", "date_asc", "gross_desc", "gross_asc"]).optional()
+});

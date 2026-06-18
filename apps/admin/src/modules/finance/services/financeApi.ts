@@ -1,5 +1,8 @@
 import { resolveWebAppApiBase } from "@therapy/auth";
 import type {
+  AdminPlatformExecutedResponse,
+  AdminPlatformPurchasesResponse,
+  AdminUnpaidProfessionalsResponse,
   FinanceOverviewResponse,
   FinancePayoutRunDetailResponse,
   FinancePayoutRunsResponse,
@@ -113,4 +116,28 @@ export async function fetchStripeOperations(token: string, query: string): Promi
 
 export async function retryStripeEvent(token: string, eventId: string): Promise<void> {
   await apiRequest<unknown>(`/api/admin/finance/stripe/events/${eventId}/retry`, token, { method: "POST" });
+}
+
+export async function fetchAdminPlatformExecuted(token: string, query: string): Promise<AdminPlatformExecutedResponse> {
+  return apiRequest<AdminPlatformExecutedResponse>(`/api/admin/finance/platform/executed?${query}`, token);
+}
+
+export async function fetchAdminPlatformPurchases(token: string, query: string): Promise<AdminPlatformPurchasesResponse> {
+  return apiRequest<AdminPlatformPurchasesResponse>(`/api/admin/finance/platform/purchases?${query}`, token);
+}
+
+export async function fetchUnpaidProfessionals(token: string): Promise<AdminUnpaidProfessionalsResponse> {
+  return apiRequest<AdminUnpaidProfessionalsResponse>("/api/admin/finance/unpaid-professionals", token);
+}
+
+export async function payProfessionalUnpaid(
+  token: string,
+  professionalId: string,
+  payoutReference?: string
+): Promise<{ message: string; professionalNetCents: number; sessionsCount: number }> {
+  return apiRequest(`/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}/pay`, token, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payoutReference: payoutReference ?? undefined })
+  });
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import { InlineBadge } from "@therapy/ui";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
+import { ProPageLoader } from "../components/ProPageLoader";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
@@ -738,7 +739,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
                 </button>
               </div>
             </div>
-            {loading ? <p>{t(props.language, { es: "Cargando agenda...", en: "Loading agenda...", pt: "Carregando agenda..." })}</p> : null}
+            {loading ? <ProPageLoader language={props.language} layout="inline" /> : null}
             {error ? <p className="pro-error">{error}</p> : null}
             {!loading && !error && bookings.length === 0 ? (
               <p>{t(props.language, { es: "Todavía no hay sesiones registradas.", en: "There are no sessions yet.", pt: "Ainda nao ha sessoes registradas." })}</p>
@@ -842,7 +843,7 @@ export function PublishedAvailabilityPage(props: { token: string; language: AppL
       <section className="pro-card">
         <h2>{t(props.language, { es: "Disponibilidad publicada", en: "Published availability", pt: "Disponibilidade publicada" })}</h2>
         {error ? <p className="pro-error">{error}</p> : null}
-        {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+        {loading ? <ProPageLoader language={props.language} layout="inline" /> : null}
         {!loading && groupedSlots.length === 0 ? <p>{t(props.language, { es: "No hay horarios cargados.", en: "No slots loaded yet.", pt: "Nao ha horarios carregados." })}</p> : null}
         {!loading && groupedSlots.length > 0 ? (
           <div className="schedule-group-list">

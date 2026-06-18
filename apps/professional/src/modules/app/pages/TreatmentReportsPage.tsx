@@ -8,6 +8,7 @@ import {
   type TreatmentReportDetail,
   type TreatmentReportListItem
 } from "../../treatment-reports/services/treatmentReportsApi";
+import { ProPageLoader } from "../components/ProPageLoader";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -93,12 +94,13 @@ export function TreatmentReportsPage(props: TreatmentReportsPageProps) {
     });
   }, [items]);
 
+  if (!sortedItems && !listError) {
+    return <ProPageLoader language={language} layout="block" />;
+  }
+
   return (
     <section className="pro-card pro-treatment-reports-card">
       <header className="pro-treatment-reports-header">
-        <h2>
-          {t(language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
-        </h2>
         <p className="pro-treatment-reports-subtitle">
           {t(language, {
             es: "Resumen del acompañamiento entre sesiones del paciente con el asistente Maca. Solo aparecen pacientes que dieron su consentimiento.",
@@ -109,10 +111,6 @@ export function TreatmentReportsPage(props: TreatmentReportsPageProps) {
       </header>
 
       {listError ? <p className="pro-error">{listError}</p> : null}
-
-      {!sortedItems ? (
-        <p>{t(language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p>
-      ) : null}
 
       {sortedItems && sortedItems.length === 0 && !listError ? (
         <p className="pro-treatment-reports-empty">

@@ -150,6 +150,15 @@ button.danger {
   color: #b91c1c;
 }
 
+button.danger:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+button.danger:active {
+  background: #fee2e2;
+}
+
 .auth-shell {
   min-height: 100vh;
   min-height: 100dvh;
@@ -1053,6 +1062,8 @@ label {
 .user-card-compact.expanded {
   background: linear-gradient(165deg, #f0e8fb 0%, #ebe4f7 45%, #e8e0f4 100%);
   border-color: #d4c4ea;
+  position: relative;
+  z-index: 3;
 }
 
 .users-admin-edit-feedback {
@@ -2046,7 +2057,7 @@ label {
 .user-edit-actions {
   position: sticky;
   bottom: 0;
-  z-index: 2;
+  z-index: 4;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -4449,7 +4460,12 @@ button.primary.finance-hero-search {
   margin-top: 8px;
 }
 
-.finance-collapsible-body--stack {
+/* Closed <details> must not paint body content; display:grid on --stack broke native hiding and let later sections steal clicks (Configuración → usuarios). */
+.finance-collapsible:not([open]) > .finance-collapsible-body {
+  display: none;
+}
+
+.finance-collapsible[open] > .finance-collapsible-body--stack {
   display: grid;
   gap: 18px;
   padding-top: 4px;
@@ -5922,4 +5938,373 @@ button.primary.finance-hero-search {
   .email-notif-row-toggle {
     justify-self: start;
   }
+}
+
+.admin-platform-finance {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-platform-finance-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-platform-finance-head h3 {
+  margin: 0 0 4px;
+}
+
+.admin-platform-finance-lead {
+  margin: 0;
+  color: var(--text-soft);
+  max-width: 52rem;
+  line-height: 1.45;
+}
+
+.admin-platform-finance-toolbar,
+.admin-platform-finance-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-platform-finance-control {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #fff;
+}
+
+.admin-platform-finance-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.admin-platform-finance-tabs button {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.admin-platform-finance-tabs button.active {
+  background: rgba(95, 68, 235, 0.12);
+  color: var(--brand);
+}
+
+.admin-platform-finance-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-platform-finance-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.admin-platform-finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-platform-finance-table th,
+.admin-platform-finance-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-platform-finance-table th {
+  background: #f8fafc;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.admin-platform-finance-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-platform-finance-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-platform-finance-badge--trial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-platform-finance-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.admin-platform-finance-pagination button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .admin-platform-finance-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-platform-finance-export {
+  font-weight: 600;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  cursor: pointer;
+}
+
+.admin-platform-finance-export:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-export-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.admin-export-modal {
+  width: min(520px, 100%);
+  border-radius: 18px;
+  border: 1px solid #dce3f1;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fe 100%);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.2);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.admin-export-modal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-export-modal h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.admin-export-modal header button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #d2daea;
+  background: #fff;
+  color: #41516f;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-export-modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-export-modal-lead {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.admin-export-modal-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-export-modal-date-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.admin-export-modal-date-field span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.admin-export-modal-date-field input {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #d2daea;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+
+.admin-export-modal-error {
+  margin: 0;
+  font-size: 14px;
+  color: #b91c1c;
+}
+
+.admin-export-modal-meta {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f3f4f6;
+}
+
+.admin-export-modal-meta div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-export-modal-meta dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.admin-export-modal-meta dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.admin-export-modal-filters {
+  margin: 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.admin-export-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.admin-export-modal-actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #d2daea;
+  background: #fff;
+  color: #41516f;
+  font-weight: 600;
+}
+
+.admin-export-modal-actions button.primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.admin-export-modal-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-unpaid-professionals {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-unpaid-professionals-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-unpaid-professionals-head h3 {
+  margin: 0 0 6px;
+}
+
+.admin-unpaid-professionals-lead {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.admin-unpaid-professionals-total {
+  font-size: 18px;
+  color: #1e3a8a;
+  white-space: nowrap;
+}
+
+.admin-unpaid-professionals-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-unpaid-professionals-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-unpaid-professionals-table th,
+.admin-unpaid-professionals-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.admin-unpaid-professionals-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.admin-unpaid-professionals-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-professionals-table button.primary {
+  min-height: 36px;
+  padding: 0 14px;
 }

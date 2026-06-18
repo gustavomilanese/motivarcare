@@ -22,19 +22,29 @@ describe("computeFxSnapshot", () => {
     }
   });
 
-  it("USD: equivalente = priceCents, sin FX, provider 'n/a'", async () => {
+  it("USD: persiste equivalente USD y cotización ARS del momento del cobro", async () => {
+    process.env.USD_ARS_RATE_OVERRIDE = "1400";
     const snap = await computeFxSnapshot({ priceCents: 40_000, currency: "usd" });
     expect(snap.packagePriceUsdCentsSnapshot).toBe(40_000);
-    expect(snap.fxArsPerUsdSnapshot).toBeNull();
-    expect(snap.fxProviderSnapshot).toBe("n/a");
+    expect(snap.fxArsPerUsdSnapshot).toBe("1400.0000");
+    expect(snap.fxProviderSnapshot).toBe("override");
     expect(snap.fxFetchedAt).toBeInstanceOf(Date);
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("USD insensible a mayúsculas/espacios", async () => {
+  it("USD: si FX falla, mantiene USD snapshot y deja TC en null (fallback servicio después)", async () => {
+    delete process.env.USD_ARS_RATE_OVERRIDE;
+    fetchSpy
+      .mockResolvedValueOnce(new Response("oops", { status: 500 }))
+      .mockResolvedValueOnce(new Response("oops", { status: 500 }));
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     const snap = await computeFxSnapshot({ priceCents: 12_345, currency: "USD" });
     expect(snap.packagePriceUsdCentsSnapshot).toBe(12_345);
-    expect(snap.fxProviderSnapshot).toBe("n/a");
+    expect(snap.fxArsPerUsdSnapshot).toBeNull();
+    expect(snap.fxProviderSnapshot).toBeNull();
+    expect(warnSpy).toHaveBeenCalledOnce();
+
+    warnSpy.mockRestore();
   });
 
   it("ARS: usa override y calcula equivalente USD en centavos", async () => {

@@ -223,9 +223,9 @@ export function IntakeChatScreen(props: IntakeChatScreenProps) {
           <div className="intake-chat-header-text">
             <span className="intake-chat-header-eyebrow">
               {t({
-                es: "Entrevista conversacional · Beta",
-                en: "Conversational intake · Beta",
-                pt: "Entrevista conversacional · Beta"
+                es: "Maca · Entrevista conversacional",
+                en: "Maca · Conversational intake",
+                pt: "Maca · Entrevista conversacional"
               })}
             </span>
             <h1 className="intake-chat-title">
@@ -430,7 +430,7 @@ function MessageBubble({
     >
       <div className="intake-chat-bubble-meta">
         {isAssistant
-          ? textByLanguage(language, { es: "Asistente", en: "Assistant", pt: "Assistente" })
+          ? textByLanguage(language, { es: "Maca", en: "Maca", pt: "Maca" })
           : textByLanguage(language, { es: "Vos", en: "You", pt: "Você" })}
       </div>
       <div className="intake-chat-bubble-content">{displayContent}</div>

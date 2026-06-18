@@ -139,6 +139,7 @@ export const PATIENT_CLINICAL_INTAKE_FIRST_STEPS: IntakeQuestion[] = [
       "Soledad",
       "Dificultad para controlar impulsos",
       "Crecimiento personal",
+      "Terapia de pareja",
       "Otro"
     ],
     allowMultiple: true,

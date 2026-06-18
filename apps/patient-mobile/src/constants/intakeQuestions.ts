@@ -196,6 +196,7 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
       "Soledad",
       "Dificultad para controlar impulsos",
       "Crecimiento personal",
+      "Terapia de pareja",
       "Otro"
     ],
     allowMultiple: true,

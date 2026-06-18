@@ -5,10 +5,15 @@ import {
   type LocalizedText,
   formatDateWithLocale,
   replaceTemplate,
-  textByLanguage
+  textByLanguage,
+  SESSION_PRICE_ARS_ROUND_STEP,
+  roundSessionPriceArsFromUsd
 } from "@therapy/i18n-config";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { PROFESSIONAL_CANCELLATION_POLICY_NOTICE } from "../../onboarding/constants/professionalProfileGuidanceCopy";
+import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
 import { apiRequest } from "../services/api";
+import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
 import type { AvailabilitySlot, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -30,8 +35,6 @@ const SLOT_DURATION_MINUTES = 60;
 const FORWARD_WEEKS = 8;
 const MIN_BOOKING_NOTICE_HOURS = 24;
 const SESSION_LIST_PRICE_CAP = 10_000_000;
-const AR_SESSION_LIST_MIN = 2_000;
-const AR_SESSION_LIST_MAX = 5_000_000;
 const MAX_VACATION_RANGE_DAYS = 120;
 const VACATION_MARKER_HOUR = 6;
 const VACATION_MARKER_DURATION_MINUTES = 30;
@@ -411,7 +414,9 @@ export function SchedulePage(props: {
   const [professionalId, setProfessionalId] = useState("");
   const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
   const [sessionPriceUsd, setSessionPriceUsd] = useState<number>(0);
-  const [sessionPriceArs, setSessionPriceArs] = useState<number | null>(null);
+  const [storedSessionPriceArs, setStoredSessionPriceArs] = useState<number | null>(null);
+  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
+  const [usdArsRateError, setUsdArsRateError] = useState(false);
   const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
   const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
   const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
@@ -419,6 +424,16 @@ export function SchedulePage(props: {
   const [weekTemplate, setWeekTemplate] = useState<Array<Set<string>>>(() => DAY_KEYS.map(() => new Set<string>()));
 
   const selectedDayIndex = useMemo(() => toDayIndex(selectedDay), [selectedDay]);
+  const computedSessionPriceArs = useMemo(() => {
+    const usd = Math.round(Number(sessionPriceUsd || 0));
+    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
+      return null;
+    }
+    return roundSessionPriceArsFromUsd(usd, usdArsRate);
+  }, [sessionPriceUsd, usdArsRate]);
+
+  const displayedSessionPriceArs = computedSessionPriceArs ?? storedSessionPriceArs;
+
   const openSlotsPerWeek = useMemo(() => summarizeTemplate(weekTemplate), [weekTemplate]);
   const { weeks: forwardWeeks, result: plannedSlots } = useMemo(() => buildForwardTemplateSlots(weekTemplate), [weekTemplate]);
   const existingStarts = useMemo(() => new Set(slots.map((slot) => new Date(slot.startsAt).getTime())), [slots]);
@@ -467,7 +482,7 @@ export function SchedulePage(props: {
       setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
       setSessionPriceUsd(Math.max(0, Number(profileResponse.profile?.sessionPriceUsd ?? 0)));
       const ars = profileResponse.profile?.sessionPriceArs;
-      setSessionPriceArs(ars != null && ars > 0 ? ars : null);
+      setStoredSessionPriceArs(ars != null && ars > 0 ? ars : null);
       setError("");
     } catch (requestError) {
       if (showError) {
@@ -482,6 +497,26 @@ export function SchedulePage(props: {
   useEffect(() => {
     void load();
   }, [props.token]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPublicUsdArsRate()
+      .then((rate) => {
+        if (!cancelled) {
+          setUsdArsRate(rate);
+          setUsdArsRateError(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsdArsRate(null);
+          setUsdArsRateError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const resetToWorkRoot = () => {
@@ -584,25 +619,6 @@ export function SchedulePage(props: {
     const usdRounded = Math.max(0, Math.min(SESSION_LIST_PRICE_CAP, Math.round(Number(sessionPriceUsd || 0))));
     const nextUsd = usdRounded > 0 ? usdRounded : null;
 
-    let nextArs: number | null = null;
-    if (sessionPriceArs != null && sessionPriceArs > 0) {
-      const arsRounded = Math.round(sessionPriceArs);
-      if (arsRounded < AR_SESSION_LIST_MIN || arsRounded > AR_SESSION_LIST_MAX) {
-        setError(
-          replaceTemplate(
-            t(props.language, {
-              es: "El precio en ARS debe estar entre {min} y {max} (entero).",
-              en: "The ARS list price must be between {min} and {max} (integer).",
-              pt: "O preco em ARS deve estar entre {min} e {max} (inteiro)."
-            }),
-            { min: String(AR_SESSION_LIST_MIN), max: String(AR_SESSION_LIST_MAX) }
-          )
-        );
-        return;
-      }
-      nextArs = arsRounded;
-    }
-
     setSavingNotice(true);
     setError("");
     setMessage("");
@@ -611,29 +627,34 @@ export function SchedulePage(props: {
       await apiRequest<{ message: string }>(`/api/profiles/professional/${professionalId}/public-profile`, props.token, {
         method: "PATCH",
         body: JSON.stringify({
-          sessionPriceArs: nextArs,
           sessionPriceUsd: nextUsd
         })
       });
 
       setSessionPriceUsd(nextUsd ?? 0);
-      setSessionPriceArs(nextArs);
-      const arsPart =
-        nextArs != null
-          ? `ARS ${nextArs}`
-          : t(props.language, { es: "ARS sin definir", en: "ARS not set", pt: "ARS nao definido" });
+      const savedArs =
+        nextUsd != null && usdArsRate != null && Number.isFinite(usdArsRate)
+          ? roundSessionPriceArsFromUsd(nextUsd, usdArsRate)
+          : storedSessionPriceArs;
+      if (savedArs != null) {
+        setStoredSessionPriceArs(savedArs);
+      }
       const usdPart =
         nextUsd != null
           ? `USD ${nextUsd}`
           : t(props.language, { es: "USD sin definir", en: "USD not set", pt: "USD nao definido" });
+      const arsPart =
+        savedArs != null
+          ? `ARS ${savedArs.toLocaleString("es-AR")}`
+          : t(props.language, { es: "ARS se calculará al guardar", en: "ARS will be computed on save", pt: "ARS sera calculado ao salvar" });
       setMessage(
         replaceTemplate(
           t(props.language, {
-            es: "Precios de lista actualizados: {detail}.",
-            en: "List prices updated: {detail}.",
-            pt: "Precos de lista atualizados: {detail}."
+            es: "Precio de lista actualizado: {detail}.",
+            en: "List price updated: {detail}.",
+            pt: "Preco de lista atualizado: {detail}."
           }),
-          { detail: `${arsPart} · ${usdPart}` }
+          { detail: `${usdPart} · ${arsPart}` }
         )
       );
     } catch (requestError) {
@@ -1076,6 +1097,8 @@ export function SchedulePage(props: {
             />
           </label>
 
+          <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_CANCELLATION_POLICY_NOTICE} />
+
           <button
             type="button"
             className="pro-primary schedule-save schedule-notice-save"
@@ -1107,35 +1130,21 @@ export function SchedulePage(props: {
             </div>
           </header>
 
-          <label className="schedule-notice-field">
-            {t(props.language, {
-              es: "Precio de lista por sesión (ARS, catálogo Argentina)",
-              en: "Per-session list price (ARS, Argentina catalog)",
-              pt: "Preco de lista por sessao (ARS, catalogo Argentina)"
-            })}
-            <input
-              type="number"
-              min={0}
-              max={AR_SESSION_LIST_MAX}
-              step={1}
-              value={sessionPriceArs ?? ""}
-              placeholder={t(props.language, { es: "Opcional", en: "Optional", pt: "Opcional" })}
-              onChange={(event) => {
-                const raw = event.target.value;
-                if (raw.trim() === "") {
-                  setSessionPriceArs(null);
-                  return;
-                }
-                setSessionPriceArs(Math.round(Number(raw)));
-              }}
-            />
-          </label>
+          <div className="schedule-notice-copy">
+            <p className="pro-muted">
+              {t(props.language, {
+                es: `Definí el valor de referencia en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al múltiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("es-AR")} ARS más cercano.`,
+                en: `Set your reference price in US dollars (USD). The peso price uses the official exchange rate and rounds to the nearest ARS ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("en-US")}.`,
+                pt: `Defina o valor de referencia em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o multiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("pt-BR")} ARS mais proximo.`
+              })}
+            </p>
+          </div>
 
           <label className="schedule-notice-field">
             {t(props.language, {
-              es: "Precio de lista por sesión (USD, otros mercados)",
-              en: "Per-session list price (USD, other markets)",
-              pt: "Preco de lista por sessao (USD, outros mercados)"
+              es: "Precio de lista por sesión (USD)",
+              en: "Per-session list price (USD)",
+              pt: "Preco de lista por sessao (USD)"
             })}
             <input
               type="number"
@@ -1146,6 +1155,25 @@ export function SchedulePage(props: {
               onChange={(event) => setSessionPriceUsd(Number(event.target.value || 0))}
             />
           </label>
+
+          {usdArsRateError ? (
+            <p className="pro-muted" role="status">
+              {t(props.language, {
+                es: "No pudimos obtener el tipo de cambio ahora. Podés guardar el USD; el ARS se calculará al confirmar.",
+                en: "We couldn’t load the exchange rate now. You can save USD; ARS will be computed when you confirm.",
+                pt: "Nao foi possivel obter a cotacao agora. Voce pode salvar o USD; o ARS sera calculado ao confirmar."
+              })}
+            </p>
+          ) : null}
+          {computedSessionPriceArs !== null ? (
+            <p className="pro-muted">
+              {t(props.language, {
+                es: `Equivalente orientativo: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS.`,
+                en: `Indicative equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS.`,
+                pt: `Equivalente indicativo: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS.`
+              })}
+            </p>
+          ) : null}
 
           <button
             type="button"
@@ -1309,8 +1337,10 @@ export function SchedulePage(props: {
                 <strong>{t(props.language, { es: "Valor de sesión", en: "Session rate", pt: "Valor da sessao" })}</strong>
                 <span>
                   {[
-                    sessionPriceArs != null && sessionPriceArs > 0 ? `ARS ${sessionPriceArs}` : null,
-                    sessionPriceUsd > 0 ? `USD ${sessionPriceUsd}` : null
+                    sessionPriceUsd > 0 ? `USD ${sessionPriceUsd}` : null,
+                    displayedSessionPriceArs != null && displayedSessionPriceArs > 0
+                      ? `ARS ${displayedSessionPriceArs.toLocaleString("es-AR")}`
+                      : null
                   ]
                     .filter(Boolean)
                     .join(" · ") ||
@@ -1360,9 +1390,9 @@ export function SchedulePage(props: {
 
   return (
     <div className="pro-grid-stack">
-      <section className="pro-card schedule-work-card">
-        <header className={`schedule-work-head${props.inScheduleHub ? " schedule-work-head--hub" : ""}`}>
-          {props.inScheduleHub ? null : (
+      <section className="pro-card schedule-work-card" data-tour="pro-tour-agenda-work">
+        {props.inScheduleHub ? null : (
+          <header className="schedule-work-head">
             <button
               type="button"
               className="schedule-back"
@@ -1371,17 +1401,17 @@ export function SchedulePage(props: {
             >
               ‹
             </button>
-          )}
-          <div>
-            <h2>
-              {t(props.language, {
-                es: "Configurar horarios de trabajo",
-                en: "Configure work hours",
-                pt: "Configurar horários de trabalho"
-              })}
-            </h2>
-          </div>
-        </header>
+            <div>
+              <h2>
+                {t(props.language, {
+                  es: "Configurar horarios de trabajo",
+                  en: "Configure work hours",
+                  pt: "Configurar horários de trabalho"
+                })}
+              </h2>
+            </div>
+          </header>
+        )}
 
         <div className="schedule-work-days" aria-label={t(props.language, { es: "Dias de la semana", en: "Week days", pt: "Dias da semana" })}>
           {DAY_KEYS.map((day) => {

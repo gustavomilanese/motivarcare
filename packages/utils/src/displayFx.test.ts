@@ -34,9 +34,9 @@ describe("resolveFxRatePerUsd", () => {
 });
 
 describe("roundDisplayMajorFromUsd", () => {
-  it("ceil-rounds ARS to nearest 1000", () => {
-    expect(roundDisplayMajorFromUsd(65, "ARS", 1400)).toBe(91_000);
-    expect(roundDisplayMajorFromUsd(65, "ARS", 1392.5)).toBe(91_000);
+  it("redondea ARS al múltiplo de 2.000 más cercano", () => {
+    expect(roundDisplayMajorFromUsd(65, "ARS", 1400)).toBe(92_000);
+    expect(roundDisplayMajorFromUsd(65, "ARS", 1392.5)).toBe(90_000);
   });
 
   it("rounds other currencies to integer major units", () => {
@@ -48,7 +48,7 @@ describe("roundDisplayMajorFromUsd", () => {
 
 describe("convertUsdMajorToDisplayMajor", () => {
   it("converts Fernando USD 65/session for AR patient with live FX", () => {
-    expect(convertUsdMajorToDisplayMajor(65, "ARS", { arsPerUsd: 1400 })).toBe(91_000);
+    expect(convertUsdMajorToDisplayMajor(65, "ARS", { arsPerUsd: 1400 })).toBe(92_000);
   });
 
   it("converts with static ARS fallback", () => {
@@ -64,7 +64,7 @@ describe("formatUsdMajorForPatientDisplay", () => {
       language: "es",
       fxRates: { arsPerUsd: 1400 }
     });
-    expect(label).toContain("91");
+    expect(label).toContain("92");
     expect(label).toMatch(/ARS/i);
   });
 });

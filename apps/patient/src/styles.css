@@ -1,3 +1,5 @@
+@import "@therapy/ui/motivarCareLoader.css";
+
 /* Fonts loaded via index.html so this sheet applies immediately (avoids blank auth layout on first paint). */
 
 :root {
@@ -11550,6 +11552,55 @@ button.sessions-balance {
   box-shadow: 0 2px 14px rgba(95, 68, 235, 0.07);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+
+.intake-intro-maca-offer {
+  margin: 14px 16px 16px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(95, 68, 235, 0.35);
+  background: rgba(255, 255, 255, 0.55);
+  display: grid;
+  gap: 8px;
+}
+
+.intake-intro-maca-offer-lead {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4338ca;
+  letter-spacing: -0.01em;
+}
+
+.intake-intro-maca-offer-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.intake-intro-maca-btn {
+  justify-self: start;
+  margin-top: 2px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(95, 68, 235, 0.35);
+  background: linear-gradient(135deg, rgba(95, 68, 235, 0.12) 0%, rgba(115, 89, 245, 0.08) 100%);
+  color: #5f44eb;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.intake-intro-maca-btn:hover {
+  border-color: rgba(95, 68, 235, 0.5);
+  background: linear-gradient(135deg, rgba(95, 68, 235, 0.18) 0%, rgba(115, 89, 245, 0.12) 100%);
+  box-shadow: 0 6px 18px rgba(95, 68, 235, 0.14);
 }
 
 .intake-intro-point-icon-wrap {

@@ -1,13 +1,9 @@
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import {
-  type AppLanguage,
-  type LocalizedText,
-  type SupportedCurrency,
-  replaceTemplate,
-  textByLanguage
-} from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import { ProMobileNavIcon } from "../components/ProMobileNavIcon";
+import { ProPortalChromeProvider } from "../components/ProPortalChromeContext";
+import { ProPortalHeaderActions } from "../components/ProPortalHeaderActions";
 import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav";
 import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
 import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
@@ -23,9 +19,28 @@ import { ScheduleHubPage } from "./ScheduleHubPage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
 import { TreatmentReportsPage } from "./TreatmentReportsPage";
-import { professionalPortalGreetingDisplayName } from "../lib/portalGreetingDisplayName";
 import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY } from "../services/api";
 import type { AuthUser, PortalSection } from "../types";
+import { ProfessionalPortalGuidedTour } from "../components/ProfessionalPortalGuidedTour";
+
+function portalNavTourKey(to: PortalSection): string | undefined {
+  if (to === "/") {
+    return "dashboard";
+  }
+  if (to === "/horarios") {
+    return "agenda";
+  }
+  if (to === "/pacientes") {
+    return "pacientes";
+  }
+  if (to === "/chat") {
+    return "chat";
+  }
+  if (to === "/ingresos") {
+    return "ingresos";
+  }
+  return undefined;
+}
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -127,9 +142,24 @@ export function ProfessionalPortal(props: {
     pt: "Novas mensagens"
   });
 
+  const headerActionsProps = {
+    language: props.language,
+    notificationsOpen,
+    notificationsUnreadCount,
+    notificationItems,
+    onToggleNotifications: () => setNotificationsOpen((current) => !current),
+    onCloseNotifications: () => setNotificationsOpen(false),
+    onLogout: props.onLogout
+  };
+
+  const portalHeaderActions = (
+    <ProPortalHeaderActions {...headerActionsProps} variant="dashboard-toolbar" />
+  );
+
   return (
     <div className="pro-shell">
-      <aside className="pro-sidebar">
+      <ProfessionalPortalGuidedTour language={props.language} sessionUserId={props.user.id} token={props.token} />
+      <aside className="pro-sidebar" data-tour="pro-tour-sidebar">
         <div className="pro-brand">
           <img
             className="pro-brand-mark-img"
@@ -154,6 +184,7 @@ export function ProfessionalPortal(props: {
                 onClick={handlePortalNavClick(link.to)}
                 className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")}
                 end={link.to === "/"}
+                data-tour-nav={portalNavTourKey(link.to)}
               >
                 {link.to === "/chat" ? (
                   <span className="pro-nav-link-with-badge">
@@ -188,92 +219,10 @@ export function ProfessionalPortal(props: {
         </div>
       </aside>
 
-      <div className="pro-main">
-        <header className="pro-header">
-          <div>
-            <h1>
-              {replaceTemplate(
-                t(props.language, { es: "Hola, {name}", en: "Hi, {name}", pt: "Ola, {name}" }),
-                {
-                  name:
-                    professionalPortalGreetingDisplayName(props.user) ||
-                    t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })
-                }
-              )}
-            </h1>
-          </div>
-          <div className="pro-header-actions">
-            <NavLink
-              to="/perfil"
-              className={({ isActive }) => `pro-header-icon-link ${isActive ? "active" : ""}`}
-              aria-label={t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
-            >
-              <span className="pro-header-icon profile" aria-hidden="true" />
-            </NavLink>
-            <NavLink
-              to="/ajustes"
-              className={({ isActive }) => `pro-header-icon-link ${isActive ? "active" : ""}`}
-              aria-label={t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-            >
-              <span className="pro-header-icon settings" aria-hidden="true" />
-            </NavLink>
-            <div className="pro-notifications-wrap">
-              <button
-                type="button"
-                className={`pro-header-icon-link pro-notifications-trigger ${notificationsOpen ? "active" : ""}`}
-                aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
-                onClick={() => setNotificationsOpen((current) => !current)}
-              >
-                <svg className="pro-header-bell-icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-                  <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
-                  <path d="M10 18a2 2 0 0 0 4 0" />
-                </svg>
-                {notificationsUnreadCount > 0 ? (
-                  <small>{notificationsUnreadCount > 99 ? "99+" : notificationsUnreadCount}</small>
-                ) : null}
-              </button>
-              {notificationsOpen ? (
-                <div className="pro-notifications-dropdown">
-                  <div className="pro-notifications-head">
-                    <strong>{t(props.language, { es: "Notificaciones", en: "Notifications", pt: "Notificacoes" })}</strong>
-                  </div>
-                  <div className="menu-sep" />
-                  {notificationItems.length === 0 ? (
-                    <p className="pro-notifications-empty">
-                      {t(props.language, { es: "Sin novedades por ahora.", en: "No updates for now.", pt: "Sem novidades por agora." })}
-                    </p>
-                  ) : (
-                    <ul className="pro-notifications-list">
-                      {notificationItems.slice(0, 8).map((item) => (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            className={`pro-notification-item ${item.unread ? "unread" : ""}`}
-                            onClick={() => {
-                              setNotificationsOpen(false);
-                              navigate(`/chat?patientId=${encodeURIComponent(item.patientId)}`);
-                            }}
-                          >
-                            <span>{item.title}</span>
-                            <strong>{item.body}</strong>
-                            {item.detail ? <em>{item.detail}</em> : null}
-                            <small>{item.meta}</small>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ) : null}
-            </div>
-            <button className="pro-danger pro-header-logout" type="button" onClick={props.onLogout}>
-              {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
-            </button>
-          </div>
-        </header>
-
+      <div className="pro-main pro-main--immersive pro-main--dashboard-home">
         <nav
           className="pro-mobile-nav"
+          data-tour="pro-tour-mobile-nav"
           aria-label={t(props.language, {
             es: "Navegación principal",
             en: "Main navigation",
@@ -287,6 +236,7 @@ export function ProfessionalPortal(props: {
               onClick={handlePortalNavClick(link.to)}
               className={({ isActive }) => (isActive ? "pro-mobile-link active" : "pro-mobile-link")}
               end={link.to === "/"}
+              data-tour-nav={portalNavTourKey(link.to)}
             >
               {link.to === "/chat" ? (
                 <>
@@ -311,8 +261,19 @@ export function ProfessionalPortal(props: {
         </nav>
 
         <main className="pro-main-content">
-          <Routes>
-            <Route path="/" element={<DashboardPage token={props.token} language={props.language} currency={props.currency} user={props.user} />} />
+          <ProPortalChromeProvider language={props.language} headerActions={portalHeaderActions}>
+            <Routes>
+            <Route
+              path="/"
+              element={
+                <DashboardPage
+                  token={props.token}
+                  language={props.language}
+                  currency={props.currency}
+                  user={props.user}
+                />
+              }
+            />
             <Route path="/horarios" element={<ScheduleHubPage language={props.language} />}>
               <Route index element={<SchedulePage token={props.token} language={props.language} mode="work" inScheduleHub />} />
               <Route path="disponibilidad" element={<AvailabilityMonthPage token={props.token} language={props.language} />} />
@@ -337,7 +298,7 @@ export function ProfessionalPortal(props: {
                 />
               }
             />
-            <Route path="/ingresos" element={<IncomePage token={props.token} language={props.language} currency={props.currency} />} />
+            <Route path="/ingresos" element={<IncomePage token={props.token} language={props.language} user={props.user} />} />
             <Route path="/admin" element={<AdminPage token={props.token} language={props.language} />} />
             <Route
               path="/perfil"
@@ -346,6 +307,7 @@ export function ProfessionalPortal(props: {
             <Route path="/ajustes" element={<SettingsPage token={props.token} onLogout={props.onLogout} language={props.language} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ProPortalChromeProvider>
         </main>
       </div>
     </div>

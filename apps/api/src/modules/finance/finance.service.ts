@@ -699,6 +699,104 @@ export async function closePayoutRun(runId: string) {
   return { run: updated };
 }
 
+/** Liquida todas las sesiones sin payout de un profesional: crea corrida, marca pagado y cierra. */
+export async function payProfessionalUnpaidBalance(professionalId: string, payoutReference?: string) {
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: { id: true }
+  });
+  if (!professional) {
+    return { notFound: true as const };
+  }
+
+  const eligibleRecords = await prisma.financeSessionRecord.findMany({
+    where: {
+      professionalId,
+      bookingStatus: "COMPLETED",
+      payoutLineId: null
+    },
+    orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }]
+  });
+
+  if (eligibleRecords.length === 0) {
+    return { noRecords: true as const };
+  }
+
+  const periodStart =
+    eligibleRecords[0]?.bookingCompletedAt ?? eligibleRecords[0]?.bookingStartsAt ?? new Date();
+  const last = eligibleRecords[eligibleRecords.length - 1];
+  const periodEnd = last?.bookingCompletedAt ?? last?.bookingStartsAt ?? periodStart;
+
+  let grossCents = 0;
+  let platformFeeCents = 0;
+  let professionalNetCents = 0;
+  for (const record of eligibleRecords) {
+    grossCents += record.sessionPriceCents;
+    platformFeeCents += record.platformFeeCents;
+    professionalNetCents += record.professionalNetCents;
+  }
+
+  const paidAt = new Date();
+  const result = await prisma.$transaction(async (tx) => {
+    const run = await tx.financePayoutRun.create({
+      data: {
+        periodStart,
+        periodEnd,
+        status: "CLOSED",
+        totalGrossCents: grossCents,
+        totalFeeCents: platformFeeCents,
+        totalNetCents: professionalNetCents,
+        notes: "Pago directo desde pendientes",
+        closedAt: paidAt
+      }
+    });
+    const line = await tx.financePayoutLine.create({
+      data: {
+        payoutRunId: run.id,
+        professionalId,
+        sessionsCount: eligibleRecords.length,
+        grossCents,
+        platformFeeCents,
+        professionalNetCents,
+        status: "PAID",
+        paidAt,
+        payoutReference: payoutReference?.trim() || null
+      }
+    });
+    await Promise.all(
+      eligibleRecords.map((record) =>
+        tx.financeSessionRecord.update({
+          where: { id: record.id },
+          data: { payoutLineId: line.id }
+        })
+      )
+    );
+    await tx.outboxEvent.create({
+      data: {
+        eventType: "finance.professional_unpaid_paid",
+        aggregateType: "financePayoutLine",
+        aggregateId: line.id,
+        payload: {
+          payoutRunId: run.id,
+          payoutLineId: line.id,
+          professionalId,
+          sessionsCount: eligibleRecords.length,
+          professionalNetCents,
+          paidAt: paidAt.toISOString()
+        }
+      }
+    });
+    return { payoutRunId: run.id, payoutLineId: line.id };
+  });
+
+  return {
+    payoutRunId: result.payoutRunId,
+    payoutLineId: result.payoutLineId,
+    sessionsCount: eligibleRecords.length,
+    professionalNetCents
+  };
+}
+
 export async function rebuildFinanceDailyAggregates() {
   const rows = await prisma.financeSessionRecord.groupBy({
     by: ["bookingCompletedAt", "currency"],
