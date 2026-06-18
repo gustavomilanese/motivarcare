@@ -45,7 +45,7 @@ export function ProfessionalFocusAreasPicker(props: {
                   <span className="pro-web-focus-group-count">{groupSelected}</span>
                 ) : null}
               </div>
-              <div className="pro-web-focus-chips" role="group" aria-label={t(props.language, group.title)}>
+              <div className="pro-web-focus-check-list" role="group" aria-label={t(props.language, group.title)}>
                 {group.areas.map((area) => {
                   const active = props.selected.includes(area);
                   const isCouples = area === PROFESSIONAL_ATTENTION_AREA_COUPLES_ES;
@@ -53,11 +53,11 @@ export function ProfessionalFocusAreasPicker(props: {
                     <button
                       key={area}
                       type="button"
-                      className={`pro-web-focus-chip${active ? " active" : ""}${isCouples ? " pro-web-focus-chip--couples" : ""}`}
+                      className={`pro-profile-check-item pro-web-focus-check-item${active ? " selected" : ""}${isCouples ? " pro-web-focus-check-item--couples" : ""}`}
                       aria-pressed={active}
                       onClick={() => props.onToggle(area)}
                     >
-                      {active ? <span className="pro-web-focus-chip-check" aria-hidden="true">✓</span> : null}
+                      <span className="pro-profile-checkbox" aria-hidden="true" />
                       <span>{area}</span>
                     </button>
                   );
