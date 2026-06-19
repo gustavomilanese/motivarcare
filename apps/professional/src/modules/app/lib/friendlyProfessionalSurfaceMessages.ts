@@ -458,6 +458,27 @@ export function friendlyCalendarOAuthReturnMessage(
       pt: "O codigo de autorizacao do Google expirou ou ja foi usado. Tente «Conectar agora» de novo em uma unica aba."
     });
   }
+  if (r === "unauthorized_client") {
+    return t(language, {
+      es: "Google rechazó el cliente OAuth (GOOGLE_CLIENT_ID incorrecto o tipo de app incompatible). Revisá que el Client ID de Railway sea el mismo «Web application» de Google Cloud.",
+      en: "Google rejected the OAuth client (wrong GOOGLE_CLIENT_ID or incompatible app type). Ensure Railway uses the same Web application Client ID from Google Cloud.",
+      pt: "O Google rejeitou o cliente OAuth (GOOGLE_CLIENT_ID incorreto). Confira se o Railway usa o mesmo Client ID Web do Google Cloud."
+    });
+  }
+  if (r === "google_userinfo_failed") {
+    return t(language, {
+      es: "Google autorizó el calendario pero no pudimos leer tu email de perfil. Probá de nuevo o conectá más tarde desde Ajustes.",
+      en: "Google authorized calendar access but we couldn’t read your profile email. Try again or connect later from Settings.",
+      pt: "O Google autorizou o calendario, mas nao foi possivel ler seu e-mail de perfil. Tente de novo ou conecte depois em Ajustes."
+    });
+  }
+  if (r === "calendar_connection_persist_failed") {
+    return t(language, {
+      es: "Google respondió bien pero no pudimos guardar la conexión en el servidor. Probá de nuevo en unos minutos.",
+      en: "Google responded OK but we couldn’t save the connection on the server. Try again in a few minutes.",
+      pt: "O Google respondeu bem, mas nao foi possivel salvar a conexao no servidor. Tente de novo em alguns minutos."
+    });
+  }
   if (r === "missing_code") {
     return t(language, {
       es: "La respuesta de Google llegó incompleta. Probá «Conectar ahora» de nuevo.",

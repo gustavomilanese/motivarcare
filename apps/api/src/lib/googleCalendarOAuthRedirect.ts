@@ -74,16 +74,12 @@ export function resolveGoogleCalendarOauthRedirectUri(params: {
 }
 
 export function resolveGoogleCalendarOAuthFailureReason(error: unknown): string {
-  const payload = error as {
-    response?: { data?: { error?: string } };
-    message?: string;
-  };
-  const code = payload.response?.data?.error?.trim();
-  if (code === "redirect_uri_mismatch" || code === "invalid_client" || code === "invalid_grant") {
+  const code = extractGoogleOAuthErrorCode(error);
+  if (code) {
     return code;
   }
 
-  const message = payload.message ?? "";
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   if (/redirect_uri_mismatch/i.test(message)) {
     return "redirect_uri_mismatch";
   }
@@ -93,6 +89,53 @@ export function resolveGoogleCalendarOAuthFailureReason(error: unknown): string 
   if (/invalid_grant/i.test(message)) {
     return "invalid_grant";
   }
+  if (/unauthorized_client/i.test(message)) {
+    return "unauthorized_client";
+  }
 
   return "oauth_exchange_failed";
+}
+
+function extractGoogleOAuthErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const err = error as {
+    response?: { data?: unknown };
+    message?: string;
+  };
+
+  const data = err.response?.data;
+  if (data && typeof data === "object" && "error" in data) {
+    const oauthCode = (data as { error?: unknown }).error;
+    if (typeof oauthCode === "string" && oauthCode.trim().length > 0) {
+      return oauthCode.trim();
+    }
+  }
+
+  if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data) as { error?: string };
+      if (typeof parsed.error === "string" && parsed.error.trim().length > 0) {
+        return parsed.error.trim();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const message = err.message ?? "";
+  for (const known of [
+    "redirect_uri_mismatch",
+    "invalid_client",
+    "invalid_grant",
+    "unauthorized_client"
+  ]) {
+    if (message.includes(known)) {
+      return known;
+    }
+  }
+
+  return null;
 }

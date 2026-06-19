@@ -793,7 +793,10 @@ authRouter.post("/google/calendar/connect", requireAuth, async (req: Authenticat
 
   setGoogleCalendarStateCookie(res, stateToken);
   setGoogleCalendarReturnPathCookie(res, returnPath);
-  return res.json({ authUrl });
+  return res.json({
+    authUrl,
+    redirectUri: getGoogleOauthRedirectUri()
+  });
 });
 
 authRouter.get("/google/calendar/callback", async (req, res) => {
@@ -883,12 +886,47 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
   }
 
   try {
+    const redirectUri = getGoogleOauthRedirectUri();
     const oauth2Client = createGoogleOauthClient();
-    const tokenResponse = await oauth2Client.getToken(code);
+    let tokenResponse;
+    try {
+      tokenResponse = await oauth2Client.getToken({ code, redirect_uri: redirectUri });
+    } catch (tokenError) {
+      console.error("Google calendar OAuth getToken failed", {
+        redirectUriUsed: redirectUri,
+        reason: resolveGoogleCalendarOAuthFailureReason(tokenError),
+        error: tokenError
+      });
+      return redirectWithCookieClear({
+        role: stateToken.user.role,
+        status: "error",
+        reason: resolveGoogleCalendarOAuthFailureReason(tokenError),
+        userId: stateToken.user.id,
+        returnPath,
+        clientOrigin: oauthClientOrigin
+      });
+    }
+
     oauth2Client.setCredentials(tokenResponse.tokens);
 
-    const userInfo = await google.oauth2({ version: "v2", auth: oauth2Client }).userinfo.get();
-    const providerEmail = typeof userInfo.data.email === "string" ? userInfo.data.email : null;
+    let providerEmail: string | null = null;
+    try {
+      const userInfo = await google.oauth2({ version: "v2", auth: oauth2Client }).userinfo.get();
+      providerEmail = typeof userInfo.data.email === "string" ? userInfo.data.email : null;
+    } catch (userInfoError) {
+      console.error("Google calendar OAuth userinfo failed", {
+        redirectUriUsed: redirectUri,
+        error: userInfoError
+      });
+      return redirectWithCookieClear({
+        role: stateToken.user.role,
+        status: "error",
+        reason: "google_userinfo_failed",
+        userId: stateToken.user.id,
+        returnPath,
+        clientOrigin: oauthClientOrigin
+      });
+    }
 
     const existingConnection = await prisma.googleCalendarConnection.findUnique({
       where: { userId: stateToken.user.id }
@@ -905,28 +943,43 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
       });
     }
 
-    await prisma.googleCalendarConnection.upsert({
-      where: { userId: stateToken.user.id },
-      create: {
+    try {
+      await prisma.googleCalendarConnection.upsert({
+        where: { userId: stateToken.user.id },
+        create: {
+          userId: stateToken.user.id,
+          provider: "google",
+          calendarId: "primary",
+          providerEmail,
+          refreshToken: resolvedRefreshToken,
+          accessToken: tokenResponse.tokens.access_token ?? null,
+          scope: tokenResponse.tokens.scope ?? null,
+          tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
+        },
+        update: {
+          provider: "google",
+          calendarId: "primary",
+          providerEmail,
+          refreshToken: resolvedRefreshToken,
+          accessToken: tokenResponse.tokens.access_token ?? null,
+          scope: tokenResponse.tokens.scope ?? existingConnection?.scope ?? null,
+          tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
+        }
+      });
+    } catch (persistError) {
+      console.error("Google calendar OAuth persist failed", {
         userId: stateToken.user.id,
-        provider: "google",
-        calendarId: "primary",
-        providerEmail,
-        refreshToken: resolvedRefreshToken,
-        accessToken: tokenResponse.tokens.access_token ?? null,
-        scope: tokenResponse.tokens.scope ?? null,
-        tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
-      },
-      update: {
-        provider: "google",
-        calendarId: "primary",
-        providerEmail,
-        refreshToken: resolvedRefreshToken,
-        accessToken: tokenResponse.tokens.access_token ?? null,
-        scope: tokenResponse.tokens.scope ?? existingConnection?.scope ?? null,
-        tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
-      }
-    });
+        error: persistError
+      });
+      return redirectWithCookieClear({
+        role: stateToken.user.role,
+        status: "error",
+        reason: "calendar_connection_persist_failed",
+        userId: stateToken.user.id,
+        returnPath,
+        clientOrigin: oauthClientOrigin
+      });
+    }
 
     /**
      * Backfill de Meet para bookings CONFIRMED futuras que aún no tienen Meet

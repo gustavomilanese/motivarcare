@@ -49,6 +49,11 @@ describe("googleCalendarOAuthRedirect", () => {
         response: { data: { error: "redirect_uri_mismatch" } }
       })
     ).toBe("redirect_uri_mismatch");
+    expect(
+      resolveGoogleCalendarOAuthFailureReason({
+        response: { data: { error: "invalid_client" } }
+      })
+    ).toBe("invalid_client");
     expect(resolveGoogleCalendarOAuthFailureReason(new Error("boom"))).toBe("oauth_exchange_failed");
   });
 });
