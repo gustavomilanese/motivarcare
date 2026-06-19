@@ -23,7 +23,7 @@ describe("googleCalendarOAuthRedirect", () => {
     ).toBe(PRODUCTION_GOOGLE_CALENDAR_CALLBACK_ORIGIN);
   });
 
-  it("rewrites explicit GOOGLE_REDIRECT_URI away from SPA hosts", () => {
+  it("always uses api.motivarcare.com callback in production", () => {
     expect(
       resolveGoogleCalendarOauthRedirectUri({
         nodeEnv: "production",
@@ -31,6 +31,16 @@ describe("googleCalendarOAuthRedirect", () => {
         baseUrl: "https://app.motivarcare.com"
       })
     ).toBe("https://api.motivarcare.com/api/auth/google/calendar/callback");
+  });
+
+  it("rewrites explicit GOOGLE_REDIRECT_URI away from SPA hosts in development", () => {
+    expect(
+      resolveGoogleCalendarOauthRedirectUri({
+        nodeEnv: "development",
+        explicitRedirectUri: "https://app.motivarcare.com/api/auth/google/calendar/callback",
+        baseUrl: "https://app.motivarcare.com"
+      })
+    ).toBe("https://app.motivarcare.com/api/auth/google/calendar/callback");
   });
 
   it("keeps localhost redirect in development", () => {

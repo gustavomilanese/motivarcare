@@ -29,6 +29,7 @@ import {
 import { isReviewerStagingPatientPrepEnabled } from "../../lib/reviewerStagingPrep.js";
 import { prepareStagingPatientForReviewerFlow, prepareStagingProfessionalForReviewerFlow } from "../../lib/testUsersSeed.js";
 import {
+  describeGoogleCalendarOauthRuntime,
   resolveGoogleCalendarOAuthFailureReason,
   resolveGoogleCalendarOauthRedirectUri
 } from "../../lib/googleCalendarOAuthRedirect.js";
@@ -793,9 +794,17 @@ authRouter.post("/google/calendar/connect", requireAuth, async (req: Authenticat
 
   setGoogleCalendarStateCookie(res, stateToken);
   setGoogleCalendarReturnPathCookie(res, returnPath);
+  const oauthRuntime = describeGoogleCalendarOauthRuntime({
+    nodeEnv: env.NODE_ENV,
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    explicitRedirectUri: env.GOOGLE_REDIRECT_URI,
+    baseUrl: env.BASE_URL.trim() || env.BACKEND_URL.trim() || env.API_PUBLIC_URL.trim() || "http://localhost:4000"
+  });
   return res.json({
     authUrl,
-    redirectUri: getGoogleOauthRedirectUri()
+    redirectUri: oauthRuntime.redirectUri,
+    oauthClientId: oauthRuntime.clientId
   });
 });
 

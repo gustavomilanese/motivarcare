@@ -62,6 +62,10 @@ export function resolveGoogleCalendarOauthRedirectUri(params: {
   explicitRedirectUri: string;
   baseUrl: string;
 }): string {
+  if (params.nodeEnv === "production") {
+    return `${PRODUCTION_GOOGLE_CALENDAR_CALLBACK_ORIGIN}/api/auth/google/calendar/callback`;
+  }
+
   const explicit = params.explicitRedirectUri.trim();
   if (explicit.length > 0) {
     return rewriteFrontendHostToApiOrigin(params.nodeEnv, explicit);
@@ -71,6 +75,28 @@ export function resolveGoogleCalendarOauthRedirectUri(params: {
     nodeEnv: params.nodeEnv,
     baseUrl: params.baseUrl
   })}/api/auth/google/calendar/callback`;
+}
+
+export function describeGoogleCalendarOauthRuntime(params: {
+  nodeEnv: string;
+  clientId: string;
+  clientSecret: string;
+  explicitRedirectUri: string;
+  baseUrl: string;
+}): {
+  redirectUri: string;
+  clientId: string;
+  clientSecretConfigured: boolean;
+} {
+  return {
+    redirectUri: resolveGoogleCalendarOauthRedirectUri({
+      nodeEnv: params.nodeEnv,
+      explicitRedirectUri: params.explicitRedirectUri,
+      baseUrl: params.baseUrl
+    }),
+    clientId: params.clientId.trim(),
+    clientSecretConfigured: params.clientSecret.trim().length > 0
+  };
 }
 
 export function resolveGoogleCalendarOAuthFailureReason(error: unknown): string {

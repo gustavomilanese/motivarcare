@@ -3,6 +3,7 @@ import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
 import { logGoogleMeetStartupHints } from "./modules/video/googleMeet.service.js";
+import { logGoogleCalendarOauthStartupHints } from "./lib/logGoogleCalendarOauthStartup.js";
 import { markShuttingDown, runtimeState } from "./lib/operational.js";
 import { disconnectRedis } from "./lib/redis.js";
 
@@ -38,6 +39,7 @@ const onListening = () => {
       (listenHost !== undefined ? ` (host ${listenHost})` : " (default Node bind)")
   );
   logGoogleMeetStartupHints();
+  logGoogleCalendarOauthStartupHints();
   void prisma.$connect().then(
     () => console.log("[startup] database: prisma connected OK"),
     (err: unknown) =>
