@@ -500,6 +500,13 @@ export function friendlyCalendarOAuthReturnMessage(
       pt: "O Google nao devolveu acesso prolongado (comum se voce ja autorizou o app). Na conta Google, revogue o acesso do MotivarCare em apps de terceiros e tente «Conectar» de novo, ou use uma janela anonima."
     });
   }
+  if (r === "google_token_network_error") {
+    return t(language, {
+      es: "Google respondió pero la conexión se cortó antes de terminar (fallo de red entre el servidor y Google). Probá «Conectar ahora» otra vez en unos segundos.",
+      en: "Google responded but the connection dropped before finishing (network issue between our server and Google). Try “Connect now” again in a few seconds.",
+      pt: "O Google respondeu, mas a conexao caiu antes de terminar (falha de rede entre o servidor e o Google). Tente «Conectar agora» de novo em alguns segundos."
+    });
+  }
   if (r === "oauth_exchange_failed") {
     return t(language, {
       es: "No pudimos cerrar la conexión con Google (credenciales o URI de redirección). Si sos quien administra el entorno, revisá GOOGLE_CLIENT_ID/SECRET y que la URI de callback del API esté en Google Cloud. Podés seguir sin calendario.",

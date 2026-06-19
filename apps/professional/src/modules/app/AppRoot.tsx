@@ -740,6 +740,7 @@ export function App() {
 
     const callbackUserId = query.get("calendar_user_id");
     const calendarReason = query.get("calendar_reason");
+    const calendarDetail = query.get("calendar_detail");
 
     const stripCalendarQuery = (extraSearch?: string) => {
       navigate(
@@ -781,7 +782,8 @@ export function App() {
       setCalendarOnboardingError(
         friendlyCalendarOAuthReturnMessage(language, {
           status: calendarSync === "cancelled" ? "cancelled" : "error",
-          reason: calendarReason
+          reason: calendarReason,
+          detail: calendarDetail
         })
       );
       stripCalendarQuery();

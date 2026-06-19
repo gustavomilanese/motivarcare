@@ -29,7 +29,12 @@ import {
 import { isReviewerStagingPatientPrepEnabled } from "../../lib/reviewerStagingPrep.js";
 import { prepareStagingPatientForReviewerFlow, prepareStagingProfessionalForReviewerFlow } from "../../lib/testUsersSeed.js";
 import {
+  createGoogleCalendarOAuth2Client,
   describeGoogleCalendarOauthRuntime,
+  exchangeGoogleAuthorizationCode,
+  extractGoogleOAuthErrorDescription,
+  isTransientGoogleOAuthTransportError,
+  probeGoogleOAuthClientCredentials,
   resolveGoogleCalendarOAuthFailureReason,
   resolveGoogleCalendarOauthRedirectUri
 } from "../../lib/googleCalendarOAuthRedirect.js";
@@ -335,7 +340,11 @@ function getGoogleOauthRedirectUri(): string {
 }
 
 function createGoogleOauthClient() {
-  return new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, getGoogleOauthRedirectUri());
+  return createGoogleCalendarOAuth2Client({
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: getGoogleOauthRedirectUri()
+  });
 }
 
 function resolveAppRedirectForRole(role: "PATIENT" | "PROFESSIONAL" | "ADMIN"): string {
@@ -386,6 +395,7 @@ function buildOauthCallbackRedirect(params: {
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   status: "connected" | "error" | "cancelled";
   reason?: string;
+  detail?: string;
   userId?: string;
   returnPath?: string;
   /** Browser origin or mobile deep-link base saved at connect time (optional). */
@@ -395,6 +405,9 @@ function buildOauthCallbackRedirect(params: {
   searchParams.set("calendar_sync", params.status);
   if (params.reason) {
     searchParams.set("calendar_reason", params.reason);
+  }
+  if (params.detail) {
+    searchParams.set("calendar_detail", params.detail.slice(0, 180));
   }
   if (params.userId) {
     searchParams.set("calendar_user_id", params.userId);
@@ -808,6 +821,41 @@ authRouter.post("/google/calendar/connect", requireAuth, async (req: Authenticat
   });
 });
 
+authRouter.get("/google/calendar/oauth-health", async (_req, res) => {
+  const baseUrl = env.BASE_URL.trim() || env.BACKEND_URL.trim() || env.API_PUBLIC_URL.trim() || "http://localhost:4000";
+  const runtime = describeGoogleCalendarOauthRuntime({
+    nodeEnv: env.NODE_ENV,
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    explicitRedirectUri: env.GOOGLE_REDIRECT_URI,
+    baseUrl
+  });
+
+  if (!runtime.clientId || !runtime.clientSecretConfigured) {
+    return res.status(503).json({
+      ok: false,
+      redirectUri: runtime.redirectUri,
+      clientId: runtime.clientId || null,
+      secretConfigured: false,
+      credentialProbe: { ok: false, reason: "missing_credentials" }
+    });
+  }
+
+  const credentialProbe = await probeGoogleOAuthClientCredentials({
+    clientId: runtime.clientId,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: runtime.redirectUri
+  });
+
+  return res.json({
+    ok: credentialProbe.ok,
+    redirectUri: runtime.redirectUri,
+    clientId: runtime.clientId,
+    secretConfigured: true,
+    credentialProbe
+  });
+});
+
 authRouter.get("/google/calendar/callback", async (req, res) => {
   const code = typeof req.query.code === "string" ? req.query.code : "";
   const state = typeof req.query.state === "string" ? req.query.state : "";
@@ -863,6 +911,7 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
     role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
     status: "connected" | "error" | "cancelled";
     reason?: string;
+    detail?: string;
     userId?: string;
     returnPath?: string;
     clientOrigin?: string | null;
@@ -897,26 +946,45 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
   try {
     const redirectUri = getGoogleOauthRedirectUri();
     const oauth2Client = createGoogleOauthClient();
-    let tokenResponse;
+    let exchangedTokens;
     try {
-      tokenResponse = await oauth2Client.getToken({ code, redirect_uri: redirectUri });
+      exchangedTokens = await exchangeGoogleAuthorizationCode({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        code,
+        redirectUri
+      });
     } catch (tokenError) {
-      console.error("Google calendar OAuth getToken failed", {
+      const reason = resolveGoogleCalendarOAuthFailureReason(tokenError);
+      const detail = extractGoogleOAuthErrorDescription(tokenError);
+      console.error("Google calendar OAuth token exchange failed", {
         redirectUriUsed: redirectUri,
-        reason: resolveGoogleCalendarOAuthFailureReason(tokenError),
-        error: tokenError
+        reason,
+        detail,
+        transportError: isTransientGoogleOAuthTransportError(tokenError),
+        responseData:
+          tokenError && typeof tokenError === "object" && "response" in tokenError
+            ? (tokenError as { response?: { data?: unknown } }).response?.data
+            : undefined
       });
       return redirectWithCookieClear({
         role: stateToken.user.role,
         status: "error",
-        reason: resolveGoogleCalendarOAuthFailureReason(tokenError),
+        reason,
+        detail,
         userId: stateToken.user.id,
         returnPath,
         clientOrigin: oauthClientOrigin
       });
     }
 
-    oauth2Client.setCredentials(tokenResponse.tokens);
+    oauth2Client.setCredentials({
+      access_token: exchangedTokens.access_token ?? undefined,
+      refresh_token: exchangedTokens.refresh_token ?? undefined,
+      scope: exchangedTokens.scope ?? undefined,
+      token_type: exchangedTokens.token_type ?? undefined,
+      expiry_date: exchangedTokens.expiry_date ?? undefined
+    });
 
     let providerEmail: string | null = null;
     try {
@@ -940,7 +1008,7 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
     const existingConnection = await prisma.googleCalendarConnection.findUnique({
       where: { userId: stateToken.user.id }
     });
-    const resolvedRefreshToken = tokenResponse.tokens.refresh_token ?? existingConnection?.refreshToken ?? "";
+    const resolvedRefreshToken = exchangedTokens.refresh_token ?? existingConnection?.refreshToken ?? "";
     if (!resolvedRefreshToken) {
       return redirectWithCookieClear({
         role: stateToken.user.role,
@@ -961,18 +1029,18 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
           calendarId: "primary",
           providerEmail,
           refreshToken: resolvedRefreshToken,
-          accessToken: tokenResponse.tokens.access_token ?? null,
-          scope: tokenResponse.tokens.scope ?? null,
-          tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
+          accessToken: exchangedTokens.access_token ?? null,
+          scope: exchangedTokens.scope ?? null,
+          tokenExpiresAt: exchangedTokens.expiry_date ? new Date(exchangedTokens.expiry_date) : null
         },
         update: {
           provider: "google",
           calendarId: "primary",
           providerEmail,
           refreshToken: resolvedRefreshToken,
-          accessToken: tokenResponse.tokens.access_token ?? null,
-          scope: tokenResponse.tokens.scope ?? existingConnection?.scope ?? null,
-          tokenExpiresAt: tokenResponse.tokens.expiry_date ? new Date(tokenResponse.tokens.expiry_date) : null
+          accessToken: exchangedTokens.access_token ?? null,
+          scope: exchangedTokens.scope ?? existingConnection?.scope ?? null,
+          tokenExpiresAt: exchangedTokens.expiry_date ? new Date(exchangedTokens.expiry_date) : null
         }
       });
     } catch (persistError) {

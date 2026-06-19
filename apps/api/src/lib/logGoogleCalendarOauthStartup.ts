@@ -1,8 +1,11 @@
 import { env } from "../config/env.js";
-import { describeGoogleCalendarOauthRuntime } from "./googleCalendarOAuthRedirect.js";
+import {
+  describeGoogleCalendarOauthRuntime,
+  probeGoogleOAuthClientCredentials
+} from "./googleCalendarOAuthRedirect.js";
 
-/** Una línea al levantar el API: no imprime secretos; el Client ID es público (va en la URL de Google). */
-export function logGoogleCalendarOauthStartupHints(): void {
+/** Al levantar el API: no imprime secretos; el Client ID es público (va en la URL de Google). */
+export async function logGoogleCalendarOauthStartupHints(): Promise<void> {
   if (env.NODE_ENV === "test") {
     return;
   }
@@ -25,4 +28,23 @@ export function logGoogleCalendarOauthStartupHints(): void {
   console.log(
     `[Google Calendar OAuth] redirectUri=${runtime.redirectUri} clientId=${runtime.clientId} secretConfigured=yes`
   );
+
+  try {
+    const probe = await probeGoogleOAuthClientCredentials({
+      clientId: runtime.clientId,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: runtime.redirectUri
+    });
+    if (probe.ok) {
+      console.log("[Google Calendar OAuth] credentialProbe=ok (Google aceptó client_id+secret)");
+      return;
+    }
+    console.error(
+      `[Google Calendar OAuth] credentialProbe=FAILED reason=${probe.reason}${
+        probe.description ? ` description=${probe.description}` : ""
+      }`
+    );
+  } catch (probeError) {
+    console.error("[Google Calendar OAuth] credentialProbe=error", probeError);
+  }
 }

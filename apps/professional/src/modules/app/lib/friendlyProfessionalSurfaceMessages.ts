@@ -413,7 +413,7 @@ function verifyResendDeliveryIssueMessage(language: AppLanguage, raw: string): s
 /** Tras el redirect de Google OAuth (`?calendar_sync=…` en la URL del portal pro). */
 export function friendlyCalendarOAuthReturnMessage(
   language: AppLanguage,
-  params: { status: "error" | "cancelled"; reason: string | null }
+  params: { status: "error" | "cancelled"; reason: string | null; detail?: string | null }
 ): string {
   if (params.status === "cancelled") {
     return t(language, {
@@ -430,7 +430,22 @@ export function friendlyCalendarOAuthReturnMessage(
       pt: "O Google nao devolveu acesso prolongado (comum se voce ja autorizou o app). Na conta Google, revogue o acesso do MotivarCare em apps de terceiros e tente «Conectar» de novo, ou use uma janela anonima."
     });
   }
+  if (r === "google_token_network_error") {
+    return t(language, {
+      es: "Google respondió pero la conexión se cortó antes de terminar (fallo de red entre el servidor y Google). Probá «Conectar ahora» otra vez en unos segundos; suele funcionar al segundo intento.",
+      en: "Google responded but the connection dropped before finishing (network issue between our server and Google). Try “Connect now” again in a few seconds—it often works on the second try.",
+      pt: "O Google respondeu, mas a conexao caiu antes de terminar (falha de rede entre o servidor e o Google). Tente «Conectar agora» de novo em alguns segundos."
+    });
+  }
   if (r === "oauth_exchange_failed") {
+    const detail = (params.detail ?? "").trim();
+    if (detail) {
+      return t(language, {
+        es: `No pudimos cerrar la conexión con Google (${detail}). Si administrás el entorno, revisá GOOGLE_CLIENT_ID/SECRET en Railway y la URI https://api.motivarcare.com/api/auth/google/calendar/callback en Google Cloud. Podés seguir con «Lo hago después».`,
+        en: `We couldn’t finish the Google connection (${detail}). If you manage this environment, check GOOGLE_CLIENT_ID/SECRET on Railway and callback URI https://api.motivarcare.com/api/auth/google/calendar/callback in Google Cloud. You can continue with “I’ll do it later”.`,
+        pt: `Nao foi possivel concluir a conexao com o Google (${detail}). Se voce administra o ambiente, confira GOOGLE_CLIENT_ID/SECRET no Railway e a URI https://api.motivarcare.com/api/auth/google/calendar/callback na Google Cloud. Pode seguir com «Depois eu faco».`
+      });
+    }
     return t(language, {
       es: "No pudimos cerrar la conexión con Google (credenciales o URI de redirección del API). Si administrás el entorno, revisá GOOGLE_CLIENT_ID/SECRET y que la URI de callback sea exactamente https://api.motivarcare.com/api/auth/google/calendar/callback en Google Cloud. Podés seguir sin calendario con «Lo hago después».",
       en: "We couldn’t finish the Google connection (credentials or API redirect URI). If you manage this environment, check GOOGLE_CLIENT_ID/SECRET and set the callback URI to exactly https://api.motivarcare.com/api/auth/google/calendar/callback in Google Cloud. You can continue without calendar via “I’ll do it later”.",

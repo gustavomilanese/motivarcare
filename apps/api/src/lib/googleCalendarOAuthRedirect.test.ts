@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   PRODUCTION_GOOGLE_CALENDAR_CALLBACK_ORIGIN,
+  isTransientGoogleOAuthTransportError,
+  normalizeGoogleOAuthClientId,
+  normalizeGoogleOAuthClientSecret,
   pickPublicApiOriginForGoogleOAuth,
   resolveGoogleCalendarOauthRedirectUri,
   resolveGoogleCalendarOAuthFailureReason
@@ -65,5 +68,22 @@ describe("googleCalendarOAuthRedirect", () => {
       })
     ).toBe("invalid_client");
     expect(resolveGoogleCalendarOAuthFailureReason(new Error("boom"))).toBe("oauth_exchange_failed");
+  });
+
+  it("normalizes OAuth env values pasted from Railway or Google Cloud", () => {
+    expect(normalizeGoogleOAuthClientId('  "abc.apps.googleusercontent.com"  ')).toBe(
+      "abc.apps.googleusercontent.com"
+    );
+    expect(normalizeGoogleOAuthClientSecret(' "secret\n" \r\n')).toBe("secret");
+  });
+
+  it("classifies transient Google token transport failures", () => {
+    expect(
+      resolveGoogleCalendarOAuthFailureReason({
+        message: "Invalid response body while trying to fetch https://oauth2.googleapis.com/token: Premature close",
+        code: "ERR_STREAM_PREMATURE_CLOSE"
+      })
+    ).toBe("google_token_network_error");
+    expect(isTransientGoogleOAuthTransportError(new Error("socket hang up"))).toBe(true);
   });
 });

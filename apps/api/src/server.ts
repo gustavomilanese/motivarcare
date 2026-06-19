@@ -39,7 +39,7 @@ const onListening = () => {
       (listenHost !== undefined ? ` (host ${listenHost})` : " (default Node bind)")
   );
   logGoogleMeetStartupHints();
-  logGoogleCalendarOauthStartupHints();
+  void logGoogleCalendarOauthStartupHints();
   void prisma.$connect().then(
     () => console.log("[startup] database: prisma connected OK"),
     (err: unknown) =>
