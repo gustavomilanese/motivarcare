@@ -306,6 +306,44 @@ export async function exchangeGoogleAuthorizationCode(params: {
   throw lastError ?? buildGoogleOAuthTransportError(new Error("Google OAuth token exchange failed"));
 }
 
+/** Lee el email del perfil Google con fetch nativo (misma causa que el token exchange en Railway). */
+export async function fetchGoogleOAuthUserEmail(
+  accessToken: string,
+  maxAttempts = 4
+): Promise<string | null> {
+  const token = accessToken.trim();
+  if (!token) {
+    return null;
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Accept-Encoding": "identity"
+        }
+      });
+      const raw = await response.text();
+      if (!response.ok) {
+        throw new Error(`Google userinfo failed (${response.status}): ${raw.slice(0, 200)}`);
+      }
+      const parsed = JSON.parse(raw) as { email?: unknown };
+      return typeof parsed.email === "string" && parsed.email.trim().length > 0 ? parsed.email.trim() : null;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientGoogleOAuthTransportError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+      await delay(300 * attempt);
+    }
+  }
+
+  throw lastError ?? new Error("Google userinfo request failed");
+}
+
 /**
  * Canjea un código inválido a propósito: si las credenciales son válidas Google responde
  * `invalid_grant`; si el secret/ID están mal, `invalid_client`.

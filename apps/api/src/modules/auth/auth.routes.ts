@@ -33,6 +33,7 @@ import {
   describeGoogleCalendarOauthRuntime,
   exchangeGoogleAuthorizationCode,
   extractGoogleOAuthErrorDescription,
+  fetchGoogleOAuthUserEmail,
   isTransientGoogleOAuthTransportError,
   probeGoogleOAuthClientCredentials,
   resolveGoogleCalendarOAuthFailureReason,
@@ -945,7 +946,6 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
 
   try {
     const redirectUri = getGoogleOauthRedirectUri();
-    const oauth2Client = createGoogleOauthClient();
     let exchangedTokens;
     try {
       exchangedTokens = await exchangeGoogleAuthorizationCode({
@@ -978,31 +978,17 @@ authRouter.get("/google/calendar/callback", async (req, res) => {
       });
     }
 
-    oauth2Client.setCredentials({
-      access_token: exchangedTokens.access_token ?? undefined,
-      refresh_token: exchangedTokens.refresh_token ?? undefined,
-      scope: exchangedTokens.scope ?? undefined,
-      token_type: exchangedTokens.token_type ?? undefined,
-      expiry_date: exchangedTokens.expiry_date ?? undefined
-    });
-
     let providerEmail: string | null = null;
-    try {
-      const userInfo = await google.oauth2({ version: "v2", auth: oauth2Client }).userinfo.get();
-      providerEmail = typeof userInfo.data.email === "string" ? userInfo.data.email : null;
-    } catch (userInfoError) {
-      console.error("Google calendar OAuth userinfo failed", {
-        redirectUriUsed: redirectUri,
-        error: userInfoError
-      });
-      return redirectWithCookieClear({
-        role: stateToken.user.role,
-        status: "error",
-        reason: "google_userinfo_failed",
-        userId: stateToken.user.id,
-        returnPath,
-        clientOrigin: oauthClientOrigin
-      });
+    if (exchangedTokens.access_token) {
+      try {
+        providerEmail = await fetchGoogleOAuthUserEmail(exchangedTokens.access_token);
+      } catch (userInfoError) {
+        console.warn("Google calendar OAuth userinfo failed; continuing without providerEmail", {
+          redirectUriUsed: redirectUri,
+          transportError: isTransientGoogleOAuthTransportError(userInfoError),
+          error: userInfoError
+        });
+      }
     }
 
     const existingConnection = await prisma.googleCalendarConnection.findUnique({
