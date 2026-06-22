@@ -234,6 +234,12 @@ const changePasswordSchema = z
     path: ["confirmPassword"]
   });
 
+const professionalAuthSelect = {
+  id: true,
+  registrationApproval: true,
+  createdAt: true
+} as const;
+
 function shapeUserResponse(user: {
   id: string;
   email: string;
@@ -244,7 +250,11 @@ function shapeUserResponse(user: {
   role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
   emailVerified: boolean;
   patient: { id: string } | null;
-  professional: { id: string } | null;
+  professional: {
+    id: string;
+    registrationApproval: ProfessionalRegistrationApproval;
+    createdAt: Date;
+  } | null;
 }) {
   return {
     id: user.id,
@@ -256,7 +266,13 @@ function shapeUserResponse(user: {
     role: user.role,
     emailVerified: user.emailVerified,
     patientProfileId: user.patient?.id ?? null,
-    professionalProfileId: user.professional?.id ?? null
+    professionalProfileId: user.professional?.id ?? null,
+    ...(user.role === "PROFESSIONAL" && user.professional
+      ? {
+          registrationApproval: user.professional.registrationApproval,
+          profileCreatedAt: user.professional.createdAt.toISOString()
+        }
+      : {})
   };
 }
 
@@ -583,7 +599,7 @@ authRouter.post("/register", async (req, res) => {
     },
     include: {
       patient: { select: { id: true } },
-      professional: { select: { id: true } }
+      professional: { select: professionalAuthSelect }
     }
   });
 
@@ -605,7 +621,7 @@ authRouter.post("/register", async (req, res) => {
           where: { id: created.id },
           include: {
             patient: { select: { id: true } },
-            professional: { select: { id: true } }
+            professional: { select: professionalAuthSelect }
           }
         })
       : created;
@@ -1172,7 +1188,7 @@ authRouter.post("/login", async (req, res) => {
       where: { email },
       include: {
         patient: { select: { id: true } },
-        professional: { select: { id: true } }
+        professional: { select: professionalAuthSelect }
       }
     });
 
@@ -1244,7 +1260,7 @@ authRouter.post("/login", async (req, res) => {
         where: { id: user.id },
         include: {
           patient: { select: { id: true } },
-          professional: { select: { id: true } }
+          professional: { select: professionalAuthSelect }
         }
       });
       if (refreshed) {
@@ -1359,7 +1375,7 @@ authRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
       where: { id: userId },
       include: {
         patient: { select: { id: true } },
-        professional: { select: { id: true } }
+        professional: { select: professionalAuthSelect }
       }
     }),
     prisma.googleCalendarConnection.findUnique({
@@ -1423,7 +1439,7 @@ authRouter.patch("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
     },
     include: {
       patient: { select: { id: true } },
-      professional: { select: { id: true } }
+      professional: { select: professionalAuthSelect }
     }
   });
 
@@ -1497,7 +1513,7 @@ authRouter.get("/verify-email", async (req, res) => {
     where: { id: result.userId },
     include: {
       patient: { select: { id: true } },
-      professional: { select: { id: true } }
+      professional: { select: professionalAuthSelect }
     }
   });
 
@@ -1551,7 +1567,7 @@ authRouter.post("/email-verification/resend", requireAuth, async (req: Authentic
     where: { id: req.auth.userId },
     include: {
       patient: { select: { id: true } },
-      professional: { select: { id: true } }
+      professional: { select: professionalAuthSelect }
     }
   });
 
@@ -1659,7 +1675,7 @@ authRouter.post("/email-verification/dev-verify", requireAuth, async (req: Authe
     },
     include: {
       patient: { select: { id: true } },
-      professional: { select: { id: true } }
+      professional: { select: professionalAuthSelect }
     }
   });
 

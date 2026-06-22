@@ -179,7 +179,9 @@ export function persistProfessionalSessionFromVerifyEmailApi(data: VerifyEmailAp
     emailVerified: true,
     role: "PROFESSIONAL",
     professionalProfileId: data.user.professionalProfileId,
-    avatarUrl: data.user.avatarUrl ?? null
+    avatarUrl: data.user.avatarUrl ?? null,
+    registrationApproval: data.user.registrationApproval,
+    profileCreatedAt: data.user.profileCreatedAt ?? null
   };
   try {
     window.localStorage.setItem(TOKEN_KEY, data.token);

@@ -26,6 +26,8 @@ export interface AuthUser {
   role: "PROFESSIONAL";
   professionalProfileId: string;
   avatarUrl?: string | null;
+  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  profileCreatedAt?: string | null;
 }
 
 export interface AuthResponse {
@@ -40,6 +42,8 @@ export interface AuthResponse {
     role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
     professionalProfileId: string | null;
     avatarUrl?: string | null;
+    registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+    profileCreatedAt?: string | null;
   };
   emailVerificationRequired: boolean;
   devEmailVerificationBypassEnabled?: boolean;
@@ -72,6 +76,11 @@ export interface DashboardResponse {
   practiceHealth?: {
     variant: PracticeHealthVariant;
     items: Array<{ id: string; ok: boolean; detail?: Record<string, number | boolean> }>;
+  };
+  listing?: {
+    visible: boolean;
+    registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
+    profileCreatedAt: string;
   };
   /** Sesiones COMPLETED con filas en finance: precios efectivos por paquete / lista. */
   revenueStats: {
@@ -314,6 +323,8 @@ export interface ProfessionalProfile {
   lastName: string;
   email: string;
   visible: boolean;
+  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  profileCreatedAt?: string | null;
   professionalTitle: string | null;
   specialization: string | null;
   experienceBand: string | null;

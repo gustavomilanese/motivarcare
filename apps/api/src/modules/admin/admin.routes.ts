@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import { ProfessionalRegistrationApproval, type Market } from "@prisma/client";
 import { z } from "zod";
 import { env } from "../../config/env.js";
+import { sendProfessionalRegistrationApprovalEmail } from "../notifications/professionalRegistrationApprovalEmail.js";
 import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
@@ -1833,10 +1834,17 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
       .json({ error: errorMessage, field: fieldPath, details: parsed.error.flatten() });
   }
 
-  const existing = await prisma.professionalProfile.findUnique({ where: { id: req.params.professionalId } });
+  const existing = await prisma.professionalProfile.findUnique({
+    where: { id: req.params.professionalId },
+    include: {
+      user: { select: { email: true, fullName: true } }
+    }
+  });
   if (!existing) {
     return res.status(404).json({ error: "Professional not found" });
   }
+
+  const previousRegistrationApproval = existing.registrationApproval;
 
   const financeRules = await getFinanceRules();
   if (parsed.data.sessionPriceArs !== undefined && parsed.data.sessionPriceArs !== null) {
@@ -1913,6 +1921,26 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
     sessionsCount: parsed.data.sessionsCount,
     completedSessionsCount: parsed.data.completedSessionsCount
   });
+
+  const nextRegistrationApproval = parsed.data.registrationApproval;
+  if (
+    nextRegistrationApproval
+    && nextRegistrationApproval !== previousRegistrationApproval
+    && (nextRegistrationApproval === ProfessionalRegistrationApproval.APPROVED
+      || nextRegistrationApproval === ProfessionalRegistrationApproval.REJECTED)
+  ) {
+    void sendProfessionalRegistrationApprovalEmail({
+      fullName: existing.user.fullName,
+      email: existing.user.email,
+      status: nextRegistrationApproval
+    }).catch((emailError) => {
+      console.error("[admin/professionals/PATCH] registration approval email failed", {
+        professionalId: existing.id,
+        status: nextRegistrationApproval,
+        error: emailError
+      });
+    });
+  }
 
   return res.json({ professional: updated });
 });

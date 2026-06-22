@@ -640,6 +640,110 @@ ul {
   }
 }
 
+.pro-registration-approval-shell {
+  min-height: var(--viewport-h);
+  display: grid;
+  place-items: center;
+  padding: max(20px, calc(12px + var(--safe-top))) 18px max(22px, calc(12px + var(--safe-bottom)));
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 100% 65% at 100% 0%, rgba(111, 89, 245, 0.11) 0%, transparent 44%),
+    radial-gradient(ellipse 85% 50% at 0% 100%, rgba(83, 151, 255, 0.07) 0%, transparent 46%);
+}
+
+.pro-registration-approval-card {
+  width: min(100%, 520px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(56, 52, 92, 0.1);
+  padding: 32px 28px 28px;
+  text-align: center;
+}
+
+.pro-registration-approval-brand img {
+  display: block;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+}
+
+.pro-registration-approval-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5f44eb;
+}
+
+.pro-registration-approval-title {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 4vw, 26px);
+  line-height: 1.25;
+  font-weight: 800;
+  color: #0f1731;
+}
+
+.pro-registration-approval-body {
+  text-align: left;
+  display: grid;
+  gap: 12px;
+}
+
+.pro-registration-approval-body p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3d4a63;
+}
+
+.pro-registration-approval-note {
+  color: #62708a !important;
+  font-size: 14px !important;
+}
+
+.pro-registration-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.pro-registration-approval-actions button {
+  min-width: 148px;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pro-registration-approval-actions button.primary {
+  background: #5f44eb;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 8px 24px rgba(95, 68, 235, 0.28);
+}
+
+.pro-registration-approval-actions button:not(.primary) {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 560px) {
+  .pro-registration-approval-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pro-registration-approval-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .pro-register-intro-shell {
   min-height: var(--viewport-h);
   display: grid;
@@ -3980,7 +4084,12 @@ ul {
 }
 
 .pro-web-identity-section-label {
-  display: none;
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #475569;
 }
 
 .pro-web-lang-chips {
@@ -6909,6 +7018,222 @@ select.pro-dashboard-revenue-control {
 
 .pro-profile-public-preview {
   background: linear-gradient(180deg, #fafbff 0%, #f5f7fc 100%);
+}
+
+.pro-public-profile-preview-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #dbe3f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.pro-public-profile-preview-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.pro-public-profile-preview-avatar {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #eef2ff, #e0e7ff);
+  color: #4338ca;
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.pro-public-profile-preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pro-public-profile-preview-meta {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.pro-public-profile-preview-name {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.pro-public-profile-preview-title {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.pro-public-profile-preview-price {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4338ca;
+}
+
+.pro-public-profile-preview-bio {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.pro-public-profile-preview-areas {
+  display: grid;
+  gap: 8px;
+}
+
+.pro-public-profile-preview-areas-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.pro-public-profile-preview-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-public-profile-preview-chip-list li {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pro-public-profile-preview-chip-more {
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+.pro-public-profile-preview-empty {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.pro-listing-visibility-card {
+  display: grid;
+  gap: 12px;
+}
+
+.pro-listing-visibility-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pro-listing-visibility-head h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.pro-listing-visibility-lead {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.45;
+  max-width: 56ch;
+}
+
+.pro-listing-visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pro-listing-visibility-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pro-listing-visibility-toggle-ui {
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.pro-listing-visibility-toggle-ui::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  transition: transform 0.15s ease;
+}
+
+.pro-listing-visibility-toggle input:checked + .pro-listing-visibility-toggle-ui {
+  background: #6366f1;
+}
+
+.pro-listing-visibility-toggle input:checked + .pro-listing-visibility-toggle-ui::after {
+  transform: translateX(18px);
+}
+
+.pro-listing-visibility-toggle input:disabled + .pro-listing-visibility-toggle-ui {
+  opacity: 0.55;
+}
+
+.pro-listing-visibility-toggle-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  min-width: 4.5rem;
+}
+
+.pro-listing-visibility-status {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.pro-approval-pending-banner {
+  margin-bottom: 4px;
+}
+
+.pro-profile-preview-note {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pro-profile-inline-hint {
+  margin: 0;
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .pro-profile-preview-grid {

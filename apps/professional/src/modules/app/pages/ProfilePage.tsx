@@ -11,6 +11,7 @@ import {
 } from "../../onboarding/constants/professionalProfileGuidanceCopy";
 import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
 import { ProPageLoader } from "../components/ProPageLoader";
+import { ProfessionalPublicProfilePreviewCard } from "../components/ProfessionalPublicProfilePreviewCard";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { API_BASE, apiRequest } from "../services/api";
 import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
@@ -287,28 +288,24 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
 
           <section className="pro-card pro-profile-public-preview" aria-label={t(props.language, { es: "Vista previa del perfil", en: "Profile preview", pt: "Previa do perfil" })}>
             <h3>{t(props.language, { es: "Vista previa", en: "Preview", pt: "Previa" })}</h3>
-            <dl className="pro-profile-preview-grid">
-              <div>
-                <dt>{t(props.language, { es: "Nombre", en: "Name", pt: "Nome" })}</dt>
-                <dd>{[profile.firstName, profile.lastName].filter(Boolean).join(" ") || props.user.fullName}</dd>
-              </div>
-              <div>
-                <dt>{t(props.language, { es: "Título", en: "Title", pt: "Titulo" })}</dt>
-                <dd>{profile.professionalTitle?.trim() || "—"}</dd>
-              </div>
-              <div>
-                <dt>{t(props.language, { es: "Áreas", en: "Areas", pt: "Areas" })}</dt>
-                <dd>{(profile.focusAreas ?? []).length > 0 ? (profile.focusAreas ?? []).join(", ") : "—"}</dd>
-              </div>
-              <div>
-                <dt>{t(props.language, { es: "Foto", en: "Photo", pt: "Foto" })}</dt>
-                <dd>{profile.photoUrl ? "✓" : "—"}</dd>
-              </div>
-              <div>
-                <dt>{t(props.language, { es: "Video", en: "Video", pt: "Video" })}</dt>
-                <dd>{profile.videoUrl ? "✓" : "—"}</dd>
-              </div>
-            </dl>
+            <p className="pro-profile-preview-note">
+              {t(props.language, {
+                es: "Así ven los pacientes tu tarjeta en el matching (nombre, título, áreas y precio de referencia).",
+                en: "This is how patients see your card in matching (name, title, focus areas, and reference price).",
+                pt: "Assim os pacientes veem seu card no matching (nome, titulo, areas e preco de referencia)."
+              })}
+            </p>
+            <ProfessionalPublicProfilePreviewCard
+              language={props.language}
+              fullName={props.user.fullName}
+              firstName={profile.firstName}
+              lastName={profile.lastName}
+              professionalTitle={profile.professionalTitle}
+              focusAreas={profile.focusAreas}
+              shortDescription={profile.shortDescription}
+              photoUrl={profile.photoUrl}
+              sessionPriceUsd={profile.sessionPriceUsd}
+            />
           </section>
 
           <section className="pro-card pro-profile-section">
@@ -443,10 +440,24 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                 <input
                   type="checkbox"
                   checked={profile.visible}
+                  disabled={profile.registrationApproval !== "APPROVED"}
                   onChange={(event) => setProfile((current) => (current ? { ...current, visible: event.target.checked } : current))}
                 />
-                {t(props.language, { es: "Perfil visible", en: "Visible profile", pt: "Perfil visivel" })}
+                {t(props.language, {
+                  es: "Visible en matching",
+                  en: "Visible in matching",
+                  pt: "Visivel no matching"
+                })}
               </label>
+              {profile.registrationApproval === "PENDING" ? (
+                <p className="pro-profile-inline-hint">
+                  {t(props.language, {
+                    es: "Podés guardar tu perfil, pero la visibilidad en matching se habilita cuando el equipo apruebe tu alta.",
+                    en: "You can save your profile, but matching visibility turns on after the team approves your signup.",
+                    pt: "Voce pode salvar o perfil, mas a visibilidade no matching so libera apos aprovacao da equipe."
+                  })}
+                </p>
+              ) : null}
             </div>
           </section>
 

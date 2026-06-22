@@ -23,6 +23,11 @@ export const PROFESSIONAL_ATTENTION_AREA_OPTIONS_ES: readonly string[] = [
   "Soledad",
   "Dificultad para controlar impulsos",
   "Crecimiento personal",
+  "Establecimiento de límites",
+  "Comunicación efectiva",
+  "Manejo de la ansiedad social",
+  "Resolución de conflictos",
+  "Desarrollo de vínculos",
   PROFESSIONAL_ATTENTION_AREA_COUPLES_ES
 ];
 

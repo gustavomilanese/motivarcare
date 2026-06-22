@@ -32,6 +32,7 @@ import { VerifyEmailRequiredScreen } from "./pages/VerifyEmailRequiredScreen";
 import { VerifyEmailTokenScreen } from "./pages/VerifyEmailTokenScreen";
 import { professionalSurfaceMessage, friendlyCalendarOAuthReturnMessage } from "./lib/friendlyProfessionalSurfaceMessages";
 import { ProPageLoader } from "./components/ProPageLoader";
+import { ProfessionalRegistrationApprovalScreen } from "./components/ProfessionalRegistrationApprovalScreen";
 import {
   API_BASE,
   CALENDAR_ONBOARDING_PENDING_USER_ID_KEY,
@@ -81,6 +82,43 @@ function readStoredUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+type AuthMeUserPayload = {
+  id: string;
+  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  emailVerified: boolean;
+  role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
+  professionalProfileId: string | null;
+  avatarUrl?: string | null;
+  registrationApproval?: "PENDING" | "APPROVED" | "REJECTED";
+  profileCreatedAt?: string | null;
+};
+
+function buildProfessionalAuthUser(payload: AuthMeUserPayload): AuthUser | null {
+  if (payload.role !== "PROFESSIONAL" || !payload.professionalProfileId) {
+    return null;
+  }
+  return {
+    id: payload.id,
+    fullName: payload.fullName,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    email: payload.email,
+    emailVerified: payload.emailVerified,
+    role: "PROFESSIONAL",
+    professionalProfileId: payload.professionalProfileId,
+    avatarUrl: payload.avatarUrl ?? null,
+    registrationApproval: payload.registrationApproval,
+    profileCreatedAt: payload.profileCreatedAt ?? null
+  };
+}
+
+function isRegistrationPortalBlocked(user: AuthUser | null): boolean {
+  return user?.registrationApproval === "PENDING" || user?.registrationApproval === "REJECTED";
 }
 
 function readStoredEmailVerificationRequired(): boolean {
@@ -262,7 +300,7 @@ export function App() {
 
   const handleAuthSuccess = (params: {
     token: string;
-    user: AuthUser;
+    user: AuthMeUserPayload;
     emailVerificationRequired: boolean;
     emailDeliveryConfigured?: boolean;
     googleCalendarConnected?: boolean;
@@ -275,6 +313,7 @@ export function App() {
     writeDismissedProfessionalCalendarPromptUsers(nextDismissed);
     setCalendarPromptDismissedUserIds(nextDismissed);
     setShowCalendarOnboarding(false);
+    clearCalendarOnboardingPending();
 
     const calFromLogin = params.googleCalendarConnected;
     if (typeof calFromLogin === "boolean") {
@@ -296,11 +335,16 @@ export function App() {
       setGoogleCalendarConnected(null);
     }
 
+    const nextUser = buildProfessionalAuthUser(params.user);
+    if (!nextUser) {
+      return;
+    }
+
     window.localStorage.setItem(TOKEN_KEY, params.token);
-    window.localStorage.setItem(USER_KEY, JSON.stringify(params.user));
+    window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     persistEmailVerificationRequired(params.emailVerificationRequired);
     setToken(params.token);
-    setUser(params.user);
+    setUser(nextUser);
     setEmailVerificationRequired(params.emailVerificationRequired);
     if (typeof params.emailDeliveryConfigured === "boolean") {
       setEmailDeliveryConfigured(params.emailDeliveryConfigured);
@@ -418,17 +462,7 @@ export function App() {
       try {
         const response = await Promise.race([
           apiRequest<{
-            user: {
-              id: string;
-              fullName: string;
-              firstName?: string;
-              lastName?: string;
-              email: string;
-              role: "PATIENT" | "PROFESSIONAL" | "ADMIN";
-              emailVerified: boolean;
-              professionalProfileId: string | null;
-              avatarUrl?: string | null;
-            };
+            user: AuthMeUserPayload;
             emailVerificationRequired: boolean;
             emailDeliveryConfigured?: boolean;
             googleCalendarConnected?: boolean;
@@ -440,22 +474,11 @@ export function App() {
           return;
         }
 
-        if (response.user.role !== "PROFESSIONAL" || !response.user.professionalProfileId) {
+        const nextUser = buildProfessionalAuthUser(response.user);
+        if (!nextUser) {
           handleLogout();
           return;
         }
-
-        const nextUser: AuthUser = {
-          id: response.user.id,
-          fullName: response.user.fullName,
-          firstName: response.user.firstName,
-          lastName: response.user.lastName,
-          email: response.user.email,
-          emailVerified: response.user.emailVerified,
-          role: "PROFESSIONAL",
-          professionalProfileId: response.user.professionalProfileId,
-          avatarUrl: response.user.avatarUrl ?? null
-        };
 
         window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
         setUser(nextUser);
@@ -504,6 +527,20 @@ export function App() {
       cancelled = true;
     };
   }, [token, user?.id]);
+
+  const refreshRegistrationApproval = async () => {
+    if (!token) {
+      return;
+    }
+    const response = await apiRequest<{ user: AuthMeUserPayload }>("/api/auth/me", token);
+    const nextUser = buildProfessionalAuthUser(response.user);
+    if (!nextUser) {
+      handleLogout();
+      return;
+    }
+    window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
 
   useEffect(() => {
     if (!pendingOnboardingSync || !token || !user?.professionalProfileId) {
@@ -557,25 +594,12 @@ export function App() {
               body: JSON.stringify({ fullName: displayFullName })
             })
               .then((patchMe) => {
-                if (
-                  !ignore
-                  && patchMe.user
-                  && patchMe.user.role === "PROFESSIONAL"
-                  && patchMe.user.professionalProfileId
-                ) {
-                  const nextUser: AuthUser = {
-                    id: patchMe.user.id,
-                    fullName: patchMe.user.fullName,
-                    firstName: patchMe.user.firstName,
-                    lastName: patchMe.user.lastName,
-                    email: patchMe.user.email,
-                    emailVerified: patchMe.user.emailVerified,
-                    role: "PROFESSIONAL",
-                    professionalProfileId: patchMe.user.professionalProfileId,
-                    avatarUrl: patchMe.user.avatarUrl ?? null
-                  };
-                  window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-                  setUser(nextUser);
+                if (!ignore && patchMe.user) {
+                  const nextUser = buildProfessionalAuthUser(patchMe.user as AuthMeUserPayload);
+                  if (nextUser) {
+                    window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+                    setUser(nextUser);
+                  }
                 }
                 return true;
               })
@@ -640,41 +664,19 @@ export function App() {
 
     let cancelled = false;
     void apiRequest<{
-      user: {
-        id: string;
-        fullName: string;
-        firstName?: string;
-        lastName?: string;
-        email: string;
-        emailVerified: boolean;
-        role: string;
-        professionalProfileId: string | null;
-        avatarUrl?: string | null;
-      };
+      user: AuthMeUserPayload;
     }>("/api/auth/me", token, {
       method: "PATCH",
       body: JSON.stringify({ fullName: pendingName })
     })
       .then((patchMe) => {
-        if (
-          cancelled
-          || !patchMe.user
-          || patchMe.user.role !== "PROFESSIONAL"
-          || !patchMe.user.professionalProfileId
-        ) {
+        if (cancelled || !patchMe.user) {
           return;
         }
-        const nextUser: AuthUser = {
-          id: patchMe.user.id,
-          fullName: patchMe.user.fullName,
-          firstName: patchMe.user.firstName,
-          lastName: patchMe.user.lastName,
-          email: patchMe.user.email,
-          emailVerified: patchMe.user.emailVerified,
-          role: "PROFESSIONAL",
-          professionalProfileId: patchMe.user.professionalProfileId,
-          avatarUrl: patchMe.user.avatarUrl ?? null
-        };
+        const nextUser = buildProfessionalAuthUser(patchMe.user);
+        if (!nextUser) {
+          return;
+        }
         window.localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
         setUser(nextUser);
         setPendingOnboardingDisplayFullName(null);
@@ -808,6 +810,9 @@ export function App() {
     if (!user.emailVerified) {
       return;
     }
+    if (isRegistrationPortalBlocked(user)) {
+      return;
+    }
     if (showCalendarOnboarding) {
       return;
     }
@@ -879,9 +884,8 @@ export function App() {
         language={language}
         currency={currency}
         onAuthSuccess={handleAuthSuccess}
-        onRegistrationAuthSuccess={(userId) => {
-          persistCalendarOnboardingPending(userId);
-          setShowCalendarOnboarding(true);
+        onRegistrationAuthSuccess={() => {
+          /** Calendar y portal quedan bloqueados hasta aprobación manual del admin. */
         }}
         onPrepareOnboardingSync={handlePrepareOnboardingSync}
         webOnboardingResume={{
@@ -915,9 +919,8 @@ export function App() {
         language={language}
         currency={currency}
         onAuthSuccess={handleAuthSuccess}
-        onRegistrationAuthSuccess={(userId) => {
-          persistCalendarOnboardingPending(userId);
-          setShowCalendarOnboarding(true);
+        onRegistrationAuthSuccess={() => {
+          /** Calendar y portal quedan bloqueados hasta aprobación manual del admin. */
         }}
         onPrepareOnboardingSync={handlePrepareOnboardingSync}
       />
@@ -941,6 +944,19 @@ export function App() {
         email={user.email}
         emailDeliveryConfigured={emailDeliveryConfigured}
         onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (isRegistrationPortalBlocked(user)) {
+    return (
+      <ProfessionalRegistrationApprovalScreen
+        language={language}
+        status={user.registrationApproval === "REJECTED" ? "REJECTED" : "PENDING"}
+        profileCreatedAt={user.profileCreatedAt}
+        email={user.email}
+        onLogout={handleLogout}
+        onRefreshStatus={refreshRegistrationApproval}
       />
     );
   }

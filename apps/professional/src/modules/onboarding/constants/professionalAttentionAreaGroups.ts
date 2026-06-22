@@ -13,8 +13,19 @@ export type ProfessionalAttentionAreaGroup = {
 export const PROFESSIONAL_ATTENTION_AREA_GROUPS: readonly ProfessionalAttentionAreaGroup[] = [
   {
     id: "mood",
-    title: { es: "Ánimo y ansiedad", en: "Mood and anxiety", pt: "Humor e ansiedade" },
+    title: { es: "Estado Anímico", en: "Mood state", pt: "Estado animico" },
     areas: ["Ansiedad", "Ataques de pánico", "Estrés", "Depresión", "Manejo de emociones"]
+  },
+  {
+    id: "social-skills",
+    title: { es: "Habilidades sociales", en: "Social skills", pt: "Habilidades sociais" },
+    areas: [
+      "Establecimiento de límites",
+      "Comunicación efectiva",
+      "Manejo de la ansiedad social",
+      "Resolución de conflictos",
+      "Desarrollo de vínculos"
+    ]
   },
   {
     id: "relationships",

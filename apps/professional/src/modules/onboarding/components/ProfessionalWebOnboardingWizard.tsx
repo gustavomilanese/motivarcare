@@ -650,7 +650,14 @@ export function ProfessionalWebOnboardingWizard(props: {
               ) : null}
               {identityReveal.showLanguages ? (
                 <div className="pro-web-identity-section">
-                  <div className="pro-web-lang-chips" role="group" aria-label={t(props.language, { es: "Idiomas", en: "Languages", pt: "Idiomas" })}>
+                  <h3 className="pro-web-identity-section-label">
+                    {t(props.language, {
+                      es: "Idiomas de atención",
+                      en: "Session languages",
+                      pt: "Idiomas de atendimento"
+                    })}
+                  </h3>
+                  <div className="pro-web-lang-chips" role="group" aria-label={t(props.language, { es: "Idiomas de atención", en: "Session languages", pt: "Idiomas de atendimento" })}>
                     {[
                       { value: "Espanol", label: t(props.language, { es: "Español", en: "Spanish", pt: "Espanhol" }) },
                       { value: "Ingles", label: t(props.language, { es: "Inglés", en: "English", pt: "Ingles" }) },
@@ -675,6 +682,13 @@ export function ProfessionalWebOnboardingWizard(props: {
               ) : null}
               {identityReveal.showFocusAreas ? (
                 <div className="pro-web-identity-section pro-web-focus-areas" ref={focusAreasSectionRef}>
+                  <h3 className="pro-web-identity-section-label">
+                    {t(props.language, {
+                      es: "Ámbitos de atención",
+                      en: "Focus areas",
+                      pt: "Ambitos de atuacao"
+                    })}
+                  </h3>
                   <ProfessionalFocusAreasPicker
                     language={props.language}
                     selected={form.focusAreas}

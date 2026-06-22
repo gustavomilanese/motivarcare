@@ -28,6 +28,7 @@ import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackag
 import { rankProfessionalMatch, type MatchingLanguage } from "./matching.service.js";
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer } from "./intake.shared.js";
+import { maybeSendProfessionalRegistrationPendingEmail } from "../notifications/professionalRegistrationApprovalEmail.js";
 import { sendPatientSafetyReferralEmail } from "../notifications/patientSafetyReferralEmail.js";
 import { sendProfessionalChangeRequestEmail } from "../notifications/patientSupportEmail.js";
 import {
@@ -886,6 +887,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             therapeuticApproach: professional.therapeuticApproach,
             graduationYear: professional.graduationYear,
             registrationApproval: professional.registrationApproval,
+            profileCreatedAt: professional.createdAt.toISOString(),
             yearsExperience:
               professional.graduationYear != null
                 ? yearsExperienceFromGraduationYear(professional.graduationYear)
@@ -1896,6 +1898,32 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       }
     });
   });
+
+  if (
+    updated
+    && updated.registrationApproval === ProfessionalRegistrationApproval.PENDING
+    && req.auth?.userId
+  ) {
+    const actorUser = await prisma.user.findUnique({
+      where: { id: req.auth.userId },
+      select: { fullName: true, email: true }
+    });
+    if (actorUser) {
+      void maybeSendProfessionalRegistrationPendingEmail({
+        userId: req.auth.userId,
+        fullName: actorUser.fullName,
+        email: actorUser.email,
+        registrationApproval: updated.registrationApproval,
+        profileCreatedAt: updated.createdAt
+      }).catch((emailError) => {
+        console.error("[profiles/professional/public-profile] pending registration email failed", {
+          professionalId,
+          userId: req.auth?.userId,
+          error: emailError
+        });
+      });
+    }
+  }
 
   return res.json({
     message: "Public profile updated",

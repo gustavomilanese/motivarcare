@@ -482,6 +482,8 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       where: { id: actor.professionalProfileId },
       select: {
         visible: true,
+        registrationApproval: true,
+        createdAt: true,
         professionalTitle: true,
         sessionPriceUsd: true,
         sessionPriceArs: true,
@@ -639,6 +641,13 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     },
     patientStatusCounts,
     practiceHealth,
+    listing: professionalProfileSnippet
+      ? {
+          visible: Boolean(professionalProfileSnippet.visible),
+          registrationApproval: professionalProfileSnippet.registrationApproval,
+          profileCreatedAt: professionalProfileSnippet.createdAt.toISOString()
+        }
+      : undefined,
     revenueStats: {
       grossCents: revenueStats._sum.sessionPriceCents ?? 0,
       platformFeeCents: revenueStats._sum.platformFeeCents ?? 0,
