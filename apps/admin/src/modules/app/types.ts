@@ -382,6 +382,15 @@ export interface PatientRiskTriageResponse {
   pending: number;
 }
 
+export interface AdminProfessionalDiploma {
+  id: string;
+  institution: string;
+  degree: string;
+  startYear: number;
+  graduationYear: number;
+  documentUrl: string | null;
+}
+
 export interface AdminProfessionalOps {
   id: string;
   userId: string;
@@ -391,6 +400,10 @@ export interface AdminProfessionalOps {
   registrationApproval: "PENDING" | "APPROVED" | "REJECTED";
   professionalTitle?: string | null;
   specialization?: string | null;
+  experienceBand?: string | null;
+  practiceBand?: string | null;
+  gender?: string | null;
+  graduationYear?: number | null;
   focusPrimary?: string | null;
   cancellationHours: number;
   bio: string | null;
@@ -408,6 +421,7 @@ export interface AdminProfessionalOps {
   completedSessionsCount: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
+  diplomas?: AdminProfessionalDiploma[];
   bookingsCount: number;
   slots: Array<{
     id: string;

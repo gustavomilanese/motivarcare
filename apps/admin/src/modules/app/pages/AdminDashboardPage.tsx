@@ -11,6 +11,7 @@ import { majorCurrencyCodeForMarket } from "@therapy/types";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../../finance/lib/formatAdminFinanceUsd";
 import { AdminUnpaidProfessionalsPanel } from "../../finance/components/AdminUnpaidProfessionalsPanel";
+import { PendingProfessionalCredentialsPanel } from "../components/professionals/PendingProfessionalCredentialsPanel";
 import { apiRequest } from "../services/api";
 import type { AdminProfessionalOps, KpisResponse, ProfessionalsResponse } from "../types";
 
@@ -234,11 +235,8 @@ function DashboardPendingProfessionalApprovals(props: { token: string; language:
                   className="dashboard-pending-approvals__detail"
                   role="region"
                 >
-                  <dl className="dashboard-pending-approvals__dl">
-                    <div>
-                      <dt>{t(props.language, { es: "Título", en: "Title", pt: "Titulo" })}</dt>
-                      <dd>{professional.professionalTitle?.trim() || "—"}</dd>
-                    </div>
+                  <PendingProfessionalCredentialsPanel language={props.language} professional={professional} />
+                  <dl className="dashboard-pending-approvals__dl dashboard-pending-approvals__dl--secondary">
                     <div>
                       <dt>{t(props.language, { es: "Especialidad", en: "Specialization", pt: "Especialidade" })}</dt>
                       <dd>{professional.specialization?.trim() || "—"}</dd>

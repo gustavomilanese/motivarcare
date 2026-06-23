@@ -1765,6 +1765,9 @@ adminRouter.get("/professionals", async (req, res) => {
       },
       include: {
         user: { select: { id: true, fullName: true, email: true } },
+        diplomas: {
+          orderBy: { orderIndex: "asc" }
+        },
         availabilitySlots: {
           where: { startsAt: { gte: new Date(Date.now() - 1000 * 60 * 60 * 24) } },
           orderBy: { startsAt: "asc" },
@@ -1789,6 +1792,10 @@ adminRouter.get("/professionals", async (req, res) => {
       registrationApproval: item.registrationApproval,
       professionalTitle: item.professionalTitle,
       specialization: item.specialization,
+      experienceBand: item.experienceBand,
+      practiceBand: item.practiceBand,
+      gender: item.gender,
+      graduationYear: item.graduationYear,
       focusPrimary: item.focusPrimary,
       cancellationHours: item.cancellationHours,
       bio: item.bio,
@@ -1807,6 +1814,14 @@ adminRouter.get("/professionals", async (req, res) => {
       completedSessionsCount: displayOverrides[item.id]?.completedSessionsCount ?? null,
       photoUrl: item.photoUrl,
       videoUrl: item.videoUrl,
+      diplomas: item.diplomas.map((diploma) => ({
+        id: diploma.id,
+        institution: diploma.institution,
+        degree: diploma.degree,
+        startYear: diploma.startYear,
+        graduationYear: diploma.graduationYear,
+        documentUrl: diploma.documentUrl
+      })),
       bookingsCount: item._count.bookings,
       slots: item.availabilitySlots
     }))

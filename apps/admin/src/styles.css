@@ -3031,6 +3031,171 @@ label {
   line-height: 1.35;
 }
 
+.dashboard-pending-approvals__dl--secondary {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dashboard-pending-credentials {
+  margin: 10px 0 0;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+  background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%);
+}
+
+.dashboard-pending-credentials__head h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #312e81;
+}
+
+.dashboard-pending-credentials__head p {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.dashboard-pending-credentials__summary {
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 14px;
+  font-size: 0.8125rem;
+}
+
+.dashboard-pending-credentials__summary dt {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6366f1;
+}
+
+.dashboard-pending-credentials__summary dd {
+  margin: 2px 0 0;
+  color: #1e293b;
+  line-height: 1.35;
+}
+
+.dashboard-pending-credentials__title-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.dashboard-pending-credentials-diplomas {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-pending-credentials-diploma {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.dashboard-pending-credentials-diploma__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.dashboard-pending-credentials-diploma__head h4 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.dashboard-pending-credentials-doc-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #5f44eb;
+  color: #fff !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-pending-credentials-doc-link:hover {
+  background: #4c36c4;
+}
+
+.dashboard-pending-credentials-doc-missing {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.dashboard-pending-credentials-diploma__dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+.dashboard-pending-credentials-diploma__dl dt {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.dashboard-pending-credentials-diploma__dl dd {
+  margin: 2px 0 0;
+  color: #334155;
+}
+
+.dashboard-pending-credentials-doc-preview {
+  display: block;
+  margin-top: 10px;
+  max-width: 280px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.dashboard-pending-credentials-doc-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+}
+
+.dashboard-pending-credentials-doc-hint {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.dashboard-pending-credentials-doc-hint a {
+  color: #5f44eb;
+  font-weight: 600;
+}
+
+.dashboard-pending-credentials-empty {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  color: #b45309;
+  font-weight: 600;
+}
+
 .dashboard-pending-approvals__long {
   margin-top: 10px;
   font-size: 0.8125rem;
