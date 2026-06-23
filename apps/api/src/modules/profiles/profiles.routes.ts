@@ -1979,7 +1979,9 @@ profilesRouter.get("/me/pending-professional-review", requireAuth, async (req: A
 
   const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const assignments = parsePatientAssignments(assignmentConfig?.value);
-  const assignedProfessionalId = assignments[actor.patientProfileId] ?? null;
+  const queryProfessionalId =
+    typeof req.query.professionalId === "string" ? req.query.professionalId.trim() : "";
+  const assignedProfessionalId = queryProfessionalId || (assignments[actor.patientProfileId] ?? null);
 
   try {
     const pending = await getPendingProfessionalReviewForPatient({

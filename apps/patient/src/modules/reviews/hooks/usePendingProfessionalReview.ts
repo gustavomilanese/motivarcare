@@ -24,11 +24,15 @@ function markAutoPromptShown(professionalId: string): void {
   }
 }
 
-export function usePendingProfessionalReview(authToken: string | null) {
+export function usePendingProfessionalReview(
+  authToken: string | null,
+  options?: { targetProfessionalId?: string | null }
+) {
   const [pending, setPending] = useState<PendingProfessionalReviewPrompt | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const refreshGeneration = useRef(0);
+  const targetProfessionalId = options?.targetProfessionalId?.trim() || null;
 
   const refreshPending = useCallback(async () => {
     if (!authToken) {
@@ -40,12 +44,16 @@ export function usePendingProfessionalReview(authToken: string | null) {
     const generation = ++refreshGeneration.current;
     setLoading(true);
     try {
-      const next = await fetchPendingProfessionalReview(authToken);
+      const next = await fetchPendingProfessionalReview(authToken, {
+        professionalId: targetProfessionalId ?? undefined
+      });
       if (generation !== refreshGeneration.current) {
         return next;
       }
       setPending(next);
-      if (next && !hasAutoPromptBeenShown(next.professionalId)) {
+      if (next && targetProfessionalId && next.professionalId === targetProfessionalId) {
+        setModalOpen(true);
+      } else if (next && !targetProfessionalId && !hasAutoPromptBeenShown(next.professionalId)) {
         markAutoPromptShown(next.professionalId);
         setModalOpen(true);
       }
@@ -60,7 +68,7 @@ export function usePendingProfessionalReview(authToken: string | null) {
         setLoading(false);
       }
     }
-  }, [authToken]);
+  }, [authToken, targetProfessionalId]);
 
   useEffect(() => {
     void refreshPending();

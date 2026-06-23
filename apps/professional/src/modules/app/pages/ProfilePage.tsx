@@ -19,6 +19,7 @@ import { ProfessionalFocusAreasPicker } from "../../onboarding/components/Profes
 import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { ProfessionalPublicProfilePreviewCard } from "../components/ProfessionalPublicProfilePreviewCard";
+import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import {
   profileExperienceBandOptions,
@@ -365,16 +366,26 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                 </p>
                 <ProfessionalPublicProfilePreviewCard
                   language={props.language}
+                  professionalId={profile.id}
                   fullName={props.user.fullName}
                   firstName={profile.firstName}
                   lastName={profile.lastName}
                   professionalTitle={profile.professionalTitle}
+                  specialization={profile.specialization}
                   focusAreas={profile.focusAreas}
+                  bio={profile.bio}
                   shortDescription={profile.shortDescription}
+                  therapeuticApproach={profile.therapeuticApproach}
+                  languages={profile.languages}
+                  yearsExperience={profile.yearsExperience}
+                  birthCountry={profile.birthCountry}
+                  stripeVerified={profile.stripeVerified}
                   photoUrl={profile.photoUrl}
                   sessionPriceUsd={profile.sessionPriceUsd}
                 />
               </div>
+
+              <ProfessionalReviewsInvitePanel language={props.language} professionalId={profile.id} />
 
               <div className="pro-profile-studio__completion" aria-label={t(props.language, { es: "Completitud del perfil", en: "Profile completeness", pt: "Completude do perfil" })}>
                 <div className="pro-profile-studio__completion-head">

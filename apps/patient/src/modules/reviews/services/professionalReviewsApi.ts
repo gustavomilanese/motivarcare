@@ -21,9 +21,18 @@ export type CreateProfessionalReviewResponse = {
   };
 };
 
-export async function fetchPendingProfessionalReview(token: string): Promise<PendingProfessionalReviewPrompt | null> {
+export async function fetchPendingProfessionalReview(
+  token: string,
+  options?: { professionalId?: string }
+): Promise<PendingProfessionalReviewPrompt | null> {
+  const search = new URLSearchParams();
+  const professionalId = options?.professionalId?.trim();
+  if (professionalId) {
+    search.set("professionalId", professionalId);
+  }
+  const query = search.toString();
   const response = await apiRequest<PendingProfessionalReviewResponse>(
-    "/api/profiles/me/pending-professional-review",
+    `/api/profiles/me/pending-professional-review${query ? `?${query}` : ""}`,
     {},
     token
   );

@@ -96,6 +96,10 @@ export function MainPortal(props: {
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
   const [browseReviewsProfessionalId, setBrowseReviewsProfessionalId] = useState<string | null>(null);
+  const reviewInviteProfessionalId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("dejar-opinion")?.trim() || null;
+  }, [location.search]);
   const {
     pending: pendingProfessionalReview,
     modalOpen: reviewModalOpen,
@@ -103,7 +107,9 @@ export function MainPortal(props: {
     closeReviewModal,
     clearPendingAfterSubmit,
     refreshPending: refreshPendingProfessionalReview
-  } = usePendingProfessionalReview(props.state.authToken);
+  } = usePendingProfessionalReview(props.state.authToken, {
+    targetProfessionalId: reviewInviteProfessionalId
+  });
   const pendingReviewNotification = pendingProfessionalReview
     ? {
         professionalId: pendingProfessionalReview.professionalId,
