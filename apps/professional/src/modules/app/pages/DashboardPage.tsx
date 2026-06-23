@@ -10,7 +10,6 @@ import {
 } from "@therapy/i18n-config";
 import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
 import { ProPageLoader } from "../components/ProPageLoader";
-import { ProfessionalListingVisibilityControl } from "../components/ProfessionalListingVisibilityControl";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
@@ -106,7 +105,6 @@ export function DashboardPage(props: {
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
   const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
-  const [listingVisible, setListingVisible] = useState<boolean | null>(null);
   /** Solo la card «Dinero ejecutado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const location = useLocation();
@@ -129,7 +127,6 @@ export function DashboardPage(props: {
         const response = await apiRequest<DashboardResponse>(`/api/professional/dashboard${revenueQuery}`, props.token);
         if (active) {
           setData(response);
-          setListingVisible(response.listing?.visible ?? null);
           setUpcomingReservations(
             (response.upcomingSessions ?? []).slice(0, 8).map((session) => ({
               id: session.id,
@@ -545,16 +542,6 @@ export function DashboardPage(props: {
         <p className="pro-success pro-dashboard-flash" role="status">
           {profileSavedNotice}
         </p>
-      ) : null}
-      {data.listing && listingVisible !== null ? (
-        <ProfessionalListingVisibilityControl
-          language={props.language}
-          token={props.token}
-          professionalProfileId={props.user.professionalProfileId}
-          visible={listingVisible}
-          registrationApproval={data.listing.registrationApproval}
-          onVisibleChange={setListingVisible}
-        />
       ) : null}
       <div className="pro-dashboard-overview">
         <section

@@ -4,7 +4,9 @@ import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLan
 import { ProMobileNavIcon } from "../components/ProMobileNavIcon";
 import { ProPortalChromeProvider } from "../components/ProPortalChromeContext";
 import { ProPortalHeaderActions } from "../components/ProPortalHeaderActions";
+import { ProfessionalListingVisibilityControl } from "../components/ProfessionalListingVisibilityControl";
 import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav";
+import { useProfessionalListingVisibility } from "../hooks/useProfessionalListingVisibility";
 import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
 import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
 import { AdminPage } from "./AdminPage";
@@ -123,6 +125,7 @@ export function ProfessionalPortal(props: {
   }, [location.pathname, location.search, navigate]);
 
   const notificationsUnreadCount = notificationItems.filter((item) => item.unread).length;
+  const listingVisibility = useProfessionalListingVisibility(props.token);
 
   const handlePortalNavClick = (target: PortalSection) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (target === "/horarios" && window.location.pathname === "/horarios") {
@@ -149,7 +152,20 @@ export function ProfessionalPortal(props: {
     notificationItems,
     onToggleNotifications: () => setNotificationsOpen((current) => !current),
     onCloseNotifications: () => setNotificationsOpen(false),
-    onLogout: props.onLogout
+    onLogout: props.onLogout,
+    listingVisibility:
+      listingVisibility.ready && listingVisibility.visible !== null && listingVisibility.registrationApproval
+        ? (
+            <ProfessionalListingVisibilityControl
+              language={props.language}
+              token={props.token}
+              professionalProfileId={props.user.professionalProfileId}
+              visible={listingVisibility.visible}
+              registrationApproval={listingVisibility.registrationApproval}
+              onVisibleChange={listingVisibility.setVisible}
+            />
+          )
+        : null
   };
 
   const portalHeaderActions = (

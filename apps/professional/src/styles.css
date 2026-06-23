@@ -7130,6 +7130,111 @@ select.pro-dashboard-revenue-control {
   color: #94a3b8;
 }
 
+.pro-listing-visibility-header-slot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pro-listing-visibility-header-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: help;
+}
+
+.pro-listing-visibility-toggle--header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pro-listing-visibility-toggle--header:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+
+.pro-listing-visibility-toggle--header .pro-listing-visibility-toggle-ui {
+  width: 36px;
+  height: 22px;
+}
+
+.pro-listing-visibility-toggle--header .pro-listing-visibility-toggle-ui::after {
+  width: 18px;
+  height: 18px;
+  top: 2px;
+  left: 2px;
+}
+
+.pro-listing-visibility-toggle--header .pro-listing-visibility-toggle input:checked + .pro-listing-visibility-toggle-ui::after {
+  transform: translateX(14px);
+}
+
+.pro-listing-visibility-toggle--header .pro-listing-visibility-toggle-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.pro-listing-visibility-header-tooltip {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 10px);
+  right: 0;
+  left: auto;
+  transform: translateY(-4px);
+  width: min(92vw, 300px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+}
+
+.pro-listing-visibility-header-tooltip p {
+  margin: 0;
+}
+
+.pro-listing-visibility-header-tooltip p + p {
+  margin-top: 8px;
+}
+
+.pro-listing-visibility-header-tooltip-title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px !important;
+}
+
+.pro-listing-visibility-header-tooltip-error {
+  margin-top: 8px !important;
+  color: #fca5a5;
+}
+
+.pro-listing-visibility-header-wrap:hover .pro-listing-visibility-header-tooltip,
+.pro-listing-visibility-header-wrap:focus-within .pro-listing-visibility-header-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .pro-listing-visibility-card {
   display: grid;
   gap: 12px;

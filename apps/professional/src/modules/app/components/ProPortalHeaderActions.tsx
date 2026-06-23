@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PatientMessageNotificationItem } from "../lib/portalPatientNotifications";
@@ -23,6 +23,7 @@ export function ProPortalHeaderActions(props: {
   onToggleNotifications: () => void;
   onCloseNotifications: () => void;
   onLogout: () => void;
+  listingVisibility?: ReactNode;
 }) {
   const navigate = useNavigate();
   const variant = props.variant ?? "default";
@@ -78,20 +79,9 @@ export function ProPortalHeaderActions(props: {
     <div
       className={`pro-header-actions${isDashboardToolbar ? " pro-header-actions--dashboard-toolbar" : ""}`}
     >
-      <NavLink
-        to="/perfil"
-        className={({ isActive }) => `pro-header-icon-link pro-header-direct-action ${isActive ? "active" : ""}`}
-        aria-label={t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
-      >
-        <ProHeaderIconUser className="pro-header-svg-icon" />
-      </NavLink>
-      <NavLink
-        to="/ajustes"
-        className={({ isActive }) => `pro-header-icon-link pro-header-direct-action ${isActive ? "active" : ""}`}
-        aria-label={t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-      >
-        <ProHeaderIconSettings className="pro-header-svg-icon" />
-      </NavLink>
+      {props.listingVisibility ? (
+        <div className="pro-listing-visibility-header-slot">{props.listingVisibility}</div>
+      ) : null}
       <div className="pro-notifications-wrap">
         <button
           type="button"
@@ -138,6 +128,20 @@ export function ProPortalHeaderActions(props: {
           </div>
         ) : null}
       </div>
+      <NavLink
+        to="/perfil"
+        className={({ isActive }) => `pro-header-icon-link pro-header-direct-action ${isActive ? "active" : ""}`}
+        aria-label={t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
+      >
+        <ProHeaderIconUser className="pro-header-svg-icon" />
+      </NavLink>
+      <NavLink
+        to="/ajustes"
+        className={({ isActive }) => `pro-header-icon-link pro-header-direct-action ${isActive ? "active" : ""}`}
+        aria-label={t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+      >
+        <ProHeaderIconSettings className="pro-header-svg-icon" />
+      </NavLink>
       <button
         className="pro-danger pro-header-logout pro-header-direct-action"
         type="button"
