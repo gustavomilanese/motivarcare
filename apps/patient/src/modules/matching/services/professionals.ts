@@ -40,7 +40,6 @@ async function fetchProfessionalDirectoryOnce(token?: string | null, language: "
     focusAreas: Array.isArray(item.focusAreas) ? item.focusAreas : [],
     sessionPriceArs: item.sessionPriceArs ?? null,
     sessionPriceUsd: item.sessionPriceUsd ?? null,
-    couplesSessionPriceUsd: item.couplesSessionPriceUsd ?? null,
     photoUrl: resolvePublicAssetUrl(safeString(item.photoUrl)),
     birthCountry: safeString(item.birthCountry),
     stripeVerified: item.stripeVerified === true,

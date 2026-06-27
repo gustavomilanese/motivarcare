@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
-import type { Market, TherapyModality } from "@therapy/types";
+import type { Market } from "@therapy/types";
 import { effectiveSessionListMajorUnits } from "../lib/sessionListPrice";
 import type { MatchCardProfessional, SortMode } from "../types";
 
@@ -34,7 +34,6 @@ function sortFutureSlots(slots: Array<{ id: string; startsAt: string; endsAt: st
 export function useProfessionalMatching(params: {
   professionals: MatchCardProfessional[];
   patientMarket: Market;
-  therapyModality?: TherapyModality;
   intakeAnswers: Record<string, string>;
   language: AppLanguage;
   search: string;
@@ -96,16 +95,9 @@ export function useProfessionalMatching(params: {
 
   const ordered = useMemo(() => {
     const list = [...filtered];
-    list.sort((left, right) =>
-      sortResults(left, right, params.sortMode, params.patientMarket, params.therapyModality ?? "INDIVIDUAL")
-    );
+    list.sort((left, right) => sortResults(left, right, params.sortMode, params.patientMarket));
     return list;
-  }, [
-    filtered,
-    params.sortMode,
-    params.patientMarket,
-    params.therapyModality
-  ]);
+  }, [filtered, params.sortMode, params.patientMarket]);
 
   return {
     ranked,
@@ -119,20 +111,19 @@ function sortResults(
   left: RankedProfessionalView,
   right: RankedProfessionalView,
   sortMode: SortMode,
-  patientMarket: Market,
-  therapyModality: TherapyModality
+  patientMarket: Market
 ): number {
   if (sortMode === "price-asc") {
-    const leftPrice = effectiveSessionListMajorUnits(left.professional, patientMarket, therapyModality) ?? Number.MAX_SAFE_INTEGER;
-    const rightPrice = effectiveSessionListMajorUnits(right.professional, patientMarket, therapyModality) ?? Number.MAX_SAFE_INTEGER;
+    const leftPrice = effectiveSessionListMajorUnits(left.professional, patientMarket) ?? Number.MAX_SAFE_INTEGER;
+    const rightPrice = effectiveSessionListMajorUnits(right.professional, patientMarket) ?? Number.MAX_SAFE_INTEGER;
     if (leftPrice !== rightPrice) {
       return leftPrice - rightPrice;
     }
   }
 
   if (sortMode === "price-desc") {
-    const leftPrice = effectiveSessionListMajorUnits(left.professional, patientMarket, therapyModality) ?? -1;
-    const rightPrice = effectiveSessionListMajorUnits(right.professional, patientMarket, therapyModality) ?? -1;
+    const leftPrice = effectiveSessionListMajorUnits(left.professional, patientMarket) ?? -1;
+    const rightPrice = effectiveSessionListMajorUnits(right.professional, patientMarket) ?? -1;
     if (leftPrice !== rightPrice) {
       return rightPrice - leftPrice;
     }

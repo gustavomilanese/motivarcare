@@ -124,7 +124,6 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const { ordered } = useProfessionalMatching({
     professionals,
     patientMarket: props.patientMarket,
-    therapyModality: props.therapyModality,
     intakeAnswers: props.intakeAnswers,
     language: props.language,
     search: "",
@@ -577,7 +576,6 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                 key={item.professional.id}
                 item={item}
                 patientMarket={props.patientMarket}
-                therapyModality={props.therapyModality}
                 displayCurrency={props.displayCurrency}
                 residencyCountry={props.residencyCountry}
                 language={props.language}
@@ -619,13 +617,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                     en: "You have not saved favorite professionals yet.",
                     pt: "Voce ainda nao salvou profissionais favoritos."
                   })
-                : props.therapyModality === "COUPLES"
-                  ? t(props.language, {
-                      es: "Por ahora no hay profesionales de terapia de pareja disponibles con los filtros actuales. Probá más tarde o contactá a soporte.",
-                      en: "There are no couples therapy professionals available with the current filters right now. Try again later or contact support.",
-                      pt: "Por enquanto nao ha profissionais de terapia de casal disponiveis com os filtros atuais. Tente mais tarde ou fale com o suporte."
-                    })
-                  : professionals.length === 0
+                : professionals.length === 0
                   ? t(props.language, {
                       es: "No hay profesionales publicados en el directorio todavía. En el panel Admin, cada profesional debe tener «Perfil visible» activado y el alta aprobada para que aparezcan acá.",
                       en: "No professionals are published in the directory yet. In the Admin panel, each professional needs “Profile visible” on and registration approved to appear here.",
@@ -684,7 +676,6 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         <BookingSummaryModal
           language={props.language}
           patientMarket={props.patientMarket}
-          therapyModality={props.therapyModality}
           residencyCountry={props.residencyCountry}
           displayCurrency={props.displayCurrency}
           fxRates={props.fxRates}

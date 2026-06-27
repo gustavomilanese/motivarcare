@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry, patientSeeksCouplesTherapy, professionalOffersCouplesTherapy, therapyModalityFromIntakeAnswers } from "@therapy/types";
+import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { env } from "../../config/env.js";
@@ -12,12 +12,8 @@ import {
 import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import {
-  listPriceUsdMajorForModality,
-  profileDiscountPercentsForModality,
-  validateCouplesPricingRequired
-} from "../../lib/professionalPricingProfile.js";
-import {
   effectiveSessionPriceArs,
+  listPriceMajorUnitsForPackageMarket,
   validateProfessionalSessionListArs,
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
@@ -688,16 +684,6 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
   }
 
   const rankedProfessionals = professionals
-    .filter((professional) => {
-      const intakeAnswers = parseIntakeAnswers(patientIntake?.answers ?? {});
-      if (!patientSeeksCouplesTherapy(intakeAnswers)) {
-        return true;
-      }
-      return professionalOffersCouplesTherapy({
-        focusAreas: professional.focusAreas,
-        couplesSessionPriceUsd: professional.couplesSessionPriceUsd
-      });
-    })
     .map((professional) => {
       const match = rankProfessionalMatch({
         professional: {
@@ -715,8 +701,7 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
           slots: professional.slots,
           gender: professional.gender,
           graduationYear: professional.graduationYear,
-          focusAreas: professional.focusAreas,
-          couplesSessionPriceUsd: professional.couplesSessionPriceUsd
+          focusAreas: professional.focusAreas
         },
         intakeAnswers: patientIntake?.answers ?? {},
         language
@@ -733,10 +718,7 @@ profilesRouter.get("/me/matching", requireAuth, async (req: AuthenticatedRequest
     .sort((left, right) => right.matchScore - left.matchScore);
 
   return res.json({
-    professionals: rankedProfessionals,
-    therapyModality: patientSeeksCouplesTherapy(parseIntakeAnswers(patientIntake?.answers ?? {}))
-      ? "COUPLES"
-      : "INDIVIDUAL"
+    professionals: rankedProfessionals
   });
 });
 
@@ -767,8 +749,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
     const [creditSummary, assignmentConfig, triageConfig] = await Promise.all([
       prisma.patientPackagePurchase.aggregate({
         where: {
-          patientId: actor.patientProfileId,
-          modalitySnapshot: patient?.therapyModality ?? "INDIVIDUAL"
+          patientId: actor.patientProfileId
         },
         _sum: {
           totalCredits: true,
@@ -811,7 +792,6 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         avatarUrl: patient?.user?.avatarUrl ?? null,
         market: patient?.market ?? "AR",
         residencyCountry: patient?.residencyCountry ?? null,
-        therapyModality: patient?.therapyModality ?? "INDIVIDUAL",
         timezone: patient?.timezone,
         lastSeenTimezone: patient?.lastSeenTimezone ?? null,
         notificationsEmail: patient?.notificationsEmail ?? true,
@@ -1228,7 +1208,7 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
 
   const patient = await prisma.patientProfile.findUnique({
     where: { id: actor.patientProfileId },
-    select: { id: true, market: true, therapyModality: true }
+    select: { id: true, market: true }
   });
   if (!patient) {
     return res.status(404).json({ error: "Patient profile not found" });
@@ -1245,15 +1225,11 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       discountPercent: true,
       currency: true,
       professionalId: true,
-      market: true,
-      modality: true
+      market: true
     }
   });
   if (!sessionPackage) {
     return res.status(404).json({ error: "Session package not found" });
-  }
-  if (sessionPackage.modality !== patient.therapyModality) {
-    return res.status(403).json({ error: "Package modality does not match your care path" });
   }
   if (!sessionPackageAvailableForPatientMarket(sessionPackage, patient.market)) {
     return res.status(403).json({ error: "Package is not available in this patient's market" });
@@ -1272,13 +1248,9 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
             market: true,
             sessionPriceArs: true,
             sessionPriceUsd: true,
-            couplesSessionPriceUsd: true,
             discount4: true,
             discount8: true,
-            discount12: true,
-            couplesDiscount4: true,
-            couplesDiscount8: true,
-            couplesDiscount12: true
+            discount12: true
           }
         })
       : Promise.resolve(null),
@@ -1295,26 +1267,18 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
           market: true,
           sessionPriceArs: true,
           sessionPriceUsd: true,
-          couplesSessionPriceUsd: true,
           discount4: true,
           discount8: true,
-          discount12: true,
-          couplesDiscount4: true,
-          couplesDiscount8: true,
-          couplesDiscount12: true
+          discount12: true
         }
       })
     : null;
 
   const pricingProfessional = activeProfessional ?? packageProfessional;
   const arsPerUsdForPurchase = await loadUsdArsRateOrNull();
-  const profileDiscounts = profileDiscountPercentsForModality(
-    pricingProfessional ?? {},
-    patient.therapyModality
-  );
   const sessionListPriceUsdMajor =
     pricingProfessional != null
-      ? listPriceUsdMajorForModality(pricingProfessional, patient.therapyModality, arsPerUsdForPurchase)
+      ? listPriceMajorUnitsForPackageMarket(pricingProfessional, patient.market, arsPerUsdForPurchase)
       : null;
   const pricing = resolvePackagePricingFromUsd({
     credits: sessionPackage.credits,
@@ -1322,17 +1286,16 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
     fallbackCurrency: sessionPackage.currency ?? "usd",
     fallbackDiscountPercent: sessionPackage.discountPercent,
     sessionListPriceUsdMajor,
-    profileDiscount4: profileDiscounts.discount4,
-    profileDiscount8: profileDiscounts.discount8,
-    profileDiscount12: profileDiscounts.discount12,
+    profileDiscount4: pricingProfessional?.discount4,
+    profileDiscount8: pricingProfessional?.discount8,
+    profileDiscount12: pricingProfessional?.discount12,
     arsPerUsd: arsPerUsdForPurchase
   });
 
   const purchase = await prisma.$transaction(async (tx) => {
     const creditSummary = await tx.patientPackagePurchase.aggregate({
       where: {
-        patientId: patient.id,
-        modalitySnapshot: patient.therapyModality
+        patientId: patient.id
       },
       _sum: {
         remainingCredits: true
@@ -1344,7 +1307,6 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
       await tx.patientPackagePurchase.updateMany({
         where: {
           patientId: patient.id,
-          modalitySnapshot: patient.therapyModality,
           remainingCredits: { gt: 0 }
         },
         data: {
@@ -1374,7 +1336,6 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
         packagePriceCentsSnapshot: pricing.priceCents,
         packageDiscountPercentSnapshot: pricing.discountPercent,
         packageCurrencySnapshot: billingCurrencyCodeForMarket(patient.market),
-        modalitySnapshot: sessionPackage.modality,
         platformCommissionPercentSnapshot: financeRules.platformCommissionPercent,
         trialPlatformPercentSnapshot: financeRules.trialPlatformPercent,
         professionalIdSnapshot: pricingProfessional?.id ?? null
@@ -1471,7 +1432,7 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
   const arsPerUsdForIndividual = await loadUsdArsRateOrNull();
   const sessionListPriceUsdMajor =
     activeProfessional != null
-      ? listPriceUsdMajorForModality(activeProfessional, "INDIVIDUAL", arsPerUsdForIndividual)
+      ? listPriceMajorUnitsForPackageMarket(activeProfessional, patient.market, arsPerUsdForIndividual)
       : null;
   const pricing = resolvePackagePricingFromUsd({
     credits: 1,
@@ -1760,13 +1721,11 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
   }
 
   const derivedMarket = marketFromResidencyCountry(parsed.data.residencyCountry);
-  const therapyModality = therapyModalityFromIntakeAnswers(parsed.data.answers);
   await prisma.patientProfile.update({
     where: { id: actor.patientProfileId },
     data: {
       residencyCountry: parsed.data.residencyCountry,
-      market: derivedMarket,
-      therapyModality
+      market: derivedMarket
     }
   });
 
@@ -1777,8 +1736,7 @@ profilesRouter.post("/me/intake", requireAuth, async (req: AuthenticatedRequest,
       completedAt: intake.createdAt
     },
     market: derivedMarket,
-    residencyCountry: parsed.data.residencyCountry,
-    therapyModality
+    residencyCountry: parsed.data.residencyCountry
   });
 });
 
@@ -1807,10 +1765,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
     where: { id: professionalId },
     select: {
       residencyCountry: true,
-      market: true,
-      focusAreas: true,
-      focusPrimary: true,
-      couplesSessionPriceUsd: true
+      market: true
     }
   });
   if (!existingProfile) {
@@ -1931,34 +1886,6 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
         .map((s) => s.trim())
         .filter(Boolean);
       focusUpdates.focusAreas = parts.length > 0 ? parts : Prisma.JsonNull;
-    }
-  }
-
-  const mergedFocusAreas =
-    focusAreas !== undefined
-      ? focusAreas
-      : normalizeFocusAreas(existingProfile?.focusAreas, existingProfile?.focusPrimary);
-  const mergedCouplesPrice =
-    parsed.data.couplesSessionPriceUsd !== undefined
-      ? parsed.data.couplesSessionPriceUsd
-      : existingProfile?.couplesSessionPriceUsd ?? null;
-  const couplesPricingError = validateCouplesPricingRequired({
-    focusAreas: mergedFocusAreas,
-    couplesSessionPriceUsd: mergedCouplesPrice
-  });
-  if (couplesPricingError) {
-    return res.status(400).json({ error: couplesPricingError });
-  }
-  if (parsed.data.couplesSessionPriceUsd != null && parsed.data.couplesSessionPriceUsd > 0) {
-    const financeRules = await getFinanceRules();
-    const couplesUsdError = validateProfessionalSessionListUsd(parsed.data.couplesSessionPriceUsd, financeRules);
-    if (couplesUsdError) {
-      return res.status(400).json({
-        error: couplesUsdError.message,
-        sessionPriceMin: couplesUsdError.sessionPriceMin,
-        sessionPriceMax: couplesUsdError.sessionPriceMax,
-        sessionPriceCurrency: couplesUsdError.currencyCode
-      });
     }
   }
 

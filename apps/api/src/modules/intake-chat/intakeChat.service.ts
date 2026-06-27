@@ -1,5 +1,5 @@
 import type { PatientIntakeChatSession, Prisma } from "@prisma/client";
-import { marketFromResidencyCountry, therapyModalityFromIntakeAnswers } from "@therapy/types";
+import { marketFromResidencyCountry } from "@therapy/types";
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer, type IntakeRiskLevel } from "../profiles/intake.shared.js";
@@ -405,8 +405,7 @@ export async function submitSession(params: {
     where: { id: params.patientId },
     data: {
       residencyCountry: session.residencyCountry,
-      market: marketFromResidencyCountry(session.residencyCountry),
-      therapyModality: therapyModalityFromIntakeAnswers(sanitizedAnswers as Record<string, string>)
+      market: marketFromResidencyCountry(session.residencyCountry)
     }
   });
 

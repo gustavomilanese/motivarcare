@@ -794,45 +794,6 @@ export function ProfessionalWebOnboardingWizard(props: {
                   })}
                 </p>
               ) : null}
-              {offersCouplesTherapy ? (
-                <section className="pro-web-couples-pricing-panel" aria-labelledby="pro-web-couples-pricing-title">
-                  <p className="pro-web-couples-pricing-kicker">
-                    {t(props.language, {
-                      es: "Terapia de pareja",
-                      en: "Couples therapy",
-                      pt: "Terapia de casal"
-                    })}
-                  </p>
-                  <h4 id="pro-web-couples-pricing-title" className="pro-web-couples-pricing-title">
-                    {t(props.language, {
-                      es: "Precio por sesión de pareja",
-                      en: "Couples session price",
-                      pt: "Preco por sessao de casal"
-                    })}
-                  </h4>
-                  <p className="pro-web-couples-pricing-lead">
-                    {t(props.language, {
-                      es: "Las sesiones de pareja suelen tener un valor distinto al individual. Este precio alimenta tus paquetes y reservas de pareja en MotivarCare.",
-                      en: "Couples sessions often differ from individual pricing. This rate powers your couples packages and bookings on MotivarCare.",
-                      pt: "Sessoes de casal costumam ter valor diferente do individual. Este preco alimenta seus pacotes e reservas de casal no MotivarCare."
-                    })}
-                  </p>
-                  <label>
-                    <span>
-                      {t(props.language, {
-                        es: "Precio de referencia por sesión de pareja (USD)",
-                        en: "Reference couples session price (USD)",
-                        pt: "Preco de referencia por sessao de casal (USD)"
-                      })}
-                    </span>
-                    <input
-                      inputMode="numeric"
-                      value={form.couplesSessionPriceUsd}
-                      onChange={(event) => update({ couplesSessionPriceUsd: event.target.value.replace(/\D/g, "") })}
-                    />
-                  </label>
-                </section>
-              ) : null}
               <div className="pro-web-discount-packages">
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</strong>

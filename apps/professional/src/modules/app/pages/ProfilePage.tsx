@@ -31,7 +31,7 @@ import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMe
 import { API_BASE, apiRequest } from "../services/api";
 import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
 import { compressImageDataUrl, fileToDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
-import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord, focusAreasIncludeCouplesTherapy } from "@therapy/types";
+import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -86,19 +86,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     }
     return roundSessionPriceArsFromUsd(usd, usdArsRate);
   }, [profile?.sessionPriceUsd, usdArsRate]);
-
-  const offersCouplesTherapy = useMemo(
-    () => focusAreasIncludeCouplesTherapy(profile?.focusAreas),
-    [profile?.focusAreas]
-  );
-
-  const computedCouplesSessionPriceArs = useMemo(() => {
-    const usd = Math.round(Number(profile?.couplesSessionPriceUsd ?? 0));
-    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
-      return null;
-    }
-    return roundSessionPriceArsFromUsd(usd, usdArsRate);
-  }, [profile?.couplesSessionPriceUsd, usdArsRate]);
 
   const completion = useMemo(
     () => (profile ? profileCompletionScore(profile) : { done: 0, total: 8 }),
@@ -215,7 +202,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
           therapeuticApproach: profile.therapeuticApproach,
           yearsExperience: profile.yearsExperience,
           sessionPriceUsd: profile.sessionPriceUsd,
-          couplesSessionPriceUsd: offersCouplesTherapy ? profile.couplesSessionPriceUsd : null,
           discount4: profile.discount4,
           discount8: profile.discount8,
           discount12: profile.discount12,
@@ -879,56 +865,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     </p>
                   ) : null}
                 </div>
-                {offersCouplesTherapy ? (
-                  <div className="pro-profile-pricing-highlight pro-web-couples-pricing-panel">
-                    <p className="pro-web-couples-pricing-kicker">
-                      {t(props.language, {
-                        es: "Terapia de pareja",
-                        en: "Couples therapy",
-                        pt: "Terapia de casal"
-                      })}
-                    </p>
-                    <h3 className="pro-web-couples-pricing-title">
-                      {t(props.language, {
-                        es: "Precio por sesión de pareja",
-                        en: "Couples session price",
-                        pt: "Preco por sessao de casal"
-                      })}
-                    </h3>
-                    <p className="pro-web-couples-pricing-lead">
-                      {t(props.language, {
-                        es: "Obligatorio si ofrecés terapia de pareja. Alimenta paquetes y reservas en modalidad pareja.",
-                        en: "Required when offering couples therapy. Powers couples packages and bookings.",
-                        pt: "Obrigatorio se voce oferece terapia de casal. Alimenta pacotes e reservas de casal."
-                      })}
-                    </p>
-                    <label className="pro-profile-field">
-                      <span>
-                        {t(props.language, {
-                          es: "Precio por sesión de pareja (USD)",
-                          en: "Couples session price (USD)",
-                          pt: "Preco por sessao de casal (USD)"
-                        })}
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={10_000_000}
-                        value={profile.couplesSessionPriceUsd ?? 0}
-                        onChange={(event) =>
-                          setProfile((c) =>
-                            c ? { ...c, couplesSessionPriceUsd: Number(event.target.value || 0) } : c
-                          )
-                        }
-                      />
-                    </label>
-                    {computedCouplesSessionPriceArs !== null ? (
-                      <p className="pro-profile-pricing-equiv">
-                        ≈ {computedCouplesSessionPriceArs.toLocaleString("es-AR")} ARS
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
                 <div className="pro-profile-discount-row">
                   <label className="pro-profile-field">
                     <span>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</span>

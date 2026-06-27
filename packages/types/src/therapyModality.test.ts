@@ -2,51 +2,33 @@ import { describe, expect, it } from "vitest";
 import {
   PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID,
   PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES,
-  PROFESSIONAL_ATTENTION_AREA_COUPLES_ES,
+  focusAreasIncludeCouplesTherapy,
+  isCouplesIntakeActive,
   patientSeeksCouplesTherapy,
-  professionalOffersCouplesTherapy,
-  therapyModalityFromIntakeAnswers
+  PROFESSIONAL_ATTENTION_AREA_COUPLES_ES
 } from "./therapyModality.js";
 
-describe("therapyModality", () => {
+describe("therapyModality (onboarding only)", () => {
   it("detects couples from mainReason", () => {
-    expect(
-      therapyModalityFromIntakeAnswers({ mainReason: PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES })
-    ).toBe("COUPLES");
+    expect(isCouplesIntakeActive(PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES, "")).toBe(true);
+    expect(patientSeeksCouplesTherapy({ mainReason: PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES })).toBe(true);
   });
 
   it("detects couples from couplesTherapyFocus", () => {
     expect(
-      therapyModalityFromIntakeAnswers({
+      patientSeeksCouplesTherapy({
         mainReason: "",
         [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: "Comunicación"
       })
-    ).toBe("COUPLES");
+    ).toBe(true);
   });
 
-  it("defaults to individual", () => {
-    expect(therapyModalityFromIntakeAnswers({ mainReason: "Ansiedad" })).toBe("INDIVIDUAL");
+  it("defaults to individual preference", () => {
     expect(patientSeeksCouplesTherapy({ mainReason: "Ansiedad" })).toBe(false);
   });
 
-  it("requires focus area and couples price for professional offer", () => {
-    expect(
-      professionalOffersCouplesTherapy({
-        focusAreas: [PROFESSIONAL_ATTENTION_AREA_COUPLES_ES],
-        couplesSessionPriceUsd: 90
-      })
-    ).toBe(true);
-    expect(
-      professionalOffersCouplesTherapy({
-        focusAreas: [PROFESSIONAL_ATTENTION_AREA_COUPLES_ES],
-        couplesSessionPriceUsd: null
-      })
-    ).toBe(false);
-    expect(
-      professionalOffersCouplesTherapy({
-        focusAreas: ["Ansiedad"],
-        couplesSessionPriceUsd: 90
-      })
-    ).toBe(false);
+  it("detects couples focus area on professional profile", () => {
+    expect(focusAreasIncludeCouplesTherapy([PROFESSIONAL_ATTENTION_AREA_COUPLES_ES])).toBe(true);
+    expect(focusAreasIncludeCouplesTherapy(["Ansiedad"])).toBe(false);
   });
 });

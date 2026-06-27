@@ -267,15 +267,13 @@ export function BookingPage(props: {
     hasPricingProfessional,
     professionalId: pricingProfessionalId,
     language: props.language,
-    patientMarket: props.state.patientMarket,
-    therapyModality: props.state.therapyModality
+    patientMarket: props.state.patientMarket
   });
   packageCatalogDepsRef.current = {
     hasPricingProfessional,
     professionalId: pricingProfessionalId,
     language: props.language,
-    patientMarket: props.state.patientMarket,
-    therapyModality: props.state.therapyModality
+    patientMarket: props.state.patientMarket
   };
 
   const slotsFetchGenerationRef = useRef(0);
@@ -884,7 +882,6 @@ export function BookingPage(props: {
         language: snap.language,
         professionalId: snap.professionalId,
         market: snap.patientMarket,
-        modality: snap.therapyModality,
         t: (values) => t(snap.language, values)
       })
         .then((catalog) => {

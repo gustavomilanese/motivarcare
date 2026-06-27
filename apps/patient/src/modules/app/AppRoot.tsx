@@ -11,7 +11,7 @@ import {
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
-import { coerceTherapyModality, isMarket, joinFirstLastToFullName, therapyModalityFromIntakeAnswers, type Market } from "@therapy/types";
+import { isMarket, joinFirstLastToFullName, type Market } from "@therapy/types";
 import { resolvePatientPortalLanguage } from "../../patientPortalDefaultLanguage";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
@@ -116,7 +116,6 @@ const defaultState: PatientAppState = {
   currency: defaultDisplayCurrencyForMarket("AR"),
   profileResidencyCountry: null,
   patientMarket: "AR",
-  therapyModality: "INDIVIDUAL",
   intake: null,
   onboardingFinalCompleted: false,
   therapistSelectionCompleted: false,
@@ -462,7 +461,6 @@ function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
         const u = raw.trim().toUpperCase();
         return /^[A-Z]{2}$/.test(u) ? u : null;
       })(),
-      therapyModality: coerceTherapyModality((parsed as { therapyModality?: unknown }).therapyModality, "INDIVIDUAL"),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
         ? {
@@ -1369,10 +1367,6 @@ export function App() {
               const u = rc.trim().toUpperCase();
               return /^[A-Z]{2}$/.test(u) ? u : current.profileResidencyCountry;
             })(),
-            therapyModality: coerceTherapyModality(
-              profileResponse?.profile?.therapyModality,
-              current.therapyModality
-            ),
             currency: defaultDisplayCurrencyForPatient({
               residencyCountry: (() => {
                 const rc = profileResponse?.profile?.residencyCountry;
@@ -1988,7 +1982,6 @@ export function App() {
                 })
               }
             : {}),
-          therapyModality: therapyModalityFromIntakeAnswers(answers),
           intake: {
             completed: true,
             completedAt: response.intake.completedAt,

@@ -56,7 +56,6 @@ function OnboardingFinalMatching(p: {
     <MatchingPage
       language={p.state.language}
       patientMarket={p.state.patientMarket}
-      therapyModality={p.state.therapyModality}
       residencyCountry={p.state.profileResidencyCountry}
       displayCurrency={p.state.currency}
       fxRates={p.fxRates}
@@ -233,7 +232,7 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
-                  therapyModality={props.state.therapyModality}
+                 
                   residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}
@@ -326,7 +325,7 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
-                  therapyModality={props.state.therapyModality}
+                 
                   residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}

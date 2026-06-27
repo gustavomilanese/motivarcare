@@ -582,7 +582,6 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             select: {
               id: true,
               market: true,
-              therapyModality: true,
               timezone: true,
               lastSeenTimezone: true
             }
@@ -595,8 +594,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
           const latestPurchase = await tx.patientPackagePurchase.findFirst({
             where: {
               patientId: patientProfileId,
-              remainingCredits: { gt: 0 },
-              modalitySnapshot: patient.therapyModality
+              remainingCredits: { gt: 0 }
             },
             orderBy: { purchasedAt: "desc" },
             select: { id: true, remainingCredits: true }
@@ -675,8 +673,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               startsAt,
               endsAt,
               status: BOOKING_STATUS.CONFIRMED,
-              consumedCredits,
-              modality: patient.therapyModality
+              consumedCredits
             }
           });
 

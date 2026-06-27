@@ -1,6 +1,6 @@
 import type { AppLanguage } from "@therapy/i18n-config";
 import { describePackagePlan as describePackagePlanCore } from "@therapy/patient-core";
-import { isMarket, type Market, type TherapyModality } from "@therapy/types";
+import { isMarket, type Market } from "@therapy/types";
 import type { PackagePlan, PublicSessionPackagesResponse } from "../types";
 import { API_BASE } from "../services/api";
 
@@ -104,21 +104,18 @@ function resolveCatalogMarket(market: Market | undefined | null): Market {
 function publicPackageCatalogKey(
   language: AppLanguage,
   professionalId: string | undefined,
-  market: Market,
-  modality: TherapyModality
+  market: Market
 ): string {
-  return `${language}\0${professionalId ?? ""}\0${market}\0${modality}`;
+  return `${language}\0${professionalId ?? ""}\0${market}`;
 }
 
 async function fetchPublicPackageCatalog(params: {
   market: Market;
   professionalId?: string;
-  modality: TherapyModality;
 }): Promise<PublicSessionPackagesResponse> {
   const query = new URLSearchParams({
     channel: "patient",
-    market: params.market,
-    modality: params.modality
+    market: params.market
   });
   const professionalId = params.professionalId?.trim();
   if (professionalId) {
@@ -170,24 +167,21 @@ async function loadPublicPackagePlansOnce(params: {
   language: AppLanguage;
   professionalId?: string;
   market: Market;
-  modality: TherapyModality;
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
   const market = resolveCatalogMarket(params.market);
   const professionalId = params.professionalId?.trim() || undefined;
-  const modality = params.modality;
 
   try {
-    let data = await fetchPublicPackageCatalog({ market, professionalId, modality });
+    let data = await fetchPublicPackageCatalog({ market, professionalId });
     try {
       return mapPublicSessionPackagesToPlans({ data, t: params.t });
     } catch (error) {
       if (market === "AR") {
         throw error;
       }
-      /** Mercados sin bundles publicados reutilizan plantillas AR (IDs reales de compra). */
-      data = await fetchPublicPackageCatalog({ market: "AR", professionalId, modality });
+      data = await fetchPublicPackageCatalog({ market: "AR", professionalId });
       return mapPublicSessionPackagesToPlans({ data, t: params.t });
     }
   } catch {
@@ -207,18 +201,16 @@ export function loadPublicPackagePlans(params: {
   language: AppLanguage;
   professionalId?: string;
   market: Market;
-  modality?: TherapyModality;
   t: (values: { es: string; en: string; pt: string }) => string;
   fallbackPlans?: PackagePlan[];
 }): Promise<PublicPackageCatalog> {
   const market = resolveCatalogMarket(params.market);
-  const modality = params.modality ?? "INDIVIDUAL";
-  const key = publicPackageCatalogKey(params.language, params.professionalId, market, modality);
+  const key = publicPackageCatalogKey(params.language, params.professionalId, market);
   const existing = publicPackageCatalogInflight.get(key);
   if (existing) {
     return existing;
   }
-  const pending = loadPublicPackagePlansOnce({ ...params, modality }).finally(() => {
+  const pending = loadPublicPackagePlansOnce(params).finally(() => {
     publicPackageCatalogInflight.delete(key);
   });
   publicPackageCatalogInflight.set(key, pending);

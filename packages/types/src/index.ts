@@ -48,17 +48,12 @@ export {
 } from "./patientDisplayCurrency.js";
 
 export {
-  THERAPY_MODALITIES,
   PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES,
   PROFESSIONAL_ATTENTION_AREA_COUPLES_ES,
   PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID,
   focusAreasIncludeCouplesTherapy,
   isCouplesIntakeActive,
-  therapyModalityFromIntakeAnswers,
-  patientSeeksCouplesTherapy,
-  professionalOffersCouplesTherapy,
-  coerceTherapyModality,
-  type TherapyModality
+  patientSeeksCouplesTherapy
 } from "./therapyModality.js";
 
 export type {

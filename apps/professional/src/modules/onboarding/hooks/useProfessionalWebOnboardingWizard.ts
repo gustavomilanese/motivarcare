@@ -559,12 +559,6 @@ export function useProfessionalWebOnboardingWizard(input: {
             return false;
           }
         }
-        if (offersCouplesTherapy) {
-          const couplesUsd = Number(form.couplesSessionPriceUsd || "0");
-          if (!Number.isInteger(couplesUsd) || couplesUsd < usdMin || couplesUsd > usdMax) {
-            return false;
-          }
-        }
         return true;
       })()
     ),
@@ -984,16 +978,13 @@ export function useProfessionalWebOnboardingWizard(input: {
       therapeuticApproach: combineTherapeuticApproach(form.therapyModalities, form.methodology),
       sessionPriceArs: computedSessionPriceArs,
       sessionPriceUsd: form.sessionPriceUsd.trim() ? Number(form.sessionPriceUsd) : null,
-      couplesSessionPriceUsd:
-        offersCouplesTherapy && form.couplesSessionPriceUsd.trim()
-          ? Number(form.couplesSessionPriceUsd)
-          : null,
+      couplesSessionPriceUsd: null,
       discount4: form.discount4.trim() ? Number(form.discount4) : null,
       discount8: form.discount8.trim() ? Number(form.discount8) : null,
       discount12: form.discount12.trim() ? Number(form.discount12) : null,
-      couplesDiscount4: form.couplesDiscount4.trim() ? Number(form.couplesDiscount4) : null,
-      couplesDiscount8: form.couplesDiscount8.trim() ? Number(form.couplesDiscount8) : null,
-      couplesDiscount12: form.couplesDiscount12.trim() ? Number(form.couplesDiscount12) : null,
+      couplesDiscount4: null,
+      couplesDiscount8: null,
+      couplesDiscount12: null,
       photoUrl: form.profilePhotoPreview || null,
       videoUrl: form.videoFileUrl || null,
       videoCoverUrl: form.videoPreview || null,

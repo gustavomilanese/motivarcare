@@ -34,7 +34,6 @@ export interface MatchingProfessionalInput {
    * matching contra preferencia LGBTIQ+ y enriquece detección de tópicos.
    */
   focusAreas?: string[] | null;
-  couplesSessionPriceUsd?: number | null;
 }
 
 export interface ProfessionalMatchResult {

@@ -33,7 +33,6 @@ import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../servic
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
-import { CouplesTherapyCarePathBanner, isCouplesTherapyModality } from "../components/CouplesTherapyCarePathBanner";
 import {
   portalHasPricingProfessional,
   resolvePortalPricingProfessionalId
@@ -373,7 +372,6 @@ export function DashboardPage(props: {
       language: props.language,
       professionalId: pricingProfessionalId,
       market: props.state.patientMarket,
-      modality: props.state.therapyModality,
       t: (values) => t(props.language, values)
     })
       .then((catalog) => {
@@ -647,12 +645,6 @@ export function DashboardPage(props: {
           </div>
           <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount" />
         </div>
-        {isCouplesTherapyModality(props.state.therapyModality) ? (
-          <CouplesTherapyCarePathBanner
-            language={props.language}
-            onOpenPackages={props.onNavigateToSessionsCheckout}
-          />
-        ) : null}
         {(showPackageSection && defaultPackagePlan) || showGoogleCalendarCta ? (
           <div className="dashboard-hero-cta-band">
             {showPackageSection && defaultPackagePlan ? (

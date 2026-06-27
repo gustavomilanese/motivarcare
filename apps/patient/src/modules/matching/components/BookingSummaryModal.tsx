@@ -1,6 +1,6 @@
 import { type SyntheticEvent, useEffect, useState } from "react";
 import { formatDateWithLocale, textByLanguage, type AppLanguage, type DisplayFxRates, type LocalizedText, type SupportedCurrency } from "@therapy/i18n-config";
-import type { Market, TherapyModality } from "@therapy/types";
+import type { Market } from "@therapy/types";
 import { patientUsesDlocalCheckout } from "../../app/lib/patientDlocalCheckout";
 import { professionalPhotoSrc } from "../../app/services/api";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
@@ -23,7 +23,6 @@ function sessionDurationMinutes(slot: MatchTimeSlot, fallbackMinutes: number): n
 export function BookingSummaryModal(props: {
   language: AppLanguage;
   patientMarket: Market;
-  therapyModality?: TherapyModality;
   residencyCountry?: string | null;
   displayCurrency: SupportedCurrency;
   fxRates?: DisplayFxRates;
@@ -39,11 +38,7 @@ export function BookingSummaryModal(props: {
   onContinue: () => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
-  const listMajor = effectiveSessionListMajorUnits(
-    props.professional,
-    props.patientMarket,
-    props.therapyModality ?? "INDIVIDUAL"
-  );
+  const listMajor = effectiveSessionListMajorUnits(props.professional, props.patientMarket);
   const durationMinutes = sessionDurationMinutes(props.slot, props.professional.sessionDurationMinutes);
   const usesDlocalCheckout = patientUsesDlocalCheckout({
     patientMarket: props.patientMarket,
@@ -95,8 +90,7 @@ export function BookingSummaryModal(props: {
     listMajor,
     props.language,
     props.fxRates,
-    props.residencyCountry,
-    props.therapyModality ?? "INDIVIDUAL"
+    props.residencyCountry
   );
 
   return (

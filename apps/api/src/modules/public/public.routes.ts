@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { Router } from "express";
 import type { Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, coerceTherapyModality } from "@therapy/types";
+import { billingCurrencyCodeForMarket } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import {
@@ -17,10 +17,8 @@ import {
   AR_SESSION_LIST_MIN
 } from "../../lib/professionalSessionListPrice.js";
 import {
-  listPriceUsdMajorForModality,
-  profileDiscountPercentsForModality
-} from "../../lib/professionalPricingProfile.js";
-import { ensureGlobalCouplesSessionPackages } from "../../lib/ensureCouplesSessionPackages.js";
+  listPriceMajorUnitsForPackageMarket
+} from "../../lib/professionalSessionListPrice.js";
 import {
   resolvePackageDiscountPercent,
   resolvePackagePriceUsdCents
@@ -71,8 +69,7 @@ const sessionPackagesChannelSchema = z.object({
   landingSlot: landingPackagesSlotSchema.optional(),
   professionalId: z.string().trim().min(1).optional(),
   /** Catálogo por mercado (default AR). */
-  market: z.enum(["AR", "US", "BR", "ES"]).optional(),
-  modality: z.enum(["INDIVIDUAL", "COUPLES"]).optional()
+  market: z.enum(["AR", "US", "BR", "ES"]).optional()
 });
 
 const imageSourceSchema = z
@@ -324,13 +321,9 @@ const sessionPackageCatalogInclude = {
       market: true,
       sessionPriceArs: true,
       sessionPriceUsd: true,
-      couplesSessionPriceUsd: true,
       discount4: true,
       discount8: true,
       discount12: true,
-      couplesDiscount4: true,
-      couplesDiscount8: true,
-      couplesDiscount12: true,
       user: { select: { fullName: true } }
     }
   }
@@ -391,20 +384,13 @@ publicRouter.get("/session-packages", async (req, res) => {
       ? parsed.data.market
       : "AR";
 
-  const modality = coerceTherapyModality(parsed.data.modality, "INDIVIDUAL");
-  if (modality === "COUPLES") {
-    await ensureGlobalCouplesSessionPackages(market);
-  }
-
-  /**
-   * Cotización USD/ARS para normalizar filas legacy del catálogo (ARS → USD).
-   */
   const arsPerUsd = await getResilientUsdArsRate();
   const landingSlot = parsed.data.landingSlot ?? "patient_main";
+  const catalogModality = "INDIVIDUAL" as const;
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
-      where: { active: true, market, modality },
+      where: { active: true, market, modality: catalogModality },
       include: sessionPackageCatalogInclude,
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     }),
@@ -417,13 +403,9 @@ publicRouter.get("/session-packages", async (req, res) => {
             market: true,
             sessionPriceArs: true,
             sessionPriceUsd: true,
-            couplesSessionPriceUsd: true,
             discount4: true,
             discount8: true,
             discount12: true,
-            couplesDiscount4: true,
-            couplesDiscount8: true,
-            couplesDiscount12: true,
             user: { select: { fullName: true } }
           }
         })
@@ -439,11 +421,8 @@ publicRouter.get("/session-packages", async (req, res) => {
   });
 
   if (parsed.data.channel === "patient" && bundleSessionPackages(orderedPackages).length === 0 && market !== "AR") {
-    if (modality === "COUPLES") {
-      await ensureGlobalCouplesSessionPackages("AR");
-    }
     const arPackages = await prisma.sessionPackage.findMany({
-      where: { active: true, market: "AR", modality },
+      where: { active: true, market: "AR", modality: catalogModality },
       include: sessionPackageCatalogInclude,
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     });
@@ -471,20 +450,20 @@ publicRouter.get("/session-packages", async (req, res) => {
 
   return res.json({
     market,
-    modality,
     featuredPackageId,
     sessionPackages: orderedPackages.map((item) => {
       const pricingProfile = selectedProfessional ?? item.professional;
-      const profileDiscounts = profileDiscountPercentsForModality(pricingProfile ?? {}, modality);
       const discountPercent = resolvePackageDiscountPercent({
         credits: item.credits,
         fallbackDiscountPercent: item.discountPercent,
-        profileDiscount4: profileDiscounts.discount4,
-        profileDiscount8: profileDiscounts.discount8,
-        profileDiscount12: profileDiscounts.discount12
+        profileDiscount4: pricingProfile?.discount4,
+        profileDiscount8: pricingProfile?.discount8,
+        profileDiscount12: pricingProfile?.discount12
       });
       const sessionListPriceUsdMajor =
-        pricingProfile ? listPriceUsdMajorForModality(pricingProfile, modality, arsPerUsd) : null;
+        pricingProfile
+          ? listPriceMajorUnitsForPackageMarket(pricingProfile, market, arsPerUsd)
+          : null;
       const priceCents = resolvePackagePriceUsdCents({
         credits: item.credits,
         fallbackPriceCents: item.priceCents,

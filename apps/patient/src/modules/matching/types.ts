@@ -1,6 +1,6 @@
 import type { AppLanguage, DisplayFxRates, LocalizedText, SupportedCurrency } from "@therapy/i18n-config";
 import type { SyntheticEvent } from "react";
-import type { Market, TherapyModality } from "@therapy/types";
+import type { Market } from "@therapy/types";
 import type { PortalPurchaseResult } from "../app/hooks/usePortalActions";
 
 export interface ProfessionalDirectoryApiItem {
@@ -24,7 +24,6 @@ export interface ProfessionalDirectoryApiItem {
   languages: string[];
   yearsExperience: number | null;
   sessionPriceUsd: number | null;
-  couplesSessionPriceUsd?: number | null;
   /** ARS persistido por el backend (derivado en write-time del precio USD del profesional). */
   sessionPriceArs?: number | null;
   photoUrl: string | null;
@@ -73,7 +72,6 @@ export interface MatchCardProfessional {
   yearsExperience: number;
   sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
-  couplesSessionPriceUsd?: number | null;
   photoUrl: string | null;
   birthCountry: string | null;
   /** (Opcional) género del profesional; alimenta matching de `therapistPreferences.gender`. */
@@ -113,7 +111,6 @@ export interface MatchingPageProps {
   language: AppLanguage;
   /** Mercado del paciente (precio mostrado / ordenación por lista). */
   patientMarket: Market;
-  therapyModality?: TherapyModality;
   /** País de residencia ISO2 (ruteo dLocal). */
   residencyCountry?: string | null;
   /** Moneda local de display (preferencia del paciente). */
