@@ -55,11 +55,43 @@ export function friendlyBookingFailureMessage(raw: string, language: AppLanguage
     return net;
   }
 
+  if (normalized === "Online checkout is not available for your country of residence yet") {
+    return t(language, {
+      es: "El pago en línea aún no está disponible para tu país de residencia. Si creés que es un error, contactá a soporte.",
+      en: "Online checkout isn’t available yet for your country of residence. If you think this is a mistake, contact support.",
+      pt: "O pagamento online ainda nao esta disponivel para seu pais de residencia. Se achar que e um erro, fale com o suporte."
+    });
+  }
+
+  if (normalized === "Another patient is completing checkout for this time") {
+    return t(language, {
+      es: "Otra persona está reservando ese mismo horario en este momento. Elegí otro turno cercano o probá de nuevo en unos segundos.",
+      en: "Someone else is checking out for that same time right now. Pick another nearby slot or try again in a few seconds.",
+      pt: "Outra pessoa esta reservando esse mesmo horario agora. Escolha outro turno proximo ou tente de novo em alguns segundos."
+    });
+  }
+
+  if (normalized === "Slot hold expired or not found") {
+    return t(language, {
+      es: "Tu reserva temporal venció. Volvé al calendario y elegí el horario de nuevo.",
+      en: "Your temporary hold expired. Go back to the calendar and pick the time again.",
+      pt: "Sua reserva temporaria expirou. Volte ao calendario e escolha o horario de novo."
+    });
+  }
+
   if (normalized === "Professional already booked at that time") {
     return t(language, {
       es: "Ese horario acaba de ocuparse. Elegí otro que te quede bien cerca, o refrescá la lista de horarios.",
       en: "That time was just taken. Pick another nearby slot, or refresh the time list.",
       pt: "Esse horario acabou de ser reservado. Escolha outro proximo ou atualize a lista de horarios."
+    });
+  }
+
+  if (normalized === "Trial session payment required before booking.") {
+    return t(language, {
+      es: "Primero tenés que completar el pago de la sesión de prueba. Si ya pagaste, esperá unos segundos y refrescá.",
+      en: "You need to complete payment for the trial session first. If you already paid, wait a few seconds and refresh.",
+      pt: "Primeiro voce precisa concluir o pagamento da sessao de teste. Se ja pagou, aguarde alguns segundos e atualize."
     });
   }
 
@@ -419,6 +451,13 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       es: "No pudimos cargar el catálogo real de paquetes (solo hay datos de respaldo en pantalla). Recargá la página; si persiste, el API puede estar caído o mal configurado.",
       en: "We couldn’t load the real package catalog (only fallback data is shown). Reload the page; if it persists, the API may be down or misconfigured.",
       pt: "Nao foi possivel carregar o catalogo real de pacotes. Recarregue a pagina; se persistir, a API pode estar indisponivel."
+    });
+  }
+  if (n === "Online checkout is not available for your country of residence yet") {
+    return t(language, {
+      es: "El pago en línea aún no está disponible para tu país de residencia. Si creés que es un error, contactá a soporte.",
+      en: "Online checkout isn’t available yet for your country of residence. If you think this is a mistake, contact support.",
+      pt: "O pagamento online ainda nao esta disponivel para seu pais de residencia. Se achar que e um erro, fale com o suporte."
     });
   }
   if (n === "Individual session product is not configured") {

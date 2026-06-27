@@ -1,14 +1,22 @@
-import { replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import { mergeRescheduledBooking, sortBookingsByStartsAtAsc, type BookingMutationApiItem } from "../../booking/bookingMappers";
 import { apiRequest } from "../services/api";
 import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
 import { friendlyBookingFailureMessage } from "../lib/friendlyPatientMessages";
+import {
+  acquireDlocalCheckoutIdempotencyKey,
+  dlocalIndividualIdempotencyScope,
+  dlocalPackageIdempotencyScope
+} from "../lib/dlocalCheckoutIdempotency";
+import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
   PackagePlan,
   PackagePurchaseSource,
   PatientAppState,
+  ProfileMeApiResponse,
   PurchasePackageApiResponse,
   Professional,
   TimeSlot
@@ -21,7 +29,27 @@ function t(language: PatientAppState["language"], values: { es: string; en: stri
 /** Solo en dev local permitimos créditos/reservas ficticias si el API falla. */
 const allowLocalDemoFallback = import.meta.env.DEV;
 
-export type PortalPurchaseResult = { ok: boolean; error?: string };
+function usesDlocalCheckout(state: PatientAppState): boolean {
+  return patientUsesDlocalCheckout({
+    patientMarket: state.patientMarket,
+    residencyCountry: state.profileResidencyCountry
+  });
+}
+
+export type PortalPurchaseResult = {
+  ok: boolean;
+  error?: string;
+  checkoutUrl?: string;
+  paymentId?: string;
+  orderId?: string;
+};
+
+export type DlocalPaymentSyncResult = {
+  ok: boolean;
+  fulfilled?: boolean;
+  paymentStatus?: string;
+  error?: string;
+};
 
 export function usePortalActions(params: {
   state: PatientAppState;
@@ -59,6 +87,44 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
+      if (usesDlocalCheckout(params.state)) {
+        try {
+          const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+          const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(dlocalPackageIdempotencyScope(plan.id));
+          const checkout = await apiRequest<{ checkoutUrl: string; paymentId?: string; orderId?: string }>(
+            "/api/payments/dlocal/checkout",
+            {
+              method: "POST",
+              headers: { "x-idempotency-key": idempotencyKey },
+              body: JSON.stringify({
+                packageId: plan.id,
+                idempotencyKey,
+                successUrl: `${origin}/sessions?flow=checkout&payment=success`,
+                cancelUrl: `${origin}/sessions?flow=checkout&payment=cancel`
+              })
+            },
+            authToken
+          );
+          if (checkout.checkoutUrl) {
+            return {
+              ok: true,
+              checkoutUrl: checkout.checkoutUrl,
+              paymentId: checkout.paymentId,
+              orderId: checkout.orderId
+            };
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : "";
+          if (!allowLocalDemoFallback) {
+            return { ok: false, error: lastError };
+          }
+        }
+      }
+
+      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
+        return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
+      }
+
       try {
         const response = await apiRequest<PurchasePackageApiResponse>(
           "/api/profiles/me/purchase-package",
@@ -126,6 +192,44 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
+      if (usesDlocalCheckout(params.state)) {
+        try {
+          const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+          const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(dlocalIndividualIdempotencyScope(sessionCount));
+          const checkout = await apiRequest<{ checkoutUrl: string; paymentId?: string; orderId?: string }>(
+            "/api/payments/dlocal/checkout-individual",
+            {
+              method: "POST",
+              headers: { "x-idempotency-key": idempotencyKey },
+              body: JSON.stringify({
+                sessionCount,
+                idempotencyKey,
+                successUrl: `${origin}/sessions?flow=checkout&payment=success`,
+                cancelUrl: `${origin}/sessions?flow=checkout&payment=cancel`
+              })
+            },
+            authToken
+          );
+          if (checkout.checkoutUrl) {
+            return {
+              ok: true,
+              checkoutUrl: checkout.checkoutUrl,
+              paymentId: checkout.paymentId,
+              orderId: checkout.orderId
+            };
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : "";
+          if (!allowLocalDemoFallback) {
+            return { ok: false, error: lastError };
+          }
+        }
+      }
+
+      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
+        return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
+      }
+
       try {
         const response = await apiRequest<PurchasePackageApiResponse>(
           "/api/profiles/me/purchase-individual-sessions",
@@ -181,10 +285,196 @@ export function usePortalActions(params: {
     return { ok: true };
   };
 
+  const startTrialCheckout = async (
+    professionalId: string,
+    slot: TimeSlot,
+    holdId: string
+  ): Promise<PortalPurchaseResult> => {
+    const authToken = params.state.authToken;
+    if (!authToken) {
+      return {
+        ok: false,
+        error: t(params.state.language, {
+          es: "Iniciá sesión para continuar con el pago.",
+          en: "Sign in to continue with payment.",
+          pt: "Faca login para continuar com o pagamento."
+        })
+      };
+    }
+
+    if (!usesDlocalCheckout(params.state)) {
+      return {
+        ok: false,
+        error: t(params.state.language, {
+          es: "El pago en línea aún no está disponible para tu país de residencia. Escribinos a soporte si necesitás ayuda.",
+          en: "Online payment isn’t available yet for your country of residence. Contact support if you need help.",
+          pt: "O pagamento online ainda nao esta disponivel para seu pais de residencia. Fale com o suporte se precisar de ajuda."
+        })
+      };
+    }
+
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+      const checkout = await apiRequest<{ checkoutUrl: string; paymentId: string }>(
+        "/api/payments/dlocal/checkout-trial",
+        {
+          method: "POST",
+            body: JSON.stringify({
+              professionalId,
+              startsAt: slot.startsAt,
+              endsAt: slot.endsAt,
+              holdId,
+              patientTimezone: params.sessionTimezone,
+              successUrl: `${origin}/onboarding/final/matching?trialPayment=success`,
+              cancelUrl: `${origin}/onboarding/final/matching?trialPayment=cancel`
+            })
+        },
+        authToken
+      );
+      if (checkout.checkoutUrl) {
+        return {
+          ok: true,
+          checkoutUrl: checkout.checkoutUrl,
+          paymentId: checkout.paymentId
+        };
+      }
+      return {
+        ok: false,
+        error: t(params.state.language, {
+          es: "No pudimos iniciar el pago. Probá de nuevo en unos segundos.",
+          en: "We couldn't start payment. Please try again in a few seconds.",
+          pt: "Nao foi possivel iniciar o pagamento. Tente novamente em alguns segundos."
+        })
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not start trial checkout"
+      };
+    }
+  };
+
+  const refreshSubscriptionFromApi = async (): Promise<void> => {
+    const authToken = params.state.authToken;
+    if (!authToken) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, authToken);
+      const latestPackage = response.profile?.latestPackage;
+      const recentPackages = response.profile?.recentPackages;
+      if (!latestPackage) {
+        return;
+      }
+
+      params.onStateChange((current) => ({
+        ...current,
+        subscription: {
+          packageId: latestPackage.id,
+          packageName: latestPackage.name,
+          creditsTotal: latestPackage.totalCredits,
+          creditsRemaining: latestPackage.remainingCredits,
+          purchasedAt: latestPackage.purchasedAt,
+          purchaseHistory: recentPackages?.length
+            ? recentPackages.map((item) => ({
+                id: item.id,
+                name: item.name,
+                credits: item.credits,
+                purchasedAt: item.purchasedAt,
+                priceCents: item.priceCents ?? null,
+                currency: item.currency ?? null
+              }))
+            : current.subscription.purchaseHistory
+        }
+      }));
+    } catch (error) {
+      console.error("Could not refresh subscription from API", error);
+    }
+  };
+
+  const requestDlocalPaymentSyncOnce = async (syncParams: {
+    paymentId?: string | null;
+    orderId?: string | null;
+  }): Promise<DlocalPaymentSyncResult> => {
+    const authToken = params.state.authToken;
+    if (!authToken) {
+      return { ok: false, error: "Unauthorized" };
+    }
+
+    const paymentId = syncParams.paymentId?.trim() || null;
+    const orderId = syncParams.orderId?.trim() || null;
+    if (!paymentId && !orderId) {
+      return { ok: false, error: "Missing payment reference" };
+    }
+
+    try {
+      const result = paymentId
+        ? await apiRequest<{ ok: boolean; fulfilled: boolean; paymentStatus: string }>(
+            "/api/payments/dlocal/sync-payment",
+            {
+              method: "POST",
+              body: JSON.stringify({ paymentId })
+            },
+            authToken
+          )
+        : await apiRequest<{ ok: boolean; fulfilled: boolean; paymentStatus: string }>(
+            "/api/payments/dlocal/sync-order",
+            {
+              method: "POST",
+              body: JSON.stringify({ orderId })
+            },
+            authToken
+          );
+      return {
+        ok: true,
+        fulfilled: result.fulfilled,
+        paymentStatus: result.paymentStatus
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not sync payment"
+      };
+    }
+  };
+
+  const syncDlocalPayment = async (syncParams: {
+    paymentId?: string | null;
+    orderId?: string | null;
+  }): Promise<DlocalPaymentSyncResult> => {
+    const retryDelaysMs = [0, 700, 1200, 1800, 2500, 3500, 4500];
+    let lastResult: DlocalPaymentSyncResult = { ok: false, error: "Could not sync payment" };
+
+    for (const delayMs of retryDelaysMs) {
+      if (delayMs > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+      }
+
+      const result = await requestDlocalPaymentSyncOnce(syncParams);
+      lastResult = result;
+      if (!result.ok) {
+        return result;
+      }
+      if (result.fulfilled) {
+        await refreshSubscriptionFromApi();
+        return result;
+      }
+    }
+
+    return lastResult;
+  };
+
+  const syncTrialPayment = async (paymentId: string): Promise<{ ok: boolean; error?: string }> => {
+    const result = await syncDlocalPayment({ paymentId });
+    return result.ok ? { ok: true } : { ok: false, error: result.error };
+  };
+
   const confirmBooking = async (
     professionalId: string,
     slot: TimeSlot,
-    useTrialSession: boolean
+    useTrialSession: boolean,
+    holdId?: string
   ): Promise<{ ok: boolean; error?: string }> => {
     const trialAlreadyUsed = params.state.trialUsedProfessionalIds.includes(professionalId);
     const bookingAsTrial = useTrialSession && !trialAlreadyUsed;
@@ -218,7 +508,8 @@ export function usePortalActions(params: {
               startsAt: slot.startsAt,
               endsAt: slot.endsAt,
               patientTimezone: params.sessionTimezone,
-              idempotencyKey
+              idempotencyKey,
+              ...(holdId ? { holdId } : {})
             })
           },
           authToken
@@ -575,6 +866,9 @@ export function usePortalActions(params: {
     syncActiveProfessionalAssignment,
     addPackage,
     purchaseIndividualSessions,
+    startTrialCheckout,
+    syncTrialPayment,
+    syncDlocalPayment,
     confirmBooking,
     rescheduleBooking,
     planTrialFromDashboard,

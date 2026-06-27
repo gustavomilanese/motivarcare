@@ -36,36 +36,52 @@ function macaAvatarSvg(size: "large" | "small"): string {
 
 function welcomeInjectHtml(language: AppLanguage): string {
   return `
-<div class="patient-tour-welcome-shell">
-  <span class="patient-tour-eyebrow">${t(language, {
-    es: "Tour guiado",
-    en: "Guided tour",
-    pt: "Tour guiado"
-  })}</span>
-  <div class="patient-tour-maca-hero">
-    <div class="patient-tour-maca-hero__avatar" aria-hidden="true">${macaAvatarSvg("large")}</div>
-    <div class="patient-tour-maca-hero__copy">
-      <h2 class="patient-tour-welcome-h">${t(language, {
-        es: "Un tour con Maca",
-        en: "A tour with Maca",
-        pt: "Um tour com a Maca"
-      })}</h2>
-      <p class="patient-tour-maca-hero__hi">${t(language, {
-        es: "¡Hola! Yo soy <strong>Maca</strong> y te acompaño en esto.",
-        en: "Hi! I'm <strong>Maca</strong> and I'll walk you through this.",
-        pt: "Ola! Eu sou a <strong>Maca</strong> e vou te acompanhar."
-      })}</p>
-      <p class="patient-tour-maca-hero__lead">${t(language, {
-        es: "Te voy a ayudar a conocer la funcionalidad del portal: en pocos pasos te mostramos el menú, el resumen, tus reservas y dónde encontrarme. Sin prisa, con buena onda.",
-        en: "I'll help you get to know the portal: a few quick steps for the menu, your overview, bookings, and where to find me. No rush, just good vibes.",
-        pt: "Vou te ajudar a conhecer o portal: em poucos passos mostramos o menu, o resumo, as reservas e onde me achar. Sem pressa."
-      })}</p>
-      <p class="patient-tour-maca-hero__fine">${t(language, {
-        es: "Podés saltear cuando quieras con la × arriba a la derecha.",
-        en: "You can skip anytime with the × at the top right.",
-        pt: "Voce pode pular quando quiser com o × no canto superior direito."
-      })}</p>
+<div class="patient-tour-welcome-shell patient-tour-welcome-shell--cinematic">
+  <div class="patient-tour-cinematic-hero" aria-hidden="true">
+    <video
+      class="patient-tour-cinematic-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="metadata"
+      poster="/images/hero-therapy.jpg"
+    >
+      <source src="/videos/tour-welcome.mp4" type="video/mp4" />
+    </video>
+    <div class="patient-tour-cinematic-fade"></div>
+  </div>
+  <div class="patient-tour-welcome-body">
+    <span class="patient-tour-eyebrow">${t(language, {
+      es: "Tour guiado",
+      en: "Guided tour",
+      pt: "Tour guiado"
+    })}</span>
+    <div class="patient-tour-welcome-head">
+      <div class="patient-tour-maca-hero__avatar" aria-hidden="true">${macaAvatarSvg("large")}</div>
+      <div>
+        <h2 class="patient-tour-welcome-h">${t(language, {
+          es: "Un tour con Maca",
+          en: "A tour with Maca",
+          pt: "Um tour com a Maca"
+        })}</h2>
+        <p class="patient-tour-maca-hero__hi">${t(language, {
+          es: "¡Hola! Yo soy <strong>Maca</strong> y te acompaño en esto.",
+          en: "Hi! I'm <strong>Maca</strong> and I'll walk you through this.",
+          pt: "Ola! Eu sou a <strong>Maca</strong> e vou te acompanhar."
+        })}</p>
+      </div>
     </div>
+    <p class="patient-tour-maca-hero__lead">${t(language, {
+      es: "En pocos pasos te muestro el menú, tus reservas y dónde encontrarme. Sin prisa, con buena onda.",
+      en: "In a few steps I'll show you the menu, your bookings, and where to find me. No rush — just good vibes.",
+      pt: "Em poucos passos mostro o menu, suas reservas e onde me achar. Sem pressa."
+    })}</p>
+    <p class="patient-tour-maca-hero__fine">${t(language, {
+      es: "Podés saltear cuando quieras con la × arriba a la derecha.",
+      en: "You can skip anytime with the × at the top right.",
+      pt: "Voce pode pular quando quiser com o × no canto superior direito."
+    })}</p>
   </div>
 </div>`.trim();
 }
@@ -380,6 +396,16 @@ function persistTourDone(storageKey: string): void {
   }
 }
 
+function applyWelcomePopoverLayout(
+  popover: { title: HTMLElement; description: HTMLElement },
+  isWelcome: boolean
+): void {
+  const root = popover.description.closest(".driver-popover");
+  if (root) {
+    root.classList.toggle("patient-guided-tour-popover--welcome-cinematic", isWelcome);
+  }
+}
+
 /** driver.js asigna texto plano; volvemos a aplicar HTML donde corresponde. */
 function applyStepRichContent(popover: {
   title: HTMLElement;
@@ -436,11 +462,15 @@ function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
     showButtons: ["next", "previous", "close"],
     onPopoverRender: (popover, opts) => {
       const step = opts.driver.getActiveStep();
+      const stepIndex = opts.state.activeIndex ?? 0;
+      applyWelcomePopoverLayout(popover, stepIndex === 0);
       applyStepRichContent(popover, step);
     },
     onHighlighted: (_element, step, opts) => {
       const popover = opts.state.popover;
+      const stepIndex = opts.state.activeIndex ?? 0;
       if (popover) {
+        applyWelcomePopoverLayout(popover, stepIndex === 0);
         applyStepRichContent(popover, step);
       }
     },

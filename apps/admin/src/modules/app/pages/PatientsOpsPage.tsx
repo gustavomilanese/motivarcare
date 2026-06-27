@@ -916,6 +916,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
         <PatientEditModal
           open={Boolean(editingPatient) && isPatientEditModalOpen}
           language={props.language}
+          adminToken={props.token}
           editingPatient={editingPatient}
           editingPatientDraft={editingPatientDraft}
           editingBookings={editingBookings}

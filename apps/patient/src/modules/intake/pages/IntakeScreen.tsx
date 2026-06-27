@@ -1,29 +1,19 @@
 import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 
-function preIntakeIntroCopy(language: AppLanguage): {
-  title: string;
-  body: readonly [string, string];
-} {
-  return {
-    title: textByLanguage(language, {
-      es: "Antes de las preguntas",
-      en: "Before the questions",
-      pt: "Antes das perguntas"
+function preIntakeIntroCopy(language: AppLanguage): readonly [string, string] {
+  return [
+    textByLanguage(language, {
+      es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
+      en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
+      pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
     }),
-    body: [
-      textByLanguage(language, {
-        es: "A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para tu necesidad particular.",
-        en: "Next, we’ll ask you a few short questions to guide you toward the professional best suited to your particular needs.",
-        pt: "Em seguida, faremos algumas perguntas breves para orientar você ao profissional mais adequado à sua necessidade."
-      }),
-      textByLanguage(language, {
-        es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
-        en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
-        pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
-      })
-    ] as const
-  };
+    textByLanguage(language, {
+      es: "Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.",
+      en: "Everything you share is confidential and is only used to power our search engine, designed to achieve the best possible match between professionals and patients.",
+      pt: "Todas as informações que você compartilhar são confidenciais e serão usadas apenas para alimentar nosso motor de busca, pensado para o melhor match entre profissionais e pacientes."
+    })
+  ] as const;
 }
 import {
   PATIENT_PORTAL_RESIDENCY_CODES,
@@ -41,6 +31,7 @@ import { friendlyIntakeSaveMessage } from "../../app/lib/friendlyPatientMessages
 import type { IntakeCompletionPayload, IntakeQuestion, SessionUser } from "../../app/types";
 import {
   isSafetyRiskPositiveAnswer,
+  PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID,
   PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
   THERAPIST_PREF_AGE_OPTIONS_ES,
   THERAPIST_PREF_EXCLUSIVE_ES,
@@ -49,12 +40,31 @@ import {
   buildTherapistPreferencesStored,
   parseTherapistPreferencesStored
 } from "../patientClinicalIntakeQuestions";
+import { PatientCouplesTherapyNoticeDialog } from "../components/PatientCouplesTherapyNoticeDialog";
+import { PatientMainReasonStep } from "../components/PatientMainReasonStep";
+import { buildPatientIntakeWizardSteps, wizardStepIndexForQuestion } from "../lib/patientIntakeWizardSteps";
+import {
+  activateCouplesMainReason,
+  activateIndividualMainReason,
+  detectMainReasonCategory,
+  toggleCouplesFocusAnswer,
+  toggleIndividualMainReason,
+  updateIndividualOtherDetail,
+  validateMainReasonAnswers
+} from "../lib/patientMainReason";
 import { requestPatientSafetyReferral } from "../services/safetyReferralApi";
 import { SafetyReferralScreen } from "./SafetyReferralScreen";
 import type { CountryEmergencyResources } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function patientIntakeWizardName(fullName: string): string {
+  return fullName
+    .trim()
+    .replace(/^[`'"´]+|[`'"´]+$/g, "")
+    .trim();
 }
 
 function wizardHeading(title: string): string {
@@ -66,6 +76,41 @@ function intakePieces(raw: string): string[] {
     .split(INTAKE_MAIN_REASON_VALUE_JOINER)
     .map((piece) => piece.trim())
     .filter(Boolean);
+}
+
+function applyIntakeOptionSelection(
+  prev: Record<string, string>,
+  questionId: string,
+  option: string,
+  multi: boolean
+): Record<string, string> {
+  const prevRaw = prev[questionId] ?? "";
+  if (!multi) {
+    return { ...prev, [questionId]: option };
+  }
+
+  let pcs = intakePieces(prevRaw);
+  const base = intakeQuestions.find((q) => q.id === questionId);
+  const exclusiveEs = base?.exclusiveOptionEs;
+  if (exclusiveEs && option === exclusiveEs) {
+    return { ...prev, [questionId]: exclusiveEs };
+  }
+  if (exclusiveEs && pcs.includes(exclusiveEs)) {
+    pcs = pcs.filter((p) => p !== exclusiveEs);
+  }
+  if (pcs.includes(option)) {
+    const next = pcs.filter((p) => {
+      if (p === option) {
+        return false;
+      }
+      if (base?.otherFollowupOption && option === base.otherFollowupOption) {
+        return !p.startsWith(`${base.otherFollowupOption}:`);
+      }
+      return true;
+    });
+    return { ...prev, [questionId]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
+  }
+  return { ...prev, [questionId]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
 }
 
 function isCrisisEmotionalAnswer(raw: string): boolean {
@@ -129,9 +174,9 @@ function localizeIntakeQuestion(question: IntakeQuestion, language: AppLanguage)
         pt: "1. Quais sao seus principais motivos de busca?"
       }),
       help: t(language, {
-        es: "Podés marcar uno o varios.",
-        en: "You can select one or more.",
-        pt: "Voce pode marcar uma ou varias."
+        es: "Elegí un tipo de terapia y marcá uno o varios motivos.",
+        en: "Choose a therapy type and select one or more reasons.",
+        pt: "Escolha um tipo de terapia e marque um ou mais motivos."
       })
     };
   }
@@ -279,7 +324,9 @@ export function IntakeScreen(props: {
   hasActiveMacaChatSession?: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
-    const seed: Record<string, string> = {};
+    const seed: Record<string, string> = {
+      [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
+    };
     for (const question of intakeQuestions) {
       seed[question.id] = "";
     }
@@ -292,6 +339,8 @@ export function IntakeScreen(props: {
   const [crisisGate, setCrisisGate] = useState(false);
   const [safetyReferralGate, setSafetyReferralGate] = useState(false);
   const [safetyReferralResources, setSafetyReferralResources] = useState<CountryEmergencyResources | null>(null);
+  const [couplesTherapyNoticeOpen, setCouplesTherapyNoticeOpen] = useState(false);
+  const [couplesNoticeAcknowledged, setCouplesNoticeAcknowledged] = useState(false);
   const [residencyCountry, setResidencyCountry] = useState("");
 
   const presetIso = useMemo(
@@ -313,12 +362,29 @@ export function IntakeScreen(props: {
   );
 
   const introCopy = useMemo(() => preIntakeIntroCopy(props.language), [props.language]);
-  const questionCount = localizedQuestions.length;
-  /** Paso 0 = intro; si hace falta país = 1; siguientes = preguntas clínicas. */
-  const questionStepOffset = countryStepEnabled ? 2 : 1;
-  const totalWizardSteps = (countryStepEnabled ? 2 : 1) + questionCount;
-  const questionStepIndex = stepIndex >= questionStepOffset ? stepIndex - questionStepOffset : -1;
-  const current = questionStepIndex >= 0 ? localizedQuestions[questionStepIndex] : null;
+  const questionIds = useMemo(() => localizedQuestions.map((question) => question.id), [localizedQuestions]);
+  const mainReasonCategory = useMemo(
+    () =>
+      detectMainReasonCategory(
+        answers.mainReason ?? "",
+        answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""
+      ),
+    [answers]
+  );
+  const wizardSteps = useMemo(
+    () =>
+      buildPatientIntakeWizardSteps({
+        countryStepEnabled,
+        questionIds
+      }),
+    [countryStepEnabled, questionIds]
+  );
+  const totalWizardSteps = wizardSteps.length;
+  const currentWizardStep = wizardSteps[stepIndex] ?? null;
+  const current =
+    currentWizardStep?.kind === "question"
+      ? localizedQuestions.find((question) => question.id === currentWizardStep.questionId) ?? null
+      : null;
   const progressPct = ((stepIndex + 1) / totalWizardSteps) * 100;
   const isLast = stepIndex >= totalWizardSteps - 1;
 
@@ -354,11 +420,11 @@ export function IntakeScreen(props: {
   );
 
   const validateCurrent = (): boolean => {
-    if (stepIndex === 0) {
+    if (currentWizardStep?.kind === "intro") {
       setError("");
       return true;
     }
-    if (countryStepEnabled && stepIndex === 1) {
+    if (currentWizardStep?.kind === "country") {
       const iso = residencyCountry.trim().toUpperCase();
       if (!/^[A-Z]{2}$/.test(iso)) {
         setError(
@@ -375,6 +441,30 @@ export function IntakeScreen(props: {
     }
     if (!current) {
       return false;
+    }
+    if (current.id === "mainReason") {
+      if (!validateMainReasonAnswers(answers)) {
+        if (mainReasonCategory === "couples") {
+          setError(
+            t(props.language, {
+              es: "Elegí al menos un aspecto de la pareja para continuar.",
+              en: "Pick at least one relationship focus area to continue.",
+              pt: "Escolha pelo menos um aspecto do casal para continuar."
+            })
+          );
+        } else {
+          setError(
+            t(props.language, {
+              es: "Marcá al menos un motivo de consulta o completá el detalle de «Otro».",
+              en: "Select at least one reason or complete the “Other” details.",
+              pt: "Marque pelo menos um motivo ou complete o detalhe de «Outro»."
+            })
+          );
+        }
+        return false;
+      }
+      setError("");
+      return true;
     }
     if (current.optional) {
       setError("");
@@ -427,16 +517,9 @@ export function IntakeScreen(props: {
   };
 
   const goNext = () => {
-    if (stepIndex === 0) {
+    if (currentWizardStep?.kind === "intro") {
       setError("");
-      setStepIndex(1);
-      return;
-    }
-    if (countryStepEnabled && stepIndex === 1) {
-      if (!validateCurrent()) {
-        return;
-      }
-      setStepIndex(2);
+      setStepIndex((step) => Math.min(step + 1, totalWizardSteps - 1));
       return;
     }
     if (!validateCurrent()) {
@@ -452,7 +535,7 @@ export function IntakeScreen(props: {
       return;
     }
     if (!isLast) {
-      setStepIndex((s) => Math.min(s + 1, totalWizardSteps - 1));
+      setStepIndex((step) => Math.min(step + 1, totalWizardSteps - 1));
     }
   };
 
@@ -576,7 +659,8 @@ export function IntakeScreen(props: {
 
     const rc = residencyCountry.trim().toUpperCase();
     if (!/^[A-Z]{2}$/.test(rc)) {
-      setStepIndex(countryStepEnabled ? 1 : 0);
+      const countryStep = wizardSteps.findIndex((step) => step.kind === "country");
+      setStepIndex(countryStep >= 0 ? countryStep : 0);
       setError(
         t(props.language, {
           es: "Falta tu país de residencia. Volvé al paso anterior y elegí una opción.",
@@ -587,11 +671,26 @@ export function IntakeScreen(props: {
       return;
     }
 
+    if (mainReasonCategory === "couples" && !answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]?.trim()) {
+      const mainReasonStep = wizardStepIndexForQuestion(wizardSteps, "mainReason");
+      if (mainReasonStep >= 0) {
+        setStepIndex(mainReasonStep);
+      }
+      setError(
+        t(props.language, {
+          es: "Completá los aspectos de terapia de pareja para continuar.",
+          en: "Complete the couples therapy focus step to continue.",
+          pt: "Complete os aspectos da terapia de casal para continuar."
+        })
+      );
+      return;
+    }
+
     const missing = intakeQuestions.filter((question) => !question.optional && !answers[question.id]?.trim());
     if (missing.length > 0) {
-      const idx = localizedQuestions.findIndex((q) => q.id === missing[0].id);
+      const idx = wizardStepIndexForQuestion(wizardSteps, missing[0]!.id);
       if (idx >= 0) {
-        setStepIndex(idx + questionStepOffset);
+        setStepIndex(idx);
       }
       setError("");
       return;
@@ -617,9 +716,30 @@ export function IntakeScreen(props: {
     }
   };
 
+  const handleMainReasonCategoryChange = (category: "individual" | "couples") => {
+    setError("");
+    if (category === "couples" && !couplesNoticeAcknowledged) {
+      setCouplesTherapyNoticeOpen(true);
+      return;
+    }
+    setAnswers((prev) =>
+      category === "couples" ? activateCouplesMainReason(prev) : activateIndividualMainReason(prev)
+    );
+  };
+
+  const confirmCouplesTherapySelection = () => {
+    setCouplesTherapyNoticeOpen(false);
+    setCouplesNoticeAcknowledged(true);
+    setAnswers((prev) => activateCouplesMainReason(prev));
+  };
+
+  const isMainReasonCouplesView = current?.id === "mainReason" && mainReasonCategory === "couples";
+
   return (
     <Fragment>
-    <div className="intake-shell intake-shell--wizard">
+    <div
+      className={`intake-shell intake-shell--wizard${isMainReasonCouplesView ? " intake-shell--couples-focus" : ""}`}
+    >
       <section className="intake-card intake-card--wizard">
         <div className="intake-brand">
           <img
@@ -644,12 +764,29 @@ export function IntakeScreen(props: {
                 { current: String(stepIndex + 1), total: String(totalWizardSteps) }
               )}
             </p>
-            <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
-              <span aria-hidden="true">←</span>
-              {stepIndex === 0
-                ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
-                : t(props.language, { es: "Atrás", en: "Back", pt: "Voltar" })}
-            </button>
+            <div className="intake-header-inline-actions">
+              {props.onChooseMacaChat && currentWizardStep?.kind === "intro" ? (
+                <button type="button" className="intake-maca-link" onClick={props.onChooseMacaChat}>
+                  {props.hasActiveMacaChatSession
+                    ? t(props.language, {
+                        es: "Continuar con Maca",
+                        en: "Continue with Maca",
+                        pt: "Continuar com Maca"
+                      })
+                    : t(props.language, {
+                        es: "Chatear con Maca",
+                        en: "Chat with Maca",
+                        pt: "Conversar com Maca"
+                      })}
+                </button>
+              ) : null}
+              <button className="intake-back-inline" type="button" onClick={stepIndex === 0 ? handleBack : goPrev}>
+                {stepIndex === 0 ? null : <span aria-hidden="true">←</span>}
+                {stepIndex === 0
+                  ? t(props.language, { es: "Salir", en: "Exit", pt: "Sair" })
+                  : t(props.language, { es: "Atrás", en: "Back", pt: "Voltar" })}
+              </button>
+            </div>
           </div>
 
           <div
@@ -665,43 +802,37 @@ export function IntakeScreen(props: {
           </div>
 
           <h1 className="intake-wizard-title">
-            {replaceTemplate(
-              t(props.language, {
-                es: "{name}, armamos tu perfil",
-                en: "{name}, let us build your profile",
-                pt: "{name}, vamos montar seu perfil"
-              }),
-              { name: props.user.fullName }
-            )}
-          </h1>
-          <span className="chip intake-wizard-chip">
+            {patientIntakeWizardName(props.user.fullName)}
             {t(props.language, {
-              es: "Cuestionario inicial",
-              en: "Initial questionnaire",
-              pt: "Questionario inicial"
+              es: ", armamos tu perfil",
+              en: ", let us build your profile",
+              pt: ", vamos montar seu perfil"
             })}
+          </h1>
+          <span
+            className={`chip intake-wizard-chip${isMainReasonCouplesView ? " intake-wizard-chip--couples" : ""}`}
+          >
+            {isMainReasonCouplesView
+              ? t(props.language, {
+                  es: "Terapia de pareja",
+                  en: "Couples therapy",
+                  pt: "Terapia de casal"
+                })
+              : t(props.language, {
+                  es: "Cuestionario inicial",
+                  en: "Initial questionnaire",
+                  pt: "Questionario inicial"
+                })}
           </span>
         </div>
 
         <form className="intake-wizard-form" onSubmit={isLast ? handleSubmit : (e) => e.preventDefault()}>
-          {stepIndex === 0 ? (
+          {currentWizardStep?.kind === "intro" ? (
             <article className="question-card question-card--wizard intake-intro-card" key="intake-pre-questions-intro">
               <div className="intake-intro-card-accent" aria-hidden="true" />
               <div className="intake-intro-card-body">
-                <div className="intake-intro-title-row">
-                  <span className="intake-intro-hero-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                      />
-                    </svg>
-                  </span>
-                  <h2 className="intake-question-title intake-intro-title">{introCopy.title}</h2>
-                </div>
                 <div className="intake-intro-points">
-                  {introCopy.body.map((paragraph, index) => (
+                  {introCopy.map((paragraph, index) => (
                     <div className="intake-intro-point" key={index}>
                       <span className="intake-intro-point-icon-wrap" aria-hidden="true">
                         {index === 0 ? (
@@ -727,43 +858,8 @@ export function IntakeScreen(props: {
                   ))}
                 </div>
               </div>
-              {props.onChooseMacaChat ? (
-                <div className="intake-intro-maca-offer">
-                  <p className="intake-intro-maca-offer-lead">
-                    {t(props.language, {
-                      es: "¿Necesitás ayuda con Maca?",
-                      en: "Need help from Maca?",
-                      pt: "Precisa de ajuda com a Maca?"
-                    })}
-                  </p>
-                  <p className="intake-intro-maca-offer-hint">
-                    {t(props.language, {
-                      es: "Podés completar la entrevista conversando con Maca: las mismas preguntas, a tu ritmo y con tus palabras.",
-                      en: "You can complete the intake by chatting with Maca: the same questions, at your pace, in your own words.",
-                      pt: "Voce pode completar a entrevista conversando com a Maca: as mesmas perguntas, no seu ritmo e com suas palavras."
-                    })}
-                  </p>
-                  <button
-                    type="button"
-                    className="intake-intro-maca-btn"
-                    onClick={props.onChooseMacaChat}
-                  >
-                    {props.hasActiveMacaChatSession
-                      ? t(props.language, {
-                          es: "Continuar con Maca",
-                          en: "Continue with Maca",
-                          pt: "Continuar com Maca"
-                        })
-                      : t(props.language, {
-                          es: "Chatear con Maca",
-                          en: "Chat with Maca",
-                          pt: "Conversar com Maca"
-                        })}
-                  </button>
-                </div>
-              ) : null}
             </article>
-          ) : stepIndex === 1 && countryStepEnabled ? (
+          ) : currentWizardStep?.kind === "country" ? (
             <article className="question-card question-card--wizard" key="intake-residency">
               <h2 className="intake-question-title">
                 {t(props.language, {
@@ -801,6 +897,27 @@ export function IntakeScreen(props: {
                 </select>
               </label>
             </article>
+          ) : current?.id === "mainReason" ? (
+            <PatientMainReasonStep
+              language={props.language}
+              title={wizardHeading(current.title)}
+              help={current.help}
+              mainReason={answers.mainReason ?? ""}
+              couplesFocus={answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""}
+              onCategoryChange={handleMainReasonCategoryChange}
+              onToggleIndividual={(option) => {
+                setError("");
+                setAnswers((prev) => toggleIndividualMainReason(prev, option));
+              }}
+              onToggleCouplesFocus={(option) => {
+                setError("");
+                setAnswers((prev) => toggleCouplesFocusAnswer(prev, option));
+              }}
+              onOtherDetailChange={(detail) => {
+                setError("");
+                setAnswers((prev) => updateIndividualOtherDetail(prev, detail));
+              }}
+            />
           ) : current ? (
             <article
               className={`question-card question-card--wizard ${current.id === "safetyRisk" ? "question-card--safety" : ""}`}
@@ -1006,35 +1123,7 @@ export function IntakeScreen(props: {
                               triggerSafetyReferral(/^[A-Z]{2}$/.test(rc) ? rc : presetIso || "AR");
                               return;
                             }
-                            setAnswers((prev) => {
-                              const id = current.id;
-                              const prevRaw = prev[id] ?? "";
-                              let pcs = intakePieces(prevRaw);
-                              const base = intakeQuestions.find((q) => q.id === id);
-                              const exclusiveEs = base?.exclusiveOptionEs;
-                              if (!multi) {
-                                return { ...prev, [id]: option };
-                              }
-                              if (exclusiveEs && option === exclusiveEs) {
-                                return { ...prev, [id]: exclusiveEs };
-                              }
-                              if (exclusiveEs && pcs.includes(exclusiveEs)) {
-                                pcs = pcs.filter((p) => p !== exclusiveEs);
-                              }
-                              if (pcs.includes(option)) {
-                                const next = pcs.filter((p) => {
-                                  if (p === option) {
-                                    return false;
-                                  }
-                                  if (base?.otherFollowupOption && option === base.otherFollowupOption) {
-                                    return !p.startsWith(`${base.otherFollowupOption}:`);
-                                  }
-                                  return true;
-                                });
-                                return { ...prev, [id]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER) };
-                              }
-                              return { ...prev, [id]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
-                            });
+                            setAnswers((prev) => applyIntakeOptionSelection(prev, current.id, option, multi));
                           }}
                         >
                           <span className="intake-option-chip-label">{option}</span>
@@ -1118,6 +1207,13 @@ export function IntakeScreen(props: {
         </form>
       </section>
     </div>
+    {couplesTherapyNoticeOpen ? (
+      <PatientCouplesTherapyNoticeDialog
+        language={props.language}
+        onDismiss={() => setCouplesTherapyNoticeOpen(false)}
+        onConfirm={confirmCouplesTherapySelection}
+      />
+    ) : null}
     </Fragment>
   );
 }

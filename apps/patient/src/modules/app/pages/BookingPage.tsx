@@ -15,7 +15,8 @@ import { recordPaymentFailureNotice } from "../notifications/portalNotificationS
 import { loadPublicPackagePlans, isClientFallbackPackagePlanId } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
-import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
+import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
+import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import {
   portalHasPricingProfessional,
   resolvePortalPricingProfessionalId
@@ -30,17 +31,24 @@ import {
   resolvePackagePurchaseGate
 } from "@therapy/patient-core";
 import { canPatientRescheduleBooking } from "@therapy/i18n-config";
-import { PaymentMethodModal, type PaymentSuccessSummary } from "../../matching/components/PaymentMethodModal";
-import { friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
-import { isSlotStillListedAfterFreshFetch } from "../../matching/services/availability";
+import { PaymentSuccessModal, type PaymentSuccessSummary } from "../../matching/components/PaymentSuccessModal";
+import { friendlyBookingFailureMessage, friendlyCheckoutPackageMessage } from "../lib/friendlyPatientMessages";
+import {
+  clearPendingCheckoutDlocalReturn,
+  readPendingCheckoutDlocalReturn,
+  savePendingCheckoutDlocalReturn
+} from "../lib/checkoutDlocalReturn";
+import { acquireBookingSlotHold, releaseBookingSlotHold } from "../../matching/services/slotHold";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
+import { PaymentActivityPanel } from "../components/PaymentActivityPanel";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
+import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
   PackagePlan,
@@ -112,12 +120,18 @@ export function BookingPage(props: {
   onConfirmBooking: (
     professionalId: string,
     slot: TimeSlot,
-    useTrialSession: boolean
+    useTrialSession: boolean,
+    holdId?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   onRescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
   onPurchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
+  onSyncDlocalPayment?: (params: {
+    paymentId?: string | null;
+    orderId?: string | null;
+  }) => Promise<{ ok: boolean; fulfilled?: boolean; error?: string }>;
+  onRefreshPortalFromApi?: () => void;
   onNavigateToAssignProfessional: () => void;
 }) {
   const isMobilePortal = useMobilePortal();
@@ -139,7 +153,6 @@ export function BookingPage(props: {
   const [checkoutPaymentError, setCheckoutPaymentError] = useState("");
   const [individualQtyOpen, setIndividualQtyOpen] = useState(false);
   const [individualQtyDraft, setIndividualQtyDraft] = useState("1");
-  const [individualPaymentCount, setIndividualPaymentCount] = useState<number | null>(null);
   const [individualPaymentLoading, setIndividualPaymentLoading] = useState(false);
   const [individualPaymentError, setIndividualPaymentError] = useState("");
   useEffect(() => {
@@ -155,6 +168,11 @@ export function BookingPage(props: {
     }
   }, [individualPaymentError]);
   const [bookingActionError, setBookingActionError] = useState("");
+  const [slotHoldId, setSlotHoldId] = useState("");
+  const [slotHoldExpiresAt, setSlotHoldExpiresAt] = useState("");
+  const [slotHoldLoading, setSlotHoldLoading] = useState(false);
+  const slotHoldIdRef = useRef("");
+  const holdAcquireGenerationRef = useRef(0);
   const [showNoCreditsAlert, setShowNoCreditsAlert] = useState(false);
   const [assignProfessionalModalOpen, setAssignProfessionalModalOpen] = useState(false);
   const [reviewsModalProfessionalId, setReviewsModalProfessionalId] = useState<string | null>(null);
@@ -249,13 +267,15 @@ export function BookingPage(props: {
     hasPricingProfessional,
     professionalId: pricingProfessionalId,
     language: props.language,
-    patientMarket: props.state.patientMarket
+    patientMarket: props.state.patientMarket,
+    therapyModality: props.state.therapyModality
   });
   packageCatalogDepsRef.current = {
     hasPricingProfessional,
     professionalId: pricingProfessionalId,
     language: props.language,
-    patientMarket: props.state.patientMarket
+    patientMarket: props.state.patientMarket,
+    therapyModality: props.state.therapyModality
   };
 
   const slotsFetchGenerationRef = useRef(0);
@@ -279,9 +299,76 @@ export function BookingPage(props: {
   });
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
   const pendingSessions = props.state.subscription.creditsRemaining;
+  slotHoldIdRef.current = slotHoldId;
+
+  const releaseCurrentSlotHold = useCallback(async () => {
+    const holdId = slotHoldIdRef.current;
+    if (!holdId || !props.state.authToken) {
+      setSlotHoldId("");
+      setSlotHoldExpiresAt("");
+      return;
+    }
+    try {
+      await releaseBookingSlotHold(holdId, props.state.authToken);
+    } catch {
+      // Best-effort release; TTL will expire the hold.
+    }
+    setSlotHoldId("");
+    setSlotHoldExpiresAt("");
+    slotHoldIdRef.current = "";
+  }, [props.state.authToken]);
+
+  const acquireHoldForSelectedSlot = useCallback(
+    async (slot: TimeSlot) => {
+      if (!props.state.authToken || panelMode !== "new") {
+        return;
+      }
+
+      const gen = ++holdAcquireGenerationRef.current;
+      setSlotHoldLoading(true);
+      setBookingActionError("");
+      try {
+        await releaseCurrentSlotHold();
+        const hold = await acquireBookingSlotHold(professional.id, slot, props.state.authToken);
+        if (gen !== holdAcquireGenerationRef.current) {
+          return;
+        }
+        setSlotHoldId(hold.holdId);
+        setSlotHoldExpiresAt(hold.expiresAt);
+        slotHoldIdRef.current = hold.holdId;
+      } catch (requestError) {
+        if (gen !== holdAcquireGenerationRef.current) {
+          return;
+        }
+        setSelectedSlotId("");
+        setBookingActionError(
+          friendlyBookingFailureMessage(
+            requestError instanceof Error ? requestError.message : "",
+            props.language
+          )
+        );
+      } finally {
+        if (gen === holdAcquireGenerationRef.current) {
+          setSlotHoldLoading(false);
+        }
+      }
+    },
+    [panelMode, professional.id, props.language, props.state.authToken, releaseCurrentSlotHold]
+  );
+
+  useEffect(() => {
+    return () => {
+      const holdId = slotHoldIdRef.current;
+      if (!holdId || !props.state.authToken) {
+        return;
+      }
+      void releaseBookingSlotHold(holdId, props.state.authToken).catch(() => undefined);
+    };
+  }, [props.state.authToken]);
+
   const canConfirmBooking = panelMode === "reschedule"
     ? Boolean(selectedSlot && editingBooking)
-    : Boolean(selectedSlot) && pendingSessions > 0;
+    : Boolean(selectedSlot) && pendingSessions > 0 && Boolean(slotHoldId) && !slotHoldLoading;
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const hasProfessionalsOnPortal = props.professionals.length > 0;
   const packageCatalogView = useMemo(
@@ -322,6 +409,14 @@ export function BookingPage(props: {
     checkoutPaymentPlanId && pricingReady
       ? packagePlans.find((plan) => plan.id === checkoutPaymentPlanId) ?? null
       : null;
+  const usesDlocalCheckout = useMemo(
+    () =>
+      patientUsesDlocalCheckout({
+        patientMarket: props.state.patientMarket,
+        residencyCountry: props.state.profileResidencyCountry
+      }),
+    [props.state.patientMarket, props.state.profileResidencyCountry]
+  );
 
   /**
    * Precio por sesión individual y su moneda nativa. Para pacientes AR el catálogo
@@ -346,7 +441,6 @@ export function BookingPage(props: {
   const resetIndividualPurchaseUi = () => {
     setIndividualQtyOpen(false);
     setIndividualQtyDraft("1");
-    setIndividualPaymentCount(null);
     setIndividualPaymentLoading(false);
     setIndividualPaymentError("");
   };
@@ -356,7 +450,6 @@ export function BookingPage(props: {
     setCheckoutPaymentPlanId(null);
     setIndividualPaymentError("");
     setIndividualQtyDraft("1");
-    setIndividualPaymentCount(null);
     setIndividualQtyOpen(true);
   }, []);
 
@@ -431,17 +524,29 @@ export function BookingPage(props: {
     }
   }, [isCheckoutFlow, pendingSessions, searchParams, setSearchParams]);
 
+  const [checkoutFocusTick, setCheckoutFocusTick] = useState(0);
+
+  const focusCheckoutPackagesSection = useCallback(() => {
+    const run = (attempt: number) => {
+      const node = checkoutSectionRef.current;
+      if (node) {
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+        node.focus({ preventScroll: true });
+        return;
+      }
+      if (attempt < 12) {
+        window.setTimeout(() => run(attempt + 1), 60);
+      }
+    };
+    window.requestAnimationFrame(() => run(0));
+  }, []);
+
   useEffect(() => {
-    if (!isCheckoutFlow || !isMobilePortal) {
+    if (!isCheckoutFlow) {
       return;
     }
-    const frame = window.requestAnimationFrame(() => {
-      checkoutSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [isCheckoutFlow, isMobilePortal, selectedCheckoutPlanId, packagesLoading]);
+    focusCheckoutPackagesSection();
+  }, [checkoutFocusTick, focusCheckoutPackagesSection, isCheckoutFlow, packagesLoading, selectedCheckoutPlanId]);
 
   useEffect(() => {
     if (!isCalendarExpanded || !isMobilePortal) {
@@ -491,10 +596,176 @@ export function BookingPage(props: {
   ]);
 
   const individualPurchaseDeepLinkConsumed = useRef(false);
+  const checkoutReturnHandledRef = useRef(false);
+
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    if (payment !== "success" && payment !== "cancel") {
+      checkoutReturnHandledRef.current = false;
+      return;
+    }
+    if (checkoutReturnHandledRef.current) {
+      return;
+    }
+    checkoutReturnHandledRef.current = true;
+
+    const pending = readPendingCheckoutDlocalReturn();
+    clearPendingCheckoutDlocalReturn({ clearIdempotency: payment === "success" });
+
+    const paymentId =
+      pending?.paymentId?.trim()
+      || searchParams.get("payment_id")?.trim()
+      || searchParams.get("paymentId")?.trim()
+      || null;
+    const orderId = pending?.orderId?.trim() || searchParams.get("dlocalOrder")?.trim() || null;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("payment");
+    nextParams.delete("purchase");
+    nextParams.delete("dlocalOrder");
+    nextParams.delete("payment_id");
+    nextParams.delete("paymentId");
+    setSearchParams(nextParams, { replace: true });
+
+    resetIndividualPurchaseUi();
+    setCheckoutPaymentPlanId(null);
+    setCheckoutPaymentLoading(false);
+    setIndividualPaymentLoading(false);
+
+    if (payment === "cancel") {
+      const cancelMessage = t(props.language, {
+        es: "Cancelaste el pago. Podés elegir otra opción o intentar de nuevo cuando quieras.",
+        en: "You cancelled payment. You can choose another option or try again whenever you like.",
+        pt: "Voce cancelou o pagamento. Pode escolher outra opcao ou tentar de novo quando quiser."
+      });
+      if (pending?.kind === "individual") {
+        setIndividualPaymentError(cancelMessage);
+      } else {
+        setCheckoutPaymentError(cancelMessage);
+      }
+      return;
+    }
+
+    void (async () => {
+      if (!paymentId && !orderId) {
+        const missingRefError = t(props.language, {
+          es: "No pudimos confirmar la compra automáticamente. Actualizá la página; si el pago ya se realizó y no ves sesiones, contactanos.",
+          en: "We couldn't confirm the purchase automatically. Refresh the page; if you already paid and sessions are missing, contact us.",
+          pt: "Nao foi possivel confirmar a compra automaticamente. Atualize a pagina; se o pagamento ja foi feito e as sessoes nao aparecem, fale conosco."
+        });
+        if (pending?.kind === "individual") {
+          setIndividualPaymentError(missingRefError);
+        } else {
+          setCheckoutPaymentError(missingRefError);
+        }
+        return;
+      }
+
+      if (props.onSyncDlocalPayment) {
+        const synced = await props.onSyncDlocalPayment({ paymentId, orderId });
+        if (!synced.ok) {
+          const syncError = friendlyCheckoutPackageMessage(
+            synced.error ?? "Could not confirm payment",
+            props.language
+          );
+          if (pending?.kind === "individual") {
+            setIndividualPaymentError(syncError);
+          } else {
+            setCheckoutPaymentError(syncError);
+          }
+          return;
+        }
+        if (!synced.fulfilled) {
+          const pendingError = t(props.language, {
+            es: "Recibimos tu pago, pero todavía lo estamos confirmando. Actualizá la página en unos segundos o escribinos si no ves las sesiones.",
+            en: "We received your payment, but we're still confirming it. Refresh in a few seconds or contact us if sessions don't appear.",
+            pt: "Recebemos seu pagamento, mas ainda estamos confirmando. Atualize em alguns segundos ou fale conosco se as sessoes nao aparecerem."
+          });
+          if (pending?.kind === "individual") {
+            setIndividualPaymentError(pendingError);
+          } else {
+            setCheckoutPaymentError(pendingError);
+          }
+          return;
+        }
+      }
+
+      props.onRefreshPortalFromApi?.();
+
+      if (pending?.kind === "individual" && pending.sessionCount) {
+        setIndividualPaymentSuccess({
+          title: t(props.language, {
+            es: "¡Sesiones acreditadas!",
+            en: "Sessions credited!",
+            pt: "Sessoes creditadas!"
+          }),
+          detail: replaceTemplate(
+            t(props.language, {
+              es: "Sumaste {count} sesiones a tu cuenta. Ya podés reservar turno.",
+              en: "You added {count} sessions to your account. You can book now.",
+              pt: "Voce adicionou {count} sessoes a sua conta. Ja pode reservar."
+            }),
+            { count: String(pending.sessionCount) }
+          )
+        });
+        return;
+      }
+
+      if (pending?.kind === "package") {
+        const packageLabel =
+          pending.packageName?.trim()
+          || packagePlans.find((plan) => plan.id === pending.packageId)?.name
+          || t(props.language, {
+            es: "tu paquete",
+            en: "your package",
+            pt: "seu pacote"
+          });
+        setPackagePaymentSuccess({
+          title: t(props.language, {
+            es: "¡Compra confirmada!",
+            en: "Purchase confirmed!",
+            pt: "Compra confirmada!"
+          }),
+          detail: replaceTemplate(
+            t(props.language, {
+              es: "Acreditamos {package} en tu cuenta. Ya podés reservar turno.",
+              en: "We credited {package} to your account. You can book now.",
+              pt: "Creditamos {package} na sua conta. Ja pode reservar."
+            }),
+            { package: packageLabel }
+          )
+        });
+        return;
+      }
+
+      setIndividualPaymentSuccess({
+        title: t(props.language, {
+          es: "¡Pago confirmado!",
+          en: "Payment confirmed!",
+          pt: "Pagamento confirmado!"
+        }),
+        detail: t(props.language, {
+          es: "Tu compra fue procesada. Si no ves las sesiones al instante, actualizá la página en unos segundos.",
+          en: "Your purchase was processed. If sessions do not appear right away, refresh in a few seconds.",
+          pt: "Sua compra foi processada. Se as sessoes nao aparecerem de imediato, atualize em alguns segundos."
+        })
+      });
+    })();
+  }, [
+    packagePlans,
+    props.language,
+    props.onRefreshPortalFromApi,
+    props.onSyncDlocalPayment,
+    searchParams,
+    setSearchParams
+  ]);
 
   useEffect(() => {
     if (!isCheckoutFlow || searchParams.get("purchase") !== "individual") {
       individualPurchaseDeepLinkConsumed.current = false;
+      return;
+    }
+    if (searchParams.get("payment") === "success" || searchParams.get("payment") === "cancel") {
       return;
     }
     if (packagesLoading || individualUnitPriceMajor === null) {
@@ -613,6 +884,7 @@ export function BookingPage(props: {
         language: snap.language,
         professionalId: snap.professionalId,
         market: snap.patientMarket,
+        modality: snap.therapyModality,
         t: (values) => t(snap.language, values)
       })
         .then((catalog) => {
@@ -683,19 +955,19 @@ export function BookingPage(props: {
       return;
     }
 
-    const stillListed = await isSlotStillListedAfterFreshFetch(professional.id, selectedSlot, props.state.authToken);
-    if (!stillListed) {
+    if (!slotHoldId) {
       setBookingActionError(
-        t(props.language, {
-          es: "Ese horario se llenó recién. Elegí otro desde el calendario cuando puedas.",
-          en: "That time just filled up. Please pick another from the calendar when you’re ready.",
-          pt: "Esse horario acabou de ficar cheio. Escolha outro no calendario quando puder."
-        })
+        friendlyBookingFailureMessage("Slot hold expired or not found", props.language)
       );
       return;
     }
 
-    const result = await props.onConfirmBooking(professional.id, selectedSlot, false);
+    const result = await props.onConfirmBooking(
+      professional.id,
+      selectedSlot,
+      false,
+      panelMode === "new" ? slotHoldId : undefined
+    );
     if (!result.ok) {
       setBookingActionError(
         result.error?.trim()
@@ -714,16 +986,13 @@ export function BookingPage(props: {
   };
 
   const closeBookingPanel = () => {
+    holdAcquireGenerationRef.current += 1;
+    void releaseCurrentSlotHold();
     setPanelMode(null);
     setEditingBookingId(null);
     setSelectedSlotId("");
     setBookingActionError("");
-  };
-
-  const scrollCheckoutIntoView = () => {
-    window.requestAnimationFrame(() => {
-      checkoutSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    setSlotHoldLoading(false);
   };
 
   const openCheckoutCatalog = useCallback(
@@ -738,12 +1007,11 @@ export function BookingPage(props: {
       setCheckoutPaymentError("");
       resetIndividualPurchaseUi();
       setCheckoutFlow(true, typeof planId === "string" ? planId : null);
-      if (isMobilePortal) {
-        scrollCheckoutIntoView();
-      }
+      setCheckoutFocusTick((current) => current + 1);
+      focusCheckoutPackagesSection();
     },
     [
-      isMobilePortal,
+      focusCheckoutPackagesSection,
       resetIndividualPurchaseUi,
       setCheckoutFlow
     ]
@@ -806,7 +1074,10 @@ export function BookingPage(props: {
     setBookingActionError("");
     setPanelMode((current) => {
       if (current === "new") {
+        holdAcquireGenerationRef.current += 1;
+        void releaseCurrentSlotHold();
         setShowNoCreditsAlert(false);
+        setSlotHoldLoading(false);
         return null;
       }
       if (pendingSessions <= 0) {
@@ -825,15 +1096,80 @@ export function BookingPage(props: {
   }, [pendingSessions, showNoCreditsAlert]);
 
   const handlePurchasePlan = (plan: PackagePlan) => {
+    if (checkoutPaymentLoading) {
+      return;
+    }
     const gate = resolvePackagePurchaseGate({ pricingReady, planId: plan.id });
     if (!gate.allowed) {
       openAssignProfessionalPrompt();
       return;
     }
+    void startPackageCheckout(plan);
+  };
+
+  const startPackageCheckout = async (plan: PackagePlan) => {
+    if (checkoutPaymentLoading) {
+      return;
+    }
     setCheckoutPaymentError("");
     resetIndividualPurchaseUi();
-    setCheckoutPaymentPlanId(plan.id);
+
+    if (!usesDlocalCheckout) {
+      if (import.meta.env.DEV) {
+        void confirmPackagePurchase(plan);
+        return;
+      }
+      setCheckoutPaymentError(
+        friendlyCheckoutPackageMessage(DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, props.language)
+      );
+      return;
+    }
+
+    if (!packageCatalogFromApi || isClientFallbackPackagePlanId(plan.id)) {
+      setCheckoutPaymentError(friendlyCheckoutPackageMessage("Catalog unavailable", props.language));
+      return;
+    }
+
+    setCheckoutPaymentLoading(true);
+    try {
+      const purchased = await props.onPurchasePackage(plan);
+      if (purchased.checkoutUrl) {
+        savePendingCheckoutDlocalReturn({
+          kind: "package",
+          packageId: plan.id,
+          packageName: plan.name,
+          paymentId: purchased.paymentId,
+          orderId: purchased.orderId
+        });
+        window.location.assign(purchased.checkoutUrl);
+        return;
+      }
+      if (!purchased.ok) {
+        setCheckoutPaymentError(
+          friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
+        );
+      }
+    } catch (error) {
+      setCheckoutPaymentError(
+        friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
+      );
+    } finally {
+      setCheckoutPaymentLoading(false);
+    }
   };
+
+  const dlocalPackageCheckoutStartedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!usesDlocalCheckout || !checkoutPaymentPlan) {
+      return;
+    }
+    if (dlocalPackageCheckoutStartedRef.current === checkoutPaymentPlan.id) {
+      return;
+    }
+    dlocalPackageCheckoutStartedRef.current = checkoutPaymentPlan.id;
+    void startPackageCheckout(checkoutPaymentPlan);
+  }, [checkoutPaymentPlan, usesDlocalCheckout]);
 
   const proceedIndividualToPayment = () => {
     if (!pricingReady) {
@@ -844,24 +1180,64 @@ export function BookingPage(props: {
     if (!Number.isFinite(n) || n < 1 || n > 99 || individualUnitPriceMajor === null) {
       return;
     }
-    setIndividualQtyOpen(false);
-    setIndividualPaymentCount(n);
-    setIndividualPaymentError("");
-  };
 
-  const handleConfirmIndividualPayment = async () => {
-    if (!individualPaymentCount) {
+    if (!usesDlocalCheckout) {
+      setIndividualQtyOpen(false);
+      setIndividualPaymentError("");
+      if (import.meta.env.DEV) {
+        void confirmIndividualPurchase(n);
+        return;
+      }
+      setIndividualQtyOpen(true);
+      setIndividualPaymentError(
+        friendlyCheckoutPackageMessage(DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, props.language)
+      );
       return;
     }
 
+    setIndividualQtyOpen(false);
+    setIndividualPaymentError("");
+    setIndividualPaymentLoading(true);
+    void (async () => {
+      try {
+        const purchased = await props.onPurchaseIndividualSessions(n);
+        if (purchased.checkoutUrl) {
+          savePendingCheckoutDlocalReturn({
+            kind: "individual",
+            sessionCount: n,
+            paymentId: purchased.paymentId,
+            orderId: purchased.orderId
+          });
+          window.location.assign(purchased.checkoutUrl);
+          return;
+        }
+        if (!purchased.ok) {
+          setIndividualPaymentError(
+            friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
+          );
+          setIndividualQtyOpen(true);
+        }
+      } catch (error) {
+        setIndividualPaymentError(
+          friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
+        );
+        setIndividualQtyOpen(true);
+      } finally {
+        setIndividualPaymentLoading(false);
+      }
+    })();
+  };
+
+  const confirmIndividualPurchase = async (sessionCount: number) => {
     setIndividualPaymentLoading(true);
     setIndividualPaymentError("");
     try {
-      const purchased = await props.onPurchaseIndividualSessions(individualPaymentCount);
+      const purchased = await props.onPurchaseIndividualSessions(sessionCount);
       if (!purchased.ok) {
         setIndividualPaymentError(
           friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
         );
+        setIndividualQtyOpen(true);
         return;
       }
       setIndividualPaymentSuccess({
@@ -876,7 +1252,7 @@ export function BookingPage(props: {
             en: "You added {count} sessions to your account. You can book now.",
             pt: "Voce adicionou {count} sessoes a sua conta. Ja pode reservar."
           }),
-          { count: String(individualPaymentCount) }
+          { count: String(sessionCount) }
         ),
         primaryLabel: t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessao" })
       });
@@ -884,27 +1260,28 @@ export function BookingPage(props: {
       setIndividualPaymentError(
         friendlyCheckoutPackageMessage(error instanceof Error ? error.message : "", props.language)
       );
+      setIndividualQtyOpen(true);
     } finally {
       setIndividualPaymentLoading(false);
     }
   };
 
-  const handleConfirmPackagePayment = async () => {
-    if (!checkoutPaymentPlan) {
-      return;
-    }
-
+  const confirmPackagePurchase = async (plan: PackagePlan) => {
     setCheckoutPaymentLoading(true);
     setCheckoutPaymentError("");
     try {
-      if (!packageCatalogFromApi || isClientFallbackPackagePlanId(checkoutPaymentPlan.id)) {
+      if (!packageCatalogFromApi || isClientFallbackPackagePlanId(plan.id)) {
         setCheckoutPaymentError(
           friendlyCheckoutPackageMessage("Catalog unavailable", props.language)
         );
         return;
       }
 
-      const purchased = await props.onPurchasePackage(checkoutPaymentPlan);
+      const purchased = await props.onPurchasePackage(plan);
+      if (purchased.checkoutUrl) {
+        window.location.assign(purchased.checkoutUrl);
+        return;
+      }
       if (!purchased.ok) {
         setCheckoutPaymentError(
           friendlyCheckoutPackageMessage(purchased.error ?? "", props.language)
@@ -913,9 +1290,9 @@ export function BookingPage(props: {
       }
       setPackagePaymentSuccess({
         title: t(props.language, {
-          es: "¡Compra simulada con éxito!",
-          en: "Simulated purchase successful!",
-          pt: "Compra simulada com sucesso!"
+          es: "¡Compra exitosa!",
+          en: "Purchase successful!",
+          pt: "Compra concluida!"
         }),
         detail: replaceTemplate(
           t(props.language, {
@@ -923,7 +1300,7 @@ export function BookingPage(props: {
             en: "We credited {count} sessions from “{name}”. You can pick a time now.",
             pt: "Creditamos {count} sessoes de «{name}». Ja pode escolher horario."
           }),
-          { count: String(checkoutPaymentPlan.credits), name: checkoutPaymentPlan.name }
+          { count: String(plan.credits), name: plan.name }
         ),
         primaryLabel: t(props.language, { es: "Reservar sesión", en: "Book a session", pt: "Reservar sessao" })
       });
@@ -1202,6 +1579,8 @@ export function BookingPage(props: {
                   if (!canPatientRescheduleBooking(booking.startsAt)) {
                     return;
                   }
+                  holdAcquireGenerationRef.current += 1;
+                  void releaseCurrentSlotHold();
                   setEditingBookingId(booking.id);
                   setSelectedSlotId(
                     findSlotIdForBooking(
@@ -1221,10 +1600,20 @@ export function BookingPage(props: {
       </section>
 
       {showPackageSection && isCheckoutFlow ? (
-        <section ref={checkoutSectionRef} className="content-card booking-session-card booking-card-minimal sessions-package-options-panel">
+        <section
+          ref={checkoutSectionRef}
+          tabIndex={-1}
+          className="content-card booking-session-card booking-card-minimal sessions-package-options-panel"
+          aria-label={t(props.language, {
+            es: "Adquirir nuevas sesiones",
+            en: "Get new sessions",
+            pt: "Adquirir novas sessoes"
+          })}
+        >
           <CheckoutPackagesPanel
             language={props.language}
             currency={props.currency}
+            residencyCountry={props.state.profileResidencyCountry}
             fxRates={props.fxRates}
             packagesLoading={packagesLoading && hasPricingProfessional}
             packagePlans={displayPackagePlans}
@@ -1249,6 +1638,8 @@ export function BookingPage(props: {
               openIndividualPurchase();
             }}
             onRequireProfessional={openAssignProfessionalPrompt}
+            paymentLoading={checkoutPaymentLoading}
+            paymentError={checkoutPaymentError}
           />
         </section>
       ) : null}
@@ -1374,6 +1765,8 @@ export function BookingPage(props: {
           />
         ) : null}
       </section>
+
+      <PaymentActivityPanel language={props.language} authToken={props.state.authToken} />
       </div>
 
       <ProfessionalReviewsModal
@@ -1405,11 +1798,25 @@ export function BookingPage(props: {
         pendingSessions={pendingSessions}
         bookingActionError={bookingActionError}
         canConfirmBooking={canConfirmBooking}
+        slotHoldLoading={slotHoldLoading}
+        holdExpiresAt={panelMode === "new" ? slotHoldExpiresAt : undefined}
         language={props.language}
         sessionTimezone={props.sessionTimezone}
         onSelectSlot={(slotId) => {
           setSelectedSlotId(slotId);
           setBookingActionError("");
+          if (!slotId) {
+            holdAcquireGenerationRef.current += 1;
+            void releaseCurrentSlotHold();
+            return;
+          }
+          const slot = availableSlots.find((item) => item.id === slotId) ?? null;
+          if (slot && panelMode === "new") {
+            void acquireHoldForSelectedSlot(slot);
+          } else {
+            holdAcquireGenerationRef.current += 1;
+            void releaseCurrentSlotHold();
+          }
         }}
         onClose={closeBookingPanel}
         onConfirm={handleBooking}
@@ -1417,99 +1824,66 @@ export function BookingPage(props: {
         formatDateTime={formatDateTime}
       />
 
-      {(isCheckoutFlow && checkoutPaymentPlan) || packagePaymentSuccess ? (
-        <PaymentMethodModal
+      {packagePaymentSuccess ? (
+        <PaymentSuccessModal
           language={props.language}
-          amountMajor={checkoutPaymentPlan?.priceCents ? checkoutPaymentPlan.priceCents / 100 : null}
-          displayCurrency={props.currency}
-          fxRates={props.fxRates}
-          loading={checkoutPaymentLoading}
-          error={checkoutPaymentError}
-          walletOnly
-          successSummary={packagePaymentSuccess}
-          onBack={() => {
-            setCheckoutPaymentPlanId(null);
-            setCheckoutPaymentError("");
-          }}
-          onClose={() => {
-            if (packagePaymentSuccess) {
-              dismissPackagePaymentSuccess();
-              return;
-            }
-            setCheckoutPaymentPlanId(null);
-            setCheckoutPaymentError("");
-            setCheckoutFlow(false);
-          }}
-          onSuccessDismiss={dismissPackagePaymentSuccess}
-          onPay={handleConfirmPackagePayment}
+          summary={packagePaymentSuccess}
+          onDismiss={dismissPackagePaymentSuccess}
         />
       ) : null}
 
-      {(isCheckoutFlow && individualPaymentCount !== null && individualUnitPrice !== null) || individualPaymentSuccess ? (
-        <PaymentMethodModal
+      {individualPaymentSuccess ? (
+        <PaymentSuccessModal
           language={props.language}
-          amountMajor={
-            individualUnitPrice && individualPaymentCount
-              ? individualUnitPrice.amount * individualPaymentCount
-              : null
-          }
-          displayCurrency={props.currency}
-          fxRates={props.fxRates}
-          loading={individualPaymentLoading}
-          error={individualPaymentError}
-          walletOnly
-          successSummary={individualPaymentSuccess}
-          onBack={() => {
-            setIndividualPaymentCount(null);
-            setIndividualPaymentError("");
-            setIndividualQtyOpen(true);
-          }}
-          onClose={() => {
-            if (individualPaymentSuccess) {
-              dismissIndividualPaymentSuccess();
-              return;
-            }
-            resetIndividualPurchaseUi();
-            setCheckoutFlow(false);
-          }}
-          onSuccessDismiss={dismissIndividualPaymentSuccess}
-          onPay={() => void handleConfirmIndividualPayment()}
+          summary={individualPaymentSuccess}
+          onDismiss={dismissIndividualPaymentSuccess}
         />
       ) : null}
 
       {isCheckoutFlow && individualQtyOpen && individualUnitPrice !== null ? (
         <div
-          className="matching-flow-backdrop"
+          className="matching-flow-backdrop trial-checkout-backdrop"
           role="presentation"
           onClick={() => {
+            if (individualPaymentLoading) {
+              return;
+            }
             setIndividualQtyOpen(false);
             setIndividualQtyDraft("1");
           }}
         >
           <section
-            className="matching-flow-modal checkout-individual-qty-modal"
+            className="matching-flow-modal trial-checkout-modal checkout-individual-qty-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="checkout-individual-qty-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="matching-flow-header payment-modal-head">
-              <div className="payment-modal-head-copy">
-                <p className="payment-modal-mini-title">
+            <header className="trial-checkout-header">
+              <div className="trial-checkout-copy">
+                <p className="trial-checkout-kicker">
                   {t(props.language, { es: "Compra flexible", en: "Flexible purchase", pt: "Compra flexivel" })}
                 </p>
-                <h3 id="checkout-individual-qty-title" className="checkout-individual-qty-heading">
+                <h3 id="checkout-individual-qty-title">
                   {t(props.language, {
                     es: "Sesiones fuera de paquete",
                     en: "Sessions outside a bundle",
                     pt: "Sessoes fora do pacote"
                   })}
                 </h3>
+                <p className="trial-checkout-lead">
+                  {t(props.language, {
+                    es: "Elegí cuántas sesiones querés sumar. El precio por sesión es el mismo que para una compra suelta.",
+                    en: "Choose how many sessions to add. The per-session price matches a single-session purchase.",
+                    pt: "Escolha quantas sessoes adicionar. O preco por sessao e o de uma compra avulsa."
+                  })}
+                </p>
               </div>
               <button
                 type="button"
-                className="matching-flow-close payment-modal-close"
+                className="trial-checkout-close"
                 aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                disabled={individualPaymentLoading}
                 onClick={() => {
                   setIndividualQtyOpen(false);
                   setIndividualQtyDraft("1");
@@ -1518,27 +1892,25 @@ export function BookingPage(props: {
                 ×
               </button>
             </header>
-            <p className="checkout-individual-qty-intro">
-              {t(props.language, {
-                es: "Elegí cuántas sesiones querés sumar. El precio por sesión es el mismo que para una compra suelta.",
-                en: "Choose how many sessions to add. The per-session price matches a single-session purchase.",
-                pt: "Escolha quantas sessoes adicionar. O preco por sessao e o de uma compra avulsa."
-              })}
-            </p>
-            <div className="checkout-individual-qty-presets">
+
+            <div className="checkout-individual-qty-presets" role="group" aria-label={t(props.language, { es: "Cantidad rápida", en: "Quick quantity", pt: "Quantidade rapida" })}>
               {([1, 2, 3] as const).map((n) => (
                 <button
                   key={n}
                   type="button"
                   className={`checkout-individual-qty-pill ${individualQtyDraft === String(n) ? "selected" : ""}`}
+                  disabled={individualPaymentLoading}
                   onClick={() => setIndividualQtyDraft(String(n))}
                 >
-                  {replaceTemplate(t(props.language, { es: "{n} sesiones", en: "{n} sessions", pt: "{n} sessoes" }), {
-                    n: String(n)
-                  })}
+                  {n === 1
+                    ? t(props.language, { es: "1 sesión", en: "1 session", pt: "1 sessao" })
+                    : replaceTemplate(t(props.language, { es: "{n} sesiones", en: "{n} sessions", pt: "{n} sessoes" }), {
+                        n: String(n)
+                      })}
                 </button>
               ))}
             </div>
+
             <label className="checkout-individual-qty-field">
               <span>{t(props.language, { es: "Otra cantidad (1–99)", en: "Other quantity (1–99)", pt: "Outra quantidade (1–99)" })}</span>
               <input
@@ -1546,44 +1918,85 @@ export function BookingPage(props: {
                 min={1}
                 max={99}
                 value={individualQtyDraft}
+                disabled={individualPaymentLoading}
                 onChange={(event) => setIndividualQtyDraft(event.target.value.replace(/\D/g, "").slice(0, 2))}
               />
             </label>
+
             {(() => {
               const n = Number.parseInt(individualQtyDraft.trim(), 10);
               const ok = Number.isFinite(n) && n >= 1 && n <= 99 && individualUnitPrice !== null;
               const totalMajor = ok && individualUnitPrice ? individualUnitPrice.amount * n : null;
+              const unitLabel =
+                individualUnitPrice &&
+                formatPatientUsdPrice({
+                  usdMajor: individualUnitPrice.amount,
+                  displayCurrency: props.currency,
+                  language: props.language,
+                  fxRates: props.fxRates,
+                  maximumFractionDigits: 0
+                });
+
               return (
-                <p className="checkout-individual-qty-total">
-                  {ok && totalMajor !== null && individualUnitPrice
-                    ? replaceTemplate(
-                        t(props.language, {
-                          es: "Total estimado: {amount}",
-                          en: "Estimated total: {amount}",
-                          pt: "Total estimado: {amount}"
-                        }),
-                        {
-                          amount: formatPatientUsdPrice({
+                <div className="checkout-individual-qty-summary">
+                  {ok && totalMajor !== null && individualUnitPrice && unitLabel ? (
+                    <>
+                      <div className="checkout-individual-qty-summary-row">
+                        <span>{t(props.language, { es: "Precio por sesión", en: "Price per session", pt: "Preco por sessao" })}</span>
+                        <strong>{unitLabel}</strong>
+                      </div>
+                      <div className="checkout-individual-qty-summary-row checkout-individual-qty-summary-row--total">
+                        <span>{t(props.language, { es: "Total estimado", en: "Estimated total", pt: "Total estimado" })}</span>
+                        <strong>
+                          {formatPatientUsdPrice({
                             usdMajor: totalMajor,
                             displayCurrency: props.currency,
                             language: props.language,
                             fxRates: props.fxRates,
                             maximumFractionDigits: 0
-                          })
-                        }
-                      )
-                    : t(props.language, {
+                          })}
+                        </strong>
+                      </div>
+                      {usesDlocalCheckout ? (
+                        <p className="checkout-individual-qty-provider-note">
+                          {props.state.patientMarket === "AR"
+                            ? t(props.language, {
+                                es: "El pago se realiza en pesos argentinos de forma segura.",
+                                en: "Payment is processed securely in Argentine pesos.",
+                                pt: "O pagamento e feito com seguranca em pesos argentinos."
+                              })
+                            : t(props.language, {
+                                es: "El pago se realiza en tu moneda local de forma segura.",
+                                en: "Payment is processed securely in your local currency.",
+                                pt: "O pagamento e feito na sua moeda local com seguranca."
+                              })}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="checkout-individual-qty-total checkout-individual-qty-total--hint">
+                      {t(props.language, {
                         es: "Ingresá una cantidad válida.",
                         en: "Enter a valid quantity.",
                         pt: "Insira uma quantidade valida."
                       })}
-                </p>
+                    </p>
+                  )}
+                </div>
               );
             })()}
-            <div className="checkout-individual-qty-actions">
+
+            {individualPaymentError ? (
+              <p className="trial-checkout-error" role="alert">
+                {individualPaymentError}
+              </p>
+            ) : null}
+
+            <footer className="trial-checkout-footer checkout-individual-qty-actions">
               <button
                 type="button"
-                className="ghost-button"
+                className="trial-checkout-secondary"
+                disabled={individualPaymentLoading}
                 onClick={() => {
                   setIndividualQtyOpen(false);
                   setIndividualQtyDraft("1");
@@ -1593,20 +2006,27 @@ export function BookingPage(props: {
               </button>
               <button
                 type="button"
-                className="primary"
+                className="matching-flow-primary trial-checkout-primary"
                 onClick={() => proceedIndividualToPayment()}
-                disabled={(() => {
-                  const n = Number.parseInt(individualQtyDraft.trim(), 10);
-                  return !Number.isFinite(n) || n < 1 || n > 99;
-                })()}
+                disabled={
+                  individualPaymentLoading ||
+                  (() => {
+                    const n = Number.parseInt(individualQtyDraft.trim(), 10);
+                    return !Number.isFinite(n) || n < 1 || n > 99;
+                  })()
+                }
               >
-                {t(props.language, {
-                  es: "Continuar al pago simulado",
-                  en: "Continue to simulated payment",
-                  pt: "Continuar para pagamento simulado"
-                })}
+                {individualPaymentLoading
+                  ? t(props.language, { es: "Un momento…", en: "One moment…", pt: "Um momento…" })
+                  : usesDlocalCheckout
+                    ? t(props.language, { es: "Continuar al pago", en: "Continue to payment", pt: "Continuar para pagamento" })
+                    : t(props.language, {
+                        es: "Continuar",
+                        en: "Continue",
+                        pt: "Continuar"
+                      })}
               </button>
-            </div>
+            </footer>
           </section>
         </div>
       ) : null}

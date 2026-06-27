@@ -11,8 +11,6 @@ interface AvailabilityApiResponse {
   }>;
 }
 
-export type SlotAvailabilityRef = Pick<MatchTimeSlot, "id" | "startsAt" | "endsAt">;
-
 function mapSlotsResponse(response: AvailabilityApiResponse): MatchTimeSlot[] {
   const minHours = Number.isFinite(Number(response.minimumBookingNoticeHours))
     ? Number(response.minimumBookingNoticeHours)
@@ -43,23 +41,4 @@ export async function fetchProfessionalAvailability(
   );
 
   return mapSlotsResponse(response);
-}
-
-/**
- * Último chequeo antes de pagar/confirmar: lista fresca desde el API.
- * Si el fetch falla, devuelve `true` (el POST sigue siendo la fuente de verdad).
- */
-export async function isSlotStillListedAfterFreshFetch(
-  professionalId: string,
-  slot: SlotAvailabilityRef,
-  token?: string | null
-): Promise<boolean> {
-  try {
-    const fresh = await fetchProfessionalAvailability(professionalId, token);
-    return fresh.some(
-      (row) => row.id === slot.id && row.startsAt === slot.startsAt && row.endsAt === slot.endsAt
-    );
-  } catch {
-    return true;
-  }
 }

@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { Router } from "express";
 import type { Market } from "@prisma/client";
+import { billingCurrencyCodeForMarket, coerceTherapyModality } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import {
@@ -13,11 +14,20 @@ import {
 } from "../../lib/sessionPackageVisibility.js";
 import {
   AR_SESSION_LIST_MAX,
-  AR_SESSION_LIST_MIN,
-  listPriceMajorUnitsForPackageMarket
+  AR_SESSION_LIST_MIN
 } from "../../lib/professionalSessionListPrice.js";
+import {
+  listPriceUsdMajorForModality,
+  profileDiscountPercentsForModality
+} from "../../lib/professionalPricingProfile.js";
+import { ensureGlobalCouplesSessionPackages } from "../../lib/ensureCouplesSessionPackages.js";
+import {
+  resolvePackageDiscountPercent,
+  resolvePackagePriceUsdCents
+} from "../../lib/resolveSessionPackagePrice.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { getUsdArsRate } from "../../lib/usdArsExchange.js";
+import { getUsdDisplayFxRates } from "../../lib/usdDisplayFxRates.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { env } from "../../config/env.js";
 import { type ExercisePost } from "../web-content/exercises.defaults.js";
@@ -61,7 +71,8 @@ const sessionPackagesChannelSchema = z.object({
   landingSlot: landingPackagesSlotSchema.optional(),
   professionalId: z.string().trim().min(1).optional(),
   /** Catálogo por mercado (default AR). */
-  market: z.enum(["AR", "US", "BR", "ES"]).optional()
+  market: z.enum(["AR", "US", "BR", "ES"]).optional(),
+  modality: z.enum(["INDIVIDUAL", "COUPLES"]).optional()
 });
 
 const imageSourceSchema = z
@@ -269,6 +280,16 @@ publicRouter.get("/fx/usd-ars", async (_req, res) => {
   }
 });
 
+/** Cotizaciones USD → monedas de display del portal paciente (cache 15 min). */
+publicRouter.get("/fx/display-rates", async (_req, res) => {
+  try {
+    const ratesPerUsd = await getUsdDisplayFxRates();
+    return res.json({ ratesPerUsd });
+  } catch {
+    return res.status(503).json({ error: "FX_UNAVAILABLE" });
+  }
+});
+
 const checkEmailQuerySchema = z.object({
   email: z.string().trim().email().max(254)
 });
@@ -285,12 +306,6 @@ publicRouter.get("/check-email", async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   return res.json({ available: existing === null });
 });
-
-import { billingCurrencyCodeForMarket } from "@therapy/types";
-import {
-  resolvePackageDiscountPercent,
-  resolvePackagePriceUsdCents
-} from "../../lib/resolveSessionPackagePrice.js";
 
 function resolveSessionPackageMarketingLabel(credits: number): "Inicio" | "Continuidad" | "Intensivo" {
   if (credits <= 4) {
@@ -309,9 +324,13 @@ const sessionPackageCatalogInclude = {
       market: true,
       sessionPriceArs: true,
       sessionPriceUsd: true,
+      couplesSessionPriceUsd: true,
       discount4: true,
       discount8: true,
       discount12: true,
+      couplesDiscount4: true,
+      couplesDiscount8: true,
+      couplesDiscount12: true,
       user: { select: { fullName: true } }
     }
   }
@@ -372,6 +391,11 @@ publicRouter.get("/session-packages", async (req, res) => {
       ? parsed.data.market
       : "AR";
 
+  const modality = coerceTherapyModality(parsed.data.modality, "INDIVIDUAL");
+  if (modality === "COUPLES") {
+    await ensureGlobalCouplesSessionPackages(market);
+  }
+
   /**
    * Cotización USD/ARS para normalizar filas legacy del catálogo (ARS → USD).
    */
@@ -380,7 +404,7 @@ publicRouter.get("/session-packages", async (req, res) => {
 
   const [packages, visibilityConfig, selectedProfessional] = await Promise.all([
     prisma.sessionPackage.findMany({
-      where: { active: true, market },
+      where: { active: true, market, modality },
       include: sessionPackageCatalogInclude,
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     }),
@@ -393,9 +417,13 @@ publicRouter.get("/session-packages", async (req, res) => {
             market: true,
             sessionPriceArs: true,
             sessionPriceUsd: true,
+            couplesSessionPriceUsd: true,
             discount4: true,
             discount8: true,
             discount12: true,
+            couplesDiscount4: true,
+            couplesDiscount8: true,
+            couplesDiscount12: true,
             user: { select: { fullName: true } }
           }
         })
@@ -411,8 +439,11 @@ publicRouter.get("/session-packages", async (req, res) => {
   });
 
   if (parsed.data.channel === "patient" && bundleSessionPackages(orderedPackages).length === 0 && market !== "AR") {
+    if (modality === "COUPLES") {
+      await ensureGlobalCouplesSessionPackages("AR");
+    }
     const arPackages = await prisma.sessionPackage.findMany({
-      where: { active: true, market: "AR" },
+      where: { active: true, market: "AR", modality },
       include: sessionPackageCatalogInclude,
       orderBy: [{ credits: "asc" }, { createdAt: "asc" }]
     });
@@ -440,18 +471,20 @@ publicRouter.get("/session-packages", async (req, res) => {
 
   return res.json({
     market,
+    modality,
     featuredPackageId,
     sessionPackages: orderedPackages.map((item) => {
       const pricingProfile = selectedProfessional ?? item.professional;
+      const profileDiscounts = profileDiscountPercentsForModality(pricingProfile ?? {}, modality);
       const discountPercent = resolvePackageDiscountPercent({
         credits: item.credits,
         fallbackDiscountPercent: item.discountPercent,
-        profileDiscount4: pricingProfile?.discount4,
-        profileDiscount8: pricingProfile?.discount8,
-        profileDiscount12: pricingProfile?.discount12
+        profileDiscount4: profileDiscounts.discount4,
+        profileDiscount8: profileDiscounts.discount8,
+        profileDiscount12: profileDiscounts.discount12
       });
       const sessionListPriceUsdMajor =
-        pricingProfile ? listPriceMajorUnitsForPackageMarket(pricingProfile, market, arsPerUsd) : null;
+        pricingProfile ? listPriceUsdMajorForModality(pricingProfile, modality, arsPerUsd) : null;
       const priceCents = resolvePackagePriceUsdCents({
         credits: item.credits,
         fallbackPriceCents: item.priceCents,
@@ -475,6 +508,7 @@ publicRouter.get("/session-packages", async (req, res) => {
         discountPercent,
         marketingLabel: resolveSessionPackageMarketingLabel(item.credits),
         currency: normalizedCurrency,
+        modality: item.modality,
         active: item.active,
         createdAt: item.createdAt
       };

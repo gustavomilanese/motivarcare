@@ -47,6 +47,8 @@ export function AvailabilityPickerModal(props: {
   onSelectSlot: (slot: MatchTimeSlot) => void;
   onClose: () => void;
   onContinue: () => void;
+  onRetry?: () => void;
+  continueLoading?: boolean;
 }) {
   const ordered = useMemo(() => sortByStart(props.slots), [props.slots]);
   const dayKeys = useMemo(
@@ -96,117 +98,215 @@ export function AvailabilityPickerModal(props: {
     return { morning, day, night };
   }, [props.timezone, visibleDaySlots]);
 
+  const hasVisibleSlots = grouped.morning.length + grouped.day.length + grouped.night.length > 0;
+  const showEmptyState = !props.loading && !props.error && dayKeys.length === 0;
+
+  const monthLabel = selectedDayKey
+    ? formatDateWithLocale({
+        value: `${selectedDayKey}T12:00:00.000Z`,
+        language: props.language,
+        timeZone: props.timezone,
+        options: { month: "long", year: "numeric" }
+      })
+    : null;
+
   return (
-    <div className="matching-flow-backdrop" role="presentation" onClick={props.onClose}>
+    <div className="matching-flow-backdrop availability-picker-backdrop" role="presentation" onClick={props.onClose}>
       <section
         className="matching-flow-modal availability-picker-modal"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="availability-picker-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="matching-flow-header">
-          <button type="button" className="matching-flow-back-button" onClick={props.onClose}>
+        <header className="availability-picker-header">
+          <button
+            type="button"
+            className="availability-picker-icon-btn"
+            onClick={props.onClose}
+            aria-label={t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+          >
             ←
           </button>
-          <div>
-            <h3>{t(props.language, { es: "Elige una hora", en: "Choose a time", pt: "Escolha um horario" })}</h3>
-            <p>
-              {replaceSessionLabel(props.language, props.sessionDurationMinutes)} · {props.professionalName}
-            </p>
-          </div>
-          <span className="matching-flow-info">i</span>
+          <button
+            type="button"
+            className="availability-picker-icon-btn"
+            onClick={props.onClose}
+            aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          >
+            ×
+          </button>
         </header>
 
-        <section className="availability-month-row">
-          <strong>
-            {selectedDayKey
-              ? formatDateWithLocale({
-                  value: `${selectedDayKey}T12:00:00.000Z`,
-                  language: props.language,
-                  timeZone: props.timezone,
-                  options: { month: "long", year: "numeric" }
-                })
-              : t(props.language, { es: "Sin fechas", en: "No dates", pt: "Sem datas" })}
-          </strong>
-        </section>
-
-        <div className="availability-days-grid">
-          {dayKeys.slice(0, 10).map((dayKey) => {
-            const iso = `${dayKey}T12:00:00.000Z`;
-            const weekday = formatDateWithLocale({
-              value: iso,
-              language: props.language,
-              timeZone: props.timezone,
-              options: { weekday: "short" }
-            });
-            const day = formatDateWithLocale({
-              value: iso,
-              language: props.language,
-              timeZone: props.timezone,
-              options: { day: "2-digit" }
-            });
-            return (
-              <button
-                key={dayKey}
-                type="button"
-                className={`availability-day-button ${selectedDayKey === dayKey ? "selected" : ""}`}
-                onClick={() => setSelectedDayKey(dayKey)}
-              >
-                <span>{weekday}</span>
-                <strong>{day}</strong>
-              </button>
-            );
-          })}
+        <div className="availability-picker-copy">
+          <p className="availability-picker-kicker">
+            {t(props.language, { es: "Horarios disponibles", en: "Available times", pt: "Horarios disponiveis" })}
+          </p>
+          <h3 id="availability-picker-title">
+            {t(props.language, {
+              es: "Elegí día y hora",
+              en: "Pick a day and time",
+              pt: "Escolha dia e horario"
+            })}
+          </h3>
+          <p className="availability-picker-lead">
+            {replaceSessionLabel(props.language, props.sessionDurationMinutes)} · {props.professionalName}
+            {!props.loading && ordered.length > 0
+              ? ` · ${ordered.length} ${t(props.language, { es: "opciones", en: "options", pt: "opcoes" })}`
+              : ""}
+          </p>
         </div>
 
-        <p className="availability-timezone-note">
-          {t(props.language, {
-            es: "La fecha y hora se muestran según tu zona horaria actual",
-            en: "Date and time are shown in your current timezone",
-            pt: "Data e horario sao exibidos no seu fuso horario atual"
-          })}: {props.timezone}
-        </p>
-
-        {props.loading ? <MotivarCarePageLoader language={props.language} layout="inline" /> : null}
-
-        {!props.loading && props.error ? (
-          <p className="availability-status-message booking-soft-notice" role="status">
-            {props.error}
-          </p>
-        ) : null}
-
-        {!props.loading && !props.error ? (
-          <div className="availability-periods">
-            <AvailabilityPeriodBlock
-              language={props.language}
-              label={t(props.language, { es: "Por la mañana", en: "Morning", pt: "Manhã" })}
-              slots={grouped.morning}
-              timezone={props.timezone}
-              selectedSlotId={props.selectedSlotId}
-              onSelectSlot={props.onSelectSlot}
-            />
-            <AvailabilityPeriodBlock
-              language={props.language}
-              label={t(props.language, { es: "Tarde", en: "Afternoon", pt: "Tarde" })}
-              slots={grouped.day}
-              timezone={props.timezone}
-              selectedSlotId={props.selectedSlotId}
-              onSelectSlot={props.onSelectSlot}
-            />
-            <AvailabilityPeriodBlock
-              language={props.language}
-              label={t(props.language, { es: "Noche", en: "Evening", pt: "Noite" })}
-              slots={grouped.night}
-              timezone={props.timezone}
-              selectedSlotId={props.selectedSlotId}
-              onSelectSlot={props.onSelectSlot}
-            />
+        {props.loading ? (
+          <div className="availability-picker-loading" role="status">
+            <MotivarCarePageLoader language={props.language} layout="inline" />
+            <p>
+              {t(props.language, {
+                es: "Cargando horarios del profesional…",
+                en: "Loading this therapist’s times…",
+                pt: "Carregando horarios do profissional…"
+              })}
+            </p>
           </div>
         ) : null}
 
-        <footer className="matching-flow-footer">
-          <button type="button" className="matching-flow-primary" onClick={props.onContinue} disabled={!props.selectedSlotId}>
-            {t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
+        {!props.loading && props.error ? (
+          <div className="availability-picker-empty" role="alert">
+            <strong>
+              {t(props.language, {
+                es: "No pudimos cargar los horarios",
+                en: "We couldn’t load times",
+                pt: "Nao foi possivel carregar os horarios"
+              })}
+            </strong>
+            <p>{props.error}</p>
+            {props.onRetry ? (
+              <button type="button" className="availability-picker-retry" onClick={props.onRetry}>
+                {t(props.language, { es: "Reintentar", en: "Try again", pt: "Tentar de novo" })}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showEmptyState ? (
+          <div className="availability-picker-empty">
+            <strong>
+              {t(props.language, {
+                es: "No hay turnos libres por ahora",
+                en: "No open slots right now",
+                pt: "Nao ha horarios livres agora"
+              })}
+            </strong>
+            <p>
+              {t(props.language, {
+                es: "Este profesional no tiene horarios publicados en las próximas semanas. Probá con otro o volvé más tarde.",
+                en: "This therapist has no published times in the coming weeks. Try another or check back later.",
+                pt: "Este profissional nao tem horarios publicados nas proximas semanas. Tente outro ou volte mais tarde."
+              })}
+            </p>
+            {props.onRetry ? (
+              <button type="button" className="availability-picker-retry" onClick={props.onRetry}>
+                {t(props.language, { es: "Actualizar", en: "Refresh", pt: "Atualizar" })}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!props.loading && !props.error && dayKeys.length > 0 ? (
+          <>
+            <section className="availability-month-row">
+              <strong>{monthLabel}</strong>
+            </section>
+
+            <div className="availability-days-grid">
+              {dayKeys.slice(0, 10).map((dayKey) => {
+                const iso = `${dayKey}T12:00:00.000Z`;
+                const weekday = formatDateWithLocale({
+                  value: iso,
+                  language: props.language,
+                  timeZone: props.timezone,
+                  options: { weekday: "short" }
+                });
+                const day = formatDateWithLocale({
+                  value: iso,
+                  language: props.language,
+                  timeZone: props.timezone,
+                  options: { day: "2-digit" }
+                });
+                const slotsForDay = ordered.filter((slot) => toDateKey(slot.startsAt, props.timezone) === dayKey).length;
+                return (
+                  <button
+                    key={dayKey}
+                    type="button"
+                    className={`availability-day-button ${selectedDayKey === dayKey ? "selected" : ""}`}
+                    onClick={() => setSelectedDayKey(dayKey)}
+                  >
+                    <span>{weekday}</span>
+                    <strong>{day}</strong>
+                    <em>{slotsForDay}</em>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="availability-timezone-note">
+              {t(props.language, {
+                es: "Mostramos fecha y hora en tu zona",
+                en: "Date and time shown in your timezone",
+                pt: "Data e horario no seu fuso"
+              })}
+              : <strong>{props.timezone}</strong>
+            </p>
+
+            {hasVisibleSlots ? (
+              <div className="availability-periods">
+                <AvailabilityPeriodBlock
+                  language={props.language}
+                  label={t(props.language, { es: "Mañana", en: "Morning", pt: "Manha" })}
+                  slots={grouped.morning}
+                  timezone={props.timezone}
+                  selectedSlotId={props.selectedSlotId}
+                  onSelectSlot={props.onSelectSlot}
+                />
+                <AvailabilityPeriodBlock
+                  language={props.language}
+                  label={t(props.language, { es: "Tarde", en: "Afternoon", pt: "Tarde" })}
+                  slots={grouped.day}
+                  timezone={props.timezone}
+                  selectedSlotId={props.selectedSlotId}
+                  onSelectSlot={props.onSelectSlot}
+                />
+                <AvailabilityPeriodBlock
+                  language={props.language}
+                  label={t(props.language, { es: "Noche", en: "Evening", pt: "Noite" })}
+                  slots={grouped.night}
+                  timezone={props.timezone}
+                  selectedSlotId={props.selectedSlotId}
+                  onSelectSlot={props.onSelectSlot}
+                />
+              </div>
+            ) : (
+              <p className="availability-picker-day-empty">
+                {t(props.language, {
+                  es: "No hay horarios para este día. Elegí otra fecha arriba.",
+                  en: "No times on this day. Pick another date above.",
+                  pt: "Nao ha horarios neste dia. Escolha outra data acima."
+                })}
+              </p>
+            )}
+          </>
+        ) : null}
+
+        <footer className="availability-picker-footer">
+          <button
+            type="button"
+            className="matching-flow-primary availability-picker-primary"
+            onClick={props.onContinue}
+            disabled={!props.selectedSlotId || props.continueLoading || props.loading}
+          >
+            {props.continueLoading
+              ? t(props.language, { es: "Reservando…", en: "Reserving…", pt: "Reservando…" })
+              : t(props.language, { es: "Continuar", en: "Continue", pt: "Continuar" })}
           </button>
         </footer>
       </section>
@@ -216,9 +316,9 @@ export function AvailabilityPickerModal(props: {
 
 function replaceSessionLabel(language: AppLanguage, minutes: number): string {
   return t(language, {
-    es: `Sesión ${minutes} minutos`,
-    en: `${minutes}-minute session`,
-    pt: `Sessao de ${minutes} minutos`
+    es: `Sesión ${minutes} min`,
+    en: `${minutes}-min session`,
+    pt: `Sessao de ${minutes} min`
   });
 }
 

@@ -34,6 +34,7 @@ export interface MatchingProfessionalInput {
    * matching contra preferencia LGBTIQ+ y enriquece detección de tópicos.
    */
   focusAreas?: string[] | null;
+  couplesSessionPriceUsd?: number | null;
 }
 
 export interface ProfessionalMatchResult {
@@ -206,7 +207,7 @@ function localize(language: MatchingLanguage, values: { es: string; en: string; 
   return values.es;
 }
 
-function parseIntakeAnswers(answers: unknown): Record<string, string> {
+export function parseIntakeAnswers(answers: unknown): Record<string, string> {
   if (!answers || typeof answers !== "object") {
     return {};
   }
@@ -222,9 +223,10 @@ function parseIntakeAnswers(answers: unknown): Record<string, string> {
 
 function extractPatientTopics(answers: Record<string, string>): TopicKey[] {
   const mainReasonRaw = answers.mainReason ?? "";
+  const couplesFocusRaw = answers.couplesTherapyFocus ?? "";
   const goalText = normalize(answers.therapyGoal);
   const emotionalState = normalize(answers.emotionalState);
-  const combined = `${goalText} ${emotionalState}`;
+  const combined = `${goalText} ${emotionalState} ${couplesFocusRaw}`;
   const topics: TopicKey[] = [];
 
   const mainParts = mainReasonRaw

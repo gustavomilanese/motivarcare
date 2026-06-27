@@ -2,6 +2,7 @@ import type { AppLanguage } from "@therapy/i18n-config";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { PatientOpsAvatar } from "./PatientsOpsSections";
+import { PatientPaymentCheckoutsPanel } from "./PatientPaymentCheckoutsPanel";
 import { ADMIN_TRIAL_BOOKING_CANCEL_PHRASE, SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../../constants";
 import type {
   AdminBookingOps,
@@ -141,6 +142,7 @@ export function CreatePatientModal(props: {
 export function PatientEditModal(props: {
   open: boolean;
   language: AppLanguage;
+  adminToken: string;
   editingPatient: AdminPatientOps | null;
   editingPatientDraft?: PatientDetailDraft;
   editingBookings: AdminBookingOps[];
@@ -330,6 +332,34 @@ export function PatientEditModal(props: {
               Riesgo {editingPatient.intakeRiskLevel ?? "medium"}
             </span>
           </div>
+          {props.triagePending ? (
+            <div className="risk-triage-decision-panel" role="status">
+              <p className="risk-triage-decision-copy">
+                Este paciente está <strong>pendiente de triage</strong>. Aprobar o rechazar solo define si puede usar la
+                plataforma según el screening de riesgo. No guarda sesiones ni otros datos del perfil.
+              </p>
+              <div className="risk-triage-form-actions">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={props.onApproveTriage}
+                  disabled={props.triageActionLoading}
+                >
+                  {props.triageActionLoading ? "Procesando..." : "Aprobar triage"}
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={props.onRejectTriage}
+                  disabled={props.triageActionLoading}
+                >
+                  Rechazar triage
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="risk-triage-decision-resolved">Triage de riesgo aprobado.</p>
+          )}
           {intakeEntries.length === 0 ? (
             <p className="risk-intake-empty">No hay respuestas de screening cargadas para este paciente.</p>
           ) : (
@@ -343,6 +373,12 @@ export function PatientEditModal(props: {
             </div>
           )}
         </section>
+
+        <PatientPaymentCheckoutsPanel
+          token={props.adminToken}
+          patientId={editingPatient.id}
+          language={props.language}
+        />
 
         <section className="sessions-subsection">
           <div className="sessions-subsection-head">
@@ -605,26 +641,6 @@ export function PatientEditModal(props: {
           <button className="primary" type="button" disabled={props.patientSaveLoading} onClick={props.onSavePatient}>
             {props.patientSaveLoading ? "Guardando..." : "Guardar cambios"}
           </button>
-          {props.triagePending ? (
-            <div className="risk-triage-form-actions">
-              <button
-                type="button"
-                className="primary"
-                onClick={props.onApproveTriage}
-                disabled={props.triageActionLoading}
-              >
-                {props.triageActionLoading ? "Procesando..." : "Aprobar"}
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={props.onRejectTriage}
-                disabled={props.triageActionLoading}
-              >
-                Rechazar
-              </button>
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

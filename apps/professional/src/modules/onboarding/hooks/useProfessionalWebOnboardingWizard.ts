@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { detectBrowserTimezone } from "@therapy/auth";
+import { focusAreasIncludeCouplesTherapy } from "@therapy/types";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { resendVerificationEmail as requestVerificationEmailResend } from "../../app/lib/ensureVerificationEmailSent";
 import {
@@ -24,6 +25,13 @@ import {
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { PROFESSIONAL_THERAPY_MODALITY_EXCLUSIVE_ES } from "../constants/professionalTherapyModalityOptions";
 import type { PayoutProvider } from "../components/ProfessionalPayoutSetupPanel";
+import {
+  defaultBankTransferType,
+  isPayoutFormComplete,
+  normalizeBankAccountValue,
+  normalizeTaxIdDigits,
+  type PayoutFormFields
+} from "../lib/professionalPayoutValidation";
 import {
   inferPayoutProviderFromBrowser,
   inferPayoutProviderFromResidencyCountry
@@ -162,15 +170,25 @@ export function useProfessionalWebOnboardingWizard(input: {
     shortDescription: "",
     sessionPriceArs: "",
     sessionPriceUsd: "",
+    couplesSessionPriceUsd: "",
     discount4: "",
     discount8: "",
     discount12: "",
+    couplesDiscount4: "",
+    couplesDiscount8: "",
+    couplesDiscount12: "",
     profilePhotoReady: false,
     profilePhotoPreview: "",
     videoReady: false,
     videoPreview: "",
     videoFileUrl: "",
     taxId: "",
+    payoutLegalName: "",
+    payoutAccountHolderName: "",
+    payoutBankTransferType: defaultBankTransferType(inferPayoutProviderFromBrowser()),
+    payoutBankAccountValue: "",
+    payoutBankName: "",
+    payoutTermsAccepted: false,
     diplomas: [
       {
         institution: "",
@@ -360,8 +378,30 @@ export function useProfessionalWebOnboardingWizard(input: {
     const iso = form.residencyCountry.trim();
     const next =
       iso.length === 2 ? inferPayoutProviderFromResidencyCountry(iso) : inferPayoutProviderFromBrowser();
-    setForm((current) => (current.payoutProvider === next ? current : { ...current, payoutProvider: next }));
+    setForm((current) => {
+      if (current.payoutProvider === next) {
+        return current;
+      }
+      return {
+        ...current,
+        payoutProvider: next,
+        payoutBankTransferType: defaultBankTransferType(next),
+        payoutBankAccountValue: ""
+      };
+    });
   }, [form.residencyCountry]);
+
+  useEffect(() => {
+    const holder = joinWebOnboardingFullName(form.firstName, form.lastName);
+    if (!holder) {
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      payoutLegalName: current.payoutLegalName.trim() ? current.payoutLegalName : holder,
+      payoutAccountHolderName: current.payoutAccountHolderName.trim() ? current.payoutAccountHolderName : holder
+    }));
+  }, [form.firstName, form.lastName]);
 
   const turnstileSiteKey =
     typeof import.meta !== "undefined" && import.meta.env?.VITE_TURNSTILE_SITE_KEY
@@ -472,6 +512,8 @@ export function useProfessionalWebOnboardingWizard(input: {
   };
 
   /** Turnstile: no exigimos token en estado para habilitar el botón; se lee con la ref al enviar (getResponse). */
+  const offersCouplesTherapy = focusAreasIncludeCouplesTherapy(form.focusAreas);
+
   const stepValidations = [
     Boolean(
       looksLikeEmail(form.email)
@@ -513,7 +555,15 @@ export function useProfessionalWebOnboardingWizard(input: {
         const arMin = sessionPriceBounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
         const arMax = sessionPriceBounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
         if (computedSessionPriceArs !== null) {
-          return computedSessionPriceArs >= arMin && computedSessionPriceArs <= arMax;
+          if (computedSessionPriceArs < arMin || computedSessionPriceArs > arMax) {
+            return false;
+          }
+        }
+        if (offersCouplesTherapy) {
+          const couplesUsd = Number(form.couplesSessionPriceUsd || "0");
+          if (!Number.isInteger(couplesUsd) || couplesUsd < usdMin || couplesUsd > usdMax) {
+            return false;
+          }
         }
         return true;
       })()
@@ -528,7 +578,19 @@ export function useProfessionalWebOnboardingWizard(input: {
         && diploma.graduationYear
       )
     ),
-    true
+    isPayoutFormComplete(
+      form.payoutProvider,
+      {
+        legalName: form.payoutLegalName,
+        taxId: form.taxId,
+        accountHolderName: form.payoutAccountHolderName,
+        bankTransferType: form.payoutBankTransferType,
+        bankAccountValue: form.payoutBankAccountValue,
+        bankName: form.payoutBankName,
+        payoutTermsAccepted: form.payoutTermsAccepted
+      } satisfies PayoutFormFields,
+      Boolean(form.stripeDocPreview.trim())
+    )
   ];
 
   const canContinue = stepValidations[step];
@@ -922,15 +984,22 @@ export function useProfessionalWebOnboardingWizard(input: {
       therapeuticApproach: combineTherapeuticApproach(form.therapyModalities, form.methodology),
       sessionPriceArs: computedSessionPriceArs,
       sessionPriceUsd: form.sessionPriceUsd.trim() ? Number(form.sessionPriceUsd) : null,
+      couplesSessionPriceUsd:
+        offersCouplesTherapy && form.couplesSessionPriceUsd.trim()
+          ? Number(form.couplesSessionPriceUsd)
+          : null,
       discount4: form.discount4.trim() ? Number(form.discount4) : null,
       discount8: form.discount8.trim() ? Number(form.discount8) : null,
       discount12: form.discount12.trim() ? Number(form.discount12) : null,
+      couplesDiscount4: form.couplesDiscount4.trim() ? Number(form.couplesDiscount4) : null,
+      couplesDiscount8: form.couplesDiscount8.trim() ? Number(form.couplesDiscount8) : null,
+      couplesDiscount12: form.couplesDiscount12.trim() ? Number(form.couplesDiscount12) : null,
       photoUrl: form.profilePhotoPreview || null,
       videoUrl: form.videoFileUrl || null,
       videoCoverUrl: form.videoPreview || null,
       stripeDocUrl: form.stripeDocPreview || null,
-      stripeVerified: form.stripeVerified,
-      stripeVerificationStarted: form.stripeVerificationStarted,
+      stripeVerified: false,
+      stripeVerificationStarted: true,
       diplomas: form.diplomas
         .filter((diploma) => diploma.institution.trim() && diploma.degree.trim() && diploma.startYear && diploma.graduationYear)
         .map((diploma) => ({
@@ -940,8 +1009,15 @@ export function useProfessionalWebOnboardingWizard(input: {
           graduationYear: Number(diploma.graduationYear),
           documentUrl: diploma.diplomaPreview || null
         })),
-      taxId: form.taxId.trim() || undefined,
-      payoutMethod: form.payoutProvider
+      taxId: normalizeTaxIdDigits(form.taxId) || undefined,
+      payoutMethod: form.payoutProvider,
+      payoutProfile: {
+        legalName: form.payoutLegalName.trim(),
+        accountHolderName: form.payoutAccountHolderName.trim(),
+        bankTransferType: form.payoutBankTransferType,
+        bankAccountValue: normalizeBankAccountValue(form.payoutBankTransferType, form.payoutBankAccountValue),
+        bankName: form.payoutBankName.trim() || undefined
+      }
     };
 
     const meta: ProfessionalWebOnboardingFinishMeta = {
@@ -1012,6 +1088,7 @@ export function useProfessionalWebOnboardingWizard(input: {
     discountedPriceLabelArs,
     discountedPriceLabelUsd,
     computedSessionPriceArs,
+    offersCouplesTherapy,
     usdArsRate,
     usdArsRateError,
     canContinue,

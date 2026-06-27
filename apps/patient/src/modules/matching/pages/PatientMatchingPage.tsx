@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { MatchingHeader } from "../components/MatchingHeader";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
@@ -6,12 +6,14 @@ import { ProfessionalMatchCard } from "../components/ProfessionalMatchCard";
 import { MatchingStickyAction } from "../components/MatchingStickyAction";
 import { AvailabilityPickerModal } from "../components/AvailabilityPickerModal";
 import { BookingSummaryModal } from "../components/BookingSummaryModal";
-import { PaymentMethodModal } from "../components/PaymentMethodModal";
+import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import { friendlyBookingFailureMessage } from "../../app/lib/friendlyPatientMessages";
+import { patientUsesDlocalCheckout } from "../../app/lib/patientDlocalCheckout";
 import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
-import { effectiveSessionListMajorUnits } from "../lib/sessionListPrice";
-import { fetchProfessionalAvailability, isSlotStillListedAfterFreshFetch } from "../services/availability";
+import { fetchProfessionalAvailability } from "../services/availability";
+import { acquireBookingSlotHold, releaseBookingSlotHold } from "../services/slotHold";
 import { fetchProfessionalDirectory } from "../services/professionals";
+import type { PortalPurchaseResult } from "../../app/hooks/usePortalActions";
 import type {
   MatchCardProfessional,
   MatchingPageProps,
@@ -20,8 +22,32 @@ import type {
   SortMode
 } from "../types";
 
+const ONBOARDING_TRIAL_BOOKING_STORAGE_KEY = "mc:onboarding-trial-booking";
+
+type PendingTrialBooking = {
+  professionalId: string;
+  slot: MatchTimeSlot;
+  paymentId: string;
+  holdId?: string;
+};
+
 function t(language: MatchingPageProps["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function sortFutureSlots(slots: MatchTimeSlot[]): MatchTimeSlot[] {
+  const now = Date.now();
+  return [...slots]
+    .filter((slot) => new Date(slot.startsAt).getTime() > now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+}
+
+function directorySlotsForProfessional(professional: MatchCardProfessional | null | undefined): MatchTimeSlot[] {
+  if (!professional) {
+    return [];
+  }
+  const source = professional.slots.length > 0 ? professional.slots : (professional.suggestedSlots ?? []);
+  return sortFutureSlots(source);
 }
 
 export function PatientMatchingPage(props: MatchingPageProps) {
@@ -32,7 +58,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const [professionals, setProfessionals] = useState<MatchCardProfessional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [bookingStep, setBookingStep] = useState<"availability" | "summary" | "payment" | null>(null);
+  const [bookingStep, setBookingStep] = useState<"availability" | "summary" | null>(null);
   const [bookingProfessionalId, setBookingProfessionalId] = useState("");
   const [bookingSlot, setBookingSlot] = useState<MatchTimeSlot | null>(null);
   const [allSlots, setAllSlots] = useState<MatchTimeSlot[]>([]);
@@ -40,7 +66,24 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const [slotsError, setSlotsError] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [summaryContinueLoading, setSummaryContinueLoading] = useState(false);
+  const [checkoutLoadingPhase, setCheckoutLoadingPhase] = useState<"idle" | "creating" | "redirecting">("idle");
+  const [summaryHoldLoading, setSummaryHoldLoading] = useState(false);
+  const [slotHoldId, setSlotHoldId] = useState("");
+  const [slotHoldExpiresAt, setSlotHoldExpiresAt] = useState("");
+  const slotHoldIdRef = useRef("");
+  const bookingProfessionalIdRef = useRef("");
+  const checkoutRedirectingRef = useRef(false);
+  const trialReturnHandledRef = useRef(false);
   const viewerTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  const usesDlocalCheckout = useMemo(
+    () =>
+      patientUsesDlocalCheckout({
+        patientMarket: props.patientMarket,
+        residencyCountry: props.residencyCountry ?? null
+      }),
+    [props.patientMarket, props.residencyCountry]
+  );
 
   useEffect(() => {
     let active = true;
@@ -81,6 +124,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const { ordered } = useProfessionalMatching({
     professionals,
     patientMarket: props.patientMarket,
+    therapyModality: props.therapyModality,
     intakeAnswers: props.intakeAnswers,
     language: props.language,
     search: "",
@@ -175,14 +219,207 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     [bookingProfessionalId, professionals]
   );
 
-  const bookingListMajor = useMemo(() => {
-    if (!bookingProfessional) {
-      return null;
+  slotHoldIdRef.current = slotHoldId;
+  bookingProfessionalIdRef.current = bookingProfessionalId;
+
+  const releaseCurrentSlotHold = async () => {
+    const holdId = slotHoldIdRef.current;
+    if (!holdId || !props.authToken) {
+      setSlotHoldId("");
+      setSlotHoldExpiresAt("");
+      return;
     }
-    return effectiveSessionListMajorUnits(bookingProfessional, props.patientMarket);
-  }, [bookingProfessional, props.patientMarket]);
+    try {
+      await releaseBookingSlotHold(holdId, props.authToken);
+    } catch {
+      // Best-effort release; TTL will expire the hold.
+    }
+    setSlotHoldId("");
+    setSlotHoldExpiresAt("");
+    slotHoldIdRef.current = "";
+  };
+
+  const resolveProfessionalById = useCallback(
+    (professionalId: string) => professionals.find((item) => item.id === professionalId) ?? null,
+    [professionals]
+  );
+
+  const loadProfessionalSlots = useCallback(
+    (professionalId: string) => {
+      const directorySlots = directorySlotsForProfessional(resolveProfessionalById(professionalId));
+      if (directorySlots.length > 0) {
+        setAllSlots(directorySlots);
+      }
+      setSlotsLoading(true);
+      setSlotsError("");
+      return fetchProfessionalAvailability(professionalId, props.authToken)
+        .then((slots) => {
+          const nextSlots = slots.length > 0 ? slots : directorySlots;
+          setAllSlots(nextSlots);
+          return nextSlots;
+        })
+        .catch(() => {
+          if (directorySlots.length > 0) {
+            setAllSlots(directorySlots);
+            setSlotsError("");
+            return directorySlots;
+          }
+          setAllSlots([]);
+          setSlotsError(
+            t(props.language, {
+              es: "Ahora no pudimos cargar los horarios. Volvé a intentar o elegí otro profesional.",
+              en: "We couldn’t load times just now. Try again or choose another professional.",
+              pt: "Nao foi possivel carregar os horarios agora. Tente de novo ou escolha outro profissional."
+            })
+          );
+          return [] as MatchTimeSlot[];
+        })
+        .finally(() => {
+          setSlotsLoading(false);
+        });
+    },
+    [props.authToken, props.language, resolveProfessionalById]
+  );
+
+  const goBackToAvailabilityPicker = useCallback(
+    (professionalId: string) => {
+      const targetProfessionalId = professionalId.trim() || bookingProfessionalIdRef.current;
+      if (!targetProfessionalId) {
+        return;
+      }
+      void releaseCurrentSlotHold();
+      setBookingProfessionalId(targetProfessionalId);
+      setPaymentError("");
+      setSummaryHoldLoading(false);
+      setSlotHoldId("");
+      setSlotHoldExpiresAt("");
+      setBookingStep("availability");
+      void loadProfessionalSlots(targetProfessionalId);
+    },
+    [loadProfessionalSlots]
+  );
+
+  const enterSummaryWithHold = async (professionalId: string, slot: MatchTimeSlot) => {
+    if (!props.authToken) {
+      setPaymentError(
+        t(props.language, {
+          es: "Iniciá sesión para reservar tu turno.",
+          en: "Sign in to book your slot.",
+          pt: "Faca login para reservar seu horario."
+        })
+      );
+      return;
+    }
+
+    setSummaryHoldLoading(true);
+    setPaymentError("");
+    setBookingProfessionalId(professionalId);
+    try {
+      await releaseCurrentSlotHold();
+      const hold = await acquireBookingSlotHold(professionalId, slot, props.authToken);
+      setSlotHoldId(hold.holdId);
+      setSlotHoldExpiresAt(hold.expiresAt);
+      slotHoldIdRef.current = hold.holdId;
+      setBookingProfessionalId(professionalId);
+      setBookingSlot(slot);
+      setBookingStep("summary");
+    } catch (requestError) {
+      const message = friendlyBookingFailureMessage(
+        requestError instanceof Error ? requestError.message : "",
+        props.language
+      );
+      setPaymentError(message);
+      setSlotsError(message);
+    } finally {
+      setSummaryHoldLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      const holdId = slotHoldIdRef.current;
+      if (!holdId || !props.authToken) {
+        return;
+      }
+      void releaseBookingSlotHold(holdId, props.authToken).catch(() => undefined);
+    };
+  }, [props.authToken]);
+
+  useEffect(() => {
+    if (!bookingFlowEnabled || !usesDlocalCheckout || trialReturnHandledRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const trialPayment = params.get("trialPayment");
+    if (!trialPayment) {
+      return;
+    }
+
+    trialReturnHandledRef.current = true;
+    window.history.replaceState({}, "", window.location.pathname);
+
+    if (trialPayment === "cancel") {
+      sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+      setPaymentError(
+        t(props.language, {
+          es: "Cancelaste el pago. Podés elegir otro horario o intentar de nuevo cuando quieras.",
+          en: "You cancelled payment. You can pick another time or try again whenever you like.",
+          pt: "Voce cancelou o pagamento. Pode escolher outro horario ou tentar de novo quando quiser."
+        })
+      );
+      return;
+    }
+
+    if (trialPayment !== "success") {
+      return;
+    }
+
+    const raw = sessionStorage.getItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    let pending: PendingTrialBooking;
+    try {
+      pending = JSON.parse(raw) as PendingTrialBooking;
+    } catch {
+      sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+      return;
+    }
+
+    sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+    setPaymentLoading(true);
+    setPaymentError("");
+
+    void (async () => {
+      try {
+        if (props.onSyncTrialPayment) {
+          const synced = await props.onSyncTrialPayment(pending.paymentId);
+          if (!synced.ok) {
+            throw new Error(synced.error ?? "Could not confirm trial payment");
+          }
+        }
+
+        await props.onCreateBooking(pending.professionalId, pending.slot, {
+          holdId: pending.holdId
+        });
+        closeBookingFlow();
+      } catch (requestError) {
+        setPaymentError(
+          friendlyBookingFailureMessage(
+            requestError instanceof Error ? requestError.message : "",
+            props.language
+          )
+        );
+      } finally {
+        setPaymentLoading(false);
+      }
+    })();
+  }, [bookingFlowEnabled, props.authToken, props.language, props.onCreateBooking, props.onSyncTrialPayment, usesDlocalCheckout]);
 
   const closeBookingFlow = () => {
+    void releaseCurrentSlotHold();
     setBookingStep(null);
     setBookingProfessionalId("");
     setBookingSlot(null);
@@ -191,6 +428,10 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     setPaymentError("");
     setSlotsLoading(false);
     setPaymentLoading(false);
+    setSummaryHoldLoading(false);
+    setSummaryContinueLoading(false);
+    setCheckoutLoadingPhase("idle");
+    checkoutRedirectingRef.current = false;
   };
 
   const openAvailabilityFlow = (professionalId: string) => {
@@ -202,25 +443,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     setBookingProfessionalId(professionalId);
     setBookingSlot(null);
     setBookingStep("availability");
-    setSlotsLoading(true);
-    setSlotsError("");
-    void fetchProfessionalAvailability(professionalId, props.authToken)
-      .then((slots) => {
-        setAllSlots(slots);
-      })
-      .catch((requestError) => {
-        setAllSlots([]);
-        setSlotsError(
-          t(props.language, {
-            es: "Ahora no pudimos cargar los horarios. Volvé a intentar o elegí otro profesional.",
-            en: "We couldn’t load times just now. Try again or choose another professional.",
-            pt: "Nao foi possivel carregar os horarios agora. Tente de novo ou escolha outro profissional."
-          })
-        );
-      })
-      .finally(() => {
-        setSlotsLoading(false);
-      });
+    void loadProfessionalSlots(professionalId);
   };
 
   const openSummaryFromSuggestedSlot = (professionalId: string, slot: MatchTimeSlot) => {
@@ -228,45 +451,80 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       props.onReserve(professionalId);
       return;
     }
-    setPaymentError("");
     setBookingProfessionalId(professionalId);
-    setBookingSlot(slot);
-    setBookingStep("summary");
+    const directorySlots = directorySlotsForProfessional(resolveProfessionalById(professionalId));
+    if (directorySlots.length > 0) {
+      setAllSlots(directorySlots);
+    }
+    void loadProfessionalSlots(professionalId);
+    void enterSummaryWithHold(professionalId, slot);
   };
 
-  const handlePay = async () => {
-    if (!bookingFlowEnabled) {
-      return;
-    }
-    if (!bookingProfessionalId || !bookingSlot) {
-      return;
-    }
-
-    setPaymentLoading(true);
-    setPaymentError("");
-    try {
-      const stillListed = await isSlotStillListedAfterFreshFetch(bookingProfessionalId, bookingSlot, props.authToken);
-      if (!stillListed) {
-        throw new Error(
+  const handleSummaryContinue = async () => {
+    if (!bookingFlowEnabled || !bookingProfessionalId || !bookingSlot || !slotHoldId) {
+      if (!slotHoldId) {
+        setPaymentError(
           t(props.language, {
-            es: "Ese horario se llenó recién. Te pedimos que elijas otro que te venga bien.",
-            en: "That time just filled up. Please choose another that works for you.",
-            pt: "Esse horario acabou de ficar cheio. Escolha outro que lhe sirva."
+            es: "Tu reserva temporal venció. Volvé al calendario y elegí el horario de nuevo.",
+            en: "Your temporary hold expired. Go back to the calendar and pick the time again.",
+            pt: "Sua reserva temporaria expirou. Volte ao calendario e escolha o horario de novo."
           })
         );
       }
-      await props.onCreateBooking(bookingProfessionalId, bookingSlot);
-      closeBookingFlow();
-    } catch (requestError) {
-      setPaymentError(
-        friendlyBookingFailureMessage(
-          requestError instanceof Error ? requestError.message : "",
-          props.language
-        )
-      );
-    } finally {
-      setPaymentLoading(false);
+      return;
     }
+
+    if (usesDlocalCheckout && props.onStartTrialCheckout) {
+      setSummaryContinueLoading(true);
+      setCheckoutLoadingPhase("creating");
+      setPaymentError("");
+      try {
+        const checkout = await props.onStartTrialCheckout(bookingProfessionalId, bookingSlot, slotHoldId);
+        if (checkout.checkoutUrl && checkout.paymentId) {
+          const pending: PendingTrialBooking = {
+            professionalId: bookingProfessionalId,
+            slot: bookingSlot,
+            paymentId: checkout.paymentId,
+            holdId: slotHoldId
+          };
+          sessionStorage.setItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY, JSON.stringify(pending));
+          checkoutRedirectingRef.current = true;
+          setCheckoutLoadingPhase("redirecting");
+          window.location.assign(checkout.checkoutUrl);
+          return;
+        }
+        if (!checkout.ok) {
+          setPaymentError(
+            friendlyBookingFailureMessage(checkout.error ?? "", props.language)
+          );
+        } else {
+          setPaymentError(
+            t(props.language, {
+              es: "No pudimos abrir el pago. Probá de nuevo en unos segundos.",
+              en: "We couldn't open checkout. Please try again in a few seconds.",
+              pt: "Nao foi possivel abrir o pagamento. Tente novamente em alguns segundos."
+            })
+          );
+        }
+      } catch (requestError) {
+        setPaymentError(
+          friendlyBookingFailureMessage(
+            requestError instanceof Error ? requestError.message : "",
+            props.language
+          )
+        );
+      } finally {
+        if (!checkoutRedirectingRef.current) {
+          setSummaryContinueLoading(false);
+          setCheckoutLoadingPhase("idle");
+        }
+      }
+      return;
+    }
+
+    setPaymentError(
+      friendlyBookingFailureMessage(DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, props.language)
+    );
   };
 
   return (
@@ -293,6 +551,16 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }
       />
 
+      {paymentLoading && !bookingStep ? (
+        <MotivarCarePageLoader language={props.language} layout="block" />
+      ) : null}
+
+      {paymentError && !bookingStep ? (
+        <p className="availability-status-message booking-soft-notice" role="alert">
+          {paymentError}
+        </p>
+      ) : null}
+
       {loading ? <MotivarCarePageLoader language={props.language} layout="block" /> : null}
 
       {!loading && error ? (
@@ -309,7 +577,9 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                 key={item.professional.id}
                 item={item}
                 patientMarket={props.patientMarket}
+                therapyModality={props.therapyModality}
                 displayCurrency={props.displayCurrency}
+                residencyCountry={props.residencyCountry}
                 language={props.language}
                 fxRates={props.fxRates}
                 isFavorite={favoriteIds.has(item.professional.id)}
@@ -349,7 +619,13 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                     en: "You have not saved favorite professionals yet.",
                     pt: "Voce ainda nao salvou profissionais favoritos."
                   })
-                : professionals.length === 0
+                : props.therapyModality === "COUPLES"
+                  ? t(props.language, {
+                      es: "Por ahora no hay profesionales de terapia de pareja disponibles con los filtros actuales. Probá más tarde o contactá a soporte.",
+                      en: "There are no couples therapy professionals available with the current filters right now. Try again later or contact support.",
+                      pt: "Por enquanto nao ha profissionais de terapia de casal disponiveis com os filtros atuais. Tente mais tarde ou fale com o suporte."
+                    })
+                  : professionals.length === 0
                   ? t(props.language, {
                       es: "No hay profesionales publicados en el directorio todavía. En el panel Admin, cada profesional debe tener «Perfil visible» activado y el alta aprobada para que aparezcan acá.",
                       en: "No professionals are published in the directory yet. In the Admin panel, each professional needs “Profile visible” on and registration approved to appear here.",
@@ -391,12 +667,16 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           selectedSlotId={bookingSlot?.id ?? ""}
           onSelectSlot={setBookingSlot}
           onClose={closeBookingFlow}
+          onRetry={() => {
+            void loadProfessionalSlots(bookingProfessional.id);
+          }}
           onContinue={() => {
-            if (!bookingSlot) {
+            if (!bookingSlot || summaryHoldLoading) {
               return;
             }
-            setBookingStep("summary");
+            void enterSummaryWithHold(bookingProfessional.id, bookingSlot);
           }}
+          continueLoading={summaryHoldLoading}
         />
       ) : null}
 
@@ -404,29 +684,25 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         <BookingSummaryModal
           language={props.language}
           patientMarket={props.patientMarket}
+          therapyModality={props.therapyModality}
+          residencyCountry={props.residencyCountry}
           displayCurrency={props.displayCurrency}
           fxRates={props.fxRates}
           timezone={viewerTimezone}
           professional={bookingProfessional}
           slot={bookingSlot}
-          onBack={() => setBookingStep("availability")}
-          onClose={closeBookingFlow}
-          onContinue={() => setBookingStep("payment")}
-          onImageFallback={props.onImageFallback}
-        />
-      ) : null}
-
-      {bookingFlowEnabled && bookingStep === "payment" && bookingProfessional && bookingSlot ? (
-        <PaymentMethodModal
-          language={props.language}
-          amountMajor={bookingListMajor}
-          displayCurrency={props.displayCurrency}
-          fxRates={props.fxRates}
-          loading={paymentLoading}
+          holdExpiresAt={slotHoldExpiresAt}
+          continueLoading={summaryContinueLoading}
+          checkoutLoadingPhase={checkoutLoadingPhase}
           error={paymentError}
-          onBack={() => setBookingStep("summary")}
+          onChangeTime={() => {
+            goBackToAvailabilityPicker(bookingProfessional.id);
+          }}
           onClose={closeBookingFlow}
-          onPay={handlePay}
+          onContinue={() => {
+            void handleSummaryContinue();
+          }}
+          onImageFallback={props.onImageFallback}
         />
       ) : null}
     </div>

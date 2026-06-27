@@ -1,10 +1,27 @@
 export const SUPPORTED_LANGUAGES = ["es", "en", "pt"] as const;
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
-export const SUPPORTED_CURRENCIES = ["USD", "EUR", "GBP", "BRL", "ARS"] as const;
-export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+export {
+  SUPPORTED_CURRENCIES,
+  STATIC_FX_RATE_FROM_USD,
+  CURRENCY_LABELS,
+  isSupportedCurrency,
+  coerceSupportedCurrency,
+  type SupportedCurrency
+} from "./currencies.js";
 
-import { displayCurrencyForMarket } from "./displayFx.js";
+import {
+  CURRENCY_LABELS,
+  STATIC_FX_RATE_FROM_USD,
+  SUPPORTED_CURRENCIES,
+  coerceSupportedCurrency,
+  isSupportedCurrency,
+  type SupportedCurrency
+} from "./currencies.js";
+import {
+  defaultDisplayCurrencyForPatient,
+  displayCurrencyForMarket
+} from "./displayFx.js";
 
 export type LocalizedText = Record<AppLanguage, string>;
 
@@ -14,26 +31,10 @@ const LANGUAGE_LOCALE: Record<AppLanguage, string> = {
   pt: "pt-BR"
 };
 
-const CURRENCY_RATE_FROM_USD: Record<SupportedCurrency, number> = {
-  USD: 1,
-  EUR: 0.92,
-  GBP: 0.79,
-  BRL: 5.08,
-  ARS: 1070
-};
-
 const LANGUAGE_LABELS: Record<AppLanguage, LocalizedText> = {
   es: { es: "Espanol", en: "Spanish", pt: "Espanhol" },
   en: { es: "Ingles", en: "English", pt: "Ingles" },
   pt: { es: "Portugues", en: "Portuguese", pt: "Portugues" }
-};
-
-const CURRENCY_LABELS: Record<SupportedCurrency, LocalizedText> = {
-  USD: { es: "Dolar estadounidense (USD)", en: "US Dollar (USD)", pt: "Dolar americano (USD)" },
-  EUR: { es: "Euro (EUR)", en: "Euro (EUR)", pt: "Euro (EUR)" },
-  GBP: { es: "Libra esterlina (GBP)", en: "British Pound (GBP)", pt: "Libra esterlina (GBP)" },
-  BRL: { es: "Real brasileno (BRL)", en: "Brazilian Real (BRL)", pt: "Real brasileiro (BRL)" },
-  ARS: { es: "Peso argentino (ARS)", en: "Argentine Peso (ARS)", pt: "Peso argentino (ARS)" }
 };
 
 export function localeFromLanguage(language: AppLanguage): string {
@@ -162,7 +163,7 @@ export function currencyOptionLabel(currency: SupportedCurrency, uiLanguage: App
 }
 
 export function convertUsdAmount(amountInUsd: number, currency: SupportedCurrency): number {
-  return amountInUsd * CURRENCY_RATE_FROM_USD[currency];
+  return amountInUsd * STATIC_FX_RATE_FROM_USD[currency];
 }
 
 export function convertUsdCents(centsInUsd: number, currency: SupportedCurrency): number {
@@ -205,11 +206,7 @@ export function formatCurrencyCents(params: {
 }
 
 function normalizeCurrencyCode(currency: string | null | undefined, fallback: SupportedCurrency): SupportedCurrency {
-  if (!currency) {
-    return fallback;
-  }
-  const upper = currency.trim().toUpperCase();
-  return (SUPPORTED_CURRENCIES as readonly string[]).includes(upper) ? (upper as SupportedCurrency) : fallback;
+  return coerceSupportedCurrency(currency, fallback);
 }
 
 /**
@@ -305,9 +302,9 @@ export {
 } from "./patientReschedule.js";
 
 export {
-  STATIC_FX_RATE_FROM_USD,
   convertUsdMajorToDisplayMajor,
   displayCurrencyForMarket,
+  defaultDisplayCurrencyForPatient,
   formatUsdMajorForPatientDisplay,
   resolveFxRatePerUsd,
   roundDisplayMajorFromUsd,

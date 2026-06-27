@@ -7,6 +7,49 @@ const INTAKE_JOIN = "\n";
 export const PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES =
   "Estoy teniendo pensamientos de hacerme daño o de no querer vivir";
 
+/** Texto canónico (ES) de terapia de pareja en motivos de consulta. */
+export const PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES = "Terapia de pareja";
+
+/** Motivos de consulta para terapia individual (sin terapia de pareja). */
+export const PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES = [
+  "Ansiedad",
+  "Ataques de pánico",
+  "Estrés",
+  "Depresión",
+  "Problemas de autoestima",
+  "Dificultad en relaciones",
+  "Rupturas amorosas o duelos",
+  "Problemas laborales o burnout",
+  "Toma de decisiones importantes",
+  "Falta de motivación o propósito",
+  "Problemas de sueño",
+  "Manejo de emociones",
+  "Consumo o conductas adictivas",
+  "Experiencias difíciles del pasado",
+  "Crisis personales",
+  "Soledad",
+  "Dificultad para controlar impulsos",
+  "Crecimiento personal",
+  "Otro"
+] as const;
+
+export type PatientIndividualMainReasonOptionEs = (typeof PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES)[number];
+
+/** Clave de respuesta para el foco de terapia de pareja (sub-motivos). */
+export const PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID = "couplesTherapyFocus";
+
+/** Opciones de foco al elegir terapia de pareja (texto canónico ES). */
+export const PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES = [
+  "Comunicación y conflictos",
+  "Distanciamiento emocional",
+  "Confianza, celos o infidelidad",
+  "Intimidad y sexualidad",
+  "Convivencia, crianza y proyectos de vida",
+  "Otro / No estoy seguro(a)"
+] as const;
+
+export type PatientCouplesTherapyFocusOptionEs = (typeof PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES)[number];
+
 /** Respuesta distinta de «No» en la pregunta de autolesión del intake. */
 export function isSafetyRiskPositiveAnswer(raw: string): boolean {
   const normalized = raw.trim().toLowerCase();
@@ -120,28 +163,7 @@ export const PATIENT_CLINICAL_INTAKE_FIRST_STEPS: IntakeQuestion[] = [
     id: "mainReason",
     title: "1. ¿Cuáles son tus motivos principales de consulta?",
     help: "Podés marcar uno o varios.",
-    options: [
-      "Ansiedad",
-      "Ataques de pánico",
-      "Estrés",
-      "Depresión",
-      "Problemas de autoestima",
-      "Dificultad en relaciones",
-      "Rupturas amorosas o duelos",
-      "Problemas laborales o burnout",
-      "Toma de decisiones importantes",
-      "Falta de motivación o propósito",
-      "Problemas de sueño",
-      "Manejo de emociones",
-      "Consumo o conductas adictivas",
-      "Experiencias difíciles del pasado",
-      "Crisis personales",
-      "Soledad",
-      "Dificultad para controlar impulsos",
-      "Crecimiento personal",
-      "Terapia de pareja",
-      "Otro"
-    ],
+    options: [...PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES, PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES],
     allowMultiple: true,
     otherFollowupOption: "Otro"
   },

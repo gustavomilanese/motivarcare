@@ -26,14 +26,14 @@ import {
   listSharedEntriesForProfessional
 } from "../emotional-diary/emotionalDiary.service.js";
 
-const adminPayloadSchema = z.object({
-  taxId: z.string().max(60).optional(),
-  payoutMethod: z.string().max(80).optional(),
-  payoutAccount: z.string().max(120).optional(),
-  legalAcceptedAt: z.string().datetime().nullable().optional(),
-  acceptedDocuments: z.array(z.string().max(120)).optional(),
-  notes: z.string().max(1000).optional()
-});
+import {
+  defaultProfessionalPayoutAdminData,
+  professionalPayoutAdminPayloadSchema,
+  validatePayoutBankAccountForProvider,
+  validateTaxIdForProvider
+} from "../../lib/professionalPayoutProfileSchema.js";
+
+const adminPayloadSchema = professionalPayoutAdminPayloadSchema;
 
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
@@ -1291,16 +1291,16 @@ professionalRouter.get("/admin", async (req: AuthenticatedRequest, res) => {
   const key = `professional-admin-${actor.professionalProfileId}`;
   const config = await prisma.systemConfig.findUnique({ where: { key } });
 
+  const stored =
+    config?.value && typeof config.value === "object" && !Array.isArray(config.value)
+      ? (config.value as Record<string, unknown>)
+      : {};
+
   return res.json({
-    data:
-      config?.value
-      ?? {
-        taxId: "",
-        payoutMethod: "stripe",
-        payoutAccount: "",
-        legalAcceptedAt: null,
-        acceptedDocuments: []
-      }
+    data: {
+      ...defaultProfessionalPayoutAdminData(),
+      ...stored
+    }
   });
 });
 
@@ -1320,13 +1320,38 @@ professionalRouter.put("/admin", async (req: AuthenticatedRequest, res) => {
   }
 
   const key = `professional-admin-${actor.professionalProfileId}`;
+  const existingConfig = await prisma.systemConfig.findUnique({ where: { key } });
+  const existingValue =
+    existingConfig?.value && typeof existingConfig.value === "object" && !Array.isArray(existingConfig.value)
+      ? (existingConfig.value as Record<string, unknown>)
+      : {};
+
+  const payoutMethod = parsed.data.payoutMethod ?? (existingValue.payoutMethod as "dlocal" | "stripe" | undefined) ?? "stripe";
+  if (parsed.data.taxId) {
+    const taxError = validateTaxIdForProvider(payoutMethod, parsed.data.taxId);
+    if (taxError) {
+      return res.status(400).json({ error: taxError });
+    }
+  }
+  if (parsed.data.payoutBankAccount) {
+    const bankError = validatePayoutBankAccountForProvider(payoutMethod, parsed.data.payoutBankAccount);
+    if (bankError) {
+      return res.status(400).json({ error: bankError });
+    }
+  }
 
   const nextValue = {
+    ...defaultProfessionalPayoutAdminData(),
+    ...existingValue,
     ...parsed.data,
-    legalAcceptedAt: parsed.data.legalAcceptedAt ?? null,
+    legalAcceptedAt: parsed.data.legalAcceptedAt ?? (existingValue.legalAcceptedAt as string | null | undefined) ?? null,
     updatedByUserId: actor.userId,
     updatedAt: new Date().toISOString()
   };
+
+  if (parsed.data.payoutBankAccount) {
+    nextValue.payoutAccount = parsed.data.payoutBankAccount.accountValue;
+  }
 
   const config = await prisma.systemConfig.upsert({
     where: { key },

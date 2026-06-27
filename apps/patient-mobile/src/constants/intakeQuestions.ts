@@ -77,6 +77,173 @@ export function applyIntakeOptionSelection(
   return { ...prev, [id]: [...pcs, option].join(INTAKE_MAIN_REASON_VALUE_JOINER) };
 }
 
+export const PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES = "Terapia de pareja";
+export const PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID = "couplesTherapyFocus";
+
+export const PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES = [
+  "Ansiedad",
+  "Ataques de pánico",
+  "Estrés",
+  "Depresión",
+  "Problemas de autoestima",
+  "Dificultad en relaciones",
+  "Rupturas amorosas o duelos",
+  "Problemas laborales o burnout",
+  "Toma de decisiones importantes",
+  "Falta de motivación o propósito",
+  "Problemas de sueño",
+  "Manejo de emociones",
+  "Consumo o conductas adictivas",
+  "Experiencias difíciles del pasado",
+  "Crisis personales",
+  "Soledad",
+  "Dificultad para controlar impulsos",
+  "Crecimiento personal",
+  "Otro"
+] as const;
+
+export type MainReasonCategory = "individual" | "couples";
+
+const OTHER_OPTION_ES = "Otro";
+
+export function individualMainReasonPieces(mainReason: string): string[] {
+  return intakePieces(mainReason).filter((piece) => piece !== PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES);
+}
+
+export function detectMainReasonCategory(mainReason: string, couplesFocus: string): MainReasonCategory {
+  if (
+    intakePieces(mainReason).includes(PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES)
+    || couplesFocus.trim().length > 0
+  ) {
+    return "couples";
+  }
+  return "individual";
+}
+
+export function activateCouplesMainReason(prev: Record<string, string>): Record<string, string> {
+  return {
+    ...prev,
+    mainReason: PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES,
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: prev[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""
+  };
+}
+
+export function activateIndividualMainReason(prev: Record<string, string>): Record<string, string> {
+  return {
+    ...prev,
+    mainReason: individualMainReasonPieces(prev.mainReason ?? "").join(INTAKE_MAIN_REASON_VALUE_JOINER),
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
+  };
+}
+
+export function toggleIndividualMainReason(prev: Record<string, string>, option: string): Record<string, string> {
+  let pieces = individualMainReasonPieces(prev.mainReason ?? "");
+  if (pieces.includes(option)) {
+    pieces = pieces.filter((piece) => {
+      if (piece === option) {
+        return false;
+      }
+      if (option === OTHER_OPTION_ES) {
+        return !piece.startsWith(`${OTHER_OPTION_ES}:`);
+      }
+      return true;
+    });
+  } else {
+    pieces = [...pieces, option];
+  }
+  return {
+    ...prev,
+    mainReason: pieces.join(INTAKE_MAIN_REASON_VALUE_JOINER),
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
+  };
+}
+
+export function updateIndividualOtherDetail(prev: Record<string, string>, detail: string): Record<string, string> {
+  const pieces = individualMainReasonPieces(prev.mainReason ?? "").filter(
+    (piece) => piece !== OTHER_OPTION_ES && !piece.startsWith(`${OTHER_OPTION_ES}:`)
+  );
+  const trimmed = detail.trim();
+  const next = trimmed ? [...pieces, `${OTHER_OPTION_ES}: ${detail}`] : pieces;
+  return {
+    ...prev,
+    mainReason: next.join(INTAKE_MAIN_REASON_VALUE_JOINER),
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
+  };
+}
+
+export function validateMainReasonAnswers(answers: Record<string, string>): boolean {
+  const category = detectMainReasonCategory(
+    answers.mainReason ?? "",
+    answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""
+  );
+  if (category === "couples") {
+    return (answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? "").trim().length > 0;
+  }
+  const pieces = individualMainReasonPieces(answers.mainReason ?? "");
+  if (pieces.length === 0) {
+    return false;
+  }
+  const hasOther =
+    pieces.includes(OTHER_OPTION_ES) || pieces.some((piece) => piece.startsWith(`${OTHER_OPTION_ES}:`));
+  if (hasOther) {
+    const detail = pieces.find((piece) => piece.startsWith(`${OTHER_OPTION_ES}:`));
+    if (!detail || detail.slice(OTHER_OPTION_ES.length + 1).trim().length === 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export const PATIENT_COUPLES_THERAPY_FOCUS_OPTIONS_ES = [
+  "Comunicación y conflictos",
+  "Distanciamiento emocional",
+  "Confianza, celos o infidelidad",
+  "Intimidad y sexualidad",
+  "Convivencia, crianza y proyectos de vida",
+  "Otro / No estoy seguro(a)"
+] as const;
+
+export function applyMainReasonSelection(
+  prev: Record<string, string>,
+  def: IntakeQuestionDef,
+  option: string
+): Record<string, string> {
+  const next = applyIntakeOptionSelection(prev, def, option);
+  const hadCouples = intakePieces(prev.mainReason ?? "").includes(PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES);
+  const hasCouples = intakePieces(next.mainReason ?? "").includes(PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES);
+  if (hadCouples && !hasCouples) {
+    return { ...next, [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: "" };
+  }
+  return next;
+}
+
+export type MobileIntakeWizardStep =
+  | { kind: "intro" }
+  | { kind: "country" }
+  | { kind: "question"; questionId: string };
+
+export function buildMobileIntakeWizardSteps(params: {
+  questionIds: readonly string[];
+}): MobileIntakeWizardStep[] {
+  const steps: MobileIntakeWizardStep[] = [{ kind: "intro" }, { kind: "country" }];
+  for (const questionId of params.questionIds) {
+    steps.push({ kind: "question", questionId });
+  }
+  return steps;
+}
+
+export function toggleCouplesFocusSelection(prev: Record<string, string>, option: string): Record<string, string> {
+  const pcs = intakePieces(prev[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? "");
+  const next = pcs.includes(option)
+    ? pcs.filter((item) => item !== option)
+    : [...pcs, option];
+  return {
+    ...prev,
+    mainReason: PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES,
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: next.join(INTAKE_MAIN_REASON_VALUE_JOINER)
+  };
+}
+
 /** Misma semántica que apps/patient (valor guardado del paso 3). */
 export const THERAPIST_PREF_EXCLUSIVE_ES = "No tengo preferencias";
 
@@ -176,29 +343,8 @@ const CLINICAL_STEPS: IntakeQuestionDef[] = [
   {
     id: "mainReason",
     title: "1. ¿Cuáles son tus motivos principales de consulta?",
-    help: "Podés marcar uno o varios.",
-    options: [
-      "Ansiedad",
-      "Ataques de pánico",
-      "Estrés",
-      "Depresión",
-      "Problemas de autoestima",
-      "Dificultad en relaciones",
-      "Rupturas amorosas o duelos",
-      "Problemas laborales o burnout",
-      "Toma de decisiones importantes",
-      "Falta de motivación o propósito",
-      "Problemas de sueño",
-      "Manejo de emociones",
-      "Consumo o conductas adictivas",
-      "Experiencias difíciles del pasado",
-      "Crisis personales",
-      "Soledad",
-      "Dificultad para controlar impulsos",
-      "Crecimiento personal",
-      "Terapia de pareja",
-      "Otro"
-    ],
+    help: "Elegí un tipo de terapia y marcá uno o varios motivos.",
+    options: [...PATIENT_INDIVIDUAL_MAIN_REASON_OPTIONS_ES, PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES],
     allowMultiple: true,
     otherFollowupOption: "Otro"
   },

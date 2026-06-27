@@ -58,6 +58,11 @@ const EnvSchema = z.object({
   STRIPE_PRICE_PACKAGE_8: z.string().optional().default(""),
   STRIPE_PRICE_PACKAGE_12: z.string().optional().default(""),
   STRIPE_PRICE_MAP_JSON: z.string().optional().default(""),
+  DLOCALGO_API_URL: z.string().min(1).default("https://api-sbx.dlocalgo.com"),
+  DLOCALGO_API_KEY: z.string().optional().default(""),
+  DLOCALGO_API_SECRET: z.string().optional().default(""),
+  /** Opcional: transparent checkout (SmartFields). No requerido para redirect. */
+  DLOCALGO_SMARTFIELDS_API_KEY: z.string().optional().default(""),
   DAILY_API_KEY: z.string().optional().default(""),
   DAILY_DOMAIN: z.string().optional().default(""),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),

@@ -7,12 +7,14 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
+import type { ProfessionalPayoutAdminData } from "@therapy/types";
 import {
   buildPatchDraftFromMobileInputs,
   buildPatchDraftFromWebPayload,
   type OnboardingPatchDraft,
   type ProfessionalWebOnboardingFinishMeta
 } from "../../onboarding";
+import { buildPayoutAdminFromWebPayload } from "../../onboarding/lib/buildPayoutAdminFromWebPayload";
 import { professionalProblemSelectionIsComplete } from "../../onboarding/constants/professionalClientProblemQuestionnaire";
 import {
   ProfessionalAboutInfoIntroStep,
@@ -132,7 +134,10 @@ export function ProfessionalAuthFlow(props: {
     googleCalendarConnected?: boolean;
   }) => void;
   onRegistrationAuthSuccess?: (userId: string) => void;
-  onPrepareOnboardingSync: (draft: OnboardingPatchDraft, meta?: { displayFullName?: string; taxId?: string }) => void;
+  onPrepareOnboardingSync: (
+    draft: OnboardingPatchDraft,
+    meta?: { displayFullName?: string; payoutAdmin?: ProfessionalPayoutAdminData }
+  ) => void;
   /** Reanudar onboarding web tras verificar el mail (mismo navegador). */
   webOnboardingResume?: {
     initialWizardStep: number;
@@ -202,7 +207,9 @@ export function ProfessionalAuthFlow(props: {
       displayName.trim().length >= 2 || taxIdTrimmed.length >= 6
         ? {
             ...(displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : {}),
-            ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+            ...(taxIdTrimmed.length >= 6
+              ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } satisfies ProfessionalPayoutAdminData }
+              : {})
           }
         : undefined;
     props.onPrepareOnboardingSync(buildMobileDraft(), nameMeta);
@@ -423,7 +430,7 @@ export function ProfessionalAuthFlow(props: {
           });
           props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload), {
             displayFullName: payload.fullName.trim(),
-            taxId: payload.taxId
+            payoutAdmin: buildPayoutAdminFromWebPayload(payload)
           });
           setRegisterBackMode("register-web");
           const displayName = payload.fullName.trim() || meta.user.fullName;
@@ -869,7 +876,9 @@ export function ProfessionalAuthFlow(props: {
               mobileName.length >= 2 || taxIdTrimmed.length >= 6
                 ? {
                     ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+                    ...(taxIdTrimmed.length >= 6
+                      ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } }
+                      : {})
                   }
                 : undefined
             );
@@ -906,7 +915,9 @@ export function ProfessionalAuthFlow(props: {
               mobileName.length >= 2 || taxIdTrimmed.length >= 6
                 ? {
                     ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(taxIdTrimmed.length >= 6 ? { taxId: taxIdTrimmed } : {})
+                    ...(taxIdTrimmed.length >= 6
+                      ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } }
+                      : {})
                   }
                 : undefined
             );

@@ -48,6 +48,12 @@ enum PackagePaymentProvider {
   MERCADOPAGO
 }
 
+/// Línea de atención del paciente / tipo de sesión comercial.
+enum TherapyModality {
+  INDIVIDUAL
+  COUPLES
+}
+
 /// Alta de profesional: hasta que un admin apruebe, no aparece en el directorio. REJECTED = alta rechazada por admin.
 enum ProfessionalRegistrationApproval {
   PENDING
@@ -121,6 +127,8 @@ model PatientProfile {
   market         Market                   @default(AR)
   /// ISO 3166-1 alpha-2 (país de residencia habitual); el mercado se deriva con `marketFromResidencyCountry`.
   residencyCountry String?               @map("residency_country") @db.VarChar(2)
+  /// Individual vs terapia de pareja (desde intake).
+  therapyModality  TherapyModality       @default(INDIVIDUAL) @map("therapy_modality")
   timezone       String                   @default("America/New_York")
   lastSeenTimezone String?
   status         String                   @default("active")
@@ -143,6 +151,7 @@ model PatientProfile {
   emotionalDiaryEntries  EmotionalDiaryEntry[]
   emailDeliveries PatientEmailDelivery[]
   professionalReviews ProfessionalReview[]
+  paymentCheckouts PaymentCheckout[]
 }
 
 model ProfessionalProfile {
@@ -177,9 +186,14 @@ model ProfessionalProfile {
   sessionPriceArs       Int?                     @map("session_price_ars")
   /// Precio de lista por sesión en USD (enteros); oferta mercado US (y referencia para BR/ES en catálogo).
   sessionPriceUsd       Int?
+  /// Precio de lista por sesión de pareja en USD (enteros).
+  couplesSessionPriceUsd Int?                    @map("couples_session_price_usd")
   discount4             Int?
   discount8             Int?
   discount12            Int?
+  couplesDiscount4      Int?                     @map("couples_discount4")
+  couplesDiscount8      Int?                     @map("couples_discount8")
+  couplesDiscount12     Int?                     @map("couples_discount12")
   photoUrl              String?                  @db.LongText
   videoUrl              String?                  @db.LongText
   videoCoverUrl         String?                  @db.LongText
@@ -407,6 +421,7 @@ model SessionPackage {
   priceCents        Int
   discountPercent   Int                      @default(0)
   currency          String                   @default("usd")
+  modality          TherapyModality          @default(INDIVIDUAL)
   active            Boolean                  @default(true)
   createdAt         DateTime                 @default(now())
   purchases         PatientPackagePurchase[]
@@ -429,6 +444,7 @@ model PatientPackagePurchase {
   packagePriceCentsSnapshot Int?
   packageDiscountPercentSnapshot Int?
   packageCurrencySnapshot  String?
+  modalitySnapshot         TherapyModality        @default(INDIVIDUAL) @map("modality_snapshot")
   platformCommissionPercentSnapshot Int?
   trialPlatformPercentSnapshot Int?
   professionalIdSnapshot   String?
@@ -485,6 +501,7 @@ model Booking {
   cancelledAt        DateTime?
   completedAt        DateTime?
   consumedCredits    Int                  @default(0)
+  modality           TherapyModality      @default(INDIVIDUAL)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   patient            PatientProfile       @relation("PatientBookings", fields: [patientId], references: [id])
@@ -656,6 +673,78 @@ model FinanceDailyAggregate {
 
   @@unique([day, currency])
   @@index([day])
+}
+
+enum PaymentCheckoutKind {
+  PACKAGE
+  INDIVIDUAL
+  TRIAL
+}
+
+enum PaymentCheckoutStatus {
+  CREATED
+  REDIRECTED
+  PAID
+  FULFILLED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentCheckoutProvider {
+  DLOCAL
+  STRIPE
+  MANUAL
+}
+
+/// Immutable-ish checkout intent + lifecycle for every purchase attempt (package, individual, trial).
+model PaymentCheckout {
+  id                    String                  @id @default(cuid())
+  patientId             String                  @map("patient_id")
+  kind                  PaymentCheckoutKind
+  status                PaymentCheckoutStatus   @default(CREATED)
+  provider              PaymentCheckoutProvider
+  providerPaymentId     String?                 @map("provider_payment_id")
+  providerOrderId       String?                 @unique @map("provider_order_id")
+  checkoutSessionKey    String?                 @unique @map("checkout_session_key")
+  packageId             String?                 @map("package_id")
+  sessionCount          Int?                    @map("session_count")
+  trialProfessionalId   String?                 @map("trial_professional_id")
+  trialStartsAt         DateTime?               @map("trial_starts_at")
+  trialEndsAt           DateTime?               @map("trial_ends_at")
+  chargeAmountMajor     Decimal?                @map("charge_amount_major") @db.Decimal(14, 2)
+  chargeCurrency        String?                 @map("charge_currency") @db.VarChar(8)
+  displayName           String?                 @map("display_name")
+  fulfillmentPurchaseId String?                 @map("fulfillment_purchase_id")
+  fulfillmentBookingId  String?                 @map("fulfillment_booking_id")
+  lastProviderStatus    String?                 @map("last_provider_status")
+  lastError             String?                 @map("last_error") @db.Text
+  metadata              Json?
+  paidAt                DateTime?               @map("paid_at")
+  fulfilledAt           DateTime?               @map("fulfilled_at")
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  patient               PatientProfile          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  events                PaymentCheckoutEvent[]
+
+  @@index([patientId, createdAt])
+  @@index([providerPaymentId])
+  @@index([status])
+  @@map("payment_checkouts")
+}
+
+model PaymentCheckoutEvent {
+  id         String          @id @default(cuid())
+  checkoutId String          @map("checkout_id")
+  eventType  String          @map("event_type") @db.VarChar(80)
+  message    String?         @db.Text
+  payload    Json?
+  actorRole  String?         @map("actor_role") @db.VarChar(24)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  checkout   PaymentCheckout @relation(fields: [checkoutId], references: [id], onDelete: Cascade)
+
+  @@index([checkoutId, createdAt])
+  @@map("payment_checkout_events")
 }
 
 model OutboxEvent {

@@ -82,6 +82,7 @@ export function ProfessionalWebOnboardingWizard(props: {
     discountedPriceLabelArs,
     discountedPriceLabelUsd,
     computedSessionPriceArs,
+    offersCouplesTherapy,
     usdArsRateError,
     canContinue,
     handleContinue,
@@ -793,6 +794,45 @@ export function ProfessionalWebOnboardingWizard(props: {
                   })}
                 </p>
               ) : null}
+              {offersCouplesTherapy ? (
+                <section className="pro-web-couples-pricing-panel" aria-labelledby="pro-web-couples-pricing-title">
+                  <p className="pro-web-couples-pricing-kicker">
+                    {t(props.language, {
+                      es: "Terapia de pareja",
+                      en: "Couples therapy",
+                      pt: "Terapia de casal"
+                    })}
+                  </p>
+                  <h4 id="pro-web-couples-pricing-title" className="pro-web-couples-pricing-title">
+                    {t(props.language, {
+                      es: "Precio por sesión de pareja",
+                      en: "Couples session price",
+                      pt: "Preco por sessao de casal"
+                    })}
+                  </h4>
+                  <p className="pro-web-couples-pricing-lead">
+                    {t(props.language, {
+                      es: "Las sesiones de pareja suelen tener un valor distinto al individual. Este precio alimenta tus paquetes y reservas de pareja en MotivarCare.",
+                      en: "Couples sessions often differ from individual pricing. This rate powers your couples packages and bookings on MotivarCare.",
+                      pt: "Sessoes de casal costumam ter valor diferente do individual. Este preco alimenta seus pacotes e reservas de casal no MotivarCare."
+                    })}
+                  </p>
+                  <label>
+                    <span>
+                      {t(props.language, {
+                        es: "Precio de referencia por sesión de pareja (USD)",
+                        en: "Reference couples session price (USD)",
+                        pt: "Preco de referencia por sessao de casal (USD)"
+                      })}
+                    </span>
+                    <input
+                      inputMode="numeric"
+                      value={form.couplesSessionPriceUsd}
+                      onChange={(event) => update({ couplesSessionPriceUsd: event.target.value.replace(/\D/g, "") })}
+                    />
+                  </label>
+                </section>
+              ) : null}
               <div className="pro-web-discount-packages">
                 <article className="pro-web-discount-card">
                   <strong>{t(props.language, { es: "4 sesiones", en: "4 sessions", pt: "4 sessoes" })}</strong>
@@ -1037,25 +1077,41 @@ export function ProfessionalWebOnboardingWizard(props: {
                 language={props.language}
                 provider={form.payoutProvider}
                 providerLocked
-                taxId={form.taxId}
-                onTaxIdChange={(taxId) => update({ taxId })}
+                form={{
+                  legalName: form.payoutLegalName,
+                  taxId: form.taxId,
+                  accountHolderName: form.payoutAccountHolderName,
+                  bankTransferType: form.payoutBankTransferType,
+                  bankAccountValue: form.payoutBankAccountValue,
+                  bankName: form.payoutBankName,
+                  payoutTermsAccepted: form.payoutTermsAccepted
+                }}
+                onFormChange={(patch) => {
+                  update({
+                    ...(patch.legalName !== undefined ? { payoutLegalName: patch.legalName } : {}),
+                    ...(patch.taxId !== undefined ? { taxId: patch.taxId } : {}),
+                    ...(patch.accountHolderName !== undefined
+                      ? { payoutAccountHolderName: patch.accountHolderName }
+                      : {}),
+                    ...(patch.bankTransferType !== undefined
+                      ? { payoutBankTransferType: patch.bankTransferType }
+                      : {}),
+                    ...(patch.bankAccountValue !== undefined
+                      ? { payoutBankAccountValue: patch.bankAccountValue }
+                      : {}),
+                    ...(patch.bankName !== undefined ? { payoutBankName: patch.bankName } : {}),
+                    ...(patch.payoutTermsAccepted !== undefined
+                      ? { payoutTermsAccepted: patch.payoutTermsAccepted }
+                      : {})
+                  });
+                }}
                 docPreview={form.stripeDocPreview}
                 docInputRef={webStripeDocInputRef}
                 onDocSelected={async (file) => {
                   const preview = await mediaPreviewFromFile(file);
                   update({ stripeDocPreview: preview ?? "" });
                 }}
-                verificationStarted={form.stripeVerificationStarted}
-                verified={form.stripeVerified}
-                onStartVerification={() => {
-                  const url =
-                    form.payoutProvider === "dlocal"
-                      ? "https://www.dlocal.com"
-                      : "https://dashboard.stripe.com";
-                  window.open(url, "_blank", "noopener,noreferrer");
-                  update({ stripeVerificationStarted: true });
-                }}
-                onMarkVerified={() => update({ stripeVerified: true })}
+                payoutStatus="draft"
               />
             </div>
           ) : null}
@@ -1133,9 +1189,9 @@ export function ProfessionalWebOnboardingWizard(props: {
               <h3>{t(props.language, { es: "Tu perfil profesional ya esta listo", en: "Your professional profile is ready", pt: "Seu perfil profissional esta pronto" })}</h3>
               <p>
                 {t(props.language, {
-                  es: "Completaste tus datos y la verificación de cobros. En el siguiente paso podrás acceder a tu cuenta y comenzar a operar en MotivarCare.",
-                  en: "You completed your profile data and payout verification. In the next step you can access your account and start operating on MotivarCare.",
-                  pt: "Voce concluiu os dados do perfil e a verificacao de pagamentos. No proximo passo podera acessar sua conta e comecar a operar na MotivarCare."
+                  es: "Recibimos tus datos de cobro. Los revisamos en 1–2 días hábiles; mientras tanto podés seguir con el alta y conectar tu agenda.",
+                  en: "We received your payout details. We'll review them within 1–2 business days; meanwhile you can finish sign-up and connect your calendar.",
+                  pt: "Recebemos seus dados de recebimento. Revisamos em 1–2 dias uteis; enquanto isso voce pode concluir o cadastro e conectar a agenda."
                 })}
               </p>
               <div className="pro-web-celebration-actions">

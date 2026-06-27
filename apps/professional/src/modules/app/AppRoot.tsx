@@ -8,6 +8,7 @@ import {
   type SupportedCurrency,
   textByLanguage
 } from "@therapy/i18n-config";
+import type { ProfessionalPayoutAdminData } from "@therapy/types";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
   createDefaultOnboardingPatchDraft,
@@ -222,7 +223,8 @@ export function App() {
   const [onboardingPatchDraft, setOnboardingPatchDraft] = useState<OnboardingPatchDraft>(
     createDefaultOnboardingPatchDraft()
   );
-  const [pendingOnboardingTaxId, setPendingOnboardingTaxId] = useState<string | null>(null);
+  const [pendingOnboardingPayoutAdmin, setPendingOnboardingPayoutAdmin] =
+    useState<ProfessionalPayoutAdminData | null>(null);
   const [showCalendarOnboarding, setShowCalendarOnboarding] = useState(() =>
     readCalendarOnboardingPendingForSession(
       readStoredUser(),
@@ -378,7 +380,7 @@ export function App() {
 
   const handlePrepareOnboardingSync = (
     draft: OnboardingPatchDraft,
-    meta?: { displayFullName?: string; taxId?: string }
+    meta?: { displayFullName?: string; payoutAdmin?: ProfessionalPayoutAdminData }
   ) => {
     const trimmed = meta?.displayFullName?.trim() ?? "";
     if (trimmed.length >= 2) {
@@ -387,8 +389,7 @@ export function App() {
     } else {
       setPendingOnboardingDisplayFullName(null);
     }
-    const taxTrimmed = meta?.taxId?.trim() ?? "";
-    setPendingOnboardingTaxId(taxTrimmed.length >= 6 ? taxTrimmed : null);
+    setPendingOnboardingPayoutAdmin(meta?.payoutAdmin ?? null);
     setOnboardingPatchDraft(draft);
     setPendingOnboardingSync(true);
   };
@@ -564,16 +565,15 @@ export function App() {
         return null;
       });
 
-      const taxPromise =
-        pendingOnboardingTaxId
-          ? apiRequest("/api/professional/admin", token, {
-              method: "PUT",
-              body: JSON.stringify({ taxId: pendingOnboardingTaxId })
-            }).catch((error) => {
-              console.error("Could not sync onboarding tax id", error);
-              return null;
-            })
-          : Promise.resolve(null);
+      const adminPromise = pendingOnboardingPayoutAdmin
+        ? apiRequest("/api/professional/admin", token, {
+            method: "PUT",
+            body: JSON.stringify(pendingOnboardingPayoutAdmin)
+          }).catch((error) => {
+            console.error("Could not sync onboarding payout profile", error);
+            return null;
+          })
+        : Promise.resolve(null);
 
       const namePromise =
         displayFullName && displayFullName.length >= 2
@@ -609,11 +609,11 @@ export function App() {
               })
           : Promise.resolve(true);
 
-      const [, , nameOk] = await Promise.all([profilePromise, taxPromise, namePromise]);
+      const [, , nameOk] = await Promise.all([profilePromise, adminPromise, namePromise]);
 
       if (!ignore) {
         setPendingOnboardingSync(false);
-        setPendingOnboardingTaxId(null);
+        setPendingOnboardingPayoutAdmin(null);
         if (nameOk) {
           setPendingOnboardingDisplayFullName(null);
           clearPendingOnboardingDisplayFullName();
@@ -632,7 +632,7 @@ export function App() {
     token,
     user?.professionalProfileId,
     onboardingPatchDraft,
-    pendingOnboardingTaxId
+    pendingOnboardingPayoutAdmin
   ]);
 
   /**

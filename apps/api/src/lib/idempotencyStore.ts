@@ -62,3 +62,17 @@ export async function setIdempotencyValue(params: {
     expiresAt: Date.now() + ttlSeconds * 1000
   });
 }
+
+export async function deleteIdempotencyValue(key: string): Promise<void> {
+  const redis = await getRedisClient();
+  if (redis) {
+    try {
+      await redis.del(`idem:${key}`);
+      return;
+    } catch {
+      // fallback to memory
+    }
+  }
+
+  memoryStore.delete(key);
+}

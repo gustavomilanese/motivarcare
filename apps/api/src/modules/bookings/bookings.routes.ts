@@ -29,13 +29,36 @@ import {
   type GoogleMeetSyncTargets
 } from "../video/meetSyncTargets.js";
 import { scheduleMeetBackfillIfNeeded } from "../video/calendarBackfill.js";
+import {
+  clearTrialPaymentProof,
+  loadTrialPaymentProof,
+  trialPaymentMatchesBooking
+} from "../payments/dlocalGoCheckout.service.js";
+import {
+  findPaidTrialCheckoutProof,
+  linkPaymentCheckoutTrialBooking
+} from "../payments/paymentCheckout.service.js";
+import {
+  acquireBookingSlotHold,
+  BOOKING_SLOT_HOLD_TTL_SECONDS,
+  releaseBookingSlotHold,
+  requireBookingSlotHoldForPatient,
+  SlotHoldError
+} from "../../lib/bookingSlotHold.js";
 
 const createBookingSchema = z.object({
   professionalId: z.string().min(1),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
   patientTimezone: z.string().trim().min(3).max(120).optional(),
-  idempotencyKey: z.string().trim().min(8).max(120).optional()
+  idempotencyKey: z.string().trim().min(8).max(120).optional(),
+  holdId: z.string().uuid().optional()
+});
+
+const createSlotHoldSchema = z.object({
+  professionalId: z.string().min(1),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime()
 });
 
 const rescheduleBookingSchema = z.object({
@@ -315,6 +338,56 @@ bookingsRouter.get("/mine", requireAuth, async (req: AuthenticatedRequest, res) 
   return res.json({ role: actor.role, bookings: [] });
 });
 
+bookingsRouter.post("/slot-holds", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = createSlotHoldSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid slot hold payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can hold booking slots" });
+  }
+
+  try {
+    const hold = await acquireBookingSlotHold({
+      patientId: actor.patientProfileId,
+      professionalId: parsed.data.professionalId,
+      startsAt: parsed.data.startsAt,
+      endsAt: parsed.data.endsAt
+    });
+
+    return res.status(201).json({
+      holdId: hold.holdId,
+      expiresAt: hold.expiresAt,
+      ttlSeconds: BOOKING_SLOT_HOLD_TTL_SECONDS
+    });
+  } catch (error) {
+    if (error instanceof SlotHoldError) {
+      return res.status(409).json({ error: error.message, code: error.code });
+    }
+    throw error;
+  }
+});
+
+bookingsRouter.delete("/slot-holds/:holdId", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can release booking slot holds" });
+  }
+
+  await releaseBookingSlotHold(req.params.holdId, actor.patientProfileId);
+  return res.status(204).send();
+});
+
 bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -415,6 +488,25 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
     return res.status(404).json({ error: "Professional not found" });
   }
 
+  let validatedHoldId: string | null = null;
+  if (parsed.data.holdId) {
+    try {
+      await requireBookingSlotHoldForPatient({
+        holdId: parsed.data.holdId,
+        patientId: patientProfileId,
+        professionalId: parsed.data.professionalId,
+        startsAt: parsed.data.startsAt,
+        endsAt: parsed.data.endsAt
+      });
+      validatedHoldId = parsed.data.holdId;
+    } catch (error) {
+      if (error instanceof SlotHoldError) {
+        return res.status(409).json({ error: error.message, code: error.code });
+      }
+      throw error;
+    }
+  }
+
   const minimumBookingNoticeHours = resolveMinimumBookingNoticeHours(professional.cancellationHours);
   if (!hasMinimumBookingNotice(startsAt, minimumBookingNoticeHours)) {
     return res.status(409).json({
@@ -489,6 +581,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             where: { id: patientProfileId },
             select: {
               id: true,
+              market: true,
+              therapyModality: true,
               timezone: true,
               lastSeenTimezone: true
             }
@@ -501,7 +595,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
           const latestPurchase = await tx.patientPackagePurchase.findFirst({
             where: {
               patientId: patientProfileId,
-              remainingCredits: { gt: 0 }
+              remainingCredits: { gt: 0 },
+              modalitySnapshot: patient.therapyModality
             },
             orderBy: { purchasedAt: "desc" },
             select: { id: true, remainingCredits: true }
@@ -546,7 +641,24 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               select: { id: true }
             });
             if (existingTrialBooking) {
-              throw new Error("NO_AVAILABLE_CREDITS");
+              throw new Error("TRIAL_ALREADY_USED");
+            }
+
+            if (patient.market === "AR") {
+              const trialProof = await loadTrialPaymentProof(patientProfileId);
+              const dbTrialProof = await findPaidTrialCheckoutProof({
+                patientId: patientProfileId,
+                professionalId: professional.id,
+                startsAt,
+                endsAt
+              });
+              const paidTrialForSlot =
+                (trialProof != null
+                  && trialPaymentMatchesBooking(trialProof, professional.id, startsAt, endsAt))
+                || dbTrialProof != null;
+              if (!paidTrialForSlot) {
+                throw new Error("TRIAL_PAYMENT_REQUIRED");
+              }
             }
           }
 
@@ -563,7 +675,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               startsAt,
               endsAt,
               status: BOOKING_STATUS.CONFIRMED,
-              consumedCredits
+              consumedCredits,
+              modality: patient.therapyModality
             }
           });
 
@@ -691,6 +804,9 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       if (error.message === "TRIAL_ALREADY_USED") {
         return res.status(409).json({ error: "Trial session already used. Purchase a package to continue." });
       }
+      if (error.message === "TRIAL_PAYMENT_REQUIRED") {
+        return res.status(402).json({ error: "Trial session payment required before booking." });
+      }
     }
 
     throw error;
@@ -698,6 +814,17 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
 
   if (!createdBooking) {
     return res.status(500).json({ error: "Booking could not be created" });
+  }
+
+  if (createdBooking.booking.consumedCredits === 0) {
+    await clearTrialPaymentProof(patientProfileId);
+    await linkPaymentCheckoutTrialBooking({
+      patientId: patientProfileId,
+      professionalId: createdBooking.booking.professionalId,
+      startsAt: createdBooking.booking.startsAt.toISOString(),
+      endsAt: createdBooking.booking.endsAt.toISOString(),
+      bookingId: createdBooking.booking.id
+    });
   }
 
   let joinUrlPatient = createdBooking.joinUrlPatient;
@@ -918,6 +1045,10 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
       value: createdBooking.booking.id,
       ttlSeconds: 24 * 60 * 60
     });
+  }
+
+  if (validatedHoldId) {
+    void releaseBookingSlotHold(validatedHoldId, patientProfileId);
   }
 
   void sendPatientEmailForBooking({

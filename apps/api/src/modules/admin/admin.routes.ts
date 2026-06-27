@@ -18,6 +18,15 @@ import {
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
+import {
+  listPaymentCheckoutsForPatient,
+  logPaymentCheckoutEvent
+} from "../payments/paymentCheckout.service.js";
+import {
+  processDlocalGoOrderSync,
+  processDlocalGoPaymentNotification
+} from "../payments/dlocalGoCheckout.service.js";
+import { isDlocalGoConfigured } from "../../lib/dlocalGoClient.js";
 import { DEFAULT_BLOG_POSTS } from "../web-content/blogPosts.defaults.js";
 import { DEFAULT_EXERCISES } from "../web-content/exercises.defaults.js";
 import {
@@ -2355,6 +2364,84 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
       }))
     }
   });
+});
+
+adminRouter.get("/patients/:patientId/payment-checkouts", async (req, res) => {
+  const patient = await prisma.patientProfile.findUnique({
+    where: { id: req.params.patientId },
+    select: { id: true }
+  });
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const checkouts = await listPaymentCheckoutsForPatient({
+    patientId: patient.id,
+    limit: 60,
+    includeEvents: true,
+    includeExpired: true
+  });
+
+  return res.json({ checkouts });
+});
+
+adminRouter.post("/payment-checkouts/:checkoutId/retry-sync", async (req, res) => {
+  if (!isDlocalGoConfigured()) {
+    return res.status(501).json({ error: "dLocal Go not configured" });
+  }
+
+  const checkout = await prisma.paymentCheckout.findUnique({
+    where: { id: req.params.checkoutId }
+  });
+  if (!checkout) {
+    return res.status(404).json({ error: "Payment checkout not found" });
+  }
+  if (checkout.provider !== "DLOCAL") {
+    return res.status(400).json({ error: "Retry sync is only available for dLocal checkouts" });
+  }
+
+  try {
+    const result = checkout.providerPaymentId
+      ? await processDlocalGoPaymentNotification(checkout.providerPaymentId)
+      : checkout.providerOrderId
+        ? await processDlocalGoOrderSync(checkout.providerOrderId)
+        : null;
+
+    if (!result) {
+      return res.status(400).json({ error: "Checkout has no provider payment reference yet" });
+    }
+
+    await logPaymentCheckoutEvent({
+      checkoutId: checkout.id,
+      eventType: "admin.retry_sync",
+      message: result.fulfilled
+        ? "Admin retry sync fulfilled checkout"
+        : `Admin retry sync — provider status ${result.paymentStatus}`,
+      payload: {
+        fulfilled: result.fulfilled,
+        paymentStatus: result.paymentStatus,
+        purchaseId: result.purchaseId ?? null
+      },
+      actorRole: "ADMIN"
+    });
+
+    return res.json({
+      ok: true,
+      fulfilled: result.fulfilled,
+      paymentStatus: result.paymentStatus,
+      purchaseId: result.purchaseId ?? null,
+      checkoutId: result.checkoutId ?? checkout.id
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not retry payment sync";
+    await logPaymentCheckoutEvent({
+      checkoutId: checkout.id,
+      eventType: "admin.retry_sync_failed",
+      message,
+      actorRole: "ADMIN"
+    });
+    return res.status(400).json({ error: message });
+  }
 });
 
 adminRouter.patch("/patients/:patientId/risk-triage", async (req: AuthenticatedRequest, res) => {

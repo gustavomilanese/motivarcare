@@ -176,18 +176,12 @@ export function ProfessionalStripeVerificationStep(props: {
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const [verificationStatus, setVerificationStatus] = useState<"unverified" | "pending" | "verified">("unverified");
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
   const [documentLoaded, setDocumentLoaded] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const payoutDocInputRef = useRef<HTMLInputElement | null>(null);
   const payoutProvider = inferPayoutProviderFromResidencyCountry(props.residencyCountry);
   const isDlocal = payoutProvider === "dlocal";
-
-  const handleVerificationContinue = () => {
-    const url = isDlocal ? "https://www.dlocal.com" : "https://dashboard.stripe.com";
-    window.open(url, "_blank", "noopener,noreferrer");
-    setVerificationStatus("pending");
-  };
 
   return (
     <div className="pro-register-intro-shell">
@@ -259,31 +253,23 @@ export function ProfessionalStripeVerificationStep(props: {
           </button>
         </div>
 
-        <div className="pro-price-discounts">
-          <button type="button" className="pro-photo-upload-main" onClick={handleVerificationContinue}>
+        <label className="pro-payout-terms">
+          <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+          <span>
             {t(props.language, {
-              es: "Continuar con la verificación",
-              en: "Continue to verification",
-              pt: "Continuar com a verificacao"
+              es: "Confirmo que los datos fiscales son correctos. Completaré CBU/alias desde el portal si uso la versión móvil.",
+              en: "I confirm my tax details are correct. I’ll add bank details from the portal if I used mobile onboarding.",
+              pt: "Confirmo que os dados fiscais estao corretos. Completare CBU/alias no portal se usei o onboarding mobile."
             })}
-          </button>
-          <button
-            type="button"
-            className="pro-photo-secondary"
-            disabled={!documentLoaded || verificationStatus === "verified"}
-            onClick={() => setVerificationStatus("verified")}
-          >
-            {verificationStatus === "verified"
-              ? t(props.language, { es: "Verificación lista", en: "Verification done", pt: "Verificacao concluida" })
-              : t(props.language, {
-                  es: "Ya completé la verificación",
-                  en: "I completed verification",
-                  pt: "Ja conclui a verificacao"
-                })}
-          </button>
-        </div>
+          </span>
+        </label>
 
-        <button className="pro-primary pro-register-intro-cta" type="button" disabled={verificationStatus !== "verified" || props.taxId.trim().length < 6 || !documentLoaded} onClick={props.onContinue}>
+        <button
+          className="pro-primary pro-register-intro-cta"
+          type="button"
+          disabled={!termsAccepted || props.taxId.trim().length < 6 || !documentLoaded}
+          onClick={props.onContinue}
+        >
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>

@@ -11,7 +11,11 @@ export function formatPatientUsdPrice(params: {
   displayCurrency: SupportedCurrency;
   language: AppLanguage;
   fxRates?: DisplayFxRates;
+  residencyCountry?: string | null;
   maximumFractionDigits?: number;
 }): string {
-  return formatUsdMajorForPatientDisplay(params);
+  return formatUsdMajorForPatientDisplay({
+    ...params,
+    residencyCountry: params.residencyCountry
+  });
 }

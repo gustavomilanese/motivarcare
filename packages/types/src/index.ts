@@ -30,6 +30,37 @@ export {
   type ResidencyCountryOption
 } from "./residencyMarket.js";
 
+export {
+  DLOCAL_GO_PAYER_COUNTRIES,
+  DLOCAL_CHECKOUT_UNAVAILABLE_ERROR,
+  normalizeResidencyCountryIso2,
+  isDlocalGoPayerCountry,
+  resolveDlocalPayerCountry,
+  isDlocalGoCheckoutAvailable
+} from "./dlocalGoCoverage.js";
+
+export {
+  RESIDENCY_DISPLAY_CURRENCY,
+  PATIENT_LIVE_FX_CURRENCY_CODES,
+  displayCurrencyCodeForResidencyCountry,
+  defaultDisplayCurrencyCodeForPatient,
+  type PatientLiveFxCurrencyCode
+} from "./patientDisplayCurrency.js";
+
+export {
+  THERAPY_MODALITIES,
+  PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES,
+  PROFESSIONAL_ATTENTION_AREA_COUPLES_ES,
+  PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID,
+  focusAreasIncludeCouplesTherapy,
+  isCouplesIntakeActive,
+  therapyModalityFromIntakeAnswers,
+  patientSeeksCouplesTherapy,
+  professionalOffersCouplesTherapy,
+  coerceTherapyModality,
+  type TherapyModality
+} from "./therapyModality.js";
+
 export type {
   LandingPackagesSlotId,
   SessionPackagesVisibilityPayload
@@ -67,6 +98,14 @@ export type {
   ProfessionalReviewPublicItem,
   ProfessionalReviewStats
 } from "./professionalReviews.js";
+
+export type {
+  ProfessionalPayoutAdminData,
+  ProfessionalPayoutBankAccount,
+  ProfessionalPayoutBankTransferType,
+  ProfessionalPayoutProvider,
+  ProfessionalPayoutStatus
+} from "./professionalPayoutProfile.js";
 
 export interface CancellationPolicy {
   freeCancellationHours: number;

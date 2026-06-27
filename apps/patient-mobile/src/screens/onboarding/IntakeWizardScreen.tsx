@@ -15,20 +15,30 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { RESIDENCY_COUNTRY_OPTIONS, getEmergencyResources } from "@therapy/types";
 import {
+  activateCouplesMainReason,
+  activateIndividualMainReason,
   applyIntakeOptionSelection,
+  buildMobileIntakeWizardSteps,
   buildTherapistPreferencesStored,
   coerceTherapistOption,
+  detectMainReasonCategory,
   intakePieces,
   INTAKE_MAIN_REASON_VALUE_JOINER,
   intakeQuestions,
   isSafetyRiskPositiveAnswer,
   parseTherapistPreferencesStored,
+  PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID,
   PATIENT_INTAKE_CRISIS_EMOTIONAL_OPTION_ES,
+  toggleCouplesFocusSelection,
+  toggleIndividualMainReason,
+  updateIndividualOtherDetail,
+  validateMainReasonAnswers,
   THERAPIST_PREF_AGE_OPTIONS_ES,
   THERAPIST_PREF_EXCLUSIVE_ES,
   THERAPIST_PREF_GENDER_OPTIONS_ES,
   THERAPIST_PREF_LGBT_OPTIONS_ES
 } from "../../constants/intakeQuestions";
+import { MainReasonStepPanel } from "../../components/onboarding/MainReasonStepPanel";
 import { submitPatientIntake, requestPatientSafetyReferral } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
@@ -245,6 +255,52 @@ function buildIntakeStyles(colors: AppThemeColors) {
       color: colors.text,
       fontWeight: "600"
     },
+    introPoint: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text
+    },
+    introPointWrap: {
+      gap: 12
+    },
+    couplesNoticeBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15,23,42,0.45)",
+      justifyContent: "center",
+      padding: 20
+    },
+    couplesNoticeCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+      padding: 20,
+      gap: 14,
+      borderWidth: 1,
+      borderColor: colors.border
+    },
+    couplesNoticeTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: colors.text
+    },
+    couplesNoticeBullet: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.textMuted
+    },
+    rootCouplesFocus: {
+      backgroundColor: "#fff5f9"
+    },
+    couplesFocusCard: {
+      borderColor: "rgba(219, 39, 119, 0.28)",
+      backgroundColor: "#fff9fc"
+    },
+    couplesFocusKicker: {
+      color: "rgba(255,255,255,0.9)",
+      fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.5,
+      textTransform: "uppercase"
+    },
     safetyModalBackdrop: {
       flex: 1,
       backgroundColor: "rgba(15, 23, 42, 0.55)",
@@ -287,11 +343,15 @@ export function IntakeWizardScreen() {
   const { refresh } = usePatientProfile();
   const [screenIndex, setScreenIndex] = useState(0);
   const [residencyCountry, setResidencyCountry] = useState("");
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({
+    [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [crisisGate, setCrisisGate] = useState(false);
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
+  const [couplesTherapyNoticeOpen, setCouplesTherapyNoticeOpen] = useState(false);
+  const [couplesNoticeAcknowledged, setCouplesNoticeAcknowledged] = useState(false);
   const [picker, setPicker] = useState<null | "gender" | "age" | "lgbt">(null);
 
   const openSafetyReferral = useCallback(
@@ -315,10 +375,47 @@ export function IntakeWizardScreen() {
     [residencyCountry]
   );
 
-  const totalScreens = 1 + intakeQuestions.length;
-  const questionIdx = screenIndex === 0 ? -1 : screenIndex - 1;
-  const question = questionIdx >= 0 ? intakeQuestions[questionIdx] : null;
+  const mainReasonCategory = useMemo(
+    () =>
+      detectMainReasonCategory(
+        answers.mainReason ?? "",
+        answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""
+      ),
+    [answers]
+  );
+  const questionIds = useMemo(() => intakeQuestions.map((item) => item.id), []);
+  const wizardSteps = useMemo(() => buildMobileIntakeWizardSteps({ questionIds }), [questionIds]);
+  const totalScreens = wizardSteps.length;
+  const currentWizardStep = wizardSteps[screenIndex] ?? null;
+  const question =
+    currentWizardStep?.kind === "question"
+      ? intakeQuestions.find((item) => item.id === currentWizardStep.questionId) ?? null
+      : null;
   const progress = useMemo(() => ((screenIndex + 1) / totalScreens) * 100, [screenIndex, totalScreens]);
+  const isMainReasonCouplesView = question?.id === "mainReason" && mainReasonCategory === "couples";
+  const heroGradient = isMainReasonCouplesView
+    ? (["#DB2777", "#A855F7", "#7C3AED"] as const)
+    : gradients.hero;
+
+  const handleMainReasonCategoryChange = useCallback(
+    (category: "individual" | "couples") => {
+      setError("");
+      if (category === "couples" && !couplesNoticeAcknowledged) {
+        setCouplesTherapyNoticeOpen(true);
+        return;
+      }
+      setAnswers((prev) =>
+        category === "couples" ? activateCouplesMainReason(prev) : activateIndividualMainReason(prev)
+      );
+    },
+    [couplesNoticeAcknowledged]
+  );
+
+  const confirmCouplesTherapySelection = useCallback(() => {
+    setCouplesTherapyNoticeOpen(false);
+    setCouplesNoticeAcknowledged(true);
+    setAnswers((prev) => activateCouplesMainReason(prev));
+  }, []);
 
   const persistAnswer = useCallback(
     (value: string) => {
@@ -333,18 +430,40 @@ export function IntakeWizardScreen() {
   const goNext = useCallback(async () => {
     Keyboard.dismiss();
 
-    if (screenIndex === 0) {
+    if (currentWizardStep?.kind === "intro") {
+      setError("");
+      setScreenIndex(1);
+      return;
+    }
+
+    if (currentWizardStep?.kind === "country") {
       const iso = residencyCountry.trim().toUpperCase();
       if (!/^[A-Z]{2}$/.test(iso)) {
         setError("Elegí tu país de residencia para continuar.");
         return;
       }
       setError("");
-      setScreenIndex(1);
+      setScreenIndex(2);
       return;
     }
 
     if (!question) {
+      return;
+    }
+
+    if (question.id === "mainReason") {
+      if (!validateMainReasonAnswers(answers)) {
+        setError(
+          mainReasonCategory === "couples"
+            ? "Elegí al menos un aspecto de la pareja para continuar."
+            : "Marcá al menos un motivo de consulta o completá el detalle de «Otro»."
+        );
+        return;
+      }
+      setError("");
+      if (screenIndex < totalScreens - 1) {
+        setScreenIndex((index) => index + 1);
+      }
       return;
     }
 
@@ -392,7 +511,19 @@ export function IntakeWizardScreen() {
     const isoRes = residencyCountry.trim().toUpperCase();
     if (!/^[A-Z]{2}$/.test(isoRes)) {
       setError("Falta país de residencia.");
-      setScreenIndex(0);
+      const countryStep = wizardSteps.findIndex((step) => step.kind === "country");
+      setScreenIndex(countryStep >= 0 ? countryStep : 0);
+      return;
+    }
+
+    if (mainReasonCategory === "couples" && !answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]?.trim()) {
+      const mainReasonStep = wizardSteps.findIndex(
+        (step) => step.kind === "question" && step.questionId === "mainReason"
+      );
+      if (mainReasonStep >= 0) {
+        setScreenIndex(mainReasonStep);
+      }
+      setError("Completá los aspectos de terapia de pareja para continuar.");
       return;
     }
 
@@ -410,7 +541,7 @@ export function IntakeWizardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [answers, openSafetyReferral, question, refresh, residencyCountry, screenIndex, token, totalScreens]);
+  }, [answers, currentWizardStep, mainReasonCategory, openSafetyReferral, question, refresh, residencyCountry, screenIndex, token, totalScreens, wizardSteps]);
 
   const goBack = useCallback(() => {
     Keyboard.dismiss();
@@ -512,7 +643,7 @@ export function IntakeWizardScreen() {
   return (
     <>
       <KeyboardAvoidingView
-        style={styles.root}
+        style={[styles.root, isCouplesFocusStep ? styles.rootCouplesFocus : null]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 4 : 0}
       >
@@ -522,19 +653,40 @@ export function IntakeWizardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, scrollPad]}
       >
-        <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <LinearGradient colors={[...heroGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <Text style={styles.heroKicker}>
             Paso {screenIndex + 1} de {totalScreens}
           </Text>
-          <Text style={styles.heroTitle}>Tu bienestar empieza acá</Text>
-          <Text style={styles.heroLead}>Respuestas confidenciales · Mejor matching con tu profesional</Text>
+          {isMainReasonCouplesView ? (
+            <>
+              <Text style={styles.couplesFocusKicker}>Terapia de pareja</Text>
+              <Text style={styles.heroTitle}>Contanos qué querés trabajar</Text>
+              <Text style={styles.heroLead}>Elegí uno o varios aspectos de la relación</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.heroTitle}>Tu bienestar empieza acá</Text>
+              <Text style={styles.heroLead}>Respuestas confidenciales · Mejor matching con tu profesional</Text>
+            </>
+          )}
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progress}%` }]} />
           </View>
         </LinearGradient>
 
-        <View style={styles.card}>
-          {screenIndex === 0 ? (
+        <View style={[styles.card, isMainReasonCouplesView ? styles.couplesFocusCard : null]}>
+          {currentWizardStep?.kind === "intro" ? (
+            <View style={styles.introPointWrap}>
+              <Text style={styles.introPoint}>
+                A continuación te haremos unas breves preguntas para orientarte hacia el profesional más adecuado para
+                tu necesidad particular.
+              </Text>
+              <Text style={styles.introPoint}>
+                Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de
+                búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.
+              </Text>
+            </View>
+          ) : currentWizardStep?.kind === "country" ? (
             <>
               <Text style={styles.qTitle}>País de residencia</Text>
               <View style={{ gap: 10 }}>
@@ -554,6 +706,29 @@ export function IntakeWizardScreen() {
                   );
                 })}
               </View>
+            </>
+          ) : question?.id === "mainReason" ? (
+            <>
+              <Text style={styles.qTitle}>{question.title}</Text>
+              <Text style={styles.qHelp}>{question.help}</Text>
+              <MainReasonStepPanel
+                colors={colors}
+                mainReason={answers.mainReason ?? ""}
+                couplesFocus={answers[PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID] ?? ""}
+                onCategoryChange={handleMainReasonCategoryChange}
+                onToggleIndividual={(option) => {
+                  setError("");
+                  setAnswers((prev) => toggleIndividualMainReason(prev, option));
+                }}
+                onToggleCouplesFocus={(option) => {
+                  setError("");
+                  setAnswers((prev) => toggleCouplesFocusSelection(prev, option));
+                }}
+                onOtherDetailChange={(detail) => {
+                  setError("");
+                  setAnswers((prev) => updateIndividualOtherDetail(prev, detail));
+                }}
+              />
             </>
           ) : question ? (
             <>
@@ -717,6 +892,39 @@ export function IntakeWizardScreen() {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={couplesTherapyNoticeOpen} transparent animationType="fade" onRequestClose={() => setCouplesTherapyNoticeOpen(false)}>
+        <View style={styles.couplesNoticeBackdrop}>
+          <View style={styles.couplesNoticeCard}>
+            <Text style={styles.couplesNoticeTitle}>Terapia de pareja por videollamada</Text>
+            <Text style={styles.couplesNoticeBullet}>
+              Si en la videollamada se conectan 3 o más personas, la versión gratuita de Google Meet dura hasta 45
+              minutos.
+            </Text>
+            <Text style={styles.couplesNoticeBullet}>
+              Para sesiones completas de 60 minutos, el enlace debe generarse desde una cuenta con Google Meet de pago
+              (Google Workspace).
+            </Text>
+            <Text style={styles.couplesNoticeBullet}>
+              Si cada integrante se conecta desde un dispositivo distinto, todos deben usar el mismo enlace de Meet que
+              comparte tu profesional.
+            </Text>
+            <View style={styles.actions}>
+              <PrimaryButton
+                label="Elegir otra opción"
+                variant="ghost"
+                onPress={() => setCouplesTherapyNoticeOpen(false)}
+                style={styles.half}
+              />
+              <PrimaryButton
+                label="Entendido"
+                onPress={confirmCouplesTherapySelection}
+                style={styles.half}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={safetyFrequentModal}

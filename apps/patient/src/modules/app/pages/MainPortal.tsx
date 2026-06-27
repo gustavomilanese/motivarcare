@@ -88,6 +88,7 @@ export function MainPortal(props: {
   fxRates?: DisplayFxRates;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   onLogout: () => void;
+  onRefreshPortalFromApi?: () => void;
   /** Postergó el modal de Calendar: mostrar CTA en dashboard para volver al flujo OAuth. */
   showPatientGoogleCalendarReconnectCta?: boolean;
   onOpenPatientGoogleCalendarConnect?: () => void;
@@ -310,6 +311,9 @@ export function MainPortal(props: {
     syncActiveProfessionalAssignment,
     addPackage,
     purchaseIndividualSessions,
+    startTrialCheckout,
+    syncTrialPayment,
+    syncDlocalPayment,
     confirmBooking,
     rescheduleBooking,
     planTrialFromDashboard,
@@ -425,10 +429,14 @@ export function MainPortal(props: {
             toggleFavoriteProfessional={toggleFavoriteProfessional}
             syncActiveProfessionalAssignment={syncActiveProfessionalAssignment}
             confirmBooking={confirmBooking}
+            startTrialCheckout={startTrialCheckout}
+            syncTrialPayment={syncTrialPayment}
             rescheduleBooking={rescheduleBooking}
             planTrialFromDashboard={planTrialFromDashboard}
             addPackage={addPackage}
             purchaseIndividualSessions={purchaseIndividualSessions}
+            syncDlocalPayment={syncDlocalPayment}
+            onRefreshPortalFromApi={props.onRefreshPortalFromApi}
             sendMessage={sendMessage}
             markThreadAsRead={markThreadAsRead}
             onBookingSelectProfessional={onBookingSelectProfessional}

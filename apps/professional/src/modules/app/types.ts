@@ -1,5 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
-import type { Market } from "@therapy/types";
+import type { Market, ProfessionalPayoutAdminData } from "@therapy/types";
 
 export type PortalSection =
   | "/"
@@ -343,6 +343,7 @@ export interface ProfessionalProfile {
   yearsExperience: number | null;
   sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
+  couplesSessionPriceUsd?: number | null;
   discount4: number | null;
   discount8: number | null;
   discount12: number | null;
@@ -365,12 +366,7 @@ export interface ProfessionalProfile {
   }>;
 }
 
-export interface AdminData {
-  taxId?: string;
-  payoutMethod?: string;
-  payoutAccount?: string;
-  legalAcceptedAt?: string | null;
-  acceptedDocuments?: string[];
+export interface AdminData extends ProfessionalPayoutAdminData {
   notes?: string;
 }
 

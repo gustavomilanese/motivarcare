@@ -40,7 +40,14 @@ function OnboardingFinalMatching(p: {
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
   syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
-  confirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => Promise<{ ok: boolean; error?: string }>;
+  confirmBooking: (
+    professionalId: string,
+    slot: TimeSlot,
+    useTrialSession: boolean,
+    holdId?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
+  syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
   handleReserveFromAnywhere: (professionalId: string) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
@@ -49,6 +56,8 @@ function OnboardingFinalMatching(p: {
     <MatchingPage
       language={p.state.language}
       patientMarket={p.state.patientMarket}
+      therapyModality={p.state.therapyModality}
+      residencyCountry={p.state.profileResidencyCountry}
       displayCurrency={p.state.currency}
       fxRates={p.fxRates}
       authToken={p.state.authToken}
@@ -93,8 +102,8 @@ function OnboardingFinalMatching(p: {
         }));
         p.navigate("/", { replace: true });
       }}
-      onCreateBooking={async (professionalId, slot) => {
-        const result = await p.confirmBooking(professionalId, slot, true);
+      onCreateBooking={async (professionalId, slot, options) => {
+        const result = await p.confirmBooking(professionalId, slot, true, options?.holdId);
         if (!result.ok) {
           throw new Error(
             result.error ??
@@ -111,6 +120,8 @@ function OnboardingFinalMatching(p: {
         }));
         p.navigate("/", { replace: true });
       }}
+      onStartTrialCheckout={p.startTrialCheckout}
+      onSyncTrialPayment={p.syncTrialPayment}
       onReserve={p.handleReserveFromAnywhere}
       onChat={p.handleChatFromAnywhere}
       onImageFallback={p.onImageFallback}
@@ -139,11 +150,23 @@ export function PortalRoutes(props: {
   handleChatFromAnywhere: (professionalId: string) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
   syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
-  confirmBooking: (professionalId: string, slot: TimeSlot, useTrialSession: boolean) => Promise<{ ok: boolean; error?: string }>;
+  confirmBooking: (
+    professionalId: string,
+    slot: TimeSlot,
+    useTrialSession: boolean,
+    holdId?: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
+  syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<PortalPurchaseResult>;
   purchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
+  syncDlocalPayment: (params: {
+    paymentId?: string | null;
+    orderId?: string | null;
+  }) => Promise<{ ok: boolean; fulfilled?: boolean; error?: string }>;
+  onRefreshPortalFromApi?: () => void;
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
   onBookingSelectProfessional: (professionalId: string) => void;
@@ -210,6 +233,8 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
+                  therapyModality={props.state.therapyModality}
+                  residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}
                   authToken={props.state.authToken}
@@ -253,6 +278,8 @@ export function PortalRoutes(props: {
                   toggleFavoriteProfessional={props.toggleFavoriteProfessional}
                   syncActiveProfessionalAssignment={props.syncActiveProfessionalAssignment}
                   confirmBooking={props.confirmBooking}
+                  startTrialCheckout={props.startTrialCheckout}
+                  syncTrialPayment={props.syncTrialPayment}
                   handleReserveFromAnywhere={props.handleReserveFromAnywhere}
                   handleChatFromAnywhere={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
@@ -279,6 +306,8 @@ export function PortalRoutes(props: {
                     toggleFavoriteProfessional={props.toggleFavoriteProfessional}
                     syncActiveProfessionalAssignment={props.syncActiveProfessionalAssignment}
                     confirmBooking={props.confirmBooking}
+                    startTrialCheckout={props.startTrialCheckout}
+                    syncTrialPayment={props.syncTrialPayment}
                     handleReserveFromAnywhere={props.handleReserveFromAnywhere}
                     handleChatFromAnywhere={props.handleChatFromAnywhere}
                     onImageFallback={props.onImageFallback}
@@ -297,6 +326,8 @@ export function PortalRoutes(props: {
                 <MatchingPage
                   language={props.state.language}
                   patientMarket={props.state.patientMarket}
+                  therapyModality={props.state.therapyModality}
+                  residencyCountry={props.state.profileResidencyCountry}
                   displayCurrency={props.state.currency}
                   fxRates={props.fxRates}
                   authToken={props.state.authToken}
@@ -343,6 +374,8 @@ export function PortalRoutes(props: {
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
                   onPurchaseIndividualSessions={props.purchaseIndividualSessions}
+                  onSyncDlocalPayment={props.syncDlocalPayment}
+                  onRefreshPortalFromApi={props.onRefreshPortalFromApi}
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
                 />
               )

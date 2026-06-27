@@ -26,9 +26,13 @@ export interface OnboardingPatchDraft {
   shortDescription: string | null;
   sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
+  couplesSessionPriceUsd: number | null;
   discount4: number | null;
   discount8: number | null;
   discount12: number | null;
+  couplesDiscount4: number | null;
+  couplesDiscount8: number | null;
+  couplesDiscount12: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   videoCoverUrl: string | null;
@@ -78,9 +82,13 @@ export interface ProfessionalWebOnboardingPayload {
   therapeuticApproach: string;
   sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
+  couplesSessionPriceUsd: number | null;
   discount4: number | null;
   discount8: number | null;
   discount12: number | null;
+  couplesDiscount4: number | null;
+  couplesDiscount8: number | null;
+  couplesDiscount12: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
   videoCoverUrl: string | null;
@@ -92,6 +100,13 @@ export interface ProfessionalWebOnboardingPayload {
   taxId?: string;
   /** Proveedor de cobros elegido en onboarding. */
   payoutMethod?: string;
+  payoutProfile?: {
+    legalName: string;
+    accountHolderName: string;
+    bankTransferType: string;
+    bankAccountValue: string;
+    bankName?: string;
+  };
 }
 
 export interface ProfessionalMobileOnboardingInputs {

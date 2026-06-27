@@ -27,13 +27,15 @@ function formatMoney(
   amountMajor: number,
   language: AppLanguage,
   displayCurrency: SupportedCurrency,
-  fxRates?: DisplayFxRates
+  fxRates?: DisplayFxRates,
+  residencyCountry?: string | null
 ): string {
   return formatPatientUsdPrice({
     usdMajor: amountMajor,
     displayCurrency,
     language,
     fxRates,
+    residencyCountry,
     maximumFractionDigits: 0
   });
 }
@@ -41,6 +43,7 @@ function formatMoney(
 export function CheckoutPackagesPanel(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
+  residencyCountry?: string | null;
   fxRates?: DisplayFxRates;
   packagesLoading: boolean;
   packagePlans: PackagePlan[];
@@ -55,6 +58,8 @@ export function CheckoutPackagesPanel(props: {
   onSelectPlan: (plan: PackagePlan) => void;
   onIndividualPurchase: () => void;
   onRequireProfessional: () => void;
+  paymentLoading?: boolean;
+  paymentError?: string;
 }) {
   const isMobilePortal = useMobilePortal();
   const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
@@ -101,6 +106,12 @@ export function CheckoutPackagesPanel(props: {
           {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
         </button>
       </div>
+
+      {props.paymentError ? (
+        <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
+          {props.paymentError}
+        </p>
+      ) : null}
 
       {props.packagesLoading ? (
         <PackageCatalogLoading language={props.language} />
@@ -179,7 +190,7 @@ export function CheckoutPackagesPanel(props: {
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates) }
+                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates, props.residencyCountry) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -193,7 +204,7 @@ export function CheckoutPackagesPanel(props: {
                     <div className="deal-pricing-top">
                       {props.pricingReady ? (
                         <>
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates)}</span>
+                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry)}</span>
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </>
                       ) : (
@@ -208,7 +219,7 @@ export function CheckoutPackagesPanel(props: {
                     </div>
                     <p className={`deal-main-price${props.pricingReady ? "" : " deal-main-price--placeholder"}`}>
                       {props.pricingReady
-                        ? formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates)
+                        ? formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry)
                         : "—"}
                     </p>
                     <p className="sessions-package-card-unit">
@@ -219,7 +230,7 @@ export function CheckoutPackagesPanel(props: {
                               en: "Equivalent to {amount} per session",
                               pt: "Equivale a {amount} por sessao"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates) }
+                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.residencyCountry) }
                           )
                         : t(props.language, {
                             es: "Tarifa del profesional × sesiones − descuento del paquete",
@@ -247,8 +258,12 @@ export function CheckoutPackagesPanel(props: {
                     <button
                       className={`deal-select-button ${props.featuredPackageId === plan.id ? "featured" : ""}`}
                       type="button"
+                      disabled={props.paymentLoading}
                       onClick={(event) => {
                         event.stopPropagation();
+                        if (props.paymentLoading) {
+                          return;
+                        }
                         if (!props.pricingReady) {
                           props.onRequireProfessional();
                           return;

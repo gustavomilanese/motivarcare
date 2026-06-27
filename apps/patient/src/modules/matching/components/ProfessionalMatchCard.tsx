@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type SyntheticEvent, type UIEvent, type WheelEvent } from "react";
 import { formatDateWithLocale, type AppLanguage, type DisplayFxRates, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
-import type { Market } from "@therapy/types";
+import type { Market, TherapyModality } from "@therapy/types";
 import type { RankedProfessional } from "../matchingEngine";
 import { effectiveSessionListMajorUnits, formatSessionListMajorPrice } from "../lib/sessionListPrice";
 import type { MatchTimeSlot } from "../types";
@@ -60,7 +60,9 @@ function formatSlotDate(slotIso: string, language: AppLanguage): string {
 export function ProfessionalMatchCard(props: {
   item: RankedProfessional;
   patientMarket: Market;
+  therapyModality?: TherapyModality;
   displayCurrency: SupportedCurrency;
+  residencyCountry?: string | null;
   language: AppLanguage;
   fxRates?: DisplayFxRates;
   isFavorite: boolean;
@@ -90,8 +92,19 @@ export function ProfessionalMatchCard(props: {
     ? `${professional.reviewsCount} ${t(props.language, { es: "opiniones", en: "reviews", pt: "avaliacoes" })}`
     : t(props.language, { es: "Sin opiniones", en: "No reviews yet", pt: "Sem avaliacoes" });
   const ratingValue = professional.ratingAverage ?? 5;
-  const listMajor = effectiveSessionListMajorUnits(professional, props.patientMarket);
-  const priceLabel = formatSessionListMajorPrice(props.displayCurrency, listMajor, props.language, props.fxRates);
+  const listMajor = effectiveSessionListMajorUnits(
+    professional,
+    props.patientMarket,
+    props.therapyModality ?? "INDIVIDUAL"
+  );
+  const priceLabel = formatSessionListMajorPrice(
+    props.displayCurrency,
+    listMajor,
+    props.language,
+    props.fxRates,
+    props.residencyCountry,
+    props.therapyModality ?? "INDIVIDUAL"
+  );
 
   const suggested = props.item.suggestedSlots.slice(0, 6);
 

@@ -5,11 +5,13 @@ import {
   SUPPORTED_CURRENCIES,
   SUPPORTED_LANGUAGES,
   defaultDisplayCurrencyForMarket,
+  defaultDisplayCurrencyForPatient,
+  isSupportedCurrency,
   type AppLanguage,
   type LocalizedText,
   textByLanguage
 } from "@therapy/i18n-config";
-import { isMarket, joinFirstLastToFullName, type Market } from "@therapy/types";
+import { coerceTherapyModality, isMarket, joinFirstLastToFullName, therapyModalityFromIntakeAnswers, type Market } from "@therapy/types";
 import { resolvePatientPortalLanguage } from "../../patientPortalDefaultLanguage";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import {
@@ -114,6 +116,7 @@ const defaultState: PatientAppState = {
   currency: defaultDisplayCurrencyForMarket("AR"),
   profileResidencyCountry: null,
   patientMarket: "AR",
+  therapyModality: "INDIVIDUAL",
   intake: null,
   onboardingFinalCompleted: false,
   therapistSelectionCompleted: false,
@@ -434,13 +437,24 @@ function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
         return isMarket(pm) ? pm : "AR";
       })(),
       currency: (() => {
+        const residency = (() => {
+          const raw = (parsed as { profileResidencyCountry?: unknown }).profileResidencyCountry;
+          if (typeof raw !== "string") return null;
+          const u = raw.trim().toUpperCase();
+          return /^[A-Z]{2}$/.test(u) ? u : null;
+        })();
+        if (residency) {
+          const pm = (parsed as { patientMarket?: unknown }).patientMarket;
+          const market: Market = isMarket(pm) ? pm : "AR";
+          return defaultDisplayCurrencyForPatient({ residencyCountry: residency, market });
+        }
         const storedCurrency = (parsed as { currency?: unknown }).currency;
-        if (typeof storedCurrency === "string" && (SUPPORTED_CURRENCIES as readonly string[]).includes(storedCurrency)) {
-          return storedCurrency as PatientAppState["currency"];
+        if (typeof storedCurrency === "string" && isSupportedCurrency(storedCurrency)) {
+          return storedCurrency;
         }
         const pm = (parsed as { patientMarket?: unknown }).patientMarket;
         const market: Market = isMarket(pm) ? pm : "AR";
-        return defaultDisplayCurrencyForMarket(market);
+        return defaultDisplayCurrencyForPatient({ market });
       })(),
       profileResidencyCountry: (() => {
         const raw = (parsed as { profileResidencyCountry?: unknown }).profileResidencyCountry;
@@ -448,6 +462,7 @@ function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
         const u = raw.trim().toUpperCase();
         return /^[A-Z]{2}$/.test(u) ? u : null;
       })(),
+      therapyModality: coerceTherapyModality((parsed as { therapyModality?: unknown }).therapyModality, "INDIVIDUAL"),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
       session: parsed.session
         ? {
@@ -661,7 +676,7 @@ export function App() {
   /** `true` cuando ya hicimos el lookup de sesión activa (evita parpadear el chooser durante el fetch). */
   const [chatSessionLookupDone, setChatSessionLookupDone] = useState(false);
   const { flags: publicFeatures } = usePublicFeatures();
-  const { fxRates } = useDisplayFxRates(state.patientMarket, state.currency);
+  const { fxRates } = useDisplayFxRates(state.currency);
   /**
    * Cada incremento invalida el lote de `syncFromApi` en vuelo (p. ej. verificación de email completada).
    * Así una respuesta vieja de GET /me no pisa estado ya actualizado.
@@ -1354,11 +1369,27 @@ export function App() {
               const u = rc.trim().toUpperCase();
               return /^[A-Z]{2}$/.test(u) ? u : current.profileResidencyCountry;
             })(),
-            currency: (() => {
-              const m = profileResponse?.profile?.market;
-              const resolvedMarket: Market = isMarket(m) ? m : current.patientMarket;
-              return defaultDisplayCurrencyForMarket(resolvedMarket);
-            })(),
+            therapyModality: coerceTherapyModality(
+              profileResponse?.profile?.therapyModality,
+              current.therapyModality
+            ),
+            currency: defaultDisplayCurrencyForPatient({
+              residencyCountry: (() => {
+                const rc = profileResponse?.profile?.residencyCountry;
+                if (rc === null || rc === undefined) {
+                  return current.profileResidencyCountry;
+                }
+                if (typeof rc !== "string") {
+                  return current.profileResidencyCountry;
+                }
+                const u = rc.trim().toUpperCase();
+                return /^[A-Z]{2}$/.test(u) ? u : current.profileResidencyCountry;
+              })(),
+              market: (() => {
+                const m = profileResponse?.profile?.market;
+                return isMarket(m) ? m : current.patientMarket;
+              })()
+            }),
             profile: {
               ...current.profile,
               timezone: profileResponse?.profile?.timezone ?? current.profile.timezone,
@@ -1922,6 +1953,14 @@ export function App() {
     ): void => {
       const riskLevel = response.intake.riskLevel as RiskLevel;
       const nextMarket = isMarket(response.market) ? response.market : undefined;
+      const nextResidency = (() => {
+        const rc = response.residencyCountry;
+        if (typeof rc !== "string") {
+          return state.profileResidencyCountry;
+        }
+        const u = rc.trim().toUpperCase();
+        return /^[A-Z]{2}$/.test(u) ? u : state.profileResidencyCountry;
+      })();
 
       const sessionUserId = state.session?.id ?? "";
       const offerGoogleCalendarStep =
@@ -1939,12 +1978,17 @@ export function App() {
           assignedProfessionalId: null,
           assignedProfessionalName: null,
           session: current.session ? { ...current.session } : null,
-          ...(nextMarket
+          ...(nextMarket || nextResidency
             ? {
-                patientMarket: nextMarket,
-                currency: defaultDisplayCurrencyForMarket(nextMarket)
+                patientMarket: nextMarket ?? current.patientMarket,
+                profileResidencyCountry: nextResidency,
+                currency: defaultDisplayCurrencyForPatient({
+                  residencyCountry: nextResidency,
+                  market: nextMarket ?? current.patientMarket
+                })
               }
             : {}),
+          therapyModality: therapyModalityFromIntakeAnswers(answers),
           intake: {
             completed: true,
             completedAt: response.intake.completedAt,
@@ -2128,6 +2172,7 @@ export function App() {
         sessionTimezone={sessionTimezone}
         fxRates={fxRates}
         onStateChange={updateState}
+        onRefreshPortalFromApi={requestPortalResync}
         showPatientGoogleCalendarReconnectCta={showPatientGoogleCalendarReconnectCta}
         onOpenPatientGoogleCalendarConnect={openPatientGoogleCalendarFromDashboard}
         onLogout={() => {

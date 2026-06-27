@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import type { DisplayFxRates } from "@therapy/i18n-config";
-import { fetchDisplayFxRatesForMarket } from "../lib/fetchDisplayFxRates";
+import { fetchDisplayFxRatesForCurrency } from "../lib/fetchDisplayFxRates";
 
-export function useDisplayFxRates(
-  patientMarket: string | null | undefined,
-  displayCurrency?: string | null
-): {
+export function useDisplayFxRates(displayCurrency?: string | null): {
   fxRates: DisplayFxRates;
   fxLoading: boolean;
   fxError: string | null;
@@ -16,11 +13,9 @@ export function useDisplayFxRates(
 
   useEffect(() => {
     let active = true;
-    const needsLiveArs =
-      (displayCurrency ?? "").trim().toUpperCase() === "ARS"
-      || (patientMarket ?? "").trim().toUpperCase() === "AR";
+    const code = (displayCurrency ?? "").trim().toUpperCase();
 
-    if (!needsLiveArs) {
+    if (!code || code === "USD") {
       setFxRates({});
       setFxLoading(false);
       setFxError(null);
@@ -32,17 +27,14 @@ export function useDisplayFxRates(
     setFxLoading(true);
     setFxError(null);
 
-    void fetchDisplayFxRatesForMarket(patientMarket)
+    void fetchDisplayFxRatesForCurrency(code)
       .then((rates) => {
         if (!active) {
           return;
         }
         setFxRates(rates);
-        if (rates.arsPerUsd == null) {
-          setFxError("FX_UNAVAILABLE");
-        } else {
-          setFxError(null);
-        }
+        const live = rates.ratesPerUsd?.[code as keyof typeof rates.ratesPerUsd];
+        setFxError(typeof live === "number" && live > 0 ? null : "FX_UNAVAILABLE");
       })
       .catch(() => {
         if (!active) {
@@ -60,7 +52,7 @@ export function useDisplayFxRates(
     return () => {
       active = false;
     };
-  }, [displayCurrency, patientMarket]);
+  }, [displayCurrency]);
 
   return { fxRates, fxLoading, fxError };
 }

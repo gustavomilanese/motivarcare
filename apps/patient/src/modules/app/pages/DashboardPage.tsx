@@ -33,6 +33,7 @@ import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../servic
 import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
+import { CouplesTherapyCarePathBanner, isCouplesTherapyModality } from "../components/CouplesTherapyCarePathBanner";
 import {
   portalHasPricingProfessional,
   resolvePortalPricingProfessionalId
@@ -121,13 +122,15 @@ function formatMoney(
   amountMajor: number,
   language: AppLanguage,
   displayCurrency: SupportedCurrency,
-  fxRates?: DisplayFxRates
+  fxRates?: DisplayFxRates,
+  residencyCountry?: string | null
 ): string {
   return formatPatientUsdPrice({
     usdMajor: amountMajor,
     displayCurrency,
     language,
     fxRates,
+    residencyCountry,
     maximumFractionDigits: 0
   });
 }
@@ -370,6 +373,7 @@ export function DashboardPage(props: {
       language: props.language,
       professionalId: pricingProfessionalId,
       market: props.state.patientMarket,
+      modality: props.state.therapyModality,
       t: (values) => t(props.language, values)
     })
       .then((catalog) => {
@@ -643,6 +647,12 @@ export function DashboardPage(props: {
           </div>
           <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount" />
         </div>
+        {isCouplesTherapyModality(props.state.therapyModality) ? (
+          <CouplesTherapyCarePathBanner
+            language={props.language}
+            onOpenPackages={props.onNavigateToSessionsCheckout}
+          />
+        ) : null}
         {(showPackageSection && defaultPackagePlan) || showGoogleCalendarCta ? (
           <div className="dashboard-hero-cta-band">
             {showPackageSection && defaultPackagePlan ? (
@@ -1081,7 +1091,7 @@ export function DashboardPage(props: {
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates) }
+                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -1095,10 +1105,10 @@ export function DashboardPage(props: {
                     {pricingReady ? (
                       <>
                         <div className="deal-pricing-top">
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates)}</span>
+                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}</span>
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </div>
-                        <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates)}</p>
+                        <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}</p>
                         <p className="sessions-package-card-unit">
                           {replaceTemplate(
                             t(props.language, {
@@ -1106,7 +1116,7 @@ export function DashboardPage(props: {
                               en: "Equivalent to {amount} per session",
                               pt: "Equivale a {amount} por sessao"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates) }
+                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry) }
                           )}
                         </p>
                       </>

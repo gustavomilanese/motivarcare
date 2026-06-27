@@ -313,14 +313,16 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
           <div className="session-management-cell session-management-meta">
             <span className="session-management-cell-label">{headLabels.professional}</span>
-            <ProfessionalNameLink
-              className="session-management-professional-link"
-              professional={bookingProfessional}
-              professionalId={props.booking.professionalId}
-              language={props.language}
-              onOpenProfessionalReviews={props.onOpenProfessionalReviews}
-            />
-            <ProfessionalRatingCompact professional={bookingProfessional} className="session-pro-rating-compact--table" />
+            <div className="session-management-meta-body">
+              <ProfessionalNameLink
+                className="session-management-professional-link"
+                professional={bookingProfessional}
+                professionalId={props.booking.professionalId}
+                language={props.language}
+                onOpenProfessionalReviews={props.onOpenProfessionalReviews}
+              />
+              <ProfessionalRatingCompact professional={bookingProfessional} className="session-pro-rating-compact--table" />
+            </div>
           </div>
           <div className="session-management-cell session-management-cell-status">
             <span className="session-management-cell-label">{headLabels.status}</span>

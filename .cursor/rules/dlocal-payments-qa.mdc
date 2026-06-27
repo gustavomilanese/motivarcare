@@ -1,0 +1,55 @@
+---
+description: Contexto DLocal Go multi-país, moneda local en UI y QA pendiente en sandbox
+alwaysApply: true
+---
+
+# DLocal Go — pagos multi-país y moneda local
+
+## Entorno actual
+
+- **Estamos trabajando con DLocal sandbox**, no producción.
+- API URL por defecto: `https://api-sbx.dlocalgo.com` (`DLOCALGO_API_URL` en `apps/api/src/config/env.ts` y `.env.example`).
+- Credenciales: `DLOCALGO_API_KEY` + `DLOCALGO_API_SECRET` (sandbox).
+
+## Qué se implementó (pendiente QA manual)
+
+- Checkout DLocal para **todos los países dLocal Go** (AR, BO, BR, CL, CO, CR, EC, GT, MX, PY, PE, UY, ID, MY, KE, NG) — ver `packages/types/src/dlocalGoCoverage.ts`.
+- **Moneda local en pantalla** para el paciente según país de residencia (no solo AR/USD).
+- Catálogo interno sigue en **USD**; conversión es solo **display**.
+- Cobro DLocal: **ARS en Argentina**; resto de países dLocal cobra en **USD** y DLocal muestra moneda local en checkout.
+- Google Pay simulado fue **eliminado**; flujo unificado vía DLocal cuando aplica.
+
+## Archivos clave
+
+| Área | Paths |
+|------|-------|
+| País → moneda display | `packages/types/src/patientDisplayCurrency.ts` |
+| Cobertura dLocal | `packages/types/src/dlocalGoCoverage.ts` |
+| FX + formato | `packages/utils/src/currencies.ts`, `displayFx.ts` |
+| FX API pública | `apps/api/src/lib/usdDisplayFxRates.ts`, `public.routes.ts` |
+| Checkout backend | `apps/api/src/modules/payments/dlocalGoCheckout.service.ts` |
+| Portal paciente | `apps/patient/src/modules/app/AppRoot.tsx`, `useDisplayFxRates.ts`, `usePortalActions.ts`, `BookingPage.tsx`, matching |
+
+## Tests automatizados (ya pasan)
+
+- `@therapy/types`: dlocalGoCoverage + patientDisplayCurrency (mapeo cada país dLocal)
+- `@therapy/i18n-config`: displayFx (COP, CLP, ARS, redondeos, locales)
+- API: `usdDisplayFxRates.test.ts`
+
+## QA manual pendiente (planificado)
+
+Probar en **sandbox** mañana, por país si es posible:
+
+1. Intake/residencia (ej. CO) → precios en moneda local (COP)
+2. Matching → precio del profesional en moneda local
+3. Paquete individual, paquete multi-sesión, sesión de prueba → redirect DLocal sandbox
+4. Return post-pago → fulfillment / historial de compras
+5. País **sin** cobertura dLocal (ej. ES/US sin residencia dLocal) → mensaje claro, sin crash
+6. Ecuador (EC) → display USD (dolarizado)
+7. Verificar que cotizaciones live cargan (`GET /api/public/fx/display-rates`); sin API, fallback estático
+
+## Deploy
+
+- Cambios en disco no llegan a prod sin commit + push.
+- Para FX live en prod: deploy API (Railway) con endpoint nuevo.
+- No hacer push salvo que el usuario lo pida explícitamente.

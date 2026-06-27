@@ -37,16 +37,43 @@ export const PROFESSIONAL_IDENTITY_ADVANCE_COUPLES_BULLETS: readonly LocalizedTe
 ];
 
 export const PROFESSIONAL_PAYOUT_SETUP_LEAD: LocalizedText = {
-  es: "Conectá tu cuenta para recibir pagos de tus sesiones. Podés completarlo ahora o más adelante desde tu perfil.",
-  en: "Connect your account to receive payments for your sessions. You can complete this now or later from your profile.",
-  pt: "Conecte sua conta para receber pagamentos das suas sessoes. Voce pode concluir agora ou depois no perfil."
+  es: "El paciente paga a MotivarCare; nosotros retenemos la comisión de la plataforma y te transferimos tu parte neta a la cuenta que indiques acá.",
+  en: "Patients pay MotivarCare; we retain the platform fee and transfer your net share to the account you enter here.",
+  pt: "O paciente paga ao MotivarCare; retemos a comissao da plataforma e transferimos sua parte liquida para a conta indicada aqui."
 };
 
 export const PROFESSIONAL_PAYOUT_FISCAL_NOTICE: LocalizedText = {
-  es: "Validamos identidad y datos fiscales (DNI/CUIT u equivalente). Completá el proceso en el proveedor de pagos y cargá acá tu documento.",
-  en: "We validate identity and tax data (national ID / tax number). Complete the process with the payment provider and upload your document here.",
-  pt: "Validamos identidade e dados fiscais (documento / numero fiscal). Conclua o processo no provedor de pagamentos e envie seu documento aqui."
+  es: "Deben coincidir con tu documento y con el titular de la cuenta bancaria. Los usamos para cumplir normativa y liberar tus cobros.",
+  en: "These must match your ID and bank account holder. We use them for compliance and to release your payouts.",
+  pt: "Devem coincidir com seu documento e com o titular da conta bancaria. Usamos para conformidade e liberar seus recebimentos."
 };
+
+export const PROFESSIONAL_PAYOUT_FLOW_STEPS: ReadonlyArray<{ title: LocalizedText; body: LocalizedText }> = [
+  {
+    title: { es: "El paciente paga", en: "Patient pays", pt: "Paciente paga" },
+    body: {
+      es: "Cobra la sesión o paquete con tarjeta u otros medios locales (dLocal en Argentina).",
+      en: "They pay for the session or package by card or local methods (dLocal in Argentina).",
+      pt: "Paga a sessao ou pacote com cartao ou metodos locais (dLocal na Argentina)."
+    }
+  },
+  {
+    title: { es: "MotivarCare liquida", en: "MotivarCare settles", pt: "MotivarCare liquida" },
+    body: {
+      es: "Al completarse la sesión calculamos tu neto: precio de lista menos comisión de plataforma.",
+      en: "When the session is completed we calculate your net: list price minus platform fee.",
+      pt: "Ao concluir a sessao calculamos seu liquido: preco de lista menos comissao da plataforma."
+    }
+  },
+  {
+    title: { es: "Transferimos a tu banco", en: "We pay your bank", pt: "Transferimos ao seu banco" },
+    body: {
+      es: "Acumulás saldo pendiente y lo transferimos a tu CBU/CVU/alias o cuenta internacional.",
+      en: "You accrue a pending balance and we transfer it to your CBU/CVU/alias or international account.",
+      pt: "Voce acumula saldo pendente e transferimos para seu CBU/CVU/alias ou conta internacional."
+    }
+  }
+];
 
 export const PROFESSIONAL_MEDIA_BOTH_REQUIRED_NOTICE: LocalizedText = {
   es: "Necesitamos tu foto y tu video de presentación para continuar. Si subiste uno incorrecto, podés cambiarlo antes de seguir.",
