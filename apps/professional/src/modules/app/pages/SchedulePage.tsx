@@ -5,15 +5,13 @@ import {
   type LocalizedText,
   formatDateWithLocale,
   replaceTemplate,
-  textByLanguage,
-  SESSION_PRICE_ARS_ROUND_STEP,
-  roundSessionPriceArsFromUsd
+  textByLanguage
 } from "@therapy/i18n-config";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { PROFESSIONAL_CANCELLATION_POLICY_NOTICE } from "../../onboarding/constants/professionalProfileGuidanceCopy";
 import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
+import { useProfessionalLocalSessionPriceDisplay } from "../hooks/useProfessionalLocalSessionPriceDisplay";
 import { apiRequest } from "../services/api";
-import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
 import type { AvailabilitySlot, ProfessionalProfile } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -414,9 +412,7 @@ export function SchedulePage(props: {
   const [professionalId, setProfessionalId] = useState("");
   const [bookingNoticeHours, setBookingNoticeHours] = useState(MIN_BOOKING_NOTICE_HOURS);
   const [sessionPriceUsd, setSessionPriceUsd] = useState<number>(0);
-  const [storedSessionPriceArs, setStoredSessionPriceArs] = useState<number | null>(null);
-  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
-  const [usdArsRateError, setUsdArsRateError] = useState(false);
+  const [residencyCountry, setResidencyCountry] = useState("");
   const [vacationStartDate, setVacationStartDate] = useState(() => formatDateInput(new Date()));
   const [vacationEndDate, setVacationEndDate] = useState(() => formatDateInput(new Date()));
   const [editingVacationRangeId, setEditingVacationRangeId] = useState<string | null>(null);
@@ -424,15 +420,11 @@ export function SchedulePage(props: {
   const [weekTemplate, setWeekTemplate] = useState<Array<Set<string>>>(() => DAY_KEYS.map(() => new Set<string>()));
 
   const selectedDayIndex = useMemo(() => toDayIndex(selectedDay), [selectedDay]);
-  const computedSessionPriceArs = useMemo(() => {
-    const usd = Math.round(Number(sessionPriceUsd || 0));
-    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
-      return null;
-    }
-    return roundSessionPriceArsFromUsd(usd, usdArsRate);
-  }, [sessionPriceUsd, usdArsRate]);
-
-  const displayedSessionPriceArs = computedSessionPriceArs ?? storedSessionPriceArs;
+  const { sessionPriceLocalLabel, formatUsdMajorLocal, fxRatesError } = useProfessionalLocalSessionPriceDisplay({
+    residencyCountry,
+    sessionPriceUsd,
+    language: props.language
+  });
 
   const openSlotsPerWeek = useMemo(() => summarizeTemplate(weekTemplate), [weekTemplate]);
   const { weeks: forwardWeeks, result: plannedSlots } = useMemo(() => buildForwardTemplateSlots(weekTemplate), [weekTemplate]);
@@ -481,8 +473,7 @@ export function SchedulePage(props: {
       }
       setBookingNoticeHours(Math.max(MIN_BOOKING_NOTICE_HOURS, Number(profileResponse.profile?.cancellationHours ?? MIN_BOOKING_NOTICE_HOURS)));
       setSessionPriceUsd(Math.max(0, Number(profileResponse.profile?.sessionPriceUsd ?? 0)));
-      const ars = profileResponse.profile?.sessionPriceArs;
-      setStoredSessionPriceArs(ars != null && ars > 0 ? ars : null);
+      setResidencyCountry((profileResponse.profile?.residencyCountry ?? "").trim().toUpperCase());
       setError("");
     } catch (requestError) {
       if (showError) {
@@ -497,26 +488,6 @@ export function SchedulePage(props: {
   useEffect(() => {
     void load();
   }, [props.token]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchPublicUsdArsRate()
-      .then((rate) => {
-        if (!cancelled) {
-          setUsdArsRate(rate);
-          setUsdArsRateError(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setUsdArsRate(null);
-          setUsdArsRateError(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     const resetToWorkRoot = () => {
@@ -551,6 +522,14 @@ export function SchedulePage(props: {
       } else {
         next[selectedDayIndex].add(timeLabel);
       }
+      return next;
+    });
+  };
+
+  const clearSelectedDayHours = () => {
+    setWeekTemplate((current) => {
+      const next = cloneTemplate(current);
+      next[selectedDayIndex] = new Set();
       return next;
     });
   };
@@ -632,21 +611,14 @@ export function SchedulePage(props: {
       });
 
       setSessionPriceUsd(nextUsd ?? 0);
-      const savedArs =
-        nextUsd != null && usdArsRate != null && Number.isFinite(usdArsRate)
-          ? roundSessionPriceArsFromUsd(nextUsd, usdArsRate)
-          : storedSessionPriceArs;
-      if (savedArs != null) {
-        setStoredSessionPriceArs(savedArs);
-      }
       const usdPart =
         nextUsd != null
           ? `USD ${nextUsd}`
           : t(props.language, { es: "USD sin definir", en: "USD not set", pt: "USD nao definido" });
-      const arsPart =
-        savedArs != null
-          ? `ARS ${savedArs.toLocaleString("es-AR")}`
-          : t(props.language, { es: "ARS se calculará al guardar", en: "ARS will be computed on save", pt: "ARS sera calculado ao salvar" });
+      const localPart =
+        nextUsd != null
+          ? formatUsdMajorLocal(nextUsd)
+          : null;
       setMessage(
         replaceTemplate(
           t(props.language, {
@@ -654,7 +626,7 @@ export function SchedulePage(props: {
             en: "List price updated: {detail}.",
             pt: "Preco de lista atualizado: {detail}."
           }),
-          { detail: `${usdPart} · ${arsPart}` }
+          { detail: [usdPart, localPart].filter(Boolean).join(" · ") }
         )
       );
     } catch (requestError) {
@@ -1133,9 +1105,9 @@ export function SchedulePage(props: {
           <div className="schedule-notice-copy">
             <p className="pro-muted">
               {t(props.language, {
-                es: `Definí el valor de referencia en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al múltiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("es-AR")} ARS más cercano.`,
-                en: `Set your reference price in US dollars (USD). The peso price uses the official exchange rate and rounds to the nearest ARS ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("en-US")}.`,
-                pt: `Defina o valor de referencia em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o multiplo de ${SESSION_PRICE_ARS_ROUND_STEP.toLocaleString("pt-BR")} ARS mais proximo.`
+                es: "Definí el valor de referencia en dólares (USD). Abajo verás el equivalente orientativo en tu moneda local según tu país de residencia.",
+                en: "Set your reference price in US dollars (USD). Below you'll see an indicative equivalent in your local currency based on your country of residence.",
+                pt: "Defina o valor de referencia em dolares (USD). Abaixo vera o equivalente indicativo na sua moeda local conforme seu pais de residencia."
               })}
             </p>
           </div>
@@ -1156,21 +1128,21 @@ export function SchedulePage(props: {
             />
           </label>
 
-          {usdArsRateError ? (
+          {fxRatesError ? (
             <p className="pro-muted" role="status">
               {t(props.language, {
-                es: "No pudimos obtener el tipo de cambio ahora. Podés guardar el USD; el ARS se calculará al confirmar.",
-                en: "We couldn’t load the exchange rate now. You can save USD; ARS will be computed when you confirm.",
-                pt: "Nao foi possivel obter a cotacao agora. Voce pode salvar o USD; o ARS sera calculado ao confirmar."
+                es: "No pudimos obtener el tipo de cambio ahora. Podés guardar el USD; el equivalente local se mostrará cuando haya cotización.",
+                en: "We couldn’t load the exchange rate now. You can save USD; the local equivalent will show once rates are available.",
+                pt: "Nao foi possivel obter a cotacao agora. Voce pode salvar o USD; o equivalente local aparecera quando houver cotacao."
               })}
             </p>
           ) : null}
-          {computedSessionPriceArs !== null ? (
+          {sessionPriceLocalLabel ? (
             <p className="pro-muted">
               {t(props.language, {
-                es: `Equivalente orientativo: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS.`,
-                en: `Indicative equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS.`,
-                pt: `Equivalente indicativo: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS.`
+                es: `Equivalente orientativo: ${sessionPriceLocalLabel} por sesión.`,
+                en: `Indicative equivalent: ${sessionPriceLocalLabel} per session.`,
+                pt: `Equivalente indicativo: ${sessionPriceLocalLabel} por sessao.`
               })}
             </p>
           ) : null}
@@ -1338,9 +1310,7 @@ export function SchedulePage(props: {
                 <span>
                   {[
                     sessionPriceUsd > 0 ? `USD ${sessionPriceUsd}` : null,
-                    displayedSessionPriceArs != null && displayedSessionPriceArs > 0
-                      ? `ARS ${displayedSessionPriceArs.toLocaleString("es-AR")}`
-                      : null
+                    sessionPriceLocalLabel
                   ]
                     .filter(Boolean)
                     .join(" · ") ||
@@ -1429,6 +1399,18 @@ export function SchedulePage(props: {
             );
           })}
         </div>
+
+        {weekTemplate[selectedDayIndex].size > 0 ? (
+          <div className="schedule-work-selection-actions">
+            <button type="button" className="schedule-work-clear" onClick={clearSelectedDayHours}>
+              {t(props.language, {
+                es: "Eliminar selección del día",
+                en: "Clear day selection",
+                pt: "Remover seleção do dia"
+              })}
+            </button>
+          </div>
+        ) : null}
 
         <div className="schedule-work-grid">
           {TIME_OPTIONS.map((timeLabel) => {

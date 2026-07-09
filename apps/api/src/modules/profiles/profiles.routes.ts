@@ -71,9 +71,21 @@ const professionalDisplayOverrideSchema = z.object({
 const professionalDisplayOverridesSchema = z.record(z.string(), professionalDisplayOverrideSchema);
 
 const submitIntakeSchema = z.object({
-  answers: z.record(z.string().min(1), z.string().trim().min(1)).refine((answers) => Object.keys(answers).length > 0, {
-    message: "Intake answers are required"
-  }),
+  answers: z
+    .record(z.string().min(1), z.string())
+    .transform((raw) => {
+      const sanitized: Record<string, string> = {};
+      for (const [key, value] of Object.entries(raw)) {
+        const trimmed = value.trim();
+        if (trimmed.length > 0) {
+          sanitized[key] = trimmed;
+        }
+      }
+      return sanitized;
+    })
+    .refine((answers) => Object.keys(answers).length > 0, {
+      message: "Intake answers are required"
+    }),
   residencyCountry: z
     .string()
     .trim()

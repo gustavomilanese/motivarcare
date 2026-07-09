@@ -4,9 +4,7 @@ import {
   type AppLanguage,
   type LocalizedText,
   replaceTemplate,
-  textByLanguage,
-  roundSessionPriceArsFromUsd,
-  SESSION_PRICE_ARS_ROUND_STEP
+  textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone, syncUserTimezone } from "@therapy/auth";
 import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../../onboarding/constants/latinAmericaCountries";
@@ -28,8 +26,8 @@ import {
   profileTitleOptions
 } from "../lib/profileFormOptions";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { useProfessionalLocalSessionPriceDisplay } from "../hooks/useProfessionalLocalSessionPriceDisplay";
 import { API_BASE, apiRequest } from "../services/api";
-import { fetchPublicUsdArsRate } from "../services/usdArsPublicRate";
 import { compressImageDataUrl, fileToDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
 import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
@@ -68,7 +66,12 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const [isReadingVideo, setIsReadingVideo] = useState(false);
   const [readingDiplomaIndex, setReadingDiplomaIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
+
+  const { sessionPriceLocalLabel } = useProfessionalLocalSessionPriceDisplay({
+    residencyCountry: profile?.residencyCountry,
+    sessionPriceUsd: Math.round(Number(profile?.sessionPriceUsd ?? 0)),
+    language: props.language
+  });
 
   useProPortalChrome({
     title: t(props.language, { es: "Perfil profesional", en: "Professional profile", pt: "Perfil profissional" })
@@ -78,14 +81,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const experienceOptions = useMemo(() => profileExperienceBandOptions(props.language), [props.language]);
   const practiceOptions = useMemo(() => profilePracticeBandOptions(props.language), [props.language]);
   const genderOptions = useMemo(() => profileGenderOptions(props.language), [props.language]);
-
-  const computedSessionPriceArs = useMemo(() => {
-    const usd = Math.round(Number(profile?.sessionPriceUsd ?? 0));
-    if (!usd || usdArsRate === null || !Number.isFinite(usdArsRate)) {
-      return null;
-    }
-    return roundSessionPriceArsFromUsd(usd, usdArsRate);
-  }, [profile?.sessionPriceUsd, usdArsRate]);
 
   const completion = useMemo(
     () => (profile ? profileCompletionScore(profile) : { done: 0, total: 8 }),
@@ -131,24 +126,6 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   useEffect(() => {
     void loadProfile();
   }, [props.token]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchPublicUsdArsRate()
-      .then((rate) => {
-        if (!cancelled) {
-          setUsdArsRate(rate);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setUsdArsRate(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const birthCountryOptions = useMemo(() => {
     const current = profile?.birthCountry?.trim();
@@ -859,9 +836,9 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                       }
                     />
                   </label>
-                  {computedSessionPriceArs !== null ? (
+                  {sessionPriceLocalLabel ? (
                     <p className="pro-profile-pricing-equiv">
-                      ≈ {computedSessionPriceArs.toLocaleString("es-AR")} ARS
+                      ≈ {sessionPriceLocalLabel}
                     </p>
                   ) : null}
                 </div>

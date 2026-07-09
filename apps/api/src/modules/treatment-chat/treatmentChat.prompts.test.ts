@@ -78,6 +78,13 @@ describe("buildTreatmentChatSystemPrompt", () => {
     expect(prompt).toContain("pendiente de confirmación");
   });
 
+  it("prioriza ejercicios y música, no terapia clínica", () => {
+    const prompt = buildTreatmentChatSystemPrompt();
+    expect(prompt).toContain("ejercicios");
+    expect(prompt).toContain("música");
+    expect(prompt).toContain("NO hacés terapia");
+  });
+
   it("informa explícitamente cuando no hay sesiones agendadas o créditos en cero", () => {
     const prompt = buildTreatmentChatSystemPrompt(
       makeContext({

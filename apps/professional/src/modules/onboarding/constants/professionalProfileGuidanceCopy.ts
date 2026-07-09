@@ -17,29 +17,27 @@ export const PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET: LocalizedText = {
   pt: "Sua selecao orienta o match com pacientes — escolha apenas o que voce realmente atende."
 };
 
-/** Avisos de terapia de pareja (solo profesionales): popup al confirmar, no banner inline. */
-export const PROFESSIONAL_IDENTITY_ADVANCE_COUPLES_BULLETS: readonly LocalizedText[] = [
+/** Aviso al marcar terapia de pareja (click en ámbitos de atención). */
+export const PROFESSIONAL_COUPLES_THERAPY_MEET_NOTICE_BULLETS: readonly LocalizedText[] = [
   {
-    es: "Con 3 o más personas en la llamada, Google Meet gratuito dura hasta 45 minutos.",
-    en: "With 3 or more people on the call, free Google Meet lasts up to 45 minutes.",
-    pt: "Com 3 ou mais pessoas na chamada, o Google Meet gratuito dura ate 45 minutos."
+    es: "En llamadas de Google Meet con 3 o más personas, la versión gratuita permite hasta 45 minutos.",
+    en: "On Google Meet calls with 3 or more people, the free version allows up to 45 minutes.",
+    pt: "Em chamadas do Google Meet com 3 ou mais pessoas, a versao gratuita permite ate 45 minutos."
   },
   {
-    es: "Si la pareja se conecta desde distintos dispositivos o ubicaciones, deben compartir el enlace de Meet generado para la sesión.",
-    en: "If the couple joins from different devices or locations, they must share the Meet link generated for the session.",
-    pt: "Se o casal entrar de dispositivos ou locais diferentes, devem compartilhar o link do Meet gerado para a sessao."
-  },
-  {
-    es: "Quien tenga la suscripción de Google Workspace activa podrá compartir ese enlace; vos también podrás compartirlo para sesiones de hasta 60 minutos con Meet Pro.",
-    en: "Whoever has an active Google Workspace subscription can share that link; you can also share it for sessions up to 60 minutes with Meet Pro.",
-    pt: "Quem tiver a assinatura do Google Workspace ativa podera compartilhar esse link; voce tambem podera compartilha-lo para sessoes de ate 60 minutos com Meet Pro."
+    es: "Para sesiones de 60 minutos o más, es necesario usar una cuenta con Google Workspace.",
+    en: "For 60-minute sessions or longer, you need an account with Google Workspace.",
+    pt: "Para sessoes de 60 minutos ou mais, e necessario usar uma conta com Google Workspace."
   }
 ];
 
+/** @deprecated Usar aviso al click; ya no se repite en el modal de avance. */
+export const PROFESSIONAL_IDENTITY_ADVANCE_COUPLES_BULLETS = PROFESSIONAL_COUPLES_THERAPY_MEET_NOTICE_BULLETS;
+
 export const PROFESSIONAL_PAYOUT_SETUP_LEAD: LocalizedText = {
-  es: "El paciente paga a MotivarCare; nosotros retenemos la comisión de la plataforma y te transferimos tu parte neta a la cuenta que indiques acá.",
-  en: "Patients pay MotivarCare; we retain the platform fee and transfer your net share to the account you enter here.",
-  pt: "O paciente paga ao MotivarCare; retemos a comissao da plataforma e transferimos sua parte liquida para a conta indicada aqui."
+  es: "Ingresá tus datos bancarios para que podamos transferirte el pago correspondiente a las sesiones realizadas durante el mes.",
+  en: "Enter your bank details so we can transfer the payment for the sessions you complete during the month.",
+  pt: "Informe seus dados bancarios para que possamos transferir o pagamento das sessoes realizadas durante o mes."
 };
 
 export const PROFESSIONAL_PAYOUT_FISCAL_NOTICE: LocalizedText = {
@@ -47,33 +45,6 @@ export const PROFESSIONAL_PAYOUT_FISCAL_NOTICE: LocalizedText = {
   en: "These must match your ID and bank account holder. We use them for compliance and to release your payouts.",
   pt: "Devem coincidir com seu documento e com o titular da conta bancaria. Usamos para conformidade e liberar seus recebimentos."
 };
-
-export const PROFESSIONAL_PAYOUT_FLOW_STEPS: ReadonlyArray<{ title: LocalizedText; body: LocalizedText }> = [
-  {
-    title: { es: "El paciente paga", en: "Patient pays", pt: "Paciente paga" },
-    body: {
-      es: "Cobra la sesión o paquete con tarjeta u otros medios locales (dLocal en Argentina).",
-      en: "They pay for the session or package by card or local methods (dLocal in Argentina).",
-      pt: "Paga a sessao ou pacote com cartao ou metodos locais (dLocal na Argentina)."
-    }
-  },
-  {
-    title: { es: "MotivarCare liquida", en: "MotivarCare settles", pt: "MotivarCare liquida" },
-    body: {
-      es: "Al completarse la sesión calculamos tu neto: precio de lista menos comisión de plataforma.",
-      en: "When the session is completed we calculate your net: list price minus platform fee.",
-      pt: "Ao concluir a sessao calculamos seu liquido: preco de lista menos comissao da plataforma."
-    }
-  },
-  {
-    title: { es: "Transferimos a tu banco", en: "We pay your bank", pt: "Transferimos ao seu banco" },
-    body: {
-      es: "Acumulás saldo pendiente y lo transferimos a tu CBU/CVU/alias o cuenta internacional.",
-      en: "You accrue a pending balance and we transfer it to your CBU/CVU/alias or international account.",
-      pt: "Voce acumula saldo pendente e transferimos para seu CBU/CVU/alias ou conta internacional."
-    }
-  }
-];
 
 export const PROFESSIONAL_MEDIA_BOTH_REQUIRED_NOTICE: LocalizedText = {
   es: "Necesitamos tu foto y tu video de presentación para continuar. Si subiste uno incorrecto, podés cambiarlo antes de seguir.",

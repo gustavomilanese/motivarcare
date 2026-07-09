@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
+import {
+  type AppLanguage,
+  type DisplayFxRates,
+  type LocalizedText,
+  type SupportedCurrency,
+  defaultDisplayCurrencyForPatient,
+  formatUsdMajorForPatientDisplay,
+  textByLanguage
+} from "@therapy/i18n-config";
 import {
   FALLBACK_SESSION_PRICE_MAX_ARS,
   FALLBACK_SESSION_PRICE_MAX_USD,
@@ -9,6 +17,7 @@ import {
   type SessionPriceBoundsDual
 } from "../../../app/services/sessionPriceBounds";
 import {
+  fetchPublicDisplayFxRates,
   fetchPublicUsdArsRate,
   roundSessionPriceArsFromUsd
 } from "../../../app/services/usdArsPublicRate";
@@ -21,6 +30,8 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function ProfessionalPriceStep(props: {
   language: AppLanguage;
   currency: SupportedCurrency;
+  /** País de residencia del profesional; define la moneda local (COP, MXN, etc.) para mostrar el equivalente. */
+  residencyCountry?: string;
   value: {
     sessionPriceArs: string;
     sessionPrice: string;
@@ -45,7 +56,13 @@ export function ProfessionalPriceStep(props: {
   const [bounds, setBounds] = useState<SessionPriceBoundsDual | null>(null);
   const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
   const [usdArsRateError, setUsdArsRateError] = useState(false);
+  const [displayFxRates, setDisplayFxRates] = useState<DisplayFxRates>({});
   const [priceError, setPriceError] = useState("");
+
+  const proDisplayCurrency: SupportedCurrency = useMemo(
+    () => defaultDisplayCurrencyForPatient({ residencyCountry: props.residencyCountry }),
+    [props.residencyCountry]
+  );
 
   const arMin = bounds?.ars.min ?? FALLBACK_SESSION_PRICE_MIN_ARS;
   const arMax = bounds?.ars.max ?? FALLBACK_SESSION_PRICE_MAX_ARS;
@@ -67,6 +84,24 @@ export function ProfessionalPriceStep(props: {
 
   useEffect(() => {
     void fetchSessionPriceBoundsDual().then(setBounds);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchPublicDisplayFxRates()
+      .then((rates) => {
+        if (!cancelled) {
+          setDisplayFxRates(rates);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDisplayFxRates({});
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -145,18 +180,38 @@ export function ProfessionalPriceStep(props: {
       return null;
     }
     const bits: string[] = [];
-    const arsBasis = computedSessionPriceArs;
-    if (arsBasis != null && arsBasis > 0) {
-      bits.push(`${Math.max(0, Math.round(arsBasis * (1 - percent / 100)))} ARS`);
+    if (usd > 0 && proDisplayCurrency !== "USD") {
+      bits.push(
+        formatUsdMajorForPatientDisplay({
+          usdMajor: usd * (1 - percent / 100),
+          displayCurrency: proDisplayCurrency,
+          language: props.language,
+          fxRates: displayFxRates,
+          residencyCountry: props.residencyCountry
+        })
+      );
     }
     if (usd > 0) {
-      bits.push(`${Math.max(0, Math.round(usd * (1 - percent / 100)))} ${props.currency}`);
+      bits.push(`${Math.max(0, Math.round(usd * (1 - percent / 100)))} USD`);
     }
     if (bits.length === 0) {
       return null;
     }
     return `${bits.join(" · ")} ${t(props.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
   };
+
+  const sessionPriceLocalLabel = useMemo(() => {
+    if (!usd || proDisplayCurrency === "USD") {
+      return null;
+    }
+    return formatUsdMajorForPatientDisplay({
+      usdMajor: usd,
+      displayCurrency: proDisplayCurrency,
+      language: props.language,
+      fxRates: displayFxRates,
+      residencyCountry: props.residencyCountry
+    });
+  }, [usd, proDisplayCurrency, displayFxRates, props.language, props.residencyCountry]);
 
   const discounted4 = discountedLine(props.value.discount4);
   const discounted8 = discountedLine(props.value.discount8);
@@ -179,18 +234,18 @@ export function ProfessionalPriceStep(props: {
           <h1>{t(props.language, { es: "Precios por sesión", en: "Session prices", pt: "Precos por sessao" })}</h1>
           <p>
             {t(props.language, {
-              es: "Acá definís el valor de referencia de tu sesión en dólares (USD). El precio en pesos se calcula con el tipo de cambio oficial y se redondea al múltiplo de 2.000 ARS más cercano.",
-              en: "Set your reference session price in US dollars (USD). The peso price uses the official exchange rate and rounds to the nearest ARS 2,000.",
-              pt: "Defina aqui o valor de referencia da sessao em dolares (USD). O preco em pesos usa a cotacao oficial e arredonda para o multiplo de 2.000 ARS mais proximo."
+              es: "Acá definís el valor de referencia de tu sesión en dólares (USD). Abajo verás el equivalente orientativo en tu moneda local según tu país de residencia.",
+              en: "Set your reference session price in US dollars (USD). Below you'll see an indicative equivalent in your local currency based on your country of residence.",
+              pt: "Defina aqui o valor de referencia da sessao em dolares (USD). Abaixo vera o equivalente indicativo na sua moeda local conforme seu pais de residencia."
             })}
           </p>
         </div>
 
         <p className="pro-price-bounds-hint">
           {t(props.language, {
-            es: `USD ${usdMin}–${usdMax} enteros. Equivalente ARS (${arMin}–${arMax}) según cotización.`,
-            en: `USD ${usdMin}–${usdMax} whole dollars. Implied ARS range (${arMin}–${arMax}) depends on the exchange rate.`,
-            pt: `USD ${usdMin}–${usdMax} inteiros. ARS equivalente depende da cotacao (${arMin}–${arMax}).`
+            es: `USD ${usdMin}–${usdMax} enteros. El equivalente en tu moneda local depende de la cotización vigente.`,
+            en: `USD ${usdMin}–${usdMax} whole dollars. Your local currency equivalent depends on the current exchange rate.`,
+            pt: `USD ${usdMin}–${usdMax} inteiros. O equivalente na sua moeda local depende da cotacao vigente.`
           })}
         </p>
         {usdArsRateError ? (
@@ -211,12 +266,12 @@ export function ProfessionalPriceStep(props: {
             onChange={(event) => update({ sessionPrice: event.target.value.replace(/\D/g, "") })}
           />
         </label>
-        {computedSessionPriceArs !== null ? (
+        {sessionPriceLocalLabel ? (
           <p className="pro-price-bounds-hint">
             {t(props.language, {
-              es: `Equivalente orientativo: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS.`,
-              en: `Indicative equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS.`,
-              pt: `Equivalente indicativo: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS.`
+              es: `Equivalente orientativo: ${sessionPriceLocalLabel} por sesión.`,
+              en: `Indicative equivalent: ${sessionPriceLocalLabel} per session.`,
+              pt: `Equivalente indicativo: ${sessionPriceLocalLabel} por sessao.`
             })}
           </p>
         ) : null}

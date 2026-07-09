@@ -87,7 +87,39 @@ export function resolveFxRatePerUsd(
   return STATIC_FX_RATE_FROM_USD[displayCurrency];
 }
 
-/** Coherente con `roundSessionPriceArsFromUsd` (misma regla para ARS). */
+/**
+ * Monedas "duras" de baja denominación: se muestran con conversión exacta (redondeo a
+ * entero), sin snapping. Evita alterar montos chicos donde cada unidad importa.
+ */
+const HARD_LOW_DENOMINATION_CURRENCIES: ReadonlySet<SupportedCurrency> = new Set([
+  "USD",
+  "EUR",
+  "GBP"
+]);
+
+/**
+ * Paso de redondeo "natural" para un monto ya convertido a moneda local (solo display).
+ * Apunta a ~1% del valor y lo ajusta al múltiplo redondo {1,2,5}×10ⁿ más cercano, de modo
+ * que el paso escale con la magnitud: montos chicos conservan detalle y montos grandes
+ * (COP, IDR, PYG…) pierden los dígitos de ruido (p. ej. COP 83.740 → paso 1.000 → 84.000).
+ */
+export function niceDisplayRoundStep(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 1;
+  }
+  const rough = value / 100;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalized = rough / magnitude; // dentro de [1, 10)
+  const unit = normalized < 1.5 ? 1 : normalized < 3.5 ? 2 : normalized < 7.5 ? 5 : 10;
+  return Math.max(1, unit * magnitude);
+}
+
+/**
+ * Redondea el equivalente en moneda local a una cifra "con sentido".
+ * ARS mantiene su regla de negocio (múltiplo de 2.000 vía `roundSessionPriceArsFromUsd`);
+ * USD/EUR/GBP se muestran exactos; el resto usa redondeo natural por magnitud.
+ * Es solo display: el cobro canónico interno sigue en USD.
+ */
 export function roundDisplayMajorFromUsd(
   usdMajor: number,
   displayCurrency: SupportedCurrency,
@@ -97,13 +129,16 @@ export function roundDisplayMajorFromUsd(
     return roundSessionPriceArsFromUsd(usdMajor, ratePerUsd);
   }
   const raw = usdMajor * ratePerUsd;
-  if (displayCurrency === "IDR" || displayCurrency === "PYG" || displayCurrency === "NGN") {
-    return Math.round(raw / 100) * 100;
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return Math.max(0, Math.round(raw));
   }
-  if (displayCurrency === "COP" || displayCurrency === "CLP") {
-    return Math.round(raw / 100) * 100;
+  if (HARD_LOW_DENOMINATION_CURRENCIES.has(displayCurrency)) {
+    return Math.round(raw);
   }
-  return Math.round(raw);
+  const step = niceDisplayRoundStep(raw);
+  const rounded = Math.round(raw / step) * step;
+  // Evita colapsar a 0 valores positivos chicos: sube al primer múltiplo válido.
+  return rounded < step ? step : rounded;
 }
 
 export function convertUsdMajorToDisplayMajor(

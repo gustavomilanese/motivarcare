@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { detectBrowserTimezone } from "@therapy/auth";
 import {
   type AppLanguage,
@@ -15,6 +15,14 @@ import {
   type ProfessionalWebOnboardingFinishMeta
 } from "../../onboarding";
 import { buildPayoutAdminFromWebPayload } from "../../onboarding/lib/buildPayoutAdminFromWebPayload";
+import { buildPayoutAdminFromFormFields } from "../../onboarding/lib/buildPayoutAdminFromFormFields";
+import {
+  defaultBankTransferType,
+  isPayoutFormComplete,
+  type PayoutFormFields
+} from "../../onboarding/lib/professionalPayoutValidation";
+import { inferPayoutProviderFromResidencyCountry } from "../../onboarding/lib/inferPayoutProvider";
+import { isDlocalPayoutCountry } from "@therapy/types";
 import { professionalProblemSelectionIsComplete } from "../../onboarding/constants/professionalClientProblemQuestionnaire";
 import {
   ProfessionalAboutInfoIntroStep,
@@ -196,20 +204,62 @@ export function ProfessionalAuthFlow(props: {
   const [mobilePreAuthSession, setMobilePreAuthSession] = useState<ProfessionalWebOnboardingFinishMeta | null>(null);
   const [mobileRegisterError, setMobileRegisterError] = useState("");
 
+  const mobilePayoutProvider = inferPayoutProviderFromResidencyCountry(personalData.residencyCountry);
+  const [payoutForm, setPayoutForm] = useState<PayoutFormFields>({
+    legalName: "",
+    taxId: "",
+    accountHolderName: "",
+    bankTransferType: defaultBankTransferType("dlocal"),
+    bankAccountValue: "",
+    bankName: "",
+    payoutTermsAccepted: false,
+    payoutCountry: "",
+    beneficiaryFirstName: "",
+    beneficiaryLastName: "",
+    documentType: "",
+    bankCode: "",
+    bankBranch: "",
+    accountType: ""
+  });
+  const updatePayoutForm = useCallback((patch: Partial<PayoutFormFields>) => {
+    setPayoutForm((current) => ({ ...current, ...patch }));
+  }, []);
+  // Pre-rellena país de cobro (si la residencia lo soporta) y nombre/apellido del titular.
+  useEffect(() => {
+    const iso = personalData.residencyCountry.trim().toUpperCase();
+    setPayoutForm((current) => ({
+      ...current,
+      bankTransferType: defaultBankTransferType(mobilePayoutProvider),
+      payoutCountry:
+        current.payoutCountry.trim().length === 0 && isDlocalPayoutCountry(iso) ? iso : current.payoutCountry,
+      beneficiaryFirstName: current.beneficiaryFirstName.trim() || personalData.firstName.trim(),
+      beneficiaryLastName: current.beneficiaryLastName.trim() || personalData.lastName.trim()
+    }));
+  }, [personalData.residencyCountry, personalData.firstName, personalData.lastName, mobilePayoutProvider]);
+
+  const buildMobilePayoutAdmin = (): ProfessionalPayoutAdminData | undefined => {
+    if (isPayoutFormComplete(mobilePayoutProvider, payoutForm, true)) {
+      return buildPayoutAdminFromFormFields(mobilePayoutProvider, payoutForm);
+    }
+    const taxIdTrimmed = payoutForm.taxId.trim() || registerTaxId.trim();
+    if (taxIdTrimmed.length >= 6) {
+      return { taxId: taxIdTrimmed, payoutStatus: "draft" as const };
+    }
+    return undefined;
+  };
+
   const completeMobileOnboardingWithSession = () => {
     if (!mobilePreAuthSession) {
       return;
     }
     const displayName =
       joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim() || mobilePreAuthSession.user.fullName;
-    const taxIdTrimmed = registerTaxId.trim();
+    const payoutAdmin = buildMobilePayoutAdmin();
     const nameMeta =
-      displayName.trim().length >= 2 || taxIdTrimmed.length >= 6
+      displayName.trim().length >= 2 || payoutAdmin
         ? {
             ...(displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : {}),
-            ...(taxIdTrimmed.length >= 6
-              ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } satisfies ProfessionalPayoutAdminData }
-              : {})
+            ...(payoutAdmin ? { payoutAdmin } : {})
           }
         : undefined;
     props.onPrepareOnboardingSync(buildMobileDraft(), nameMeta);
@@ -755,6 +805,7 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalPriceStep
         language={props.language}
         currency={props.currency}
+        residencyCountry={personalData.residencyCountry}
         value={priceData}
         onChange={setPriceData}
         onUsdArsRate={setMobileUsdArsRate}
@@ -851,8 +902,14 @@ export function ProfessionalAuthFlow(props: {
       <ProfessionalStripeVerificationStep
         language={props.language}
         residencyCountry={personalData.residencyCountry}
-        taxId={registerTaxId}
-        onTaxIdChange={setRegisterTaxId}
+        provider={mobilePayoutProvider}
+        form={payoutForm}
+        onFormChange={(patch) => {
+          updatePayoutForm(patch);
+          if (patch.taxId !== undefined) {
+            setRegisterTaxId(patch.taxId);
+          }
+        }}
         onBack={() => setAuthEntryMode("register-education")}
         onContinue={() => setAuthEntryMode("register-success-info")}
       />
@@ -870,15 +927,13 @@ export function ProfessionalAuthFlow(props: {
             completeMobileOnboardingWithSession();
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
-            const taxIdTrimmed = registerTaxId.trim();
+            const payoutAdmin = buildMobilePayoutAdmin();
             props.onPrepareOnboardingSync(
               buildMobileDraft(),
-              mobileName.length >= 2 || taxIdTrimmed.length >= 6
+              mobileName.length >= 2 || payoutAdmin
                 ? {
                     ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(taxIdTrimmed.length >= 6
-                      ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } }
-                      : {})
+                    ...(payoutAdmin ? { payoutAdmin } : {})
                   }
                 : undefined
             );
@@ -909,15 +964,13 @@ export function ProfessionalAuthFlow(props: {
             completeMobileOnboardingWithSession();
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
-            const taxIdTrimmed = registerTaxId.trim();
+            const payoutAdmin = buildMobilePayoutAdmin();
             props.onPrepareOnboardingSync(
               buildMobileDraft(),
-              mobileName.length >= 2 || taxIdTrimmed.length >= 6
+              mobileName.length >= 2 || payoutAdmin
                 ? {
                     ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(taxIdTrimmed.length >= 6
-                      ? { payoutAdmin: { taxId: taxIdTrimmed, payoutStatus: "draft" as const } }
-                      : {})
+                    ...(payoutAdmin ? { payoutAdmin } : {})
                   }
                 : undefined
             );

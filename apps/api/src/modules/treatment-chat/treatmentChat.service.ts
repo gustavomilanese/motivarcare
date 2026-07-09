@@ -5,7 +5,13 @@ import { prisma } from "../../lib/prisma.js";
 import { evaluateSafety } from "../intake-chat/llm/safetyClassifier.js";
 import { getEmergencyResources, renderEmergencyResourcesText } from "./emergencyResources.js";
 import { getTreatmentChatProvider } from "./llm/providerFactory.js";
+import { assertPatientEligibleForTreatmentChat } from "./patientEligibility.js";
 import { loadPatientContext } from "./patientContext.js";
+import { TreatmentChatError } from "./treatmentChat.errors.js";
+import {
+  computeSessionQuota,
+  resolveConversationSession
+} from "./treatmentChatSession.js";
 import {
   TREATMENT_CHAT_SAFETY_ALERT_MESSAGE,
   buildTreatmentChatGreeting,
@@ -41,6 +47,12 @@ export interface TreatmentChatDto {
   };
   /** Consent del paciente para compartir resumen con el profesional. */
   professionalShareConsent: boolean;
+  /** Límite de tiempo por conversación continua. */
+  session: {
+    maxMinutes: number;
+    minutesRemaining: number;
+    sessionActive: boolean;
+  };
 }
 
 export interface SendMessageResult extends TreatmentChatDto {
@@ -49,22 +61,7 @@ export interface SendMessageResult extends TreatmentChatDto {
   safetyTriggeredThisTurn: boolean;
 }
 
-export class TreatmentChatError extends Error {
-  constructor(
-    public readonly code:
-      | "FEATURE_DISABLED"
-      | "CHAT_NOT_FOUND"
-      | "CHAT_ARCHIVED"
-      | "DAILY_LIMIT_REACHED"
-      | "MESSAGE_INVALID"
-      | "PROVIDER_ERROR",
-    message: string,
-    public readonly details?: Record<string, unknown>
-  ) {
-    super(message);
-    this.name = "TreatmentChatError";
-  }
-}
+export { TreatmentChatError } from "./treatmentChat.errors.js";
 
 const USER_MESSAGE_MAX_LENGTH = 4000;
 
@@ -78,6 +75,7 @@ const USER_MESSAGE_MAX_LENGTH = 4000;
  */
 export async function getOrCreateChat(patientId: string): Promise<TreatmentChatDto> {
   ensureFeatureEnabled();
+  await assertPatientEligibleForTreatmentChat(patientId);
 
   const existing = await prisma.patientTreatmentChat.findUnique({
     where: { patientId }
@@ -225,7 +223,18 @@ async function prepareUserTurn(
     throw new TreatmentChatError("CHAT_ARCHIVED", "El chat está archivado");
   }
 
-  const today = startOfUtcDay(new Date());
+  await assertPatientEligibleForTreatmentChat(patientId);
+
+  const now = new Date();
+  const sessionState = resolveConversationSession(chat, now);
+  if (sessionState.expired) {
+    throw new TreatmentChatError(
+      "SESSION_TIME_LIMIT_REACHED",
+      `Esta conversación llegó al límite de ${env.TREATMENT_CHAT_SESSION_MAX_MINUTES} minutos. Cerrá el chat un rato y volvé más tarde para empezar otra, o escribile a tu profesional.`
+    );
+  }
+
+  const today = startOfUtcDay(now);
   const dailyUsed = computeDailyUsed(chat, today);
   if (dailyUsed >= env.TREATMENT_CHAT_DAILY_TURN_LIMIT) {
     throw new TreatmentChatError(
@@ -237,6 +246,14 @@ async function prepareUserTurn(
   const userMsg = await prisma.patientTreatmentChatMessage.create({
     data: { chatId: chat.id, role: "user", content: trimmed }
   });
+
+  if (sessionState.isNew) {
+    await prisma.patientTreatmentChat.update({
+      where: { id: chat.id },
+      data: { conversationSessionStartedAt: sessionState.startedAt }
+    });
+    chat.conversationSessionStartedAt = sessionState.startedAt;
+  }
 
   const recent = await loadRecentMessagesForContext(chat.id);
   const provider = getTreatmentChatProvider();
@@ -257,6 +274,7 @@ export async function sendMessage(params: {
   userMessage: string;
 }): Promise<SendMessageResult> {
   ensureFeatureEnabled();
+  await assertPatientEligibleForTreatmentChat(params.patientId);
 
   const { chat, userMsg, recent, today, dailyUsed, provider, trimmed } = await prepareUserTurn(
     params.patientId,
@@ -373,6 +391,7 @@ export async function writeTreatmentChatMessageStream(params: {
   res: Response;
 }): Promise<void> {
   ensureFeatureEnabled();
+  await assertPatientEligibleForTreatmentChat(params.patientId);
   const { res } = params;
   const sse = (data: object) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -580,9 +599,11 @@ export const __internals = {
 };
 
 function chatToDto(chat: PatientTreatmentChat, messages: PatientTreatmentChatMessage[]): TreatmentChatDto {
-  const today = startOfUtcDay(new Date());
+  const now = new Date();
+  const today = startOfUtcDay(now);
   const dailyUsed = computeDailyUsed(chat, today);
   const remaining = Math.max(0, env.TREATMENT_CHAT_DAILY_TURN_LIMIT - dailyUsed);
+  const session = computeSessionQuota(chat, now);
 
   return {
     chatId: chat.id,
@@ -600,6 +621,7 @@ function chatToDto(chat: PatientTreatmentChat, messages: PatientTreatmentChatMes
       dailyTurnsRemaining: remaining,
       estimatedCostUsdCents: chat.estimatedCostUsdCents
     },
-    professionalShareConsent: chat.professionalShareConsent
+    professionalShareConsent: chat.professionalShareConsent,
+    session
   };
 }

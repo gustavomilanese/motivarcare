@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import express, { Router } from "express";
 import type { Market } from "@prisma/client";
 import { billingCurrencyCodeForMarket } from "@therapy/types";
+import { pickStandardSessionBundles } from "@therapy/patient-core";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import {
@@ -358,8 +359,15 @@ function orderPatientSessionPackages<T extends {
   let orderedPackages = params.channel
     ? packagesFromVisibility.length > 0
       ? packagesFromVisibility
-      : bundleSessionPackages(params.packages).slice(0, 3)
-    : params.packages.slice(0, 3);
+      : pickStandardSessionBundles(bundleSessionPackages(params.packages))
+    : pickStandardSessionBundles(params.packages);
+
+  const singles = orderedPackages.filter((item) => item.credits === 1);
+  const bundleCandidates = orderedPackages.filter((item) => item.credits > 1);
+  orderedPackages = [
+    ...singles,
+    ...pickStandardSessionBundles(params.packages, { preferredFirst: bundleCandidates })
+  ];
 
   if (params.channel === "patient") {
     const singleCredit = params.packages.find(

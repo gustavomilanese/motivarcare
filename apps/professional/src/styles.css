@@ -9014,6 +9014,28 @@ button.schedule-home-item {
     0 8px 16px rgba(24, 26, 31, 0.28);
 }
 
+.schedule-work-selection-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 4px 0 2px;
+}
+
+.schedule-work-clear {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.schedule-work-clear:hover {
+  color: #912018;
+}
+
 .schedule-work-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -11289,6 +11311,81 @@ button:disabled {
   margin-top: 2px;
 }
 
+.pro-couples-meet-notice-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 24, 40, 0.42);
+}
+
+.pro-couples-meet-notice-card {
+  width: min(400px, 100%);
+  border-radius: 18px;
+  border: 1px solid #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 42%);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.16);
+  padding: 20px 20px 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.pro-couples-meet-notice-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b45309;
+}
+
+.pro-couples-meet-notice-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.pro-couples-meet-notice-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.pro-couples-meet-notice-points li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.pro-couples-meet-notice-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.pro-couples-meet-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid #fef3c7;
+}
+
 /* Legacy alias */
 .pro-web-identity-rest {
   display: grid;
@@ -11938,12 +12035,51 @@ button:disabled {
   color: #334155;
 }
 
-.pro-payout-card__grid input {
+.pro-payout-card__grid input,
+.pro-payout-card__grid select {
   min-height: 44px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
   padding: 0 12px;
   font-size: 15px;
+  background: #fff;
+}
+
+.pro-payout-dlocal {
+  display: grid;
+  gap: 14px;
+}
+
+.pro-payout-dlocal > label {
+  display: grid;
+  gap: 6px;
+}
+
+.pro-payout-dlocal > label > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.pro-payout-dlocal select,
+.pro-payout-dlocal input {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0 12px;
+  font-size: 15px;
+  background: #fff;
+}
+
+.pro-payout-card__warning {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
 .pro-payout-transfer-tabs {

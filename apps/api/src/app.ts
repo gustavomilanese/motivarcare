@@ -12,6 +12,7 @@ import { profilesRouter } from "./modules/profiles/profiles.routes.js";
 import { availabilityRouter } from "./modules/availability/availability.routes.js";
 import { bookingsRouter } from "./modules/bookings/bookings.routes.js";
 import { paymentsRouter } from "./modules/payments/payments.routes.js";
+import { payoutsRouter } from "./modules/payouts/payouts.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
 import { aiAuditRouter } from "./modules/ai-audit/aiAudit.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
@@ -272,6 +273,7 @@ function mountApiRoutes(prefix: "/api" | "/api/v1") {
   app.use(`${prefix}/availability`, availabilityRouter);
   app.use(`${prefix}/bookings`, bookingsRouter);
   app.use(`${prefix}/payments`, paymentsRouter);
+  app.use(`${prefix}/payouts`, payoutsRouter);
   app.use(`${prefix}/video`, videoRouter);
   app.use(`${prefix}/ai-audit`, aiAuditRouter);
   app.use(`${prefix}/admin`, adminRouter);

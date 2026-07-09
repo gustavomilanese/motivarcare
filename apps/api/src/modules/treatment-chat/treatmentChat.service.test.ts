@@ -24,6 +24,7 @@ function buildChat(overrides: Partial<PatientTreatmentChat> = {}): PatientTreatm
     professionalSummaryMessageCount: null,
     professionalShareConsent: false,
     professionalShareConsentAt: null,
+    conversationSessionStartedAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides

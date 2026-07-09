@@ -6553,3 +6553,322 @@ button.primary.finance-hero-search {
   gap: 0.25rem;
   font-size: 0.84rem;
 }
+
+/* Finance — professional payout review drawer */
+.finance-payout-review-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.finance-payout-review-drawer {
+  width: min(920px, 100vw);
+  height: 100%;
+  background: #f8fafc;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.18);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.finance-payout-review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.finance-payout-review-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.finance-payout-review-head h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.finance-payout-review-sub {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.finance-payout-review-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.finance-payout-review-close:hover {
+  background: #e2e8f0;
+}
+
+.finance-payout-review-body {
+  overflow: auto;
+  padding: 20px 24px 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.finance-payout-review-loading {
+  padding: 24px;
+  color: #64748b;
+}
+
+.finance-payout-review-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.finance-payout-review-metric {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.finance-payout-review-metric span {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.finance-payout-review-metric strong {
+  font-size: 22px;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.finance-payout-review-metric--accent {
+  border-color: #bfdbfe;
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+}
+
+.finance-payout-review-metric--accent strong {
+  color: #1d4ed8;
+}
+
+.finance-payout-review-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.finance-payout-review-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.finance-payout-review-payout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.finance-payout-review-payout-grid > div {
+  display: grid;
+  gap: 4px;
+}
+
+.finance-payout-review-payout-grid span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.finance-payout-review-payout-grid strong {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.finance-payout-review-payout-grid strong.ok {
+  color: #15803d;
+}
+
+.finance-payout-review-payout-grid strong.warn {
+  color: #b45309;
+}
+
+.finance-payout-review-estimate {
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.finance-payout-review-estimate small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.finance-payout-review-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.finance-payout-review-table-wrap {
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.finance-payout-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.finance-payout-review-table th,
+.finance-payout-review-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: top;
+}
+
+.finance-payout-review-table th {
+  background: #f8fafc;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.finance-payout-review-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.finance-payout-review-patient {
+  display: block;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.finance-payout-review-pct {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.finance-payout-review-original {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.finance-payout-review-actions-card {
+  gap: 16px;
+}
+
+.finance-payout-review-ref {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-payout-review-ref span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.finance-payout-review-ref input {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.finance-payout-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.finance-payout-review-actions button {
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.finance-payout-review-footer-msg {
+  margin: 0;
+  padding: 12px 24px 16px;
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.finance-payout-review-success {
+  color: #15803d;
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .finance-payout-review-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-payout-review-payout-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .finance-payout-review-drawer {
+    width: 100vw;
+  }
+
+  .finance-payout-review-metrics,
+  .finance-payout-review-payout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-payout-review-actions {
+    flex-direction: column;
+  }
+
+  .finance-payout-review-actions button {
+    width: 100%;
+  }
+}

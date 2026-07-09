@@ -450,17 +450,19 @@ export function DashboardPage(props: {
       );
 
       setUpcomingReservations((current) =>
-        current.map((item) =>
-          item.id === rescheduleTargetBooking.id
-            ? {
-                ...item,
-                startsAt: response.booking.startsAt,
-                endsAt: response.booking.endsAt,
-                status: response.booking.status,
-                joinUrl: response.booking.joinUrlProfessional ?? item.joinUrl
-              }
-            : item
-        )
+        current
+          .map((item) =>
+            item.id === rescheduleTargetBooking.id
+              ? {
+                  ...item,
+                  startsAt: response.booking.startsAt,
+                  endsAt: response.booking.endsAt,
+                  status: response.booking.status,
+                  joinUrl: response.booking.joinUrlProfessional ?? item.joinUrl
+                }
+              : item
+          )
+          .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
       );
       setIsRescheduleModalOpen(false);
       setRescheduleTargetBooking(null);

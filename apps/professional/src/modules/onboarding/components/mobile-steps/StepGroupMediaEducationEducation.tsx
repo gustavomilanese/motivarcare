@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { mediaPreviewFromFile } from "../../../app/utils/mediaPreview";
 import { PROFESSIONAL_PAYOUT_FISCAL_NOTICE, PROFESSIONAL_PAYOUT_SETUP_LEAD } from "../../constants/professionalProfileGuidanceCopy";
-import { inferPayoutProviderFromResidencyCountry } from "../../lib/inferPayoutProvider";
 import { ProfessionalGuidanceBanner } from "../ProfessionalGuidanceBanner";
+import { DlocalPayoutCountryFields } from "../DlocalPayoutCountryFields";
+import { isPayoutFormComplete, type PayoutFormFields } from "../../lib/professionalPayoutValidation";
+import type { ProfessionalPayoutProvider } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -171,17 +173,17 @@ export function ProfessionalEducationStep(props: {
 export function ProfessionalStripeVerificationStep(props: {
   language: AppLanguage;
   residencyCountry: string;
-  taxId: string;
-  onTaxIdChange: (value: string) => void;
+  provider: ProfessionalPayoutProvider;
+  form: PayoutFormFields;
+  onFormChange: (patch: Partial<PayoutFormFields>) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
   const [documentLoaded, setDocumentLoaded] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const payoutDocInputRef = useRef<HTMLInputElement | null>(null);
-  const payoutProvider = inferPayoutProviderFromResidencyCountry(props.residencyCountry);
-  const isDlocal = payoutProvider === "dlocal";
+  const isDlocal = props.provider === "dlocal";
+  const canContinue = isPayoutFormComplete(props.provider, props.form, documentLoaded);
 
   return (
     <div className="pro-register-intro-shell">
@@ -199,27 +201,22 @@ export function ProfessionalStripeVerificationStep(props: {
         <div className="pro-price-copy">
           <h1>{t(props.language, { es: "Recibir pagos", en: "Receive payments", pt: "Receber pagamentos" })}</h1>
           <p>{t(props.language, PROFESSIONAL_PAYOUT_SETUP_LEAD)}</p>
-          <p className="pro-mobile-payout-region">
-            {isDlocal
-              ? t(props.language, {
-                  es: "Configuración para Argentina y Latam",
-                  en: "Setup for Argentina and Latin America",
-                  pt: "Configuracao para Argentina e Latam"
-                })
-              : t(props.language, {
-                  es: "Configuración internacional",
-                  en: "International setup",
-                  pt: "Configuracao internacional"
-                })}
-          </p>
           <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_PAYOUT_FISCAL_NOTICE} />
         </div>
 
-        <input
-          value={props.taxId}
-          placeholder={t(props.language, { es: "DNI / CUIT / identificador fiscal", en: "National ID / tax number", pt: "Documento / numero fiscal" })}
-          onChange={(event) => props.onTaxIdChange(event.target.value)}
-        />
+        {isDlocal ? (
+          <DlocalPayoutCountryFields language={props.language} fields={props.form} onFormChange={props.onFormChange} />
+        ) : (
+          <input
+            value={props.form.taxId}
+            placeholder={t(props.language, {
+              es: "DNI / CUIT / identificador fiscal",
+              en: "National ID / tax number",
+              pt: "Documento / numero fiscal"
+            })}
+            onChange={(event) => props.onFormChange({ taxId: event.target.value })}
+          />
+        )}
 
         <input
           ref={payoutDocInputRef}
@@ -239,7 +236,7 @@ export function ProfessionalStripeVerificationStep(props: {
 
         <div className="pro-web-media-row">
           <div className="pro-web-media-row-main">
-            <strong>{t(props.language, { es: "Documento de identidad", en: "Identity document", pt: "Documento de identidade" })}</strong>
+            <strong>{t(props.language, { es: "Verificación de identidad", en: "Identity verification", pt: "Verificacao de identidade" })}</strong>
             {documentPreview ? (
               <span className="pro-web-media-preview" aria-hidden="true">
                 <img src={documentPreview} alt="" />
@@ -254,12 +251,16 @@ export function ProfessionalStripeVerificationStep(props: {
         </div>
 
         <label className="pro-payout-terms">
-          <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+          <input
+            type="checkbox"
+            checked={props.form.payoutTermsAccepted}
+            onChange={(event) => props.onFormChange({ payoutTermsAccepted: event.target.checked })}
+          />
           <span>
             {t(props.language, {
-              es: "Confirmo que los datos fiscales son correctos. Completaré CBU/alias desde el portal si uso la versión móvil.",
-              en: "I confirm my tax details are correct. I’ll add bank details from the portal if I used mobile onboarding.",
-              pt: "Confirmo que os dados fiscais estao corretos. Completare CBU/alias no portal se usei o onboarding mobile."
+              es: "Confirmo que los datos ingresados son correctos, que la cuenta está a mi nombre y autorizo a MotivarCare a transferir allí mis pagos.",
+              en: "I confirm the details entered are correct, the account is in my name, and I authorize MotivarCare to transfer my payments there.",
+              pt: "Confirmo que os dados informados estao corretos, que a conta esta em meu nome e autorizo a MotivarCare a transferir ali meus pagamentos."
             })}
           </span>
         </label>
@@ -267,7 +268,7 @@ export function ProfessionalStripeVerificationStep(props: {
         <button
           className="pro-primary pro-register-intro-cta"
           type="button"
-          disabled={!termsAccepted || props.taxId.trim().length < 6 || !documentLoaded}
+          disabled={!canContinue}
           onClick={props.onContinue}
         >
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}

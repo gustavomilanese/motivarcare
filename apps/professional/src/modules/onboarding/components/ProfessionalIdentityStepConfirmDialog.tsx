@@ -1,7 +1,6 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import {
-  PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET,
-  PROFESSIONAL_IDENTITY_ADVANCE_COUPLES_BULLETS
+  PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET
 } from "../constants/professionalProfileGuidanceCopy";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -10,14 +9,10 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function ProfessionalIdentityStepConfirmDialog(props: {
   language: AppLanguage;
-  showCouplesNotice: boolean;
   onGoBack: () => void;
   onContinue: () => void;
 }) {
-  const points = [
-    PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET,
-    ...(props.showCouplesNotice ? PROFESSIONAL_IDENTITY_ADVANCE_COUPLES_BULLETS : [])
-  ];
+  const points = [PROFESSIONAL_IDENTITY_ADVANCE_AI_BULLET];
 
   return (
     <div className="pro-web-identity-confirm" role="dialog" aria-modal="true" aria-labelledby="pro-web-identity-confirm-title">

@@ -4,9 +4,11 @@ import {
   defaultDisplayCurrencyForPatient,
   displayCurrencyForMarket,
   formatUsdMajorForPatientDisplay,
+  niceDisplayRoundStep,
   resolveFxRatePerUsd,
   roundDisplayMajorFromUsd
 } from "./displayFx.js";
+import { STATIC_FX_RATE_FROM_USD, SUPPORTED_CURRENCIES } from "./currencies.js";
 
 describe("defaultDisplayCurrencyForPatient", () => {
   it("maps Colombia residency to COP even with US market", () => {
@@ -57,20 +59,75 @@ describe("roundDisplayMajorFromUsd", () => {
     expect(roundDisplayMajorFromUsd(65, "ARS", 1400)).toBe(92_000);
   });
 
-  it("rounds COP and CLP to hundreds", () => {
-    expect(roundDisplayMajorFromUsd(65, "COP", 4200)).toBe(273_000);
-    expect(roundDisplayMajorFromUsd(65, "CLP", 950)).toBe(61_800);
+  it("limpia el ruido de montos grandes en COP (valor raro → cifra redonda)", () => {
+    // Antes daba COP 83.740 (paso 100). Ahora el paso escala a 1.000.
+    expect(roundDisplayMajorFromUsd(20, "COP", 4187)).toBe(84_000);
+    expect(roundDisplayMajorFromUsd(65, "COP", 4200)).toBe(274_000);
   });
 
-  it("rounds BRL and MXN to integer major units", () => {
+  it("redondea CLP a un paso natural según magnitud", () => {
+    expect(roundDisplayMajorFromUsd(65, "CLP", 950)).toBe(62_000);
+  });
+
+  it("preserva montos ya limpios en monedas de baja denominación", () => {
     expect(roundDisplayMajorFromUsd(65, "BRL", 5.08)).toBe(330);
     expect(roundDisplayMajorFromUsd(65, "MXN", 18)).toBe(1170);
   });
+
+  it("muestra USD/EUR/GBP con conversión exacta (sin snapping)", () => {
+    expect(roundDisplayMajorFromUsd(65, "USD", 1)).toBe(65);
+    expect(roundDisplayMajorFromUsd(65, "EUR", 0.92)).toBe(60);
+    expect(roundDisplayMajorFromUsd(65, "GBP", 0.79)).toBe(51);
+  });
+
+  it("nunca colapsa un monto positivo a 0", () => {
+    expect(roundDisplayMajorFromUsd(0.1, "COP", 4200)).toBeGreaterThan(0);
+  });
+});
+
+describe("niceDisplayRoundStep", () => {
+  it("escala el paso con la magnitud del valor", () => {
+    expect(niceDisplayRoundStep(65)).toBe(1);
+    expect(niceDisplayRoundStep(800)).toBe(10);
+    expect(niceDisplayRoundStep(18_600)).toBe(200);
+    expect(niceDisplayRoundStep(83_740)).toBe(1_000);
+    expect(niceDisplayRoundStep(324_000)).toBe(2_000);
+    expect(niceDisplayRoundStep(700_000)).toBe(5_000);
+  });
+
+  it("es robusto ante valores no válidos", () => {
+    expect(niceDisplayRoundStep(0)).toBe(1);
+    expect(niceDisplayRoundStep(-5)).toBe(1);
+    expect(niceDisplayRoundStep(Number.NaN)).toBe(1);
+  });
+});
+
+describe("redondeo con sentido para todas las monedas (fallback estático)", () => {
+  const SESSION_PRICES_USD = [15, 20, 35, 50, 65, 90, 120];
+
+  for (const currency of SUPPORTED_CURRENCIES) {
+    it(`${currency}: el equivalente es múltiplo de su paso natural y con error < 3%`, () => {
+      const rate = STATIC_FX_RATE_FROM_USD[currency];
+      for (const usd of SESSION_PRICES_USD) {
+        const raw = usd * rate;
+        const value = roundDisplayMajorFromUsd(usd, currency, rate);
+        expect(value).toBeGreaterThan(0);
+        // El valor mostrado no debe desviarse más de ~3% del real.
+        const relativeError = Math.abs(value - raw) / raw;
+        expect(relativeError).toBeLessThan(0.03);
+        // No debe tener dígitos de "ruido": múltiplo de su paso (salvo ARS/hard que ya validamos aparte).
+        if (currency !== "ARS" && !["USD", "EUR", "GBP"].includes(currency)) {
+          const step = niceDisplayRoundStep(raw);
+          expect(value % step).toBe(0);
+        }
+      }
+    });
+  }
 });
 
 describe("convertUsdMajorToDisplayMajor", () => {
   it("converts Fernando USD 65/session for Colombian patient", () => {
-    expect(convertUsdMajorToDisplayMajor(65, "COP", { ratesPerUsd: { COP: 4200 } })).toBe(273_000);
+    expect(convertUsdMajorToDisplayMajor(65, "COP", { ratesPerUsd: { COP: 4200 } })).toBe(274_000);
   });
 });
 
@@ -84,7 +141,7 @@ describe("formatUsdMajorForPatientDisplay", () => {
       fxRates: { ratesPerUsd: { COP: 4200 } }
     });
     expect(label).toMatch(/COP/i);
-    expect(label.replace(/\D/g, "")).toContain("273000");
+    expect(label.replace(/\D/g, "")).toContain("274000");
   });
 
   it("formats ARS with code display", () => {

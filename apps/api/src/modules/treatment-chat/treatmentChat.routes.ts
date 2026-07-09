@@ -48,6 +48,20 @@ function handleTreatmentChatError(res: Parameters<typeof sendApiError>[0]["res"]
           code: "TOO_MANY_REQUESTS",
           message: error.message
         });
+      case "NOT_ELIGIBLE":
+        return void sendApiError({
+          res,
+          status: 403,
+          code: "FORBIDDEN",
+          message: error.message
+        });
+      case "SESSION_TIME_LIMIT_REACHED":
+        return void sendApiError({
+          res,
+          status: 429,
+          code: "TOO_MANY_REQUESTS",
+          message: error.message
+        });
       case "MESSAGE_INVALID":
         return void sendApiError({
           res,

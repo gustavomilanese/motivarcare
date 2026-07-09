@@ -332,6 +332,7 @@ model PatientTreatmentChat {
   /// Consentimiento explícito del paciente para que su profesional vea el resumen agregado.
   professionalShareConsent  Boolean  @default(false) @map("professional_share_consent")
   professionalShareConsentAt DateTime? @map("professional_share_consent_at")
+  conversationSessionStartedAt     DateTime? @map("conversation_session_started_at")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
   patient                   PatientProfile                @relation(fields: [patientId], references: [id])
