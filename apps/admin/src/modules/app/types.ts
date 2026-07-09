@@ -48,6 +48,7 @@ export interface AdminUser {
   lastName?: string;
   /** Foto de perfil a nivel cuenta (paciente / cualquier rol con User.avatarUrl). */
   avatarUrl?: string | null;
+  hasAvatar?: boolean;
   role: Role;
   isActive: boolean;
   isTestUser: boolean;
@@ -68,6 +69,8 @@ export interface AdminUser {
     yearsExperience: number | null;
     photoUrl: string | null;
     videoUrl: string | null;
+    hasPhoto?: boolean;
+    hasVideo?: boolean;
     birthCountry: string | null;
     residencyCountry: string | null;
     market: Market;

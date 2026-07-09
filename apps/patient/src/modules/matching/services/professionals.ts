@@ -41,6 +41,8 @@ async function fetchProfessionalDirectoryOnce(token?: string | null, language: "
     sessionPriceArs: item.sessionPriceArs ?? null,
     sessionPriceUsd: item.sessionPriceUsd ?? null,
     photoUrl: resolvePublicAssetUrl(safeString(item.photoUrl)),
+    videoUrl: resolvePublicAssetUrl(safeString(item.videoUrl)),
+    videoCoverUrl: resolvePublicAssetUrl(safeString(item.videoCoverUrl)),
     birthCountry: safeString(item.birthCountry),
     stripeVerified: item.stripeVerified === true,
     ratingAverage: item.ratingAverage ?? null,

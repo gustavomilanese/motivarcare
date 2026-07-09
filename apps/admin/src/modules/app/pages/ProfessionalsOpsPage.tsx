@@ -9,7 +9,7 @@ import {
 } from "../components/professionals/ProfessionalEditModal";
 import { ProfessionalPhotoUrlField } from "../components/shared/ProfessionalPhotoUrlField";
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
-import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
+import { adminStoredMediaDisplayLabel } from "../lib/adminUserMedia";
 import { apiRequest } from "../services/api";
 import { joinFirstLastToFullName, majorCurrencyCodeForMarket, splitFullNameToFirstLast } from "@therapy/types";
 import type {
@@ -1424,7 +1424,9 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                   </div>
                   <div>
                     <strong>{t(props.language, { es: "Video", en: "Video", pt: "Video" })}</strong>
-                    <p className="prof-ops-read-bio">{selectedProfessional.videoUrl?.trim() || "—"}</p>
+                    <p className="prof-ops-read-bio admin-media-display-label">
+                      {adminStoredMediaDisplayLabel(selectedProfessional.videoUrl, props.language, { kind: "video" })}
+                    </p>
                   </div>
                 </div>
               )}

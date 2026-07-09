@@ -9,6 +9,7 @@ import { professionalPhotoAlt } from "../../app/components/ProfessionalNameStack
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
 import { PATIENT_FAVORITES_ENABLED } from "../../app/constants";
+import { ProfessionalVideoModal } from "./ProfessionalVideoModal";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -78,9 +79,11 @@ export function ProfessionalMatchCard(props: {
 }) {
   const slotsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [hasSlotsOverflow, setHasSlotsOverflow] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   const professional = props.item.professional;
   const displayedSpecialties = [professional.specialization, professional.focusPrimary].filter(Boolean) as string[];
   const photoUrl = professionalPhotoSrc(professional.photoUrl);
+  const hasVideo = Boolean(professional.videoUrl);
   const flag = countryToFlag(professional.birthCountry);
   const matchLabel = t(props.language, {
     es: `${props.item.score}% match`,
@@ -191,12 +194,31 @@ export function ProfessionalMatchCard(props: {
         <span className="match-badge">{matchLabel}</span>
       </div>
 
-      <img
-        className="patient-therapist-avatar"
-        src={photoUrl}
-        alt={professionalPhotoAlt(professional)}
-        onError={props.onImageFallback}
-      />
+      <div className="patient-therapist-avatar-wrap">
+        <img
+          className="patient-therapist-avatar"
+          src={photoUrl}
+          alt={professionalPhotoAlt(professional)}
+          onError={props.onImageFallback}
+        />
+        {hasVideo ? (
+          <button
+            type="button"
+            className="patient-therapist-video-trigger"
+            onClick={() => setVideoOpen(true)}
+            aria-label={t(props.language, {
+              es: `Ver video de ${professionalAccessibleName(professional)}`,
+              en: `Watch ${professionalAccessibleName(professional)}'s video`,
+              pt: `Ver vídeo de ${professionalAccessibleName(professional)}`
+            })}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.92" />
+              <path d="M10 8.2v7.6c0 .5.55.8 1 .55l5.8-3.3a.65.65 0 0 0 0-1.12l-5.8-3.73A.65.65 0 0 0 10 8.2Z" fill="#ffffff" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
 
       <div className="patient-therapist-main">
         <header className="patient-therapist-head">
@@ -317,6 +339,13 @@ export function ProfessionalMatchCard(props: {
           </div>
         ) : null}
       </div>
+      {videoOpen && hasVideo ? (
+        <ProfessionalVideoModal
+          language={props.language}
+          professional={professional}
+          onClose={() => setVideoOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }

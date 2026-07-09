@@ -1071,6 +1071,13 @@ label {
   gap: 6px;
 }
 
+.admin-media-display-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;

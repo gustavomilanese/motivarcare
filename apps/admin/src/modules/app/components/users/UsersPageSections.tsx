@@ -1,6 +1,7 @@
 import { memo, type FormEvent, type Dispatch, type SetStateAction } from "react";
 import type { AppLanguage } from "@therapy/i18n-config";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
+import { adminStoredMediaDisplayLabel } from "../../lib/adminUserMedia";
 import { TIMEZONE_OPTIONS } from "../../constants";
 import { RESIDENCY_COUNTRY_OPTIONS, splitFullNameToFirstLast } from "@therapy/types";
 import type {
@@ -259,6 +260,7 @@ function UsersListSectionComponent(props: {
   editingUserId: string | null;
   editDrafts: Record<string, EditUserDraft>;
   saveLoading: boolean;
+  editMediaLoadingUserId: string | null;
   deleteLoadingUserId: string | null;
   setRoleFilter: Dispatch<SetStateAction<RoleFilter>>;
   setSearchInput: Dispatch<SetStateAction<string>>;
@@ -274,55 +276,10 @@ function UsersListSectionComponent(props: {
   t: (values: { es: string; en: string; pt: string }) => string;
   onSaveEdit: (user: AdminUser) => void;
   onDeleteUser: (user: AdminUser) => void;
+  onToggleExpandUser: (user: AdminUser) => void;
 }) {
   const toggleExpand = (user: AdminUser) => {
-    if (props.editingUserId === user.id) {
-      props.setEditingUserId(null);
-      props.setEditError("");
-      return;
-    }
-
-    props.setEditingUserId(user.id);
-    props.setEditError("");
-    const fn = user.firstName?.trim() ?? "";
-    const ln = user.lastName?.trim() ?? "";
-    const { firstName, lastName } =
-      fn !== "" || ln !== "" ? { firstName: fn, lastName: ln } : splitFullNameToFirstLast(user.fullName);
-    props.setEditDrafts((current) => ({
-      ...current,
-      [user.id]: {
-        role: user.role,
-        isTestUser: user.isTestUser,
-        firstName,
-        lastName,
-        password: "",
-        passwordConfirm: "",
-        patientAvatarUrl: user.avatarUrl ?? "",
-        patientStatus: (user.patientProfile?.status as PatientStatus) ?? "active",
-        patientTimezone: user.patientProfile?.timezone ?? "America/New_York",
-        professionalVisible: user.professionalProfile?.visible ?? true,
-        professionalCancellationHours: String(user.professionalProfile?.cancellationHours ?? 24),
-        professionalBio: user.professionalProfile?.bio ?? "",
-        professionalTherapeuticApproach: user.professionalProfile?.therapeuticApproach ?? "",
-        professionalYearsExperience:
-          user.professionalProfile?.yearsExperience !== null && user.professionalProfile?.yearsExperience !== undefined
-            ? String(user.professionalProfile.yearsExperience)
-            : "",
-        professionalPhotoUrl: user.professionalProfile?.photoUrl ?? "",
-        professionalVideoUrl: user.professionalProfile?.videoUrl ?? "",
-        professionalBirthCountry: user.professionalProfile?.birthCountry ?? "",
-        professionalSessionPriceUsd: stringFromOptionalNumber(user.professionalProfile?.sessionPriceUsd),
-        professionalTitle: user.professionalProfile?.professionalTitle ?? "",
-        professionalSpecialization: user.professionalProfile?.specialization ?? "",
-        professionalFocusPrimary: user.professionalProfile?.focusPrimary ?? "",
-        professionalRatingAverage: stringFromOptionalNumber(user.professionalProfile?.ratingAverage),
-        professionalReviewsCount: String(user.professionalProfile?.reviewsCount ?? 0),
-        professionalSessionDurationMinutes: stringFromOptionalNumber(user.professionalProfile?.sessionDurationMinutes),
-        professionalActivePatientsCount: stringFromOptionalNumber(user.professionalProfile?.activePatientsCount),
-        professionalSessionsCount: stringFromOptionalNumber(user.professionalProfile?.sessionsCount),
-        professionalCompletedSessionsCount: stringFromOptionalNumber(user.professionalProfile?.completedSessionsCount)
-      }
-    }));
+    props.onToggleExpandUser(user);
   };
 
   return (
@@ -514,7 +471,12 @@ function UsersListSectionComponent(props: {
                                 </div>
                                 <div>
                                   <strong>{props.t({ es: "Video presentación", en: "Intro video", pt: "Video de apresentacao" })}</strong>
-                                  <p>{user.professionalProfile.videoUrl || "-"}</p>
+                                  <p className="admin-media-display-label" title={adminStoredMediaDisplayLabel(user.professionalProfile.videoUrl, props.language, { hasMedia: user.professionalProfile.hasVideo, kind: "video" })}>
+                                    {adminStoredMediaDisplayLabel(user.professionalProfile.videoUrl, props.language, {
+                                      hasMedia: user.professionalProfile.hasVideo,
+                                      kind: "video"
+                                    })}
+                                  </p>
                                 </div>
                               </>
                             ) : null}
@@ -735,6 +697,15 @@ function UsersListSectionComponent(props: {
                             </span>
                           </summary>
                           <div className="user-edit-accordion__panel">
+                            {props.editMediaLoadingUserId === user.id ? (
+                              <p className="user-edit-media-loading">
+                                {props.t({
+                                  es: "Cargando foto y video del perfil…",
+                                  en: "Loading profile photo and video…",
+                                  pt: "Carregando foto e video do perfil…"
+                                })}
+                              </p>
+                            ) : null}
                             <div className="user-edit-pro">
                               <div className="user-edit-pro-group">
                                 <p className="user-edit-pro-group-title">
@@ -1067,7 +1038,7 @@ function UsersListSectionComponent(props: {
                                   <div className="user-edit-pro-photo-wrap">
                                     <ProfessionalPhotoUrlField
                                       language={props.language}
-                                      disabled={props.saveLoading}
+                                      disabled={props.saveLoading || props.editMediaLoadingUserId === user.id}
                                       value={draft.professionalPhotoUrl}
                                       onChange={(next) =>
                                         props.setEditDrafts((current) => ({
@@ -1082,20 +1053,31 @@ function UsersListSectionComponent(props: {
                                   </div>
                                   <label>
                                     {props.t({ es: "URL video presentación", en: "Intro video URL", pt: "URL do video de apresentacao" })}
-                                    <input
-                                      type="url"
-                                      autoComplete="off"
-                                      value={draft.professionalVideoUrl}
-                                      onChange={(event) =>
-                                        props.setEditDrafts((current) => ({
-                                          ...current,
-                                          [user.id]: {
-                                            ...draft,
-                                            professionalVideoUrl: event.target.value
-                                          }
-                                        }))
-                                      }
-                                    />
+                                    {draft.professionalVideoUrl.startsWith("data:") ? (
+                                      <p className="user-edit-pro-media-note">
+                                        {props.t({
+                                          es: "Video cargado desde la app del profesional (no editable acá).",
+                                          en: "Video uploaded from the professional app (not editable here).",
+                                          pt: "Video carregado pelo app do profissional (nao editavel aqui)."
+                                        })}
+                                      </p>
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        autoComplete="off"
+                                        disabled={props.editMediaLoadingUserId === user.id}
+                                        value={draft.professionalVideoUrl}
+                                        onChange={(event) =>
+                                          props.setEditDrafts((current) => ({
+                                            ...current,
+                                            [user.id]: {
+                                              ...draft,
+                                              professionalVideoUrl: event.target.value
+                                            }
+                                          }))
+                                        }
+                                      />
+                                    )}
                                   </label>
                                 </div>
                               </div>
@@ -1133,7 +1115,7 @@ function UsersListSectionComponent(props: {
                       <div className="user-edit-actions__primary">
                         <button
                           className="primary"
-                          disabled={props.saveLoading}
+                          disabled={props.saveLoading || props.editMediaLoadingUserId === user.id}
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();

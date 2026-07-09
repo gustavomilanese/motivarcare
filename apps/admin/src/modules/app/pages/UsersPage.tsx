@@ -6,6 +6,7 @@ import { UsersCreateSection, UsersListSection } from "../components/users/UsersP
 import { UserDeleteConfirmModal } from "../components/users/UserDeleteConfirmModal";
 import { closeStickyCollapsibleSection, useStickySectionNavigation } from "../hooks/useStickySectionNavigation";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
+import { adminUserMediaBaseline, stripAdminUserListMedia } from "../lib/adminUserMedia";
 import { apiRequest } from "../services/api";
 import { joinFirstLastToFullName, splitFullNameToFirstLast } from "@therapy/types";
 import type {
@@ -152,10 +153,12 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
+  const [editMediaLoadingUserId, setEditMediaLoadingUserId] = useState<string | null>(null);
   const [deleteLoadingUserId, setDeleteLoadingUserId] = useState<string | null>(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<AdminUser | null>(null);
   const [purgeHistoricalOnDelete, setPurgeHistoricalOnDelete] = useState(false);
   const deleteInFlightRef = useRef<AbortController | null>(null);
+  const editMediaBaselineRef = useRef<Record<string, ReturnType<typeof adminUserMediaBaseline>>>({});
 
   const { scrollToSection } = useStickySectionNavigation(sectionIdsForNavigation, { loading: embedded });
 
@@ -351,7 +354,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     }
   };
 
-  const openEdit = (user: AdminUser) => {
+  const openEdit = useCallback(async (user: AdminUser) => {
     setEditingUserId(user.id);
     setEditError("");
     setEditSuccess("");
@@ -359,16 +362,49 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       ...current,
       [user.id]: buildEditDraft(user)
     }));
-  };
+    setEditMediaLoadingUserId(user.id);
 
-  const toggleExpand = (user: AdminUser) => {
+    try {
+      const response = await apiRequest<{ user: AdminUser }>(`/api/admin/users/${user.id}`, {}, props.token);
+      editMediaBaselineRef.current[user.id] = adminUserMediaBaseline(response.user);
+      setEditDrafts((current) => ({
+        ...current,
+        [user.id]: buildEditDraft(response.user)
+      }));
+    } catch (requestError) {
+      delete editMediaBaselineRef.current[user.id];
+      setEditingUserId(null);
+      setEditDrafts((current) => {
+        if (!current[user.id]) {
+          return current;
+        }
+        const next = { ...current };
+        delete next[user.id];
+        return next;
+      });
+      setEditError(
+        requestError instanceof Error
+          ? requestError.message
+          : t(props.language, {
+              es: "No se pudo cargar el perfil completo para editar.",
+              en: "Could not load the full profile for editing.",
+              pt: "Nao foi possivel carregar o perfil completo para editar."
+            })
+      );
+    } finally {
+      setEditMediaLoadingUserId((current) => (current === user.id ? null : current));
+    }
+  }, [props.language, props.token]);
+
+  const toggleExpand = useCallback((user: AdminUser) => {
     if (editingUserId === user.id) {
       setEditingUserId(null);
       setEditError("");
+      delete editMediaBaselineRef.current[user.id];
       return;
     }
-    openEdit(user);
-  };
+    void openEdit(user);
+  }, [editingUserId, openEdit]);
 
   const saveEdit = useCallback(async (user: AdminUser) => {
     const draft = editDrafts[user.id];
@@ -453,7 +489,10 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (draft.role === "PATIENT") {
       payload.patientStatus = draft.patientStatus;
       payload.patientTimezone = draft.patientTimezone.trim() || "America/New_York";
-      payload.avatarUrl = draft.patientAvatarUrl.trim().length > 0 ? draft.patientAvatarUrl.trim() : null;
+      const mediaBaseline = editMediaBaselineRef.current[user.id];
+      if (mediaBaseline && draft.patientAvatarUrl.trim() !== mediaBaseline.avatarUrl.trim()) {
+        payload.avatarUrl = draft.patientAvatarUrl.trim().length > 0 ? draft.patientAvatarUrl.trim() : null;
+      }
     }
 
     if (draft.role === "PROFESSIONAL") {
@@ -611,8 +650,13 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       if (yearsExperience !== null) {
         payload.professionalYearsExperience = yearsExperience;
       }
-      payload.professionalPhotoUrl = draft.professionalPhotoUrl.trim().length > 0 ? draft.professionalPhotoUrl.trim() : null;
-      payload.professionalVideoUrl = draft.professionalVideoUrl.trim().length > 0 ? draft.professionalVideoUrl.trim() : null;
+      const mediaBaseline = editMediaBaselineRef.current[user.id];
+      if (mediaBaseline && draft.professionalPhotoUrl.trim() !== mediaBaseline.photoUrl.trim()) {
+        payload.professionalPhotoUrl = draft.professionalPhotoUrl.trim().length > 0 ? draft.professionalPhotoUrl.trim() : null;
+      }
+      if (mediaBaseline && draft.professionalVideoUrl.trim() !== mediaBaseline.videoUrl.trim()) {
+        payload.professionalVideoUrl = draft.professionalVideoUrl.trim().length > 0 ? draft.professionalVideoUrl.trim() : null;
+      }
       payload.professionalBirthCountry = draft.professionalBirthCountry.trim().length > 0 ? draft.professionalBirthCountry.trim() : null;
       payload.professionalSessionPriceUsd = sessionPriceUsd;
       payload.professionalTitle = draft.professionalTitle.trim().length > 0 ? draft.professionalTitle.trim() : null;
@@ -627,7 +671,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     }
 
     try {
-      await apiRequest<{ user: AdminUser }>(
+      const response = await apiRequest<{ user: AdminUser }>(
         `/api/admin/users/${user.id}`,
         {
           method: "PATCH",
@@ -644,6 +688,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         })
       );
       setEditingUserId(null);
+      delete editMediaBaselineRef.current[user.id];
       setEditDrafts((current) => {
         if (!current[user.id]) {
           return current;
@@ -652,7 +697,9 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
         delete next[user.id];
         return next;
       });
-      await loadUsers(usersPage);
+      setUsers((current) =>
+        current.map((item) => (item.id === user.id ? stripAdminUserListMedia(response.user) : item))
+      );
     } catch (requestError) {
       setEditError(
         requestError instanceof Error
@@ -666,7 +713,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     } finally {
       setSaveLoading(false);
     }
-  }, [editDrafts, props.language, props.token, usersPage]);
+  }, [editDrafts, props.language, props.token]);
 
   const requestDeleteUser = useCallback((user: AdminUser) => {
     setPurgeHistoricalOnDelete(false);
@@ -796,6 +843,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       editingUserId={editingUserId}
       editDrafts={editDrafts}
       saveLoading={saveLoading}
+      editMediaLoadingUserId={editMediaLoadingUserId}
       deleteLoadingUserId={deleteLoadingUserId}
       setRoleFilter={setRoleFilter}
       setSearchInput={setSearchInput}
@@ -811,6 +859,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       t={translateForList}
       onSaveEdit={saveEdit}
       onDeleteUser={requestDeleteUser}
+      onToggleExpandUser={toggleExpand}
     />
   );
 

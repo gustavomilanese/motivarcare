@@ -28,6 +28,7 @@ export interface ProfessionalDirectoryApiItem {
   sessionPriceArs?: number | null;
   photoUrl: string | null;
   videoUrl: string | null;
+  videoCoverUrl?: string | null;
   stripeVerified: boolean;
   cancellationHours: number;
   compatibility: number;
@@ -73,6 +74,8 @@ export interface MatchCardProfessional {
   sessionPriceArs: number | null;
   sessionPriceUsd: number | null;
   photoUrl: string | null;
+  videoUrl: string | null;
+  videoCoverUrl: string | null;
   birthCountry: string | null;
   /** (Opcional) género del profesional; alimenta matching de `therapistPreferences.gender`. */
   gender?: string | null;

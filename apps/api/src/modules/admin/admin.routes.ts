@@ -90,6 +90,14 @@ const imageSourceSchema = z
     message: "Invalid image source"
   });
 
+const mediaSourceSchema = z
+  .string()
+  .trim()
+  .max(20_000_000)
+  .refine((value) => value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:"), {
+    message: "Invalid media source"
+  });
+
 const listUsersQuerySchema = z.object({
   role: appRoleSchema.optional(),
   search: z
@@ -99,7 +107,11 @@ const listUsersQuerySchema = z.object({
     .max(120)
     .optional(),
   page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(100).optional()
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  includeMedia: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((value) => value === "true" || value === "1")
 });
 
 const patientResidencyCountryIso2Schema = z
@@ -126,7 +138,7 @@ const createUserSchema = z
     professionalTherapeuticApproach: z.string().max(500).optional(),
     professionalYearsExperience: z.number().int().min(0).max(80).optional(),
     professionalPhotoUrl: imageSourceSchema.nullable().optional(),
-    professionalVideoUrl: z.string().url().nullable().optional()
+    professionalVideoUrl: mediaSourceSchema.nullable().optional()
   })
   .superRefine((data, ctx) => {
     if (data.role === "PATIENT" && !data.patientResidencyCountry) {
@@ -153,7 +165,7 @@ const updateUserSchema = z
     professionalTherapeuticApproach: z.string().max(500).optional(),
     professionalYearsExperience: z.number().int().min(0).max(80).optional(),
     professionalPhotoUrl: imageSourceSchema.nullable().optional(),
-    professionalVideoUrl: z.string().url().nullable().optional(),
+    professionalVideoUrl: mediaSourceSchema.nullable().optional(),
     professionalBirthCountry: z.string().trim().max(120).nullable().optional(),
     professionalSessionPriceUsd: z.number().int().min(0).max(10_000_000).nullable().optional(),
     professionalTitle: z.string().trim().max(120).nullable().optional(),
@@ -489,15 +501,22 @@ function shapeAdminUser(
     activePatientsCount?: number;
     sessionsCount?: number;
     completedSessionsCount?: number;
-  }
+  },
+  options?: { includeMedia?: boolean }
 ) {
+  const includeMedia = options?.includeMedia ?? false;
+  const avatarUrlRaw = user.avatarUrl?.trim() ?? "";
+  const photoUrlRaw = user.professional?.photoUrl?.trim() ?? "";
+  const videoUrlRaw = user.professional?.videoUrl?.trim() ?? "";
+
   return {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
     firstName: user.firstName,
     lastName: user.lastName,
-    avatarUrl: user.avatarUrl,
+    avatarUrl: includeMedia ? (avatarUrlRaw || null) : null,
+    hasAvatar: avatarUrlRaw.length > 0,
     role: user.role,
     isActive: user.isActive,
     isTestUser: user.isTestUser,
@@ -519,8 +538,10 @@ function shapeAdminUser(
           bio: user.professional.bio,
           therapeuticApproach: user.professional.therapeuticApproach,
           yearsExperience: user.professional.yearsExperience,
-          photoUrl: user.professional.photoUrl,
-          videoUrl: user.professional.videoUrl,
+          photoUrl: includeMedia ? (photoUrlRaw || null) : null,
+          videoUrl: includeMedia ? (videoUrlRaw || null) : null,
+          hasPhoto: photoUrlRaw.length > 0,
+          hasVideo: videoUrlRaw.length > 0,
           birthCountry: user.professional.birthCountry,
           residencyCountry: user.professional.residencyCountry ?? null,
           market: user.professional.market,
@@ -868,7 +889,7 @@ adminRouter.get("/users", async (req, res) => {
   return res.json({
     users: users.map((user: AdminUserRecord) => {
       const display = user.professional?.id ? displayOverridesAll[user.professional.id] : undefined;
-      return shapeAdminUser(user, display);
+      return shapeAdminUser(user, display, { includeMedia: parsed.data.includeMedia ?? false });
     }),
     pagination: {
       page,
@@ -968,7 +989,7 @@ adminRouter.post("/users", async (req, res) => {
   });
 
   return res.status(201).json({
-    user: shapeAdminUser(created)
+    user: shapeAdminUser(created, undefined, { includeMedia: false })
   });
 });
 
@@ -1005,6 +1026,32 @@ const adminUserInclude = {
     }
   }
 } as const;
+
+adminRouter.get("/users/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  if (!userId) {
+    return res.status(400).json({ error: "User id is required" });
+  }
+
+  const [user, displayOverridesConfig] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: adminUserInclude
+    }),
+    prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
+  ]);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const displayOverridesAll = parseProfessionalDisplayOverrides(displayOverridesConfig?.value);
+  const display = user.professional?.id ? displayOverridesAll[user.professional.id] : undefined;
+
+  return res.json({
+    user: shapeAdminUser(user, display, { includeMedia: true })
+  });
+});
 
 adminRouter.patch("/users/:userId", async (req, res) => {
   const parsed = updateUserSchema.safeParse(req.body);
@@ -1193,7 +1240,7 @@ adminRouter.patch("/users/:userId", async (req, res) => {
   const professionalCardDisplay = updated.professional?.id ? displayOverridesAfter[updated.professional.id] : undefined;
 
   return res.json({
-    user: shapeAdminUser(updated, professionalCardDisplay)
+    user: shapeAdminUser(updated, professionalCardDisplay, { includeMedia: false })
   });
 });
 
