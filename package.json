@@ -41,7 +41,7 @@
     "test": "npm run test --workspaces --if-present",
     "load:smoke": "node scripts/load/smoke.mjs",
     "prisma:generate:api": "prisma generate --schema=./apps/api/prisma/schema.prisma",
-    "build:deps": "npm run build -w @therapy/types && npm run build -w @therapy/i18n-config",
+    "build:deps": "npm run build -w @therapy/types && npm run build -w @therapy/i18n-config && npm run build -w @therapy/patient-core",
     "build:api": "npm run build:deps && npm run prisma:generate:api && npm run build -w @therapy/api",
     "build:admin": "npm run build:deps && npm run build -w @therapy/admin",
     "build:patient": "npm run build:deps && npm run build -w @therapy/patient-core && npm run build -w @therapy/patient",
