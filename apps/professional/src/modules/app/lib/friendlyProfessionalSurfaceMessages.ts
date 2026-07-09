@@ -117,6 +117,7 @@ export type ProfessionalSurfaceContext =
   | "profile-load"
   | "profile-save"
   | "profile-image-type"
+  | "profile-image-heic"
   | "profile-image-size"
   | "profile-image-read"
   | "patients-load"
@@ -237,10 +238,15 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     en: "Choose a JPG, PNG, or WEBP image—or cancel to keep your current photo.",
     pt: "Escolha JPG, PNG ou WEBP, ou cancele para manter a foto."
   },
+  "profile-image-heic": {
+    es: "HEIC no es compatible en este navegador. En el iPhone: Fotos → Compartir → Guardar imagen (JPG) o probá desde Safari.",
+    en: "HEIC isn’t supported in this browser. On iPhone: Photos → Share → Save as JPG, or try Safari.",
+    pt: "HEIC nao e compativel neste navegador. No iPhone: Fotos → Compartilhar → Salvar imagem (JPG) ou use Safari."
+  },
   "profile-image-size": {
-    es: "La imagen pesa más de 4 MB. Comprimila en tu teléfono o elegí otra más chica.",
-    en: "That image is over 4 MB. Compress it or pick a smaller file.",
-    pt: "A imagem passa de 4 MB. Comprima ou escolha outra menor."
+    es: "La imagen pesa más de 15 MB. Elegí otra más chica o exportala como JPG desde tu teléfono.",
+    en: "That image is over 15 MB. Pick a smaller file or export it as JPG from your phone.",
+    pt: "A imagem passa de 15 MB. Escolha outra menor ou exporte como JPG no celular."
   },
   "profile-image-read": {
     es: "No pudimos leer ese archivo. Probá con otra foto o subila desde otra carpeta.",

@@ -1,3 +1,35 @@
+/** Max raw file size before client-side compression (photos are re-encoded to JPEG). */
+export const PROFESSIONAL_PROFILE_PHOTO_MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+export const PROFESSIONAL_PROFILE_PHOTO_MAX_WIDTH = 1200;
+export const PROFESSIONAL_PROFILE_PHOTO_JPEG_QUALITY = 0.82;
+
+function isHeicLikeFile(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === "image/heic" || type === "image/heif") {
+    return true;
+  }
+  const name = file.name.toLowerCase();
+  return name.endsWith(".heic") || name.endsWith(".heif");
+}
+
+export function assertProfessionalProfilePhotoFile(file: File): void {
+  if (isHeicLikeFile(file)) {
+    throw new Error("HEIC_UNSUPPORTED");
+  }
+  if (!file.type.startsWith("image/")) {
+    throw new Error("INVALID_IMAGE_TYPE");
+  }
+  if (file.size > PROFESSIONAL_PROFILE_PHOTO_MAX_UPLOAD_BYTES) {
+    throw new Error("IMAGE_TOO_LARGE");
+  }
+}
+
+export async function prepareProfessionalProfilePhotoDataUrl(file: File): Promise<string> {
+  assertProfessionalProfilePhotoFile(file);
+  const raw = await fileToDataUrl(file);
+  return compressImageDataUrl(raw, PROFESSIONAL_PROFILE_PHOTO_MAX_WIDTH, PROFESSIONAL_PROFILE_PHOTO_JPEG_QUALITY);
+}
+
 function loadImageElement(dataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();

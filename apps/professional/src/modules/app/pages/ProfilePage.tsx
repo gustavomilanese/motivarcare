@@ -28,7 +28,7 @@ import {
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { useProfessionalLocalSessionPriceDisplay } from "../hooks/useProfessionalLocalSessionPriceDisplay";
 import { API_BASE, apiRequest } from "../services/api";
-import { compressImageDataUrl, fileToDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
+import { compressImageDataUrl, fileToDataUrl, prepareProfessionalProfilePhotoDataUrl, readVideoFileForUpload } from "../utils/mediaPreview";
 import { avatarInitialsFromNameParts, resolvedFirstLastFromUserRecord } from "@therapy/types";
 import type { AuthUser, ProfessionalProfile } from "../types";
 
@@ -227,26 +227,31 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
     if (!file) {
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      setError(professionalSurfaceMessage("profile-image-type", props.language));
-      setMessage("");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setError(professionalSurfaceMessage("profile-image-size", props.language));
-      setMessage("");
-      return;
-    }
     setIsReadingPhoto(true);
     setError("");
     setMessage("");
     try {
-      const raw = await fileToDataUrl(file);
-      const dataUrl = await compressImageDataUrl(raw, 1600, 0.82);
+      const dataUrl = await prepareProfessionalProfilePhotoDataUrl(file);
       setProfile((current) => (current ? { ...current, photoUrl: dataUrl } : current));
+      setMessage(
+        t(props.language, {
+          es: "Foto lista. Tocá «Guardar cambios» al final para publicarla.",
+          en: "Photo ready. Tap “Save changes” at the bottom to publish it.",
+          pt: "Foto pronta. Toque em «Salvar alterações» no final para publicar."
+        })
+      );
     } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setError(professionalSurfaceMessage("profile-image-read", props.language, raw));
+      const code = requestError instanceof Error ? requestError.message : "";
+      if (code === "HEIC_UNSUPPORTED") {
+        setError(professionalSurfaceMessage("profile-image-heic", props.language));
+      } else if (code === "INVALID_IMAGE_TYPE") {
+        setError(professionalSurfaceMessage("profile-image-type", props.language));
+      } else if (code === "IMAGE_TOO_LARGE") {
+        setError(professionalSurfaceMessage("profile-image-size", props.language));
+      } else {
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(professionalSurfaceMessage("profile-image-read", props.language, raw));
+      }
     } finally {
       setIsReadingPhoto(false);
     }
@@ -940,6 +945,13 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                           {t(props.language, { es: "Quitar", en: "Remove", pt: "Remover" })}
                         </button>
                       ) : null}
+                      <small>
+                        {t(props.language, {
+                          es: "JPG, PNG o WEBP · hasta 15 MB · se comprime automáticamente",
+                          en: "JPG, PNG, or WEBP · up to 15 MB · auto-compressed",
+                          pt: "JPG, PNG ou WEBP · ate 15 MB · comprimida automaticamente"
+                        })}
+                      </small>
                     </div>
                   </div>
                   <div className="pro-profile-media-card">
