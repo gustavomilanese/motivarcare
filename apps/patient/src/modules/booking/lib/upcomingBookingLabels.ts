@@ -9,15 +9,15 @@ export function upcomingBookingStatusPillLabel(
   isTrialBooking: boolean
 ): string {
   return isTrialBooking
-    ? t(language, { es: "Prueba confirmada", en: "Trial confirmed", pt: "Teste confirmado" })
-    : t(language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
+    ? t(language, { es: "Prueba reservada", en: "Trial booked", pt: "Teste reservado" })
+    : t(language, { es: "Reservada", en: "Booked", pt: "Reservada" });
 }
 
 export function upcomingBookingCardStatusLine(language: AppLanguage, isTrialBooking: boolean): string {
-  const statusConfirmed = t(language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
+  const statusBooked = t(language, { es: "Reservada", en: "Booked", pt: "Reservada" });
   return isTrialBooking
-    ? `${statusConfirmed} · ${t(language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
-    : statusConfirmed;
+    ? `${statusBooked} · ${t(language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
+    : statusBooked;
 }
 
 export function rescheduleUnavailableTitle(language: AppLanguage): string {
@@ -38,9 +38,9 @@ export function joinSessionLabel(language: AppLanguage): string {
 
 export function joinPendingLabel(language: AppLanguage): string {
   return t(language, {
-    es: "El enlace se generará al confirmar la sesión.",
-    en: "The link will be available once the session is confirmed.",
-    pt: "O link ficara disponivel quando a sessao for confirmada."
+    es: "El enlace se generará al reservar la sesión.",
+    en: "The link will be available once the session is booked.",
+    pt: "O link ficara disponivel quando a sessao for reservada."
   });
 }
 
@@ -49,6 +49,10 @@ export function viewDetailLabel(language: AppLanguage): string {
 }
 
 export function rescheduleAriaLabel(language: AppLanguage): string {
+  return t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" });
+}
+
+export function rescheduleTooltipLabel(language: AppLanguage): string {
   return t(language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" });
 }
 

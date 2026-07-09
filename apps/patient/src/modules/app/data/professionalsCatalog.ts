@@ -127,5 +127,14 @@ export const professionalImageMap: Record<string, string> = {
   "pro-4": "https://images.unsplash.com/photo-1594824804732-ca8db7d6e6f8?auto=format&fit=crop&w=900&q=80"
 };
 
+/** Directorio inicial al resetear sesión: stub solo en dev; vacío en prod. */
+export function initialProfessionalDirectory(): Professional[] {
+  return import.meta.env.DEV ? professionalsCatalog : [];
+}
+
+export function initialProfessionalPhotoMap(): Record<string, string> {
+  return import.meta.env.DEV ? professionalImageMap : {};
+}
+
 /** Hero login paciente: asset en `public/images/auth-hero-patient.png`. */
 export const heroImage = "/images/auth-hero-patient.png";

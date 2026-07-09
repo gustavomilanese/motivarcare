@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -293,6 +294,7 @@ export function PaymentActivityPanel(props: { language: AppLanguage; authToken: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
   const load = useCallback(async () => {
     if (!props.authToken) {
@@ -316,89 +318,101 @@ export function PaymentActivityPanel(props: { language: AppLanguage; authToken: 
   }, [props.authToken]);
 
   useEffect(() => {
+    if (!isPanelExpanded) {
+      return;
+    }
     void load();
-  }, [load]);
+  }, [isPanelExpanded, load]);
 
   if (!props.authToken) {
     return null;
   }
 
   return (
-    <section className="payment-activity-panel content-card stack">
-      <div className="payment-activity-head">
-        <h3 className="payment-activity-title">
+    <section className="payment-activity-panel sessions-calendar-collapsible sessions-secondary-section">
+      <button
+        type="button"
+        className="sessions-calendar-toggle"
+        aria-expanded={isPanelExpanded}
+        onClick={() => setIsPanelExpanded((current) => !current)}
+      >
+        <h2 className="sessions-secondary-title">
           {t(props.language, {
             es: "Actividad de compras",
             en: "Purchase activity",
             pt: "Atividade de compras"
           })}
-        </h3>
-        <button type="button" className="ghost" onClick={() => void load()} disabled={loading}>
-          {t(props.language, { es: "Actualizar", en: "Refresh", pt: "Atualizar" })}
-        </button>
-      </div>
+        </h2>
+        <SessionsCollapsibleToggle expanded={isPanelExpanded} language={props.language} />
+      </button>
 
-      {loading && rows.length === 0 ? (
-        <p className="muted">
-          {t(props.language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
-        </p>
+      {isPanelExpanded ? (
+        <div className="sessions-collapsible-panel">
+        <div className="payment-activity-body">
+          {loading && rows.length === 0 ? (
+            <p className="muted">
+              {t(props.language, { es: "Cargando…", en: "Loading…", pt: "Carregando…" })}
+            </p>
+          ) : null}
+          {error ? <p className="danger">{error}</p> : null}
+          {!loading && rows.length === 0 && !error ? (
+            <p className="muted">
+              {t(props.language, {
+                es: "Todavía no hay compras registradas.",
+                en: "No purchases recorded yet.",
+                pt: "Ainda nao ha compras registradas."
+              })}
+            </p>
+          ) : null}
+
+          <ul className="payment-activity-list">
+            {rows.map((row) => {
+              const expanded = expandedId === row.id;
+              const title =
+                row.displayName?.trim()
+                || (row.sessionCount
+                  ? t(props.language, {
+                      es: `${row.sessionCount} sesión${row.sessionCount === 1 ? "" : "es"}`,
+                      en: `${row.sessionCount} session${row.sessionCount === 1 ? "" : "s"}`,
+                      pt: `${row.sessionCount} sessao${row.sessionCount === 1 ? "" : "es"}`
+                    })
+                  : kindLabel(row.kind, props.language));
+              const amount =
+                row.chargeAmountMajor != null && row.chargeCurrency
+                  ? `${row.chargeCurrency} ${row.chargeAmountMajor.toLocaleString()}`
+                  : null;
+
+              return (
+                <li key={row.id} className={`payment-activity-item status-${row.status.toLowerCase()}`}>
+                  <button
+                    type="button"
+                    className="payment-activity-item-trigger"
+                    onClick={() => setExpandedId(expanded ? null : row.id)}
+                    aria-expanded={expanded}
+                  >
+                    <div className="payment-activity-item-main">
+                      <strong>{title}</strong>
+                      <span className="payment-activity-meta">
+                        {kindLabel(row.kind, props.language)} · {formatWhen(row.createdAt, props.language)}
+                      </span>
+                    </div>
+                    <div className="payment-activity-item-side">
+                      {amount ? <span className="payment-activity-amount">{amount}</span> : null}
+                      <span className={`payment-activity-status status-${row.status.toLowerCase()}`}>
+                        {statusLabel(row.status, props.language)}
+                      </span>
+                    </div>
+                  </button>
+                  {expanded ? (
+                    <PaymentActivityDetail row={row} title={title} amount={amount} language={props.language} />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        </div>
       ) : null}
-      {error ? <p className="danger">{error}</p> : null}
-      {!loading && rows.length === 0 && !error ? (
-        <p className="muted">
-          {t(props.language, {
-            es: "Todavía no hay compras registradas.",
-            en: "No purchases recorded yet.",
-            pt: "Ainda nao ha compras registradas."
-          })}
-        </p>
-      ) : null}
-
-      <ul className="payment-activity-list">
-        {rows.map((row) => {
-          const expanded = expandedId === row.id;
-          const title =
-            row.displayName?.trim()
-            || (row.sessionCount
-              ? t(props.language, {
-                  es: `${row.sessionCount} sesión${row.sessionCount === 1 ? "" : "es"}`,
-                  en: `${row.sessionCount} session${row.sessionCount === 1 ? "" : "s"}`,
-                  pt: `${row.sessionCount} sessao${row.sessionCount === 1 ? "" : "es"}`
-                })
-              : kindLabel(row.kind, props.language));
-          const amount =
-            row.chargeAmountMajor != null && row.chargeCurrency
-              ? `${row.chargeCurrency} ${row.chargeAmountMajor.toLocaleString()}`
-              : null;
-
-          return (
-            <li key={row.id} className={`payment-activity-item status-${row.status.toLowerCase()}`}>
-              <button
-                type="button"
-                className="payment-activity-item-trigger"
-                onClick={() => setExpandedId(expanded ? null : row.id)}
-                aria-expanded={expanded}
-              >
-                <div className="payment-activity-item-main">
-                  <strong>{title}</strong>
-                  <span className="payment-activity-meta">
-                    {kindLabel(row.kind, props.language)} · {formatWhen(row.createdAt, props.language)}
-                  </span>
-                </div>
-                <div className="payment-activity-item-side">
-                  {amount ? <span className="payment-activity-amount">{amount}</span> : null}
-                  <span className={`payment-activity-status status-${row.status.toLowerCase()}`}>
-                    {statusLabel(row.status, props.language)}
-                  </span>
-                </div>
-              </button>
-              {expanded ? (
-                <PaymentActivityDetail row={row} title={title} amount={amount} language={props.language} />
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
     </section>
   );
 }

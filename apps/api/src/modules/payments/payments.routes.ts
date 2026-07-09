@@ -7,6 +7,7 @@ import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
 import type { Market } from "@prisma/client";
 import { createDlocalCheckoutForIndividualSessions, createDlocalCheckoutForPackage, createDlocalCheckoutForTrialSession, processDlocalGoOrderSync, processDlocalGoPaymentNotification } from "./dlocalGoCheckout.service.js";
+import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSessionPurchase.js";
 import { assertPatientOwnsPaymentCheckout } from "./paymentCheckout.service.js";
 import { isDlocalGoConfigured, verifyDlocalGoNotificationSignature } from "../../lib/dlocalGoClient.js";
 import { prisma } from "../../lib/prisma.js";
@@ -93,9 +94,15 @@ const createDlocalCheckoutSchema = z.object({
 
 const createDlocalIndividualCheckoutSchema = z.object({
   sessionCount: z.number().int().min(1).max(99),
+  professionalId: z.string().trim().min(1).optional(),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
   idempotencyKey: z.string().trim().min(8).max(120).optional()
+});
+
+const individualSessionsQuoteQuerySchema = z.object({
+  sessionCount: z.coerce.number().int().min(1).max(99),
+  professionalId: z.string().trim().min(1).optional()
 });
 
 const createDlocalTrialCheckoutSchema = z.object({
@@ -283,6 +290,10 @@ paymentsRouter.post("/stripe/webhook", express.raw({ type: "application/json", l
   return res.status(202).json({ received: true, queued: true });
 });
 
+paymentsRouter.get("/dlocal/availability", (_req, res) => {
+  return res.json({ configured: isDlocalGoConfigured() });
+});
+
 paymentsRouter.post("/dlocal/checkout", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -355,6 +366,41 @@ paymentsRouter.post("/dlocal/checkout", requireAuth, async (req: AuthenticatedRe
   }
 });
 
+paymentsRouter.get("/individual-sessions-quote", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can quote individual sessions" });
+  }
+
+  const parsed = individualSessionsQuoteQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query", details: parsed.error.flatten() });
+  }
+
+  try {
+    const quote = await resolveIndividualSessionsPurchaseQuote({
+      patientId: actor.patientProfileId,
+      sessionCount: parsed.data.sessionCount,
+      professionalId: parsed.data.professionalId ?? null
+    });
+    return res.json({
+      sessionCount: quote.sessionCount,
+      unitPriceUsdCents: quote.unitPricing.priceCents,
+      totalPriceUsdCents: quote.totalPricing.priceCents,
+      chargeAmountMajor: quote.chargeAmountMajor,
+      chargeCurrency: quote.chargeCurrency,
+      billingCurrency: quote.billingCurrency
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not quote individual sessions";
+    return res.status(400).json({ error: message });
+  }
+});
+
 paymentsRouter.post("/dlocal/checkout-individual", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -401,6 +447,7 @@ paymentsRouter.post("/dlocal/checkout-individual", requireAuth, async (req: Auth
     const checkout = await createDlocalCheckoutForIndividualSessions({
       patientId: actor.patientProfileId,
       sessionCount: parsed.data.sessionCount,
+      professionalId: parsed.data.professionalId ?? null,
       successUrl: parsed.data.successUrl,
       backUrl: parsed.data.cancelUrl
     });
@@ -423,6 +470,11 @@ paymentsRouter.post("/dlocal/checkout-individual", requireAuth, async (req: Auth
     return res.status(201).json(responsePayload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not create dLocal Go checkout";
+    console.error("[payments] dlocal checkout-individual failed", {
+      message,
+      patientId: actor.patientProfileId,
+      sessionCount: parsed.data.sessionCount
+    });
     return res.status(400).json({ error: message });
   }
 });

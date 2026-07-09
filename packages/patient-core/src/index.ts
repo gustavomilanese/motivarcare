@@ -4,6 +4,9 @@ export {
   packageUnitPriceMajor,
   pickDefaultPurchasePlan,
   pickFirstBundlePlan,
+  resolveIndividualListUnitUsdFromPackages,
+  resolveIndividualListUnitUsdMajor,
+  resolveSessionListUsdMajor,
   sortPlansByCredits
 } from "./packageCatalog.js";
 export type { PackageCopyTranslator } from "./packageCopy.js";
@@ -13,6 +16,7 @@ export {
   catalogPricingReady,
   DEFAULT_DISPLAY_FEATURED_BUNDLE_CREDITS,
   isDisplayOnlyBundlePlanId,
+  pickStandardSessionBundles,
   STANDARD_SESSION_BUNDLE_CREDITS
 } from "./packageBundleTemplates.js";
 export type {

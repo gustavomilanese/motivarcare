@@ -16,6 +16,18 @@ export function intakeMainReasonPieces(raw: string): string[] {
     .filter(Boolean);
 }
 
+/** Quita respuestas vacías antes de POST /me/intake (el API rechaza strings vacíos en el record). */
+export function sanitizeIntakeAnswersForSubmit(answers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(answers)) {
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      out[key] = trimmed;
+    }
+  }
+  return out;
+}
+
 export function individualMainReasonPieces(mainReason: string): string[] {
   return intakeMainReasonPieces(mainReason).filter((piece) => piece !== PATIENT_INTAKE_COUPLES_THERAPY_OPTION_ES);
 }

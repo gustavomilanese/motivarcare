@@ -196,6 +196,8 @@ export interface Professional {
   activePatients: number;
   introVideoUrl: string;
   slots: TimeSlot[];
+  /** Antelación mínima (horas) para cancelar/reprogramar; configurable por el profesional (máx. 24). */
+  cancellationHours?: number;
 }
 
 export interface TimeSlot {

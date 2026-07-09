@@ -3,7 +3,8 @@ import {
   buildUnpricedBundlePlans,
   catalogPricingReady,
   DEFAULT_DISPLAY_FEATURED_BUNDLE_CREDITS,
-  isDisplayOnlyBundlePlanId
+  isDisplayOnlyBundlePlanId,
+  pickStandardSessionBundles
 } from "./packageBundleTemplates.js";
 import type { SessionPackagePlan } from "./sessionPackagePlan.js";
 
@@ -28,7 +29,7 @@ export type PackageCatalogView = {
 };
 
 function topBundlePlans(plans: SessionPackagePlan[]): SessionPackagePlan[] {
-  return plans.filter((plan) => plan.credits > 1).slice(0, 3);
+  return pickStandardSessionBundles(plans);
 }
 
 function resolveFeaturedBundleId(

@@ -20,6 +20,7 @@ import {
   joinPendingLabel,
   joinSessionLabel,
   rescheduleAriaLabel,
+  rescheduleTooltipLabel,
   rescheduleUnavailableTitle,
   upcomingBookingCardStatusLine,
   upcomingBookingStatusPillLabel,
@@ -173,7 +174,9 @@ function SessionRescheduleButton(props: {
   canReschedule: boolean;
   onReschedule: () => void;
 }) {
-  const title = props.canReschedule ? undefined : rescheduleUnavailableTitle(props.language);
+  const title = props.canReschedule
+    ? rescheduleTooltipLabel(props.language)
+    : rescheduleUnavailableTitle(props.language);
   const ariaLabel = rescheduleAriaLabel(props.language);
   const onClick = (event: MouseEvent) => {
     stopActivation(event);
@@ -241,7 +244,10 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
   const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
   const isTrialBooking = props.booking.bookingMode === "trial";
   const joinUrl = bookingJoinUrl(props.booking);
-  const canReschedule = canPatientRescheduleBooking(props.booking.startsAt);
+  const canReschedule = canPatientRescheduleBooking(
+    props.booking.startsAt,
+    bookingProfessional.cancellationHours
+  );
   const cardClassName = [
     "session-management-card",
     "session-management-card-clickable",

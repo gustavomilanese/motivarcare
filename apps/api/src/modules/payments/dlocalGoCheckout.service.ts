@@ -398,7 +398,7 @@ async function createDlocalCheckoutForPackageCore(params: {
     description: `MotivarCare · ${sessionPackage.name}`,
     notificationUrl,
     successUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
-    backUrl: appendDlocalOrderToUrl(params.backUrl, orderId),
+    backUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
     payer: {
       name: payerName,
       email: patient.user.email
@@ -434,6 +434,7 @@ function buildIndividualOrderId(patientId: string, sessionCount: number): string
 export async function createDlocalCheckoutForIndividualSessions(params: {
   patientId: string;
   sessionCount: number;
+  professionalId?: string | null;
   successUrl: string;
   backUrl: string;
 }): Promise<DlocalCheckoutResult> {
@@ -449,6 +450,7 @@ export async function createDlocalCheckoutForIndividualSessions(params: {
 async function createDlocalCheckoutForIndividualSessionsCore(params: {
   patientId: string;
   sessionCount: number;
+  professionalId?: string | null;
   successUrl: string;
   backUrl: string;
 }): Promise<DlocalCheckoutResult> {
@@ -460,7 +462,8 @@ async function createDlocalCheckoutForIndividualSessionsCore(params: {
 
   const quote = await resolveIndividualSessionsPurchaseQuote({
     patientId: patient.id,
-    sessionCount: params.sessionCount
+    sessionCount: params.sessionCount,
+    professionalId: params.professionalId ?? null
   });
 
   const orderId = buildIndividualOrderId(patient.id, quote.sessionCount);
@@ -622,7 +625,7 @@ export async function createDlocalCheckoutForTrialSession(params: {
     }),
     notificationUrl,
     successUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
-    backUrl: appendDlocalOrderToUrl(params.backUrl, orderId),
+    backUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
     payer: {
       name: payerName,
       email: patient.user.email

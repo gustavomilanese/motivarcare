@@ -1,5 +1,13 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
-import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
+import {
+  type AppLanguage,
+  type LocalizedText,
+  formatDateWithLocale,
+  textByLanguage,
+  resolvePatientChangeNoticeHours,
+  canPatientCancelBooking,
+  canPatientRescheduleBooking
+} from "@therapy/i18n-config";
 import { professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../../app/services/api";
@@ -68,8 +76,17 @@ export function SessionDetailModal(props: {
   onClose: () => void;
   onOpenProfessionalReviews?: () => void;
   onImageFallback?: (event: SyntheticEvent<HTMLImageElement>) => void;
+  noticeHours?: number;
+  onReschedule?: () => void;
+  onCancel?: () => void;
+  cancelSubmitting?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const noticeHours = resolvePatientChangeNoticeHours(props.noticeHours);
+  const isTrialBooking = props.booking.bookingMode === "trial";
+  const canReschedule = canPatientRescheduleBooking(props.booking.startsAt, noticeHours);
+  const canCancel = canPatientCancelBooking(props.booking.startsAt, noticeHours);
   const joinUrl = props.booking.joinUrl?.trim() ?? "";
   const isGoogleMeet = joinUrl.includes("meet.google.");
   /** Enlace provisional del API cuando no se pudo crear Meet (Daily demo / placeholder local). */
@@ -127,8 +144,8 @@ export function SessionDetailModal(props: {
           <div className="session-detail-head-copy">
             <span className="chip">
               {props.booking.bookingMode === "trial"
-                ? t(props.language, { es: "Sesión de prueba confirmada", en: "Confirmed trial session", pt: "Sessao de teste confirmada" })
-                : t(props.language, { es: "Sesión confirmada", en: "Confirmed session", pt: "Sessao confirmada" })}
+                ? t(props.language, { es: "Sesión de prueba reservada", en: "Booked trial session", pt: "Sessao de teste reservada" })
+                : t(props.language, { es: "Sesión reservada", en: "Booked session", pt: "Sessao reservada" })}
             </span>
             <p>{formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</p>
           </div>
@@ -230,10 +247,20 @@ export function SessionDetailModal(props: {
                   {isLikelyNonMeetVideoLink ? (
                     <p className="session-detail-meet-fallback-hint">
                       {t(props.language, {
-                        es: "Si esperabas Google Meet: el servidor no pudo crear el evento Meet (revisá GOOGLE_CLIENT_ID/SECRET, tokens del calendario del profesional o tuyo, o consola del API). Este enlace es solo respaldo.",
-                        en: "If you expected Google Meet, the server could not create the Meet event (check GOOGLE_CLIENT_ID/SECRET, your or your professional’s calendar tokens, or the API console). This link is only a fallback.",
-                        pt: "Se voce esperava Google Meet, o servidor nao criou o evento Meet (confira GOOGLE_CLIENT_ID/SECRET, tokens do calendario seu ou do profissional, ou o console da API). Este link e apenas reserva."
+                        es: "Este enlace es un respaldo: no pudimos crear el evento de Google Meet. Si tenés dudas, escribinos por soporte.",
+                        en: "This link is a fallback—we couldn’t create the Google Meet event. If you have questions, contact support.",
+                        pt: "Este link e um respaldo: nao foi possivel criar o evento do Google Meet. Se tiver duvidas, fale com o suporte."
                       })}
+                      {import.meta.env.DEV ? (
+                        <span className="session-detail-meet-dev-hint">
+                          {" "}
+                          {t(props.language, {
+                            es: "(Dev: revisá GOOGLE_CLIENT_ID/SECRET y tokens de calendario en el API.)",
+                            en: "(Dev: check GOOGLE_CLIENT_ID/SECRET and calendar tokens on the API.)",
+                            pt: "(Dev: confira GOOGLE_CLIENT_ID/SECRET e tokens de calendario no API.)"
+                          })}
+                        </span>
+                      ) : null}
                     </p>
                   ) : null}
                 </div>
@@ -259,21 +286,107 @@ export function SessionDetailModal(props: {
           ) : (
             <p className="session-detail-meet-empty">
               {t(props.language, {
-                es: "Todavía no hay enlace de videollamada para esta sesión. Si ya esta confirmada, actualiza la página en unos minutos o escribe por chat a tu profesional.",
-                en: "There is no video link for this session yet. If it is already confirmed, refresh in a few minutes or message your professional in chat.",
-                pt: "Ainda nao ha link de video para esta sessao. Se ja estiver confirmada, atualize em alguns minutos ou fale no chat com seu profissional."
+                es: "Todavía no hay enlace de videollamada para esta sesión. Si ya está reservada, actualiza la página en unos minutos o escribe por chat a tu profesional.",
+                en: "There is no video link for this session yet. If it is already booked, refresh in a few minutes or message your professional in chat.",
+                pt: "Ainda nao ha link de video para esta sessao. Se ja estiver reservada, atualize em alguns minutos ou fale no chat com seu profissional."
               })}
             </p>
           )}
         </section>
 
-        <section className="session-modal-footer session-detail-footer session-detail-footer-hint">
-          <p>
-            {t(props.language, {
-              es: "Para cambiar el horario, reprogramá desde Sesiones con al menos 24 h de anticipación. Conectate 5 min antes.",
-              en: "To change the time, reschedule from Sessions at least 24 h in advance. Join 5 min early.",
-              pt: "Para mudar o horario, reagende em Sessoes com pelo menos 24 h de antecedência. Entre 5 min antes."
-            })}
+        <section className="session-modal-footer session-detail-footer session-detail-footer-actions">
+          {props.onReschedule || props.onCancel ? (
+            <div className="session-detail-change-actions">
+              {props.onReschedule ? (
+                <button
+                  type="button"
+                  className="session-detail-action session-detail-action--primary"
+                  disabled={!canReschedule}
+                  title={
+                    canReschedule
+                      ? undefined
+                      : t(props.language, {
+                          es: `Solo podés reprogramar con al menos ${noticeHours} h de anticipación.`,
+                          en: `You can only reschedule at least ${noticeHours} h in advance.`,
+                          pt: `Só é possível reagendar com pelo menos ${noticeHours} h de antecedência.`
+                        })
+                  }
+                  onClick={props.onReschedule}
+                >
+                  {t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
+                </button>
+              ) : null}
+              {props.onCancel ? (
+                confirmCancel ? (
+                  <div className="session-detail-cancel-confirm">
+                    <p>
+                      {isTrialBooking
+                        ? t(props.language, {
+                            es: "¿Cancelar tu sesión de prueba? Podrás elegir otro horario después.",
+                            en: "Cancel your trial session? You can choose another time later.",
+                            pt: "Cancelar sua sessão de teste? Você poderá escolher outro horário depois."
+                          })
+                        : t(props.language, {
+                            es: "¿Cancelar esta sesión? El crédito vuelve a tus sesiones disponibles.",
+                            en: "Cancel this session? The credit returns to your available sessions.",
+                            pt: "Cancelar esta sessão? O crédito volta para suas sessões disponíveis."
+                          })}
+                    </p>
+                    <div className="session-detail-cancel-confirm-actions">
+                      <button
+                        type="button"
+                        className="session-detail-action session-detail-action--danger"
+                        disabled={!canCancel || props.cancelSubmitting}
+                        onClick={() => void props.onCancel?.()}
+                      >
+                        {props.cancelSubmitting
+                          ? t(props.language, { es: "Cancelando...", en: "Cancelling...", pt: "Cancelando..." })
+                          : t(props.language, { es: "Confirmar cancelación", en: "Confirm cancellation", pt: "Confirmar cancelamento" })}
+                      </button>
+                      <button
+                        type="button"
+                        className="session-detail-action session-detail-action--ghost"
+                        disabled={props.cancelSubmitting}
+                        onClick={() => setConfirmCancel(false)}
+                      >
+                        {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="session-detail-action session-detail-action--ghost"
+                    disabled={!canCancel}
+                    title={
+                      canCancel
+                        ? undefined
+                        : t(props.language, {
+                            es: `Solo podés cancelar con al menos ${noticeHours} h de anticipación.`,
+                            en: `You can only cancel at least ${noticeHours} h in advance.`,
+                            pt: `Só é possível cancelar com pelo menos ${noticeHours} h de antecedência.`
+                          })
+                    }
+                    onClick={() => setConfirmCancel(true)}
+                  >
+                    {t(props.language, { es: "Cancelar sesión", en: "Cancel session", pt: "Cancelar sessão" })}
+                  </button>
+                )
+              ) : null}
+            </div>
+          ) : null}
+          <p className="session-detail-footer-hint">
+            {isTrialBooking
+              ? t(props.language, {
+                  es: `Podés reprogramar o cancelar la sesión de prueba con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
+                  en: `You can reschedule or cancel the trial session at least ${noticeHours} h in advance. Join 5 min early.`,
+                  pt: `Você pode reagendar ou cancelar a sessão de teste com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
+                })
+              : t(props.language, {
+                  es: `Para cambiar o cancelar, hacelo con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
+                  en: `To change or cancel, do it at least ${noticeHours} h in advance. Join 5 min early.`,
+                  pt: `Para mudar ou cancelar, faça com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
+                })}
           </p>
         </section>
       </section>

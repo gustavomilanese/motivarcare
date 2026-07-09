@@ -144,6 +144,8 @@ export function chargeAmountMajorForMarket(params: {
 export async function resolveIndividualSessionsPurchaseQuote(params: {
   patientId: string;
   sessionCount: number;
+  /** Misma referencia que el catálogo de paquetes del portal (asignado, reserva o selección). */
+  professionalId?: string | null;
 }): Promise<IndividualSessionsPurchaseQuote> {
   if (!Number.isInteger(params.sessionCount) || params.sessionCount < 1 || params.sessionCount > 99) {
     throw new Error("Invalid session count");
@@ -164,7 +166,8 @@ export async function resolveIndividualSessionsPurchaseQuote(params: {
   ]);
 
   const assignments = parsePatientAssignments(assignmentConfig?.value);
-  const activeProfessionalId = assignments[patient.id] ?? null;
+  const requestedProfessionalId = params.professionalId?.trim() || null;
+  const activeProfessionalId = requestedProfessionalId ?? assignments[patient.id] ?? null;
   const activeProfessional = activeProfessionalId
     ? await prisma.professionalProfile.findUnique({
         where: { id: activeProfessionalId },

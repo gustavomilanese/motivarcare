@@ -57,7 +57,7 @@ export function PortalPreferencesModal(props: {
         <div className="preferences-groups">
           <section className="preferences-group">
             <h3>{t(props.language, { es: "Seleccionar idioma", en: "Select language", pt: "Selecionar idioma" })}</h3>
-            <div className="preferences-options-grid">
+            <div className="preferences-options-grid preferences-options-grid--single">
               {props.languageChoices.map((item) => (
                 <button
                   key={item.value}

@@ -201,6 +201,7 @@ export function PortalNavigation(props: {
   const [dashboardHeroToolbarMount, setDashboardHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
+  const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     if (!diaryHomeImmersive) {
@@ -302,6 +303,31 @@ export function PortalNavigation(props: {
     };
   }, [wellbeingRelaxImmersive, location.pathname]);
 
+  useLayoutEffect(() => {
+    if (!chatImmersive) {
+      setChatHeroToolbarMount(null);
+      return;
+    }
+    let cancelled = false;
+    let frames = 0;
+    const resolveMount = () => {
+      if (cancelled) return;
+      const mount = document.getElementById("chat-hero-toolbar-mount");
+      if (mount) {
+        setChatHeroToolbarMount(mount);
+        return;
+      }
+      if (frames < 40) {
+        frames += 1;
+        requestAnimationFrame(resolveMount);
+      }
+    };
+    resolveMount();
+    return () => {
+      cancelled = true;
+    };
+  }, [chatImmersive, location.pathname]);
+
   const avatarVisual = (
     <span className="portal-header-avatar-edit-visual">
       {props.patientHeaderAvatarSrc ? (
@@ -328,7 +354,8 @@ export function PortalNavigation(props: {
     pt: "Alterar foto do perfil"
   });
 
-  const mobileGreeting = replaceTemplate(
+  /** Saludo en hero de Inicio — solo web desktop (no mobile ni otras secciones). */
+  const dashboardHomeGreeting = replaceTemplate(
     t(props.language, {
       es: "Hola, {name}",
       en: "Hi, {name}",
@@ -369,10 +396,10 @@ export function PortalNavigation(props: {
     setMobileMoreOpen(false);
   }, [location.pathname]);
 
-  function renderImmersiveMobileGreeting() {
+  function renderDashboardHomeGreeting() {
     return (
       <div className="portal-immersive-mobile-greet">
-        <span className="portal-immersive-mobile-greet-label">{mobileGreeting}</span>
+        <span className="portal-immersive-mobile-greet-label">{dashboardHomeGreeting}</span>
       </div>
     );
   }
@@ -628,9 +655,14 @@ export function PortalNavigation(props: {
       return null;
     }
 
+    const showDashboardHomeGreeting =
+      onImmersiveToolbar && dashboardHomeImmersive && !isMobilePortal;
+
     return (
-      <div className={`header-actions${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}`}>
-        {onImmersiveToolbar ? renderImmersiveMobileGreeting() : null}
+      <div
+        className={`header-actions${onImmersiveToolbar ? " header-actions--immersive-toolbar" : ""}${onImmersiveToolbar && !showDashboardHomeGreeting ? " header-actions--toolbar-only" : ""}`}
+      >
+        {showDashboardHomeGreeting ? renderDashboardHomeGreeting() : null}
         <div className="header-actions-cluster">
           {PATIENT_FAVORITES_ENABLED ? (
             <NavLink
@@ -763,24 +795,13 @@ export function PortalNavigation(props: {
                   {avatarVisual}
                   <span className="sr-only">{avatarSrLabel}</span>
                 </label>
-                <h1 className="portal-header-greeting-desktop">
-                  {replaceTemplate(
-                    t(props.language, {
-                      es: "Hola, {name}",
-                      en: "Hi, {name}",
-                      pt: "Ola, {name}"
-                    }),
-                    { name: props.sessionFullName ?? "" }
-                  )}
-                </h1>
               </div>
 
-              <div className="portal-header-greeting-mobile" aria-label={mobileGreeting}>
+              <div className="portal-header-greeting-mobile">
                 <label htmlFor={avatarInputId} className="portal-header-avatar-edit portal-header-avatar-edit--mobile">
                   {avatarVisual}
                   <span className="sr-only">{avatarSrLabel}</span>
                 </label>
-                <span className="portal-header-patient-name">{mobileGreeting}</span>
               </div>
 
               {props.patientHeaderAvatarError ? (
@@ -917,6 +938,9 @@ export function PortalNavigation(props: {
           : null}
         {wellbeingRelaxImmersive && wellbeingRelaxToolbarMount
           ? createPortal(renderHeaderActions(true), wellbeingRelaxToolbarMount)
+          : null}
+        {chatImmersive && chatHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), chatHeroToolbarMount)
           : null}
       </div>
     </>

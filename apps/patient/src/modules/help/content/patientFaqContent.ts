@@ -23,9 +23,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Qué son los créditos de sesión?", en: "What are session credits?", pt: "O que são créditos de sessão?" },
         answer: {
-          es: "Cada crédito equivale a una sesión confirmada. Los paquetes que comprás suman créditos a tu cuenta. En Sesiones ves cuántos tenés disponibles antes de reservar.",
-          en: "Each credit equals one confirmed session. Packages you buy add credits to your account. In Sessions you see how many you have before booking.",
-          pt: "Cada crédito equivale a uma sessão confirmada. Os pacotes que você compra somam créditos na conta. Em Sessões você vê quantos tem antes de reservar."
+          es: "Cada crédito equivale a una sesión reservada. Los paquetes que comprás suman créditos a tu cuenta. En Sesiones ves cuántos tenés disponibles antes de reservar.",
+          en: "Each credit equals one booked session. Packages you buy add credits to your account. In Sessions you see how many you have before booking.",
+          pt: "Cada crédito equivale a uma sessão reservada. Os pacotes que você compra somam créditos na conta. Em Sessões você vê quantos tem antes de reservar."
         }
       },
       {
@@ -39,9 +39,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿Dónde está el enlace de videollamada?", en: "Where is the video call link?", pt: "Onde está o link da videochamada?" },
         answer: {
-          es: "Aparece en Próximas reservas cuando la sesión está confirmada y próxima. También podés abrir el detalle de la sesión desde Inicio o el calendario en Sesiones.",
-          en: "It appears under Upcoming bookings when the session is confirmed and near. You can also open session details from Home or the calendar in Sessions.",
-          pt: "Aparece em Próximas reservas quando a sessão está confirmada e próxima. Também pode abrir o detalhe da sessão em Início ou no calendário em Sessões."
+          es: "Aparece en Próximas reservas cuando la sesión está reservada y próxima. También podés abrir el detalle de la sesión desde Inicio o el calendario en Sesiones.",
+          en: "It appears under Upcoming bookings when the session is booked and near. You can also open session details from Home or the calendar in Sessions.",
+          pt: "Aparece em Próximas reservas quando a sessão está reservada e próxima. Também pode abrir o detalhe da sessão em Início ou no calendário em Sessões."
         }
       },
       {

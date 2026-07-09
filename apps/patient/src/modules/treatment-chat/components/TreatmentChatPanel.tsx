@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import type { TreatmentChatMessageDto } from "../services/treatmentChatApi";
 import type { TreatmentChatLoadState } from "../hooks/useTreatmentChat";
 
@@ -17,6 +17,9 @@ interface TreatmentChatPanelProps {
   isAssistantTyping: boolean;
   safetyAlert: string | null;
   dailyTurnsRemaining: number | null;
+  sessionMinutesRemaining: number | null;
+  sessionMaxMinutes: number | null;
+  sessionActive: boolean;
   /** Consent del paciente para compartir resumen IA con su profesional. */
   shareConsent: boolean;
   /** True mientras se está actualizando el toggle. */
@@ -37,6 +40,9 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
     isAssistantTyping,
     safetyAlert,
     dailyTurnsRemaining,
+    sessionMinutesRemaining,
+    sessionMaxMinutes,
+    sessionActive,
     shareConsent,
     consentSaving,
     onClose,
@@ -65,7 +71,8 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
   }, [isAssistantTyping]);
 
   const dailyLimitReached = dailyTurnsRemaining !== null && dailyTurnsRemaining <= 0;
-  const inputDisabled = loadState !== "ready" || isAssistantTyping || dailyLimitReached;
+  const sessionLimitReached = sessionActive === false && sessionMinutesRemaining !== null && sessionMinutesRemaining <= 0;
+  const inputDisabled = loadState !== "ready" || isAssistantTyping || dailyLimitReached || sessionLimitReached;
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -95,9 +102,9 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
           <strong>{ASSISTANT_NAME}</strong>
           <span>
             {t(language, {
-              es: "Te acompaño entre sesiones",
-              en: "I'm here between sessions",
-              pt: "Te acompanho entre sessões"
+              es: "Bienestar entre sesiones · no reemplazo terapia",
+              en: "Wellbeing between sessions · not therapy",
+              pt: "Bem-estar entre sessões · não substitui terapia"
             })}
           </span>
         </div>
@@ -156,6 +163,19 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
         ) : null}
       </div>
 
+      {loadState === "ready" && sessionMaxMinutes !== null && sessionMinutesRemaining !== null && sessionActive ? (
+        <p className="treatment-chat-panel__session-hint" role="status">
+          {replaceTemplate(
+            t(language, {
+              es: "Esta charla dura hasta {max} min (quedan ~{left}). Para temas clínicos, tu profesional.",
+              en: "This chat lasts up to {max} min (~{left} left). For clinical topics, your therapist.",
+              pt: "Esta conversa dura ate {max} min (faltam ~{left}). Para temas clinicos, seu profissional."
+            }),
+            { max: String(sessionMaxMinutes), left: String(sessionMinutesRemaining) }
+          )}
+        </p>
+      ) : null}
+
       {safetyAlert ? (
         <div className="treatment-chat-panel__safety" role="status">
           {safetyAlert}
@@ -177,7 +197,13 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            dailyLimitReached
+            sessionLimitReached
+              ? t(language, {
+                  es: "Esta conversación llegó al límite de tiempo. Cerrá y volvé más tarde, o escribile a tu profesional.",
+                  en: "This conversation reached its time limit. Close and come back later, or message your therapist.",
+                  pt: "Esta conversa atingiu o limite de tempo. Feche e volte mais tarde, ou escreva ao seu profissional."
+                })
+              : dailyLimitReached
               ? t(language, {
                   es: "Llegaste al límite diario. Volvé mañana o agendá con tu profesional.",
                   en: "You've hit today's limit. Come back tomorrow or book with your therapist.",
@@ -201,9 +227,9 @@ export function TreatmentChatPanel(props: TreatmentChatPanelProps) {
 
       <p className="treatment-chat-panel__disclaimer">
         {t(language, {
-          es: "No reemplaza tu terapia. Si hay urgencia, contactá a tu profesional o servicios de emergencia.",
-          en: "This doesn't replace therapy. If it's urgent, reach your therapist or emergency services.",
-          pt: "Não substitui sua terapia. Em emergência, contate seu profissional ou serviços de emergência."
+          es: "No hago terapia. Te oriento a ejercicios y música del portal; lo clínico es con tu profesional.",
+          en: "I don't provide therapy. I point you to exercises and music in the portal; clinical work is with your therapist.",
+          pt: "Não faco terapia. Oriento a exercicios e musica do portal; o clinico e com seu profissional."
         })}
       </p>
 

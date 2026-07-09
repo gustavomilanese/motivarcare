@@ -6,10 +6,12 @@ import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
 import { friendlyBookingFailureMessage } from "../lib/friendlyPatientMessages";
 import {
   acquireDlocalCheckoutIdempotencyKey,
+  clearDlocalCheckoutIdempotencyKey,
   dlocalIndividualIdempotencyScope,
   dlocalPackageIdempotencyScope
 } from "../lib/dlocalCheckoutIdempotency";
 import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
+import { resolvePortalPricingProfessionalId } from "../lib/patientPricingProfessional";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
   Booking,
@@ -99,8 +101,8 @@ export function usePortalActions(params: {
               body: JSON.stringify({
                 packageId: plan.id,
                 idempotencyKey,
-                successUrl: `${origin}/sessions?flow=checkout&payment=success`,
-                cancelUrl: `${origin}/sessions?flow=checkout&payment=cancel`
+                successUrl: `${origin}/?payment=success&purchase=package`,
+                cancelUrl: `${origin}/?payment=cancel&purchase=package`
               })
             },
             authToken
@@ -186,16 +188,22 @@ export function usePortalActions(params: {
       return { ok: false, error: "Invalid session count" };
     }
 
-    const selectedProfessionalId = params.state.selectedProfessionalId;
+    const pricingProfessionalId = resolvePortalPricingProfessionalId({
+      assignedProfessionalId: params.state.assignedProfessionalId,
+      selectedProfessionalId: params.state.selectedProfessionalId,
+      bookings: params.state.bookings
+    });
     const authToken = params.state.authToken;
+    const selectedProfessionalId = params.state.selectedProfessionalId;
     let purchasedPackage: PurchasePackageApiResponse["purchase"] | null = null;
     let lastError = "";
 
     if (authToken) {
       if (usesDlocalCheckout(params.state)) {
+        const idempotencyScope = dlocalIndividualIdempotencyScope(sessionCount);
         try {
           const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
-          const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(dlocalIndividualIdempotencyScope(sessionCount));
+          const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(idempotencyScope);
           const checkout = await apiRequest<{ checkoutUrl: string; paymentId?: string; orderId?: string }>(
             "/api/payments/dlocal/checkout-individual",
             {
@@ -203,25 +211,33 @@ export function usePortalActions(params: {
               headers: { "x-idempotency-key": idempotencyKey },
               body: JSON.stringify({
                 sessionCount,
+                ...(pricingProfessionalId ? { professionalId: pricingProfessionalId } : {}),
                 idempotencyKey,
-                successUrl: `${origin}/sessions?flow=checkout&payment=success`,
-                cancelUrl: `${origin}/sessions?flow=checkout&payment=cancel`
+                successUrl: `${origin}/?payment=success&purchase=individual`,
+                cancelUrl: `${origin}/?payment=cancel&purchase=individual`
               })
             },
             authToken
           );
-          if (checkout.checkoutUrl) {
+          const checkoutUrl = checkout.checkoutUrl?.trim() ?? "";
+          if (/^https?:\/\//i.test(checkoutUrl)) {
             return {
               ok: true,
-              checkoutUrl: checkout.checkoutUrl,
+              checkoutUrl,
               paymentId: checkout.paymentId,
               orderId: checkout.orderId
             };
           }
-        } catch (error) {
-          lastError = error instanceof Error ? error.message : "";
+          lastError = "dLocal Go did not return a checkout redirect URL";
+          clearDlocalCheckoutIdempotencyKey(idempotencyScope);
           if (!allowLocalDemoFallback) {
             return { ok: false, error: lastError };
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : "";
+          clearDlocalCheckoutIdempotencyKey(idempotencyScope);
+          if (!allowLocalDemoFallback) {
+            return { ok: false, error: lastError || "Could not create dLocal Go checkout" };
           }
         }
       }
@@ -443,7 +459,11 @@ export function usePortalActions(params: {
     paymentId?: string | null;
     orderId?: string | null;
   }): Promise<DlocalPaymentSyncResult> => {
-    const retryDelaysMs = [0, 700, 1200, 1800, 2500, 3500, 4500];
+    // Cuando el paciente vuelve de dLocal, el pago ya está aprobado del lado del proveedor,
+    // así que el primer intento suele acreditar de inmediato (o el webhook ya lo hizo). Los
+    // reintentos cubren el pequeño lag del sandbox en pasar a PAID; los mantenemos cortos y
+    // acotados (~4,5s techo) para no dejar al paciente esperando >10s por el popup/créditos.
+    const retryDelaysMs = [0, 700, 1200, 2500];
     let lastResult: DlocalPaymentSyncResult = { ok: false, error: "Could not sync payment" };
 
     for (const delayMs of retryDelaysMs) {
@@ -653,7 +673,7 @@ export function usePortalActions(params: {
 
   const rescheduleBooking = async (bookingId: string, professionalId: string, slot: TimeSlot) => {
     const booking = params.state.bookings.find((item) => item.id === bookingId);
-    if (!booking || booking.status !== "confirmed" || booking.bookingMode === "trial") {
+    if (!booking || booking.status !== "confirmed") {
       return;
     }
 
@@ -740,6 +760,54 @@ export function usePortalActions(params: {
         ]
       };
     });
+  };
+
+  const cancelBooking = async (bookingId: string): Promise<{ ok: boolean; error?: string }> => {
+    const booking = params.state.bookings.find((item) => item.id === bookingId);
+    if (!booking || booking.status !== "confirmed") {
+      return { ok: false, error: "Booking cannot be cancelled" };
+    }
+
+    if (!params.state.authToken) {
+      return { ok: false, error: "Missing session" };
+    }
+
+    try {
+      await apiRequest<{ booking: { id: string; status: string } }>(
+        `/api/bookings/${bookingId}/cancel`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reason: "cancelled_by_patient" })
+        },
+        params.state.authToken
+      );
+
+      params.onStateChange((current) => {
+        const releasedSlotId = findSlotIdForBooking(
+          booking.professionalId,
+          booking.startsAt,
+          booking.endsAt,
+          params.professionalDirectory
+        );
+        const trialUsedProfessionalIds =
+          booking.bookingMode === "trial"
+            ? current.trialUsedProfessionalIds.filter((id) => id !== booking.professionalId)
+            : current.trialUsedProfessionalIds;
+        return {
+          ...current,
+          bookings: current.bookings.map((item) =>
+            item.id === bookingId ? { ...item, status: "cancelled" as const } : item
+          ),
+          bookedSlotIds: current.bookedSlotIds.filter((id) => id !== releasedSlotId),
+          trialUsedProfessionalIds
+        };
+      });
+      return { ok: true };
+    } catch (error) {
+      console.error("Could not cancel booking", error);
+      const message = error instanceof Error ? error.message : "Could not cancel booking";
+      return { ok: false, error: message };
+    }
   };
 
   const planTrialFromDashboard = (professionalId: string, slot: TimeSlot) => {
@@ -871,6 +939,7 @@ export function usePortalActions(params: {
     syncDlocalPayment,
     confirmBooking,
     rescheduleBooking,
+    cancelBooking,
     planTrialFromDashboard,
     sendMessage,
     markThreadAsRead,

@@ -1,4 +1,5 @@
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
+import { MotivarCareLoader } from "@therapy/ui";
 import { type SyntheticEvent, useEffect, useMemo, useState } from "react";
 import type { TimeSlot } from "../../types";
 
@@ -21,13 +22,13 @@ export function BookingActionModal(props: {
   bookingActionError: string;
   canConfirmBooking: boolean;
   slotHoldLoading?: boolean;
+  bookingSubmitting?: boolean;
   holdExpiresAt?: string;
   language: AppLanguage;
   sessionTimezone: string;
   onSelectSlot: (slotId: string) => void;
   onClose: () => void;
   onConfirm: () => void;
-  formatDateOnly: (params: { isoDate: string; timezone: string; language: AppLanguage }) => string;
   formatDateTime: (params: { isoDate: string; timezone: string; language: AppLanguage }) => string;
 }) {
   const [holdSecondsLeft, setHoldSecondsLeft] = useState<number | null>(null);
@@ -132,48 +133,48 @@ export function BookingActionModal(props: {
                 {t(props.language, { es: "Horario elegido", en: "Selected time", pt: "Horario escolhido" })}
               </span>
               <strong>
-                {props.formatDateOnly({
-                  isoDate: selectedSlot.startsAt,
-                  timezone: props.sessionTimezone,
-                  language: props.language
-                })}
-              </strong>
-              <p>
                 {props.formatDateTime({
                   isoDate: selectedSlot.startsAt,
                   timezone: props.sessionTimezone,
                   language: props.language
                 })}
-              </p>
+              </strong>
+              <button
+                type="button"
+                className="session-booking-change-slot"
+                disabled={props.slotHoldLoading}
+                onClick={() => props.onSelectSlot("")}
+              >
+                {t(props.language, { es: "Cambiar horario", en: "Change time", pt: "Alterar horario" })}
+              </button>
             </div>
-          ) : null}
-
-          <label className="session-booking-slot-field">
-            <span className="session-booking-slot-label">
-              {t(props.language, { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" })}
-            </span>
-            <select
-              value={props.selectedSlotId}
-              onChange={(event) => props.onSelectSlot(event.target.value)}
-              disabled={props.slotHoldLoading}
-            >
-              <option value="">
-                {props.slotsLoading
-                  ? t(props.language, { es: "Cargando disponibilidad...", en: "Loading availability...", pt: "Carregando disponibilidade..." })
-                  : props.slotHoldLoading
-                    ? t(props.language, { es: "Reservando horario...", en: "Reserving time...", pt: "Reservando horario..." })
-                    : props.availableSlots.length === 0
-                      ? t(props.language, { es: "Sin horarios publicados por ahora", en: "No published times right now", pt: "Sem horarios publicados por enquanto" })
-                      : t(props.language, { es: "Seleccioná día y horario", en: "Select day and time", pt: "Selecione dia e horario" })}
-              </option>
-              {props.availableSlots.map((slot) => (
-                <option key={slot.id} value={slot.id}>
-                  {props.formatDateOnly({ isoDate: slot.startsAt, timezone: props.sessionTimezone, language: props.language })} ·{" "}
-                  {props.formatDateTime({ isoDate: slot.startsAt, timezone: props.sessionTimezone, language: props.language })}
+          ) : (
+            <label className="session-booking-slot-field">
+              <span className="session-booking-slot-label">
+                {t(props.language, { es: "Disponibilidad", en: "Availability", pt: "Disponibilidade" })}
+              </span>
+              <select
+                value={props.selectedSlotId}
+                onChange={(event) => props.onSelectSlot(event.target.value)}
+                disabled={props.slotHoldLoading}
+              >
+                <option value="">
+                  {props.slotsLoading
+                    ? t(props.language, { es: "Cargando disponibilidad...", en: "Loading availability...", pt: "Carregando disponibilidade..." })
+                    : props.slotHoldLoading
+                      ? t(props.language, { es: "Reservando horario...", en: "Reserving time...", pt: "Reservando horario..." })
+                      : props.availableSlots.length === 0
+                        ? t(props.language, { es: "Sin horarios publicados por ahora", en: "No published times right now", pt: "Sem horarios publicados por enquanto" })
+                        : t(props.language, { es: "Seleccioná día y horario", en: "Select day and time", pt: "Selecione dia e horario" })}
                 </option>
-              ))}
-            </select>
-          </label>
+                {props.availableSlots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    {props.formatDateTime({ isoDate: slot.startsAt, timezone: props.sessionTimezone, language: props.language })}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div className="session-booking-credits-pill">
             <span>{t(props.language, { es: "Sesiones disponibles", en: "Available sessions", pt: "Sessoes disponiveis" })}</span>
@@ -185,17 +186,33 @@ export function BookingActionModal(props: {
           {props.bookingActionError ? <p className="session-booking-error">{props.bookingActionError}</p> : null}
           <button
             className="session-booking-primary"
-            disabled={!props.canConfirmBooking || (props.panelMode === "new" && holdSecondsLeft === 0)}
+            disabled={
+              !props.canConfirmBooking
+              || props.bookingSubmitting
+              || (props.panelMode === "new" && holdSecondsLeft === 0)
+            }
             type="button"
             onClick={props.onConfirm}
           >
-            {props.slotHoldLoading
+            {props.bookingSubmitting ? (
+              <span className="session-booking-primary-loading">
+                <MotivarCareLoader size={22} />
+                {isReschedule
+                  ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                  : t(props.language, { es: "Confirmando reserva...", en: "Confirming booking...", pt: "Confirmando reserva..." })}
+              </span>
+            ) : props.slotHoldLoading
               ? t(props.language, { es: "Reservando...", en: "Reserving...", pt: "Reservando..." })
               : isReschedule
                 ? t(props.language, { es: "Guardar cambio", en: "Save change", pt: "Salvar alteracao" })
                 : t(props.language, { es: "Confirmar reserva", en: "Confirm booking", pt: "Confirmar reserva" })}
           </button>
-          <button type="button" className="session-booking-secondary" onClick={props.onClose}>
+          <button
+            type="button"
+            className="session-booking-secondary"
+            onClick={props.onClose}
+            disabled={props.bookingSubmitting}
+          >
             {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
           </button>
         </footer>

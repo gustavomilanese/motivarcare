@@ -206,14 +206,14 @@ function buildDashboardTourSteps(
         }),
         description: bookingContext?.hasUpcomingMeetLink
           ? t(language, {
-              es: "Acá está tu próxima sesión confirmada. En el paso siguiente te señalamos el botón para <strong>entrar con Google Meet</strong> (videollamada).",
-              en: "Here is your next confirmed session. Next we will point to the <strong>Join with Google Meet</strong> button (video call).",
-              pt: "Aqui esta sua proxima sessao confirmada. No proximo passo indicamos o botao para <strong>entrar com Google Meet</strong>."
+              es: "Acá está tu próxima sesión reservada. En el paso siguiente te señalamos el botón para <strong>entrar con Google Meet</strong> (videollamada).",
+              en: "Here is your next booked session. Next we will point to the <strong>Join with Google Meet</strong> button (video call).",
+              pt: "Aqui esta sua proxima sessao reservada. No proximo passo indicamos o botao para <strong>entrar com Google Meet</strong>."
             })
           : t(language, {
-              es: "Acá está tu próxima sesión confirmada. Cuando conectes Google Calendar, vas a ver el enlace para unirte a la videollamada.",
-              en: "Here is your next confirmed session. After you connect Google Calendar, you will see the link to join the video call.",
-              pt: "Aqui esta sua proxima sessao confirmada. Ao conectar o Google Calendar, voce vera o link da videochamada."
+              es: "Acá está tu próxima sesión reservada. Cuando conectes Google Calendar, vas a ver el enlace para unirte a la videollamada.",
+              en: "Here is your next booked session. After you connect Google Calendar, you will see the link to join the video call.",
+              pt: "Aqui esta sua proxima sessao reservada. Ao conectar o Google Calendar, voce vera o link da videochamada."
             }),
         side: "top",
         align: "center"
@@ -265,14 +265,14 @@ function buildDashboardTourSteps(
       element: selector,
       popover: {
         title: t(language, {
-          es: "Tu espacio de inicio",
-          en: "Your home space",
-          pt: "Seu espaco inicial"
+          es: "Tu bienvenida",
+          en: "Your welcome banner",
+          pt: "Sua boas-vindas"
         }),
         description: t(language, {
-          es: "Acá está el corazón del panel: mensaje de bienvenida y, si ya tenés plan activo, el atajo para sumar sesiones. Como ves, todo queda cerca.",
-          en: "This is the heart of the dashboard: welcome copy and, if you already have an active plan, a shortcut to add sessions — everything stays close at hand.",
-          pt: "Aqui esta o coracao do painel: mensagem de boas-vindas e, se ja tiver plano ativo, o atalho para mais sessoes."
+          es: "Este banner es solo tu bienvenida. Lo que usás está a mano: arriba tenés el saludo, las notificaciones y el menú, y si ya tenés plan activo, el botón para adquirir nuevas sesiones.",
+          en: "This banner is just your welcome. The controls are close by: up top you have the greeting, notifications and the menu, and if you already have an active plan, the button to get new sessions.",
+          pt: "Este banner e apenas sua boas-vindas. O que voce usa fica a mao: em cima tem a saudacao, as notificacoes e o menu, e se ja tiver plano ativo, o botao para adquirir novas sessoes."
         }),
         side: "left",
         align: "start"
@@ -312,9 +312,9 @@ function buildDashboardTourSteps(
           pt: "Tres visoes rapidas"
         }),
         description: t(language, {
-          es: "Confirmadas, créditos y profesional activo: tocás y saltás directo a lo que necesitás.",
-          en: "Confirmed sessions, credits, and your active pro — tap and jump straight to what you need.",
-          pt: "Confirmadas, creditos e profissional ativo: toque e va direto ao que precisa."
+          es: "Reservadas, créditos y profesional activo: tocás y saltás directo a lo que necesitás.",
+          en: "Booked sessions, credits, and your active pro — tap and jump straight to what you need.",
+          pt: "Reservadas, creditos e profissional ativo: toque e va direto ao que precisa."
         }),
         side: "bottom",
         align: "center"
@@ -355,9 +355,9 @@ function buildDashboardTourSteps(
           pt: "Proximas reservas"
         }),
         description: t(language, {
-          es: "Tu agenda confirmada en limpio: abrís una fila y ves detalle o reprogramás si el horario lo permite.",
-          en: "Your confirmed sessions at a glance — open a row for details or reschedule when allowed.",
-          pt: "Sua agenda confirmada: abra uma linha para detalhes ou reagendar quando der."
+          es: "Tu agenda reservada en limpio: abrís una fila y ves detalle o reprogramás si el horario lo permite.",
+          en: "Your booked sessions at a glance — open a row for details or reschedule when allowed.",
+          pt: "Sua agenda reservada: abra uma linha para detalhes ou reagendar quando der."
         }),
         side: "top",
         align: "center"

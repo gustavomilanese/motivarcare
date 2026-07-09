@@ -105,11 +105,16 @@ export async function submitPatientIntake(params: {
   answers: Record<string, string>;
   residencyCountry: string;
 }) {
+  const answers = Object.fromEntries(
+    Object.entries(params.answers)
+      .map(([key, value]) => [key, value.trim()] as const)
+      .filter(([, value]) => value.length > 0)
+  );
   return requestJson<{ intake: { id: string; riskLevel: string; completedAt: string } }>({
     path: "/api/profiles/me/intake",
     method: "POST",
     token: params.token,
-    body: { answers: params.answers, residencyCountry: params.residencyCountry }
+    body: { answers, residencyCountry: params.residencyCountry }
   });
 }
 

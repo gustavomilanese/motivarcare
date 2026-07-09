@@ -17,6 +17,9 @@ import { usePortalNotifications } from "../hooks/usePortalNotifications";
 import { usePortalActions } from "../hooks/usePortalActions";
 import { usePortalUiState } from "../hooks/usePortalUiState";
 import { usePortalNavigation } from "../hooks/usePortalNavigation";
+import { useDlocalCheckoutReturn } from "../hooks/useDlocalCheckoutReturn";
+import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
+import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
@@ -96,6 +99,7 @@ export function MainPortal(props: {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [browseReviewsProfessionalId, setBrowseReviewsProfessionalId] = useState<string | null>(null);
   const reviewInviteProfessionalId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -257,9 +261,9 @@ export function MainPortal(props: {
     props.state.therapistSelectionCompleted
     || Boolean(props.state.assignedProfessionalId)
     || props.state.bookings.length > 0;
-  const lockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
+  const shouldLockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
   const isOnboardingMatchingView =
-    lockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
+    shouldLockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
   const isBookTrialView = location.pathname === "/book/trial";
   const hideSidebar = isOnboardingMatchingView || isBookTrialView;
   const needsInitialTherapistSelection =
@@ -300,6 +304,7 @@ export function MainPortal(props: {
   const {
     handleReserveFromAnywhere,
     handleGoToReservations,
+    handleRescheduleBookingFromAnywhere,
     handleGoToProfessional,
     handleChatFromAnywhere
   } = usePortalNavigation({
@@ -316,6 +321,7 @@ export function MainPortal(props: {
     syncDlocalPayment,
     confirmBooking,
     rescheduleBooking,
+    cancelBooking,
     planTrialFromDashboard,
     sendMessage,
     markThreadAsRead,
@@ -326,6 +332,30 @@ export function MainPortal(props: {
     professionalDirectory: props.professionalDirectory,
     onStateChange: props.onStateChange
   });
+
+  /**
+   * Retorno de dLocal centralizado a nivel portal: procesa el pago sin importar
+   * en qué ruta caiga el redirect, evita el "flash" de pantallas viejas y deja
+   * al paciente en Home con el foco puesto en lo que compró.
+   */
+  const {
+    checkoutReturnActive,
+    loaderVisible: checkoutLoaderVisible,
+    successSummary: checkoutSuccessSummary,
+    errorMessage: checkoutReturnError,
+    dismissSuccess: dismissCheckoutSuccess,
+    dismissError: dismissCheckoutError
+  } = useDlocalCheckoutReturn({
+    language: props.state.language,
+    onSyncDlocalPayment: syncDlocalPayment,
+    onRefreshPortalFromApi: props.onRefreshPortalFromApi,
+    onCheckoutFulfilled: () => {
+      props.onStateChange((current) => ({ ...current, onboardingFinalCompleted: true }));
+    }
+  });
+
+  /** Mientras se confirma un retorno de dLocal no bloqueamos a matching. */
+  const lockToTherapistSelection = shouldLockToTherapistSelection && !checkoutReturnActive;
 
   const onBookingSelectProfessional = useCallback(
     (professionalId: string) => {
@@ -423,6 +453,7 @@ export function MainPortal(props: {
             onImageFallback={handleImageFallback}
             onHeroFallback={handleHeroFallback}
             handleGoToReservations={handleGoToReservations}
+            handleRescheduleBookingFromAnywhere={handleRescheduleBookingFromAnywhere}
             handleReserveFromAnywhere={handleReserveFromAnywhere}
             handleGoToProfessional={handleGoToProfessional}
             handleChatFromAnywhere={handleChatFromAnywhere}
@@ -432,6 +463,7 @@ export function MainPortal(props: {
             startTrialCheckout={startTrialCheckout}
             syncTrialPayment={syncTrialPayment}
             rescheduleBooking={rescheduleBooking}
+            cancelBooking={cancelBooking}
             planTrialFromDashboard={planTrialFromDashboard}
             addPackage={addPackage}
             purchaseIndividualSessions={purchaseIndividualSessions}
@@ -463,6 +495,22 @@ export function MainPortal(props: {
             ...sessionDetailProfessional,
             photoUrl: props.professionalPhotoMap[selectedBooking.professionalId]
           }}
+          noticeHours={sessionDetailProfessional.cancellationHours}
+          onReschedule={() => {
+            const bookingId = selectedBooking.id;
+            setSelectedBookingId("");
+            handleRescheduleBookingFromAnywhere(bookingId);
+          }}
+          onCancel={async () => {
+            setCancelSubmitting(true);
+            const result = await cancelBooking(selectedBooking.id);
+            setCancelSubmitting(false);
+            if (result.ok) {
+              setSelectedBookingId("");
+              void props.onRefreshPortalFromApi?.();
+            }
+          }}
+          cancelSubmitting={cancelSubmitting}
           onClose={() => setSelectedBookingId("")}
           onOpenProfessionalReviews={() => setBrowseReviewsProfessionalId(selectedBooking.professionalId)}
           onImageFallback={handleImageFallback}
@@ -517,6 +565,50 @@ export function MainPortal(props: {
           }));
         }}
       />
+      {checkoutLoaderVisible ? (
+        <div className="checkout-return-loader-overlay" role="presentation">
+          <MotivarCarePageLoader language={props.state.language} layout="block" />
+        </div>
+      ) : null}
+      {checkoutSuccessSummary ? (
+        <PaymentSuccessModal
+          language={props.state.language}
+          summary={checkoutSuccessSummary}
+          onDismiss={dismissCheckoutSuccess}
+        />
+      ) : null}
+      {checkoutReturnError ? (
+        <div
+          className="matching-flow-backdrop payment-modal-backdrop"
+          role="presentation"
+          onClick={dismissCheckoutError}
+        >
+          <section
+            className="matching-flow-modal payment-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="payment-success-title">
+              {t(props.state.language, {
+                es: "Necesitamos confirmar tu pago",
+                en: "We need to confirm your payment",
+                pt: "Precisamos confirmar seu pagamento"
+              })}
+            </h3>
+            <p className="payment-success-detail">{checkoutReturnError}</p>
+            <footer className="matching-flow-footer payment-modal-footer">
+              <button
+                type="button"
+                className="matching-flow-primary payment-modal-primary"
+                onClick={dismissCheckoutError}
+              >
+                {t(props.state.language, { es: "Entendido", en: "Got it", pt: "Entendi" })}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

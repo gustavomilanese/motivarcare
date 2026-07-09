@@ -27,6 +27,11 @@ export interface TreatmentChatDto {
   };
   /** Consent del paciente para compartir resumen IA con su profesional. */
   professionalShareConsent: boolean;
+  session: {
+    maxMinutes: number;
+    minutesRemaining: number;
+    sessionActive: boolean;
+  };
 }
 
 export interface TreatmentChatConsentResponse {

@@ -7,7 +7,7 @@
   color: #0f172a;
   line-height: 1.45;
   /* CTAs login / welcome (alineado gate profesional + Stripe-like) */
-  --mc-cta-radius: 12px;
+  --mc-cta-radius: 8px;
   --mc-cta-min-height: 52px;
   --mc-cta-shadow: 0 12px 28px rgba(95, 68, 235, 0.32);
   --bg: #f4f4f7;
@@ -25,14 +25,19 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
   --touch-min: 48px;
-  --portal-radius: 20px;
-  --portal-radius-sm: 14px;
+  /* Radios del portal — referencia: hero-card KPI (Inicio) */
+  --portal-radius: 12px;
+  --portal-radius-sm: 8px;
+  --sessions-ui-radius: var(--portal-radius);
   --portal-surface: rgba(255, 255, 255, 0.86);
   --portal-surface-solid: #ffffff;
   --portal-border: rgba(226, 232, 240, 0.95);
   --portal-elev: 0 8px 32px rgba(15, 23, 42, 0.06), 0 2px 10px rgba(15, 23, 42, 0.04);
+  /* Aire entre secciones del portal (web/desktop; móvil usa --mobile-section-gap) */
+  --portal-section-gap: 16px;
   --portal-elev-lg: 0 22px 50px rgba(15, 23, 42, 0.1);
   --portal-blur: blur(16px);
+  --portal-page-inset: clamp(20px, 2.4vw, 28px);
   --viewport-h: 100vh;
 }
 
@@ -40,6 +45,40 @@
   :root {
     --viewport-h: 100dvh;
   }
+}
+
+.portal-shell {
+  --sessions-ui-radius: var(--portal-radius);
+}
+
+.portal-main :is(
+  .content-card,
+  .hero-card,
+  .session-management-card,
+  .dashboard-deal-card,
+  .sessions-secondary-section,
+  .payment-activity-item,
+  .sessions-collapsible-list li
+) {
+  border-radius: var(--portal-radius);
+}
+
+.portal-main :is(
+  .chat-gradient-button,
+  .active-professional-action-btn,
+  .deal-select-button,
+  .sessions-collapse-icon
+) {
+  border-radius: var(--portal-radius-sm);
+}
+
+.portal-main :is(
+  .sessions-hero-buy-button,
+  .sessions-reserve-button,
+  .dashboard-hero-buy-button,
+  .dashboard-hero-buy-on-photo
+) {
+  border-radius: var(--portal-radius);
 }
 
 h1,
@@ -2351,17 +2390,35 @@ button.danger {
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  border: 1px solid rgba(95, 68, 235, 0.2);
+  border: 1px solid rgba(95, 68, 235, 0.38);
+  border-left: 4px solid var(--brand);
   border-radius: var(--portal-radius-sm);
-  background: linear-gradient(145deg, #faf8ff 0%, #f3edff 38%, #ebe4ff 72%, #e8e0ff 100%);
+  background: linear-gradient(125deg, #ddd0ff 0%, #c9b5ff 52%, #b89dff 100%);
   box-shadow:
-    0 8px 24px rgba(95, 68, 235, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    0 10px 28px rgba(95, 68, 235, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 .trial-priority-inline {
   grid-template-columns: auto 1fr auto;
   gap: 10px;
+}
+
+.trial-priority-banner--clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.trial-priority-banner--clickable:hover {
+  box-shadow:
+    0 14px 34px rgba(95, 68, 235, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  transform: translateY(-1px);
+}
+
+.trial-priority-banner--clickable:focus-visible {
+  outline: 2px solid #4c31d8;
+  outline-offset: 2px;
 }
 
 .trial-inline-action {
@@ -2374,7 +2431,14 @@ button.danger {
   background: rgba(255, 255, 255, 0.94);
   border-radius: 10px;
   font-weight: 600;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.trial-priority-banner .trial-inline-action {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 6px 18px rgba(95, 68, 235, 0.3);
 }
 
 .trial-inline-action:hover {
@@ -2383,10 +2447,39 @@ button.danger {
   color: #4328c4;
 }
 
+.trial-priority-banner .trial-inline-action:hover {
+  background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(95, 68, 235, 0.34);
+}
+
+.trial-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-self: end;
+  align-items: center;
+}
+
+.trial-priority-banner .trial-inline-action--secondary {
+  background: rgba(255, 255, 255, 0.94);
+  color: #4c31d8;
+  border: 1px solid rgba(95, 68, 235, 0.32);
+  box-shadow: none;
+}
+
+.trial-priority-banner .trial-inline-action--secondary:hover {
+  background: #f5f0ff;
+  border-color: rgba(95, 68, 235, 0.45);
+  color: #4328c4;
+  box-shadow: none;
+}
+
 .trial-priority-banner h2 {
   font-size: 16px;
   font-weight: 600;
-  color: #1a2335;
+  color: #2a1260;
   margin: 0;
   display: flex;
   align-items: center;
@@ -2397,7 +2490,7 @@ button.danger {
   margin: 0;
   font-size: 14px;
   line-height: 1.25;
-  color: #5b5580;
+  color: #433878;
 }
 
 .trial-inline-icon {
@@ -2406,9 +2499,15 @@ button.danger {
   border-radius: 10px;
   display: inline-grid;
   place-items: center;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(237, 229, 255, 0.95) 100%);
-  border: 1px solid rgba(95, 68, 235, 0.22);
-  box-shadow: 0 2px 8px rgba(95, 68, 235, 0.08);
+  background: #fff;
+  border: 1px solid #c4b5fd;
+  box-shadow: 0 2px 6px rgba(95, 68, 235, 0.12);
+}
+
+.trial-priority-banner .trial-inline-icon {
+  background: linear-gradient(135deg, #5f44eb 0%, #7359f5 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(95, 68, 235, 0.28);
 }
 
 .trial-inline-icon::before {
@@ -2419,6 +2518,11 @@ button.danger {
   border: 2px solid var(--brand);
   border-top-color: transparent;
   transform: rotate(-45deg);
+}
+
+.trial-priority-banner .trial-inline-icon::before {
+  border-color: #fff;
+  border-top-color: transparent;
 }
 
 .trial-plan-modal {
@@ -3022,7 +3126,7 @@ button.danger {
 }
 
 .active-professional-action-btn {
-  border-radius: 10px;
+  border-radius: var(--portal-radius-sm);
   padding: 8px 8px;
   font-size: 12px;
   font-weight: 600;
@@ -3387,7 +3491,7 @@ button.danger {
 
 .chat-gradient-button {
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--portal-radius-sm);
   padding: 8px 12px;
   color: #fff;
   font-weight: 600;
@@ -3475,7 +3579,7 @@ button.danger {
 
 .deal-select-button {
   width: 100%;
-  border-radius: 9px;
+  border-radius: var(--portal-radius-sm);
   border: 1.5px solid #cfc4ff;
   background: #fff;
   color: #673de6;
@@ -4263,6 +4367,18 @@ button.danger {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: max(16px, var(--safe-top)) 16px max(24px, var(--safe-bottom));
+}
+
+/* Loader que cubre el portal al volver de dLocal, para no exponer la pantalla vieja
+   mientras se confirma el pago y se resincroniza el portal. */
+.checkout-return-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: #f6f7fb;
+  z-index: 200;
   display: grid;
   place-items: center;
   padding: max(16px, var(--safe-top)) 16px max(24px, var(--safe-bottom));
@@ -5772,8 +5888,8 @@ button.danger {
 
 .preferences-groups {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 22px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px 32px;
   padding: 24px 28px 28px;
   overflow: auto;
 }
@@ -5790,10 +5906,20 @@ button.danger {
   letter-spacing: -0.01em;
 }
 
+/* Monedas: columnas de ancho FIJO (no se adaptan al contenido) empaquetadas a la
+   izquierda. El contenido de cada celda queda pegado a la izquierda. */
 .preferences-options-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, 200px);
+  justify-content: start;
+  align-content: start;
+  gap: 4px 12px;
+}
+
+/* Idioma: una sola columna de ese mismo ancho fijo, a la izquierda. */
+.preferences-options-grid--single {
+  grid-template-columns: 200px;
+  justify-content: start;
 }
 
 .preferences-option {
@@ -5802,7 +5928,10 @@ button.danger {
   background: transparent;
   text-align: left;
   padding: 12px 14px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   gap: 2px;
   min-height: 58px;
 }
@@ -6011,6 +6140,25 @@ button.danger {
   font-weight: 600;
 }
 
+.session-booking-change-slot {
+  display: block;
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6d28d9;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.session-booking-change-slot:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .session-booking-slot-field {
   display: grid;
   gap: 8px;
@@ -6123,6 +6271,23 @@ button.danger {
 .session-booking-primary:disabled:focus-visible {
   background: linear-gradient(135deg, #6f59f5 0%, #8b73ff 100%);
   color: #fff;
+}
+
+/* Mientras se confirma la reserva el botón queda deshabilitado pero mostramos
+   el spinner del mark girando para que no parezca congelado. */
+.session-booking-primary:disabled:has(.session-booking-primary-loading) {
+  opacity: 1;
+}
+
+.session-booking-primary-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.session-booking-primary-loading .mc-mark-spinner {
+  flex: none;
 }
 
 .session-booking-secondary {
@@ -6365,6 +6530,76 @@ button.danger {
   border: 1px solid #e3e9f5;
   background: rgba(255, 255, 255, 0.65);
   padding: 12px 14px;
+}
+
+.session-detail-footer-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.session-detail-change-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.session-detail-action {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.session-detail-action--primary {
+  border: 0;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  color: #fff;
+}
+
+.session-detail-action--primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.session-detail-action--ghost {
+  border: 1px solid #d8deea;
+  background: #fff;
+  color: #4a5568;
+}
+
+.session-detail-action--ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.session-detail-action--danger {
+  border: 0;
+  background: #b42318;
+  color: #fff;
+}
+
+.session-detail-action--danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.session-detail-cancel-confirm {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.session-detail-cancel-confirm p {
+  margin: 0;
+  color: #4a5568;
+  font-size: 13px;
+}
+
+.session-detail-cancel-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .session-detail-meet {
@@ -6630,7 +6865,7 @@ button.danger {
 
 .sessions-hero-buy-button {
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--portal-radius);
   min-height: 44px;
   margin-top: 0;
   padding: 10px 18px;
@@ -6639,14 +6874,22 @@ button.danger {
   font-weight: 600;
   letter-spacing: 0.01em;
   background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
-  box-shadow: 0 8px 20px rgba(95, 68, 235, 0.22);
+  box-shadow:
+    0 10px 28px rgba(95, 68, 235, 0.32),
+    0 4px 14px rgba(15, 23, 42, 0.14);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    filter 0.18s ease;
 }
 
 .sessions-hero-buy-button:hover {
   background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%);
-  box-shadow: 0 10px 24px rgba(95, 68, 235, 0.28);
+  box-shadow:
+    0 12px 32px rgba(95, 68, 235, 0.38),
+    0 5px 16px rgba(15, 23, 42, 0.16);
 }
 
 .sessions-hero-buy-button:active {
@@ -6687,12 +6930,13 @@ button.danger {
   flex-shrink: 0;
   align-self: flex-start;
   min-height: 44px;
-  margin-top: 10px;
-  padding: 10px 10px;
-  border-radius: 10px;
+  margin-top: 0;
+  padding: 10px 18px;
+  border-radius: var(--portal-radius);
   font-size: 14px;
   justify-self: start;
-  width: min(50%, 340px);
+  width: auto;
+  max-width: min(100%, 340px);
 }
 
 .sessions-package-individual-link {
@@ -6844,7 +7088,12 @@ button.sessions-balance {
 }
 
 /* Sesiones / Diario home — hero inmersivo (foto ancha; título sobre la foto como Inicio) */
-.sessions-booking-page .sessions-hero-immersive,
+.sessions-booking-page .sessions-hero-immersive {
+  margin: 0 0 18px;
+  padding: 0;
+  width: 100%;
+}
+
 .diary-home-page .sessions-hero-immersive {
   margin: 0 0 18px;
   padding: 0;
@@ -6948,7 +7197,8 @@ button.sessions-balance {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 20px max(20px, env(safe-area-inset-right, 0px)) 18px max(20px, env(safe-area-inset-left, 0px));
+  padding: 20px max(var(--portal-page-inset), env(safe-area-inset-right, 0px)) 18px
+    max(var(--portal-page-inset), env(safe-area-inset-left, 0px));
   display: grid;
   gap: 8px;
 }
@@ -6985,9 +7235,9 @@ button.sessions-balance {
   gap: 0;
 }
 
-.portal-main--sessions-home .sessions-booking-page > :not(.sessions-hero-immersive):not(.sessions-booking-body) {
-  padding-left: clamp(12px, 2.4vw, 22px);
-  padding-right: clamp(12px, 2.4vw, 22px);
+.portal-main--sessions-home .sessions-booking-page > :not(.sessions-hero-immersive):not(.sessions-booking-body):not(.sessions-hero-actions-band) {
+  padding-left: var(--portal-page-inset);
+  padding-right: var(--portal-page-inset);
   box-sizing: border-box;
 }
 
@@ -6997,22 +7247,47 @@ button.sessions-balance {
   margin-bottom: 0;
 }
 
-.sessions-booking-page .sessions-hero-actions-band,
-.diary-home-page .sessions-hero-actions-band {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-  padding: 18px clamp(12px, 2.4vw, 22px) 8px;
-  background: linear-gradient(180deg, #f8f9fc 0%, #f1f3f8 100%);
-}
-
-/* Pagina Sesiones: créditos y CTA bajo el hero fotográfico */
+/* Sesiones: hero, banda de créditos y body a ancho completo del panel */
 .sessions-booking-page.page-stack {
   gap: 0;
   width: 100%;
   max-width: none;
   margin-inline: 0;
   box-sizing: border-box;
+}
+
+.sessions-booking-page.page-stack > .sessions-hero-immersive,
+.sessions-booking-page.page-stack > .sessions-hero-actions-band,
+.sessions-booking-page.page-stack > .sessions-booking-body {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
+.diary-home-page .sessions-hero-actions-band {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 18px 0 8px;
+  background: linear-gradient(180deg, #f8f9fc 0%, #f1f3f8 100%);
+}
+
+.sessions-booking-page .sessions-hero-actions-band {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+}
+
+.sessions-booking-page .sessions-hero-actions-band--buy-only {
+  padding: 10px var(--portal-page-inset) 0;
+}
+
+.sessions-booking-page .sessions-hero-actions-band--buy-only .sessions-booking-hero-actions {
+  width: 100%;
+  justify-content: flex-end;
 }
 
 /* Diario home — mismo layout full-bleed que Sesiones / Inicio */
@@ -7052,27 +7327,56 @@ button.sessions-balance {
 }
 
 .portal-main--diary-home .diary-home-page > :not(.sessions-hero-immersive):not(.sessions-hero-actions-band):not(.diary-home-band) {
-  padding-left: clamp(12px, 2.4vw, 22px);
-  padding-right: clamp(12px, 2.4vw, 22px);
+  padding-left: var(--portal-page-inset);
+  padding-right: var(--portal-page-inset);
   box-sizing: border-box;
 }
 
 .sessions-booking-page .sessions-booking-body {
   display: grid;
-  gap: 14px;
+  gap: var(--portal-section-gap);
   align-content: start;
   width: 100%;
   max-width: none;
   margin-inline: 0;
   box-sizing: border-box;
-  padding: 14px clamp(12px, 2.4vw, 22px) clamp(28px, 5vh, 40px);
-  background: #f1f3f8;
+  padding: 0 0 clamp(28px, 5vh, 40px);
+  background: transparent;
+}
+
+.sessions-booking-page .sessions-booking-body > .sessions-balance,
+.sessions-booking-page .sessions-booking-body > button.sessions-balance {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid #e4e8f0;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 16px var(--portal-page-inset);
+}
+
+.sessions-booking-page .sessions-booking-body > .sessions-balance--zero {
+  background: #fff;
+}
+
+.sessions-booking-page .sessions-booking-body > .content-card,
+.sessions-booking-page .sessions-booking-body > section.content-card,
+.sessions-booking-page .sessions-booking-body > section {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
 }
 
 @media (min-width: 1081px) {
   .sessions-booking-page .sessions-booking-body {
-    border-radius: 20px 20px 0 0;
-    margin-top: -6px;
+    border-radius: 0;
+    margin-top: 0;
   }
 }
 
@@ -7093,6 +7397,67 @@ button.sessions-balance {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.sessions-booking-hero-layout--compact {
+  grid-template-rows: auto;
+  row-gap: 0;
+}
+
+.sessions-booking-hero-layout--compact .sessions-booking-hero-balance {
+  grid-row: 1;
+}
+
+.sessions-balance-card-with-buy {
+  align-items: center;
+}
+
+.sessions-balance-inline-buy {
+  flex-shrink: 0;
+  margin-top: 6px;
+  margin-left: auto;
+  align-self: flex-end;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 28px rgba(95, 68, 235, 0.32),
+    0 4px 14px rgba(15, 23, 42, 0.14);
+}
+
+.sessions-balance-inline-buy:hover {
+  background: linear-gradient(135deg, #5136df 0%, #6b4ef4 100%);
+  box-shadow:
+    0 12px 32px rgba(95, 68, 235, 0.38),
+    0 5px 16px rgba(15, 23, 42, 0.16);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sessions-hero-buy-button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.04);
+  }
+
+  .sessions-hero-buy-button:active {
+    transform: translateY(0) scale(0.98);
+    filter: none;
+  }
+
+  .sessions-balance-inline-buy:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.04);
+  }
+
+  .patient-dashboard-home .dashboard-hero-buy-on-photo:hover {
+    transform: translateY(-2px);
+    background: #f3efff;
+    color: #4c2fd4;
+    box-shadow:
+      0 12px 32px rgba(95, 68, 235, 0.22),
+      0 6px 18px rgba(15, 23, 42, 0.2);
+  }
+
+  .patient-dashboard-home .dashboard-hero-buy-on-photo:active {
+    transform: translateY(0) scale(0.98);
+  }
 }
 
 /* "+" integrado en la pastilla (móvil); un solo botón evita solapamientos */
@@ -7128,7 +7493,12 @@ button.sessions-balance {
   width: 44px;
   height: 44px;
   font-size: 22px;
-  border-radius: 12px;
+  border-radius: var(--portal-radius-sm);
+}
+
+.sessions-booking-page .sessions-hero-buy-button,
+.sessions-booking-page .sessions-reserve-button {
+  border-radius: var(--sessions-ui-radius);
 }
 
 .sessions-booking-page .sessions-hero-actions {
@@ -7142,25 +7512,10 @@ button.sessions-balance {
 }
 
 @media (min-width: 1081px) {
-  .sessions-booking-page .sessions-balance {
-    margin-top: 0;
-    padding: 18px 22px;
+  .sessions-booking-page .sessions-booking-body > .sessions-balance,
+  .sessions-booking-page .sessions-booking-body > button.sessions-balance {
     gap: 16px;
-    border-radius: 20px;
-    border: none;
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.98) inset,
-      0 12px 40px rgba(15, 23, 42, 0.06);
-  }
-
-  .sessions-booking-page .sessions-balance--zero {
-    background: rgba(250, 250, 252, 0.85);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9) inset,
-      0 8px 28px rgba(15, 23, 42, 0.05);
+    padding: 16px var(--portal-page-inset);
   }
 }
 
@@ -7210,17 +7565,9 @@ button.sessions-balance {
 }
 
 @media (min-width: 1081px) {
-  .sessions-booking-page .sessions-balance--interactive:hover {
-    border-color: transparent;
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.95) inset,
-      0 14px 40px rgba(95, 68, 235, 0.12);
-  }
-
-  .sessions-booking-page .sessions-balance--interactive.sessions-balance--zero:hover {
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9) inset,
-      0 10px 32px rgba(15, 23, 42, 0.07);
+  .sessions-booking-page .sessions-booking-body > .sessions-balance--interactive:hover {
+    background: rgba(95, 68, 235, 0.03);
+    box-shadow: none;
   }
 }
 
@@ -7231,7 +7578,7 @@ button.sessions-balance {
 .sessions-booking-page .sessions-booking-body .booking-session-card {
   background: #fff;
   border: 1px solid #e4e8f0;
-  border-radius: 18px;
+  border-radius: var(--sessions-ui-radius);
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
@@ -7252,7 +7599,7 @@ button.sessions-balance {
 }
 
 .sessions-booking-page .sessions-panel-head {
-  padding: 0 12px;
+  padding: 0;
   align-items: center;
   gap: 10px;
 }
@@ -7322,7 +7669,7 @@ button.sessions-balance {
   gap: 6px;
   background: #f8fafc;
   border: 1px solid #e8ecf4;
-  border-radius: 14px;
+  border-radius: var(--sessions-ui-radius);
 }
 
 .sessions-booking-page .sessions-empty-state strong {
@@ -7333,15 +7680,16 @@ button.sessions-balance {
 
 @media (min-width: 1081px) {
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section,
-  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section {
-    margin-top: 0;
-    margin-left: 0;
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
+  .sessions-booking-page .sessions-booking-body .payment-activity-panel.sessions-secondary-section {
+    margin: 0;
+    margin-top: 0 !important;
     padding: 0;
     border-top: 0;
-    border-radius: 18px;
+    border-radius: var(--sessions-ui-radius);
     background: #fff;
     border: 1px solid #e4e8f0;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
     overflow: hidden;
   }
 
@@ -7355,7 +7703,7 @@ button.sessions-balance {
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle {
     margin: 0;
     width: 100%;
-    padding: 16px 18px;
+    padding: 14px 16px;
     border-radius: 0;
     align-items: center;
     box-sizing: border-box;
@@ -7366,12 +7714,16 @@ button.sessions-balance {
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle:focus-visible,
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:hover,
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle:focus-visible {
-    background: rgba(95, 68, 235, 0.07);
+    background: rgba(95, 68, 235, 0.05);
   }
 
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + *,
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + * {
-    padding: 0 18px 18px;
+    padding: 0;
+  }
+
+  .sessions-booking-page .sessions-booking-calendar-tail {
+    margin-bottom: 0;
   }
 }
 
@@ -7389,28 +7741,205 @@ button.sessions-balance {
   color: #6d5ce8;
 }
 
+.sessions-collapse-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid #dfe5ef;
+  border-radius: var(--portal-radius-sm);
+  background: #f8fafc;
+  color: #5f44eb;
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sessions-calendar-toggle:hover .sessions-collapse-icon,
+.sessions-calendar-toggle:focus-visible .sessions-collapse-icon {
+  background: #f3efff;
+  border-color: rgba(95, 68, 235, 0.28);
+  color: #5136df;
+  box-shadow: 0 2px 8px rgba(95, 68, 235, 0.12);
+}
+
+.sessions-collapsible-panel {
+  border-top: 1px solid #eef1f6;
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.sessions-collapsible-empty {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px dashed #d8deee;
+  border-radius: var(--portal-radius);
+  background: #f8fafc;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.sessions-collapsible-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sessions-collapsible-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e8ecf4 !important;
+  border-radius: var(--portal-radius) !important;
+  background: #f8fafc !important;
+  box-shadow: none !important;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sessions-collapsible-list li:last-child {
+  border-bottom: 1px solid #e8ecf4 !important;
+}
+
+.sessions-collapsible-list li:hover {
+  background: #fff !important;
+  border-color: #dde3ee !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+.sessions-purchased-history .sessions-collapsible-list li,
+.dashboard-compact-section.sessions-purchased-history .sessions-collapsible-list li {
+  border: 1px solid rgba(139, 124, 248, 0.16) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: none !important;
+}
+
+.sessions-purchased-history .sessions-collapsible-list li:hover,
+.dashboard-compact-section.sessions-purchased-history .sessions-collapsible-list li:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(139, 124, 248, 0.28) !important;
+  box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
+}
+
+.sessions-collapsible-panel--calendar {
+  padding-top: 12px;
+}
+
+.sessions-collapsible-panel--calendar .sessions-calendar-card {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #e8ecf4;
+  border-radius: var(--portal-radius);
+  background: #fff;
+  overflow: hidden;
+}
+
+.sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap {
+  border: 1px solid #eef1f6;
+  border-radius: var(--portal-radius);
+  background: #fafbfe;
+  padding: 8px;
+}
+
+.sessions-collapsible-panel .payment-activity-body {
+  gap: 12px;
+}
+
+.sessions-collapsible-panel .payment-activity-list {
+  gap: 8px;
+}
+
+.sessions-collapsible-panel .payment-activity-item {
+  border: 1px solid #e8ecf4;
+  border-radius: var(--portal-radius);
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.sessions-collapsible-panel .payment-activity-item-trigger {
+  padding: 12px 14px;
+  transition: background 0.15s ease;
+}
+
+.sessions-collapsible-panel .payment-activity-item-trigger:hover {
+  background: #fff;
+}
+
+.sessions-collapsible-panel .payment-activity-detail {
+  background: #fff;
+  border-top: 1px solid #eef1f6;
+}
+
+/* Sesiones + Inicio: esquinas planas en cards colapsables, paquetes y CTAs */
+.sessions-booking-page .sessions-collapse-icon,
+.patient-dashboard-home .sessions-collapse-icon {
+  border-radius: var(--sessions-ui-radius);
+}
+
+.sessions-booking-page .sessions-collapsible-list li,
+.patient-dashboard-home .sessions-collapsible-list li {
+  border-radius: var(--sessions-ui-radius) !important;
+}
+
+.sessions-booking-page .sessions-collapsible-panel--calendar .sessions-calendar-card,
+.sessions-booking-page .sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap,
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-card,
+.patient-dashboard-home .sessions-collapsible-panel--calendar .sessions-calendar-grid-wrap {
+  border-radius: var(--sessions-ui-radius);
+}
+
+.sessions-booking-page .sessions-collapsible-panel .payment-activity-item,
+.patient-dashboard-home .sessions-collapsible-panel .payment-activity-item {
+  border-radius: var(--sessions-ui-radius);
+}
+
+.sessions-booking-page .sessions-booking-body .sessions-secondary-section,
+.patient-dashboard-home .sessions-secondary-section {
+  border-radius: var(--sessions-ui-radius);
+}
+
+.sessions-booking-page .sessions-booking-desktop-only .session-management-card,
+.sessions-booking-page .sessions-confirmed-list--desktop .session-management-card {
+  border-radius: var(--sessions-ui-radius);
+}
+
+.sessions-booking-page .sessions-hero-buy-button,
+.sessions-booking-page .sessions-balance-inline-buy,
+.patient-dashboard-home .dashboard-hero-buy-on-photo {
+  border-radius: var(--sessions-ui-radius);
+}
+
 .sessions-booking-page .sessions-booking-body .sessions-purchased-history .sessions-secondary-toggle-label {
   color: #5f45ee;
 }
 
 .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible {
-  gap: 12px;
-}
-
-.sessions-booking-page .sessions-booking-body .sessions-history-section > p,
-.sessions-booking-page .sessions-booking-body .sessions-purchased-history > p {
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  color: #64748b;
+  gap: 0;
 }
 
 .sessions-booking-page .sessions-calendar-collapsible {
-  gap: 8px;
+  gap: 0;
 }
 
 .sessions-package-options-panel {
   border: 1px solid #e2dcfb;
-  border-radius: 24px;
+  border-radius: var(--portal-radius);
   background:
     radial-gradient(130% 100% at 100% 0%, rgba(111, 89, 245, 0.12) 0%, rgba(111, 89, 245, 0) 48%),
     linear-gradient(180deg, #faf9ff 0%, #f4f1ff 100%);
@@ -7426,7 +7955,7 @@ button.sessions-balance {
 }
 
 .dashboard-package-options-panel .dashboard-package-card {
-  cursor: default;
+  cursor: pointer;
 }
 
 .sessions-package-options-grid {
@@ -7445,7 +7974,7 @@ button.sessions-balance {
 
 .sessions-package-options-grid .deal-card-featured-kicker {
   height: 50px;
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--portal-radius) var(--portal-radius) 0 0;
   border: 1px solid #8774fb;
   border-bottom: 0;
   background: linear-gradient(135deg, #705af2 0%, #876fff 100%);
@@ -7460,7 +7989,7 @@ button.sessions-balance {
 
 .sessions-package-options-grid .dashboard-deal-card.sessions-package-card {
   min-height: 560px;
-  border-radius: 20px;
+  border-radius: var(--portal-radius);
   border: 1px solid #dfdaf8;
   background: linear-gradient(165deg, #ffffff 0%, #f8f6ff 100%);
   box-shadow: 0 12px 28px rgba(52, 38, 110, 0.1);
@@ -7470,25 +7999,18 @@ button.sessions-balance {
   gap: 14px;
 }
 
-.sessions-package-options-grid .dashboard-deal-card.sessions-package-card:hover {
-  border-color: #c7bcf8;
-  background: linear-gradient(165deg, #ffffff 0%, #f3efff 100%);
-  box-shadow: 0 16px 32px rgba(62, 45, 135, 0.14);
+.sessions-package-options-grid .dashboard-deal-card.sessions-package-card:hover,
+.sessions-package-options-grid .dashboard-deal-card.sessions-package-card:focus-within {
+  border-color: #8774fb;
+  background: linear-gradient(165deg, #f5f2ff 0%, #ede7ff 60%, #e5ddff 100%);
+  box-shadow:
+    0 16px 34px rgba(65, 48, 140, 0.16),
+    0 0 0 2px rgba(106, 82, 245, 0.16);
 }
 
-.sessions-package-options-grid .dashboard-deal-card.sessions-package-card.featured {
-  border-color: #8774fb;
+.sessions-package-options-grid .deal-card-shell.featured .dashboard-deal-card.sessions-package-card {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-  background: linear-gradient(165deg, #f5f2ff 0%, #ede7ff 60%, #e5ddff 100%);
-  box-shadow: 0 16px 34px rgba(65, 48, 140, 0.16);
-}
-
-.sessions-package-options-grid .dashboard-deal-card.sessions-package-card.selected {
-  border-color: #745ff2;
-  box-shadow:
-    0 18px 36px rgba(66, 46, 150, 0.2),
-    0 0 0 2px rgba(106, 82, 245, 0.16);
 }
 
 .sessions-package-options-grid .dashboard-deal-card.sessions-package-card h3 {
@@ -7518,7 +8040,7 @@ button.sessions-balance {
   align-items: center;
   min-height: 26px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--portal-radius-sm);
   border: 1px solid #c8bcff;
   color: #4d3ea8;
   background: rgba(255, 255, 255, 0.76);
@@ -7554,6 +8076,7 @@ button.sessions-balance {
 
 .sessions-package-options-grid .deal-discount-badge {
   padding: 6px 12px;
+  border-radius: var(--portal-radius-sm);
   background: linear-gradient(135deg, #6f59f5 0%, #8b73ff 100%);
   font-size: 12px;
   font-weight: 600;
@@ -7564,6 +8087,14 @@ button.sessions-balance {
   color: #1b1944;
   font-weight: 600;
   line-height: 1;
+}
+
+.deal-main-price-unit {
+  margin-left: 4px;
+  font-size: 0.5em;
+  font-weight: 600;
+  color: #6f668f;
+  letter-spacing: 0;
 }
 
 .sessions-package-card-unit {
@@ -7608,7 +8139,7 @@ button.sessions-balance {
 .sessions-package-options-grid .deal-select-button {
   margin-top: auto;
   min-height: 54px;
-  border-radius: 14px;
+  border-radius: var(--portal-radius-sm);
   border: 1px solid #bcafff;
   background: linear-gradient(180deg, #ffffff 0%, #f6f2ff 100%);
   color: #5a45d6;
@@ -7616,8 +8147,8 @@ button.sessions-balance {
   font-weight: 600;
 }
 
-.sessions-package-options-grid .deal-select-button.featured,
-.sessions-package-options-grid .dashboard-deal-card.sessions-package-card.selected .deal-select-button {
+.sessions-package-options-grid .dashboard-deal-card.sessions-package-card:hover .deal-select-button,
+.sessions-package-options-grid .dashboard-deal-card.sessions-package-card:focus-within .deal-select-button {
   border-color: transparent;
   background: linear-gradient(135deg, #6d57ef 0%, #856dff 100%);
   color: #ffffff;
@@ -7636,7 +8167,7 @@ button.sessions-balance {
 .packages-choose-professional-cta {
   justify-self: start;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--portal-radius);
   min-height: 44px;
   padding: 10px 20px;
   color: #fff;
@@ -7967,18 +8498,6 @@ button.sessions-balance {
   outline-offset: 2px;
 }
 
-.dashboard-go-sessions-button {
-  border: 0;
-  background: transparent;
-  color: #6a59d9;
-}
-
-.dashboard-go-sessions-button:hover {
-  border: 0;
-  background: transparent;
-  color: #5a49cb;
-}
-
 .dashboard-go-sessions-link {
   color: #6a59d9;
   border: 0;
@@ -8007,7 +8526,7 @@ button.sessions-balance {
 
 .sessions-empty-state {
   border: 1px dashed #d8deee;
-  border-radius: 16px;
+  border-radius: var(--portal-radius);
   background: #fbfbfe;
   padding: 18px;
   display: grid;
@@ -8231,6 +8750,18 @@ button.sessions-balance {
   border-color: rgba(95, 68, 235, 0.4);
 }
 
+@media (min-width: 1081px) {
+  /* Etiqueta de estado (no botón): sin borde externo */
+  .sessions-confirmed-list--desktop .session-status-pill,
+  .sessions-confirmed-list--dashboard-desktop .session-status-pill {
+    border: none;
+  }
+
+  .session-management-join-link {
+    border-radius: var(--portal-radius-sm);
+  }
+}
+
 .session-management-actions .session-detail-button:not(.session-management-join-link) {
   font-weight: 600;
   font-size: 12px;
@@ -8443,19 +8974,18 @@ button.sessions-balance {
 }
 
 .sessions-calendar-collapsible.sessions-secondary-section {
-  margin-top: min(10%, 34px);
+  margin-top: 0;
 }
 
 .sessions-secondary-section {
-  border-top: 1px solid #d5dced;
-  padding-top: 14px;
+  border-top: 0;
+  padding-top: 0;
 }
 
-/** Solo Paquetes comprados: fondo violeta muy suave (resto de secciones = estilo calendario). */
 .sessions-secondary-section.sessions-purchased-history {
-  margin-top: min(10%, 28px);
+  margin-top: 0;
   padding: 0;
-  border-radius: 14px;
+  border-radius: var(--portal-radius);
   background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%);
   border: 1px solid rgba(139, 92, 246, 0.14);
   box-shadow: 0 6px 22px rgba(95, 68, 235, 0.07);
@@ -8515,13 +9045,22 @@ button.sessions-balance {
   color: var(--text-soft);
 }
 
+.sessions-collapsible-list li:has(.session-purchase-row-meta) {
+  align-items: flex-start;
+}
+
 .sessions-purchased-history .session-purchase-row-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
   min-width: 0;
+  flex-shrink: 0;
   text-align: right;
+  margin-top: 2px;
+  margin-right: 4px;
+  padding-top: 2px;
+  padding-right: 2px;
 }
 
 .sessions-purchased-history .session-history-list li span.session-purchase-row-amount {
@@ -8584,10 +9123,12 @@ button.sessions-balance {
   padding: 14px 16px;
   box-sizing: border-box;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
 }
 
 .sessions-calendar-toggle:hover .sessions-secondary-title {
@@ -8665,11 +9206,12 @@ button.sessions-balance {
 
 .patient-dashboard-home .sessions-calendar-collapsible.dashboard-compact-section.sessions-secondary-section {
   padding: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(139, 92, 246, 0.1);
-  background: #fefefe;
-  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  border-radius: var(--portal-radius-sm);
+  border: 1px solid #e4e8f0;
+  background: #fff;
+  border-top: 1px solid #e4e8f0;
   overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
 .dashboard-compact-section:not(.sessions-purchased-history) .sessions-calendar-toggle {
@@ -8738,6 +9280,15 @@ button.sessions-balance {
   padding: 0;
 }
 
+.sessions-collapsible-panel--calendar .sessions-calendar-head {
+  padding: 6px 10px 12px 4px;
+}
+
+.sessions-collapsible-panel--calendar .sessions-calendar-month-nav {
+  margin-top: 2px;
+  margin-right: 2px;
+}
+
 .sessions-calendar-collapsible .sessions-calendar-grid-wrap {
   border: 0;
   background: transparent;
@@ -8746,7 +9297,7 @@ button.sessions-balance {
 
 .sessions-history-section {
   display: grid;
-  gap: 10px;
+  gap: 0;
 }
 
 .sessions-history-section > p {
@@ -8755,9 +9306,9 @@ button.sessions-balance {
   font-size: 14px;
 }
 
-/* Última sección (calendario) en /sessions: aire inferior. */
+/* Última sección (calendario) en /sessions: aire inferior lo da el padding del body. */
 .sessions-booking-page .sessions-booking-calendar-tail {
-  margin-bottom: clamp(24px, 5vh, 40px);
+  margin-bottom: 0;
 }
 
 /* Historial y Calendario: hover en toda la banda del encabezado (desktop booking). */
@@ -9003,6 +9554,201 @@ button.sessions-balance {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sessions-calendar-event-wrap {
+  position: relative;
+}
+
+.sessions-calendar-event.is-active {
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
+}
+
+.sessions-calendar-event--trial.is-active {
+  box-shadow: 0 0 0 2px rgba(95, 68, 235, 0.4);
+}
+
+.sessions-calendar-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  background: transparent;
+  cursor: default;
+  padding: 0;
+  margin: 0;
+}
+
+.sessions-calendar-popover {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 244px;
+  max-width: min(244px, 78vw);
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e6f2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(23, 20, 58, 0.18);
+  text-align: left;
+}
+
+.sessions-calendar-popover.align-start {
+  left: 0;
+  transform: none;
+}
+
+.sessions-calendar-popover.align-end {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.sessions-calendar-popover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sessions-calendar-popover-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1633;
+  line-height: 1.25;
+}
+
+.sessions-calendar-popover-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: #f2f2f7;
+  color: #55507a;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sessions-calendar-popover-close:hover {
+  background: #e7e6f0;
+}
+
+.sessions-calendar-popover-when {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3f3a5c;
+  text-transform: capitalize;
+}
+
+.sessions-calendar-popover-time {
+  margin: 0;
+  font-size: 12px;
+  color: #6f668f;
+}
+
+.sessions-calendar-popover-pill {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sessions-calendar-popover-pill.trial {
+  background: rgba(95, 68, 235, 0.12);
+  color: #5f44eb;
+}
+
+.sessions-calendar-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sessions-calendar-popover-action {
+  flex: 1 1 auto;
+  min-width: 88px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.sessions-calendar-popover-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sessions-calendar-popover-action.ghost {
+  background: #f4f4fb;
+  color: #4c31d8;
+}
+
+.sessions-calendar-popover-action.ghost:hover:not(:disabled) {
+  background: #ecebf7;
+}
+
+.sessions-calendar-popover-action.primary {
+  background: #5f44eb;
+  color: #fff;
+}
+
+.sessions-calendar-popover-action.primary:hover:not(:disabled) {
+  background: #4c31d8;
+}
+
+.sessions-calendar-popover-action.danger-ghost {
+  background: #fff;
+  border-color: rgba(214, 69, 69, 0.45);
+  color: #c0392b;
+}
+
+.sessions-calendar-popover-action.danger-ghost:hover:not(:disabled) {
+  background: #d64545;
+  border-color: #d64545;
+  color: #fff;
+}
+
+.sessions-calendar-popover-action.danger {
+  background: #d64545;
+  color: #fff;
+}
+
+.sessions-calendar-popover-action.danger:hover:not(:disabled) {
+  background: #bf3b3b;
+}
+
+.sessions-calendar-popover-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #8a819f;
+  line-height: 1.35;
+}
+
+.sessions-calendar-popover-confirm {
+  display: grid;
+  gap: 8px;
+}
+
+.sessions-calendar-popover-confirm p {
+  margin: 0;
+  font-size: 12px;
+  color: #3f3a5c;
+  line-height: 1.4;
 }
 
 .sessions-calendar-agenda {
@@ -9487,6 +10233,12 @@ button.sessions-balance {
   background: #fff;
 }
 
+.wa-thread-list .wa-empty {
+  padding: 20px 16px;
+  text-align: center;
+  line-height: 1.45;
+}
+
 .wa-thread-item {
   width: 100%;
   border: 0;
@@ -9658,7 +10410,10 @@ button.sessions-balance {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 10px 14px;
+  text-align: center;
+  line-height: 1.45;
+  max-width: min(420px, 92%);
 }
 
 .wa-message {
@@ -9698,24 +10453,26 @@ button.sessions-balance {
 .wa-composer {
   border-top: 1px solid #d1d7db;
   background: #f0f2f5;
-  padding: 8px 10px;
+  padding: 10px 14px;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: flex-end;
+  gap: 10px;
+  align-items: center;
 }
 
 .wa-composer textarea {
-  min-height: 42px;
+  box-sizing: border-box;
+  min-height: 44px;
   max-height: 120px;
   border-radius: 24px;
   border: none;
   background: #fff;
-  padding: 10px 14px;
+  padding: 12px 16px;
   resize: none;
   font-size: 15px;
-  line-height: 1.35;
+  line-height: 20px;
   color: #111b21;
+  overflow-y: auto;
 }
 
 .wa-composer textarea::placeholder {
@@ -9740,8 +10497,7 @@ button.sessions-balance {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  align-self: flex-end;
-  margin-bottom: 1px;
+  align-self: center;
 }
 
 .wa-send svg {
@@ -9757,6 +10513,112 @@ button.sessions-balance {
 .wa-send:disabled {
   background: #a9b2bb;
   color: #eef2f6;
+}
+
+.wa-shell + .error-text,
+.chat-page-root > .error-text {
+  margin: 10px 4px 0;
+  text-align: center;
+}
+
+.chat-page-root {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  height: 100%;
+}
+
+.chat-page-body {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-portal-toolbar-shell {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: #f0f2f5;
+  border-bottom: 1px solid #d1d7db;
+}
+
+.chat-hero-toolbar-mount {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chat-hero-toolbar-mount .header-actions {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.header-actions--immersive-toolbar.header-actions--toolbar-only {
+  justify-content: flex-end;
+}
+
+@media (min-width: 1081px) {
+  .portal-main--chat {
+    gap: 0;
+    background: #f1eef9;
+  }
+
+  .portal-main--chat .portal-main-content {
+    gap: 0;
+    padding: 0;
+    min-height: calc(100vh - 132px);
+  }
+
+  .portal-main--chat .chat-page-root {
+    min-height: clamp(560px, calc(100vh - 168px), 820px);
+  }
+
+  .portal-main--chat .chat-portal-toolbar-shell {
+    padding: 10px 18px;
+    background: #fafbfe;
+    border-bottom: 1px solid var(--portal-border);
+    border-radius: var(--portal-radius) var(--portal-radius) 0 0;
+  }
+
+  .portal-main--chat .wa-shell {
+    min-height: 0;
+    height: 100%;
+    align-self: stretch;
+    border-radius: 0 0 var(--portal-radius) var(--portal-radius);
+  }
+
+  .portal-main--chat .wa-sidebar-header {
+    padding: 18px 20px;
+  }
+
+  .portal-main--chat .wa-sidebar-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .portal-main--chat .wa-thread-item {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .portal-main--chat .wa-main-header {
+    padding: 12px 18px;
+  }
+
+  .portal-main--chat .wa-messages {
+    padding: 20px 28px;
+    gap: 12px;
+  }
+
+  .portal-main--chat .wa-composer {
+    padding: 12px 18px;
+    gap: 12px;
+  }
+
+  .portal-main--chat .wa-composer textarea {
+    padding: 12px 18px;
+  }
 }
 
 .profile-layout {
@@ -10022,8 +10884,8 @@ button.sessions-balance {
 
     .patient-dashboard-home .dashboard-hero-banner-copy,
     .patient-dashboard-home .dashboard-hero-cta-band {
-      padding-left: max(20px, env(safe-area-inset-left, 0px));
-      padding-right: max(20px, env(safe-area-inset-right, 0px));
+      padding-left: max(var(--portal-page-inset), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--portal-page-inset), env(safe-area-inset-right, 0px));
     }
 
     .patient-dashboard-home .dashboard-hero-title-on-photo {
@@ -10033,6 +10895,19 @@ button.sessions-balance {
     .patient-dashboard-home .dashboard-hero-subtitle-on-photo {
       font-size: 12px;
       white-space: normal;
+    }
+
+    .patient-dashboard-home .dashboard-hero-banner-head {
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .patient-dashboard-home .dashboard-hero-buy-on-photo {
+      white-space: normal;
+      text-align: center;
+      max-width: min(100%, 240px);
+      font-size: 13px;
+      padding: 9px 14px;
     }
 
     .patient-dashboard-home .dashboard-rn-scroll--cta {
@@ -10660,15 +11535,11 @@ button.sessions-balance {
   }
 
   .sessions-booking-page .sessions-hero-actions-band {
-    padding: 12px 16px 4px;
+    padding: 0;
   }
 
-  .sessions-booking-hero-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    row-gap: 16px;
-    column-gap: 0;
-    gap: 14px;
+  .sessions-booking-page .sessions-hero-actions-band--buy-only {
+    padding: 0;
   }
 
   .sessions-booking-page .sessions-hero-banner-copy {
@@ -10690,6 +11561,21 @@ button.sessions-balance {
     width: 100%;
     max-width: none;
     justify-self: stretch;
+  }
+
+  .sessions-booking-hero-layout--compact .sessions-booking-hero-balance {
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .sessions-balance-card-with-buy {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .sessions-balance-inline-buy {
+    width: 100%;
+    margin-left: 0;
   }
 
   .portal-main:has(.sessions-booking-page),
@@ -11673,7 +12559,7 @@ button.sessions-balance {
   }
 
   .sessions-booking-page .sessions-hero-actions-band {
-    padding: 12px 18px 4px;
+    padding: 12px 0 4px;
   }
 
   .sessions-booking-page .sessions-balance {
@@ -11748,6 +12634,7 @@ button.sessions-balance {
   .wa-composer {
     padding: 8px;
     gap: 8px;
+    align-items: center;
   }
 
   .wa-send {
@@ -12991,6 +13878,7 @@ button.sessions-balance {
     min-width: 0;
     flex: 1;
     padding-left: 2px;
+    margin-right: 6px;
   }
 
   .portal-immersive-mobile-greet-label {
@@ -13008,7 +13896,8 @@ button.sessions-balance {
   .dashboard-hero-toolbar-mount,
   .sessions-booking-page .sessions-hero-toolbar-mount,
   .diary-home-page .sessions-hero-toolbar-mount,
-  .wellbeing-relax-toolbar-mount {
+  .wellbeing-relax-toolbar-mount,
+  .chat-hero-toolbar-mount {
     left: max(10px, env(safe-area-inset-left, 0px));
     right: max(10px, env(safe-area-inset-right, 0px));
     justify-content: stretch;
@@ -13017,7 +13906,8 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions,
   .sessions-booking-page .sessions-hero-toolbar-mount .header-actions,
   .diary-home-page .sessions-hero-toolbar-mount .header-actions,
-  .wellbeing-relax-toolbar-mount .header-actions {
+  .wellbeing-relax-toolbar-mount .header-actions,
+  .chat-hero-toolbar-mount .header-actions {
     width: 100%;
   }
 
@@ -13430,11 +14320,26 @@ button.sessions-balance {
   color: #3730a3;
 }
 
-/* Inicio — hero inmersivo (foto ancha, título abajo; sin Hola/iconos en header) */
+/* Inicio — hero y secciones a ancho completo del panel principal */
+.patient-dashboard-home .dashboard-legacy-home {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.patient-dashboard-home .dashboard-legacy-home > section,
+.patient-dashboard-home .dashboard-legacy-home > .dashboard-hero-cta-band {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
 .patient-dashboard-home .dashboard-hero-immersive {
   margin: 0 0 22px;
   padding: 0;
   width: 100%;
+  max-width: none;
 }
 
 .patient-dashboard-home .dashboard-hero-banner-wrap {
@@ -13483,6 +14388,35 @@ button.sessions-balance {
   gap: 8px;
 }
 
+@media (min-width: 1081px) {
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions--immersive-toolbar {
+    width: 100%;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .portal-immersive-mobile-greet {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+    margin-right: 6px;
+  }
+
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .portal-immersive-mobile-greet-label {
+    color: #fff;
+    font-size: clamp(17px, 1.6vw, 20px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 10px rgba(15, 23, 42, 0.45);
+  }
+}
+
 .patient-dashboard-home .dashboard-hero-banner {
   position: relative;
   width: 100%;
@@ -13521,6 +14455,69 @@ button.sessions-balance {
   object-position: center 42%;
 }
 
+@media (min-width: 1081px) {
+  @keyframes dashboard-hero-photo-breeze {
+    0%,
+    100% {
+      transform: scale(1.055) translate3d(0, 0, 0);
+      object-position: 50% 42%;
+    }
+    40% {
+      transform: scale(1.07) translate3d(-0.45%, 0.12%, 0);
+      object-position: 48.5% 41.6%;
+    }
+    70% {
+      transform: scale(1.062) translate3d(0.35%, -0.08%, 0);
+      object-position: 51.2% 42.2%;
+    }
+  }
+
+  @keyframes dashboard-hero-scrim-light-drift {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: translateX(-4%) skewX(-6deg);
+    }
+    50% {
+      opacity: 0.55;
+      transform: translateX(5%) skewX(-6deg);
+    }
+  }
+
+  .patient-dashboard-home .dashboard-hero-banner:not(.dashboard-hero-banner--loading) .dashboard-hero-banner-photo {
+    transform: scale(1.055);
+    transform-origin: center 38%;
+    animation: dashboard-hero-photo-breeze 24s ease-in-out infinite;
+  }
+
+  .patient-dashboard-home .dashboard-hero-banner:not(.dashboard-hero-banner--loading) .dashboard-hero-banner-scrim::after {
+    content: "";
+    position: absolute;
+    inset: -8% -20%;
+    pointer-events: none;
+    background: linear-gradient(
+      108deg,
+      rgba(255, 255, 255, 0) 36%,
+      rgba(255, 255, 255, 0.07) 48%,
+      rgba(255, 255, 255, 0) 58%
+    );
+    mix-blend-mode: soft-light;
+    animation: dashboard-hero-scrim-light-drift 18s ease-in-out infinite;
+  }
+}
+
+@media (min-width: 1081px) and (prefers-reduced-motion: reduce) {
+  .patient-dashboard-home .dashboard-hero-banner-photo {
+    animation: none;
+    transform: none;
+  }
+
+  .patient-dashboard-home .dashboard-hero-banner-scrim::after {
+    animation: none;
+    content: none;
+  }
+}
+
 .patient-dashboard-home .dashboard-hero-banner-scrim {
   position: absolute;
   inset: 0;
@@ -13541,13 +14538,81 @@ button.sessions-balance {
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 20px max(20px, env(safe-area-inset-right, 0px)) 18px max(20px, env(safe-area-inset-left, 0px));
+  padding: 20px max(var(--portal-page-inset), env(safe-area-inset-right, 0px)) 18px
+    max(var(--portal-page-inset), env(safe-area-inset-left, 0px));
   display: grid;
   gap: 8px;
 }
 
+.patient-dashboard-home .dashboard-hero-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 20px;
+  min-width: 0;
+}
+
+.patient-dashboard-home .dashboard-hero-buy-on-photo {
+  flex-shrink: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--portal-radius);
+  min-height: 44px;
+  padding: 10px 18px;
+  background: #fff;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.18);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.patient-dashboard-home .dashboard-hero-buy-on-photo:hover {
+  background: #f8f6ff;
+  color: #5136df;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+}
+
+.patient-dashboard-home .dashboard-hero-buy-on-photo:active {
+  transform: scale(0.98);
+}
+
+.patient-dashboard-home .dashboard-hero-buy-on-photo:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.95);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1081px) {
+  .patient-dashboard-home .dashboard-hero-buy-on-photo {
+    margin-top: 5px;
+  }
+}
+
+/* Banda CTA bajo el hero (Google Calendar u otros; compra va en el hero) */
+.patient-dashboard-home .dashboard-hero-cta-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px 14px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 14px var(--portal-page-inset) 0;
+}
+
 .patient-dashboard-home .dashboard-hero-title-on-photo {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   color: #fff;
   font-size: clamp(1.45rem, 3vw, 2rem);
   font-weight: 700;
@@ -13563,14 +14628,6 @@ button.sessions-balance {
   font-size: 0.92rem;
   line-height: 1.45;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
-}
-
-.patient-dashboard-home .dashboard-hero-cta-band {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 14px;
-  padding: 14px 18px 0;
 }
 
 .patient-dashboard-home .hero-composite {
@@ -13806,8 +14863,10 @@ button.sessions-balance {
 }
 
 .patient-dashboard-home .dashboard-hero-buy-button {
-  margin-top: 0;
+  margin: 0;
   align-self: flex-start;
+  width: auto;
+  max-width: min(100%, 340px);
 }
 
 /* KPI del inicio: ~20% menos alto (menos padding, tipografía y avatar más chicos) */
@@ -14019,10 +15078,9 @@ button.sessions-balance {
     min-height: clamp(208px, 41.6vw, 288px);
   }
 
-  .patient-dashboard-home .dashboard-hero-banner-copy,
-  .patient-dashboard-home .dashboard-hero-cta-band {
-    padding-left: max(20px, env(safe-area-inset-left, 0px));
-    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  .patient-dashboard-home .dashboard-hero-banner-copy {
+    padding-left: max(var(--portal-page-inset), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--portal-page-inset), env(safe-area-inset-right, 0px));
   }
 
   .patient-dashboard-home .hero-composite {
@@ -14063,8 +15121,52 @@ button.sessions-balance {
   }
 }
 
-/* Paquetes comprados: violeta liviano (solo desktop; móvil usa mobile-portal-flat.css). */
+/* Secciones colapsables — Inicio (desktop): mismo estilo que Sesiones */
 @media (min-width: 1081px) {
+  .patient-dashboard-home .dashboard-legacy-home {
+    display: grid;
+    gap: var(--portal-section-gap);
+    align-content: start;
+  }
+
+  .patient-dashboard-home .dashboard-hero-immersive,
+  .patient-dashboard-home .hero-grid {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .patient-dashboard-home .dashboard-hero-cta-band {
+    padding-top: 0;
+  }
+
+  .patient-dashboard-home .sessions-confirmed-panel {
+    margin-top: 0;
+  }
+
+  .patient-dashboard-home .dashboard-package-options-panel {
+    margin-top: 0;
+    margin-block: 0;
+  }
+
+  .patient-dashboard-home .sessions-secondary-section,
+  .patient-dashboard-home .dashboard-compact-section.sessions-secondary-section {
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    border-radius: var(--sessions-ui-radius);
+    background: #fff;
+    border: 1px solid #e4e8f0;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+  }
+
+  .patient-dashboard-home .sessions-purchased-history .session-purchase-row-amount {
+    color: #3730a3;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Paquetes comprados: violeta liviano (solo desktop; móvil usa mobile-portal-flat.css). */
   .patient-dashboard-home .sessions-secondary-section.sessions-purchased-history,
   .sessions-booking-page .sessions-secondary-section.sessions-purchased-history {
     background: linear-gradient(175deg, #fefeff 0%, #f7f4ff 45%, #f0ecfc 100%) !important;
@@ -14073,24 +15175,16 @@ button.sessions-balance {
     overflow: hidden !important;
   }
 
-  .patient-dashboard-home .sessions-purchased-history .sessions-secondary-title,
-  .sessions-booking-page .sessions-purchased-history .sessions-secondary-title,
-  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title,
-  .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:hover .sessions-secondary-title {
-    color: #0f172a !important;
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:hover,
+  .patient-dashboard-home .sessions-purchased-history .sessions-calendar-toggle:focus-visible,
+  .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:hover,
+  .sessions-booking-page .sessions-purchased-history .sessions-calendar-toggle:focus-visible {
+    background: rgba(95, 68, 235, 0.07) !important;
   }
 
-  .patient-dashboard-home .sessions-purchased-history .sessions-secondary-toggle-label,
-  .sessions-booking-page .sessions-purchased-history .sessions-secondary-toggle-label {
-    color: #5f45ee !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history p,
-  .sessions-booking-page .sessions-purchased-history p {
-    color: #4b5872 !important;
-  }
-
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li,
   .patient-dashboard-home .sessions-purchased-history .session-history-list li,
+  .sessions-booking-page .sessions-purchased-history .sessions-collapsible-list li,
   .sessions-booking-page .sessions-purchased-history .session-history-list li {
     border: 1px solid rgba(139, 124, 248, 0.16) !important;
     border-radius: var(--portal-radius-sm) !important;
@@ -14103,47 +15197,10 @@ button.sessions-balance {
       box-shadow 0.18s ease !important;
   }
 
+  .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-list li:hover,
   .patient-dashboard-home .sessions-purchased-history .session-history-list li:hover,
+  .sessions-booking-page .sessions-purchased-history .sessions-collapsible-list li:hover,
   .sessions-booking-page .sessions-purchased-history .session-history-list li:hover {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-color: rgba(139, 124, 248, 0.28) !important;
-    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .session-history-list li:last-child,
-  .sessions-booking-page .sessions-purchased-history .session-history-list li:last-child {
-    border-bottom: 1px solid rgba(139, 124, 248, 0.16) !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .session-history-list li strong,
-  .sessions-booking-page .sessions-purchased-history .session-history-list li strong {
-    color: #131f39 !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .session-history-list li span:not(.session-status-pill),
-  .sessions-booking-page .sessions-purchased-history .session-history-list li span:not(.session-status-pill) {
-    color: #617086 !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .session-purchase-row-amount,
-  .sessions-booking-page .sessions-purchased-history .session-purchase-row-amount {
-    color: #3730a3 !important;
-    font-weight: 600 !important;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .simple-list li,
-  .sessions-booking-page .sessions-purchased-history .simple-list li {
-    border-color: rgba(139, 124, 248, 0.16) !important;
-    background: rgba(255, 255, 255, 0.72) !important;
-    transition:
-      background 0.18s ease,
-      border-color 0.18s ease,
-      box-shadow 0.18s ease !important;
-  }
-
-  .patient-dashboard-home .sessions-purchased-history .simple-list li:hover,
-  .sessions-booking-page .sessions-purchased-history .simple-list li:hover {
     background: rgba(255, 255, 255, 0.92) !important;
     border-color: rgba(139, 124, 248, 0.28) !important;
     box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
@@ -15625,6 +16682,17 @@ button.sessions-balance {
 .treatment-chat-panel__send:disabled {
   background: #b8b2e6;
   cursor: not-allowed;
+}
+
+.treatment-chat-panel__session-hint {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #5b6478;
+  text-align: center;
+  background: #f8fafc;
+  border-top: 1px solid #eef2f7;
 }
 
 .treatment-chat-panel__disclaimer {
@@ -18903,14 +19971,12 @@ body.driver-active .driver-overlay {
 }
 
 .payment-activity-panel {
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
-.payment-activity-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.payment-activity-body {
+  display: grid;
+  gap: 0.85rem;
 }
 
 .payment-activity-title {

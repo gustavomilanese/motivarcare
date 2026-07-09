@@ -295,6 +295,10 @@ export function replaceTemplate(template: string, values: Record<string, string 
 
 export {
   PATIENT_RESCHEDULE_NOTICE_HOURS,
+  MAX_PATIENT_CHANGE_NOTICE_HOURS,
+  resolvePatientChangeNoticeHours,
+  canPatientChangeBooking,
+  canPatientCancelBooking,
   bookingJoinUrl,
   canPatientRescheduleBooking,
   isPatientBookingLiveStatus,
@@ -306,6 +310,7 @@ export {
   displayCurrencyForMarket,
   defaultDisplayCurrencyForPatient,
   formatUsdMajorForPatientDisplay,
+  niceDisplayRoundStep,
   resolveFxRatePerUsd,
   roundDisplayMajorFromUsd,
   type DisplayFxRates

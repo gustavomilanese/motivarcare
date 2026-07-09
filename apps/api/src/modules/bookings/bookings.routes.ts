@@ -79,7 +79,8 @@ const completeBookingSchema = z.object({
 
 const FREE_CANCELLATION_HOURS = 24;
 const MIN_BOOKING_NOTICE_HOURS = 24;
-const PATIENT_RESCHEDULE_NOTICE_HOURS = 24;
+/** Tope de antelación que el paciente debe respetar para cancelar o reprogramar (configurable por el profesional). */
+const MAX_PATIENT_CHANGE_NOTICE_HOURS = 24;
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const BOOKING_STATUS = {
   REQUESTED: "REQUESTED",
@@ -101,6 +102,20 @@ const patientIntakeTriageSchema = z.record(z.string(), intakeTriageRecordSchema)
 function resolveMinimumBookingNoticeHours(configuredHours: number | null | undefined): number {
   const safeHours = Number.isFinite(Number(configuredHours)) ? Number(configuredHours) : MIN_BOOKING_NOTICE_HOURS;
   return Math.max(MIN_BOOKING_NOTICE_HOURS, Math.round(safeHours));
+}
+
+/** Antelación mínima para que el paciente cancele o reprograme (usa `cancellationHours` del profesional, tope 24h). */
+function resolvePatientChangeNoticeHours(configuredHours: number | null | undefined): number {
+  const safeHours = Number.isFinite(Number(configuredHours)) ? Number(configuredHours) : MAX_PATIENT_CHANGE_NOTICE_HOURS;
+  return Math.min(MAX_PATIENT_CHANGE_NOTICE_HOURS, Math.max(0, Math.round(safeHours)));
+}
+
+async function loadProfessionalChangeNoticeHours(professionalId: string): Promise<number> {
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: { cancellationHours: true }
+  });
+  return resolvePatientChangeNoticeHours(professional?.cancellationHours);
 }
 
 function hasMinimumBookingNotice(startsAt: Date, minimumHours: number): boolean {
@@ -634,7 +649,8 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             const existingTrialBooking = await tx.booking.findFirst({
               where: {
                 patientId: patientProfileId,
-                OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }]
+                OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }],
+                status: { not: BOOKING_STATUS.CANCELLED }
               },
               select: { id: true }
             });
@@ -1129,10 +1145,11 @@ bookingsRouter.post("/:bookingId/reschedule", requireAuth, async (req: Authentic
   }
 
   if (canRescheduleAsPatient) {
-    if (!hasMinimumBookingNotice(booking.startsAt, PATIENT_RESCHEDULE_NOTICE_HOURS)) {
+    const patientChangeNoticeHours = await loadProfessionalChangeNoticeHours(booking.professionalId);
+    if (!hasMinimumBookingNotice(booking.startsAt, patientChangeNoticeHours)) {
       return res.status(409).json({
-        error: `Bookings must be rescheduled at least ${PATIENT_RESCHEDULE_NOTICE_HOURS} hours before session start.`,
-        minimumBookingNoticeHours: PATIENT_RESCHEDULE_NOTICE_HOURS
+        error: `Bookings must be rescheduled at least ${patientChangeNoticeHours} hours before session start.`,
+        minimumBookingNoticeHours: patientChangeNoticeHours
       });
     }
 
@@ -1379,10 +1396,15 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   }
 
   const isTrialBooking = booking.consumedPurchaseId === null || booking.consumedCredits === 0;
-  if (isTrialBooking) {
-    return res.status(409).json({
-      error: "Trial sessions cannot be cancelled. Please reschedule it."
-    });
+
+  if (canCancelAsPatient) {
+    const patientChangeNoticeHours = await loadProfessionalChangeNoticeHours(booking.professionalId);
+    if (!hasMinimumBookingNotice(booking.startsAt, patientChangeNoticeHours)) {
+      return res.status(409).json({
+        error: `Bookings must be cancelled at least ${patientChangeNoticeHours} hours before session start.`,
+        minimumBookingNoticeHours: patientChangeNoticeHours
+      });
+    }
   }
 
   const previousStartsAt = booking.startsAt;

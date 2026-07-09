@@ -97,6 +97,9 @@ export function TreatmentChatFAB(props: TreatmentChatFABProps) {
             isAssistantTyping={chat.isAssistantTyping}
             safetyAlert={chat.safetyAlert}
             dailyTurnsRemaining={chat.conversation?.quota.dailyTurnsRemaining ?? null}
+            sessionMinutesRemaining={chat.conversation?.session.minutesRemaining ?? null}
+            sessionMaxMinutes={chat.conversation?.session.maxMinutes ?? null}
+            sessionActive={chat.conversation?.session.sessionActive ?? true}
             shareConsent={chat.conversation?.professionalShareConsent ?? false}
             consentSaving={chat.consentSaving}
             onClose={handleClose}

@@ -50,6 +50,7 @@ import {
   toggleCouplesFocusAnswer,
   toggleIndividualMainReason,
   updateIndividualOtherDetail,
+  sanitizeIntakeAnswersForSubmit,
   validateMainReasonAnswers
 } from "../lib/patientMainReason";
 import { requestPatientSafetyReferral } from "../services/safetyReferralApi";
@@ -706,7 +707,10 @@ export function IntakeScreen(props: {
     setError("");
 
     try {
-      const payload: IntakeCompletionPayload = { answers, residencyCountry: rc };
+      const payload: IntakeCompletionPayload = {
+        answers: sanitizeIntakeAnswersForSubmit(answers),
+        residencyCountry: rc
+      };
       await props.onComplete(payload);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";

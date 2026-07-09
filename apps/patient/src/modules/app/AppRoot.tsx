@@ -38,7 +38,11 @@ import {
   type PatientVerifyEmailCompletePayload
 } from "./pages/VerifyEmailTokenScreen";
 import { MainPortal } from "./pages/MainPortal";
-import { heroImage, professionalImageMap, professionalsCatalog } from "./data/professionalsCatalog";
+import {
+  heroImage,
+  initialProfessionalDirectory,
+  initialProfessionalPhotoMap
+} from "./data/professionalsCatalog";
 import {
   friendlyCalendarOAuthReturnMessage,
   friendlyCalendarOnboardingMessage
@@ -52,6 +56,7 @@ import {
   type IntakeChatSessionDto
 } from "../intake/services/intakeChatApi";
 import { TreatmentChatFAB } from "../treatment-chat/components/TreatmentChatFAB";
+import { patientMacaEligible } from "../treatment-chat/lib/patientMacaEligibility";
 import { usePublicFeatures } from "./hooks/usePublicFeatures";
 import { MotivarCarePageLoader } from "./components/MotivarCarePageLoader";
 import { useDisplayFxRates } from "./hooks/useDisplayFxRates";
@@ -119,10 +124,10 @@ const defaultState: PatientAppState = {
   intake: null,
   onboardingFinalCompleted: false,
   therapistSelectionCompleted: false,
-  selectedProfessionalId: professionalsCatalog[0].id,
+  selectedProfessionalId: "",
   assignedProfessionalId: null,
   assignedProfessionalName: null,
-  activeChatProfessionalId: professionalsCatalog[0].id,
+  activeChatProfessionalId: "",
   bookedSlotIds: [],
   favoriteProfessionalIds: [],
   bookings: [],
@@ -504,7 +509,15 @@ function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
         ...parsed.profile,
         cards: parsed.profile?.cards ?? []
       },
-      googleCalendarConnected: false
+      googleCalendarConnected: (() => {
+        const rawId = parsed.session?.id;
+        if (rawId == null) {
+          return false;
+        }
+        /** Evita flash del CTA de reconexión si esta pestaña ya supo que Calendar está conectado. */
+        const known = peekPatientAuthCalendarConnectedSession(String(rawId));
+        return known === true;
+      })()
     };
     return { state: loaded, storageParseFailed: false };
   } catch {
@@ -563,6 +576,7 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
   stripeVerified: boolean;
   sessionPriceUsd: number | null;
   activePatientsCount: number;
+  cancellationHours?: number;
   slots: Array<{ id: string; startsAt: string; endsAt: string }>;
 }): Professional {
   return {
@@ -583,7 +597,8 @@ function mapDirectoryProfessionalToLegacyProfessional(item: {
     sessionPriceUsd: item.sessionPriceUsd ?? undefined,
     activePatients: item.activePatientsCount,
     introVideoUrl: "",
-    slots: item.slots ?? []
+    slots: item.slots ?? [],
+    cancellationHours: item.cancellationHours
   };
 }
 
@@ -659,9 +674,11 @@ export function App() {
   const [calendarOnboardingLoading, setCalendarOnboardingLoading] = useState(false);
   const [calendarOnboardingError, setCalendarOnboardingError] = useState("");
   const [calendarPromptDismissedUserIds, setCalendarPromptDismissedUserIds] = useState<string[]>(() => readDismissedCalendarPromptUsers());
-  const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => professionalsCatalog);
-  const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => professionalImageMap);
+  const [professionalDirectory, setProfessionalDirectory] = useState<Professional[]>(() => initialProfessionalDirectory());
+  const [professionalPhotoMap, setProfessionalPhotoMap] = useState<Record<string, string>>(() => initialProfessionalPhotoMap());
   const [profileSyncReady, setProfileSyncReady] = useState(false);
+  /** GET /auth/me ya devolvió `googleCalendarConnected` en este login (evita CTA fantasma al refresh). */
+  const [patientAuthCalendarSynced, setPatientAuthCalendarSynced] = useState(false);
   /**
    * Modo seleccionado por el paciente para hacer el intake.
    * - `classic`: wizard tradicional paso a paso (por defecto tras verificar email).
@@ -682,8 +699,8 @@ export function App() {
    * puede encadenar ráfagas a /profiles/me + /auth/me cuando hay muchos resyncs (p. ej. visibility).
    */
   const portalSyncEpochRef = useRef(0);
-  /** `true` = saltear throttle (email verificado, otra pestaña, etc.). */
-  const schedulePortalSyncRef = useRef<(force?: boolean) => void>(() => {});
+  /** `true` = saltear throttle (email verificado, otra pestaña, etc.). Devuelve una promesa que resuelve al terminar el batch forzado. */
+  const schedulePortalSyncRef = useRef<(force?: boolean) => Promise<void> | void>(() => {});
 
   /**
    * Clave estable por sesión: evita que `id` número vs string u oscilaciones en token
@@ -703,9 +720,9 @@ export function App() {
     return `${id}::${token}`;
   }, [state.session?.id, state.authToken]);
 
-  const requestPortalResync = useCallback(() => {
+  const requestPortalResync = useCallback((): Promise<void> => {
     portalSyncEpochRef.current += 1;
-    schedulePortalSyncRef.current(true);
+    return Promise.resolve(schedulePortalSyncRef.current(true));
   }, []);
 
   const openPatientGoogleCalendarFromDashboard = useCallback(() => {
@@ -740,8 +757,8 @@ export function App() {
       clearPostTrialCalendarPending();
       clearCalendarOfferContext();
       setProfileSyncReady(false);
-      setProfessionalDirectory(professionalsCatalog);
-      setProfessionalPhotoMap(professionalImageMap);
+      setProfessionalDirectory(initialProfessionalDirectory());
+      setProfessionalPhotoMap(initialProfessionalPhotoMap());
       setShowCalendarOnboarding(false);
       setCalendarOnboardingLoading(false);
       setCalendarOnboardingError("");
@@ -775,8 +792,8 @@ export function App() {
     (payload?: PatientVerifyEmailCompletePayload) => {
       if (payload?.token && payload.user.role === "PATIENT") {
         setProfileSyncReady(false);
-        setProfessionalDirectory(professionalsCatalog);
-        setProfessionalPhotoMap(professionalImageMap);
+        setProfessionalDirectory(initialProfessionalDirectory());
+        setProfessionalPhotoMap(initialProfessionalPhotoMap());
         setShowCalendarOnboarding(false);
         setCalendarOnboardingLoading(false);
         const verifyUid = String(payload.user.id).trim();
@@ -939,7 +956,11 @@ export function App() {
     language: state.language
   };
 
-  const portalSyncMutexRef = useRef({ inFlight: false, rerun: false });
+  const portalSyncMutexRef = useRef<{ inFlight: boolean; rerun: boolean; current: Promise<void> | null }>({
+    inFlight: false,
+    rerun: false,
+    current: null
+  });
   /** Evita GET /matching duplicado al montar; solo refetch de directorio cuando el usuario cambia idioma. */
   const portalLanguageBootstrapRef = useRef(false);
 
@@ -1176,6 +1197,7 @@ export function App() {
   };
 
   useEffect(() => {
+    setPatientAuthCalendarSynced(false);
     if (!portalLoginKey) {
       if (portalSyncThrottleTimerRef.current) {
         clearTimeout(portalSyncThrottleTimerRef.current);
@@ -1183,8 +1205,8 @@ export function App() {
       }
       portalSyncLastBatchAtRef.current = 0;
       setProfileSyncReady(false);
-      setProfessionalDirectory(professionalsCatalog);
-      setProfessionalPhotoMap(professionalImageMap);
+      setProfessionalDirectory(initialProfessionalDirectory());
+      setProfessionalPhotoMap(initialProfessionalPhotoMap());
       return;
     }
 
@@ -1221,7 +1243,7 @@ export function App() {
         const authResponse = authResult.status === "fulfilled" ? authResult.value : null;
         const professionalDirectoryResponse = professionalDirectoryResult.status === "fulfilled" ? professionalDirectoryResult.value : null;
 
-        let mergedPhotos: Record<string, string> = { ...professionalImageMap };
+        let mergedPhotos: Record<string, string> = { ...initialProfessionalPhotoMap() };
         let directoryListForClamp: Professional[] | null = null;
 
         if (professionalDirectoryResult.status === "fulfilled" && professionalDirectoryResponse !== null) {
@@ -1464,6 +1486,8 @@ export function App() {
         }
         if (authResult.status === "rejected") {
           console.error("Could not sync auth state from API", authResult.reason);
+        } else if (authResponse && sid) {
+          setPatientAuthCalendarSynced(true);
         }
         if (professionalDirectoryResult.status === "rejected") {
           console.error("Could not sync professional directory from API", professionalDirectoryResult.reason);
@@ -1489,11 +1513,11 @@ export function App() {
 
     const PORTAL_SYNC_MIN_GAP_MS = 1100;
 
-    const schedulePortalSync = (force = false): void => {
-      const startBatch = (): void => {
+    const schedulePortalSync = (force = false): Promise<void> | void => {
+      const startBatch = (): Promise<void> => {
         if (portalSyncMutexRef.current.inFlight) {
           portalSyncMutexRef.current.rerun = true;
-          return;
+          return portalSyncMutexRef.current.current ?? Promise.resolve();
         }
 
         const runWithRetry = async (): Promise<void> => {
@@ -1505,10 +1529,13 @@ export function App() {
             } while (portalSyncMutexRef.current.rerun);
           } finally {
             portalSyncMutexRef.current.inFlight = false;
+            portalSyncMutexRef.current.current = null;
           }
         };
 
-        void runWithRetry();
+        const promise = runWithRetry();
+        portalSyncMutexRef.current.current = promise;
+        return promise;
       };
 
       if (force) {
@@ -1517,8 +1544,7 @@ export function App() {
           portalSyncThrottleTimerRef.current = null;
         }
         portalSyncLastBatchAtRef.current = Date.now();
-        startBatch();
-        return;
+        return startBatch();
       }
 
       const now = Date.now();
@@ -1787,8 +1813,8 @@ export function App() {
         onHeroFallback={handleHeroFallback}
         onLogin={({ user, token, emailVerificationRequired }) => {
           setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
+          setProfessionalDirectory(initialProfessionalDirectory());
+          setProfessionalPhotoMap(initialProfessionalPhotoMap());
           setShowCalendarOnboarding(false);
           setCalendarOnboardingLoading(false);
           /**
@@ -1837,8 +1863,8 @@ export function App() {
             navigate("/", { replace: true });
           }
           setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
+          setProfessionalDirectory(initialProfessionalDirectory());
+          setProfessionalPhotoMap(initialProfessionalPhotoMap());
           setState(defaultState);
         }}
       />
@@ -2014,8 +2040,8 @@ export function App() {
 
     const cleanupAndLogout = () => {
       setProfileSyncReady(false);
-      setProfessionalDirectory(professionalsCatalog);
-      setProfessionalPhotoMap(professionalImageMap);
+      setProfessionalDirectory(initialProfessionalDirectory());
+      setProfessionalPhotoMap(initialProfessionalPhotoMap());
       setState(defaultState);
     };
 
@@ -2128,6 +2154,7 @@ export function App() {
 
   const showPatientGoogleCalendarReconnectCta = Boolean(
     state.session?.id &&
+      patientAuthCalendarSynced &&
       !state.googleCalendarConnected &&
       calendarPromptDismissedUserIds.includes(String(state.session.id).trim())
   );
@@ -2148,8 +2175,8 @@ export function App() {
           clearPostTrialCalendarPending();
           clearCalendarOfferContext();
           setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
+          setProfessionalDirectory(initialProfessionalDirectory());
+          setProfessionalPhotoMap(initialProfessionalPhotoMap());
           setState(defaultState);
         }}
       />
@@ -2172,8 +2199,8 @@ export function App() {
           clearPostTrialCalendarPending();
           clearCalendarOfferContext();
           setProfileSyncReady(false);
-          setProfessionalDirectory(professionalsCatalog);
-          setProfessionalPhotoMap(professionalImageMap);
+          setProfessionalDirectory(initialProfessionalDirectory());
+          setProfessionalPhotoMap(initialProfessionalPhotoMap());
           setState(defaultState);
         }}
       />
@@ -2183,7 +2210,12 @@ export function App() {
        * de email-required) y detrás del feature flag público. El propio FAB es
        * lazy: no llama al backend hasta que el paciente abre el panel.
        */}
-      {publicFeatures.treatmentChatEnabled && state.authToken ? (
+      {publicFeatures.treatmentChatEnabled &&
+      state.authToken &&
+      patientMacaEligible({
+        creditsRemaining: state.subscription.creditsRemaining,
+        bookings: state.bookings
+      }) ? (
         <TreatmentChatFAB authToken={state.authToken} language={state.language} />
       ) : null}
     </>

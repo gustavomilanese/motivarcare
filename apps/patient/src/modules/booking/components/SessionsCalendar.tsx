@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   type AppLanguage,
   type LocalizedText,
+  canPatientCancelBooking,
+  canPatientRescheduleBooking,
   formatDateWithLocale,
   replaceTemplate,
+  resolvePatientChangeNoticeHours,
   textByLanguage
 } from "@therapy/i18n-config";
 import { pickNextPatientBooking } from "@therapy/patient-core";
@@ -126,11 +129,17 @@ export function SessionsCalendar(props: {
   timezone: string;
   language: AppLanguage;
   onOpenBookingDetail: (bookingId: string) => void;
+  onRescheduleBooking?: (booking: Booking) => void;
+  onCancelBooking?: (booking: Booking) => void | Promise<void>;
+  cancelBusyBookingId?: string | null;
   variant?: "week" | "dashboard";
   hideTitle?: boolean;
   professionals?: Professional[];
 }) {
   const variant = props.variant ?? "week";
+  const [openEventId, setOpenEventId] = useState<string | null>(null);
+  const [pendingCancelEventId, setPendingCancelEventId] = useState<string | null>(null);
+  const hasEventActions = Boolean(props.onRescheduleBooking || props.onCancelBooking);
   const [viewDate, setViewDate] = useState(() => {
     const nextBooking = getNextBooking(props.bookings);
     return nextBooking ? new Date(nextBooking.startsAt) : new Date();
@@ -193,7 +202,27 @@ export function SessionsCalendar(props: {
       const professional = findProfessionalById(booking.professionalId, props.professionals);
       return professional.fullName;
     }
-    return t(props.language, { es: "Sesión confirmada", en: "Confirmed session", pt: "Sessao confirmada" });
+    return t(props.language, { es: "Sesión reservada", en: "Booked session", pt: "Sessao reservada" });
+  };
+
+  const resolveBookingNoticeHours = (booking: Booking): number => {
+    const professionalHours = props.professionals?.length
+      ? findProfessionalById(booking.professionalId, props.professionals).cancellationHours
+      : undefined;
+    return resolvePatientChangeNoticeHours(professionalHours);
+  };
+
+  const formatDayLabel = (isoDate: string): string =>
+    formatDateWithLocale({
+      value: isoDate,
+      language: props.language,
+      timeZone: props.timezone,
+      options: { weekday: "long", day: "numeric", month: "long" }
+    });
+
+  const closePopover = () => {
+    setOpenEventId(null);
+    setPendingCancelEventId(null);
   };
 
   useEffect(() => {
@@ -231,6 +260,14 @@ export function SessionsCalendar(props: {
 
   return (
     <section className={`content-card booking-session-card booking-card-minimal sessions-calendar-card ${variant === "dashboard" ? "dashboard" : "week-google"}`}>
+      {hasEventActions && openEventId ? (
+        <button
+          type="button"
+          className="sessions-calendar-popover-backdrop"
+          aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          onClick={closePopover}
+        />
+      ) : null}
       <div className={`sessions-calendar-head ${props.hideTitle ? "no-title" : ""}`}>
         {!props.hideTitle ? (
           <div>
@@ -345,24 +382,171 @@ export function SessionsCalendar(props: {
                     {dayBookings.length === 0 ? (
                       <span className="sessions-calendar-week-empty" aria-hidden="true" />
                     ) : (
-                      dayBookings.map((booking) => (
-                        <button
-                          key={booking.id}
-                          type="button"
-                          className={`sessions-calendar-event ${booking.bookingMode === "trial" ? "sessions-calendar-event--trial" : ""}`}
-                          onClick={() => props.onOpenBookingDetail(booking.id)}
-                        >
-                          <span className="sessions-calendar-event-time">
-                            {formatTimeRange({
-                              startsAt: booking.startsAt,
-                              endsAt: booking.endsAt,
-                              timezone: props.timezone,
-                              language: props.language
-                            })}
-                          </span>
-                          <span className="sessions-calendar-event-title">{resolveBookingTitle(booking)}</span>
-                        </button>
-                      ))
+                      dayBookings.map((booking) => {
+                        const isOpen = openEventId === booking.id;
+                        const isTrial = booking.bookingMode === "trial";
+                        const noticeHours = resolveBookingNoticeHours(booking);
+                        const canReschedule = canPatientRescheduleBooking(booking.startsAt, noticeHours);
+                        const canCancel = canPatientCancelBooking(booking.startsAt, noticeHours);
+                        const cancelBusy = props.cancelBusyBookingId === booking.id;
+                        const pendingCancel = pendingCancelEventId === booking.id;
+                        const noticeHint = replaceTemplate(
+                          t(props.language, {
+                            es: "Se puede cambiar hasta {hours} h antes.",
+                            en: "Can be changed up to {hours} h before.",
+                            pt: "Pode alterar ate {hours} h antes."
+                          }),
+                          { hours: String(noticeHours) }
+                        );
+
+                        return (
+                          <div
+                            className={`sessions-calendar-event-wrap ${isOpen ? "is-open" : ""}`}
+                            key={booking.id}
+                          >
+                            <button
+                              type="button"
+                              className={`sessions-calendar-event ${isTrial ? "sessions-calendar-event--trial" : ""} ${isOpen ? "is-active" : ""}`}
+                              aria-expanded={hasEventActions ? isOpen : undefined}
+                              onClick={() => {
+                                if (!hasEventActions) {
+                                  props.onOpenBookingDetail(booking.id);
+                                  return;
+                                }
+                                setPendingCancelEventId(null);
+                                setOpenEventId((current) => (current === booking.id ? null : booking.id));
+                              }}
+                            >
+                              <span className="sessions-calendar-event-time">
+                                {formatTimeRange({
+                                  startsAt: booking.startsAt,
+                                  endsAt: booking.endsAt,
+                                  timezone: props.timezone,
+                                  language: props.language
+                                })}
+                              </span>
+                              <span className="sessions-calendar-event-title">{resolveBookingTitle(booking)}</span>
+                            </button>
+
+                            {hasEventActions && isOpen ? (
+                              <div
+                                className={`sessions-calendar-popover ${index <= 1 ? "align-start" : ""} ${index >= 5 ? "align-end" : ""}`}
+                                role="dialog"
+                              >
+                                <div className="sessions-calendar-popover-head">
+                                  <span className="sessions-calendar-popover-title">{resolveBookingTitle(booking)}</span>
+                                  <button
+                                    type="button"
+                                    className="sessions-calendar-popover-close"
+                                    onClick={closePopover}
+                                    aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                                  >
+                                    {"\u00d7"}
+                                  </button>
+                                </div>
+                                <p className="sessions-calendar-popover-when">{formatDayLabel(booking.startsAt)}</p>
+                                <p className="sessions-calendar-popover-time">
+                                  {formatTimeRange({
+                                    startsAt: booking.startsAt,
+                                    endsAt: booking.endsAt,
+                                    timezone: props.timezone,
+                                    language: props.language
+                                  })}
+                                </p>
+                                <span className={`sessions-calendar-popover-pill ${isTrial ? "trial" : ""}`}>
+                                  {isTrial
+                                    ? t(props.language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })
+                                    : t(props.language, { es: "Reservada", en: "Booked", pt: "Reservada" })}
+                                </span>
+
+                                {pendingCancel ? (
+                                  <div className="sessions-calendar-popover-confirm">
+                                    <p>
+                                      {isTrial
+                                        ? t(props.language, {
+                                            es: "¿Cancelar tu sesión de prueba? Podrás elegir otro horario después.",
+                                            en: "Cancel your trial session? You can choose another time later.",
+                                            pt: "Cancelar sua sessão de teste? Você poderá escolher outro horário depois."
+                                          })
+                                        : t(props.language, {
+                                            es: "¿Cancelar esta sesión? El crédito vuelve a estar disponible.",
+                                            en: "Cancel this session? The credit becomes available again.",
+                                            pt: "Cancelar esta sessao? O credito volta a ficar disponivel."
+                                          })}
+                                    </p>
+                                    <div className="sessions-calendar-popover-actions">
+                                      <button
+                                        type="button"
+                                        className="sessions-calendar-popover-action ghost"
+                                        onClick={() => setPendingCancelEventId(null)}
+                                        disabled={cancelBusy}
+                                      >
+                                        {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="sessions-calendar-popover-action danger"
+                                        disabled={cancelBusy}
+                                        onClick={async () => {
+                                          await props.onCancelBooking?.(booking);
+                                          closePopover();
+                                        }}
+                                      >
+                                        {cancelBusy
+                                          ? t(props.language, { es: "Cancelando…", en: "Cancelling…", pt: "Cancelando…" })
+                                          : t(props.language, { es: "Sí, cancelar", en: "Yes, cancel", pt: "Sim, cancelar" })}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="sessions-calendar-popover-actions">
+                                      <button
+                                        type="button"
+                                        className="sessions-calendar-popover-action ghost"
+                                        onClick={() => {
+                                          props.onOpenBookingDetail(booking.id);
+                                          closePopover();
+                                        }}
+                                      >
+                                        {t(props.language, { es: "Ver detalle", en: "View details", pt: "Ver detalhe" })}
+                                      </button>
+                                      {props.onRescheduleBooking ? (
+                                        <button
+                                          type="button"
+                                          className="sessions-calendar-popover-action primary"
+                                          disabled={!canReschedule}
+                                          title={canReschedule ? undefined : noticeHint}
+                                          onClick={() => {
+                                            props.onRescheduleBooking?.(booking);
+                                            closePopover();
+                                          }}
+                                        >
+                                          {t(props.language, { es: "Reprogramar", en: "Reschedule", pt: "Reagendar" })}
+                                        </button>
+                                      ) : null}
+                                      {props.onCancelBooking ? (
+                                        <button
+                                          type="button"
+                                          className="sessions-calendar-popover-action danger-ghost"
+                                          disabled={!canCancel}
+                                          title={canCancel ? undefined : noticeHint}
+                                          onClick={() => setPendingCancelEventId(booking.id)}
+                                        >
+                                          {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                    {!canReschedule || !canCancel ? (
+                                      <p className="sessions-calendar-popover-hint">{noticeHint}</p>
+                                    ) : null}
+                                  </>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>

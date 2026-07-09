@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -10,12 +10,13 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import {
-  estimateIndividualUnitPriceMajor,
   filterUpcomingPatientBookings,
   pickNextPatientBooking,
+  resolveIndividualListUnitUsdFromPackages,
   resolvePackageCatalogView,
-  resolvePackagePurchaseGate
+  resolveSessionListUsdMajor
 } from "@therapy/patient-core";
+import { resolveFxRatePerUsd } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
@@ -25,12 +26,21 @@ import {
   PackageChooseProfessionalCta
 } from "../components/booking/PackageCatalogSectionExtras";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
+import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
-import { packageBenefitLines, packageRhythmLabel, loadPublicPackagePlans } from "../lib/packageCatalog";
+import {
+  packageBenefitLines,
+  packageRhythmLabel,
+  loadPublicPackagePlans
+} from "../lib/packageCatalog";
+import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
+import { usePackageCheckout } from "../hooks/usePackageCheckout";
+import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
 import {
@@ -149,12 +159,14 @@ export function DashboardPage(props: {
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onGoToReservations: () => void;
+  onRescheduleBooking: (bookingId: string) => void;
   onGoToBooking: (professionalId: string) => void;
   onGoToProfessional: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   onStartPackagePurchase: (plan: PackagePlan) => void;
+  onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
   /** Sesiones → checkout de paquetes (sin plan concreto; el catálogo carga en destino). */
   onNavigateToSessionsCheckout: () => void;
   /** Abre Sesiones en checkout enfocado en compra suelta (misma UX que el panel de paquetes). */
@@ -290,6 +302,22 @@ export function DashboardPage(props: {
     setTrialModalOpen(true);
   };
 
+  const trialCardClickable = Boolean(activeTrialBooking);
+  const openTrialDetail = () => {
+    if (activeTrialBooking) {
+      props.onOpenBookingDetail(activeTrialBooking.id);
+    }
+  };
+  const handleTrialCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!trialCardClickable) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openTrialDetail();
+    }
+  };
+
   useEffect(() => {
     setTrialProfessionalId(props.state.assignedProfessionalId ?? props.state.selectedProfessionalId);
   }, [props.state.assignedProfessionalId, props.state.selectedProfessionalId]);
@@ -413,22 +441,43 @@ export function DashboardPage(props: {
     setAssignProModalOpen(true);
   }, [hasPricingProfessional]);
 
-  const handleStartPackagePurchase = useCallback(
-    (plan: PackagePlan) => {
-      const gate = resolvePackagePurchaseGate({ pricingReady, planId: plan.id });
-      if (!gate.allowed) {
-        setAssignProModalOpen(true);
-        return;
-      }
-      props.onStartPackagePurchase(plan as PackagePlan);
-    },
-    [pricingReady, props.onStartPackagePurchase]
+  const usesDlocalCheckout = useMemo(
+    () =>
+      patientUsesDlocalCheckout({
+        patientMarket: props.state.patientMarket,
+        residencyCountry: props.state.profileResidencyCountry
+      }),
+    [props.state.patientMarket, props.state.profileResidencyCountry]
   );
 
-  const individualUnitHome = useMemo(
-    () => estimateIndividualUnitPriceMajor(packagePlans),
-    [packagePlans]
+  const { packageCheckoutLoading, packageCheckoutError, startPackageCheckout } = usePackageCheckout({
+    language: props.language,
+    pricingReady,
+    packageCatalogFromApi,
+    usesDlocalCheckout,
+    onPurchasePackage: props.onPurchasePackage,
+    onNonDlocalCheckout: (plan) => props.onStartPackagePurchase(plan),
+    onGateBlocked: () => setAssignProModalOpen(true)
+  });
+
+  const handleStartPackagePurchase = useCallback(
+    (plan: PackagePlan) => {
+      void startPackageCheckout(plan);
+    },
+    [startPackageCheckout]
   );
+
+  const pricingProfessional = pricingProfessionalId
+    ? findProfessionalById(pricingProfessionalId, props.professionals)
+    : null;
+
+  const individualUnitHome = useMemo(() => {
+    const sessionListUsdMajor = resolveSessionListUsdMajor({
+      sessionPriceUsd: pricingProfessional?.sessionPriceUsd ?? null,
+      arsPerUsd: resolveFxRatePerUsd("ARS", props.fxRates)
+    });
+    return resolveIndividualListUnitUsdFromPackages(packagePlans, sessionListUsdMajor);
+  }, [packagePlans, pricingProfessional?.sessionPriceUsd, props.fxRates]);
   const canIndividualCtaHome = pricingReady && individualUnitHome !== null && packagePlans.length > 0;
   const availableSessions = props.state.subscription.creditsRemaining;
 
@@ -639,41 +688,49 @@ export function DashboardPage(props: {
             )}
             <div className="dashboard-hero-banner-scrim" aria-hidden="true" />
             <div className="dashboard-hero-banner-copy">
-              <h2 className="dashboard-hero-title-on-photo">{dashboardIntroTitle}</h2>
+              <div className="dashboard-hero-banner-head">
+                <h2 className="dashboard-hero-title-on-photo">{dashboardIntroTitle}</h2>
+                {showPackageSection && defaultPackagePlan ? (
+                  <button
+                    className="dashboard-hero-buy-on-photo"
+                    type="button"
+                    onClick={() => dispatchAcquireSessions("buy_cta")}
+                  >
+                    {acquireNewSessionsButtonLabel(props.language)}
+                  </button>
+                ) : null}
+              </div>
               <p className="dashboard-hero-subtitle-on-photo">{dashboardIntroBody}</p>
             </div>
           </div>
           <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount" />
         </div>
-        {(showPackageSection && defaultPackagePlan) || showGoogleCalendarCta ? (
-          <div className="dashboard-hero-cta-band">
-            {showPackageSection && defaultPackagePlan ? (
-              <button
-                className="sessions-hero-buy-button dashboard-hero-buy-button"
-                type="button"
-                onClick={() => dispatchAcquireSessions("buy_cta")}
-              >
-                {t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}
-              </button>
-            ) : null}
-            {showGoogleCalendarCta ? (
-              <button
-                type="button"
-                className={`dashboard-hero-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-              >
-                {t(props.language, {
-                  es: "Conectá Google Calendar",
-                  en: "Connect Google Calendar",
-                  pt: "Conectar o Google Calendar"
-                })}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </section>
 
-      <section className="content-card trial-priority-banner trial-priority-inline" data-tour="patient-tour-trial">
+      {showGoogleCalendarCta ? (
+        <div className="dashboard-hero-cta-band">
+          <button
+            type="button"
+            className={`dashboard-hero-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+            onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+          >
+            {t(props.language, {
+              es: "Conectá Google Calendar",
+              en: "Connect Google Calendar",
+              pt: "Conectar o Google Calendar"
+            })}
+          </button>
+        </div>
+      ) : null}
+
+      <section
+        className={`content-card trial-priority-banner trial-priority-inline ${trialCardClickable ? "trial-priority-banner--clickable" : ""}`}
+        data-tour="patient-tour-trial"
+        role={trialCardClickable ? "button" : undefined}
+        tabIndex={trialCardClickable ? 0 : undefined}
+        onClick={trialCardClickable ? openTrialDetail : undefined}
+        onKeyDown={trialCardClickable ? handleTrialCardKeyDown : undefined}
+      >
         <h2>
           <span className="trial-inline-icon" aria-hidden="true" />
           {trialStatus === "pending"
@@ -702,11 +759,27 @@ export function DashboardPage(props: {
                 })}
         </p>
         {hasTrialPlanned ? (
-          <button className="trial-inline-action" type="button" onClick={openTrialModal}>
-            {t(props.language, { es: "Modificar", en: "Modify", pt: "Modificar" })}
-          </button>
+          <div className="trial-inline-actions">
+            <button
+              className="trial-inline-action"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                openTrialModal();
+              }}
+            >
+              {t(props.language, { es: "Modificar", en: "Modify", pt: "Modificar" })}
+            </button>
+          </div>
         ) : trialStatus === "pending" ? (
-          <button className="trial-inline-action" type="button" onClick={() => props.onNavigateToBookTrial()}>
+          <button
+            className="trial-inline-action"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              props.onNavigateToBookTrial();
+            }}
+          >
             {t(props.language, {
               es: "Reservar sesión de prueba",
               en: "Book trial session",
@@ -723,7 +796,7 @@ export function DashboardPage(props: {
             type="button"
             onClick={props.onGoToReservations}
           >
-            <span className="label">{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</span>
+            <span className="label">{t(props.language, { es: "Sesiones reservadas", en: "Booked sessions", pt: "Sessoes reservadas" })}</span>
             <strong>{upcomingConfirmedBookings.length}</strong>
             <p>
               {nextBooking
@@ -741,7 +814,7 @@ export function DashboardPage(props: {
             <span className="hero-inline-link">
               {nextConfirmedBooking
                 ? t(props.language, { es: "Ver detalle", en: "View details", pt: "Ver detalhes" })
-                : t(props.language, { es: "Sin sesiones confirmadas", en: "No confirmed sessions", pt: "Sem sessoes confirmadas" })}
+                : t(props.language, { es: "Sin sesiones reservadas", en: "No booked sessions", pt: "Sem sessoes reservadas" })}
             </span>
           </button>
 
@@ -895,20 +968,15 @@ export function DashboardPage(props: {
           <div>
             <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
           </div>
-          <div className="sessions-panel-actions">
-            <button className="sessions-reserve-button dashboard-go-sessions-button" type="button" onClick={props.onGoToReservations}>
-              {t(props.language, { es: "Ir a sesiones", en: "Go to sessions", pt: "Ir para sessoes" })}
-            </button>
-          </div>
         </div>
 
         {upcomingConfirmedBookings.length === 0 ? (
           <div className="sessions-empty-state">
             <strong>
               {t(props.language, {
-                es: "Todavía no tienes sesiones confirmadas",
-                en: "You have no confirmed sessions yet",
-                pt: "Voce ainda nao tem sessoes confirmadas"
+                es: "Todavía no tienes sesiones reservadas",
+                en: "You have no booked sessions yet",
+                pt: "Voce ainda nao tem sessoes reservadas"
               })}
             </strong>
           </div>
@@ -916,7 +984,7 @@ export function DashboardPage(props: {
           <div className="dashboard-upcoming-lists-root">
             <div className={isMobilePortal ? "dashboard-upcoming-mobile-only" : "dashboard-upcoming-desktop-only"}>
               <UpcomingBookingsList
-                bookings={upcomingConfirmedBookings.slice(0, 3)}
+                bookings={upcomingConfirmedBookings}
                 professionals={props.professionals}
                 professionalPhotoMap={props.professionalPhotoMap}
                 timezone={props.state.profile.timezone}
@@ -925,7 +993,7 @@ export function DashboardPage(props: {
                 surface="dashboard"
                 onImageFallback={props.onImageFallback}
                 onOpenBookingDetail={props.onOpenBookingDetail}
-                onReschedule={() => props.onGoToReservations()}
+                onReschedule={(booking) => props.onRescheduleBooking(booking.id)}
                 firstMeetBookingId={firstMeetBookingId}
                 joinTourPulse={meetJoinHighlight && (isMobilePortal ? sessionRnLayout : !sessionRnLayout)}
               />
@@ -942,16 +1010,14 @@ export function DashboardPage(props: {
           onClick={() => setIsPackagesExpanded((current) => !current)}
         >
           <h2 className="sessions-secondary-title">{t(props.language, { es: "Paquetes comprados", en: "Purchased packages", pt: "Pacotes comprados" })}</h2>
-          <span className="sessions-secondary-toggle-label">{isPackagesExpanded
-            ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-            : t(props.language, { es: "Expandir", en: "Expand", pt: "Expandir" })}
-          </span>
+          <SessionsCollapsibleToggle expanded={isPackagesExpanded} language={props.language} />
         </button>
         {isPackagesExpanded ? (
-          props.state.subscription.purchaseHistory.length === 0 ? (
-            <p>{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
+          <div className="sessions-collapsible-panel">
+          {props.state.subscription.purchaseHistory.length === 0 ? (
+            <p className="sessions-collapsible-empty">{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
           ) : (
-            <ul className="simple-list session-history-list">
+            <ul className="simple-list session-history-list sessions-collapsible-list">
               {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => {
                 const amountLabel = formatSubscriptionPurchasePrice({
                   priceCents: item.priceCents,
@@ -976,7 +1042,8 @@ export function DashboardPage(props: {
                 );
               })}
             </ul>
-          )
+          )}
+          </div>
         ) : null}
       </section>
 
@@ -988,12 +1055,10 @@ export function DashboardPage(props: {
           onClick={() => setIsCalendarExpanded((current) => !current)}
         >
           <h2 className="sessions-secondary-title">{t(props.language, { es: "Calendario de sesiones", en: "Sessions calendar", pt: "Calendario de sessoes" })}</h2>
-          <span className="sessions-secondary-toggle-label">{isCalendarExpanded
-            ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-            : t(props.language, { es: "Expandir", en: "Expand", pt: "Expandir" })}
-          </span>
+          <SessionsCollapsibleToggle expanded={isCalendarExpanded} language={props.language} />
         </button>
         {isCalendarExpanded ? (
+          <div className="sessions-collapsible-panel sessions-collapsible-panel--calendar">
           <SessionsCalendar
             bookings={upcomingConfirmedBookings}
             timezone={props.state.profile.timezone}
@@ -1002,6 +1067,7 @@ export function DashboardPage(props: {
             variant="week"
             hideTitle
           />
+          </div>
         ) : null}
       </section>
 
@@ -1047,6 +1113,11 @@ export function DashboardPage(props: {
               </button>
             ) : null}
           </div>
+          {packageCheckoutError ? (
+            <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
+              {packageCheckoutError}
+            </p>
+          ) : null}
           {packagesLoadingHint === "loading" ? (
             <PackageCatalogLoading language={props.language} />
           ) : packagesLoadingHint === "empty" ? (
@@ -1054,7 +1125,6 @@ export function DashboardPage(props: {
           ) : (
           <div className="deal-grid sessions-package-options-grid">
             {displayPackagePlans.slice(0, 3).map((plan) => {
-              const selectedPlan = displayFeaturedPackageId ? displayFeaturedPackageId === plan.id : displayPackagePlans[0]?.id === plan.id;
               const listPriceAmount = pricingReady
                 ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
                 : 0;
@@ -1071,7 +1141,7 @@ export function DashboardPage(props: {
                     ) : null}
                   </div>
                   <article
-                    className={`deal-card dashboard-deal-card sessions-package-card dashboard-package-card ${displayFeaturedPackageId === plan.id ? "featured" : ""} ${selectedPlan ? "selected" : ""}`}
+                    className={`deal-card dashboard-deal-card sessions-package-card dashboard-package-card ${displayFeaturedPackageId === plan.id ? "featured" : ""}`}
                   >
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
@@ -1100,15 +1170,23 @@ export function DashboardPage(props: {
                           <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}</span>
                           <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
                         </div>
-                        <p className="deal-main-price">{formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}</p>
+                        <p className="deal-main-price">
+                          {formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}
+                          <span className="deal-main-price-unit">
+                            {t(props.language, { es: "/sesión", en: "/session", pt: "/sessao" })}
+                          </span>
+                        </p>
                         <p className="sessions-package-card-unit">
                           {replaceTemplate(
                             t(props.language, {
-                              es: "Equivale a {amount} por sesión",
-                              en: "Equivalent to {amount} per session",
-                              pt: "Equivale a {amount} por sessao"
+                              es: "Total {amount} por {count} sesiones",
+                              en: "Total {amount} for {count} sessions",
+                              pt: "Total {amount} por {count} sessoes"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry) }
+                            {
+                              amount: formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry),
+                              count: String(plan.credits)
+                            }
                           )}
                         </p>
                       </>
@@ -1151,8 +1229,9 @@ export function DashboardPage(props: {
                       )}
                     </p>
                     <button
-                      className={`deal-select-button ${displayFeaturedPackageId === plan.id ? "featured" : ""}`}
+                      className="deal-select-button"
                       type="button"
+                      disabled={packageCheckoutLoading}
                       onClick={() => handleStartPackagePurchase(plan)}
                     >
                       {pricingReady
@@ -1449,7 +1528,7 @@ export function DashboardPage(props: {
                   surface="dashboard"
                   onImageFallback={props.onImageFallback}
                   onOpenBookingDetail={props.onOpenBookingDetail}
-                  onReschedule={() => props.onGoToReservations()}
+                  onReschedule={(booking) => props.onRescheduleBooking(booking.id)}
                   firstMeetBookingId={firstMeetBookingId}
                   joinTourPulse={meetJoinHighlight && sessionRnLayout}
                 />
@@ -1524,9 +1603,7 @@ export function DashboardPage(props: {
           language={props.language}
           onClose={() => setAcquireSessionsModalOpen(false)}
           onChoosePackages={() => {
-            window.requestAnimationFrame(() => {
-              packageSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
+            props.onNavigateToSessionsCheckout();
           }}
           onChooseIndividual={props.onNavigateToIndividualSessions}
         />

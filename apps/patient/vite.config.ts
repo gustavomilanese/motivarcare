@@ -38,6 +38,19 @@ export default defineConfig(({ mode }) => {
     .trim()
     .replace(/\/+$/, "");
 
+  if (mode === "production") {
+    if (!apiBase) {
+      throw new Error(
+        "[@therapy/patient] Production build requires VITE_API_URL or API_PUBLIC_URL (public API base URL)."
+      );
+    }
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(apiBase)) {
+      throw new Error(
+        `[@therapy/patient] Production build cannot target localhost API (${apiBase}). Set VITE_API_URL to the deployed API.`
+      );
+    }
+  }
+
   return {
     envDir: repoRoot,
     server: {

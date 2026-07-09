@@ -144,6 +144,7 @@ export function PortalRoutes(props: {
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   handleGoToReservations: () => void;
+  handleRescheduleBookingFromAnywhere: (bookingId: string) => void;
   handleReserveFromAnywhere: (professionalId: string) => void;
   handleGoToProfessional: (professionalId: string) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
@@ -158,6 +159,7 @@ export function PortalRoutes(props: {
   startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
   syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
+  cancelBooking: (bookingId: string) => Promise<{ ok: boolean; error?: string }>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<PortalPurchaseResult>;
   purchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
@@ -207,12 +209,14 @@ export function PortalRoutes(props: {
                   onImageFallback={props.onImageFallback}
                   onHeroFallback={props.onHeroFallback}
                   onGoToReservations={props.handleGoToReservations}
+                  onRescheduleBooking={props.handleRescheduleBookingFromAnywhere}
                   onGoToBooking={props.handleReserveFromAnywhere}
                   onGoToProfessional={props.handleGoToProfessional}
                   onGoToChat={props.handleChatFromAnywhere}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
+                  onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
                   onNavigateToSessionsCheckout={startSessionsCheckoutFromDashboard}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
@@ -370,6 +374,7 @@ export function PortalRoutes(props: {
                   onSelectProfessional={props.onBookingSelectProfessional}
                   onConfirmBooking={props.confirmBooking}
                   onRescheduleBooking={props.rescheduleBooking}
+                  onCancelBooking={props.cancelBooking}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
                   onPurchaseIndividualSessions={props.purchaseIndividualSessions}

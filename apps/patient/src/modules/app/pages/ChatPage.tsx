@@ -395,7 +395,12 @@ export function ChatPage(props: {
   ]);
 
   return (
-    <div className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}`}>
+    <div className="chat-page-root">
+      <div className="chat-portal-toolbar-shell">
+        <div id="chat-hero-toolbar-mount" className="chat-hero-toolbar-mount" />
+      </div>
+      <div className="chat-page-body">
+      <div className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}`}>
       <aside className="wa-sidebar">
         <header className="wa-sidebar-header">
           <h2>{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</h2>
@@ -580,7 +585,7 @@ export function ChatPage(props: {
             placeholder={threadProfessional
               ? t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })
               : t(props.language, { es: "Chat deshabilitado hasta asignacion", en: "Chat disabled until assignment", pt: "Chat desativado ate atribuicao" })}
-            rows={2}
+            rows={1}
             value={draft}
             disabled={!threadProfessional}
             onKeyDown={handleComposerKeyDown}
@@ -600,7 +605,9 @@ export function ChatPage(props: {
           </button>
         </footer>
       </section>
+      </div>
       {apiError ? <p className="error-text">{apiError}</p> : null}
+      </div>
     </div>
   );
 }

@@ -5,6 +5,29 @@ import type { SessionPackagePlan } from "./sessionPackagePlan.js";
 
 export const STANDARD_SESSION_BUNDLE_CREDITS = [4, 8, 12] as const;
 
+export type StandardSessionBundleCredits = (typeof STANDARD_SESSION_BUNDLE_CREDITS)[number];
+
+/** Un paquete por tier estándar (4 / 8 / 12), respetando el orden de preferencia si se pasa. */
+export function pickStandardSessionBundles<T extends { credits: number }>(
+  items: T[],
+  options?: { preferredFirst?: T[] }
+): T[] {
+  const bundles = items.filter((item) => item.credits > 1);
+  const preferred = options?.preferredFirst?.filter((item) => item.credits > 1) ?? [];
+  const picked: T[] = [];
+
+  for (const tier of STANDARD_SESSION_BUNDLE_CREDITS) {
+    const match =
+      preferred.find((item) => item.credits === tier)
+      ?? bundles.find((item) => item.credits === tier && !picked.some((existing) => existing.credits === tier));
+    if (match) {
+      picked.push(match);
+    }
+  }
+
+  return picked;
+}
+
 export const DEFAULT_DISPLAY_FEATURED_BUNDLE_CREDITS = 8;
 
 function t(language: AppLanguage, values: Parameters<typeof textByLanguage>[1]): string {

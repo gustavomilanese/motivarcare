@@ -1,5 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
-import { describePackagePlan as describePackagePlanCore } from "@therapy/patient-core";
+import { describePackagePlan as describePackagePlanCore, pickStandardSessionBundles } from "@therapy/patient-core";
 import { isMarket, type Market } from "@therapy/types";
 import type { PackagePlan, PublicSessionPackagesResponse } from "../types";
 import { API_BASE } from "../services/api";
@@ -136,8 +136,7 @@ function mapPublicSessionPackagesToPlans(params: {
     throw new Error("empty_catalog");
   }
   /** El portal solo muestra paquetes multi-sesión; el de 1 crédito es catálogo interno para cobrar sueltas. */
-  const bundlesOnly = params.data.sessionPackages.filter((item) => item.credits > 1);
-  const topBundles = bundlesOnly.slice(0, 3);
+  const topBundles = pickStandardSessionBundles(params.data.sessionPackages);
   if (topBundles.length === 0) {
     throw new Error("empty_catalog");
   }

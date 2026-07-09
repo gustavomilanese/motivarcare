@@ -27,15 +27,63 @@ function apiBaseUrl(): string {
   return env.DLOCALGO_API_URL.replace(/\/+$/, "");
 }
 
-async function dlocalGoRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: authorizationHeader(),
-      ...(init?.headers ?? {})
+function extractDlocalGoErrorMessage(body: unknown, status: number): string {
+  if (typeof body === "string" && body.trim().length > 0) {
+    return body.trim();
+  }
+  if (typeof body === "object" && body != null) {
+    const record = body as Record<string, unknown>;
+    if (typeof record.message === "string" && record.message.trim().length > 0) {
+      return record.message.trim();
     }
-  });
+    if (typeof record.error === "string" && record.error.trim().length > 0) {
+      return record.error.trim();
+    }
+    const payload = record.payload;
+    if (typeof payload === "object" && payload != null) {
+      const payloadRecord = payload as Record<string, unknown>;
+      if (typeof payloadRecord.message === "string" && payloadRecord.message.trim().length > 0) {
+        return payloadRecord.message.trim();
+      }
+    }
+  }
+  return `dLocal Go API error (${status})`;
+}
+
+/**
+ * Timeout máximo por request a dLocal Go. El sandbox suele responder en 1-3s, pero
+ * si se cuelga no queremos que el request del paciente (p. ej. el sync post-pago)
+ * quede bloqueado indefinidamente: cortamos y dejamos que reintente / caiga al webhook.
+ */
+const DLOCALGO_REQUEST_TIMEOUT_MS = 8000;
+
+/**
+ * Request de bajo nivel a la API de dLocal Go (auth + parseo + manejo de errores).
+ * Reutilizado por payments y payouts para no duplicar la infraestructura HTTP.
+ */
+export async function dlocalGoRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DLOCALGO_REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl()}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authorizationHeader(),
+        ...(init?.headers ?? {})
+      }
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`dLocal Go API timeout after ${DLOCALGO_REQUEST_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const text = await response.text();
   let body: unknown = null;
@@ -48,11 +96,7 @@ async function dlocalGoRequest<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
-    const message =
-      typeof body === "object" && body != null && "message" in body && typeof (body as { message: unknown }).message === "string"
-        ? (body as { message: string }).message
-        : `dLocal Go API error (${response.status})`;
-    throw new Error(message);
+    throw new Error(extractDlocalGoErrorMessage(body, response.status));
   }
 
   return body as T;

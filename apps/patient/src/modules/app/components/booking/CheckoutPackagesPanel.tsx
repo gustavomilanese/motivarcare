@@ -48,13 +48,11 @@ export function CheckoutPackagesPanel(props: {
   packagesLoading: boolean;
   packagePlans: PackagePlan[];
   featuredPackageId: string | null;
-  selectedCheckoutPlanId: string | null;
   /** Precios calculados con tarifa del profesional asignado. */
   pricingReady: boolean;
   /** Precio unitario estimado en la moneda del catálogo (1 crédito o proporcional del primer bundle). */
   unitPriceMajor: number | null;
   onClose: () => void;
-  onSelectCard: (planId: string) => void;
   onSelectPlan: (plan: PackagePlan) => void;
   onIndividualPurchase: () => void;
   onRequireProfessional: () => void;
@@ -157,9 +155,6 @@ export function CheckoutPackagesPanel(props: {
         <>
         <div className="deal-grid sessions-package-options-grid">
           {bundlePlans.map((plan) => {
-            const selectedPlan = props.selectedCheckoutPlanId
-              ? props.selectedCheckoutPlanId === plan.id
-              : (props.featuredPackageId ? props.featuredPackageId === plan.id : bundlePlans[0]?.id === plan.id);
             const listPriceAmount = props.pricingReady
               ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
               : 0;
@@ -177,8 +172,7 @@ export function CheckoutPackagesPanel(props: {
                     ) : null}
                   </div>
                   <article
-                    className={`deal-card dashboard-deal-card sessions-package-card ${props.featuredPackageId === plan.id ? "featured" : ""} ${selectedPlan ? "selected" : ""}`}
-                    onClick={() => props.onSelectCard(plan.id)}
+                    className="deal-card dashboard-deal-card sessions-package-card"
                   >
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
@@ -218,19 +212,29 @@ export function CheckoutPackagesPanel(props: {
                       )}
                     </div>
                     <p className={`deal-main-price${props.pricingReady ? "" : " deal-main-price--placeholder"}`}>
-                      {props.pricingReady
-                        ? formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry)
-                        : "—"}
+                      {props.pricingReady ? (
+                        <>
+                          {formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.residencyCountry)}
+                          <span className="deal-main-price-unit">
+                            {t(props.language, { es: "/sesión", en: "/session", pt: "/sessao" })}
+                          </span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </p>
                     <p className="sessions-package-card-unit">
                       {props.pricingReady
                         ? replaceTemplate(
                             t(props.language, {
-                              es: "Equivale a {amount} por sesión",
-                              en: "Equivalent to {amount} per session",
-                              pt: "Equivale a {amount} por sessao"
+                              es: "Total {amount} por {count} sesiones",
+                              en: "Total {amount} for {count} sessions",
+                              pt: "Total {amount} por {count} sessoes"
                             }),
-                            { amount: formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.residencyCountry) }
+                            {
+                              amount: formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry),
+                              count: String(plan.credits)
+                            }
                           )
                         : t(props.language, {
                             es: "Tarifa del profesional × sesiones − descuento del paquete",
@@ -256,7 +260,7 @@ export function CheckoutPackagesPanel(props: {
                       </p>
                     ) : null}
                     <button
-                      className={`deal-select-button ${props.featuredPackageId === plan.id ? "featured" : ""}`}
+                      className="deal-select-button"
                       type="button"
                       disabled={props.paymentLoading}
                       onClick={(event) => {

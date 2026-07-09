@@ -16,6 +16,9 @@ export function usePortalNavigation(params: {
     handleGoToReservations: () => {
       params.navigate("/sessions?focus=reservations");
     },
+    handleRescheduleBookingFromAnywhere: (bookingId: string) => {
+      params.navigate(`/sessions?reschedule=${encodeURIComponent(bookingId)}`);
+    },
     handleGoToProfessional: (professionalId: string) => {
       params.onStateChange((current) => ({
         ...current,

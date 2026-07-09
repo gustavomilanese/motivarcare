@@ -255,6 +255,13 @@ export function friendlyIntakeSaveMessage(raw: string, language: AppLanguage): s
   if (net) {
     return net;
   }
+  if (n === "Invalid intake payload") {
+    return t(language, {
+      es: "Faltan datos o hay respuestas incompletas en el cuestionario. Revisá los pasos anteriores y volvé a enviar.",
+      en: "Some answers are missing or incomplete. Review earlier steps and submit again.",
+      pt: "Faltam dados ou ha respostas incompletas. Revise os passos anteriores e envie de novo."
+    });
+  }
   if (n === "Intake already completed") {
     return t(language, {
       es: "Este cuestionario ya estaba guardado. Podés seguir al inicio del portal o cerrar sesión y volver a entrar si algo no se actualiza en pantalla.",
@@ -448,9 +455,9 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
   }
   if (n === "Catalog unavailable") {
     return t(language, {
-      es: "No pudimos cargar el catálogo real de paquetes (solo hay datos de respaldo en pantalla). Recargá la página; si persiste, el API puede estar caído o mal configurado.",
-      en: "We couldn’t load the real package catalog (only fallback data is shown). Reload the page; if it persists, the API may be down or misconfigured.",
-      pt: "Nao foi possivel carregar o catalogo real de pacotes. Recarregue a pagina; se persistir, a API pode estar indisponivel."
+      es: "No pudimos cargar los paquetes disponibles. Recargá la página e intentá de nuevo; si persiste, contactá a soporte.",
+      en: "We couldn’t load available packages. Reload the page and try again; if it persists, contact support.",
+      pt: "Nao foi possivel carregar os pacotes disponiveis. Recarregue a pagina e tente de novo; se persistir, fale com o suporte."
     });
   }
   if (n === "Online checkout is not available for your country of residence yet") {
@@ -465,6 +472,48 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       es: "En este entorno no hay cargado el producto de sesión suelta en el catálogo. Pedile a soporte que ejecute el seed o cree un paquete de 1 crédito global (professionalId vacío).",
       en: "This environment doesn’t have a single-session product configured. Ask support to run the seed or create a global 1-credit package (no professional).",
       pt: "Neste ambiente nao ha produto de sessao avulsa configurado. Pec ao suporte para rodar o seed ou criar pacote de 1 credito global."
+    });
+  }
+  if (n === "dLocal Go not configured") {
+    return t(language, {
+      es: "El cobro con tarjeta no está activo en el servidor todavía. Si estás en local, configurá DLOCALGO_API_KEY y DLOCALGO_API_SECRET en el API y reinicialo.",
+      en: "Card checkout isn’t active on the server yet. If you’re running locally, set DLOCALGO_API_KEY and DLOCALGO_API_SECRET on the API and restart it.",
+      pt: "O pagamento com cartao ainda nao esta ativo no servidor. Em local, configure DLOCALGO_API_KEY e DLOCALGO_API_SECRET no API e reinicie."
+    });
+  }
+  if (n === "Direct session purchase is disabled in production. Use the checkout flow.") {
+    return t(language, {
+      es: "El pago en línea no pudo iniciarse. Probá de nuevo en unos segundos; si sigue igual, avisá a soporte.",
+      en: "Online payment couldn’t start. Try again in a few seconds; if it keeps failing, contact support.",
+      pt: "Nao foi possivel iniciar o pagamento online. Tente de novo em instantes; se persistir, fale com o suporte."
+    });
+  }
+  if (n === "dLocal Go did not return a checkout redirect URL") {
+    return t(language, {
+      es: "dLocal aceptó el pedido pero no devolvió la pantalla de pago. Probá de nuevo; si persiste, avisá a soporte.",
+      en: "dLocal accepted the order but didn’t return the payment screen. Try again; if it persists, contact support.",
+      pt: "A dLocal aceitou o pedido mas nao devolveu a tela de pagamento. Tente de novo; se persistir, fale com o suporte."
+    });
+  }
+  if (n.startsWith("dLocal Go API error")) {
+    return t(language, {
+      es: "dLocal rechazó iniciar el pago (error del proveedor). Probá de nuevo en un ratito o avisá a soporte si sigue igual.",
+      en: "dLocal refused to start payment (provider error). Try again shortly or contact support if it keeps happening.",
+      pt: "A dLocal recusou iniciar o pagamento (erro do provedor). Tente em instantes ou fale com o suporte se persistir."
+    });
+  }
+  if (n === "Invalid checkout payload") {
+    return t(language, {
+      es: "Los datos del pedido llegaron incompletos. Cerrá el modal, elegí de nuevo la cantidad y probá otra vez.",
+      en: "The order data didn’t come through complete. Close the modal, pick the quantity again, and retry.",
+      pt: "Os dados do pedido vieram incompletos. Feche o modal, escolha de novo e tente outra vez."
+    });
+  }
+  if (n === "Purchase failed") {
+    return t(language, {
+      es: "No pudimos iniciar el pago. Revisá tu conexión y probá de nuevo.",
+      en: "We couldn’t start payment. Check your connection and try again.",
+      pt: "Nao foi possivel iniciar o pagamento. Verifique a conexao e tente de novo."
     });
   }
   if (n === "Unauthorized" || n === "Missing bearer token" || n === "Invalid or expired token") {
