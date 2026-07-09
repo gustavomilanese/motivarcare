@@ -256,6 +256,71 @@ export type AdminUnpaidProfessionalsResponse = {
   professionals: AdminUnpaidProfessional[];
 };
 
+export type UnpaidProfessionalSessionDetail = {
+  id: string;
+  bookingId: string;
+  bookingStartsAt: string;
+  bookingCompletedAt: string | null;
+  isTrial: boolean;
+  currency: string;
+  sessionPriceCents: number;
+  platformCommissionPercent: number;
+  platformFeeCents: number;
+  professionalNetCents: number;
+  sessionPriceUsdCents: number;
+  platformFeeUsdCents: number;
+  professionalNetUsdCents: number;
+  patient: { id: string; fullName: string; email: string };
+  package: { id: string; name: string; credits: number } | null;
+};
+
+export type UnpaidProfessionalDetailResponse = {
+  currency: "usd";
+  professional: {
+    id: string;
+    fullName: string;
+    email: string;
+    residencyCountry: string | null;
+    listSessionPriceUsd: number | null;
+  };
+  totals: {
+    sessionsCount: number;
+    grossUsdCents: number;
+    platformFeeUsdCents: number;
+    professionalNetUsdCents: number;
+  };
+  sessions: UnpaidProfessionalSessionDetail[];
+  payout: {
+    dlocalConfigured: boolean;
+    ready: boolean;
+    reason: string | null;
+    status: string | null;
+    method: string | null;
+    country: string | null;
+    currency: string | null;
+    beneficiaryName: string | null;
+    bankName: string | null;
+    bankCode: string | null;
+    accountMasked: string | null;
+    documentType: string | null;
+    estimatedLocal: { currency: string; amount: number; ratePerUsd: number } | null;
+  };
+};
+
+export type PayUnpaidProfessionalResponse = {
+  message: string;
+  currency: string;
+  method: "ledger" | "dlocal";
+  payoutRunId: string;
+  payoutLineId: string;
+  sessionsCount: number;
+  professionalNetCents: number;
+  dlocalPayoutId?: string;
+  dlocalStatus?: string;
+  dlocalAmount?: number;
+  dlocalCurrency?: string;
+};
+
 export type AdminPlatformPurchase = {
   purchaseId: string;
   purchasedAt: string;

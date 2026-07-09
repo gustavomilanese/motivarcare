@@ -129,6 +129,10 @@ const EnvSchema = z.object({
   TREATMENT_CHAT_ENABLED: z.coerce.boolean().default(false),
   /** Cap diario de turnos del usuario para acotar costo y evitar abuso. */
   TREATMENT_CHAT_DAILY_TURN_LIMIT: z.coerce.number().int().positive().default(30),
+  /** Duración máxima de una conversación continua con Maca (minutos). */
+  TREATMENT_CHAT_SESSION_MAX_MINUTES: z.coerce.number().int().positive().default(10),
+  /** Pausa sin mensajes que cierra la conversación y permite empezar otra. */
+  TREATMENT_CHAT_SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(20),
   /** Cap por respuesta del LLM (tokens de output) para limitar costo y forzar concisión. */
   TREATMENT_CHAT_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(400),
   /** Cantidad de mensajes recientes que pasamos al LLM como contexto en cada turno. */

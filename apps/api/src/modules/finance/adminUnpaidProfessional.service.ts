@@ -1,0 +1,298 @@
+import {
+  dlocalPayoutBankCodes,
+  dlocalPayoutCurrencyForCountry,
+  normalizePayoutCountry,
+  type DlocalPayoutCountry
+} from "@therapy/types";
+import {
+  convertFinanceMinorToUsdMinor,
+  readSessionFxArsPerUsdSnapshot
+} from "../../lib/professionalFinanceDisplay.js";
+import { isDlocalGoConfigured } from "../../lib/dlocalGoPayouts.js";
+import { prisma } from "../../lib/prisma.js";
+import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
+import { getUsdDisplayFxRates } from "../../lib/usdDisplayFxRates.js";
+import {
+  assessPayoutReadiness,
+  createProfessionalPayout,
+  loadProfessionalPayoutAdmin,
+  ProfessionalPayoutError
+} from "../payouts/professionalPayouts.service.js";
+import { payProfessionalUnpaidBalance } from "./finance.service.js";
+
+async function resolveLiveFx() {
+  const liveArsPerUsd = await getResilientUsdArsRate().catch(() => null);
+  return liveArsPerUsd != null && liveArsPerUsd > 0 ? { arsPerUsd: liveArsPerUsd } : {};
+}
+
+function maskAccount(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= 4) {
+    return "••••";
+  }
+  return `•••• ${trimmed.slice(-4)}`;
+}
+
+function resolveBankName(country: string | null, bankCode: string | null): string | null {
+  if (!country || !bankCode) {
+    return null;
+  }
+  const list = dlocalPayoutBankCodes(country as DlocalPayoutCountry);
+  return list?.find((bank) => bank.code === bankCode)?.name ?? null;
+}
+
+export type UnpaidProfessionalSessionRow = {
+  id: string;
+  bookingId: string;
+  bookingStartsAt: string;
+  bookingCompletedAt: string | null;
+  isTrial: boolean;
+  currency: string;
+  sessionPriceCents: number;
+  platformCommissionPercent: number;
+  platformFeeCents: number;
+  professionalNetCents: number;
+  sessionPriceUsdCents: number;
+  platformFeeUsdCents: number;
+  professionalNetUsdCents: number;
+  patient: { id: string; fullName: string; email: string };
+  package: { id: string; name: string; credits: number } | null;
+};
+
+export type UnpaidProfessionalDetail = {
+  professional: {
+    id: string;
+    fullName: string;
+    email: string;
+    residencyCountry: string | null;
+    listSessionPriceUsd: number | null;
+  };
+  totals: {
+    sessionsCount: number;
+    grossUsdCents: number;
+    platformFeeUsdCents: number;
+    professionalNetUsdCents: number;
+  };
+  sessions: UnpaidProfessionalSessionRow[];
+  payout: {
+    dlocalConfigured: boolean;
+    ready: boolean;
+    reason: string | null;
+    status: string | null;
+    method: string | null;
+    country: string | null;
+    currency: string | null;
+    beneficiaryName: string | null;
+    bankName: string | null;
+    bankCode: string | null;
+    accountMasked: string | null;
+    documentType: string | null;
+    estimatedLocal: { currency: string; amount: number; ratePerUsd: number } | null;
+  };
+};
+
+export async function getUnpaidProfessionalDetail(
+  professionalId: string
+): Promise<UnpaidProfessionalDetail | { notFound: true }> {
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: {
+      id: true,
+      residencyCountry: true,
+      sessionPriceUsd: true,
+      user: { select: { fullName: true, email: true } }
+    }
+  });
+  if (!professional) {
+    return { notFound: true };
+  }
+
+  const records = await prisma.financeSessionRecord.findMany({
+    where: {
+      professionalId,
+      bookingStatus: "COMPLETED",
+      payoutLineId: null
+    },
+    orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }],
+    include: {
+      patient: { select: { id: true, user: { select: { fullName: true, email: true } } } },
+      package: { select: { id: true, name: true, credits: true } },
+      purchase: { select: { fxArsPerUsdSnapshot: true } }
+    }
+  });
+
+  const liveFx = await resolveLiveFx();
+  let grossUsdCents = 0;
+  let platformFeeUsdCents = 0;
+  let professionalNetUsdCents = 0;
+
+  const sessions: UnpaidProfessionalSessionRow[] = records.map((record) => {
+    const fx = readSessionFxArsPerUsdSnapshot({
+      currency: record.currency,
+      sessionPriceCents: record.sessionPriceCents,
+      platformFeeCents: record.platformFeeCents,
+      professionalNetCents: record.professionalNetCents,
+      fxArsPerUsdSnapshot: record.purchase?.fxArsPerUsdSnapshot ?? null
+    });
+    const sessionPriceUsdCents = convertFinanceMinorToUsdMinor(
+      record.sessionPriceCents,
+      record.currency,
+      fx,
+      liveFx
+    );
+    const feeUsdCents = convertFinanceMinorToUsdMinor(
+      record.platformFeeCents,
+      record.currency,
+      fx,
+      liveFx
+    );
+    const netUsdCents = convertFinanceMinorToUsdMinor(
+      record.professionalNetCents,
+      record.currency,
+      fx,
+      liveFx
+    );
+    grossUsdCents += sessionPriceUsdCents;
+    platformFeeUsdCents += feeUsdCents;
+    professionalNetUsdCents += netUsdCents;
+
+    return {
+      id: record.id,
+      bookingId: record.bookingId,
+      bookingStartsAt: record.bookingStartsAt.toISOString(),
+      bookingCompletedAt: record.bookingCompletedAt?.toISOString() ?? null,
+      isTrial: record.isTrial,
+      currency: record.currency,
+      sessionPriceCents: record.sessionPriceCents,
+      platformCommissionPercent: record.platformCommissionPercent,
+      platformFeeCents: record.platformFeeCents,
+      professionalNetCents: record.professionalNetCents,
+      sessionPriceUsdCents,
+      platformFeeUsdCents: feeUsdCents,
+      professionalNetUsdCents: netUsdCents,
+      patient: {
+        id: record.patient.id,
+        fullName: record.patient.user.fullName,
+        email: record.patient.user.email
+      },
+      package: record.package
+        ? { id: record.package.id, name: record.package.name, credits: record.package.credits }
+        : null
+    };
+  });
+
+  const payoutAdmin = await loadProfessionalPayoutAdmin(professionalId);
+  const readiness = assessPayoutReadiness(payoutAdmin);
+  const bank = payoutAdmin?.payoutBankAccount;
+  const payoutCountry = normalizePayoutCountry(bank?.payoutCountry ?? null);
+  const payoutCurrency = payoutCountry ? dlocalPayoutCurrencyForCountry(payoutCountry) : null;
+
+  let estimatedLocal: UnpaidProfessionalDetail["payout"]["estimatedLocal"] = null;
+  if (payoutCurrency && professionalNetUsdCents > 0) {
+    const rates = await getUsdDisplayFxRates();
+    const rate =
+      payoutCurrency === "USD" ? 1 : rates[payoutCurrency] ?? null;
+    if (rate != null && rate > 0) {
+      estimatedLocal = {
+        currency: payoutCurrency,
+        amount: Math.round((professionalNetUsdCents / 100) * rate * 100) / 100,
+        ratePerUsd: rate
+      };
+    }
+  }
+
+  const beneficiaryName = bank
+    ? `${bank.beneficiaryFirstName ?? ""} ${bank.beneficiaryLastName ?? ""}`.trim() || bank.accountHolderName
+    : null;
+
+  return {
+    professional: {
+      id: professional.id,
+      fullName: professional.user.fullName,
+      email: professional.user.email,
+      residencyCountry: professional.residencyCountry,
+      listSessionPriceUsd: professional.sessionPriceUsd
+    },
+    totals: {
+      sessionsCount: sessions.length,
+      grossUsdCents,
+      platformFeeUsdCents,
+      professionalNetUsdCents
+    },
+    sessions,
+    payout: {
+      dlocalConfigured: isDlocalGoConfigured(),
+      ready: readiness.ready,
+      reason: readiness.reason ?? null,
+      status: payoutAdmin?.payoutStatus ?? null,
+      method: payoutAdmin?.payoutMethod ?? null,
+      country: payoutCountry,
+      currency: payoutCurrency,
+      beneficiaryName: beneficiaryName ?? null,
+      bankName: resolveBankName(payoutCountry, bank?.bankCode ?? null),
+      bankCode: bank?.bankCode ?? null,
+      accountMasked: bank?.accountValue ? maskAccount(bank.accountValue) : null,
+      documentType: bank?.documentType ?? null,
+      estimatedLocal
+    }
+  };
+}
+
+export async function payUnpaidProfessional(input: {
+  professionalId: string;
+  method: "ledger" | "dlocal";
+  payoutReference?: string;
+}) {
+  const detail = await getUnpaidProfessionalDetail(input.professionalId);
+  if ("notFound" in detail) {
+    return { notFound: true as const };
+  }
+  if (detail.sessions.length === 0) {
+    return { noRecords: true as const };
+  }
+
+  if (input.method === "ledger") {
+    return payProfessionalUnpaidBalance(input.professionalId, input.payoutReference);
+  }
+
+  if (!detail.payout.dlocalConfigured) {
+    throw new ProfessionalPayoutError("dlocal_not_configured", "dLocal Go no está configurado en este entorno.");
+  }
+  if (!detail.payout.ready) {
+    throw new ProfessionalPayoutError(
+      "profile_incomplete",
+      detail.payout.reason ?? "El profesional no tiene datos de cobro completos."
+    );
+  }
+  if (!detail.payout.estimatedLocal || detail.payout.estimatedLocal.amount <= 0) {
+    throw new ProfessionalPayoutError(
+      "invalid_amount",
+      "No se pudo calcular el monto en moneda local para el payout."
+    );
+  }
+
+  const { payout, record } = await createProfessionalPayout({
+    professionalProfileId: input.professionalId,
+    amount: detail.payout.estimatedLocal.amount,
+    externalReference: `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`,
+    beneficiaryEmail: detail.professional.email,
+    description: `MotivarCare · ${detail.totals.sessionsCount} sesiones`
+  });
+
+  const ledger = await payProfessionalUnpaidBalance(
+    input.professionalId,
+    input.payoutReference?.trim() || `dlocal:${payout.payout_id}`
+  );
+
+  if ("notFound" in ledger || "noRecords" in ledger) {
+    return ledger;
+  }
+
+  return {
+    ...ledger,
+    dlocalPayoutId: payout.payout_id,
+    dlocalStatus: record.status,
+    dlocalAmount: detail.payout.estimatedLocal.amount,
+    dlocalCurrency: detail.payout.estimatedLocal.currency
+  };
+}

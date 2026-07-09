@@ -3,6 +3,8 @@ import type {
   AdminPlatformExecutedResponse,
   AdminPlatformPurchasesResponse,
   AdminUnpaidProfessionalsResponse,
+  PayUnpaidProfessionalResponse,
+  UnpaidProfessionalDetailResponse,
   FinanceOverviewResponse,
   FinancePayoutRunDetailResponse,
   FinancePayoutRunsResponse,
@@ -130,14 +132,27 @@ export async function fetchUnpaidProfessionals(token: string): Promise<AdminUnpa
   return apiRequest<AdminUnpaidProfessionalsResponse>("/api/admin/finance/unpaid-professionals", token);
 }
 
+export async function fetchUnpaidProfessionalDetail(
+  token: string,
+  professionalId: string
+): Promise<UnpaidProfessionalDetailResponse> {
+  return apiRequest<UnpaidProfessionalDetailResponse>(
+    `/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}`,
+    token
+  );
+}
+
 export async function payProfessionalUnpaid(
   token: string,
   professionalId: string,
-  payoutReference?: string
-): Promise<{ message: string; professionalNetCents: number; sessionsCount: number }> {
+  input?: { method?: "ledger" | "dlocal"; payoutReference?: string }
+): Promise<PayUnpaidProfessionalResponse> {
   return apiRequest(`/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}/pay`, token, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ payoutReference: payoutReference ?? undefined })
+    body: JSON.stringify({
+      method: input?.method ?? "ledger",
+      payoutReference: input?.payoutReference ?? undefined
+    })
   });
 }

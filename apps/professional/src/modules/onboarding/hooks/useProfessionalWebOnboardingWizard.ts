@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { detectBrowserTimezone } from "@therapy/auth";
 import { focusAreasIncludeCouplesTherapy } from "@therapy/types";
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import {
+  type AppLanguage,
+  type DisplayFxRates,
+  type LocalizedText,
+  type SupportedCurrency,
+  defaultDisplayCurrencyForPatient,
+  formatUsdMajorForPatientDisplay,
+  textByLanguage
+} from "@therapy/i18n-config";
 import { resendVerificationEmail as requestVerificationEmailResend } from "../../app/lib/ensureVerificationEmailSent";
 import {
   professionalAuthSurfaceMessage,
@@ -19,6 +27,7 @@ import {
   type SessionPriceBoundsDual
 } from "../../app/services/sessionPriceBounds";
 import {
+  fetchPublicDisplayFxRates,
   fetchPublicUsdArsRate,
   roundSessionPriceArsFromUsd
 } from "../../app/services/usdArsPublicRate";
@@ -29,9 +38,11 @@ import {
   defaultBankTransferType,
   isPayoutFormComplete,
   normalizeBankAccountValue,
-  normalizeTaxIdDigits,
+  normalizeTaxId,
+  payoutFormToDlocalProfile,
   type PayoutFormFields
 } from "../lib/professionalPayoutValidation";
+import { isDlocalPayoutCountry } from "@therapy/types";
 import {
   inferPayoutProviderFromBrowser,
   inferPayoutProviderFromResidencyCountry
@@ -131,6 +142,7 @@ export function useProfessionalWebOnboardingWizard(input: {
   const [sessionPriceBounds, setSessionPriceBounds] = useState<SessionPriceBoundsDual | null>(null);
   const [usdArsRate, setUsdArsRate] = useState<number | null>(null);
   const [usdArsRateError, setUsdArsRateError] = useState(false);
+  const [displayFxRates, setDisplayFxRates] = useState<DisplayFxRates>({});
   const [pricingStepError, setPricingStepError] = useState("");
   const [credentialsStepError, setCredentialsStepError] = useState("");
   const [credentialsChecking, setCredentialsChecking] = useState(false);
@@ -189,6 +201,13 @@ export function useProfessionalWebOnboardingWizard(input: {
     payoutBankAccountValue: "",
     payoutBankName: "",
     payoutTermsAccepted: false,
+    payoutCountry: "",
+    payoutBeneficiaryFirstName: "",
+    payoutBeneficiaryLastName: "",
+    payoutDocumentType: "",
+    payoutBankCode: "",
+    payoutBankBranch: "",
+    payoutAccountType: "" as "" | "CHECKING" | "SAVINGS",
     diplomas: [
       {
         institution: "",
@@ -222,6 +241,50 @@ export function useProfessionalWebOnboardingWizard(input: {
     }
     return roundSessionPriceArsFromUsd(usd, usdArsRate);
   }, [form.sessionPriceUsd, usdArsRate]);
+
+  /**
+   * Moneda local del profesional según su país de residencia (COP para CO, MXN
+   * para MX, etc.). Es en esta moneda que dLocal le paga por transferencia, así
+   * que le mostramos el equivalente orientativo en su moneda, no en ARS.
+   */
+  const proDisplayCurrency: SupportedCurrency = useMemo(
+    () => defaultDisplayCurrencyForPatient({ residencyCountry: form.residencyCountry }),
+    [form.residencyCountry]
+  );
+
+  const sessionPriceLocalLabel = useMemo(() => {
+    const usd = Number(form.sessionPriceUsd || "0");
+    if (!usd || proDisplayCurrency === "USD") {
+      return null;
+    }
+    return formatUsdMajorForPatientDisplay({
+      usdMajor: usd,
+      displayCurrency: proDisplayCurrency,
+      language: input.language,
+      fxRates: displayFxRates,
+      residencyCountry: form.residencyCountry
+    });
+  }, [form.sessionPriceUsd, form.residencyCountry, proDisplayCurrency, displayFxRates, input.language]);
+
+  const discountedPriceLabelLocal = (discount: string) => {
+    const usd = Number(form.sessionPriceUsd || "0");
+    if (!usd || proDisplayCurrency === "USD") {
+      return null;
+    }
+    const percent = Number(discount || "0");
+    if (!percent) {
+      return null;
+    }
+    const discountedUsd = Math.max(0, usd * (1 - percent / 100));
+    const formatted = formatUsdMajorForPatientDisplay({
+      usdMajor: discountedUsd,
+      displayCurrency: proDisplayCurrency,
+      language: input.language,
+      fxRates: displayFxRates,
+      residencyCountry: form.residencyCountry
+    });
+    return `${formatted} ${t(input.language, { es: "por sesión", en: "per session", pt: "por sessao" })}`;
+  };
 
   const labels = [
     t(input.language, { es: "Correo y contraseña", en: "Email and password", pt: "E-mail e senha" }),
@@ -353,6 +416,24 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchPublicDisplayFxRates()
+      .then((rates) => {
+        if (!cancelled) {
+          setDisplayFxRates(rates);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDisplayFxRates({});
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const seed = input.credentialsSeed;
     if (!seed) {
       return;
@@ -375,31 +456,41 @@ export function useProfessionalWebOnboardingWizard(input: {
   }, [form.email, form.emailConfirm, form.password, form.passwordConfirm, form.turnstileToken]);
 
   useEffect(() => {
-    const iso = form.residencyCountry.trim();
+    const iso = form.residencyCountry.trim().toUpperCase();
     const next =
       iso.length === 2 ? inferPayoutProviderFromResidencyCountry(iso) : inferPayoutProviderFromBrowser();
+    // Si el país de residencia es uno donde dLocal transfiere, lo pre-seleccionamos como
+    // país de cobro (el profesional puede cambiarlo si su cuenta está en otro país).
+    const residencyIsPayoutCountry = isDlocalPayoutCountry(iso);
     setForm((current) => {
-      if (current.payoutProvider === next) {
+      const payoutCountryDefault =
+        current.payoutCountry.trim().length === 0 && residencyIsPayoutCountry ? iso : current.payoutCountry;
+      if (current.payoutProvider === next && payoutCountryDefault === current.payoutCountry) {
         return current;
       }
       return {
         ...current,
         payoutProvider: next,
         payoutBankTransferType: defaultBankTransferType(next),
-        payoutBankAccountValue: ""
+        payoutBankAccountValue: current.payoutProvider === next ? current.payoutBankAccountValue : "",
+        payoutCountry: payoutCountryDefault
       };
     });
   }, [form.residencyCountry]);
 
   useEffect(() => {
     const holder = joinWebOnboardingFullName(form.firstName, form.lastName);
-    if (!holder) {
-      return;
-    }
     setForm((current) => ({
       ...current,
-      payoutLegalName: current.payoutLegalName.trim() ? current.payoutLegalName : holder,
-      payoutAccountHolderName: current.payoutAccountHolderName.trim() ? current.payoutAccountHolderName : holder
+      payoutLegalName: current.payoutLegalName.trim() || holder ? current.payoutLegalName || holder : "",
+      payoutAccountHolderName:
+        current.payoutAccountHolderName.trim() || holder ? current.payoutAccountHolderName || holder : "",
+      payoutBeneficiaryFirstName: current.payoutBeneficiaryFirstName.trim()
+        ? current.payoutBeneficiaryFirstName
+        : form.firstName.trim(),
+      payoutBeneficiaryLastName: current.payoutBeneficiaryLastName.trim()
+        ? current.payoutBeneficiaryLastName
+        : form.lastName.trim()
     }));
   }, [form.firstName, form.lastName]);
 
@@ -581,7 +672,14 @@ export function useProfessionalWebOnboardingWizard(input: {
         bankTransferType: form.payoutBankTransferType,
         bankAccountValue: form.payoutBankAccountValue,
         bankName: form.payoutBankName,
-        payoutTermsAccepted: form.payoutTermsAccepted
+        payoutTermsAccepted: form.payoutTermsAccepted,
+        payoutCountry: form.payoutCountry,
+        beneficiaryFirstName: form.payoutBeneficiaryFirstName,
+        beneficiaryLastName: form.payoutBeneficiaryLastName,
+        documentType: form.payoutDocumentType,
+        bankCode: form.payoutBankCode,
+        bankBranch: form.payoutBankBranch,
+        accountType: form.payoutAccountType
       } satisfies PayoutFormFields,
       Boolean(form.stripeDocPreview.trim())
     )
@@ -1000,15 +1098,56 @@ export function useProfessionalWebOnboardingWizard(input: {
           graduationYear: Number(diploma.graduationYear),
           documentUrl: diploma.diplomaPreview || null
         })),
-      taxId: normalizeTaxIdDigits(form.taxId) || undefined,
+      taxId: normalizeTaxId(form.taxId) || undefined,
       payoutMethod: form.payoutProvider,
-      payoutProfile: {
-        legalName: form.payoutLegalName.trim(),
-        accountHolderName: form.payoutAccountHolderName.trim(),
-        bankTransferType: form.payoutBankTransferType,
-        bankAccountValue: normalizeBankAccountValue(form.payoutBankTransferType, form.payoutBankAccountValue),
-        bankName: form.payoutBankName.trim() || undefined
-      }
+      payoutProfile: (() => {
+        // Camino dLocal: perfil dinámico por país de cobro (transfer_country + campos dLocal).
+        if (form.payoutProvider === "dlocal" && isDlocalPayoutCountry(form.payoutCountry)) {
+          const dlocal = payoutFormToDlocalProfile({
+            legalName: form.payoutLegalName,
+            taxId: form.taxId,
+            accountHolderName: form.payoutAccountHolderName,
+            bankTransferType: form.payoutBankTransferType,
+            bankAccountValue: form.payoutBankAccountValue,
+            bankName: form.payoutBankName,
+            payoutTermsAccepted: form.payoutTermsAccepted,
+            payoutCountry: form.payoutCountry,
+            beneficiaryFirstName: form.payoutBeneficiaryFirstName,
+            beneficiaryLastName: form.payoutBeneficiaryLastName,
+            documentType: form.payoutDocumentType,
+            bankCode: form.payoutBankCode,
+            bankBranch: form.payoutBankBranch,
+            accountType: form.payoutAccountType
+          });
+          return {
+            legalName:
+              form.payoutLegalName.trim()
+              || `${dlocal.beneficiaryFirstName} ${dlocal.beneficiaryLastName}`.trim(),
+            accountHolderName:
+              form.payoutAccountHolderName.trim()
+              || `${dlocal.beneficiaryFirstName} ${dlocal.beneficiaryLastName}`.trim(),
+            bankTransferType: form.payoutBankTransferType,
+            bankAccountValue: dlocal.bankAccount,
+            bankName: form.payoutBankName.trim() || undefined,
+            payoutCountry: dlocal.payoutCountry,
+            beneficiaryFirstName: dlocal.beneficiaryFirstName,
+            beneficiaryLastName: dlocal.beneficiaryLastName,
+            documentType: dlocal.documentType,
+            document: dlocal.document,
+            bankCode: dlocal.bankCode,
+            bankBranch: dlocal.bankBranch ?? undefined,
+            accountType: dlocal.accountType ?? undefined
+          };
+        }
+        // Camino legacy (Stripe / internacional).
+        return {
+          legalName: form.payoutLegalName.trim(),
+          accountHolderName: form.payoutAccountHolderName.trim(),
+          bankTransferType: form.payoutBankTransferType,
+          bankAccountValue: normalizeBankAccountValue(form.payoutBankTransferType, form.payoutBankAccountValue),
+          bankName: form.payoutBankName.trim() || undefined
+        };
+      })()
     };
 
     const meta: ProfessionalWebOnboardingFinishMeta = {
@@ -1078,7 +1217,10 @@ export function useProfessionalWebOnboardingWizard(input: {
     clampDiscountInput,
     discountedPriceLabelArs,
     discountedPriceLabelUsd,
+    discountedPriceLabelLocal,
     computedSessionPriceArs,
+    proDisplayCurrency,
+    sessionPriceLocalLabel,
     offersCouplesTherapy,
     usdArsRate,
     usdArsRateError,

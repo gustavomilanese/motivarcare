@@ -4,7 +4,6 @@ import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i
 import { compressImageDataUrl, fileToDataUrl, mediaPreviewFromFile, readVideoFileForUpload } from "../../app/utils/mediaPreview";
 import { RESIDENCY_COUNTRY_OPTIONS } from "@therapy/types";
 import { LATIN_AMERICA_COUNTRY_OPTIONS } from "../constants/latinAmericaCountries";
-import { focusAreasIncludeCouplesTherapy } from "../constants/professionalAttentionAreas";
 import { ProfessionalFocusAreasPicker } from "./ProfessionalFocusAreasPicker";
 import {
   ProfessionalIdentityStepProgress,
@@ -14,7 +13,6 @@ import { ProfessionalPayoutSetupPanel } from "./ProfessionalPayoutSetupPanel";
 import {
   PROFESSIONAL_VIDEO_MAX_DURATION_SEC
 } from "../constants/professionalProfileGuidanceCopy";
-import { ProfessionalIdentityStepConfirmDialog } from "./ProfessionalIdentityStepConfirmDialog";
 import { PROFESSIONAL_THERAPY_MODALITY_ROWS } from "../constants/professionalTherapyModalityOptions";
 import { WEB_PROFESSIONAL_TITLE_OPTIONS_ES } from "../constants/webProfessionalTitleOptions";
 import type { ProfessionalWebOnboardingFinishMeta, ProfessionalWebOnboardingPayload } from "../types";
@@ -49,10 +47,10 @@ export function ProfessionalWebOnboardingWizard(props: {
 
   const interstitialByStep = wizard.interstitialByStep;
   const [mediaStepError, setMediaStepError] = useState("");
-  const [identityStepConfirmOpen, setIdentityStepConfirmOpen] = useState(false);
   const [identityTherapyUnlocked, setIdentityTherapyUnlocked] = useState(false);
   const therapySectionRef = useRef<HTMLDivElement | null>(null);
   const focusAreasSectionRef = useRef<HTMLDivElement | null>(null);
+  const languagesSectionRef = useRef<HTMLDivElement | null>(null);
   const focusAreasWereVisibleRef = useRef(false);
 
   const {
@@ -79,10 +77,10 @@ export function ProfessionalWebOnboardingWizard(props: {
     toggleFocusArea,
     toggleTherapyModality,
     clampDiscountInput,
-    discountedPriceLabelArs,
     discountedPriceLabelUsd,
-    computedSessionPriceArs,
-    offersCouplesTherapy,
+    discountedPriceLabelLocal,
+    proDisplayCurrency,
+    sessionPriceLocalLabel,
     usdArsRateError,
     canContinue,
     handleContinue,
@@ -158,32 +156,73 @@ export function ProfessionalWebOnboardingWizard(props: {
     return { active, reached };
   }, [form, identityReveal, identityTherapyUnlocked]);
 
+  const identityFooterAdvance = useMemo((): {
+    canAdvance: boolean;
+    action: "scroll-languages" | "unlock-therapy" | "next-wizard-step" | null;
+  } => {
+    const hasNames = Boolean(form.firstName.trim() && form.lastName.trim());
+    const hasTitle = Boolean(form.professionalTitle.trim());
+    const hasCareerBasics = Boolean(form.experienceBand && form.practiceBand && form.gender);
+    const hasBirthCountry = Boolean(form.birthCountry);
+    const hasResidency = form.residencyCountry.trim().length === 2;
+
+    if (!hasNames || !hasTitle || !hasCareerBasics) {
+      return { canAdvance: false, action: null };
+    }
+    if (!hasBirthCountry || !hasResidency) {
+      return { canAdvance: hasBirthCountry && hasResidency, action: "scroll-languages" };
+    }
+    if (form.languages.length === 0) {
+      return { canAdvance: false, action: null };
+    }
+    if (form.focusAreas.length === 0) {
+      return { canAdvance: false, action: null };
+    }
+    if (!identityTherapyUnlocked) {
+      return { canAdvance: true, action: "unlock-therapy" };
+    }
+    if (form.therapyModalities.length === 0) {
+      return { canAdvance: false, action: null };
+    }
+    return { canAdvance: true, action: "next-wizard-step" };
+  }, [form, identityTherapyUnlocked]);
+
+  const scrollIdentitySection = (ref: { current: HTMLElement | null }) => {
+    window.requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const unlockIdentityTherapySection = () => {
     if (form.focusAreas.length === 0) {
       return;
     }
     setIdentityTherapyUnlocked(true);
-    window.requestAnimationFrame(() => {
-      therapySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    scrollIdentitySection(therapySectionRef);
   };
 
   const tryAdvanceFromFooter = () => {
-    if (step === 2 && canContinue) {
-      setIdentityStepConfirmOpen(true);
+    if (step === 2) {
+      const { canAdvance, action } = identityFooterAdvance;
+      if (!canAdvance || !action) {
+        return;
+      }
+      if (action === "scroll-languages") {
+        scrollIdentitySection(languagesSectionRef);
+        return;
+      }
+      if (action === "unlock-therapy") {
+        unlockIdentityTherapySection();
+        return;
+      }
+      void handleContinue();
       return;
     }
     void handleContinue();
   };
 
-  const confirmIdentityStepAdvance = () => {
-    setIdentityStepConfirmOpen(false);
-    void handleContinue();
-  };
-
   useEffect(() => {
     if (step !== 2) {
-      setIdentityStepConfirmOpen(false);
       setIdentityTherapyUnlocked(false);
     }
   }, [step]);
@@ -202,20 +241,6 @@ export function ProfessionalWebOnboardingWizard(props: {
     }
     focusAreasWereVisibleRef.current = identityReveal.showFocusAreas;
   }, [identityReveal.showFocusAreas]);
-
-  useEffect(() => {
-    if (!identityStepConfirmOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setIdentityStepConfirmOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [identityStepConfirmOpen]);
 
   const genderWebOptions = useMemo(
     () =>
@@ -347,7 +372,29 @@ export function ProfessionalWebOnboardingWizard(props: {
           </ol>
         </aside>
 
-        <div className="pro-web-panel">
+        <div
+          className="pro-web-panel"
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
+              return;
+            }
+            // Solo desde inputs de texto/número; textarea (Enter = salto de línea),
+            // botones, selects y links conservan su comportamiento nativo.
+            const target = event.target as HTMLElement;
+            if (target.tagName !== "INPUT") {
+              return;
+            }
+            const advanceDisabled =
+              (step === 2 ? !identityFooterAdvance.canAdvance : !canContinue)
+              || credentialsChecking
+              || registerInFlight;
+            if (advanceDisabled) {
+              return;
+            }
+            event.preventDefault();
+            tryAdvanceFromFooter();
+          }}
+        >
           <header className="pro-web-panel-head">
             <div className="pro-web-head-meta">
               <span className="pro-web-step-kicker">
@@ -650,7 +697,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 </div>
               ) : null}
               {identityReveal.showLanguages ? (
-                <div className="pro-web-identity-section">
+                <div className="pro-web-identity-section" ref={languagesSectionRef}>
                   <h3 className="pro-web-identity-section-label">
                     {t(props.language, {
                       es: "Idiomas de atención",
@@ -756,9 +803,9 @@ export function ProfessionalWebOnboardingWizard(props: {
             <div className="pro-web-fields">
               <p className="pro-web-price-bounds-hint">
                 {t(props.language, {
-                  es: "Acá deberás definir el valor de tu sesión de referencia en dólares. Será usada para mostrar tu oferta a los pacientes. Luego podrás definir descuentos por paquetes de sesiones.",
-                  en: "Here you’ll set your reference session price in US dollars. It will be used to show your offer to patients. You can then define discounts for session packages.",
-                  pt: "Aqui voce define o valor de referencia da sessao em dolares. Sera usado para mostrar sua oferta aos pacientes. Depois podera definir descontos em pacotes de sessoes."
+                  es: "Definí el valor de tu sesión en dólares. Este valor se usará para mostrar tu oferta a los pacientes y también como base para terapia de pareja. Luego podrás aplicar descuentos por paquetes.",
+                  en: "Set your session price in US dollars. This value will be used to show your offer to patients and as the basis for couples therapy. You can then apply package discounts.",
+                  pt: "Defina o valor da sua sessao em dolares. Este valor sera usado para mostrar sua oferta aos pacientes e tambem como base para terapia de casal. Depois podera aplicar descontos por pacotes."
                 })}
               </p>
               {usdArsRateError ? (
@@ -785,13 +832,19 @@ export function ProfessionalWebOnboardingWizard(props: {
                   onChange={(event) => update({ sessionPriceUsd: event.target.value.replace(/\D/g, "") })}
                 />
               </label>
-              {computedSessionPriceArs !== null ? (
+              {sessionPriceLocalLabel ? (
                 <p className="pro-web-price-ars-preview">
-                  {t(props.language, {
-                    es: `Equivalente orientativo en pesos: ${computedSessionPriceArs.toLocaleString("es-AR")} ARS (tipo de cambio oficial, redondeado al múltiplo de 2.000 más cercano).`,
-                    en: `Indicative ARS equivalent: ${computedSessionPriceArs.toLocaleString("en-US")} ARS (official rate, rounded to the nearest ARS 2,000).`,
-                    pt: `Equivalente indicativo em pesos: ${computedSessionPriceArs.toLocaleString("pt-BR")} ARS (cotacao oficial, arredondado ao multiplo de 2.000 mais proximo).`
-                  })}
+                  {proDisplayCurrency === "ARS"
+                    ? t(props.language, {
+                        es: `Equivalente orientativo: ${sessionPriceLocalLabel} por sesión (tipo de cambio oficial, redondeado al múltiplo de 2.000 más cercano).`,
+                        en: `Indicative equivalent: ${sessionPriceLocalLabel} per session (official rate, rounded to the nearest ARS 2,000).`,
+                        pt: `Equivalente indicativo: ${sessionPriceLocalLabel} por sessao (cotacao oficial, arredondado ao multiplo de 2.000 mais proximo).`
+                      })
+                    : t(props.language, {
+                        es: `Equivalente orientativo en tu moneda: ${sessionPriceLocalLabel} por sesión (referencia según tipo de cambio; el cobro base es en USD).`,
+                        en: `Indicative equivalent in your currency: ${sessionPriceLocalLabel} per session (reference at current FX; base charge is in USD).`,
+                        pt: `Equivalente indicativo na sua moeda: ${sessionPriceLocalLabel} por sessao (referencia pela cotacao; a cobranca base e em USD).`
+                      })}
                 </p>
               ) : null}
               <div className="pro-web-discount-packages">
@@ -808,7 +861,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                     <em>%</em>
                   </label>
                   <small className="pro-web-discount-total">
-                    {[discountedPriceLabelArs(form.discount4), discountedPriceLabelUsd(form.discount4)]
+                    {[discountedPriceLabelLocal(form.discount4), discountedPriceLabelUsd(form.discount4)]
                       .filter(Boolean)
                       .join(" · ") || "\u00A0"}
                   </small>
@@ -826,7 +879,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                     <em>%</em>
                   </label>
                   <small className="pro-web-discount-total">
-                    {[discountedPriceLabelArs(form.discount8), discountedPriceLabelUsd(form.discount8)]
+                    {[discountedPriceLabelLocal(form.discount8), discountedPriceLabelUsd(form.discount8)]
                       .filter(Boolean)
                       .join(" · ") || "\u00A0"}
                   </small>
@@ -844,7 +897,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                     <em>%</em>
                   </label>
                   <small className="pro-web-discount-total">
-                    {[discountedPriceLabelArs(form.discount12), discountedPriceLabelUsd(form.discount12)]
+                    {[discountedPriceLabelLocal(form.discount12), discountedPriceLabelUsd(form.discount12)]
                       .filter(Boolean)
                       .join(" · ") || "\u00A0"}
                   </small>
@@ -1038,6 +1091,7 @@ export function ProfessionalWebOnboardingWizard(props: {
                 language={props.language}
                 provider={form.payoutProvider}
                 providerLocked
+                residencyCountry={form.residencyCountry}
                 form={{
                   legalName: form.payoutLegalName,
                   taxId: form.taxId,
@@ -1045,7 +1099,14 @@ export function ProfessionalWebOnboardingWizard(props: {
                   bankTransferType: form.payoutBankTransferType,
                   bankAccountValue: form.payoutBankAccountValue,
                   bankName: form.payoutBankName,
-                  payoutTermsAccepted: form.payoutTermsAccepted
+                  payoutTermsAccepted: form.payoutTermsAccepted,
+                  payoutCountry: form.payoutCountry,
+                  beneficiaryFirstName: form.payoutBeneficiaryFirstName,
+                  beneficiaryLastName: form.payoutBeneficiaryLastName,
+                  documentType: form.payoutDocumentType,
+                  bankCode: form.payoutBankCode,
+                  bankBranch: form.payoutBankBranch,
+                  accountType: form.payoutAccountType
                 }}
                 onFormChange={(patch) => {
                   update({
@@ -1063,7 +1124,18 @@ export function ProfessionalWebOnboardingWizard(props: {
                     ...(patch.bankName !== undefined ? { payoutBankName: patch.bankName } : {}),
                     ...(patch.payoutTermsAccepted !== undefined
                       ? { payoutTermsAccepted: patch.payoutTermsAccepted }
-                      : {})
+                      : {}),
+                    ...(patch.payoutCountry !== undefined ? { payoutCountry: patch.payoutCountry } : {}),
+                    ...(patch.beneficiaryFirstName !== undefined
+                      ? { payoutBeneficiaryFirstName: patch.beneficiaryFirstName }
+                      : {}),
+                    ...(patch.beneficiaryLastName !== undefined
+                      ? { payoutBeneficiaryLastName: patch.beneficiaryLastName }
+                      : {}),
+                    ...(patch.documentType !== undefined ? { payoutDocumentType: patch.documentType } : {}),
+                    ...(patch.bankCode !== undefined ? { payoutBankCode: patch.bankCode } : {}),
+                    ...(patch.bankBranch !== undefined ? { payoutBankBranch: patch.bankBranch } : {}),
+                    ...(patch.accountType !== undefined ? { payoutAccountType: patch.accountType } : {})
                   });
                 }}
                 docPreview={form.stripeDocPreview}
@@ -1100,7 +1172,11 @@ export function ProfessionalWebOnboardingWizard(props: {
             <button
               type="button"
               className="pro-primary"
-              disabled={!canContinue || credentialsChecking || registerInFlight}
+              disabled={
+                (step === 2 ? !identityFooterAdvance.canAdvance : !canContinue)
+                || credentialsChecking
+                || registerInFlight
+              }
               onClick={() => tryAdvanceFromFooter()}
             >
               {registerInFlight && step === 0
@@ -1114,15 +1190,6 @@ export function ProfessionalWebOnboardingWizard(props: {
           </footer>
         </div>
       </section>
-
-      {identityStepConfirmOpen ? (
-        <ProfessionalIdentityStepConfirmDialog
-          language={props.language}
-          showCouplesNotice={focusAreasIncludeCouplesTherapy(form.focusAreas)}
-          onGoBack={() => setIdentityStepConfirmOpen(false)}
-          onContinue={confirmIdentityStepAdvance}
-        />
-      ) : null}
 
       {activeInterstitialStep !== null && interstitialByStep[activeInterstitialStep] ? (
         <div className="pro-web-interstitial" role="dialog" aria-modal="true">

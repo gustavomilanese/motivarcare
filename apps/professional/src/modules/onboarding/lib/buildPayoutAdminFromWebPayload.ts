@@ -12,18 +12,28 @@ export function buildPayoutAdminFromWebPayload(
   }
 
   const payoutMethod = payload.payoutMethod === "dlocal" ? "dlocal" : "stripe";
+  const profile = payload.payoutProfile;
 
   return {
     taxId: payload.taxId,
-    legalName: payload.payoutProfile.legalName,
+    legalName: profile.legalName,
     payoutMethod,
     payoutStatus: "pending_review",
     payoutSubmittedAt: new Date().toISOString(),
     payoutBankAccount: {
-      transferType: payload.payoutProfile.bankTransferType as ProfessionalPayoutBankTransferType,
-      accountValue: payload.payoutProfile.bankAccountValue,
-      accountHolderName: payload.payoutProfile.accountHolderName,
-      bankName: payload.payoutProfile.bankName ?? null
+      transferType: profile.bankTransferType as ProfessionalPayoutBankTransferType,
+      accountValue: profile.bankAccountValue,
+      accountHolderName: profile.accountHolderName,
+      bankName: profile.bankName ?? null,
+      // Campos dLocal (presentes sólo cuando payoutMethod === "dlocal").
+      payoutCountry: profile.payoutCountry ?? null,
+      beneficiaryFirstName: profile.beneficiaryFirstName ?? null,
+      beneficiaryLastName: profile.beneficiaryLastName ?? null,
+      documentType: profile.documentType ?? null,
+      document: profile.document ?? null,
+      bankCode: profile.bankCode ?? null,
+      bankBranch: profile.bankBranch ?? null,
+      accountType: profile.accountType ?? null
     }
   };
 }

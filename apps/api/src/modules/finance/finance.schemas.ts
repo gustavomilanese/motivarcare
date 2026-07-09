@@ -44,6 +44,11 @@ export const markPayoutLinePaidSchema = z.object({
   paidAt: z.string().datetime().optional()
 });
 
+export const payUnpaidProfessionalSchema = z.object({
+  method: z.enum(["ledger", "dlocal"]).default("ledger"),
+  payoutReference: z.string().trim().min(2).max(120).optional()
+});
+
 export const financeDailyAggregateQuerySchema = z.object({
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),

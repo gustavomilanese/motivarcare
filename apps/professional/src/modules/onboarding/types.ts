@@ -106,6 +106,15 @@ export interface ProfessionalWebOnboardingPayload {
     bankTransferType: string;
     bankAccountValue: string;
     bankName?: string;
+    /** Campos dLocal payouts (presentes cuando payoutMethod === "dlocal"). */
+    payoutCountry?: string;
+    beneficiaryFirstName?: string;
+    beneficiaryLastName?: string;
+    documentType?: string;
+    document?: string;
+    bankCode?: string;
+    bankBranch?: string;
+    accountType?: "CHECKING" | "SAVINGS";
   };
 }
 

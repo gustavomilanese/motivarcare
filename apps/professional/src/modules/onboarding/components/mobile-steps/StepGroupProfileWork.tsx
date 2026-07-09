@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { PROFESSIONAL_FOCUS_AREAS_AI_NOTICE } from "../../constants/professionalProfileGuidanceCopy";
-import { focusAreasIncludeCouplesTherapy } from "../../constants/professionalAttentionAreas";
 import {
   PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE,
   professionalProblemSelectionIsComplete,
@@ -9,7 +8,6 @@ import {
 } from "../../constants/professionalClientProblemQuestionnaire";
 import { ProfessionalFocusAreasPicker } from "../ProfessionalFocusAreasPicker";
 import { ProfessionalGuidanceBanner } from "../ProfessionalGuidanceBanner";
-import { ProfessionalIdentityStepConfirmDialog } from "../ProfessionalIdentityStepConfirmDialog";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -224,7 +222,6 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
   onContinue: () => void;
 }) {
   const [otherForcedOpen, setOtherForcedOpen] = useState<Partial<Record<ProblemQuestionBlock["id"], boolean>>>({});
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const motivosBlock = PROFESSIONAL_CLIENT_PROBLEM_QUESTIONNAIRE.find((block) => block.id === "motivos");
   const motivoValues = useMemo(
@@ -295,10 +292,6 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
 
   const tryContinue = () => {
     if (!professionalProblemSelectionIsComplete(props.values)) {
-      return;
-    }
-    if (focusAreasIncludeCouplesTherapy(selectedMotivos)) {
-      setConfirmOpen(true);
       return;
     }
     props.onContinue();
@@ -423,18 +416,6 @@ export function ProfessionalWorkAreasByClientProblemStep(props: {
           {t(props.language, { es: "Guardar y continuar", en: "Save and continue", pt: "Salvar e continuar" })}
         </button>
       </section>
-
-      {confirmOpen ? (
-        <ProfessionalIdentityStepConfirmDialog
-          language={props.language}
-          showCouplesNotice={focusAreasIncludeCouplesTherapy(selectedMotivos)}
-          onGoBack={() => setConfirmOpen(false)}
-          onContinue={() => {
-            setConfirmOpen(false);
-            props.onContinue();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

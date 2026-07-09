@@ -102,6 +102,42 @@ export type {
   ProfessionalPayoutStatus
 } from "./professionalPayoutProfile.js";
 
+export {
+  DLOCAL_PAYOUT_COUNTRY_CODES,
+  DLOCAL_PAYOUT_CURRENCY,
+  DLOCAL_PAYOUT_PURPOSE,
+  normalizePayoutCountry,
+  isDlocalPayoutCountry,
+  getDlocalPayoutCountryConfig,
+  dlocalPayoutCurrencyForCountry,
+  dlocalPayoutCountryOptions,
+  normalizeDlocalField,
+  normalizeDlocalAccountValue,
+  resolveDlocalAccountRule,
+  validateDlocalPayoutProfile,
+  isDlocalPayoutProfileComplete
+} from "./dlocalPayouts.js";
+export type {
+  DlocalPayoutCountry,
+  DlocalPayoutFlowType,
+  DlocalPayoutAccountType,
+  DlocalPayoutPurpose,
+  DlocalDocumentTypeOption,
+  DlocalFieldKind,
+  DlocalFieldRule,
+  DlocalPayoutCountryConfig,
+  DlocalPayoutProfileInput,
+  DlocalPayoutValidationError
+} from "./dlocalPayouts.js";
+
+export {
+  DLOCAL_PAYOUT_BANK_CODES,
+  dlocalPayoutBankCodes,
+  dlocalPayoutBankCodeMode,
+  isKnownDlocalBankCode
+} from "./dlocalPayoutBankCodes.js";
+export type { DlocalBankCode } from "./dlocalPayoutBankCodes.js";
+
 export interface CancellationPolicy {
   freeCancellationHours: number;
   lateCancellationPenalty: "none" | "partial_credit" | "full_credit";

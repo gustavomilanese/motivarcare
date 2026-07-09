@@ -30,6 +30,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "@therapy/i18n-config": "0.1.0",
+    "@therapy/patient-core": "0.1.0",
     "@therapy/types": "0.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

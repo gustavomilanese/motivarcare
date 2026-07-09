@@ -2,11 +2,12 @@ import { type RefObject } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { ProfessionalPayoutBankTransferType, ProfessionalPayoutStatus } from "@therapy/types";
 import {
-  PROFESSIONAL_PAYOUT_FLOW_STEPS,
   PROFESSIONAL_PAYOUT_FISCAL_NOTICE,
   PROFESSIONAL_PAYOUT_SETUP_LEAD
 } from "../constants/professionalProfileGuidanceCopy";
+import { fiscalIdHintForCountry } from "../lib/fiscalIdByCountry";
 import type { PayoutFormFields } from "../lib/professionalPayoutValidation";
+import { DlocalPayoutCountryFields } from "./DlocalPayoutCountryFields";
 
 export type PayoutProvider = "dlocal" | "stripe";
 
@@ -31,6 +32,8 @@ export function ProfessionalPayoutSetupPanel(props: {
   language: AppLanguage;
   provider: PayoutProvider;
   providerLocked?: boolean;
+  /** País de residencia del profesional: define la pista del identificador fiscal (CUIT, RFC, NIT…). */
+  residencyCountry?: string | null;
   form: PayoutFormFields;
   onFormChange: (patch: Partial<PayoutFormFields>) => void;
   docPreview: string;
@@ -39,7 +42,7 @@ export function ProfessionalPayoutSetupPanel(props: {
   payoutStatus?: ProfessionalPayoutStatus;
 }) {
   const isDlocal = props.provider === "dlocal";
-  const providerLocked = props.providerLocked ?? false;
+  const fiscalHint = fiscalIdHintForCountry(props.residencyCountry, props.language);
   const transferOptions: Array<{ value: ProfessionalPayoutBankTransferType; label: LocalizedText }> = isDlocal
     ? [
         { value: "cbu", label: { es: "CBU", en: "CBU", pt: "CBU" } },
@@ -54,21 +57,6 @@ export function ProfessionalPayoutSetupPanel(props: {
   return (
     <div className="pro-payout-setup">
       <header className="pro-payout-setup__hero">
-        {providerLocked ? (
-          <span className="pro-payout-setup__region-badge">
-            {isDlocal
-              ? t(props.language, {
-                  es: "Cobros en Argentina y Latam",
-                  en: "Payouts in Argentina and Latin America",
-                  pt: "Recebimentos na Argentina e Latam"
-                })
-              : t(props.language, {
-                  es: "Cobros internacionales",
-                  en: "International payouts",
-                  pt: "Recebimentos internacionais"
-                })}
-          </span>
-        ) : null}
         <h4 className="pro-payout-setup__title">
           {t(props.language, {
             es: "Configurá cómo vas a cobrar tus sesiones",
@@ -84,150 +72,129 @@ export function ProfessionalPayoutSetupPanel(props: {
         ) : null}
       </header>
 
-      <section className="pro-payout-flow" aria-label={t(props.language, { es: "Cómo funciona", en: "How it works", pt: "Como funciona" })}>
-        {PROFESSIONAL_PAYOUT_FLOW_STEPS.map((step, index) => (
-          <article key={step.title.es} className="pro-payout-flow__step">
-            <span className="pro-payout-flow__index">{index + 1}</span>
-            <div>
-              <strong>{t(props.language, step.title)}</strong>
-              <p>{t(props.language, step.body)}</p>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="pro-payout-card">
-        <h5>
-          {t(props.language, { es: "Datos fiscales", en: "Tax identity", pt: "Dados fiscais" })}
-        </h5>
-        <p className="pro-payout-card__hint">{t(props.language, PROFESSIONAL_PAYOUT_FISCAL_NOTICE)}</p>
-        <div className="pro-payout-card__grid">
-          <label>
-            <span>
-              {isDlocal
-                ? t(props.language, { es: "Nombre legal / razón social", en: "Legal name", pt: "Nome legal" })
-                : t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}
-            </span>
-            <input
-              value={props.form.legalName}
-              onChange={(event) => props.onFormChange({ legalName: event.target.value })}
-              autoComplete="name"
-              placeholder={t(props.language, {
-                es: "Como figura en tu documento",
-                en: "As shown on your ID",
-                pt: "Como consta no documento"
-              })}
-            />
-          </label>
-          <label>
-            <span>
-              {isDlocal
-                ? t(props.language, { es: "CUIT / CUIL / DNI", en: "CUIT / CUIL / DNI", pt: "CUIT / CUIL / DNI" })
-                : t(props.language, { es: "Identificador fiscal", en: "Tax ID", pt: "Identificador fiscal" })}
-            </span>
-            <input
-              value={props.form.taxId}
-              onChange={(event) => props.onFormChange({ taxId: event.target.value })}
-              autoComplete="off"
-              inputMode="numeric"
-              placeholder={isDlocal ? "20-12345678-9" : "Tax ID"}
-            />
-          </label>
-        </div>
-      </section>
+      {!isDlocal ? (
+        <section className="pro-payout-card">
+          <h5>
+            {t(props.language, { es: "Datos fiscales", en: "Tax identity", pt: "Dados fiscais" })}
+          </h5>
+          <p className="pro-payout-card__hint">{t(props.language, PROFESSIONAL_PAYOUT_FISCAL_NOTICE)}</p>
+          <div className="pro-payout-card__grid">
+            <label>
+              <span>
+                {t(props.language, { es: "Nombre legal / razón social", en: "Legal name", pt: "Nome legal" })}
+              </span>
+              <input
+                value={props.form.legalName}
+                onChange={(event) => props.onFormChange({ legalName: event.target.value })}
+                autoComplete="name"
+                placeholder={t(props.language, {
+                  es: "Como figura en tu documento",
+                  en: "As shown on your ID",
+                  pt: "Como consta no documento"
+                })}
+              />
+            </label>
+            <label>
+              <span>{fiscalHint.label}</span>
+              <input
+                value={props.form.taxId}
+                onChange={(event) => props.onFormChange({ taxId: event.target.value })}
+                autoComplete="off"
+                placeholder={fiscalHint.placeholder}
+              />
+            </label>
+          </div>
+        </section>
+      ) : null}
 
       <section className="pro-payout-card">
         <h5>
           {t(props.language, {
-            es: "Cuenta donde recibís el dinero",
-            en: "Account where you receive funds",
-            pt: "Conta onde voce recebe"
+            es: "Datos bancarios para pagos",
+            en: "Bank details for payouts",
+            pt: "Dados bancarios para pagamentos"
           })}
         </h5>
         <p className="pro-payout-card__hint">
-          {isDlocal
-            ? t(props.language, {
-                es: "Transferimos tu parte neta después de cada sesión ejecutada. La cuenta debe estar a tu nombre.",
-                en: "We transfer your net share after each completed session. The account must be in your name.",
-                pt: "Transferimos sua parte liquida apos cada sessao realizada. A conta deve estar em seu nome."
-              })
-            : t(props.language, {
-                es: "Usamos transferencia bancaria internacional. Verificamos los datos antes del primer pago.",
-                en: "We use international bank transfer. We verify details before the first payout.",
-                pt: "Usamos transferencia bancaria internacional. Verificamos os dados antes do primeiro pagamento."
-              })}
+          {t(props.language, {
+            es: "Cargá los datos de la cuenta bancaria en la que querés recibir tus pagos por las sesiones realizadas. La cuenta debe estar registrada a tu nombre.",
+            en: "Enter the bank account where you want to receive payment for your completed sessions. The account must be registered in your name.",
+            pt: "Informe os dados da conta bancaria onde deseja receber os pagamentos das sessoes realizadas. A conta deve estar registrada em seu nome."
+          })}
         </p>
 
-        <div className="pro-payout-transfer-tabs" role="tablist">
-          {transferOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="tab"
-              aria-selected={props.form.bankTransferType === option.value}
-              className={`pro-payout-transfer-tab${props.form.bankTransferType === option.value ? " active" : ""}`}
-              onClick={() => props.onFormChange({ bankTransferType: option.value, bankAccountValue: "" })}
-            >
-              {t(props.language, option.label)}
-            </button>
-          ))}
-        </div>
+        {isDlocal ? (
+          <DlocalPayoutCountryFields
+            language={props.language}
+            fields={props.form}
+            onFormChange={props.onFormChange}
+          />
+        ) : (
+          <>
+            <div className="pro-payout-transfer-tabs" role="tablist">
+              {transferOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={props.form.bankTransferType === option.value}
+                  className={`pro-payout-transfer-tab${props.form.bankTransferType === option.value ? " active" : ""}`}
+                  onClick={() => props.onFormChange({ bankTransferType: option.value, bankAccountValue: "" })}
+                >
+                  {t(props.language, option.label)}
+                </button>
+              ))}
+            </div>
 
-        <div className="pro-payout-card__grid">
-          <label>
-            <span>
-              {t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}
-            </span>
-            <input
-              value={props.form.accountHolderName}
-              onChange={(event) => props.onFormChange({ accountHolderName: event.target.value })}
-              autoComplete="name"
-            />
-          </label>
-          <label>
-            <span>
-              {props.form.bankTransferType === "alias"
-                ? t(props.language, { es: "Alias bancario", en: "Bank alias", pt: "Alias bancario" })
-                : props.form.bankTransferType === "iban"
-                  ? "IBAN"
-                  : props.form.bankTransferType === "ach"
-                    ? t(props.language, { es: "Número de cuenta", en: "Account number", pt: "Numero da conta" })
-                    : props.form.bankTransferType.toUpperCase()}
-            </span>
-            <input
-              value={props.form.bankAccountValue}
-              onChange={(event) => props.onFormChange({ bankAccountValue: event.target.value })}
-              autoComplete="off"
-              inputMode={props.form.bankTransferType === "alias" ? "text" : "numeric"}
-              placeholder={
-                props.form.bankTransferType === "alias"
-                  ? "mi.alias.banco"
-                  : props.form.bankTransferType === "iban"
-                    ? "DE89 3704 0044 0532 0130 00"
-                    : "0000000000000000000000"
-              }
-            />
-          </label>
-          {isDlocal && props.form.bankTransferType !== "alias" ? (
-            <label>
-              <span>{t(props.language, { es: "Banco (opcional)", en: "Bank (optional)", pt: "Banco (opcional)" })}</span>
-              <input
-                value={props.form.bankName}
-                onChange={(event) => props.onFormChange({ bankName: event.target.value })}
-                autoComplete="organization"
-              />
-            </label>
-          ) : null}
-        </div>
+            <div className="pro-payout-card__grid">
+              <label>
+                <span>
+                  {t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}
+                </span>
+                <input
+                  value={props.form.accountHolderName}
+                  onChange={(event) => props.onFormChange({ accountHolderName: event.target.value })}
+                  autoComplete="name"
+                />
+              </label>
+              <label>
+                <span>
+                  {props.form.bankTransferType === "iban"
+                    ? "IBAN"
+                    : t(props.language, { es: "Número de cuenta", en: "Account number", pt: "Numero da conta" })}
+                </span>
+                <input
+                  value={props.form.bankAccountValue}
+                  onChange={(event) => props.onFormChange({ bankAccountValue: event.target.value })}
+                  autoComplete="off"
+                  placeholder={props.form.bankTransferType === "iban" ? "DE89 3704 0044 0532 0130 00" : ""}
+                />
+              </label>
+              <label>
+                <span>{t(props.language, { es: "Banco", en: "Bank", pt: "Banco" })}</span>
+                <input
+                  value={props.form.bankName}
+                  onChange={(event) => props.onFormChange({ bankName: event.target.value })}
+                  autoComplete="organization"
+                  placeholder={t(props.language, {
+                    es: "Nombre de tu banco",
+                    en: "Your bank name",
+                    pt: "Nome do seu banco"
+                  })}
+                />
+              </label>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="pro-payout-card">
         <h5>{t(props.language, { es: "Verificación de identidad", en: "Identity verification", pt: "Verificacao de identidade" })}</h5>
         <p className="pro-payout-card__hint">
           {t(props.language, {
-            es: "Subí una foto clara de tu DNI o documento fiscal. Lo usamos para validar que la cuenta sea tuya.",
-            en: "Upload a clear photo of your national ID or tax document. We use it to confirm the account is yours.",
-            pt: "Envie uma foto clara do seu documento. Usamos para validar que a conta e sua."
+            es: "Subí una imagen clara de tu DNI o documento fiscal para que podamos validar tu identidad.",
+            en: "Upload a clear image of your national ID or tax document so we can verify your identity.",
+            pt: "Envie uma imagem clara do seu documento de identidade ou fiscal para que possamos validar sua identidade."
           })}
         </p>
 
@@ -271,20 +238,12 @@ export function ProfessionalPayoutSetupPanel(props: {
         />
         <span>
           {t(props.language, {
-            es: "Confirmo que los datos son correctos, la cuenta está a mi nombre y autorizo a MotivarCare a transferirme el neto de mis sesiones.",
-            en: "I confirm the details are correct, the account is in my name, and I authorize MotivarCare to transfer my net session earnings.",
-            pt: "Confirmo que os dados estao corretos, a conta esta em meu nome e autorizo a MotivarCare a transferir meu liquido de sessoes."
+            es: "Confirmo que los datos ingresados son correctos, que la cuenta está a mi nombre y autorizo a MotivarCare a transferir allí mis pagos.",
+            en: "I confirm the details entered are correct, the account is in my name, and I authorize MotivarCare to transfer my payments there.",
+            pt: "Confirmo que os dados informados estao corretos, que a conta esta em meu nome e autorizo a MotivarCare a transferir ali meus pagamentos."
           })}
         </span>
       </label>
-
-      <p className="pro-payout-footnote">
-        {t(props.language, {
-          es: "Revisamos los datos en 1–2 días hábiles. Podés atender pacientes mientras tanto; los pagos se liberan cuando tu cuenta quede activa.",
-          en: "We review details within 1–2 business days. You can see patients meanwhile; payouts unlock once your account is active.",
-          pt: "Revisamos os dados em 1–2 dias uteis. Voce pode atender pacientes enquanto isso; os pagamentos liberam quando a conta estiver ativa."
-        })}
-      </p>
     </div>
   );
 }

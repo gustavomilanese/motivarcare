@@ -7,7 +7,8 @@ import {
   financeStripeEventsQuerySchema,
   financeSettingsSchema,
   listPayoutRunsQuerySchema,
-  markPayoutLinePaidSchema
+  markPayoutLinePaidSchema,
+  payUnpaidProfessionalSchema
 } from "./finance.schemas.js";
 import {
   closePayoutRun,
@@ -282,25 +283,61 @@ financeRouter.get("/unpaid-professionals", async (_req, res) => {
   return res.json({ currency: "usd", professionals: rows });
 });
 
+financeRouter.get("/unpaid-professionals/:professionalId", async (req, res) => {
+  const { getUnpaidProfessionalDetail } = await import("./adminUnpaidProfessional.service.js");
+  const detail = await getUnpaidProfessionalDetail(req.params.professionalId);
+  if ("notFound" in detail) {
+    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
+  }
+  return res.json({ currency: "usd", ...detail });
+});
+
 financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res) => {
-  const parsed = markPayoutLinePaidSchema.safeParse(req.body ?? {});
+  const parsed = payUnpaidProfessionalSchema.safeParse(req.body ?? {});
   if (!parsed.success) {
     return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid payload", details: parsed.error.flatten() });
   }
-  const { payProfessionalUnpaidBalance } = await import("./finance.service.js");
-  const result = await payProfessionalUnpaidBalance(req.params.professionalId, parsed.data.payoutReference);
-  if ("notFound" in result) {
-    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
+  const { payUnpaidProfessional } = await import("./adminUnpaidProfessional.service.js");
+  const { ProfessionalPayoutError } = await import("../payouts/professionalPayouts.service.js");
+  try {
+    const result = await payUnpaidProfessional({
+      professionalId: req.params.professionalId,
+      method: parsed.data.method,
+      payoutReference: parsed.data.payoutReference
+    });
+    if ("notFound" in result) {
+      return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
+    }
+    if ("noRecords" in result) {
+      return sendApiError({ res, status: 409, code: "CONFLICT", message: "No unpaid sessions for this professional" });
+    }
+    return res.json({
+      message:
+        parsed.data.method === "dlocal"
+          ? "Payout enviado a dLocal y sesiones liquidadas en el ledger"
+          : "Professional payout recorded",
+      currency: "usd",
+      method: parsed.data.method,
+      payoutRunId: result.payoutRunId,
+      payoutLineId: result.payoutLineId,
+      sessionsCount: result.sessionsCount,
+      professionalNetCents: result.professionalNetCents,
+      dlocalPayoutId: "dlocalPayoutId" in result ? result.dlocalPayoutId : undefined,
+      dlocalStatus: "dlocalStatus" in result ? result.dlocalStatus : undefined,
+      dlocalAmount: "dlocalAmount" in result ? result.dlocalAmount : undefined,
+      dlocalCurrency: "dlocalCurrency" in result ? result.dlocalCurrency : undefined
+    });
+  } catch (error) {
+    if (error instanceof ProfessionalPayoutError) {
+      const status = error.code === "dlocal_not_configured" ? 501 : 422;
+      return sendApiError({
+        res,
+        status,
+        code: status === 501 ? "SERVICE_UNAVAILABLE" : "BAD_REQUEST",
+        message: error.message,
+        details: { payoutErrorCode: error.code }
+      });
+    }
+    throw error;
   }
-  if ("noRecords" in result) {
-    return sendApiError({ res, status: 409, code: "CONFLICT", message: "No unpaid sessions for this professional" });
-  }
-  return res.json({
-    message: "Professional payout recorded",
-    currency: "usd",
-    payoutRunId: result.payoutRunId,
-    payoutLineId: result.payoutLineId,
-    sessionsCount: result.sessionsCount,
-    professionalNetCents: result.professionalNetCents
-  });
 });
