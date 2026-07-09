@@ -59,11 +59,18 @@ export function resolveApiAssetUrl(url: string | null | undefined): string | und
   const base = API_BASE.replace(/\/$/, "");
   return `${base}${s.startsWith("/") ? s : `/${s}`}`;
 }
-const patientPortalRaw = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_PATIENT_PORTAL_URL?.trim();
-export const PATIENT_PORTAL_URL =
-  patientPortalRaw && patientPortalRaw.length > 0
-    ? patientPortalRaw.replace(/\/+$/, "")
-    : "http://localhost:5173";
+function resolvePatientPortalUrl(): string {
+  const explicit = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_PATIENT_PORTAL_URL?.trim();
+  const raw =
+    explicit && explicit.length > 0
+      ? explicit
+      : import.meta.env.DEV
+        ? "http://localhost:5173"
+        : "https://app.motivarcare.com";
+  return raw.replace(/\/+$/, "");
+}
+
+export const PATIENT_PORTAL_URL = resolvePatientPortalUrl();
 export const TOKEN_KEY = "therapy_pro_token";
 export const USER_KEY = "therapy_pro_user";
 export const EMAIL_VERIFICATION_REQUIRED_KEY = "therapy_pro_email_verification_required";

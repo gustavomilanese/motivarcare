@@ -10,7 +10,9 @@ function t(language: AppLanguage, values: LocalizedText): string {
 export function ProfessionalReviewsInvitePanel(props: {
   language: AppLanguage;
   professionalId: string;
+  variant?: "profile" | "dashboard";
 }) {
+  const variant = props.variant ?? "profile";
   const [copied, setCopied] = useState(false);
   const inviteUrl = useMemo(() => buildPatientReviewInviteUrl(props.professionalId), [props.professionalId]);
 
@@ -24,9 +26,9 @@ export function ProfessionalReviewsInvitePanel(props: {
     }
   }, [inviteUrl]);
 
-  return (
-    <section className="pro-profile-studio__reviews-invite" aria-labelledby="pro-reviews-invite-title">
-      <p className="pro-profile-studio__eyebrow" id="pro-reviews-invite-title">
+  const content = (
+    <>
+      <p className="pro-profile-studio__eyebrow" id={variant === "dashboard" ? "pro-dashboard-reviews-invite-title" : "pro-reviews-invite-title"}>
         {t(props.language, { es: "Opiniones de pacientes", en: "Patient reviews", pt: "Avaliações de pacientes" })}
       </p>
       <p className="pro-profile-studio__reviews-invite-copy">
@@ -51,6 +53,24 @@ export function ProfessionalReviewsInvitePanel(props: {
             : t(props.language, { es: "Copiar", en: "Copy", pt: "Copiar" })}
         </button>
       </div>
+    </>
+  );
+
+  if (variant === "dashboard") {
+    return (
+      <section
+        className="pro-card pro-dashboard-reviews-invite"
+        aria-labelledby="pro-dashboard-reviews-invite-title"
+        data-tour="pro-tour-reviews-invite"
+      >
+        {content}
+      </section>
+    );
+  }
+
+  return (
+    <section className="pro-profile-studio__reviews-invite" aria-labelledby="pro-reviews-invite-title">
+      {content}
     </section>
   );
 }

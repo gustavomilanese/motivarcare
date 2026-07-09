@@ -7437,6 +7437,15 @@ select.pro-dashboard-revenue-control {
   white-space: nowrap;
 }
 
+.pro-dashboard-reviews-invite {
+  display: grid;
+  gap: 10px;
+}
+
+.pro-dashboard-reviews-invite .pro-profile-studio__reviews-invite-copy {
+  max-width: 62ch;
+}
+
 @media (max-width: 720px) {
   .pro-public-profile-preview-price-row {
     flex-direction: column;

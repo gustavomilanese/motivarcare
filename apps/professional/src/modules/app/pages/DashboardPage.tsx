@@ -12,6 +12,7 @@ import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePer
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
+import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import {
   buildProfessionalStatsQuery,
@@ -605,6 +606,12 @@ export function DashboardPage(props: {
           items={data.practiceHealth.items}
         />
       ) : null}
+
+      <ProfessionalReviewsInvitePanel
+        language={props.language}
+        professionalId={props.user.professionalProfileId}
+        variant="dashboard"
+      />
 
       <section
         className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
