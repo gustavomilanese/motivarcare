@@ -498,6 +498,18 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       pt: "A dLocal rejeitou as credenciais do servidor. No Railway, confira key/secret do sandbox e a URL api-sbx.dlocalgo.com."
     });
   }
+  if (
+    /SQLGrammarException/i.test(n)
+    || /could not extract ResultSet/i.test(n)
+    || /org\.hibernate\./i.test(n)
+    || n.includes("merchant/API credentials or environment look invalid")
+  ) {
+    return t(language, {
+      es: "dLocal no pudo abrir el checkout (credenciales o ambiente mal configurados en el servidor). En Railway revisá que Key/Secret sean las del dashboard sandbox y que DLOCALGO_API_URL sea https://api-sbx.dlocalgo.com; después redeploy.",
+      en: "dLocal couldn’t open checkout (bad server credentials or environment). In Railway, use Key/Secret from the sandbox dashboard and set DLOCALGO_API_URL to https://api-sbx.dlocalgo.com, then redeploy.",
+      pt: "A dLocal nao abriu o checkout (credenciais ou ambiente errados no servidor). No Railway use Key/Secret do sandbox e DLOCALGO_API_URL=https://api-sbx.dlocalgo.com; depois redeploy."
+    });
+  }
   if (n === "Session price unavailable for trial checkout") {
     return t(language, {
       es: "No encontramos el precio de sesión del profesional para iniciar el pago. Revisá en admin que tenga precio cargado, o avisá a soporte.",

@@ -242,11 +242,20 @@ function SessionViewDetailButton(props: {
 
 export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
   const bookingProfessional = findProfessionalById(props.booking.professionalId, props.professionals);
+  const fallbackProfessionalName = textByLanguage(props.language, {
+    es: "Profesional",
+    en: "Professional",
+    pt: "Profissional"
+  });
+  const nameSubject = bookingProfessional ?? {
+    id: props.booking.professionalId,
+    fullName: fallbackProfessionalName
+  };
   const isTrialBooking = props.booking.bookingMode === "trial";
   const joinUrl = bookingJoinUrl(props.booking);
   const canReschedule = canPatientRescheduleBooking(
     props.booking.startsAt,
-    bookingProfessional.cancellationHours
+    bookingProfessional?.cancellationHours
   );
   const cardClassName = [
     "session-management-card",
@@ -279,17 +288,17 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
   const cardAriaLabel =
     props.layout === "card" && joinUrl
       ? textByLanguage(props.language, {
-          es: `Entrar a la sesión con ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+          es: `Entrar a la sesión con ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
             isoDate: props.booking.startsAt,
             timezone: props.timezone,
             language: props.language
           })}`,
-          en: `Join session with ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+          en: `Join session with ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
             isoDate: props.booking.startsAt,
             timezone: props.timezone,
             language: props.language
           })}`,
-          pt: `Entrar na sessão com ${professionalAccessibleName(bookingProfessional)}, ${formatSessionCardDateTimeLine({
+          pt: `Entrar na sessão com ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
             isoDate: props.booking.startsAt,
             timezone: props.timezone,
             language: props.language
@@ -322,12 +331,14 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
             <div className="session-management-meta-body">
               <ProfessionalNameLink
                 className="session-management-professional-link"
-                professional={bookingProfessional}
+                professional={nameSubject}
                 professionalId={props.booking.professionalId}
                 language={props.language}
                 onOpenProfessionalReviews={props.onOpenProfessionalReviews}
               />
-              <ProfessionalRatingCompact professional={bookingProfessional} className="session-pro-rating-compact--table" />
+              {bookingProfessional ? (
+                <ProfessionalRatingCompact professional={bookingProfessional} className="session-pro-rating-compact--table" />
+              ) : null}
             </div>
           </div>
           <div className="session-management-cell session-management-cell-status">
@@ -400,13 +411,13 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
               </span>
               <ProfessionalNameLink
                 className="session-rn-name"
-                professional={bookingProfessional}
+                professional={nameSubject}
                 professionalId={props.booking.professionalId}
                 language={props.language}
                 onOpenProfessionalReviews={props.onOpenProfessionalReviews}
                 singleLine
               />
-              <ProfessionalRatingCompact professional={bookingProfessional} />
+              {bookingProfessional ? <ProfessionalRatingCompact professional={bookingProfessional} /> : null}
               <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
                 {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
               </span>

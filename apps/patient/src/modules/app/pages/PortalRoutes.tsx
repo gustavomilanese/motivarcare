@@ -22,7 +22,6 @@ import { DiaryNewEntryPage } from "../../emotional-diary/pages/DiaryNewEntryPage
 import { DiaryRecordsPage } from "../../emotional-diary/pages/DiaryRecordsPage";
 import { API_BASE } from "../services/api";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
-import { findProfessionalById } from "../lib/professionals";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
 import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 

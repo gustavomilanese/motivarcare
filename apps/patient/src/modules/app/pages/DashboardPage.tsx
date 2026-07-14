@@ -280,14 +280,16 @@ export function DashboardPage(props: {
     : props.state.assignedProfessionalId
       ? props.professionals.find((item) => item.id === props.state.assignedProfessionalId) ?? null
       : null;
-  const activeTrialProfessional = activeTrialBooking ? findProfessionalById(activeTrialBooking.professionalId, props.professionals) : null;
+  const activeTrialProfessional = activeTrialBooking
+    ? findProfessionalById(activeTrialBooking.professionalId, props.professionals)
+    : null;
   const activeTrialSlotId = activeTrialProfessional
     ? activeTrialProfessional.slots.find(
         (slot) => slot.startsAt === activeTrialBooking?.startsAt && slot.endsAt === activeTrialBooking?.endsAt
       )?.id ?? ""
     : "";
   const trialProfessional = findProfessionalById(trialProfessionalId, props.professionals);
-  const availableTrialSlots = trialProfessional.slots.filter(
+  const availableTrialSlots = (trialProfessional?.slots ?? []).filter(
     (slot) => !props.state.bookedSlotIds.includes(slot.id) || slot.id === activeTrialSlotId
   );
   const selectedTrialSlot = availableTrialSlots.find((slot) => slot.id === trialSlotId) ?? null;

@@ -30,6 +30,8 @@ const candidates: MatchCardProfessional[] = professionalsCatalog.map((profession
   completedSessionsCount: 0,
   sessionsCount: 0,
   compatibilityBase: professional.compatibility,
+  videoUrl: professional.introVideoUrl?.trim() || null,
+  videoCoverUrl: null,
   slots: professional.slots
 };
 });

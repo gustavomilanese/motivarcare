@@ -648,10 +648,10 @@ function pickPreferredProfessionalIds(
     };
   }
   const pick = (id: string | null | undefined) => (id && ids.has(id) ? id : null);
-  const selected =
-    pick(assignedProfessionalId) ?? pick(currentSelectedId) ?? directoryList[0]?.id ?? currentSelectedId;
-  const chat =
-    pick(currentChatProfessionalId) ?? pick(assignedProfessionalId) ?? selected;
+  // No caer en directoryList[0]: eso mostraba un profesional ajeno (p. ej. Emma Collins del seed)
+  // hasta que llegaba la asignación real del paciente.
+  const selected = pick(assignedProfessionalId) ?? pick(currentSelectedId) ?? currentSelectedId;
+  const chat = pick(currentChatProfessionalId) ?? pick(assignedProfessionalId) ?? selected;
   return { selectedProfessionalId: selected, activeChatProfessionalId: chat };
 }
 

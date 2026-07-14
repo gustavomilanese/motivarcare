@@ -4,14 +4,22 @@ import { z } from "zod";
 config({ path: "../../.env" });
 config();
 
-/** Strip paste artifacts (BOM, quotes, newlines) that break HTTP Authorization headers. */
+/**
+ * Strip paste artifacts (BOM, surrounding quotes, outer whitespace) that break
+ * HTTP Authorization headers. If the value still contains newlines/tabs *inside*
+ * after that, treat as empty — silently joining mid-string newlines can corrupt
+ * the key into something that authenticates badly or fails oddly at dLocal.
+ */
 function sanitizeDlocalCredential(value: string | undefined): string {
-  return (value ?? "")
+  const cleaned = (value ?? "")
     .replace(/^\uFEFF/, "")
     .trim()
     .replace(/^["']+|["']+$/g, "")
-    .replace(/[\r\n\0\t]+/g, "")
     .trim();
+  if (!cleaned || /[\r\n\0\t]/.test(cleaned)) {
+    return "";
+  }
+  return cleaned;
 }
 
 const EnvSchema = z.object({

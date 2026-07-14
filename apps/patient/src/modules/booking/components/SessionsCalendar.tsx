@@ -200,14 +200,16 @@ export function SessionsCalendar(props: {
     }
     if (props.professionals?.length) {
       const professional = findProfessionalById(booking.professionalId, props.professionals);
-      return professional.fullName;
+      if (professional) {
+        return professional.fullName;
+      }
     }
     return t(props.language, { es: "Sesión reservada", en: "Booked session", pt: "Sessao reservada" });
   };
 
   const resolveBookingNoticeHours = (booking: Booking): number => {
     const professionalHours = props.professionals?.length
-      ? findProfessionalById(booking.professionalId, props.professionals).cancellationHours
+      ? findProfessionalById(booking.professionalId, props.professionals)?.cancellationHours
       : undefined;
     return resolvePatientChangeNoticeHours(professionalHours);
   };

@@ -44,23 +44,41 @@ function apiBaseUrl(): string {
   return env.DLOCALGO_API_URL.replace(/\/+$/, "");
 }
 
+function normalizeDlocalProviderMessage(raw: string): string {
+  const message = raw.trim();
+  if (!message) {
+    return message;
+  }
+  // dLocal Go is a Java/Hibernate stack; their 5xx sometimes leak SQLGrammarException
+  // when the merchant credentials or environment (sandbox vs live) are wrong.
+  if (
+    /SQLGrammarException/i.test(message)
+    || /could not extract ResultSet/i.test(message)
+    || /org\.hibernate\./i.test(message)
+    || /nested exception is org\.hibernate/i.test(message)
+  ) {
+    return "dLocal Go merchant/API credentials or environment look invalid (provider database error). Re-check DLOCALGO_API_URL (sandbox vs live) and re-paste Key/Secret from the matching dashboard.";
+  }
+  return message;
+}
+
 function extractDlocalGoErrorMessage(body: unknown, status: number): string {
   if (typeof body === "string" && body.trim().length > 0) {
-    return body.trim();
+    return normalizeDlocalProviderMessage(body);
   }
   if (typeof body === "object" && body != null) {
     const record = body as Record<string, unknown>;
     if (typeof record.message === "string" && record.message.trim().length > 0) {
-      return record.message.trim();
+      return normalizeDlocalProviderMessage(record.message);
     }
     if (typeof record.error === "string" && record.error.trim().length > 0) {
-      return record.error.trim();
+      return normalizeDlocalProviderMessage(record.error);
     }
     const payload = record.payload;
     if (typeof payload === "object" && payload != null) {
       const payloadRecord = payload as Record<string, unknown>;
       if (typeof payloadRecord.message === "string" && payloadRecord.message.trim().length > 0) {
-        return payloadRecord.message.trim();
+        return normalizeDlocalProviderMessage(payloadRecord.message);
       }
     }
   }

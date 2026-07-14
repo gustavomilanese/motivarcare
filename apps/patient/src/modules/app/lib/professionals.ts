@@ -1,4 +1,3 @@
-import { professionalsCatalog } from "../data/professionalsCatalog";
 import type { Professional } from "../types";
 
 /** Profesional de referencia asignado en backend (p. ej. tras matching o alta); si falta, no mostrar compras atadas a tarifa de un pro. */
@@ -6,20 +5,19 @@ export function patientHasAssignedProfessional(assignedProfessionalId: string | 
   return Boolean(assignedProfessionalId?.trim());
 }
 
-export function getFallbackProfessional(professionals: Professional[]): Professional {
-  return professionals[0] ?? professionalsCatalog[0];
-}
-
-export function findProfessionalById(professionalId: string, professionals: Professional[]): Professional {
-  const hit = professionals.find((item) => item.id === professionalId);
-  if (hit) {
-    return hit;
+/**
+ * Resolución estricta por id. Nunca devolver “el primero del listado” ni el catálogo demo:
+ * eso mostraba un flash de Emma Collins (u otro pro) hasta que cargaba la asignación real.
+ */
+export function findProfessionalById(
+  professionalId: string | null | undefined,
+  professionals: Professional[]
+): Professional | null {
+  const id = professionalId?.trim() ?? "";
+  if (!id) {
+    return null;
   }
-  /** Evita ids del catálogo demo cuando ya hay filas reales del API (Reservas / Sesiones). */
-  if (professionals.length > 0) {
-    return professionals[0];
-  }
-  return getFallbackProfessional(professionals);
+  return professionals.find((item) => item.id === id) ?? null;
 }
 
 export function findSlotIdForBooking(
@@ -28,5 +26,9 @@ export function findSlotIdForBooking(
   endsAt: string,
   professionals: Professional[]
 ): string | null {
-  return findProfessionalById(professionalId, professionals).slots.find((slot) => slot.startsAt === startsAt && slot.endsAt === endsAt)?.id ?? null;
+  return (
+    findProfessionalById(professionalId, professionals)?.slots.find(
+      (slot) => slot.startsAt === startsAt && slot.endsAt === endsAt
+    )?.id ?? null
+  );
 }

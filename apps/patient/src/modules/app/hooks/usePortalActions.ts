@@ -609,7 +609,8 @@ export function usePortalActions(params: {
       await syncActiveProfessionalAssignment(professionalId);
     }
 
-    const professionalName = findProfessionalById(professionalId, params.professionalDirectory).fullName;
+    const professionalName =
+      findProfessionalById(professionalId, params.professionalDirectory)?.fullName ?? professionalId;
 
     params.onStateChange((current) => {
       const currentTrialAlreadyUsed = current.trialUsedProfessionalIds.includes(professionalId);
@@ -826,9 +827,10 @@ export function usePortalActions(params: {
         return current;
       }
 
-      const previousSlotId = findProfessionalById(activeTrial.professionalId, params.professionalDirectory).slots.find(
-        (candidate) => candidate.startsAt === activeTrial.startsAt && candidate.endsAt === activeTrial.endsAt
-      )?.id ?? null;
+      const previousSlotId =
+        findProfessionalById(activeTrial.professionalId, params.professionalDirectory)?.slots.find(
+          (candidate) => candidate.startsAt === activeTrial.startsAt && candidate.endsAt === activeTrial.endsAt
+        )?.id ?? null;
 
       if (activeTrial.professionalId === professionalId && activeTrial.startsAt === slot.startsAt) {
         return current;
@@ -896,7 +898,7 @@ export function usePortalActions(params: {
                   en: "{name}: Thanks for your message. I reviewed it and we will go over it in session.",
                   pt: "{name}: Obrigado pela mensagem. Revisei e veremos isso na sessao."
                 }),
-                { name: professional.fullName }
+                { name: professional?.fullName ?? "" }
               ),
               read: false,
               createdAt: new Date().toISOString()

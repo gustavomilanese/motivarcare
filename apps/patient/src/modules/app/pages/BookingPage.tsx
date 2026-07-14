@@ -239,9 +239,10 @@ export function BookingPage(props: {
       bookings: props.state.bookings,
       upcomingBookingProfessionalIds
     }) ?? "";
-  const professional = pricingProfessionalId
-    ? findProfessionalById(pricingProfessionalId, props.professionals)
-    : findProfessionalById(effectiveProfessionalId, props.professionals);
+  const resolvedProfessionalId = pricingProfessionalId || effectiveProfessionalId;
+  const professional = resolvedProfessionalId
+    ? findProfessionalById(resolvedProfessionalId, props.professionals)
+    : null;
 
   const reviewsModalProfessional = useMemo(() => {
     if (!reviewsModalProfessionalId) {
@@ -268,13 +269,17 @@ export function BookingPage(props: {
   const editingBooking = editingBookingId
     ? upcomingConfirmedBookings.find((booking) => booking.id === editingBookingId) ?? null
     : null;
-  const editableProfessional = editingBooking ? findProfessionalById(editingBooking.professionalId, props.professionals) : professional;
+  const editableProfessional = editingBooking
+    ? findProfessionalById(editingBooking.professionalId, props.professionals)
+    : professional;
   const modalProfessional = panelMode === "reschedule" && editingBooking
     ? findProfessionalById(editingBooking.professionalId, props.professionals)
     : props.state.assignedProfessionalId
       ? findProfessionalById(props.state.assignedProfessionalId, props.professionals)
       : editableProfessional;
-  const modalProfessionalPhoto = professionalPhotoSrc(props.professionalPhotoMap[modalProfessional.id]);
+  const modalProfessionalPhoto = professionalPhotoSrc(
+    props.professionalPhotoMap[modalProfessional?.id ?? ""]
+  );
   const editingSlotId = editingBooking
     ? findSlotIdForBooking(editingBooking.professionalId, editingBooking.startsAt, editingBooking.endsAt, props.professionals)
     : null;
@@ -289,7 +294,7 @@ export function BookingPage(props: {
   slotsRequestDepsRef.current = {
     editingBookingId,
     panelMode,
-    professionalId: professional.id,
+    professionalId: professional?.id ?? resolvedProfessionalId,
     authToken: props.state.authToken,
     bookings: props.state.bookings
   };
@@ -310,7 +315,7 @@ export function BookingPage(props: {
   const slotsFetchGenerationRef = useRef(0);
   const packagesFetchGenerationRef = useRef(0);
 
-  const slotSource = props.state.authToken ? (remoteSlots ?? []) : editableProfessional.slots;
+  const slotSource = props.state.authToken ? (remoteSlots ?? []) : (editableProfessional?.slots ?? []);
   const availableSlots = slotSource.filter((slot) => {
     // El API ya devuelve solo slots con startsAt >= ahora + aviso mínimo (24h+); esto evita horarios pasados
     // si el listado viene del catálogo demo sin token o por desfase de reloj.
@@ -349,7 +354,7 @@ export function BookingPage(props: {
 
   const openReschedulePanelForBooking = useCallback(
     (booking: Booking) => {
-      const professionalHours = findProfessionalById(booking.professionalId, props.professionals).cancellationHours;
+      const professionalHours = findProfessionalById(booking.professionalId, props.professionals)?.cancellationHours;
       if (!canPatientRescheduleBooking(booking.startsAt, professionalHours)) {
         return;
       }
@@ -393,7 +398,11 @@ export function BookingPage(props: {
       setBookingActionError("");
       try {
         await releaseCurrentSlotHold();
-        const hold = await acquireBookingSlotHold(professional.id, slot, props.state.authToken);
+        const hold = await acquireBookingSlotHold(
+          professional?.id ?? resolvedProfessionalId,
+          slot,
+          props.state.authToken
+        );
         if (gen !== holdAcquireGenerationRef.current) {
           return;
         }
@@ -417,7 +426,7 @@ export function BookingPage(props: {
         }
       }
     },
-    [panelMode, professional.id, props.language, props.state.authToken, releaseCurrentSlotHold]
+    [panelMode, professional?.id, resolvedProfessionalId, props.language, props.state.authToken, releaseCurrentSlotHold]
   );
 
   useEffect(() => {
@@ -746,7 +755,13 @@ export function BookingPage(props: {
     setSearchParams(nextParams, { replace: true });
 
     const target = upcomingConfirmedBookings.find((booking) => booking.id === rescheduleBookingId);
-    if (!target || !canPatientRescheduleBooking(target.startsAt, findProfessionalById(target.professionalId, props.professionals).cancellationHours)) {
+    if (
+      !target
+      || !canPatientRescheduleBooking(
+        target.startsAt,
+        findProfessionalById(target.professionalId, props.professionals)?.cancellationHours
+      )
+    ) {
       return;
     }
 
@@ -862,7 +877,7 @@ export function BookingPage(props: {
       setPanelMode(null);
       setSelectedSlotId("");
     }
-  }, [professional.id]);
+  }, [professional?.id ?? resolvedProfessionalId]);
 
   useEffect(() => {
     if (!props.state.authToken) {
@@ -933,7 +948,7 @@ export function BookingPage(props: {
       slotsFetchGenerationRef.current += 1;
       window.clearTimeout(timer);
     };
-  }, [editingBookingId, panelMode, professional.id, props.state.authToken]);
+  }, [editingBookingId, panelMode, professional?.id, resolvedProfessionalId, props.state.authToken]);
 
   useEffect(() => {
     setPackagesLoading(true);
@@ -1015,7 +1030,7 @@ export function BookingPage(props: {
     }
 
     if (panelMode === "reschedule" && editingBooking) {
-      if (!canPatientRescheduleBooking(editingBooking.startsAt, editableProfessional.cancellationHours)) {
+      if (!canPatientRescheduleBooking(editingBooking.startsAt, editableProfessional?.cancellationHours)) {
         setBookingActionError(
           t(props.language, {
             es: "Solo puedes reprogramar hasta 24 horas antes del inicio de la sesión.",
@@ -1044,9 +1059,20 @@ export function BookingPage(props: {
 
     setBookingSubmitting(true);
     let result: { ok: boolean; error?: string };
+    const bookingProfessionalId = professional?.id ?? resolvedProfessionalId;
+    if (!bookingProfessionalId) {
+      setBookingActionError(
+        t(props.language, {
+          es: "Todavía no cargamos tu profesional. Esperá un segundo y volvé a intentar.",
+          en: "We haven’t loaded your professional yet. Wait a second and try again.",
+          pt: "Ainda nao carregamos seu profissional. Espere um segundo e tente de novo."
+        })
+      );
+      return;
+    }
     try {
       result = await props.onConfirmBooking(
-        professional.id,
+        bookingProfessionalId,
         selectedSlot,
         false,
         panelMode === "new" ? slotHoldId : undefined
@@ -1745,7 +1771,15 @@ export function BookingPage(props: {
                         className="professional-name-link session-history-professional-link"
                         onClick={() => openProfessionalReviews(booking.professionalId)}
                       >
-                        {professionalAccessibleName(bookingProfessional)}
+                        {professionalAccessibleName(
+                          bookingProfessional ?? {
+                            fullName: props.state.assignedProfessionalName ?? t(props.language, {
+                              es: "Profesional",
+                              en: "Professional",
+                              pt: "Profissional"
+                            })
+                          }
+                        )}
                       </button>
                     </div>
                     <span className={`session-status-pill ${booking.status}`}>{statusLabel}</span>
@@ -1807,7 +1841,16 @@ export function BookingPage(props: {
 
       <BookingActionModal
         panelMode={panelMode}
-        modalProfessional={modalProfessional}
+        modalProfessional={
+          modalProfessional ?? {
+            fullName: props.state.assignedProfessionalName ?? t(props.language, {
+              es: "Profesional",
+              en: "Professional",
+              pt: "Profissional"
+            }),
+            title: ""
+          }
+        }
         modalProfessionalPhoto={modalProfessionalPhoto}
         onImageFallback={props.onImageFallback}
         selectedSlotId={selectedSlotId}
