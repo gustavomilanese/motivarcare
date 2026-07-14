@@ -65,7 +65,12 @@ financeRouter.patch("/settings", async (req, res) => {
 
 financeRouter.post("/rebuild-session-records", async (_req, res) => {
   const rebuilt = await rebuildFinanceRecords();
-  return res.json({ message: "Finance records rebuilt", processed: rebuilt.processed });
+  return res.json({
+    message: "Finance records rebuilt",
+    processed: rebuilt.processed,
+    failed: rebuilt.failed,
+    errors: rebuilt.errors.slice(0, 50)
+  });
 });
 
 financeRouter.post("/rebuild-daily-aggregates", async (_req, res) => {

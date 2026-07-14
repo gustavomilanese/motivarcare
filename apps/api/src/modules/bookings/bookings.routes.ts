@@ -1574,6 +1574,8 @@ bookingsRouter.post("/:bookingId/complete", requireAuth, async (req: Authenticat
   }
 
   const completedAt = parsed.data.completedAt ? new Date(parsed.data.completedAt) : now;
+  const previousStatus = booking.status;
+  const previousCompletedAt = booking.completedAt;
 
   const updated = await prisma.booking.update({
     where: { id: booking.id },
@@ -1583,7 +1585,22 @@ bookingsRouter.post("/:bookingId/complete", requireAuth, async (req: Authenticat
     }
   });
 
-  await upsertFinanceRecordForBooking(updated.id);
+  try {
+    await upsertFinanceRecordForBooking(updated.id);
+  } catch (financeError) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: previousStatus,
+        completedAt: previousCompletedAt
+      }
+    });
+    const message =
+      financeError instanceof Error
+        ? financeError.message
+        : "Could not create finance record for completed session";
+    return res.status(409).json({ error: message });
+  }
 
   return res.json({
     message: "Booking marked as completed",

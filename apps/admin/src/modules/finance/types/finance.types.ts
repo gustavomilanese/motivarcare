@@ -262,6 +262,10 @@ export type UnpaidProfessionalSessionDetail = {
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
   isTrial: boolean;
+  sourceKind: "trial" | "package";
+  sourceLabel: string;
+  purchaseId: string | null;
+  paymentCheckoutId: string | null;
   currency: string;
   sessionPriceCents: number;
   platformCommissionPercent: number;

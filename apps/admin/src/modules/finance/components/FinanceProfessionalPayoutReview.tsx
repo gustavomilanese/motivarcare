@@ -273,6 +273,7 @@ export function FinanceProfessionalPayoutReview(props: {
                       <th>{t(props.language, { es: "Precio", en: "Price", pt: "Preço" })}</th>
                       <th>{t(props.language, { es: "Comisión", en: "Fee", pt: "Taxa" })}</th>
                       <th>{t(props.language, { es: "Neto", en: "Net", pt: "Líquido" })}</th>
+                      <th>{t(props.language, { es: "Acción", en: "Action", pt: "Ação" })}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -283,11 +284,15 @@ export function FinanceProfessionalPayoutReview(props: {
                           <span className="finance-payout-review-patient">{session.patient.fullName}</span>
                         </td>
                         <td>
-                          {session.isTrial
-                            ? t(props.language, { es: "Prueba", en: "Trial", pt: "Teste" })
-                            : session.package?.name ??
-                              t(props.language, { es: "Lista", en: "List price", pt: "Tabela" })}
-                          <span className="finance-payout-review-pct">{session.platformCommissionPercent}%</span>
+                          <div className="finance-payout-review-source">
+                            <strong>
+                              {session.sourceKind === "trial"
+                                ? t(props.language, { es: "Prueba", en: "Trial", pt: "Teste" })
+                                : t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}
+                            </strong>
+                            <span>{session.sourceLabel}</span>
+                            <span className="finance-payout-review-pct">{session.platformCommissionPercent}%</span>
+                          </div>
                         </td>
                         <td className="num">
                           {formatAdminFinanceUsd(session.sessionPriceUsdCents, props.language)}
@@ -299,6 +304,14 @@ export function FinanceProfessionalPayoutReview(props: {
                         </td>
                         <td className="num">{formatAdminFinanceUsd(session.platformFeeUsdCents, props.language)}</td>
                         <td className="num">{formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}</td>
+                        <td>
+                          <a
+                            className="finance-payout-review-session-link"
+                            href={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}
+                          >
+                            {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
+                          </a>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

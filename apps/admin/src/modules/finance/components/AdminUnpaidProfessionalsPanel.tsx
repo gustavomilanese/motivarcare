@@ -1,13 +1,39 @@
-import { useCallback, useEffect, useState } from "react";
-import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { useCallback, useEffect, useMemo, useState, Fragment } from "react";
+import { Link } from "react-router-dom";
+import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
-import { fetchUnpaidProfessionals } from "../services/financeApi";
-import type { AdminUnpaidProfessional } from "../types/finance.types";
+import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals } from "../services/financeApi";
+import type { AdminUnpaidProfessional, UnpaidProfessionalDetailResponse } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+type SortKey = "name_az" | "sessions_desc" | "gross_desc" | "fee_desc" | "net_desc";
+
+function effectiveCommissionPercent(row: AdminUnpaidProfessional): number {
+  if (row.grossCents <= 0) {
+    return 0;
+  }
+  return Math.round((row.platformFeeCents / row.grossCents) * 1000) / 10;
+}
+
+function averageSessionCents(row: AdminUnpaidProfessional): number {
+  if (row.sessionsCount <= 0) {
+    return 0;
+  }
+  return Math.round(row.grossCents / row.sessionsCount);
+}
+
+function formatSessionDay(value: string | null, language: AppLanguage): string {
+  if (!value) return "—";
+  return formatDateWithLocale({
+    value,
+    language,
+    options: { month: "short", day: "numeric", year: "numeric" }
+  });
 }
 
 export function AdminUnpaidProfessionalsPanel(props: {
@@ -22,6 +48,11 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [loading, setLoading] = useState(!props.initialRows);
   const [error, setError] = useState("");
   const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("net_desc");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
+  const [expandedLoading, setExpandedLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,7 +82,57 @@ export function AdminUnpaidProfessionalsPanel(props: {
     }
   }, [props.initialRows]);
 
-  const totalNet = rows.reduce((sum, row) => sum + row.professionalNetCents, 0);
+  const filteredSorted = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    let next = [...rows];
+    if (query) {
+      next = next.filter((row) => row.professionalName.toLowerCase().includes(query));
+    }
+    next.sort((left, right) => {
+      switch (sortKey) {
+        case "name_az":
+          return left.professionalName.localeCompare(right.professionalName, undefined, { sensitivity: "base" });
+        case "sessions_desc":
+          return right.sessionsCount - left.sessionsCount || right.professionalNetCents - left.professionalNetCents;
+        case "gross_desc":
+          return right.grossCents - left.grossCents;
+        case "fee_desc":
+          return right.platformFeeCents - left.platformFeeCents;
+        case "net_desc":
+        default:
+          return right.professionalNetCents - left.professionalNetCents;
+      }
+    });
+    return next;
+  }, [rows, search, sortKey]);
+
+  const totalNet = filteredSorted.reduce((sum, row) => sum + row.professionalNetCents, 0);
+  const totalGross = filteredSorted.reduce((sum, row) => sum + row.grossCents, 0);
+  const totalFee = filteredSorted.reduce((sum, row) => sum + row.platformFeeCents, 0);
+  const totalSessions = filteredSorted.reduce((sum, row) => sum + row.sessionsCount, 0);
+
+  const toggleExpand = async (row: AdminUnpaidProfessional) => {
+    if (expandedId === row.professionalId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(row.professionalId);
+    if (expandedDetails[row.professionalId]) {
+      return;
+    }
+    setExpandedLoading(true);
+    setError("");
+    try {
+      const detail = await fetchUnpaidProfessionalDetail(props.token, row.professionalId);
+      setExpandedDetails((current) => ({ ...current, [row.professionalId]: detail }));
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+      setExpandedId(null);
+    } finally {
+      setExpandedLoading(false);
+    }
+  };
 
   return (
     <>
@@ -67,24 +148,68 @@ export function AdminUnpaidProfessionalsPanel(props: {
             </h3>
             <p className="admin-unpaid-professionals-lead">
               {t(props.language, {
-                es: "Revisá sesión por sesión antes de liquidar. Montos en USD (valor al cobrar).",
-                en: "Review session by session before paying out. Amounts in USD (value at checkout).",
-                pt: "Revise sessão por sessão antes de liquidar. Valores em USD."
+                es: "Sesión ejecutada = reserva. Valor: prueba = tarifa del profesional (como individual, guardada al pagar); paquete = precio del paquete ÷ créditos. Nunca lista inventada. Expandí una fila para ver origen y neto.",
+                en: "Executed session = booking. Value: trial = professional rate (same as individual, snapshotted at payment); package = package price ÷ credits. Never invented list price. Expand a row for source and net.",
+                pt: "Sessão executada = reserva. Valor: teste = tarifa do profissional (como individual, no pagamento); pacote = preço ÷ créditos. Nunca preço inventado. Expanda para ver origem e líquido."
               })}
             </p>
           </div>
           {!props.compact ? (
-            <strong className="admin-unpaid-professionals-total">
-              {t(props.language, { es: "Total neto", en: "Total net", pt: "Total liquido" })}:{" "}
-              {formatAdminFinanceUsd(totalNet, props.language)}
-            </strong>
+            <div className="admin-unpaid-professionals-totals">
+              <strong>
+                {t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}:{" "}
+                {formatAdminFinanceUsd(totalNet, props.language)}
+              </strong>
+              <span>
+                {totalSessions}{" "}
+                {t(props.language, {
+                  es: totalSessions === 1 ? "sesión" : "sesiones",
+                  en: totalSessions === 1 ? "session" : "sessions",
+                  pt: totalSessions === 1 ? "sessão" : "sessões"
+                })}{" "}
+                · {formatAdminFinanceUsd(totalGross, props.language)}{" "}
+                {t(props.language, { es: "ejecutado", en: "executed", pt: "executado" })} ·{" "}
+                {formatAdminFinanceUsd(totalFee, props.language)}{" "}
+                {t(props.language, { es: "comisión", en: "fee", pt: "comissão" })}
+              </span>
+            </div>
           ) : null}
         </header>
+
+        <div className="admin-unpaid-professionals-toolbar">
+          <label>
+            <span>{t(props.language, { es: "Buscar profesional", en: "Search professional", pt: "Buscar profissional" })}</span>
+            <input
+              type="search"
+              value={search}
+              placeholder={t(props.language, { es: "Nombre…", en: "Name…", pt: "Nome…" })}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+          <label>
+            <span>{t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}</span>
+            <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
+              <option value="net_desc">
+                {t(props.language, { es: "Neto · mayor", en: "Net · highest", pt: "Líquido · maior" })}
+              </option>
+              <option value="gross_desc">
+                {t(props.language, { es: "Ejecutado · mayor", en: "Gross · highest", pt: "Executado · maior" })}
+              </option>
+              <option value="fee_desc">
+                {t(props.language, { es: "Comisión · mayor", en: "Fee · highest", pt: "Comissão · maior" })}
+              </option>
+              <option value="sessions_desc">
+                {t(props.language, { es: "Sesiones · más", en: "Sessions · most", pt: "Sessões · mais" })}
+              </option>
+              <option value="name_az">{t(props.language, { es: "Nombre A–Z", en: "Name A–Z", pt: "Nome A–Z" })}</option>
+            </select>
+          </label>
+        </div>
 
         {error ? <p className="error-text">{error}</p> : null}
         {loading ? (
           <p>{t(props.language, { es: "Cargando pendientes…", en: "Loading pending…", pt: "Carregando pendentes…" })}</p>
-        ) : rows.length === 0 ? (
+        ) : filteredSorted.length === 0 ? (
           <p>
             {t(props.language, {
               es: "No hay pagos pendientes a profesionales.",
@@ -98,36 +223,168 @@ export function AdminUnpaidProfessionalsPanel(props: {
               <thead>
                 <tr>
                   <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
-                  <th>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</th>
-                  <th>{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</th>
-                  <th>{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}</th>
-                  <th>{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Liquido a pagar" })}</th>
-                  <th>{t(props.language, { es: "Acción", en: "Action", pt: "Acao" })}</th>
+                  <th className="num">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</th>
+                  <th className="num">
+                    {t(props.language, { es: "Valor / sesión", en: "Value / session", pt: "Valor / sessão" })}
+                  </th>
+                  <th className="num">{t(props.language, { es: "% comisión", en: "Fee %", pt: "% comissão" })}</th>
+                  <th className="num">{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</th>
+                  <th className="num">{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}</th>
+                  <th className="num">{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}</th>
+                  <th>{t(props.language, { es: "Acciones", en: "Actions", pt: "Ações" })}</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.professionalId}>
-                    <td>{row.professionalName}</td>
-                    <td>{row.sessionsCount}</td>
-                    <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
-                    <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
-                    <td className="num">{formatAdminFinanceUsd(row.professionalNetCents, props.language)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="primary"
-                        onClick={() => setReviewTarget(row)}
-                      >
-                        {t(props.language, {
-                          es: "Revisar y pagar",
-                          en: "Review & pay",
-                          pt: "Revisar e pagar"
-                        })}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredSorted.map((row) => {
+                  const expanded = expandedId === row.professionalId;
+                  const expandedDetail = expandedDetails[row.professionalId] ?? null;
+                  const unit = averageSessionCents(row);
+                  const pct = effectiveCommissionPercent(row);
+                  return (
+                    <Fragment key={row.professionalId}>
+                      <tr className={expanded ? "is-expanded" : undefined}>
+                        <td>
+                          <button
+                            type="button"
+                            className="admin-unpaid-pro-name"
+                            onClick={() => void toggleExpand(row)}
+                            aria-expanded={expanded}
+                          >
+                            <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+                            {row.professionalName}
+                          </button>
+                        </td>
+                        <td className="num">{row.sessionsCount}</td>
+                        <td className="num">{formatAdminFinanceUsd(unit, props.language)}</td>
+                        <td className="num">{pct.toLocaleString(props.language === "en" ? "en-US" : "es-AR")}%</td>
+                        <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
+                        <td className="num admin-unpaid-net">
+                          {formatAdminFinanceUsd(row.professionalNetCents, props.language)}
+                        </td>
+                        <td className="admin-unpaid-actions">
+                          <button type="button" className="secondary" onClick={() => void toggleExpand(row)}>
+                            {expanded
+                              ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
+                              : t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
+                          </button>
+                          <button type="button" className="primary" onClick={() => setReviewTarget(row)}>
+                            {t(props.language, {
+                              es: "Revisar y pagar",
+                              en: "Review & pay",
+                              pt: "Revisar e pagar"
+                            })}
+                          </button>
+                        </td>
+                      </tr>
+                      {expanded ? (
+                        <tr className="admin-unpaid-detail-row">
+                          <td colSpan={8}>
+                            {expandedLoading ? (
+                              <p className="admin-unpaid-detail-loading">
+                                {t(props.language, {
+                                  es: "Cargando sesiones…",
+                                  en: "Loading sessions…",
+                                  pt: "Carregando sessões…"
+                                })}
+                              </p>
+                            ) : expandedDetail ? (
+                              <div className="admin-unpaid-session-detail">
+                                <table className="admin-unpaid-session-table">
+                                  <thead>
+                                    <tr>
+                                      <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
+                                      <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
+                                      <th>{t(props.language, { es: "Origen / paquete", en: "Source / package", pt: "Origem" })}</th>
+                                      <th className="num">{t(props.language, { es: "Valor sesión", en: "Session value", pt: "Valor" })}</th>
+                                      <th className="num">%</th>
+                                      <th className="num">{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}</th>
+                                      <th className="num">{t(props.language, { es: "Neto", en: "Net", pt: "Líquido" })}</th>
+                                      <th>{t(props.language, { es: "Acción", en: "Action", pt: "Ação" })}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {expandedDetail.sessions.map((session) => (
+                                      <tr key={session.id}>
+                                        <td>
+                                          {formatSessionDay(
+                                            session.bookingCompletedAt ?? session.bookingStartsAt,
+                                            props.language
+                                          )}
+                                        </td>
+                                        <td>{session.patient.fullName}</td>
+                                        <td>
+                                          <div className="admin-unpaid-source">
+                                            <strong>
+                                              {session.sourceKind === "trial"
+                                                ? t(props.language, {
+                                                    es: "Sesión de prueba",
+                                                    en: "Trial session",
+                                                    pt: "Sessão teste"
+                                                  })
+                                                : t(props.language, {
+                                                    es: "Paquete",
+                                                    en: "Package",
+                                                    pt: "Pacote"
+                                                  })}
+                                            </strong>
+                                            <span>{session.sourceLabel}</span>
+                                            {session.purchaseId ? (
+                                              <small>purchase · {session.purchaseId.slice(0, 8)}</small>
+                                            ) : null}
+                                            {session.paymentCheckoutId ? (
+                                              <small>checkout · {session.paymentCheckoutId.slice(0, 8)}</small>
+                                            ) : null}
+                                          </div>
+                                        </td>
+                                        <td className="num">
+                                          {formatAdminFinanceUsd(session.sessionPriceUsdCents, props.language)}
+                                          {session.currency.toLowerCase() !== "usd" ? (
+                                            <small className="admin-unpaid-original">
+                                              {" "}
+                                              ({session.currency.toUpperCase()}{" "}
+                                              {(session.sessionPriceCents / 100).toFixed(2)})
+                                            </small>
+                                          ) : null}
+                                        </td>
+                                        <td className="num">{session.platformCommissionPercent}%</td>
+                                        <td className="num">
+                                          {formatAdminFinanceUsd(session.platformFeeUsdCents, props.language)}
+                                        </td>
+                                        <td className="num">
+                                          {formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}
+                                        </td>
+                                        <td>
+                                          <Link
+                                            className="admin-unpaid-session-link"
+                                            to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}
+                                          >
+                                            {t(props.language, {
+                                              es: "Revisar en Sesiones",
+                                              en: "Open in Sessions",
+                                              pt: "Abrir em Sessões"
+                                            })}
+                                          </Link>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                                <p className="admin-unpaid-calc-hint">
+                                  {t(props.language, {
+                                    es: "Verificación: Ejecutado − Comisión = Neto. Si el valor no cuadra con el paquete, abrí la sesión y confirmá que el booking tiene purchase/crédito vinculado.",
+                                    en: "Check: Gross − Fee = Net. If value doesn’t match the package, open the session and confirm the booking has a linked purchase/credit.",
+                                    pt: "Chequeque: Executado − Comissão = Líquido. Se o valor nao bate com o pacote, abra a sessão e confira a compra vinculada."
+                                  })}
+                                </p>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

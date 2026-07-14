@@ -230,15 +230,17 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
           kpis={kpisResponse?.kpis ?? null}
           loading={kpisLoading}
           error={kpisError || null}
-        />
-        <AdminUnpaidProfessionalsPanel
-          token={props.token}
-          language={props.language}
-          initialRows={kpisResponse?.unpaidByProfessional}
-          onChanged={() => {
-            setKpisRefreshToken((value) => value + 1);
-            void model.loadAll();
-          }}
+          afterRevenue={
+            <AdminUnpaidProfessionalsPanel
+              token={props.token}
+              language={props.language}
+              initialRows={kpisResponse?.unpaidByProfessional}
+              onChanged={() => {
+                setKpisRefreshToken((value) => value + 1);
+                void model.loadAll();
+              }}
+            />
+          }
         />
         {kpisResponse?.kpis ? (
           <FinanceSimulatedCashflowCard

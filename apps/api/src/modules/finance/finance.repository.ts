@@ -22,31 +22,49 @@ export const financeRepository = {
   findBookingForFinance(bookingId: string) {
     return prisma.booking.findUnique({
       where: { id: bookingId },
-      include: {
-        professional: { select: { sessionPriceUsd: true } }
+      select: {
+        id: true,
+        patientId: true,
+        professionalId: true,
+        consumedPurchaseId: true,
+        consumedCredits: true,
+        status: true,
+        completedAt: true,
+        startsAt: true,
+        endsAt: true
       }
     });
   },
-  findFirstCompletedBookingByPatient(patientId: string) {
-    return prisma.booking.findFirst({
-      where: { patientId, status: "COMPLETED" },
-      orderBy: [{ startsAt: "asc" }, { id: "asc" }],
-      select: { id: true }
-    });
-  },
-  findLatestPurchaseByPatientUntil(patientId: string, until: Date) {
-    return prisma.patientPackagePurchase.findMany({
+  findTrialCheckoutForBooking(booking: {
+    id: string;
+    patientId: string;
+    professionalId: string;
+    startsAt: Date;
+    endsAt: Date;
+  }) {
+    return prisma.paymentCheckout.findFirst({
       where: {
-        patientId,
-        purchasedAt: { lte: until }
+        kind: "TRIAL",
+        status: { in: ["PAID", "FULFILLED"] },
+        OR: [
+          { fulfillmentBookingId: booking.id },
+          {
+            patientId: booking.patientId,
+            trialProfessionalId: booking.professionalId,
+            trialStartsAt: booking.startsAt,
+            trialEndsAt: booking.endsAt
+          }
+        ]
       },
-      include: {
-        sessionPackage: {
-          select: { id: true, currency: true, priceCents: true, credits: true }
-        }
-      },
-      orderBy: { purchasedAt: "desc" },
-      take: 1
+      orderBy: [{ fulfilledAt: "desc" }, { paidAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        chargeAmountMajor: true,
+        chargeCurrency: true,
+        displayName: true,
+        fulfillmentBookingId: true,
+        metadata: true
+      }
     });
   },
   findPurchaseById(purchaseId: string) {
@@ -54,7 +72,7 @@ export const financeRepository = {
       where: { id: purchaseId },
       include: {
         sessionPackage: {
-          select: { id: true, currency: true, priceCents: true, credits: true }
+          select: { id: true, name: true, currency: true, priceCents: true, credits: true }
         }
       }
     });

@@ -1,4 +1,5 @@
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import type { ReactNode } from "react";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import type { KpisResponse } from "../../app/types";
 
@@ -65,6 +66,8 @@ export function FinanceMonthOverviewSection(props: {
   kpis: KpisResponse["kpis"] | null;
   loading: boolean;
   error: string | null;
+  /** Insertado debajo de «Ingresos del mes» (p. ej. pendientes a pagar). */
+  afterRevenue?: ReactNode;
 }) {
   const k = props.kpis;
 
@@ -235,6 +238,19 @@ export function FinanceMonthOverviewSection(props: {
               />
             </div>
           </section>
+
+          {props.afterRevenue ? (
+            <section
+              className="dashboard-section dashboard-section--raised dashboard-section--tone-sess finance-dash-section"
+              aria-label={t(props.language, {
+                es: "Pendiente de pagar a profesionales",
+                en: "Pending professional payouts",
+                pt: "Pendente de pagar a profissionais"
+              })}
+            >
+              {props.afterRevenue}
+            </section>
+          ) : null}
 
           <section className="dashboard-section dashboard-section--raised dashboard-section--tone-viz finance-dash-section" aria-labelledby="fin-dash-viz">
             <h2 id="fin-dash-viz" className="dashboard-section-title">

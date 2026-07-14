@@ -4814,6 +4814,264 @@ button.primary.finance-hero-search {
   color: #475569;
 }
 
+.sessions-ops-premium .sessions-ops-hero {
+  gap: 18px;
+}
+
+.sessions-ops-hero-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px 24px;
+  align-items: flex-start;
+}
+
+.sessions-ops-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.sessions-ops-hero-header h2 {
+  margin: 0;
+}
+
+.sessions-ops-hero-stats {
+  display: flex;
+  gap: 10px;
+}
+
+.sessions-ops-hero-stats > div {
+  min-width: 88px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, #f8fafc 0%, #eef2ff 100%);
+  border: 1px solid #e2e8f0;
+  display: grid;
+  gap: 2px;
+}
+
+.sessions-ops-hero-stats span {
+  font-size: 11px;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sessions-ops-hero-stats strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.sessions-ops-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 1100px) {
+  .sessions-ops-filters {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sessions-ops-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sessions-ops-filter-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.sessions-ops-filter-field input,
+.sessions-ops-filter-field select {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d6deeb;
+  background: #fff;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.sessions-ops-inline-search {
+  display: flex;
+  gap: 8px;
+}
+
+.sessions-ops-inline-search input {
+  flex: 1;
+}
+
+.sessions-ops-linkish {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #1d4ed8;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sessions-ops-clear-filters {
+  margin-left: auto;
+}
+
+.sessions-ops-day-group {
+  display: grid;
+  gap: 10px;
+}
+
+.sessions-ops-day-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 4px 0;
+}
+
+.sessions-ops-day-heading h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3053;
+  text-transform: capitalize;
+}
+
+.sessions-ops-day-heading span {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ops-session-editor {
+  display: grid;
+  gap: 14px;
+  padding: 4px 16px 16px;
+}
+
+.admin-session-schedule {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(59, 130, 246, 0.08), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.admin-session-schedule-head h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.admin-session-schedule-head p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.admin-session-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .admin-session-schedule-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-session-schedule-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.admin-session-schedule-field input,
+.admin-session-schedule-field select {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d6deeb;
+  background: #fff;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.admin-session-schedule-end {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.admin-session-schedule-end span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.admin-session-schedule-end strong {
+  font-size: 14px;
+  font-weight: 650;
+  color: #fff;
+}
+
+.admin-session-schedule-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-session-schedule-preset {
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #312e81;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.admin-session-schedule-preset:hover:not(:disabled) {
+  background: #e0e7ff;
+}
+
+.admin-session-schedule-preset:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .admin-booking-session-actions {
   padding: 0 16px 16px;
   gap: 10px;
@@ -6478,6 +6736,47 @@ button.primary.finance-hero-search {
   white-space: nowrap;
 }
 
+.admin-unpaid-professionals-totals {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.admin-unpaid-professionals-totals strong {
+  font-size: 18px;
+  color: #1e3a8a;
+}
+
+.admin-unpaid-professionals-totals span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-unpaid-professionals-toolbar {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.4fr) minmax(180px, 0.8fr);
+  gap: 12px;
+}
+
+.admin-unpaid-professionals-toolbar label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.admin-unpaid-professionals-toolbar input,
+.admin-unpaid-professionals-toolbar select {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid #d6deeb;
+  padding: 0 12px;
+  font: inherit;
+  background: #fff;
+}
+
 .admin-unpaid-professionals-table-wrap {
   overflow-x: auto;
 }
@@ -6492,6 +6791,7 @@ button.primary.finance-hero-search {
   padding: 10px 12px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
+  vertical-align: middle;
 }
 
 .admin-unpaid-professionals-table th {
@@ -6501,14 +6801,132 @@ button.primary.finance-hero-search {
   color: #64748b;
 }
 
+.admin-unpaid-professionals-table th.num,
 .admin-unpaid-professionals-table td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.admin-unpaid-professionals-table button.primary {
-  min-height: 36px;
-  padding: 0 14px;
+.admin-unpaid-professionals-table td.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-net {
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.admin-unpaid-pro-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-unpaid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-unpaid-professionals-table button.primary,
+.admin-unpaid-professionals-table button.secondary {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.admin-unpaid-detail-row > td {
+  background: #f8fafc;
+  padding: 0 12px 14px;
+}
+
+.admin-unpaid-session-detail {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.admin-unpaid-session-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-unpaid-session-table th,
+.admin-unpaid-session-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  font-size: 13px;
+}
+
+.admin-unpaid-session-table th.num,
+.admin-unpaid-session-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-session-table th {
+  background: #f1f5f9;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.admin-unpaid-session-link {
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.admin-unpaid-original {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.admin-unpaid-source {
+  display: grid;
+  gap: 2px;
+  min-width: 10rem;
+}
+
+.admin-unpaid-source strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-unpaid-source span {
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.admin-unpaid-source small {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.admin-unpaid-calc-hint,
+.admin-unpaid-detail-loading {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .patient-payment-checkouts {
@@ -6802,6 +7220,22 @@ button.primary.finance-hero-search {
   margin-top: 2px;
   font-size: 11px;
   color: #94a3b8;
+}
+
+.finance-payout-review-source {
+  display: grid;
+  gap: 2px;
+}
+
+.finance-payout-review-source strong {
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.finance-payout-review-source span {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.35;
 }
 
 .finance-payout-review-original {

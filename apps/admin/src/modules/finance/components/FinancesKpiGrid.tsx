@@ -45,9 +45,9 @@ export function FinancesKpiGrid(props: FinancesKpiGridProps) {
         <>
           <p className="finance-kpis-section-label">
             {t(props.language, {
-              es: "Planificado (aprox.): sesiones confirmadas o pedidas con inicio entre las fechas del filtro. Precio lista del profesional y % actual; no refleja trial ni crédito de paquete.",
-              en: "Planned (approx.): confirmed or requested sessions starting in the filter range. Pro list price and current %; excludes trial and package credit pricing.",
-              pt: "Planejado (aprox.): sessoes com inicio no intervalo. Preco lista e % atual."
+              es: "Planificado (aprox.): sesiones confirmadas o pedidas con inicio entre las fechas del filtro. Es una proyección; el valor real de cada sesión ejecutada siempre sale del checkout de prueba o del paquete comprado.",
+              en: "Planned (approx.): confirmed or requested sessions starting in the filter range. Projection only; executed session value always comes from the trial checkout or purchased package.",
+              pt: "Planejado (aprox.): sessoes com inicio no intervalo. Projecao; o valor real da sessao executada vem do checkout de teste ou do pacote comprado."
             })}
           </p>
           <div className="kpi-grid finance-kpis finance-kpis-planned">

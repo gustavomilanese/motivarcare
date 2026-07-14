@@ -47,6 +47,10 @@ export type UnpaidProfessionalSessionRow = {
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
   isTrial: boolean;
+  sourceKind: "trial" | "package";
+  sourceLabel: string;
+  purchaseId: string | null;
+  paymentCheckoutId: string | null;
   currency: string;
   sessionPriceCents: number;
   platformCommissionPercent: number;
@@ -117,9 +121,38 @@ export async function getUnpaidProfessionalDetail(
     include: {
       patient: { select: { id: true, user: { select: { fullName: true, email: true } } } },
       package: { select: { id: true, name: true, credits: true } },
-      purchase: { select: { fxArsPerUsdSnapshot: true } }
+      purchase: {
+        select: {
+          id: true,
+          packageNameSnapshot: true,
+          packageCreditsSnapshot: true,
+          fxArsPerUsdSnapshot: true
+        }
+      }
     }
   });
+
+  const bookingIds = records.map((record) => record.bookingId);
+  const trialCheckouts = bookingIds.length
+    ? await prisma.paymentCheckout.findMany({
+        where: {
+          kind: "TRIAL",
+          fulfillmentBookingId: { in: bookingIds }
+        },
+        select: {
+          id: true,
+          fulfillmentBookingId: true,
+          displayName: true,
+          chargeAmountMajor: true,
+          chargeCurrency: true
+        }
+      })
+    : [];
+  const trialCheckoutByBookingId = new Map(
+    trialCheckouts
+      .filter((checkout) => checkout.fulfillmentBookingId != null)
+      .map((checkout) => [checkout.fulfillmentBookingId as string, checkout])
+  );
 
   const liveFx = await resolveLiveFx();
   let grossUsdCents = 0;
@@ -156,12 +189,34 @@ export async function getUnpaidProfessionalDetail(
     platformFeeUsdCents += feeUsdCents;
     professionalNetUsdCents += netUsdCents;
 
+    const trialCheckout = record.isTrial ? trialCheckoutByBookingId.get(record.bookingId) : undefined;
+    const packageName =
+      record.purchase?.packageNameSnapshot?.trim()
+      || record.package?.name?.trim()
+      || null;
+    const packageCredits =
+      record.purchase?.packageCreditsSnapshot
+      ?? record.package?.credits
+      ?? null;
+    const sourceKind = record.isTrial ? ("trial" as const) : ("package" as const);
+    const sourceLabel = record.isTrial
+      ? "Sesión de prueba · tarifa profesional (como individual)"
+      : packageName
+        ? packageCredits != null
+          ? `${packageName} (${packageCredits} cr)`
+          : packageName
+        : "Paquete";
+
     return {
       id: record.id,
       bookingId: record.bookingId,
       bookingStartsAt: record.bookingStartsAt.toISOString(),
       bookingCompletedAt: record.bookingCompletedAt?.toISOString() ?? null,
       isTrial: record.isTrial,
+      sourceKind,
+      sourceLabel,
+      purchaseId: record.purchaseId,
+      paymentCheckoutId: trialCheckout?.id ?? null,
       currency: record.currency,
       sessionPriceCents: record.sessionPriceCents,
       platformCommissionPercent: record.platformCommissionPercent,
@@ -176,7 +231,11 @@ export async function getUnpaidProfessionalDetail(
         email: record.patient.user.email
       },
       package: record.package
-        ? { id: record.package.id, name: record.package.name, credits: record.package.credits }
+        ? {
+            id: record.package.id,
+            name: packageName ?? record.package.name,
+            credits: packageCredits ?? record.package.credits
+          }
         : null
     };
   });

@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { financeRepository } from "./finance.repository.js";
+import {
+  isTrialBookingForFinance,
+  resolvePackageSessionPricing,
+  resolveTrialSessionPricing
+} from "./resolveFinanceSessionPricing.js";
 
 const FINANCE_RULES_KEY = "finance-rules";
 
@@ -11,10 +16,6 @@ export type FinanceRules = {
   sessionPriceMinUsd: number;
   sessionPriceMaxUsd: number;
 };
-
-function roundCents(value: number): number {
-  return Math.round(value);
-}
 
 function parseFinanceRules(value: unknown): FinanceRules {
   const parsed = value as Partial<FinanceRules> | undefined;
@@ -70,43 +71,59 @@ export async function upsertFinanceRecordForBooking(bookingId: string): Promise<
     return;
   }
 
-  const [rules, firstCompletedForPatient, purchaseById, purchases] = await Promise.all([
-    getFinanceRules(),
-    financeRepository.findFirstCompletedBookingByPatient(booking.patientId),
-    booking.consumedPurchaseId ? financeRepository.findPurchaseById(booking.consumedPurchaseId) : Promise.resolve(null),
-    financeRepository.findLatestPurchaseByPatientUntil(booking.patientId, booking.startsAt)
-  ]);
+  const rules = await getFinanceRules();
+  const isTrial = isTrialBookingForFinance(booking);
 
-  const isTrial = firstCompletedForPatient?.id === booking.id;
-  const purchase = purchaseById ?? purchases[0] ?? null;
-  const packageCurrency = purchase?.packageCurrencySnapshot?.toLowerCase() ?? purchase?.sessionPackage.currency?.toLowerCase() ?? "usd";
-  const packageCredits = purchase?.packageCreditsSnapshot ?? purchase?.sessionPackage.credits ?? null;
-  const packagePriceCents = purchase?.packagePriceCentsSnapshot ?? purchase?.sessionPackage.priceCents ?? null;
-  const packageSessionPrice =
-    packagePriceCents !== null && packageCredits !== null && packageCredits > 0
-      ? roundCents(packagePriceCents / packageCredits)
-      : null;
-  const sessionPriceCents =
-    packageSessionPrice
-    ?? (booking.professional.sessionPriceUsd ? booking.professional.sessionPriceUsd * 100 : rules.defaultSessionPriceCents);
-  const regularCommissionPercent = purchase?.platformCommissionPercentSnapshot ?? rules.platformCommissionPercent;
-  const trialCommissionPercent = purchase?.trialPlatformPercentSnapshot ?? rules.trialPlatformPercent;
-  const commissionPercent = isTrial ? trialCommissionPercent : regularCommissionPercent;
-  const platformFeeCents = roundCents((sessionPriceCents * commissionPercent) / 100);
-  const professionalNetCents = Math.max(0, sessionPriceCents - platformFeeCents);
+  let pricing;
+  if (isTrial) {
+    const checkout = await financeRepository.findTrialCheckoutForBooking(booking);
+    if (!checkout) {
+      throw new Error(
+        "Cannot build finance for trial session: missing paid trial checkout linked to this booking."
+      );
+    }
+    pricing = {
+      isTrial: true as const,
+      packageId: null,
+      purchaseId: null,
+      packageCredits: null,
+      ...resolveTrialSessionPricing({
+        checkout,
+        trialCommissionPercent: rules.trialPlatformPercent
+      })
+    };
+  } else {
+    if (!booking.consumedPurchaseId) {
+      throw new Error("Cannot build finance for package session: booking has no consumed purchase.");
+    }
+    const purchase = await financeRepository.findPurchaseById(booking.consumedPurchaseId);
+    if (!purchase) {
+      throw new Error(
+        `Cannot build finance for package session: purchase ${booking.consumedPurchaseId} was not found.`
+      );
+    }
+    pricing = {
+      isTrial: false as const,
+      paymentCheckoutId: null,
+      ...resolvePackageSessionPricing({
+        purchase,
+        regularCommissionPercentFallback: rules.platformCommissionPercent
+      })
+    };
+  }
 
   await financeRepository.upsertFinanceSessionRecord({
     bookingId: booking.id,
     patientId: booking.patientId,
     professionalId: booking.professionalId,
-    packageId: purchase?.packageId ?? null,
-    purchaseId: purchase?.id ?? null,
-    isTrial,
-    currency: packageCurrency,
-    sessionPriceCents,
-    platformCommissionPercent: commissionPercent,
-    platformFeeCents,
-    professionalNetCents,
+    packageId: pricing.packageId,
+    purchaseId: pricing.purchaseId,
+    isTrial: pricing.isTrial,
+    currency: pricing.currency,
+    sessionPriceCents: pricing.sessionPriceCents,
+    platformCommissionPercent: pricing.platformCommissionPercent,
+    platformFeeCents: pricing.platformFeeCents,
+    professionalNetCents: pricing.professionalNetCents,
     bookingStatus: booking.status,
     bookingCompletedAt: booking.completedAt ?? null,
     bookingStartsAt: booking.startsAt
@@ -120,20 +137,38 @@ export async function upsertFinanceRecordForBooking(bookingId: string): Promise<
       bookingId: booking.id,
       patientId: booking.patientId,
       professionalId: booking.professionalId,
-      sessionPriceCents,
-      platformFeeCents,
-      professionalNetCents,
-      isTrial
+      sessionPriceCents: pricing.sessionPriceCents,
+      platformFeeCents: pricing.platformFeeCents,
+      professionalNetCents: pricing.professionalNetCents,
+      isTrial: pricing.isTrial,
+      purchaseId: pricing.purchaseId,
+      paymentCheckoutId: pricing.paymentCheckoutId,
+      sourceLabel: pricing.sourceLabel,
+      packageCredits: pricing.packageCredits
     } as Prisma.InputJsonValue
   );
 }
 
-export async function rebuildFinanceRecords(): Promise<{ processed: number }> {
+export async function rebuildFinanceRecords(): Promise<{
+  processed: number;
+  failed: number;
+  errors: Array<{ bookingId: string; message: string }>;
+}> {
   const completedBookings = await financeRepository.findCompletedBookingIds();
+  const errors: Array<{ bookingId: string; message: string }> = [];
+  let processed = 0;
   for (const booking of completedBookings) {
-    await upsertFinanceRecordForBooking(booking.id);
+    try {
+      await upsertFinanceRecordForBooking(booking.id);
+      processed += 1;
+    } catch (error) {
+      errors.push({
+        bookingId: booking.id,
+        message: error instanceof Error ? error.message : "Unknown finance rebuild error"
+      });
+    }
   }
-  return { processed: completedBookings.length };
+  return { processed, failed: errors.length, errors };
 }
 
 type FinanceOverviewQueryParams = {

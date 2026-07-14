@@ -576,6 +576,18 @@ function OverviewPage(props: OverviewPageProps) {
       </section>
 
       <section
+        className="dashboard-section dashboard-section--raised dashboard-section--tone-sess"
+        aria-labelledby="dash-unpaid"
+      >
+        <AdminUnpaidProfessionalsPanel
+          token={props.token}
+          language={props.language}
+          initialRows={unpaidRows}
+          onChanged={() => setRefreshToken((value) => value + 1)}
+        />
+      </section>
+
+      <section
         className="dashboard-section dashboard-section--raised dashboard-section--tone-viz"
         aria-labelledby="dash-viz"
       >
@@ -676,18 +688,6 @@ function OverviewPage(props: OverviewPageProps) {
             ))}
           </div>
         </article>
-      </section>
-
-      <section
-        className="dashboard-section dashboard-section--raised dashboard-section--tone-sess"
-        aria-labelledby="dash-unpaid"
-      >
-        <AdminUnpaidProfessionalsPanel
-          token={props.token}
-          language={props.language}
-          initialRows={unpaidRows}
-          onChanged={() => setRefreshToken((value) => value + 1)}
-        />
       </section>
 
       <section
