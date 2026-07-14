@@ -39,7 +39,7 @@ function formatBookingStatus(status: string, language: AppLanguage): string {
     return t(language, { es: "Solicitada", en: "Requested", pt: "Solicitada" });
   }
   if (normalized === "completed") {
-    return t(language, { es: "Completada", en: "Completed", pt: "Concluida" });
+    return t(language, { es: "Ejecutada", en: "Executed", pt: "Executada" });
   }
   if (normalized === "cancelled") {
     return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });

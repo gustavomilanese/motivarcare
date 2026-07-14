@@ -132,7 +132,19 @@ export interface DashboardResponse {
     startsAt: string;
     endsAt: string;
     status: string;
-    joinUrl: string | null;
+    joinUrl?: string | null;
+  }>;
+  /** Sesiones ya iniciadas (CONFIRMADAS) que el profesional aún no marcó como ejecutadas. */
+  pendingExecutionSessions?: Array<{
+    id: string;
+    patientId: string;
+    patientName: string;
+    patientEmail: string;
+    patientAvatarUrl?: string | null;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+    joinUrl?: string | null;
   }>;
 }
 

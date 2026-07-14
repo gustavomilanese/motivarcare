@@ -907,6 +907,13 @@ label {
   color: #334155;
 }
 
+.ops-status-field-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
 .toolbar-actions {
   display: flex;
   flex-wrap: wrap;

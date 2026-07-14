@@ -57,6 +57,15 @@ export async function upsertFinanceRecordForBooking(bookingId: string): Promise<
   }
 
   if (booking.status !== "COMPLETED") {
+    const existingFinance = await prisma.financeSessionRecord.findUnique({
+      where: { bookingId },
+      select: { payoutLineId: true }
+    });
+    if (existingFinance?.payoutLineId) {
+      throw new Error(
+        "Cannot reverse an executed session that is already linked to a payout. Unlink or adjust the payout first."
+      );
+    }
     await financeRepository.deleteFinanceRecordByBooking(bookingId);
     return;
   }

@@ -14,6 +14,7 @@ import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
+import { PendingExecutionSessionsList } from "../components/agenda/PendingExecutionSessionsList";
 import {
   buildProfessionalStatsQuery,
   type RevenuePreset,
@@ -90,6 +91,7 @@ export function DashboardPage(props: {
 }) {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [upcomingReservations, setUpcomingReservations] = useState<UpcomingReservationItem[]>([]);
+  const [pendingExecutionSessions, setPendingExecutionSessions] = useState<UpcomingReservationItem[]>([]);
   const [error, setError] = useState("");
   const [bookingActionInProgressId, setBookingActionInProgressId] = useState<string | null>(null);
   const [bookingActionError, setBookingActionError] = useState("");
@@ -137,7 +139,19 @@ export function DashboardPage(props: {
               patientEmail: session.patientEmail,
               patientAvatarUrl: session.patientAvatarUrl ?? null,
               status: session.status,
-              joinUrl: session.joinUrl
+              joinUrl: session.joinUrl ?? null
+            }))
+          );
+          setPendingExecutionSessions(
+            (response.pendingExecutionSessions ?? []).map((session) => ({
+              id: session.id,
+              startsAt: session.startsAt,
+              endsAt: session.endsAt,
+              patientName: session.patientName,
+              patientEmail: session.patientEmail,
+              patientAvatarUrl: session.patientAvatarUrl ?? null,
+              status: session.status,
+              joinUrl: session.joinUrl ?? null
             }))
           );
           setError("");
@@ -518,6 +532,24 @@ export function DashboardPage(props: {
     }
   };
 
+  const submitMarkExecuted = async (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setBookingActionInProgressId(booking.id);
+    try {
+      await apiRequest<{ message: string }>(`/api/bookings/${booking.id}/complete`, props.token, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      setPendingExecutionSessions((current) => current.filter((item) => item.id !== booking.id));
+      setDashboardReloadKey((value) => value + 1);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-complete-booking", props.language, raw));
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
   const executedMoneyTooltip = t(props.language, {
     es: "Total de Ingreso bruto de sesiones ya realizadas, en el periodo definido en los filtros.",
     en: "Total gross revenue from sessions already completed, in the period set by the filters above.",
@@ -613,6 +645,34 @@ export function DashboardPage(props: {
         variant="dashboard"
       />
 
+      <section className="pro-card agenda-upcoming-panel" id="sesiones-por-ejecutar" data-tour="pro-tour-pending-execution">
+        <div className="agenda-upcoming-head">
+          <h2>
+            {t(props.language, {
+              es: "Sesiones por marcar como ejecutadas",
+              en: "Sessions to mark as executed",
+              pt: "Sessoes para marcar como executadas"
+            })}
+          </h2>
+          {pendingExecutionSessions.length > 0 ? (
+            <span className="agenda-execution-count">{pendingExecutionSessions.length}</span>
+          ) : null}
+        </div>
+        <p className="agenda-execution-lead">
+          {t(props.language, {
+            es: "Marcá las sesiones ya realizadas. Así entran a tu liquidación pendiente en Admin.",
+            en: "Mark sessions you’ve already run. They enter your pending payout in Admin.",
+            pt: "Marque as sessoes ja realizadas. Elas entram na sua liquidacao pendente no Admin."
+          })}
+        </p>
+        <PendingExecutionSessionsList
+          language={props.language}
+          sessions={pendingExecutionSessions}
+          busyBookingId={bookingActionInProgressId}
+          onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
+        />
+      </section>
+
       <section
         className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
         id="sesiones-agendadas"
@@ -632,8 +692,9 @@ export function DashboardPage(props: {
           highlightJoinPulseBookingId={highlightJoinPulseBookingId}
           joinTourTargetBookingId={firstMeetBookingId}
         />
-        {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
       </section>
+
+      {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
 
       {isRescheduleModalOpen ? (
         <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => setIsRescheduleModalOpen(false)}>

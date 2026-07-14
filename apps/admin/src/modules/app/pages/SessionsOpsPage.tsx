@@ -38,9 +38,9 @@ function bookingStatusLabel(language: AppLanguage, status: AdminBookingOps["stat
     case "CANCELLED":
       return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });
     case "COMPLETED":
-      return t(language, { es: "Completada", en: "Completed", pt: "Concluida" });
+      return t(language, { es: "Ejecutada", en: "Executed", pt: "Executada" });
     case "NO_SHOW":
-      return t(language, { es: "Ausencia", en: "No-show", pt: "Falta" });
+      return t(language, { es: "No realizada / Ausencia", en: "Not held / No-show", pt: "Nao realizada / Falta" });
   }
 }
 
@@ -326,9 +326,9 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
         </header>
         <p className="settings-section-lead">
           {t(props.language, {
-            es: "Buscá por paciente, filtrá por estado y cancelá sesiones que el portal no deja borrar. También podés abrir Pacientes → editar → Ver sesiones.",
-            en: "Search by patient, filter by status, and cancel sessions the portal won't remove. You can also open Patients → edit → View sessions.",
-            pt: "Busque por paciente, filtre por estado e cancele sessoes. Tambem em Pacientes → editar → Ver sessoes."
+            es: "Buscá por paciente, filtrá por estado y corregí ejecuciones: El profesional marca «Ejecutada»; vos podés disputar o cambiar el estado si hubo un error. También Pacientes → editar → Ver sesiones.",
+            en: "Search by patient, filter by status, and correct executions: the therapist marks “Executed”; you can dispute or change status if something is wrong. Also Patients → edit → View sessions.",
+            pt: "Busque por paciente, filtre por estado e corrija execucoes: o profissional marca «Executada»; voce pode disputar ou mudar o status. Tambem Pacientes → editar → Ver sessoes."
           })}
         </p>
 
@@ -476,6 +476,13 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
                           </button>
                         ))}
                       </div>
+                      <p className="ops-status-field-hint">
+                        {t(props.language, {
+                          es: "«Ejecutada» genera el registro a liquidar. Si ya estuvo en un payout, no se puede revertir hasta ajustar la liquidación.",
+                          en: "“Executed” creates the payout ledger row. If it was already paid out, you can’t reverse it until the payout is adjusted.",
+                          pt: "«Executada» gera o registro a liquidar. Se ja entrou num payout, nao da para reverter sem ajustar a liquidacao."
+                        })}
+                      </p>
                     </div>
                     <label>
                       Inicio

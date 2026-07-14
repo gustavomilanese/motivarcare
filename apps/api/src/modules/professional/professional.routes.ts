@@ -356,6 +356,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
 
   const [
     upcomingBookings,
+    pendingExecutionBookings,
     upcomingBookingsCount,
     weeklySessionsCount,
     allBookings,
@@ -383,6 +384,23 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       },
       orderBy: { startsAt: "asc" },
       take: 24
+    }),
+    prisma.booking.findMany({
+      where: {
+        professionalId: actor.professionalProfileId,
+        status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
+        startsAt: { lte: now }
+      },
+      include: {
+        patient: {
+          include: {
+            user: { select: { fullName: true, email: true, avatarUrl: true } }
+          }
+        },
+        videoSession: true
+      },
+      orderBy: { startsAt: "desc" },
+      take: 40
     }),
     prisma.booking.count({
       where: {
@@ -688,6 +706,17 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         }
       : null,
     upcomingSessions: upcomingSessions.map((booking: any) => ({
+      id: booking.id,
+      patientId: booking.patientId,
+      patientName: booking.patient.user.fullName,
+      patientEmail: booking.patient.user.email,
+      patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+      status: booking.status.toLowerCase(),
+      joinUrl: booking.videoSession?.joinUrlProfessional ?? null
+    })),
+    pendingExecutionSessions: pendingExecutionBookings.map((booking: any) => ({
       id: booking.id,
       patientId: booking.patientId,
       patientName: booking.patient.user.fullName,

@@ -6767,6 +6767,32 @@ select.pro-dashboard-revenue-control {
   cursor: wait;
 }
 
+.agenda-execution-lead {
+  margin: 0 0 14px;
+  color: #5b647a;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.agenda-execution-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agenda-execution-table-head,
+.agenda-execution-row {
+  grid-template-columns: 1.1fr 1fr 1.4fr 1.2fr;
+}
+
 .agenda-week-item-actions {
   display: flex;
   align-items: center;

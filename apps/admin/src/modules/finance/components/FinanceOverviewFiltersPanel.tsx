@@ -153,11 +153,11 @@ export function FinanceOverviewFiltersPanel(props: FinanceOverviewFiltersPanelPr
             <span className="finance-filters-field-label">Estado</span>
             <select value={props.filters.bookingStatus} onChange={(event) => props.onFilterChange({ bookingStatus: event.target.value })}>
               <option value="">Cualquiera</option>
-              <option value="COMPLETED">Completada</option>
+              <option value="COMPLETED">Ejecutada</option>
               <option value="CONFIRMED">Confirmada</option>
               <option value="CANCELLED">Cancelada</option>
               <option value="REQUESTED">Solicitada</option>
-              <option value="NO_SHOW">No show</option>
+              <option value="NO_SHOW">No realizada / Ausencia</option>
             </select>
           </label>
         </div>

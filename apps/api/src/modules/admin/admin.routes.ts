@@ -1792,7 +1792,15 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
     return updatedBooking;
   });
 
-  await upsertFinanceRecordForBooking(updated.id);
+  try {
+    await upsertFinanceRecordForBooking(updated.id);
+  } catch (financeError) {
+    const message = financeError instanceof Error ? financeError.message : "Could not update finance for booking";
+    if (message.includes("already linked to a payout")) {
+      return res.status(409).json({ error: message });
+    }
+    throw financeError;
+  }
 
   return res.json({ booking: updated });
 });

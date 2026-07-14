@@ -129,6 +129,7 @@ export type ProfessionalSurfaceContext =
   | "dashboard-reschedule-availability"
   | "dashboard-reschedule-save"
   | "dashboard-cancel-booking"
+  | "dashboard-complete-booking"
   | "chat-threads"
   | "chat-messages"
   | "chat-send"
@@ -297,6 +298,11 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     es: "No pudimos cancelar desde el panel. Actualizá la página o gestioná la sesión desde la agenda publicada.",
     en: "We couldn’t cancel from the dashboard. Refresh or manage the session from your published schedule.",
     pt: "Nao foi possivel cancelar pelo painel. Atualize ou use a agenda publicada."
+  },
+  "dashboard-complete-booking": {
+    es: "No pudimos marcar la sesión como ejecutada. Si ya empezó, reintentá; si persiste, avisá a Admin.",
+    en: "We couldn’t mark the session as executed. If it already started, retry; if it keeps failing, contact Admin.",
+    pt: "Nao foi possivel marcar a sessao como executada. Se ja comecou, tente de novo; se persistir, avise o Admin."
   },
   "chat-threads": {
     es: "No cargaron las conversaciones. Tirá para actualizar o salí del chat y volvé a entrar.",
