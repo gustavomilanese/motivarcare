@@ -48,7 +48,7 @@ function OnboardingFinalMatching(p: {
   ) => Promise<{ ok: boolean; error?: string }>;
   startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
   syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
-  handleReserveFromAnywhere: (professionalId: string) => void;
+  handleReserveFromAnywhere: (professionalId: string, options?: { returnTo?: string }) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
@@ -144,8 +144,8 @@ export function PortalRoutes(props: {
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   handleGoToReservations: () => void;
-  handleRescheduleBookingFromAnywhere: (bookingId: string) => void;
-  handleReserveFromAnywhere: (professionalId: string) => void;
+  handleRescheduleBookingFromAnywhere: (bookingId: string, options?: { returnTo?: string }) => void;
+  handleReserveFromAnywhere: (professionalId: string, options?: { returnTo?: string }) => void;
   handleGoToProfessional: (professionalId: string) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
@@ -209,8 +209,12 @@ export function PortalRoutes(props: {
                   onImageFallback={props.onImageFallback}
                   onHeroFallback={props.onHeroFallback}
                   onGoToReservations={props.handleGoToReservations}
-                  onRescheduleBooking={props.handleRescheduleBookingFromAnywhere}
-                  onGoToBooking={props.handleReserveFromAnywhere}
+                  onRescheduleBooking={(bookingId) =>
+                    props.handleRescheduleBookingFromAnywhere(bookingId, { returnTo: "/" })
+                  }
+                  onGoToBooking={(professionalId) =>
+                    props.handleReserveFromAnywhere(professionalId, { returnTo: "/" })
+                  }
                   onGoToProfessional={props.handleGoToProfessional}
                   onGoToChat={props.handleChatFromAnywhere}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}

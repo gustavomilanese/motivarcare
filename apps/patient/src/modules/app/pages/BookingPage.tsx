@@ -1,5 +1,5 @@
 import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type DisplayFxRates,
@@ -108,6 +108,23 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
   });
 }
 
+/** Only allow same-app paths (e.g. `/`) — blocks open redirects. */
+function safeInternalReturnPath(raw: string | null | undefined): string | null {
+  if (!raw) {
+    return null;
+  }
+  let decoded = raw.trim();
+  try {
+    decoded = decodeURIComponent(decoded).trim();
+  } catch {
+    return null;
+  }
+  if (!decoded.startsWith("/") || decoded.startsWith("//") || decoded.includes("://")) {
+    return null;
+  }
+  return decoded;
+}
+
 export function BookingPage(props: {
   state: PatientAppState;
   professionals: Professional[];
@@ -137,7 +154,9 @@ export function BookingPage(props: {
   onNavigateToAssignProfessional: () => void;
 }) {
   const isMobilePortal = useMobilePortal();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const bookingReturnToRef = useRef<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [panelMode, setPanelMode] = useState<"new" | "reschedule" | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
@@ -680,6 +699,8 @@ export function BookingPage(props: {
       return;
     }
 
+    bookingReturnToRef.current = safeInternalReturnPath(searchParams.get("returnTo"));
+
     if (isCheckoutFlow) {
       setCheckoutPaymentLoading(false);
       setCheckoutPaymentPlanId(null);
@@ -693,6 +714,7 @@ export function BookingPage(props: {
     nextParams.delete("plan");
     nextParams.delete("purchase");
     nextParams.delete("source");
+    nextParams.delete("returnTo");
     setSearchParams(nextParams, { replace: true });
 
     setEditingBookingId(null);
@@ -716,8 +738,11 @@ export function BookingPage(props: {
       return;
     }
 
+    bookingReturnToRef.current = safeInternalReturnPath(searchParams.get("returnTo"));
+
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("reschedule");
+    nextParams.delete("returnTo");
     setSearchParams(nextParams, { replace: true });
 
     const target = upcomingConfirmedBookings.find((booking) => booking.id === rescheduleBookingId);
@@ -1006,7 +1031,7 @@ export function BookingPage(props: {
       } finally {
         setBookingSubmitting(false);
       }
-      closeBookingPanel();
+      finishBookingFlowAndMaybeReturn();
       return;
     }
 
@@ -1043,7 +1068,7 @@ export function BookingPage(props: {
     }
 
     setBookingActionError("");
-    closeBookingPanel();
+    finishBookingFlowAndMaybeReturn();
   };
 
   const closeBookingPanel = () => {
@@ -1054,6 +1079,15 @@ export function BookingPage(props: {
     setSelectedSlotId("");
     setBookingActionError("");
     setSlotHoldLoading(false);
+    bookingReturnToRef.current = null;
+  };
+
+  const finishBookingFlowAndMaybeReturn = () => {
+    const returnTo = bookingReturnToRef.current;
+    closeBookingPanel();
+    if (returnTo) {
+      navigate(returnTo);
+    }
   };
 
   const openCheckoutCatalog = useCallback(
