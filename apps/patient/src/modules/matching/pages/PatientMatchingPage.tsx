@@ -7,7 +7,7 @@ import { MatchingStickyAction } from "../components/MatchingStickyAction";
 import { AvailabilityPickerModal } from "../components/AvailabilityPickerModal";
 import { BookingSummaryModal } from "../components/BookingSummaryModal";
 import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
-import { friendlyBookingFailureMessage } from "../../app/lib/friendlyPatientMessages";
+import { friendlyBookingFailureMessage, friendlyCheckoutPackageMessage } from "../../app/lib/friendlyPatientMessages";
 import { patientUsesDlocalCheckout } from "../../app/lib/patientDlocalCheckout";
 import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
 import { fetchProfessionalAvailability } from "../services/availability";
@@ -494,7 +494,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }
         if (!checkout.ok) {
           setPaymentError(
-            friendlyBookingFailureMessage(checkout.error ?? "", props.language)
+            friendlyCheckoutPackageMessage(checkout.error ?? "", props.language)
           );
         } else {
           setPaymentError(
@@ -507,7 +507,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         }
       } catch (requestError) {
         setPaymentError(
-          friendlyBookingFailureMessage(
+          friendlyCheckoutPackageMessage(
             requestError instanceof Error ? requestError.message : "",
             props.language
           )

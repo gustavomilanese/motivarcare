@@ -15,12 +15,29 @@ export type DlocalGoPayment = {
   description?: string | null;
 };
 
+function dlocalApiKey(): string {
+  return env.DLOCALGO_API_KEY;
+}
+
+function dlocalApiSecret(): string {
+  return env.DLOCALGO_API_SECRET;
+}
+
 export function isDlocalGoConfigured(): boolean {
-  return Boolean(env.DLOCALGO_API_KEY.trim() && env.DLOCALGO_API_SECRET.trim());
+  return Boolean(dlocalApiKey() && dlocalApiSecret());
 }
 
 function authorizationHeader(): string {
-  return `Bearer ${env.DLOCALGO_API_KEY}:${env.DLOCALGO_API_SECRET}`;
+  const key = dlocalApiKey();
+  const secret = dlocalApiSecret();
+  if (!key || !secret) {
+    throw new Error("dLocal Go not configured");
+  }
+  // Reject values that would make fetch() throw and leak the header into patient UI.
+  if (!/^[\x20-\x7E]+$/.test(key) || !/^[\x20-\x7E]+$/.test(secret)) {
+    throw new Error("dLocal Go credentials contain invalid characters. Re-paste API key/secret without quotes or line breaks.");
+  }
+  return `Bearer ${key}:${secret}`;
 }
 
 function apiBaseUrl(): string {
@@ -48,6 +65,24 @@ function extractDlocalGoErrorMessage(body: unknown, status: number): string {
     }
   }
   return `dLocal Go API error (${status})`;
+}
+
+function sanitizeOutboundDlocalError(error: unknown): Error {
+  if (!(error instanceof Error)) {
+    return new Error("dLocal Go request failed");
+  }
+  const message = error.message;
+  if (
+    /Headers\.append/i.test(message)
+    || /invalid header value/i.test(message)
+    || /Bearer\s+\S+:\S+/i.test(message)
+    || /DLOCALGO_API_/i.test(message)
+  ) {
+    return new Error(
+      "dLocal Go credentials are invalid or contain hidden characters. Re-paste DLOCALGO_API_KEY and DLOCALGO_API_SECRET in Railway (no quotes or line breaks)."
+    );
+  }
+  return error;
 }
 
 /**
@@ -80,7 +115,7 @@ export async function dlocalGoRequest<T>(path: string, init?: RequestInit): Prom
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error(`dLocal Go API timeout after ${DLOCALGO_REQUEST_TIMEOUT_MS}ms`);
     }
-    throw error;
+    throw sanitizeOutboundDlocalError(error);
   } finally {
     clearTimeout(timeout);
   }
@@ -157,8 +192,8 @@ export function verifyDlocalGoNotificationSignature(params: {
   }
 
   const expectedHex = match[1].toLowerCase();
-  const message = `${env.DLOCALGO_API_KEY}${params.rawBody}`;
-  const computed = createHmac("sha256", env.DLOCALGO_API_SECRET).update(message, "utf8").digest("hex");
+  const message = `${dlocalApiKey()}${params.rawBody}`;
+  const computed = createHmac("sha256", dlocalApiSecret()).update(message, "utf8").digest("hex");
 
   try {
     return timingSafeEqual(Buffer.from(computed, "utf8"), Buffer.from(expectedHex, "utf8"));

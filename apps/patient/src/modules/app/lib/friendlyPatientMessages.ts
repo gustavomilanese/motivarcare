@@ -481,6 +481,40 @@ export function friendlyCheckoutPackageMessage(raw: string, language: AppLanguag
       pt: "O pagamento com cartao ainda nao esta ativo no servidor. Em local, configure DLOCALGO_API_KEY e DLOCALGO_API_SECRET no API e reinicie."
     });
   }
+  if (
+    n.includes("credentials are invalid or contain hidden characters")
+    || n.includes("credentials contain invalid characters")
+  ) {
+    return t(language, {
+      es: "Las claves de dLocal en el servidor tienen un problema de formato (comillas o saltos de línea). Hay que volver a pegarlas en Railway y redeploy.",
+      en: "The server’s dLocal keys have a formatting problem (quotes or line breaks). Re-paste them in Railway and redeploy.",
+      pt: "As chaves dLocal no servidor tem problema de formato (aspas ou quebras de linha). Cole de novo no Railway e faca redeploy."
+    });
+  }
+  if (n === "Invalid Credentials." || n === "Invalid Credentials") {
+    return t(language, {
+      es: "dLocal rechazó las credenciales del servidor (API Key/Secret). Revisá en Railway que coincidan con el dashboard sandbox y que la URL sea api-sbx.dlocalgo.com.",
+      en: "dLocal rejected the server credentials (API Key/Secret). In Railway, match the sandbox dashboard keys and use api-sbx.dlocalgo.com.",
+      pt: "A dLocal rejeitou as credenciais do servidor. No Railway, confira key/secret do sandbox e a URL api-sbx.dlocalgo.com."
+    });
+  }
+  if (n === "Session price unavailable for trial checkout") {
+    return t(language, {
+      es: "No encontramos el precio de sesión del profesional para iniciar el pago. Revisá en admin que tenga precio cargado, o avisá a soporte.",
+      en: "We couldn’t find the therapist’s session price to start payment. Check in admin that a price is set, or contact support.",
+      pt: "Nao encontramos o preco da sessao do profissional. Verifique no admin se ha preco, ou fale com o suporte."
+    });
+  }
+  if (n === "USD/ARS exchange rate unavailable for Argentina checkout") {
+    return t(language, {
+      es: "No pudimos obtener la cotización USD/ARS para cobrar en pesos. Probá de nuevo en unos minutos; si sigue, avisá a soporte.",
+      en: "We couldn’t get the USD/ARS rate to charge in pesos. Try again in a few minutes; if it persists, contact support.",
+      pt: "Nao foi possivel obter a cotacao USD/ARS. Tente em alguns minutos; se persistir, fale com o suporte."
+    });
+  }
+  if (n === "Slot hold expired or not found" || n === "Another patient is completing checkout for this time") {
+    return friendlyBookingFailureMessage(n, language);
+  }
   if (n === "Direct session purchase is disabled in production. Use the checkout flow.") {
     return t(language, {
       es: "El pago en línea no pudo iniciarse. Probá de nuevo en unos segundos; si sigue igual, avisá a soporte.",

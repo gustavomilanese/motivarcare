@@ -4,6 +4,16 @@ import { z } from "zod";
 config({ path: "../../.env" });
 config();
 
+/** Strip paste artifacts (BOM, quotes, newlines) that break HTTP Authorization headers. */
+function sanitizeDlocalCredential(value: string | undefined): string {
+  return (value ?? "")
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/[\r\n\0\t]+/g, "")
+    .trim();
+}
+
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(4000),
   /** Vacío = en development escucha en 0.0.0.0 (LAN / móvil); en production, comportamiento por defecto de Node. */
@@ -58,11 +68,27 @@ const EnvSchema = z.object({
   STRIPE_PRICE_PACKAGE_8: z.string().optional().default(""),
   STRIPE_PRICE_PACKAGE_12: z.string().optional().default(""),
   STRIPE_PRICE_MAP_JSON: z.string().optional().default(""),
-  DLOCALGO_API_URL: z.string().min(1).default("https://api-sbx.dlocalgo.com"),
-  DLOCALGO_API_KEY: z.string().optional().default(""),
-  DLOCALGO_API_SECRET: z.string().optional().default(""),
+  DLOCALGO_API_URL: z
+    .string()
+    .min(1)
+    .default("https://api-sbx.dlocalgo.com")
+    .transform((value) => value.trim().replace(/\/+$/, "")),
+  DLOCALGO_API_KEY: z
+    .string()
+    .optional()
+    .default("")
+    .transform((value) => sanitizeDlocalCredential(value)),
+  DLOCALGO_API_SECRET: z
+    .string()
+    .optional()
+    .default("")
+    .transform((value) => sanitizeDlocalCredential(value)),
   /** Opcional: transparent checkout (SmartFields). No requerido para redirect. */
-  DLOCALGO_SMARTFIELDS_API_KEY: z.string().optional().default(""),
+  DLOCALGO_SMARTFIELDS_API_KEY: z
+    .string()
+    .optional()
+    .default("")
+    .transform((value) => sanitizeDlocalCredential(value)),
   DAILY_API_KEY: z.string().optional().default(""),
   DAILY_DOMAIN: z.string().optional().default(""),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
