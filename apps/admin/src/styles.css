@@ -6806,19 +6806,12 @@ button.primary.finance-hero-search {
   display: grid;
   grid-template-columns: minmax(200px, 1.4fr) minmax(180px, 0.8fr);
   gap: 12px;
-}
-
-.admin-unpaid-professionals-toolbar label {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
+  align-items: center;
 }
 
 .admin-unpaid-professionals-toolbar input,
 .admin-unpaid-professionals-toolbar select {
+  width: 100%;
   min-height: 40px;
   border-radius: 10px;
   border: 1px solid #d6deeb;

@@ -169,18 +169,26 @@ export function AdminUnpaidProfessionalsPanel(props: {
         </header>
 
         <div className="admin-unpaid-professionals-toolbar">
-          <label>
-            <span>{t(props.language, { es: "Buscar profesional", en: "Search professional", pt: "Buscar profissional" })}</span>
-            <input
-              type="search"
-              value={search}
-              placeholder={t(props.language, { es: "Nombre…", en: "Name…", pt: "Nome…" })}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
-          <label>
-            <span>{t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}</span>
-            <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
+          <input
+            type="search"
+            value={search}
+            placeholder={t(props.language, {
+              es: "Buscar profesional…",
+              en: "Search professional…",
+              pt: "Buscar profissional…"
+            })}
+            aria-label={t(props.language, {
+              es: "Buscar profesional",
+              en: "Search professional",
+              pt: "Buscar profissional"
+            })}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <select
+            value={sortKey}
+            aria-label={t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}
+            onChange={(event) => setSortKey(event.target.value as SortKey)}
+          >
               <option value="net_desc">
                 {t(props.language, { es: "Neto · mayor", en: "Net · highest", pt: "Líquido · maior" })}
               </option>
@@ -194,8 +202,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                 {t(props.language, { es: "Sesiones · más", en: "Sessions · most", pt: "Sessões · mais" })}
               </option>
               <option value="name_az">{t(props.language, { es: "Nombre A–Z", en: "Name A–Z", pt: "Nome A–Z" })}</option>
-            </select>
-          </label>
+          </select>
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}
