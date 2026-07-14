@@ -442,6 +442,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                   <thead>
                                     <tr>
                                       <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
+                                      <th>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</th>
                                       <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
                                       <th>{t(props.language, { es: "Origen / paquete", en: "Source / package", pt: "Origem" })}</th>
                                       <th className="num">{t(props.language, { es: "Valor sesión", en: "Session value", pt: "Valor" })}</th>
@@ -452,13 +453,28 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {expandedDetail.sessions.map((session) => (
-                                      <tr key={session.id}>
+                                    {expandedDetail.sessions.map((session) => {
+                                      const isPaid = session.payoutStatus === "paid";
+                                      return (
+                                      <tr key={session.id} className={isPaid ? "is-paid" : "is-pending"}>
                                         <td>
                                           {formatSessionDay(
                                             session.bookingCompletedAt ?? session.bookingStartsAt,
                                             props.language
                                           )}
+                                        </td>
+                                        <td>
+                                          <span
+                                            className={`admin-unpaid-status${isPaid ? " admin-unpaid-status--paid" : " admin-unpaid-status--pending"}`}
+                                          >
+                                            {isPaid
+                                              ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
+                                              : t(props.language, {
+                                                  es: "Pendiente",
+                                                  en: "Pending",
+                                                  pt: "Pendente"
+                                                })}
+                                          </span>
                                         </td>
                                         <td>{session.patient.fullName}</td>
                                         <td>
@@ -511,7 +527,8 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                           </Link>
                                         </td>
                                       </tr>
-                                    ))}
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>

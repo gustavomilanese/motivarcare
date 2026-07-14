@@ -202,6 +202,9 @@ export type UnpaidProfessionalSessionRow = {
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
   monthKey: string;
+  /** `pending` = aún no liquidada al profesional; `paid` = ya incluida en un payout pagado. */
+  payoutStatus: "pending" | "paid";
+  payoutPaidAt: string | null;
   isTrial: boolean;
   sourceKind: "trial" | "package";
   sourceLabel: string;
@@ -230,9 +233,14 @@ export type UnpaidProfessionalDetail = {
   selectedMonths: string[];
   totals: {
     sessionsCount: number;
+    pendingSessionsCount: number;
+    paidSessionsCount: number;
     grossUsdCents: number;
     platformFeeUsdCents: number;
     professionalNetUsdCents: number;
+    pendingGrossUsdCents: number;
+    pendingPlatformFeeUsdCents: number;
+    pendingProfessionalNetUsdCents: number;
   };
   sessions: UnpaidProfessionalSessionRow[];
   payout: {
@@ -273,8 +281,7 @@ export async function getUnpaidProfessionalDetail(
   const allRecords = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId,
-      bookingStatus: "COMPLETED",
-      payoutLineId: null
+      bookingStatus: "COMPLETED"
     },
     orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }],
     include: {
@@ -287,7 +294,8 @@ export async function getUnpaidProfessionalDetail(
           packageCreditsSnapshot: true,
           fxArsPerUsdSnapshot: true
         }
-      }
+      },
+      payoutLine: { select: { id: true, status: true, paidAt: true, payoutReference: true } }
     }
   });
 
@@ -322,6 +330,11 @@ export async function getUnpaidProfessionalDetail(
   let grossUsdCents = 0;
   let platformFeeUsdCents = 0;
   let professionalNetUsdCents = 0;
+  let pendingGrossUsdCents = 0;
+  let pendingPlatformFeeUsdCents = 0;
+  let pendingProfessionalNetUsdCents = 0;
+  let pendingSessionsCount = 0;
+  let paidSessionsCount = 0;
 
   const sessions: UnpaidProfessionalSessionRow[] = records.map((record) => {
     const fx = readSessionFxArsPerUsdSnapshot({
@@ -353,6 +366,18 @@ export async function getUnpaidProfessionalDetail(
     platformFeeUsdCents += feeUsdCents;
     professionalNetUsdCents += netUsdCents;
 
+    const line = record.payoutLine;
+    const isPaid = Boolean(line && (line.status === "PAID" || line.paidAt != null));
+    const payoutStatus = isPaid ? ("paid" as const) : ("pending" as const);
+    if (isPaid) {
+      paidSessionsCount += 1;
+    } else {
+      pendingSessionsCount += 1;
+      pendingGrossUsdCents += sessionPriceUsdCents;
+      pendingPlatformFeeUsdCents += feeUsdCents;
+      pendingProfessionalNetUsdCents += netUsdCents;
+    }
+
     const trialCheckout = record.isTrial ? trialCheckoutByBookingId.get(record.bookingId) : undefined;
     const packageName =
       record.purchase?.packageNameSnapshot?.trim()
@@ -377,6 +402,8 @@ export async function getUnpaidProfessionalDetail(
       bookingStartsAt: record.bookingStartsAt.toISOString(),
       bookingCompletedAt: record.bookingCompletedAt?.toISOString() ?? null,
       monthKey: financeRecordMonthKey(record),
+      payoutStatus,
+      payoutPaidAt: line?.paidAt?.toISOString() ?? null,
       isTrial: record.isTrial,
       sourceKind,
       sourceLabel,
@@ -412,14 +439,14 @@ export async function getUnpaidProfessionalDetail(
   const payoutCurrency = payoutCountry ? dlocalPayoutCurrencyForCountry(payoutCountry) : null;
 
   let estimatedLocal: UnpaidProfessionalDetail["payout"]["estimatedLocal"] = null;
-  if (payoutCurrency && professionalNetUsdCents > 0) {
+  if (payoutCurrency && pendingProfessionalNetUsdCents > 0) {
     const rates = await getUsdDisplayFxRates();
     const rate =
       payoutCurrency === "USD" ? 1 : rates[payoutCurrency] ?? null;
     if (rate != null && rate > 0) {
       estimatedLocal = {
         currency: payoutCurrency,
-        amount: Math.round((professionalNetUsdCents / 100) * rate * 100) / 100,
+        amount: Math.round((pendingProfessionalNetUsdCents / 100) * rate * 100) / 100,
         ratePerUsd: rate
       };
     }
@@ -440,9 +467,14 @@ export async function getUnpaidProfessionalDetail(
     selectedMonths,
     totals: {
       sessionsCount: sessions.length,
+      pendingSessionsCount,
+      paidSessionsCount,
       grossUsdCents,
       platformFeeUsdCents,
-      professionalNetUsdCents
+      professionalNetUsdCents,
+      pendingGrossUsdCents,
+      pendingPlatformFeeUsdCents,
+      pendingProfessionalNetUsdCents
     },
     sessions,
     payout: {
@@ -472,7 +504,7 @@ export async function payUnpaidProfessional(input: {
   if ("notFound" in detail) {
     return { notFound: true as const };
   }
-  if (detail.sessions.length === 0) {
+  if (detail.totals.pendingSessionsCount === 0) {
     return { noRecords: true as const };
   }
 
@@ -501,7 +533,7 @@ export async function payUnpaidProfessional(input: {
     amount: detail.payout.estimatedLocal.amount,
     externalReference: `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`,
     beneficiaryEmail: detail.professional.email,
-    description: `MotivarCare · ${detail.totals.sessionsCount} sesiones`
+    description: `MotivarCare · ${detail.totals.pendingSessionsCount} sesiones`
   });
 
   const ledger = await payProfessionalUnpaidBalance(

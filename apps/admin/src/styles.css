@@ -6917,6 +6917,33 @@ button.primary.finance-hero-search {
   white-space: nowrap;
 }
 
+.admin-unpaid-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.admin-unpaid-status--pending {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.admin-unpaid-status--paid {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+}
+
+.admin-unpaid-session-table tr.is-paid {
+  opacity: 0.78;
+}
+
 .admin-unpaid-professionals-lead {
   margin: 0;
   color: #4b5563;

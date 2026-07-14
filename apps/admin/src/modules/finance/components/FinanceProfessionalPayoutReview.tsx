@@ -268,6 +268,7 @@ export function FinanceProfessionalPayoutReview(props: {
                   <thead>
                     <tr>
                       <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
+                      <th>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</th>
                       <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
                       <th>{t(props.language, { es: "Origen", en: "Source", pt: "Origem" })}</th>
                       <th>{t(props.language, { es: "Precio", en: "Price", pt: "Preço" })}</th>
@@ -277,9 +278,20 @@ export function FinanceProfessionalPayoutReview(props: {
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.sessions.map((session) => (
+                    {detail.sessions.map((session) => {
+                      const isPaid = session.payoutStatus === "paid";
+                      return (
                       <tr key={session.id}>
                         <td>{formatSessionDate(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}</td>
+                        <td>
+                          <span
+                            className={`admin-unpaid-status${isPaid ? " admin-unpaid-status--paid" : " admin-unpaid-status--pending"}`}
+                          >
+                            {isPaid
+                              ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
+                              : t(props.language, { es: "Pendiente", en: "Pending", pt: "Pendente" })}
+                          </span>
+                        </td>
                         <td>
                           <span className="finance-payout-review-patient">{session.patient.fullName}</span>
                         </td>
@@ -313,7 +325,8 @@ export function FinanceProfessionalPayoutReview(props: {
                           </a>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
