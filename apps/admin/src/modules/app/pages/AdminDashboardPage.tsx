@@ -434,42 +434,42 @@ function OverviewPage(props: OverviewPageProps) {
 
   return (
     <div className="dashboard-page">
-      <header className="dashboard-page-header">
-        <div className="dashboard-page-header__top">
-          <div className="dashboard-header-actions dashboard-header-actions--end">
-            {typeof props.onNotificationCenterClick === "function" ? (
-              <button
-                type="button"
-                className="dashboard-notify-bell"
-                onClick={props.onNotificationCenterClick}
-                aria-label={t(props.language, {
-                  es: "Notificaciones: altas de psicólogos pendientes",
-                  en: "Notifications: pending psychologist sign-ups",
-                  pt: "Notificacoes: cadastros de psicologos pendentes"
-                })}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                {(props.pendingProfessionalRegistrationCount ?? 0) > 0 ? (
-                  <span className="dashboard-notify-badge">{props.pendingProfessionalRegistrationCount}</span>
-                ) : null}
-              </button>
-            ) : null}
-            <div className="dashboard-month-field">
-              <input
-                className="dashboard-month-input"
-                type="month"
-                value={selectedMonth}
-                max={maxMonth}
-                onChange={(event) => setSelectedMonth(event.target.value)}
-                aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
-              />
-            </div>
+      <header className="dashboard-page-toolbar">
+        <h1 className="dashboard-page-heading">
+          {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+        </h1>
+        <div className="dashboard-header-actions">
+          {typeof props.onNotificationCenterClick === "function" ? (
+            <button
+              type="button"
+              className="dashboard-notify-bell"
+              onClick={props.onNotificationCenterClick}
+              aria-label={t(props.language, {
+                es: "Notificaciones: altas de psicólogos pendientes",
+                en: "Notifications: pending psychologist sign-ups",
+                pt: "Notificacoes: cadastros de psicologos pendentes"
+              })}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {(props.pendingProfessionalRegistrationCount ?? 0) > 0 ? (
+                <span className="dashboard-notify-badge">{props.pendingProfessionalRegistrationCount}</span>
+              ) : null}
+            </button>
+          ) : null}
+          <div className="dashboard-month-field">
+            <input
+              className="dashboard-month-input"
+              type="month"
+              value={selectedMonth}
+              max={maxMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
+            />
           </div>
         </div>
-        <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
       </header>
 
       {error ? (
@@ -483,6 +483,8 @@ function OverviewPage(props: OverviewPageProps) {
           <p>{t(props.language, { es: "Cargando overview...", en: "Loading overview...", pt: "Carregando visao geral..." })}</p>
         </section>
       ) : null}
+
+      <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
 
       {k === undefined ? null : (
         <>

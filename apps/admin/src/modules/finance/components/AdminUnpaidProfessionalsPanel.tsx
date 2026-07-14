@@ -14,13 +14,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 type SortKey = "name_az" | "sessions_desc" | "gross_desc" | "fee_desc" | "net_desc";
 
-function effectiveCommissionPercent(row: AdminUnpaidProfessional): number {
-  if (row.grossCents <= 0) {
-    return 0;
-  }
-  return Math.round((row.platformFeeCents / row.grossCents) * 1000) / 10;
-}
-
 function averageSessionCents(row: AdminUnpaidProfessional): number {
   if (row.sessionsCount <= 0) {
     return 0;
@@ -226,11 +219,10 @@ export function AdminUnpaidProfessionalsPanel(props: {
                   <th className="num">
                     {t(props.language, { es: "Valor / sesión", en: "Value / session", pt: "Valor / sessão" })}
                   </th>
-                  <th className="num">{t(props.language, { es: "% comisión", en: "Fee %", pt: "% comissão" })}</th>
                   <th className="num">{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</th>
                   <th className="num">{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}</th>
                   <th className="num">{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}</th>
-                  <th>{t(props.language, { es: "Acciones", en: "Actions", pt: "Ações" })}</th>
+                  <th className="admin-unpaid-actions-col">{t(props.language, { es: "Acciones", en: "Actions", pt: "Ações" })}</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,7 +230,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
                   const expanded = expandedId === row.professionalId;
                   const expandedDetail = expandedDetails[row.professionalId] ?? null;
                   const unit = averageSessionCents(row);
-                  const pct = effectiveCommissionPercent(row);
                   return (
                     <Fragment key={row.professionalId}>
                       <tr className={expanded ? "is-expanded" : undefined}>
@@ -255,30 +246,56 @@ export function AdminUnpaidProfessionalsPanel(props: {
                         </td>
                         <td className="num">{row.sessionsCount}</td>
                         <td className="num">{formatAdminFinanceUsd(unit, props.language)}</td>
-                        <td className="num">{pct.toLocaleString(props.language === "en" ? "en-US" : "es-AR")}%</td>
                         <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
                         <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
                         <td className="num admin-unpaid-net">
                           {formatAdminFinanceUsd(row.professionalNetCents, props.language)}
                         </td>
                         <td className="admin-unpaid-actions">
-                          <button type="button" className="secondary" onClick={() => void toggleExpand(row)}>
-                            {expanded
-                              ? t(props.language, { es: "Ocultar", en: "Hide", pt: "Ocultar" })
-                              : t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
+                          <button
+                            type="button"
+                            className="admin-unpaid-icon-btn"
+                            onClick={() => void toggleExpand(row)}
+                            aria-expanded={expanded}
+                            aria-label={
+                              expanded
+                                ? t(props.language, { es: "Ocultar sesiones", en: "Hide sessions", pt: "Ocultar sessões" })
+                                : t(props.language, { es: "Ver sesiones", en: "Show sessions", pt: "Ver sessões" })
+                            }
+                            title={
+                              expanded
+                                ? t(props.language, { es: "Ocultar sesiones", en: "Hide sessions", pt: "Ocultar sessões" })
+                                : t(props.language, { es: "Ver sesiones", en: "Show sessions", pt: "Ver sessões" })
+                            }
+                          >
+                            <span aria-hidden>{expanded ? "−" : "+"}</span>
                           </button>
-                          <button type="button" className="primary" onClick={() => setReviewTarget(row)}>
-                            {t(props.language, {
+                          <button
+                            type="button"
+                            className="admin-unpaid-icon-btn admin-unpaid-icon-btn--pay"
+                            onClick={() => setReviewTarget(row)}
+                            aria-label={t(props.language, {
                               es: "Revisar y pagar",
                               en: "Review & pay",
                               pt: "Revisar e pagar"
                             })}
+                            title={t(props.language, {
+                              es: "Revisar y pagar",
+                              en: "Review & pay",
+                              pt: "Revisar e pagar"
+                            })}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="5" width="20" height="14" rx="2" />
+                              <path d="M2 10h20" />
+                              <path d="M6 15h2" />
+                            </svg>
                           </button>
                         </td>
                       </tr>
                       {expanded ? (
                         <tr className="admin-unpaid-detail-row">
-                          <td colSpan={8}>
+                          <td colSpan={7}>
                             {expandedLoading ? (
                               <p className="admin-unpaid-detail-loading">
                                 {t(props.language, {

@@ -2851,6 +2851,24 @@ label {
   padding-bottom: 8px;
 }
 
+.dashboard-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+}
+
+.dashboard-page-heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
 .dashboard-page-header {
   display: flex;
   flex-direction: column;
@@ -6864,9 +6882,52 @@ button.primary.finance-hero-search {
 
 .admin-unpaid-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.admin-unpaid-actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.admin-unpaid-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-unpaid-icon-btn:hover,
+.admin-unpaid-icon-btn:focus-visible {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  outline: none;
+}
+
+.admin-unpaid-icon-btn--pay {
+  border-color: #a5b4fc;
+  background: #5f44eb;
+  color: #fff;
+}
+
+.admin-unpaid-icon-btn--pay:hover,
+.admin-unpaid-icon-btn--pay:focus-visible {
+  background: #4f37d4;
+  border-color: #4f37d4;
+  color: #fff;
 }
 
 .admin-unpaid-professionals-table button.primary,
