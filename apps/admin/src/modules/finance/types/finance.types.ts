@@ -251,8 +251,24 @@ export type AdminUnpaidProfessional = {
   professionalNetCents: number;
 };
 
+export type AdminUnpaidMonthBucket = {
+  monthKey: string;
+  sessionsCount: number;
+  grossUsdCents: number;
+  platformFeeUsdCents: number;
+  professionalNetUsdCents: number;
+};
+
 export type AdminUnpaidProfessionalsResponse = {
   currency: "usd";
+  selectedMonths: string[];
+  months: AdminUnpaidMonthBucket[];
+  totals: {
+    sessionsCount: number;
+    grossUsdCents: number;
+    platformFeeUsdCents: number;
+    professionalNetUsdCents: number;
+  };
   professionals: AdminUnpaidProfessional[];
 };
 
@@ -261,6 +277,7 @@ export type UnpaidProfessionalSessionDetail = {
   bookingId: string;
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
+  monthKey?: string;
   isTrial: boolean;
   sourceKind: "trial" | "package";
   sourceLabel: string;
@@ -287,6 +304,7 @@ export type UnpaidProfessionalDetailResponse = {
     residencyCountry: string | null;
     listSessionPriceUsd: number | null;
   };
+  selectedMonths?: string[];
   totals: {
     sessionsCount: number;
     grossUsdCents: number;

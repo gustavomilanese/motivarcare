@@ -25,6 +25,161 @@ async function resolveLiveFx() {
   return liveArsPerUsd != null && liveArsPerUsd > 0 ? { arsPerUsd: liveArsPerUsd } : {};
 }
 
+export function utcMonthKeyFromDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+export function parseUnpaidMonthKeys(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+  return [
+    ...new Set(
+      raw
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => /^\d{4}-\d{2}$/.test(part))
+    )
+  ].sort();
+}
+
+function financeRecordMonthKey(row: {
+  bookingCompletedAt: Date | null;
+  bookingStartsAt: Date;
+}): string {
+  return utcMonthKeyFromDate(row.bookingCompletedAt ?? row.bookingStartsAt);
+}
+
+type MoneyTotals = {
+  sessionsCount: number;
+  grossUsdCents: number;
+  platformFeeUsdCents: number;
+  professionalNetUsdCents: number;
+};
+
+function emptyTotals(): MoneyTotals {
+  return {
+    sessionsCount: 0,
+    grossUsdCents: 0,
+    platformFeeUsdCents: 0,
+    professionalNetUsdCents: 0
+  };
+}
+
+function addTotals(target: MoneyTotals, gross: number, fee: number, net: number): void {
+  target.sessionsCount += 1;
+  target.grossUsdCents += gross;
+  target.platformFeeUsdCents += fee;
+  target.professionalNetUsdCents += net;
+}
+
+export type UnpaidMonthBucket = {
+  monthKey: string;
+} & MoneyTotals;
+
+export type UnpaidProfessionalListRow = {
+  professionalId: string;
+  professionalName: string;
+  sessionsCount: number;
+  grossCents: number;
+  platformFeeCents: number;
+  professionalNetCents: number;
+};
+
+export type UnpaidProfessionalsOverview = {
+  selectedMonths: string[];
+  months: UnpaidMonthBucket[];
+  totals: MoneyTotals;
+  professionals: UnpaidProfessionalListRow[];
+};
+
+export async function listUnpaidProfessionalsOverview(input?: {
+  months?: string[];
+}): Promise<UnpaidProfessionalsOverview> {
+  const selectedMonths = [...new Set((input?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  const liveFx = await resolveLiveFx();
+
+  const rows = await prisma.financeSessionRecord.findMany({
+    where: {
+      bookingStatus: "COMPLETED",
+      payoutLineId: null
+    },
+    select: {
+      currency: true,
+      sessionPriceCents: true,
+      platformFeeCents: true,
+      professionalNetCents: true,
+      professionalId: true,
+      bookingCompletedAt: true,
+      bookingStartsAt: true,
+      purchase: { select: { fxArsPerUsdSnapshot: true } }
+    }
+  });
+
+  const byMonth = new Map<string, MoneyTotals>();
+  const byProfessional = new Map<string, MoneyTotals>();
+  const selectionTotals = emptyTotals();
+
+  for (const row of rows) {
+    const monthKey = financeRecordMonthKey(row);
+    const fx = readSessionFxArsPerUsdSnapshot({
+      currency: row.currency,
+      sessionPriceCents: row.sessionPriceCents,
+      platformFeeCents: row.platformFeeCents,
+      professionalNetCents: row.professionalNetCents,
+      fxArsPerUsdSnapshot: row.purchase?.fxArsPerUsdSnapshot ?? null
+    });
+    const gross = convertFinanceMinorToUsdMinor(row.sessionPriceCents, row.currency, fx, liveFx);
+    const fee = convertFinanceMinorToUsdMinor(row.platformFeeCents, row.currency, fx, liveFx);
+    const net = convertFinanceMinorToUsdMinor(row.professionalNetCents, row.currency, fx, liveFx);
+
+    const monthBucket = byMonth.get(monthKey) ?? emptyTotals();
+    addTotals(monthBucket, gross, fee, net);
+    byMonth.set(monthKey, monthBucket);
+
+    const inSelection = selectedMonths.length === 0 || selectedMonths.includes(monthKey);
+    if (!inSelection) {
+      continue;
+    }
+    addTotals(selectionTotals, gross, fee, net);
+    const proBucket = byProfessional.get(row.professionalId) ?? emptyTotals();
+    addTotals(proBucket, gross, fee, net);
+    byProfessional.set(row.professionalId, proBucket);
+  }
+
+  const months: UnpaidMonthBucket[] = [...byMonth.entries()]
+    .map(([monthKey, totals]) => ({ monthKey, ...totals }))
+    .sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+
+  let professionals: UnpaidProfessionalListRow[] = [];
+  if (byProfessional.size > 0) {
+    const profiles = await prisma.professionalProfile.findMany({
+      where: { id: { in: [...byProfessional.keys()] } },
+      select: { id: true, user: { select: { fullName: true } } }
+    });
+    const nameById = new Map(profiles.map((pro) => [pro.id, pro.user.fullName]));
+    professionals = [...byProfessional.entries()]
+      .map(([professionalId, totals]) => ({
+        professionalId,
+        professionalName: nameById.get(professionalId) ?? "Profesional",
+        sessionsCount: totals.sessionsCount,
+        grossCents: totals.grossUsdCents,
+        platformFeeCents: totals.platformFeeUsdCents,
+        professionalNetCents: totals.professionalNetUsdCents
+      }))
+      .sort((a, b) => b.professionalNetCents - a.professionalNetCents);
+  }
+
+  return {
+    selectedMonths,
+    months,
+    totals: selectionTotals,
+    professionals
+  };
+}
+
 function maskAccount(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length <= 4) {
@@ -46,6 +201,7 @@ export type UnpaidProfessionalSessionRow = {
   bookingId: string;
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
+  monthKey: string;
   isTrial: boolean;
   sourceKind: "trial" | "package";
   sourceLabel: string;
@@ -71,6 +227,7 @@ export type UnpaidProfessionalDetail = {
     residencyCountry: string | null;
     listSessionPriceUsd: number | null;
   };
+  selectedMonths: string[];
   totals: {
     sessionsCount: number;
     grossUsdCents: number;
@@ -96,8 +253,10 @@ export type UnpaidProfessionalDetail = {
 };
 
 export async function getUnpaidProfessionalDetail(
-  professionalId: string
+  professionalId: string,
+  input?: { months?: string[] }
 ): Promise<UnpaidProfessionalDetail | { notFound: true }> {
+  const selectedMonths = [...new Set((input?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
   const professional = await prisma.professionalProfile.findUnique({
     where: { id: professionalId },
     select: {
@@ -111,7 +270,7 @@ export async function getUnpaidProfessionalDetail(
     return { notFound: true };
   }
 
-  const records = await prisma.financeSessionRecord.findMany({
+  const allRecords = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId,
       bookingStatus: "COMPLETED",
@@ -131,6 +290,11 @@ export async function getUnpaidProfessionalDetail(
       }
     }
   });
+
+  const records =
+    selectedMonths.length === 0
+      ? allRecords
+      : allRecords.filter((record) => selectedMonths.includes(financeRecordMonthKey(record)));
 
   const bookingIds = records.map((record) => record.bookingId);
   const trialCheckouts = bookingIds.length
@@ -212,6 +376,7 @@ export async function getUnpaidProfessionalDetail(
       bookingId: record.bookingId,
       bookingStartsAt: record.bookingStartsAt.toISOString(),
       bookingCompletedAt: record.bookingCompletedAt?.toISOString() ?? null,
+      monthKey: financeRecordMonthKey(record),
       isTrial: record.isTrial,
       sourceKind,
       sourceLabel,
@@ -272,6 +437,7 @@ export async function getUnpaidProfessionalDetail(
       residencyCountry: professional.residencyCountry,
       listSessionPriceUsd: professional.sessionPriceUsd
     },
+    selectedMonths,
     totals: {
       sessionsCount: sessions.length,
       grossUsdCents,

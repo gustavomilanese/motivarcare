@@ -6800,6 +6800,123 @@ button.primary.finance-hero-search {
   cursor: not-allowed;
 }
 
+.admin-unpaid-month-filter {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-unpaid-month-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-unpaid-month-chip {
+  display: grid;
+  gap: 2px;
+  min-width: 7.5rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d6deeb;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.admin-unpaid-month-chip:hover,
+.admin-unpaid-month-chip:focus-visible {
+  border-color: #a5b4fc;
+  outline: none;
+}
+
+.admin-unpaid-month-chip.is-active {
+  border-color: #5f44eb;
+  background: #f5f3ff;
+  box-shadow: 0 0 0 1px rgb(95 68 235 / 25%);
+}
+
+.admin-unpaid-month-chip-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #64748b;
+}
+
+.admin-unpaid-month-chip strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.admin-unpaid-month-chip small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.admin-unpaid-month-selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.admin-unpaid-month-selection-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.admin-unpaid-month-selection-item {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.admin-unpaid-month-selection-item span {
+  text-transform: capitalize;
+}
+
+.admin-unpaid-month-selection-item strong {
+  color: #0f172a;
+}
+
+.admin-unpaid-month-selection-total {
+  display: grid;
+  gap: 2px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.admin-unpaid-month-selection-total span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-unpaid-month-selection-total strong {
+  font-size: 16px;
+  color: #1e3a8a;
+}
+
+.admin-unpaid-month-selection-total small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.admin-unpaid-month-clear {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .admin-unpaid-professionals-lead {
   margin: 0;
   color: #4b5563;

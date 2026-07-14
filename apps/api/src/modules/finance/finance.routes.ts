@@ -8,7 +8,8 @@ import {
   financeSettingsSchema,
   listPayoutRunsQuerySchema,
   markPayoutLinePaidSchema,
-  payUnpaidProfessionalSchema
+  payUnpaidProfessionalSchema,
+  unpaidProfessionalsQuerySchema
 } from "./finance.schemas.js";
 import {
   closePayoutRun,
@@ -282,15 +283,48 @@ financeRouter.post("/payouts/runs/:runId/close", async (req, res) => {
   return res.json({ message: "Payout run closed", run: closed.run });
 });
 
-financeRouter.get("/unpaid-professionals", async (_req, res) => {
-  const { getAdminUnpaidProfessionalsUsd } = await import("../admin/adminKpis.service.js");
-  const rows = await getAdminUnpaidProfessionalsUsd();
-  return res.json({ currency: "usd", professionals: rows });
+financeRouter.get("/unpaid-professionals", async (req, res) => {
+  const parsed = unpaidProfessionalsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid query params",
+      details: parsed.error.flatten()
+    });
+  }
+  const {
+    listUnpaidProfessionalsOverview,
+    parseUnpaidMonthKeys
+  } = await import("./adminUnpaidProfessional.service.js");
+  const overview = await listUnpaidProfessionalsOverview({
+    months: parseUnpaidMonthKeys(parsed.data.months)
+  });
+  return res.json({
+    currency: "usd",
+    selectedMonths: overview.selectedMonths,
+    months: overview.months,
+    totals: overview.totals,
+    professionals: overview.professionals
+  });
 });
 
 financeRouter.get("/unpaid-professionals/:professionalId", async (req, res) => {
-  const { getUnpaidProfessionalDetail } = await import("./adminUnpaidProfessional.service.js");
-  const detail = await getUnpaidProfessionalDetail(req.params.professionalId);
+  const parsed = unpaidProfessionalsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid query params",
+      details: parsed.error.flatten()
+    });
+  }
+  const { getUnpaidProfessionalDetail, parseUnpaidMonthKeys } = await import("./adminUnpaidProfessional.service.js");
+  const detail = await getUnpaidProfessionalDetail(req.params.professionalId, {
+    months: parseUnpaidMonthKeys(parsed.data.months)
+  });
   if ("notFound" in detail) {
     return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
   }

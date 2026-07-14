@@ -128,16 +128,22 @@ export async function fetchAdminPlatformPurchases(token: string, query: string):
   return apiRequest<AdminPlatformPurchasesResponse>(`/api/admin/finance/platform/purchases?${query}`, token);
 }
 
-export async function fetchUnpaidProfessionals(token: string): Promise<AdminUnpaidProfessionalsResponse> {
-  return apiRequest<AdminUnpaidProfessionalsResponse>("/api/admin/finance/unpaid-professionals", token);
+export async function fetchUnpaidProfessionals(
+  token: string,
+  months: string[] = []
+): Promise<AdminUnpaidProfessionalsResponse> {
+  const query = months.length > 0 ? `?months=${encodeURIComponent(months.join(","))}` : "";
+  return apiRequest<AdminUnpaidProfessionalsResponse>(`/api/admin/finance/unpaid-professionals${query}`, token);
 }
 
 export async function fetchUnpaidProfessionalDetail(
   token: string,
-  professionalId: string
+  professionalId: string,
+  months: string[] = []
 ): Promise<UnpaidProfessionalDetailResponse> {
+  const query = months.length > 0 ? `?months=${encodeURIComponent(months.join(","))}` : "";
   return apiRequest<UnpaidProfessionalDetailResponse>(
-    `/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}`,
+    `/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}${query}`,
     token
   );
 }

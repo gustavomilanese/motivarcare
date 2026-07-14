@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const unpaidProfessionalsQuerySchema = z.object({
+  /** Meses UTC `YYYY-MM` separados por coma (multi-selección). Vacío = todos. */
+  months: z.string().trim().max(200).optional()
+});
+
 export const financeSettingsSchema = z.object({
   platformCommissionPercent: z.number().int().min(0).max(100).optional(),
   trialPlatformPercent: z.number().int().min(0).max(100).optional(),

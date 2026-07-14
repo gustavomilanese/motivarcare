@@ -5,7 +5,11 @@ import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages"
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
 import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals } from "../services/financeApi";
-import type { AdminUnpaidProfessional, UnpaidProfessionalDetailResponse } from "../types/finance.types";
+import type {
+  AdminUnpaidMonthBucket,
+  AdminUnpaidProfessional,
+  UnpaidProfessionalDetailResponse
+} from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -30,16 +34,39 @@ function formatSessionDay(value: string | null, language: AppLanguage): string {
   });
 }
 
+function formatMonthKeyLabel(monthKey: string, language: AppLanguage): string {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return monthKey;
+  }
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  return formatDateWithLocale({
+    value: date.toISOString(),
+    language,
+    options: { month: "long", year: "numeric" }
+  });
+}
+
 export function AdminUnpaidProfessionalsPanel(props: {
   token: string;
   language: AppLanguage;
-  /** Si viene del KPI, evita fetch inicial duplicado. */
+  /** Si viene del KPI, se usa como prefetch hasta el primer fetch con meses. */
   initialRows?: AdminUnpaidProfessional[];
   compact?: boolean;
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<AdminUnpaidProfessional[]>(props.initialRows ?? []);
-  const [loading, setLoading] = useState(!props.initialRows);
+  const [monthBuckets, setMonthBuckets] = useState<AdminUnpaidMonthBucket[]>([]);
+  const [selectionTotals, setSelectionTotals] = useState({
+    sessionsCount: 0,
+    grossUsdCents: 0,
+    platformFeeUsdCents: 0,
+    professionalNetUsdCents: 0
+  });
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
   const [search, setSearch] = useState("");
@@ -49,33 +76,39 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [expandedLoading, setExpandedLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const monthsKey = selectedMonths.join(",");
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetchUnpaidProfessionals(props.token);
+      const response = await fetchUnpaidProfessionals(props.token, selectedMonths);
       setRows(response.professionals);
+      setMonthBuckets(response.months ?? []);
+      setSelectionTotals(
+        response.totals ?? {
+          sessionsCount: 0,
+          grossUsdCents: 0,
+          platformFeeUsdCents: 0,
+          professionalNetUsdCents: 0
+        }
+      );
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
     } finally {
       setLoading(false);
     }
-  }, [props.language, props.token]);
+  }, [props.language, props.token, selectedMonths]);
 
   useEffect(() => {
-    if (props.initialRows) {
-      setRows(props.initialRows);
-      return;
-    }
     void load();
-  }, [load, props.initialRows]);
+  }, [load]);
 
   useEffect(() => {
-    if (props.initialRows) {
-      setRows(props.initialRows);
-    }
-  }, [props.initialRows]);
+    setExpandedDetails({});
+    setExpandedId(null);
+  }, [monthsKey]);
 
   const filteredSorted = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -101,6 +134,23 @@ export function AdminUnpaidProfessionalsPanel(props: {
     return next;
   }, [rows, search, sortKey]);
 
+  const selectedMonthBuckets = useMemo(() => {
+    if (selectedMonths.length === 0) {
+      return monthBuckets;
+    }
+    const selected = new Set(selectedMonths);
+    return monthBuckets.filter((bucket) => selected.has(bucket.monthKey));
+  }, [monthBuckets, selectedMonths]);
+
+  const toggleMonth = (monthKey: string) => {
+    setSelectedMonths((current) => {
+      if (current.includes(monthKey)) {
+        return current.filter((key) => key !== monthKey);
+      }
+      return [...current, monthKey].sort();
+    });
+  };
+
   const toggleExpand = async (row: AdminUnpaidProfessional) => {
     if (expandedId === row.professionalId) {
       setExpandedId(null);
@@ -113,7 +163,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
     setExpandedLoading(true);
     setError("");
     try {
-      const detail = await fetchUnpaidProfessionalDetail(props.token, row.professionalId);
+      const detail = await fetchUnpaidProfessionalDetail(props.token, row.professionalId, selectedMonths);
       setExpandedDetails((current) => ({ ...current, [row.professionalId]: detail }));
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -132,10 +182,11 @@ export function AdminUnpaidProfessionalsPanel(props: {
     setError("");
     try {
       const stamp = new Date().toISOString().slice(0, 10);
+      const monthsSuffix = selectedMonths.length > 0 ? `-${selectedMonths.join("_")}` : "";
       await downloadUnpaidProfessionalsExcel({
         rows: filteredSorted,
         language: props.language,
-        filenameStem: `motivarcare-pendientes-profesionales-${stamp}`
+        filenameStem: `motivarcare-pendientes-profesionales${monthsSuffix}-${stamp}`
       });
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -177,6 +228,71 @@ export function AdminUnpaidProfessionalsPanel(props: {
           </button>
         </header>
 
+        {monthBuckets.length > 0 ? (
+          <div className="admin-unpaid-month-filter">
+            <div className="admin-unpaid-month-chips" role="group" aria-label={t(props.language, { es: "Meses", en: "Months", pt: "Meses" })}>
+              {monthBuckets.map((bucket) => {
+                const active = selectedMonths.includes(bucket.monthKey);
+                return (
+                  <button
+                    key={bucket.monthKey}
+                    type="button"
+                    className={`admin-unpaid-month-chip${active ? " is-active" : ""}`}
+                    aria-pressed={active}
+                    onClick={() => toggleMonth(bucket.monthKey)}
+                  >
+                    <span className="admin-unpaid-month-chip-label">{formatMonthKeyLabel(bucket.monthKey, props.language)}</span>
+                    <strong>{formatAdminFinanceUsd(bucket.professionalNetUsdCents, props.language)}</strong>
+                    <small>
+                      {bucket.sessionsCount}{" "}
+                      {t(props.language, {
+                        es: bucket.sessionsCount === 1 ? "sesión" : "sesiones",
+                        en: bucket.sessionsCount === 1 ? "session" : "sessions",
+                        pt: bucket.sessionsCount === 1 ? "sessão" : "sessões"
+                      })}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedMonths.length > 0 ? (
+              <div className="admin-unpaid-month-selection">
+                <div className="admin-unpaid-month-selection-groups">
+                  {selectedMonthBuckets.map((bucket) => (
+                    <div key={bucket.monthKey} className="admin-unpaid-month-selection-item">
+                      <span>{formatMonthKeyLabel(bucket.monthKey, props.language)}</span>
+                      <strong>{formatAdminFinanceUsd(bucket.professionalNetUsdCents, props.language)}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className="admin-unpaid-month-selection-total">
+                  <span>
+                    {t(props.language, {
+                      es: "Total selección",
+                      en: "Selection total",
+                      pt: "Total seleção"
+                    })}
+                  </span>
+                  <strong>{formatAdminFinanceUsd(selectionTotals.professionalNetUsdCents, props.language)}</strong>
+                  <small>
+                    {selectionTotals.sessionsCount}{" "}
+                    {t(props.language, {
+                      es: "sesiones",
+                      en: "sessions",
+                      pt: "sessões"
+                    })}{" "}
+                    · {formatAdminFinanceUsd(selectionTotals.grossUsdCents, props.language)}{" "}
+                    {t(props.language, { es: "ejecutado", en: "executed", pt: "executado" })}
+                  </small>
+                </div>
+                <button type="button" className="secondary admin-unpaid-month-clear" onClick={() => setSelectedMonths([])}>
+                  {t(props.language, { es: "Ver todos los meses", en: "Show all months", pt: "Ver todos os meses" })}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="admin-unpaid-professionals-toolbar">
           <input
             type="search"
@@ -198,19 +314,19 @@ export function AdminUnpaidProfessionalsPanel(props: {
             aria-label={t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}
             onChange={(event) => setSortKey(event.target.value as SortKey)}
           >
-              <option value="net_desc">
-                {t(props.language, { es: "Neto · mayor", en: "Net · highest", pt: "Líquido · maior" })}
-              </option>
-              <option value="gross_desc">
-                {t(props.language, { es: "Ejecutado · mayor", en: "Gross · highest", pt: "Executado · maior" })}
-              </option>
-              <option value="fee_desc">
-                {t(props.language, { es: "Comisión · mayor", en: "Fee · highest", pt: "Comissão · maior" })}
-              </option>
-              <option value="sessions_desc">
-                {t(props.language, { es: "Sesiones · más", en: "Sessions · most", pt: "Sessões · mais" })}
-              </option>
-              <option value="name_az">{t(props.language, { es: "Nombre A–Z", en: "Name A–Z", pt: "Nome A–Z" })}</option>
+            <option value="net_desc">
+              {t(props.language, { es: "Neto · mayor", en: "Net · highest", pt: "Líquido · maior" })}
+            </option>
+            <option value="gross_desc">
+              {t(props.language, { es: "Ejecutado · mayor", en: "Gross · highest", pt: "Executado · maior" })}
+            </option>
+            <option value="fee_desc">
+              {t(props.language, { es: "Comisión · mayor", en: "Fee · highest", pt: "Comissão · maior" })}
+            </option>
+            <option value="sessions_desc">
+              {t(props.language, { es: "Sesiones · más", en: "Sessions · most", pt: "Sessões · mais" })}
+            </option>
+            <option value="name_az">{t(props.language, { es: "Nombre A–Z", en: "Name A–Z", pt: "Nome A–Z" })}</option>
           </select>
         </div>
 
