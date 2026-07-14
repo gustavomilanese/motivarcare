@@ -6774,6 +6774,32 @@ button.primary.finance-hero-search {
   color: #0f172a;
 }
 
+.admin-unpaid-excel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #d1e7dd;
+  border-radius: 10px;
+  background: #f0fdf4;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-unpaid-excel-btn:hover:not(:disabled),
+.admin-unpaid-excel-btn:focus-visible:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+  outline: none;
+}
+
+.admin-unpaid-excel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .admin-unpaid-professionals-lead {
   margin: 0;
   color: #4b5563;

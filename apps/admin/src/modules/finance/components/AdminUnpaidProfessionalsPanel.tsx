@@ -158,13 +158,22 @@ export function AdminUnpaidProfessionalsPanel(props: {
           </h3>
           <button
             type="button"
-            className="secondary"
+            className="admin-unpaid-excel-btn"
             disabled={exporting || filteredSorted.length === 0}
             onClick={() => void exportExcel()}
+            aria-label={
+              exporting
+                ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
+                : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })
+            }
+            title={t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
           >
-            {exporting
-              ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
-              : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+              <rect x="3" y="2" width="14" height="18" rx="2" fill="#217346" />
+              <path d="M6 7h8M6 11h8M6 15h5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="17.5" cy="17.5" r="5.5" fill="#16a34a" stroke="#fff" strokeWidth="1.5" />
+              <path d="M17.5 14.5v5M15.5 17.5l2 2 2-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
           </button>
         </header>
 
