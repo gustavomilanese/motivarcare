@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
+import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
 import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals } from "../services/financeApi";
 import type { AdminUnpaidProfessional, UnpaidProfessionalDetailResponse } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
@@ -53,6 +54,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
   const [expandedLoading, setExpandedLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,11 +108,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
     return next;
   }, [rows, search, sortKey]);
 
-  const totalNet = filteredSorted.reduce((sum, row) => sum + row.professionalNetCents, 0);
-  const totalGross = filteredSorted.reduce((sum, row) => sum + row.grossCents, 0);
-  const totalFee = filteredSorted.reduce((sum, row) => sum + row.platformFeeCents, 0);
-  const totalSessions = filteredSorted.reduce((sum, row) => sum + row.sessionsCount, 0);
-
   const toggleExpand = async (row: AdminUnpaidProfessional) => {
     if (expandedId === row.professionalId) {
       setExpandedId(null);
@@ -134,46 +131,48 @@ export function AdminUnpaidProfessionalsPanel(props: {
     }
   };
 
+  const exportExcel = async () => {
+    if (filteredSorted.length === 0 || exporting) {
+      return;
+    }
+    setExporting(true);
+    setError("");
+    try {
+      const stamp = new Date().toISOString().slice(0, 10);
+      await downloadUnpaidProfessionalsExcel({
+        rows: filteredSorted,
+        language: props.language,
+        filenameStem: `motivarcare-pendientes-profesionales-${stamp}`
+      });
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <section className={`admin-unpaid-professionals${props.compact ? " admin-unpaid-professionals--compact" : ""}`}>
         <header className="admin-unpaid-professionals-head">
-          <div>
-            <h3>
-              {t(props.language, {
-                es: "Pendiente de pagar a profesionales",
-                en: "Pending professional payouts",
-                pt: "Pendente de pagar a profissionais"
-              })}
-            </h3>
-            <p className="admin-unpaid-professionals-lead">
-              {t(props.language, {
-                es: "Sesión ejecutada = reserva. Valor: prueba = tarifa del profesional (como individual, guardada al pagar); paquete = precio del paquete ÷ créditos. Nunca lista inventada. Expandí una fila para ver origen y neto.",
-                en: "Executed session = booking. Value: trial = professional rate (same as individual, snapshotted at payment); package = package price ÷ credits. Never invented list price. Expand a row for source and net.",
-                pt: "Sessão executada = reserva. Valor: teste = tarifa do profissional (como individual, no pagamento); pacote = preço ÷ créditos. Nunca preço inventado. Expanda para ver origem e líquido."
-              })}
-            </p>
-          </div>
-          {!props.compact ? (
-            <div className="admin-unpaid-professionals-totals">
-              <strong>
-                {t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}:{" "}
-                {formatAdminFinanceUsd(totalNet, props.language)}
-              </strong>
-              <span>
-                {totalSessions}{" "}
-                {t(props.language, {
-                  es: totalSessions === 1 ? "sesión" : "sesiones",
-                  en: totalSessions === 1 ? "session" : "sessions",
-                  pt: totalSessions === 1 ? "sessão" : "sessões"
-                })}{" "}
-                · {formatAdminFinanceUsd(totalGross, props.language)}{" "}
-                {t(props.language, { es: "ejecutado", en: "executed", pt: "executado" })} ·{" "}
-                {formatAdminFinanceUsd(totalFee, props.language)}{" "}
-                {t(props.language, { es: "comisión", en: "fee", pt: "comissão" })}
-              </span>
-            </div>
-          ) : null}
+          <h3>
+            {t(props.language, {
+              es: "Pendiente de pagar a profesionales",
+              en: "Pending professional payouts",
+              pt: "Pendente de pagar a profissionais"
+            })}
+          </h3>
+          <button
+            type="button"
+            className="secondary"
+            disabled={exporting || filteredSorted.length === 0}
+            onClick={() => void exportExcel()}
+          >
+            {exporting
+              ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
+              : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+          </button>
         </header>
 
         <div className="admin-unpaid-professionals-toolbar">
@@ -359,24 +358,13 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                             className="admin-unpaid-session-link"
                                             to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}
                                           >
-                                            {t(props.language, {
-                                              es: "Revisar en Sesiones",
-                                              en: "Open in Sessions",
-                                              pt: "Abrir em Sessões"
-                                            })}
+                                            {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
                                           </Link>
                                         </td>
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
-                                <p className="admin-unpaid-calc-hint">
-                                  {t(props.language, {
-                                    es: "Verificación: Ejecutado − Comisión = Neto. Si el valor no cuadra con el paquete, abrí la sesión y confirmá que el booking tiene purchase/crédito vinculado.",
-                                    en: "Check: Gross − Fee = Net. If value doesn’t match the package, open the session and confirm the booking has a linked purchase/credit.",
-                                    pt: "Chequeque: Executado − Comissão = Líquido. Se o valor nao bate com o pacote, abra a sessão e confira a compra vinculada."
-                                  })}
-                                </p>
                               </div>
                             ) : null}
                           </td>
@@ -399,6 +387,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
           professionalName={reviewTarget.professionalName}
           onClose={() => setReviewTarget(null)}
           onPaid={() => {
+            setReviewTarget(null);
             void load();
             props.onChanged?.();
           }}

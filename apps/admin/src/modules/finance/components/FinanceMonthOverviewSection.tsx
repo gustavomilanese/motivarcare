@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import type { KpisResponse } from "../../app/types";
 
@@ -14,17 +15,30 @@ function formatMoneyCents(cents: number, language: AppLanguage): string {
 function StatCard(props: {
   label: string;
   value: string;
-  /** Detalle útil en hover / title; no ocupa espacio en la card. */
   detail?: string;
   variant?: "default" | "accent";
+  to?: string;
 }) {
-  return (
-    <article
-      className={`dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}`}
-      title={props.detail || undefined}
-    >
+  const className = `dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}${
+    props.to ? " dashboard-stat-card--link" : ""
+  }`;
+  const title = props.detail || undefined;
+  const body = (
+    <>
       <span className="dashboard-stat-label">{props.label}</span>
       <strong className="dashboard-stat-value">{props.value}</strong>
+    </>
+  );
+  if (props.to) {
+    return (
+      <Link className={className} to={props.to} title={title}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <article className={className} title={title}>
+      {body}
     </article>
   );
 }
@@ -66,6 +80,8 @@ export function FinanceMonthOverviewSection(props: {
   viewingPastMonth: boolean;
   /** KPIs mensuales acotados por profesional/paciente (filtros de la lupa). */
   scopedToEntity?: boolean;
+  /** Mes UTC `YYYY-MM` del resumen (para deep-links a Finanzas). */
+  monthKey?: string;
   kpis: KpisResponse["kpis"] | null;
   loading: boolean;
   error: string | null;
@@ -73,6 +89,10 @@ export function FinanceMonthOverviewSection(props: {
   afterRevenue?: ReactNode;
 }) {
   const k = props.kpis;
+  const monthKey = props.monthKey ?? "";
+  const purchasesHref = monthKey
+    ? `/finances?platformTab=purchases&month=${encodeURIComponent(monthKey)}`
+    : "/finances?platformTab=purchases";
 
   const grossPkg = k?.packagePurchasesMonthCents ?? 0;
   const trialCount = k?.trialSessionsMonthCount ?? 0;
@@ -155,23 +175,25 @@ export function FinanceMonthOverviewSection(props: {
             <h2 id="fin-dash-op" className="dashboard-section-title">
               {t(props.language, { es: "Operación", en: "Operations", pt: "Operacao" })}
             </h2>
-            <div className="dashboard-stat-grid dashboard-stat-grid--3">
-              <StatCard label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })} value={String(k.activePatients)} />
+            <div className="dashboard-stat-grid dashboard-stat-grid--2">
+              <StatCard
+                label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
+                value={String(k.activePatients)}
+                to="/patients"
+                detail={t(props.language, {
+                  es: "Abrir listado de pacientes",
+                  en: "Open patients list",
+                  pt: "Abrir lista de pacientes"
+                })}
+              />
               <StatCard
                 label={t(props.language, { es: "Profesionales visibles", en: "Visible professionals", pt: "Profissionais visiveis" })}
                 value={String(k.activeProfessionals)}
-              />
-              <StatCard
-                label={t(props.language, {
-                  es: "Sesiones confirmadas (mes)",
-                  en: "Confirmed sessions (month)",
-                  pt: "Sessoes confirmadas (mes)"
-                })}
-                value={String(k.scheduledSessions)}
+                to="/professionals"
                 detail={t(props.language, {
-                  es: "Inicio de la reserva en el mes UTC elegido",
-                  en: "Booking start in the selected UTC month",
-                  pt: "Inicio no mes UTC escolhido"
+                  es: "Abrir listado de psicólogos",
+                  en: "Open professionals list",
+                  pt: "Abrir lista de profissionais"
                 })}
               />
             </div>
@@ -195,13 +217,14 @@ export function FinanceMonthOverviewSection(props: {
             </h2>
             <div className="dashboard-stat-grid dashboard-stat-grid--4">
               <StatCard
-                label={t(props.language, { es: "Movimientos", en: "Line items", pt: "Linhas" })}
+                label={t(props.language, { es: "Compras + pruebas", en: "Purchases + trials", pt: "Compras + testes" })}
                 value={String((k.packagePurchasesMonthCount ?? 0) + trialCount)}
+                to={purchasesHref}
                 detail={replaceTemplate(
                   t(props.language, {
-                    es: "{pkg} paquetes · {pr} pruebas",
-                    en: "{pkg} packages · {pr} trials",
-                    pt: "{pkg} pacotes · {pr} provas"
+                    es: "{pkg} paquetes · {pr} pruebas · ver ventas",
+                    en: "{pkg} packages · {pr} trials · view sales",
+                    pt: "{pkg} pacotes · {pr} provas · ver vendas"
                   }),
                   { pkg: String(k.packagePurchasesMonthCount ?? 0), pr: String(trialCount) }
                 )}
@@ -209,11 +232,12 @@ export function FinanceMonthOverviewSection(props: {
               <StatCard
                 label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
                 value={formatMoneyCents(grossPkgAndTrial, props.language)}
+                to={purchasesHref}
                 detail={replaceTemplate(
                   t(props.language, {
-                    es: "Paquetes {p} + pruebas {t}",
-                    en: "Packages {p} + trials {t}",
-                    pt: "Pacotes {p} + provas {t}"
+                    es: "Paquetes {p} + pruebas {t} · ver ventas del mes",
+                    en: "Packages {p} + trials {t} · view month sales",
+                    pt: "Pacotes {p} + provas {t} · ver vendas"
                   }),
                   {
                     p: formatMoneyCents(grossPkg, props.language),
@@ -225,19 +249,21 @@ export function FinanceMonthOverviewSection(props: {
                 variant="accent"
                 label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
                 value={formatMoneyCents(feePkgAndTrial, props.language)}
+                to={purchasesHref}
                 detail={t(props.language, {
-                  es: "Paquetes + pruebas del mes",
-                  en: "Packages + trials in month",
-                  pt: "Pacotes + provas"
+                  es: "Comisión sobre paquetes + pruebas · ver ventas",
+                  en: "Fee on packages + trials · view sales",
+                  pt: "Comissao sobre pacotes + provas · ver vendas"
                 })}
               />
               <StatCard
                 label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
                 value={formatMoneyCents(proNetPkgAndTrial, props.language)}
+                to={purchasesHref}
                 detail={t(props.language, {
-                  es: "Reparto paquetes + neto pruebas",
-                  en: "Package split + trial net",
-                  pt: "Pacotes + liquido provas"
+                  es: "Reparto de paquetes + neto de pruebas · ver ventas",
+                  en: "Package split + trial net · view sales",
+                  pt: "Pacotes + liquido provas · ver vendas"
                 })}
               />
             </div>

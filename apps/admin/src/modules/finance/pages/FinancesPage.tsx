@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -67,6 +68,7 @@ function utcMonthKeyFromDate(d: Date): string {
 }
 
 export function FinancesPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
+  const [searchParams] = useSearchParams();
   const model = useFinanceDashboard({
     token: props.token,
     formatDate: (value) => formatDate(value, props.language),
@@ -85,6 +87,20 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
     void model.loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.token]);
+
+  const { activeSection: activeFinanceSection, scrollToSection: scrollToFinanceSection } = useStickySectionNavigation(
+    FINANCE_SCROLL_SECTION_IDS
+  );
+
+  useEffect(() => {
+    if (!searchParams.get("platformTab")) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      scrollToFinanceSection("fin-plataforma");
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, scrollToFinanceSection]);
 
   const loadKpis = useCallback(async () => {
     setKpisLoading(true);
@@ -115,9 +131,6 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
 
   const sim = financeSimulatedAccruedCollected(kpisResponse?.kpis);
 
-  const { activeSection: activeFinanceSection, scrollToSection: scrollToFinanceSection } = useStickySectionNavigation(
-    FINANCE_SCROLL_SECTION_IDS
-  );
   const [searchRecordsModalOpen, setSearchRecordsModalOpen] = useState(false);
 
   const ledgerSearchTitle = t(props.language, {
@@ -227,6 +240,7 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
           language={props.language}
           viewingPastMonth={kpisMonth !== maxKpisMonth}
           scopedToEntity={Boolean(model.filters.professionalId || model.filters.patientId)}
+          monthKey={kpisMonth}
           kpis={kpisResponse?.kpis ?? null}
           loading={kpisLoading}
           error={kpisError || null}

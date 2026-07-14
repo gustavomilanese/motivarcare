@@ -35,14 +35,29 @@ function StatCard(props: {
   /** Detalle útil en hover / title; no ocupa espacio en la card. */
   detail?: string;
   variant?: "default" | "accent";
+  /** Si hay `to`, la card es un enlace con hover. */
+  to?: string;
 }) {
-  return (
-    <article
-      className={`dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}`}
-      title={props.detail || undefined}
-    >
+  const className = `dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}${
+    props.to ? " dashboard-stat-card--link" : ""
+  }`;
+  const title = props.detail || undefined;
+  const body = (
+    <>
       <span className="dashboard-stat-label">{props.label}</span>
       <strong className="dashboard-stat-value">{props.value}</strong>
+    </>
+  );
+  if (props.to) {
+    return (
+      <Link className={className} to={props.to} title={title}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <article className={className} title={title}>
+      {body}
     </article>
   );
 }
@@ -421,11 +436,7 @@ function OverviewPage(props: OverviewPageProps) {
     <div className="dashboard-page">
       <header className="dashboard-page-header">
         <div className="dashboard-page-header__top">
-          <div>
-            <p className="dashboard-hero-eyebrow">{t(props.language, { es: "Panel ejecutivo", en: "Executive overview", pt: "Painel executivo" })}</p>
-            <h1 className="dashboard-page-title">{t(props.language, { es: "Resumen del mes", en: "Month at a glance", pt: "Resumo do mes" })}</h1>
-          </div>
-          <div className="dashboard-header-actions">
+          <div className="dashboard-header-actions dashboard-header-actions--end">
             {typeof props.onNotificationCenterClick === "function" ? (
               <button
                 type="button"
@@ -485,29 +496,31 @@ function OverviewPage(props: OverviewPageProps) {
         {viewingPastMonth ? (
           <p className="dashboard-section-asof">
             {t(props.language, {
-              es: "Pacientes y profesionales: estado actual. Sesiones confirmadas e ingresos: mes elegido (UTC), misma ventana que las pruebas y paquetes.",
-              en: "Patients and pros: current state. Confirmed sessions and revenue: selected month (UTC), same window as trials and packages.",
-              pt: "Pacientes e pros: estado atual. Sessoes confirmadas e receita: mes escolhido (UTC)."
+              es: "Pacientes y profesionales: estado actual. Ingresos: mes elegido (UTC).",
+              en: "Patients and pros: current state. Revenue: selected month (UTC).",
+              pt: "Pacientes e pros: estado atual. Receita: mes escolhido (UTC)."
             })}
           </p>
         ) : null}
-        <div className="dashboard-stat-grid dashboard-stat-grid--3">
-          <StatCard label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })} value={String(k.activePatients)} />
+        <div className="dashboard-stat-grid dashboard-stat-grid--2">
+          <StatCard
+            label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
+            value={String(k.activePatients)}
+            to="/patients"
+            detail={t(props.language, {
+              es: "Abrir listado de pacientes",
+              en: "Open patients list",
+              pt: "Abrir lista de pacientes"
+            })}
+          />
           <StatCard
             label={t(props.language, { es: "Profesionales visibles", en: "Visible professionals", pt: "Profissionais visiveis" })}
             value={String(k.activeProfessionals)}
-          />
-          <StatCard
-            label={t(props.language, {
-              es: "Sesiones confirmadas (mes)",
-              en: "Confirmed sessions (month)",
-              pt: "Sessoes confirmadas (mes)"
-            })}
-            value={String(k.scheduledSessions)}
+            to="/professionals"
             detail={t(props.language, {
-              es: "Inicio de la reserva en el mes UTC elegido",
-              en: "Booking start falls in the selected UTC month",
-              pt: "Inicio da reserva no mes UTC escolhido"
+              es: "Abrir listado de psicólogos",
+              en: "Open professionals list",
+              pt: "Abrir lista de profissionais"
             })}
           />
         </div>
@@ -531,13 +544,14 @@ function OverviewPage(props: OverviewPageProps) {
         </h2>
         <div className="dashboard-stat-grid dashboard-stat-grid--4">
           <StatCard
-            label={t(props.language, { es: "Movimientos", en: "Line items", pt: "Linhas" })}
+            label={t(props.language, { es: "Compras + pruebas", en: "Purchases + trials", pt: "Compras + testes" })}
             value={String((k.packagePurchasesMonthCount ?? 0) + trialCount)}
+            to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={replaceTemplate(
               t(props.language, {
-                es: "{pkg} paquetes · {pr} pruebas",
-                en: "{pkg} packages · {pr} trials",
-                pt: "{pkg} pacotes · {pr} provas"
+                es: "{pkg} paquetes · {pr} pruebas · ver ventas",
+                en: "{pkg} packages · {pr} trials · view sales",
+                pt: "{pkg} pacotes · {pr} provas · ver vendas"
               }),
               { pkg: String(k.packagePurchasesMonthCount ?? 0), pr: String(trialCount) }
             )}
@@ -545,11 +559,12 @@ function OverviewPage(props: OverviewPageProps) {
           <StatCard
             label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
             value={formatMoneyCents(grossPkgAndTrial, props.language)}
+            to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={replaceTemplate(
               t(props.language, {
-                es: "Paquetes {p} + pruebas {t}",
-                en: "Packages {p} + trials {t}",
-                pt: "Pacotes {p} + provas {t}"
+                es: "Paquetes {p} + pruebas {t} · ver ventas del mes",
+                en: "Packages {p} + trials {t} · view month sales",
+                pt: "Pacotes {p} + provas {t} · ver vendas"
               }),
               {
                 p: formatMoneyCents(grossPkg, props.language),
@@ -561,19 +576,21 @@ function OverviewPage(props: OverviewPageProps) {
             variant="accent"
             label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
             value={formatMoneyCents(feePkgAndTrial, props.language)}
+            to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={t(props.language, {
-              es: "Sobre paquetes vendidos + pruebas del mes",
-              en: "On packages sold + trials in month",
-              pt: "Pacotes + provas no mes"
+              es: "Comisión sobre paquetes + pruebas · ver ventas",
+              en: "Fee on packages + trials · view sales",
+              pt: "Comissao sobre pacotes + provas · ver vendas"
             })}
           />
           <StatCard
             label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
             value={formatMoneyCents(proNetPkgAndTrial, props.language)}
+            to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={t(props.language, {
-              es: "Reparto paquetes + neto pruebas (según % prueba)",
-              en: "Package split + trial net (per trial %)",
-              pt: "Pacotes + liquido provas"
+              es: "Reparto de paquetes + neto de pruebas · ver ventas",
+              en: "Package split + trial net · view sales",
+              pt: "Pacotes + liquido provas · ver vendas"
             })}
           />
         </div>

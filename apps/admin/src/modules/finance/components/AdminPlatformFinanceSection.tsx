@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -82,12 +83,25 @@ export function AdminPlatformFinanceSection(props: {
   language: AppLanguage;
   professionals: Array<{ professionalId: string; professionalName: string }>;
 }) {
+  const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<FinanceTab>("executed");
   const [revenuePreset, setRevenuePreset] = useState<RevenuePreset>("month");
   const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
   const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
   const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
   const [professionalId, setProfessionalId] = useState("");
+
+  useEffect(() => {
+    const platformTab = searchParams.get("platformTab");
+    if (platformTab === "purchases" || platformTab === "executed") {
+      setTab(platformTab);
+    }
+    const month = searchParams.get("month")?.trim() ?? "";
+    if (/^\d{4}-\d{2}$/.test(month)) {
+      setRevenuePreset("month");
+      setRevenueMonth(month);
+    }
+  }, [searchParams]);
 
   const [executed, setExecuted] = useState<AdminPlatformExecutedResponse | null>(null);
   const [purchases, setPurchases] = useState<AdminPlatformPurchasesResponse | null>(null);
