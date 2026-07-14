@@ -14,14 +14,17 @@ function formatMoneyCents(cents: number, language: AppLanguage): string {
 function StatCard(props: {
   label: string;
   value: string;
-  hint?: string;
+  /** Detalle útil en hover / title; no ocupa espacio en la card. */
+  detail?: string;
   variant?: "default" | "accent";
 }) {
   return (
-    <article className={`dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}`}>
+    <article
+      className={`dashboard-stat-card${props.variant === "accent" ? " dashboard-stat-card--accent" : ""}`}
+      title={props.detail || undefined}
+    >
       <span className="dashboard-stat-label">{props.label}</span>
       <strong className="dashboard-stat-value">{props.value}</strong>
-      {props.hint ? <p className="dashboard-stat-hint">{props.hint}</p> : null}
     </article>
   );
 }
@@ -165,7 +168,7 @@ export function FinanceMonthOverviewSection(props: {
                   pt: "Sessoes confirmadas (mes)"
                 })}
                 value={String(k.scheduledSessions)}
-                hint={t(props.language, {
+                detail={t(props.language, {
                   es: "Inicio de la reserva en el mes UTC elegido",
                   en: "Booking start in the selected UTC month",
                   pt: "Inicio no mes UTC escolhido"
@@ -175,25 +178,26 @@ export function FinanceMonthOverviewSection(props: {
           </section>
 
           <section className="dashboard-section dashboard-section--highlight dashboard-section--tone-pkg finance-dash-section" aria-labelledby="fin-dash-pkg">
-            <h2 id="fin-dash-pkg" className="dashboard-section-title">
+            <h2
+              id="fin-dash-pkg"
+              className="dashboard-section-title"
+              title={t(props.language, {
+                es: "USD (valor original). Pruebas = tarifa del profesional + % trial de Finanzas.",
+                en: "USD (original). Trials = pro rate + trial % from Finance.",
+                pt: "USD (original). Testes = tarifa do profissional + % trial."
+              })}
+            >
               {t(props.language, {
-                es: "Ingresos del mes: paquetes + sesiones de prueba",
-                en: "Month revenue: packages + trial sessions",
-                pt: "Receita do mes: pacotes + sessoes de teste"
+                es: "Ingresos del mes",
+                en: "Month revenue",
+                pt: "Receita do mes"
               })}
             </h2>
-            <p className="dashboard-section-asof finance-month-asof" style={{ marginTop: 0 }}>
-              {t(props.language, {
-                es: "Pruebas: precio de sesión del profesional y % trial de reglas (Finanzas).",
-                en: "Trials: pro session price and trial % from finance rules.",
-                pt: "Testes: preco do profissional e % trial nas regras."
-              })}
-            </p>
             <div className="dashboard-stat-grid dashboard-stat-grid--4">
               <StatCard
-                label={t(props.language, { es: "Movimientos (#)", en: "Line items (#)", pt: "Linhas (#)" })}
+                label={t(props.language, { es: "Movimientos", en: "Line items", pt: "Linhas" })}
                 value={String((k.packagePurchasesMonthCount ?? 0) + trialCount)}
-                hint={replaceTemplate(
+                detail={replaceTemplate(
                   t(props.language, {
                     es: "{pkg} paquetes · {pr} pruebas",
                     en: "{pkg} packages · {pr} trials",
@@ -205,7 +209,7 @@ export function FinanceMonthOverviewSection(props: {
               <StatCard
                 label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
                 value={formatMoneyCents(grossPkgAndTrial, props.language)}
-                hint={replaceTemplate(
+                detail={replaceTemplate(
                   t(props.language, {
                     es: "Paquetes {p} + pruebas {t}",
                     en: "Packages {p} + trials {t}",
@@ -221,7 +225,7 @@ export function FinanceMonthOverviewSection(props: {
                 variant="accent"
                 label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
                 value={formatMoneyCents(feePkgAndTrial, props.language)}
-                hint={t(props.language, {
+                detail={t(props.language, {
                   es: "Paquetes + pruebas del mes",
                   en: "Packages + trials in month",
                   pt: "Pacotes + provas"
@@ -230,7 +234,7 @@ export function FinanceMonthOverviewSection(props: {
               <StatCard
                 label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
                 value={formatMoneyCents(proNetPkgAndTrial, props.language)}
-                hint={t(props.language, {
+                detail={t(props.language, {
                   es: "Reparto paquetes + neto pruebas",
                   en: "Package split + trial net",
                   pt: "Pacotes + liquido provas"
