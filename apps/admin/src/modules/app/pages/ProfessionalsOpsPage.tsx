@@ -10,6 +10,7 @@ import {
 import { ProfessionalPhotoUrlField } from "../components/shared/ProfessionalPhotoUrlField";
 import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSection";
 import { adminStoredMediaDisplayLabel } from "../lib/adminUserMedia";
+import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import { joinFirstLastToFullName, majorCurrencyCodeForMarket, splitFullNameToFirstLast } from "@therapy/types";
 import type {
