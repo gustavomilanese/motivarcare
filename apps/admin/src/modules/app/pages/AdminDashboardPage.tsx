@@ -422,7 +422,6 @@ function OverviewPage(props: OverviewPageProps) {
   const pkgFee = k?.packagePlatformFeeFromPurchasesMonthCents ?? 0;
   const pkgProNet = k?.packageProfessionalNetFromPurchasesMonthCents ?? 0;
   const grossPkg = k?.packagePurchasesMonthCents ?? 0;
-  const trialCount = k?.trialSessionsMonthCount ?? 0;
   const trialGross = k?.trialGrossMonthCents ?? 0;
   const trialFee = k?.trialPlatformFeeMonthCents ?? 0;
   const trialNet = k?.trialProfessionalNetMonthCents ?? 0;
@@ -533,9 +532,9 @@ function OverviewPage(props: OverviewPageProps) {
           id="dash-pkg"
           className="dashboard-section-title"
           title={t(props.language, {
-            es: "USD (valor original). Pruebas = tarifa del profesional + % trial de Finanzas.",
-            en: "USD (original). Trials = pro rate + trial % from Finance.",
-            pt: "USD (original). Testes = tarifa do profissional + % trial."
+            es: "Cobros del mes en USD: paquetes comprados + sesiones de prueba. Las sesiones con crédito de paquete se ven en pendientes / comparativas.",
+            en: "Month collections in USD: package purchases + trial sessions. Package-credit sessions appear under unpaid / comparisons.",
+            pt: "Cobranças do mês em USD: pacotes + sessões de teste. Sessões com crédito do pacote ficam em pendentes / comparativos."
           })}
         >
           {t(props.language, {
@@ -544,29 +543,16 @@ function OverviewPage(props: OverviewPageProps) {
             pt: "Receita do mes"
           })}
         </h2>
-        <div className="dashboard-stat-grid dashboard-stat-grid--4">
+        <div className="dashboard-stat-grid dashboard-stat-grid--3">
           <StatCard
-            label={t(props.language, { es: "Compras + pruebas", en: "Purchases + trials", pt: "Compras + testes" })}
-            value={String((k.packagePurchasesMonthCount ?? 0) + trialCount)}
-            to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
-            detail={replaceTemplate(
-              t(props.language, {
-                es: "{pkg} paquetes · {pr} pruebas · ver ventas",
-                en: "{pkg} packages · {pr} trials · view sales",
-                pt: "{pkg} pacotes · {pr} provas · ver vendas"
-              }),
-              { pkg: String(k.packagePurchasesMonthCount ?? 0), pr: String(trialCount) }
-            )}
-          />
-          <StatCard
-            label={t(props.language, { es: "Bruto pacientes", en: "Patient gross", pt: "Bruto pacientes" })}
+            label={t(props.language, { es: "Bruto cobrado", en: "Gross collected", pt: "Bruto cobrado" })}
             value={formatMoneyCents(grossPkgAndTrial, props.language)}
             to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={replaceTemplate(
               t(props.language, {
-                es: "Paquetes {p} + pruebas {t} · ver ventas del mes",
-                en: "Packages {p} + trials {t} · view month sales",
-                pt: "Pacotes {p} + provas {t} · ver vendas"
+                es: "Paquetes {p} · pruebas {t}",
+                en: "Packages {p} · trials {t}",
+                pt: "Pacotes {p} · testes {t}"
               }),
               {
                 p: formatMoneyCents(grossPkg, props.language),
@@ -576,23 +562,23 @@ function OverviewPage(props: OverviewPageProps) {
           />
           <StatCard
             variant="accent"
-            label={t(props.language, { es: "Comisión plataforma", en: "Platform commission", pt: "Comissao plataforma" })}
+            label={t(props.language, { es: "Comisión MotivarCare", en: "MotivarCare fee", pt: "Comissão MotivarCare" })}
             value={formatMoneyCents(feePkgAndTrial, props.language)}
             to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={t(props.language, {
-              es: "Comisión sobre paquetes + pruebas · ver ventas",
-              en: "Fee on packages + trials · view sales",
-              pt: "Comissao sobre pacotes + provas · ver vendas"
+              es: "Tu parte sobre paquetes y pruebas cobrados este mes",
+              en: "Your cut of packages and trials collected this month",
+              pt: "Sua parte sobre pacotes e testes cobrados neste mês"
             })}
           />
           <StatCard
-            label={t(props.language, { es: "A pagar a profesionales", en: "Owed to professionals", pt: "A pagar pros" })}
+            label={t(props.language, { es: "Neto profesionales", en: "Pro net", pt: "Líquido profissionais" })}
             value={formatMoneyCents(proNetPkgAndTrial, props.language)}
             to={`/finances?platformTab=purchases&month=${encodeURIComponent(selectedMonth)}`}
             detail={t(props.language, {
-              es: "Reparto de paquetes + neto de pruebas · ver ventas",
-              en: "Package split + trial net · view sales",
-              pt: "Pacotes + liquido provas · ver vendas"
+              es: "Parte de profesionales sobre esos cobros (no es el pendiente a liquidar)",
+              en: "Professionals’ share of those collections (not the unpaid queue)",
+              pt: "Parte dos profissionais desses cobranças (não é o pendente)"
             })}
           />
         </div>

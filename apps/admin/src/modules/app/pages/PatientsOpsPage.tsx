@@ -1028,7 +1028,11 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           sessionReasonDrafts={sessionReasonDrafts}
           sessionOpsLoading={sessionOpsLoading}
           patientSaveLoading={patientSaveLoading}
-          triagePending={editingPatient?.riskTriageDecision !== "approved"}
+          triagePending={
+            (editingPatient?.intakeRiskLevel === "medium" || editingPatient?.intakeRiskLevel === "high")
+            && (editingPatient.riskTriageDecision === "pending" || editingPatient.riskTriageDecision == null)
+          }
+          triageDecision={editingPatient?.riskTriageDecision ?? null}
           triageActionLoading={editingPatient ? riskTriageActionPatientId === editingPatient.id : false}
           setPatientDetailDrafts={setPatientDetailDrafts}
           setBookingDrafts={setBookingDrafts}

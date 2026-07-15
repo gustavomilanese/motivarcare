@@ -154,6 +154,7 @@ export function PatientEditModal(props: {
   sessionOpsLoading: boolean;
   patientSaveLoading: boolean;
   triagePending: boolean;
+  triageDecision: "pending" | "approved" | "cancelled" | null;
   triageActionLoading: boolean;
   setPatientDetailDrafts: Dispatch<SetStateAction<Record<string, PatientDetailDraft>>>;
   setBookingDrafts: Dispatch<SetStateAction<Record<string, BookingDraft>>>;
@@ -328,37 +329,47 @@ export function PatientEditModal(props: {
         <section className="risk-intake-section">
           <div className="risk-intake-head">
             <h4>Detalle del cuestionario de riesgo</h4>
-            <span className={`risk-level-pill ${editingPatient.intakeRiskLevel ?? "medium"}`}>
-              Riesgo {editingPatient.intakeRiskLevel ?? "medium"}
+            <span className={`risk-level-pill ${editingPatient.intakeRiskLevel ?? "low"}`}>
+              Riesgo {editingPatient.intakeRiskLevel ?? "low"}
             </span>
           </div>
-          {props.triagePending ? (
-            <div className="risk-triage-decision-panel" role="status">
-              <p className="risk-triage-decision-copy">
-                Este paciente está <strong>pendiente de triage</strong>. Aprobar o rechazar solo define si puede usar la
-                plataforma según el screening de riesgo. No guarda sesiones ni otros datos del perfil.
-              </p>
-              <div className="risk-triage-form-actions">
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={props.onApproveTriage}
-                  disabled={props.triageActionLoading}
-                >
-                  {props.triageActionLoading ? "Procesando..." : "Aprobar triage"}
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  onClick={props.onRejectTriage}
-                  disabled={props.triageActionLoading}
-                >
-                  Rechazar triage
-                </button>
+          {editingPatient.intakeRiskLevel === "medium" || editingPatient.intakeRiskLevel === "high" ? (
+            props.triagePending ? (
+              <div className="risk-triage-decision-panel" role="status">
+                <p className="risk-triage-decision-copy">
+                  Este paciente está <strong>pendiente de triage</strong>. Aprobar o rechazar solo define si puede usar la
+                  plataforma según el screening de riesgo. No guarda sesiones ni otros datos del perfil.
+                </p>
+                <div className="risk-triage-form-actions">
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={props.onApproveTriage}
+                    disabled={props.triageActionLoading}
+                  >
+                    {props.triageActionLoading ? "Procesando..." : "Aprobar triage"}
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={props.onRejectTriage}
+                    disabled={props.triageActionLoading}
+                  >
+                    Rechazar triage
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="risk-triage-decision-resolved">
+                {props.triageDecision === "cancelled"
+                  ? "Triage de riesgo rechazado."
+                  : "Triage de riesgo aprobado."}
+              </p>
+            )
           ) : (
-            <p className="risk-triage-decision-resolved">Triage de riesgo aprobado.</p>
+            <p className="risk-triage-decision-resolved">
+              Riesgo bajo: no requiere triage. Puede usar la plataforma con normalidad.
+            </p>
           )}
           {intakeEntries.length === 0 ? (
             <p className="risk-intake-empty">No hay respuestas de screening cargadas para este paciente.</p>
