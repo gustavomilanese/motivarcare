@@ -389,7 +389,7 @@ export async function getUnpaidProfessionalDetail(
       ?? null;
     const sourceKind = record.isTrial ? ("trial" as const) : ("package" as const);
     const sourceLabel = record.isTrial
-      ? "Sesión de prueba · tarifa profesional (como individual)"
+      ? "Rate × sesión"
       : packageName
         ? packageCredits != null
           ? `${packageName} (${packageCredits} cr)`

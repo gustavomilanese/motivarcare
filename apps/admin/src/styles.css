@@ -1161,6 +1161,12 @@ label {
   object-fit: cover;
 }
 
+.patient-list-empty {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
 .patient-results-list {
   display: grid;
   gap: 8px;
@@ -1452,6 +1458,7 @@ label {
 .patient-result-main {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .patient-result-main strong {
@@ -1461,6 +1468,56 @@ label {
 .patient-result-main span {
   color: #5d6782;
   font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-result-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.patient-result-fact {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.patient-result-fact--muted {
+  background: #f1f5f9;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.patient-status-filter-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dbe4f5;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #475569;
+}
+
+.patient-status-filter-banner .secondary {
+  min-height: 32px;
+  padding: 0 12px;
 }
 
 .patient-result-actions {
@@ -6767,11 +6824,9 @@ button.primary.finance-hero-search {
   gap: 12px;
 }
 
-.admin-unpaid-professionals-head h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 650;
-  color: #0f172a;
+.admin-unpaid-professionals-head .dashboard-page-heading {
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-unpaid-excel-btn {
@@ -6907,7 +6962,30 @@ button.primary.finance-hero-search {
 
 .admin-unpaid-professionals-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+.admin-unpaid-col-pro {
+  width: 26%;
+}
+
+.admin-unpaid-col-sessions {
+  width: 9%;
+}
+
+.admin-unpaid-col-unit,
+.admin-unpaid-col-gross,
+.admin-unpaid-col-fee {
+  width: 12%;
+}
+
+.admin-unpaid-col-net {
+  width: 13%;
+}
+
+.admin-unpaid-col-actions {
+  width: 16%;
 }
 
 .admin-unpaid-professionals-table th,
@@ -6935,7 +7013,6 @@ button.primary.finance-hero-search {
   font-variant-numeric: tabular-nums;
 }
 
-.admin-unpaid-professionals-table tfoot .admin-unpaid-totals-row th,
 .admin-unpaid-professionals-table tfoot .admin-unpaid-totals-row td {
   border-bottom: none;
   border-top: 2px solid #cbd5e1;
@@ -6946,10 +7023,8 @@ button.primary.finance-hero-search {
   vertical-align: middle;
 }
 
-.admin-unpaid-professionals-table tfoot .admin-unpaid-totals-row th {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 13px;
+.admin-unpaid-professionals-table tfoot .admin-unpaid-totals-row td:first-child {
+  font-weight: 650;
   color: #334155;
 }
 
@@ -7037,12 +7112,16 @@ button.primary.finance-hero-search {
 .admin-unpaid-detail-row > td {
   background: #f8fafc;
   padding: 0 12px 14px;
+  /* Keep expanded content from reshaping parent columns. */
+  overflow: hidden;
 }
 
 .admin-unpaid-session-detail {
   display: grid;
   gap: 10px;
   padding-top: 8px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .admin-unpaid-session-table {

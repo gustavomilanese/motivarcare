@@ -186,6 +186,6 @@ export function resolveTrialSessionPricing(params: {
     platformFeeCents,
     professionalNetCents,
     paymentCheckoutId: params.checkout.id,
-    sourceLabel: "Sesión de prueba · tarifa profesional (como individual)"
+    sourceLabel: "Rate × sesión"
   };
 }

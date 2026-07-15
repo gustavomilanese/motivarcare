@@ -399,7 +399,7 @@ function OverviewPage(props: OverviewPageProps) {
           },
           {
             key: "pros",
-            label: t(props.language, { es: "Profesionales visibles", en: "Visible pros", pt: "Profissionais" }),
+            label: t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" }),
             value: Math.max(1, k.activeProfessionals),
             tone: "var(--brand-2)"
           },
@@ -508,21 +508,21 @@ function OverviewPage(props: OverviewPageProps) {
           <StatCard
             label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
             value={String(k.activePatients)}
-            to="/patients"
+            to="/patients?status=active"
             detail={t(props.language, {
-              es: "Abrir listado de pacientes",
-              en: "Open patients list",
-              pt: "Abrir lista de pacientes"
+              es: "Ver pacientes activos",
+              en: "View active patients",
+              pt: "Ver pacientes ativos"
             })}
           />
           <StatCard
-            label={t(props.language, { es: "Profesionales visibles", en: "Visible professionals", pt: "Profissionais visiveis" })}
+            label={t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
             value={String(k.activeProfessionals)}
-            to="/professionals"
+            to="/professionals?visible=true"
             detail={t(props.language, {
-              es: "Abrir listado de psicólogos",
-              en: "Open professionals list",
-              pt: "Abrir lista de profissionais"
+              es: "Ver listado de profesionales",
+              en: "View professionals list",
+              pt: "Ver lista de profissionais"
             })}
           />
         </div>
@@ -610,13 +610,16 @@ function OverviewPage(props: OverviewPageProps) {
         />
       </section>
 
-      <section
-        className="dashboard-section dashboard-section--raised dashboard-section--tone-viz"
-        aria-labelledby="dash-viz"
-      >
-        <h2 id="dash-viz" className="dashboard-section-title">
-          {t(props.language, { es: "Comparativas del mes", en: "Month comparisons", pt: "Comparativas do mes" })}
-        </h2>
+      <details className="dashboard-section dashboard-section--raised dashboard-section--tone-viz dashboard-details">
+        <summary className="dashboard-details-summary">
+          <span className="dashboard-collapsible-heading">
+            <h2 id="dash-viz" className="dashboard-section-title">
+              {t(props.language, { es: "Comparativas del mes", en: "Month comparisons", pt: "Comparativas do mes" })}
+            </h2>
+          </span>
+          <span className="dashboard-details-chevron" aria-hidden />
+        </summary>
+        <div className="dashboard-details-body">
         <div className="dashboard-chart-grid">
         <BarCompare
           title={t(props.language, {
@@ -689,15 +692,19 @@ function OverviewPage(props: OverviewPageProps) {
           ]}
         />
         </div>
-      </section>
+        </div>
+      </details>
 
-      <section
-        className="dashboard-section dashboard-section--raised dashboard-section--tone-load"
-        aria-labelledby="dash-load"
-      >
-        <h2 id="dash-load" className="dashboard-section-title">
-          {t(props.language, { es: "Carga relativa", en: "Relative load", pt: "Carga relativa" })}
-        </h2>
+      <details className="dashboard-section dashboard-section--raised dashboard-section--tone-load dashboard-details">
+        <summary className="dashboard-details-summary">
+          <span className="dashboard-collapsible-heading">
+            <h2 id="dash-load" className="dashboard-section-title">
+              {t(props.language, { es: "Carga relativa", en: "Relative load", pt: "Carga relativa" })}
+            </h2>
+          </span>
+          <span className="dashboard-details-chevron" aria-hidden />
+        </summary>
+        <div className="dashboard-details-body">
         <article className="card dashboard-chart-card">
           <div className="dashboard-bar-chart">
             {loadBars.map((item) => (
@@ -711,7 +718,8 @@ function OverviewPage(props: OverviewPageProps) {
             ))}
           </div>
         </article>
-      </section>
+        </div>
+      </details>
 
       <section
         className="dashboard-section dashboard-section--raised dashboard-section--tone-sess"

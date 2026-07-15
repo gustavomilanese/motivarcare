@@ -202,13 +202,13 @@ export function AdminUnpaidProfessionalsPanel(props: {
     <>
       <section className={`admin-unpaid-professionals${props.compact ? " admin-unpaid-professionals--compact" : ""}`}>
         <header className="admin-unpaid-professionals-head">
-          <h3>
+          <h2 className="dashboard-page-heading">
             {t(props.language, {
               es: "Pendiente de pagar a profesionales",
               en: "Pending professional payouts",
               pt: "Pendente de pagar a profissionais"
             })}
-          </h3>
+          </h2>
           <button
             type="button"
             className="admin-unpaid-excel-btn"
@@ -312,6 +312,15 @@ export function AdminUnpaidProfessionalsPanel(props: {
         ) : (
           <div className="admin-unpaid-professionals-table-wrap">
             <table className="admin-unpaid-professionals-table">
+              <colgroup>
+                <col className="admin-unpaid-col-pro" />
+                <col className="admin-unpaid-col-sessions" />
+                <col className="admin-unpaid-col-unit" />
+                <col className="admin-unpaid-col-gross" />
+                <col className="admin-unpaid-col-fee" />
+                <col className="admin-unpaid-col-net" />
+                <col className="admin-unpaid-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
@@ -510,8 +519,10 @@ export function AdminUnpaidProfessionalsPanel(props: {
               </tbody>
               <tfoot>
                 <tr className="admin-unpaid-totals-row">
-                  <th scope="row">
-                    {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+                  <td>
+                    <strong>
+                      {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+                    </strong>
                     <span className="admin-unpaid-totals-count">
                       {" "}
                       · {filteredSorted.length}{" "}
@@ -521,13 +532,13 @@ export function AdminUnpaidProfessionalsPanel(props: {
                         pt: filteredSorted.length === 1 ? "profissional" : "profissionais"
                       })}
                     </span>
-                  </th>
+                  </td>
                   <td className="num">{listTotals.sessionsCount}</td>
                   <td className="num">—</td>
                   <td className="num">{formatAdminFinanceUsd(listTotals.grossCents, props.language)}</td>
                   <td className="num">{formatAdminFinanceUsd(listTotals.platformFeeCents, props.language)}</td>
                   <td className="num admin-unpaid-net">{formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}</td>
-                  <td />
+                  <td className="admin-unpaid-actions-col" aria-hidden="true" />
                 </tr>
               </tfoot>
             </table>

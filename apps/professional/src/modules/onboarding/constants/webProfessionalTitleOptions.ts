@@ -1,10 +1,9 @@
-/** Valor persistido = etiqueta en español (canónico). */
-export const WEB_PROFESSIONAL_TITLE_OPTIONS_ES = [
-  "Psicólogo",
-  "Psiquiatra",
-  "Sexólogo",
-  "Coach",
-  "Nutricionista"
-] as const;
+import {
+  PROFESSIONAL_KIND_OPTIONS_ES,
+  type ProfessionalKindEs
+} from "@therapy/types";
 
-export type WebProfessionalTitleEs = (typeof WEB_PROFESSIONAL_TITLE_OPTIONS_ES)[number];
+/** Valor persistido = etiqueta en español (canónico). */
+export const WEB_PROFESSIONAL_TITLE_OPTIONS_ES = PROFESSIONAL_KIND_OPTIONS_ES;
+
+export type WebProfessionalTitleEs = ProfessionalKindEs;

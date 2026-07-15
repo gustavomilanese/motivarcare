@@ -1,4 +1,5 @@
 import type { AppLanguage } from "@therapy/i18n-config";
+import { textByLanguage } from "@therapy/i18n-config";
 import type { Dispatch, SetStateAction } from "react";
 import { PATIENT_EMPTY_ART_URL } from "../../constants";
 import { resolveApiAssetUrl } from "../../services/api";
@@ -31,19 +32,65 @@ export function PatientsSearchHeader(props: {
   setPatientSearchInput: Dispatch<SetStateAction<string>>;
   onSearch: () => void;
   onOpenCreate: () => void;
+  statusFilter?: PatientStatus | "";
+  onClearStatusFilter?: () => void;
 }) {
+  const isActiveList = props.statusFilter === "active";
   return (
     <>
       <div className="patient-section-head">
-        <h2>Buscador de Pacientes</h2>
-        <button className="new-patient-btn" type="button" onClick={props.onOpenCreate}>Nuevo paciente</button>
+        <h2>
+          {isActiveList
+            ? textByLanguage(props.language, {
+                es: "Pacientes activos",
+                en: "Active patients",
+                pt: "Pacientes ativos"
+              })
+            : textByLanguage(props.language, {
+                es: "Buscador de Pacientes",
+                en: "Patient search",
+                pt: "Busca de pacientes"
+              })}
+        </h2>
+        <button className="new-patient-btn" type="button" onClick={props.onOpenCreate}>
+          {textByLanguage(props.language, {
+            es: "Nuevo paciente",
+            en: "New patient",
+            pt: "Novo paciente"
+          })}
+        </button>
       </div>
+
+      {isActiveList ? (
+        <div className="patient-status-filter-banner">
+          <span>
+            {textByLanguage(props.language, {
+              es: "Listado filtrado por estado activo (mismo criterio del dashboard).",
+              en: "List filtered by active status (same as dashboard).",
+              pt: "Lista filtrada por status ativo (mesmo critério do dashboard)."
+            })}
+          </span>
+          {props.onClearStatusFilter ? (
+            <button type="button" className="secondary" onClick={props.onClearStatusFilter}>
+              {textByLanguage(props.language, {
+                es: "Quitar filtro",
+                en: "Clear filter",
+                pt: "Limpar filtro"
+              })}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="patient-search-shell">
         <div className="patient-search-inline">
           <input
             className="patient-search-input"
-            placeholder="Buscar paciente por nombre o email"
+            placeholder={textByLanguage(props.language, {
+              es: "Buscar paciente por nombre o email",
+              en: "Search patient by name or email",
+              pt: "Buscar paciente por nome ou email"
+            })}
             value={props.patientSearchInput}
             onChange={(event) => props.setPatientSearchInput(event.target.value)}
             onKeyDown={(event) => {
@@ -52,7 +99,9 @@ export function PatientsSearchHeader(props: {
               }
             }}
           />
-          <button type="button" className="primary" onClick={props.onSearch}>Buscar</button>
+          <button type="button" className="primary" onClick={props.onSearch}>
+            {textByLanguage(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
+          </button>
         </div>
       </div>
     </>
@@ -63,15 +112,35 @@ export function PatientsSearchResults(props: {
   language: AppLanguage;
   loading: boolean;
   patientSearch: string;
+  statusFilter?: PatientStatus | "";
   patients: AdminPatientOps[];
   editingPatientId: string | null;
   patientPagination: { page: number; totalPages: number; hasPrev: boolean; hasNext: boolean } | null;
+  patientStatusLabel: (status: PatientStatus | string) => string;
   onSelectPatient: (patientId: string) => void;
   onEditPatient: (patientId: string) => void;
   onPrevPage: () => void;
   onNextPage: () => void;
 }) {
+  const listMode = props.patientSearch.length > 0 || Boolean(props.statusFilter);
   if (!props.loading && props.patients.length === 0) {
+    if (listMode) {
+      return (
+        <p className="patient-list-empty">
+          {props.statusFilter === "active"
+            ? textByLanguage(props.language, {
+                es: "No hay pacientes activos.",
+                en: "No active patients.",
+                pt: "Não há pacientes ativos."
+              })
+            : textByLanguage(props.language, {
+                es: "No se encontraron pacientes.",
+                en: "No patients found.",
+                pt: "Nenhum paciente encontrado."
+              })}
+        </p>
+      );
+    }
     return (
       <div className="patient-empty-art">
         <img src={PATIENT_EMPTY_ART_URL} alt="La Ultima Cena - Leonardo da Vinci" loading="lazy" />
@@ -79,44 +148,78 @@ export function PatientsSearchResults(props: {
     );
   }
 
+  const showPagination =
+    Boolean(props.patientPagination)
+    && (props.patientSearch === "*" || Boolean(props.statusFilter));
+
   return (
     <>
-      {props.patientSearch.length > 0 ? (
+      {listMode ? (
         <section className="ops-section results-section">
           <header className="ops-section-head">
-            <h3>Resultados de busqueda</h3>
+            <h3>
+              {props.statusFilter === "active"
+                ? textByLanguage(props.language, {
+                    es: "Pacientes activos",
+                    en: "Active patients",
+                    pt: "Pacientes ativos"
+                  })
+                : textByLanguage(props.language, {
+                    es: "Resultados de búsqueda",
+                    en: "Search results",
+                    pt: "Resultados da busca"
+                  })}
+            </h3>
           </header>
           <div className="patient-results-list">
-            {props.patients.map((patient) => (
-              <article
-                key={patient.id}
-                className={"patient-result-row" + (props.editingPatientId === patient.id ? " active" : "")}
-                onClick={() => props.onSelectPatient(patient.id)}
-              >
-                <div className="patient-result-row-body">
-                  <PatientOpsAvatar url={patient.avatarUrl} label={patient.fullName} />
-                  <div className="patient-result-main">
-                    <strong>{patient.fullName}</strong>
+            {props.patients.map((patient) => {
+              const credits = patient.latestPurchase?.remainingCredits ?? patient.creditBalance ?? 0;
+              return (
+                <article
+                  key={patient.id}
+                  className={"patient-result-row" + (props.editingPatientId === patient.id ? " active" : "")}
+                  onClick={() => props.onSelectPatient(patient.id)}
+                >
+                  <div className="patient-result-row-body">
+                    <PatientOpsAvatar url={patient.avatarUrl} label={patient.fullName} />
+                    <div className="patient-result-main">
+                      <strong>{patient.fullName}</strong>
+                      <span>{patient.email}</span>
+                    </div>
+                    <div className="patient-result-facts">
+                      <span className="patient-result-fact">{props.patientStatusLabel(patient.status)}</span>
+                      <span className="patient-result-fact">
+                        {credits}{" "}
+                        {textByLanguage(props.language, {
+                          es: credits === 1 ? "crédito" : "créditos",
+                          en: credits === 1 ? "credit" : "credits",
+                          pt: credits === 1 ? "crédito" : "créditos"
+                        })}
+                      </span>
+                      {patient.timezone ? (
+                        <span className="patient-result-fact patient-result-fact--muted">{patient.timezone}</span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div className="patient-result-actions">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      props.onEditPatient(patient.id);
-                    }}
-                  >
-                    Editar
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <div className="patient-result-actions">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        props.onEditPatient(patient.id);
+                      }}
+                    >
+                      {textByLanguage(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       ) : null}
 
-      {props.patientSearch === "*" && props.patientPagination ? (
+      {showPagination && props.patientPagination ? (
         <div className="patient-pagination">
           <button
             type="button"
@@ -126,7 +229,9 @@ export function PatientsSearchResults(props: {
           >
             &lt;
           </button>
-          <span>Pagina {props.patientPagination.page} de {props.patientPagination.totalPages}</span>
+          <span>
+            Pagina {props.patientPagination.page} de {props.patientPagination.totalPages}
+          </span>
           <button
             type="button"
             aria-label="Pagina siguiente"

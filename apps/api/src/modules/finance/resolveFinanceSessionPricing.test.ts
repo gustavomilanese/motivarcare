@@ -84,7 +84,7 @@ describe("resolveTrialSessionPricing", () => {
     expect(resolved.currency).toBe("usd");
     expect(resolved.platformFeeCents).toBe(6500);
     expect(resolved.professionalNetCents).toBe(0);
-    expect(resolved.sourceLabel).toMatch(/tarifa profesional/i);
+    expect(resolved.sourceLabel).toMatch(/rate/i);
   });
 
   it("falls back to charge amount only when rate snapshot is missing", () => {

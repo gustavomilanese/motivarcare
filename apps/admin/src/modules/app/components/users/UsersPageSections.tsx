@@ -3,7 +3,7 @@ import type { AppLanguage } from "@therapy/i18n-config";
 import { ProfessionalPhotoUrlField } from "../shared/ProfessionalPhotoUrlField";
 import { adminStoredMediaDisplayLabel } from "../../lib/adminUserMedia";
 import { TIMEZONE_OPTIONS } from "../../constants";
-import { RESIDENCY_COUNTRY_OPTIONS, splitFullNameToFirstLast } from "@therapy/types";
+import { RESIDENCY_COUNTRY_OPTIONS, PROFESSIONAL_KIND_OPTIONS_ES, isKnownProfessionalKind, resolveProfessionalKindLabel, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminUser,
   CreateUserFormState,
@@ -836,9 +836,9 @@ function UsersListSectionComponent(props: {
                                     />
                                   </label>
                                   <label>
-                                    {props.t({ es: "Título profesional", en: "Professional title", pt: "Titulo profissional" })}
-                                    <input
-                                      value={draft.professionalTitle}
+                                    {props.t({ es: "Tipo de profesional", en: "Professional type", pt: "Tipo de profissional" })}
+                                    <select
+                                      value={resolveProfessionalKindLabel(draft.professionalTitle)}
                                       onChange={(event) =>
                                         props.setEditDrafts((current) => ({
                                           ...current,
@@ -848,7 +848,19 @@ function UsersListSectionComponent(props: {
                                           }
                                         }))
                                       }
-                                    />
+                                    >
+                                      {PROFESSIONAL_KIND_OPTIONS_ES.map((kind) => (
+                                        <option key={kind} value={kind}>
+                                          {kind}
+                                        </option>
+                                      ))}
+                                      {draft.professionalTitle.trim()
+                                      && !isKnownProfessionalKind(draft.professionalTitle.trim()) ? (
+                                        <option value={draft.professionalTitle.trim()}>
+                                          {draft.professionalTitle.trim()}
+                                        </option>
+                                      ) : null}
+                                    </select>
                                   </label>
                                   <label>
                                     {props.t({ es: "Especialización (etiqueta)", en: "Specialization (tag)", pt: "Especializacao" })}

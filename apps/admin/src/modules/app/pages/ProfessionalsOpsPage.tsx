@@ -1,5 +1,6 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PROFESSIONAL_EMPTY_ART_URL } from "../constants";
 import {
   type ProfessionalBookingDraft,
@@ -12,7 +13,7 @@ import { PortalHeroSettingsSection } from "../components/PortalHeroSettingsSecti
 import { adminStoredMediaDisplayLabel } from "../lib/adminUserMedia";
 import { adminSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
-import { joinFirstLastToFullName, majorCurrencyCodeForMarket, splitFullNameToFirstLast } from "@therapy/types";
+import { joinFirstLastToFullName, majorCurrencyCodeForMarket, resolveProfessionalKindLabel, PROFESSIONAL_KIND_OPTIONS_ES, isKnownProfessionalKind, splitFullNameToFirstLast } from "@therapy/types";
 import type {
   AdminBookingOps,
   AdminBookingsResponse,
@@ -121,12 +122,16 @@ function buildProfessionalEditDraft(professional: AdminProfessionalOps): Profess
 type ProfessionalProfileEditSection = null | "account" | "presentation" | "media";
 
 export function ProfessionalsOpsPage(props: { token: string; language: AppLanguage }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const handledVisibleFilterRef = useRef<string | null>(null);
   const [professionals, setProfessionals] = useState<AdminProfessionalOps[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [professionalSearchInput, setProfessionalSearchInput] = useState("");
   const [professionalSearch, setProfessionalSearch] = useState("");
+  const [visibleFilter, setVisibleFilter] = useState<"" | "true" | "false">("");
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null);
   const [isProfessionalEditModalOpen, setIsProfessionalEditModalOpen] = useState(false);
   const [professionalSaveLoading, setProfessionalSaveLoading] = useState(false);
@@ -160,25 +165,32 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     });
   };
 
-  const buildProfessionalsListUrl = (normalizedSearch: string): string | null => {
-    if (normalizedSearch.length === 0) {
+  const buildProfessionalsListUrl = (
+    normalizedSearch: string,
+    visibleValue: "" | "true" | "false"
+  ): string | null => {
+    if (normalizedSearch.length === 0 && !visibleValue) {
       return null;
     }
     const params = new URLSearchParams();
-    if (normalizedSearch !== "*") {
+    if (visibleValue) {
+      params.set("visible", visibleValue);
+    }
+    if (normalizedSearch.length > 0 && normalizedSearch !== "*") {
       params.set("search", normalizedSearch);
     }
     const qs = params.toString();
     return qs.length > 0 ? `/api/admin/professionals?${qs}` : "/api/admin/professionals";
   };
 
-  const load = async (searchValue?: string) => {
+  const load = async (searchValue?: string, visibleValue?: "" | "true" | "false") => {
     setLoading(true);
     setError("");
 
     try {
       const normalizedSearch = (searchValue ?? professionalSearch).trim();
-      const listUrl = buildProfessionalsListUrl(normalizedSearch);
+      const requestedVisible = visibleValue !== undefined ? visibleValue : visibleFilter;
+      const listUrl = buildProfessionalsListUrl(normalizedSearch, requestedVisible);
       const request =
         listUrl === null
           ? Promise.resolve<ProfessionalsResponse>({ professionals: [] })
@@ -202,8 +214,31 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   };
 
   useEffect(() => {
-    void load();
-  }, [props.token]);
+    const visibleParam = searchParams.get("visible")?.trim() ?? "";
+    const isValidVisible = visibleParam === "true" || visibleParam === "false";
+
+    if (isValidVisible) {
+      if (handledVisibleFilterRef.current === visibleParam) {
+        return;
+      }
+      handledVisibleFilterRef.current = visibleParam;
+      setVisibleFilter(visibleParam);
+      setProfessionalSearch("*");
+      setProfessionalSearchInput("");
+      void load("*", visibleParam);
+      return;
+    }
+
+    if (handledVisibleFilterRef.current === "manual-search") {
+      handledVisibleFilterRef.current = null;
+      setVisibleFilter("");
+      return;
+    }
+
+    handledVisibleFilterRef.current = null;
+    setVisibleFilter("");
+    void load("", "");
+  }, [props.token, searchParams]);
 
   const loadProfessionalBookings = async (professionalId: string) => {
     setProfessionalBookingsLoading((current) => ({ ...current, [professionalId]: true }));
@@ -236,8 +271,22 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
   const applyProfessionalSearch = async () => {
     const nextSearch = professionalSearchInput.trim();
+    setVisibleFilter("");
+    handledVisibleFilterRef.current = searchParams.get("visible") ? "manual-search" : null;
+    if (searchParams.get("visible")) {
+      navigate("/professionals", { replace: true });
+    }
     setProfessionalSearch(nextSearch);
-    await load(nextSearch);
+    await load(nextSearch, "");
+  };
+
+  const clearVisibleFilter = () => {
+    setVisibleFilter("");
+    handledVisibleFilterRef.current = null;
+    setProfessionalSearch("");
+    setProfessionalSearchInput("");
+    setProfessionals([]);
+    navigate("/professionals", { replace: true });
   };
 
   const cancelProfileSectionEdit = (professional: AdminProfessionalOps) => {
@@ -258,7 +307,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
   const afterProfessionalPatchSuccess = async (professionalId: string) => {
     setEditingProfileSection(null);
-    await load(professionalSearch);
+    await load(professionalSearch, visibleFilter);
     if (showConfirmedSessions) {
       await loadProfessionalBookings(professionalId);
     }
@@ -641,7 +690,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
 
       setProfessionalSlotDrafts((current) => ({ ...current, [professionalId]: createEmptySlotDraft() }));
       setSuccess("Slot creado");
-      await load(professionalSearch);
+      await load(professionalSearch, visibleFilter);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("prof-ops-slot-create", props.language, raw));
@@ -659,7 +708,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
         props.token
       );
       setSuccess("Slot eliminado");
-      await load(professionalSearch);
+      await load(professionalSearch, visibleFilter);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("prof-ops-slot-delete", props.language, raw));
@@ -719,14 +768,37 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     <div className="stack-lg ops-page">
       <section className="card stack ops-panel patient-search-section">
         <div className="patient-section-head">
-          <h2>Buscador de Psicologos</h2>
+          <h2>
+            {visibleFilter === "true"
+              ? t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })
+              : t(props.language, { es: "Buscador de Psicólogos", en: "Psychologist search", pt: "Busca de psicólogos" })}
+          </h2>
         </div>
+
+        {visibleFilter === "true" ? (
+          <div className="patient-status-filter-banner">
+            <span>
+              {t(props.language, {
+                es: "Listado alineado al KPI del dashboard (perfiles publicados).",
+                en: "List aligned with the dashboard KPI (published profiles).",
+                pt: "Lista alinhada ao KPI do dashboard (perfis publicados)."
+              })}
+            </span>
+            <button type="button" className="secondary" onClick={clearVisibleFilter}>
+              {t(props.language, { es: "Quitar filtro", en: "Clear filter", pt: "Limpar filtro" })}
+            </button>
+          </div>
+        ) : null}
 
         <div className="patient-search-shell">
           <div className="patient-search-inline">
             <input
               className="patient-search-input"
-              placeholder="Buscar psicólogo por nombre o email"
+              placeholder={t(props.language, {
+                es: "Buscar psicólogo por nombre o email",
+                en: "Search psychologist by name or email",
+                pt: "Buscar psicólogo por nome ou email"
+              })}
               value={professionalSearchInput}
               onChange={(event) => setProfessionalSearchInput(event.target.value)}
               onKeyDown={(event) => {
@@ -735,76 +807,121 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 }
               }}
             />
-            <button type="button" className="primary" onClick={() => void applyProfessionalSearch()}>Buscar</button>
+            <button type="button" className="primary" onClick={() => void applyProfessionalSearch()}>
+              {t(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
+            </button>
           </div>
-          <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-            {t(props.language, {
-              es: "Para listar todos los perfiles usá * en el buscador. Las altas pendientes de aprobación se revisan en el Dashboard (debajo de «Resumen del mes»).",
-              en: "Use * in the search field to list all profiles. Pending sign-ups are reviewed on the Dashboard (under Month at a glance).",
-              pt: "Use * na busca para listar todos os perfis. Cadastros pendentes ficam no Dashboard (abaixo de «Resumo do mes»)."
-            })}
-          </p>
+          {visibleFilter !== "true" ? (
+            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+              {t(props.language, {
+                es: "Para listar todos los perfiles usá * en el buscador. Las altas pendientes de aprobación se revisan en el Dashboard.",
+                en: "Use * in the search field to list all profiles. Pending sign-ups are reviewed on the Dashboard.",
+                pt: "Use * na busca para listar todos os perfis. Cadastros pendentes ficam no Dashboard."
+              })}
+            </p>
+          ) : null}
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
         {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
 
-                  <section className="ops-section results-section">
-            {!loading && professionals.length > 0 ? (
+        <section className="ops-section results-section">
+          {!loading && (professionalSearch.length > 0 || Boolean(visibleFilter)) && professionals.length > 0 ? (
             <header className="ops-section-head">
-              <h3>Resultados de busqueda</h3>
+              <h3>
+                {visibleFilter === "true"
+                  ? t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })
+                  : t(props.language, { es: "Resultados de búsqueda", en: "Search results", pt: "Resultados da busca" })}
+              </h3>
             </header>
-            ) : null}
-            {!loading && professionals.length === 0 ? (
+          ) : null}
+          {!loading && professionals.length === 0 ? (
+            professionalSearch.length > 0 || visibleFilter ? (
+              <p className="patient-list-empty">
+                {visibleFilter === "true"
+                  ? t(props.language, {
+                      es: "No hay profesionales publicados.",
+                      en: "No published professionals.",
+                      pt: "Não há profissionais publicados."
+                    })
+                  : t(props.language, {
+                      es: "No se encontraron profesionales.",
+                      en: "No professionals found.",
+                      pt: "Nenhum profissional encontrado."
+                    })}
+              </p>
+            ) : (
               <div className="patient-empty-art">
                 <img src={PROFESSIONAL_EMPTY_ART_URL} alt="La Creacion de Adan de Miguel Angel (Capilla Sixtina)" loading="lazy" />
               </div>
-            ) : null}
-            <div className="patient-results-list">
-            {professionals.map((professional) => (
-              <article
-                key={professional.id}
-                className={"patient-result-row" + (selectedProfessionalId === professional.id ? " active" : "")}
-                onClick={() => {
-                  setSelectedProfessionalId(professional.id);
-                  setIsProfessionalEditModalOpen(false);
-                  setEditingProfileSection(null);
-                }}
-              >
-                <div className="patient-result-main">
-                  <strong>{professional.fullName}</strong>
-                  <span>
-                    {professional.email} · {professional.visible ? "visible" : "oculto"} ·{" "}
-                    {professional.registrationApproval === "PENDING"
-                      ? t(props.language, { es: "alta pendiente", en: "approval pending", pt: "cadastro pendente" })
-                      : professional.registrationApproval === "REJECTED"
-                        ? t(props.language, { es: "alta rechazada", en: "registration rejected", pt: "cadastro rejeitado" })
-                        : t(props.language, { es: "alta aprobada", en: "approved", pt: "cadastro aprovado" })}{" "}
-                    · slots {professional.slots.length}
-                  </span>
-                </div>
-                <div className="patient-result-actions">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setSelectedProfessionalId(professional.id);
-                      setEditingProfileSection(null);
-                      setIsProfessionalEditModalOpen(true);
-                    }}
-                  >
-                    {t(props.language, {
-                      es: "Horarios y sesiones",
-                      en: "Slots & sessions",
-                      pt: "Horarios e sessoes"
-                    })}
-                  </button>
-                </div>
-              </article>
-            ))}
-            </div>
-          </section>
+            )
+          ) : null}
+          <div className="patient-results-list">
+            {professionals.map((professional) => {
+              const approvalLabel =
+                professional.registrationApproval === "PENDING"
+                  ? t(props.language, { es: "alta pendiente", en: "approval pending", pt: "cadastro pendente" })
+                  : professional.registrationApproval === "REJECTED"
+                    ? t(props.language, { es: "alta rechazada", en: "rejected", pt: "rejeitado" })
+                    : t(props.language, { es: "aprobado", en: "approved", pt: "aprovado" });
+              const professionalKind = resolveProfessionalKindLabel(professional.professionalTitle);
+              const specialization = professional.specialization?.trim() || null;
+              return (
+                <article
+                  key={professional.id}
+                  className={"patient-result-row" + (selectedProfessionalId === professional.id ? " active" : "")}
+                  onClick={() => {
+                    setSelectedProfessionalId(professional.id);
+                    setIsProfessionalEditModalOpen(false);
+                    setEditingProfileSection(null);
+                  }}
+                >
+                  <div className="patient-result-row-body">
+                    <div className="patient-result-main">
+                      <strong>{professional.fullName}</strong>
+                      <span>{professional.email}</span>
+                    </div>
+                    <div className="patient-result-facts">
+                      <span className="patient-result-fact" title={t(props.language, { es: "Tipo de profesional", en: "Professional type", pt: "Tipo de profissional" })}>
+                        {professionalKind}
+                      </span>
+                      {specialization && specialization !== professionalKind ? (
+                        <span className="patient-result-fact patient-result-fact--muted">{specialization}</span>
+                      ) : null}
+                      <span className="patient-result-fact">{approvalLabel}</span>
+                      <span className="patient-result-fact patient-result-fact--muted">
+                        {professional.slots.length}{" "}
+                        {t(props.language, {
+                          es: professional.slots.length === 1 ? "slot" : "slots",
+                          en: professional.slots.length === 1 ? "slot" : "slots",
+                          pt: professional.slots.length === 1 ? "slot" : "slots"
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="patient-result-actions">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedProfessionalId(professional.id);
+                        setEditingProfileSection(null);
+                        setIsProfessionalEditModalOpen(true);
+                      }}
+                    >
+                      {t(props.language, {
+                        es: "Editar",
+                        en: "Edit",
+                        pt: "Editar"
+                      })}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
         {selectedProfessional && selectedProfessionalDraft ? (
           <section className="patient-inline-panel record-panel prof-ops-detail">
@@ -993,12 +1110,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                     </label>
                     <label>
                       {t(props.language, {
-                        es: "Título profesional (listado)",
-                        en: "Professional title (directory)",
-                        pt: "Titulo profissional (listagem)"
+                        es: "Tipo de profesional",
+                        en: "Professional type",
+                        pt: "Tipo de profissional"
                       })}
-                      <input
-                        value={selectedProfessionalDraft.professionalTitle}
+                      <select
+                        value={resolveProfessionalKindLabel(selectedProfessionalDraft.professionalTitle)}
                         onChange={(event) =>
                           setProfessionalEditDrafts((current) => ({
                             ...current,
@@ -1008,7 +1125,19 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                             }
                           }))
                         }
-                      />
+                      >
+                        {PROFESSIONAL_KIND_OPTIONS_ES.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {kind}
+                          </option>
+                        ))}
+                        {selectedProfessionalDraft.professionalTitle.trim()
+                        && !isKnownProfessionalKind(selectedProfessionalDraft.professionalTitle.trim()) ? (
+                          <option value={selectedProfessionalDraft.professionalTitle.trim()}>
+                            {selectedProfessionalDraft.professionalTitle.trim()}
+                          </option>
+                        ) : null}
+                      </select>
                     </label>
                     <label>
                       {t(props.language, {
@@ -1291,8 +1420,8 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                 <dl className="prof-ops-read-stack">
                   <dt>{t(props.language, { es: "Visible", en: "Visible", pt: "Visivel" })}</dt>
                   <dd>{selectedProfessional.visible ? t(props.language, { es: "Sí", en: "Yes", pt: "Sim" }) : t(props.language, { es: "No", en: "No", pt: "Nao" })}</dd>
-                  <dt>{t(props.language, { es: "Título profesional", en: "Professional title", pt: "Titulo" })}</dt>
-                  <dd>{selectedProfessional.professionalTitle?.trim() || "—"}</dd>
+                  <dt>{t(props.language, { es: "Tipo de profesional", en: "Professional type", pt: "Tipo de profissional" })}</dt>
+                  <dd>{resolveProfessionalKindLabel(selectedProfessional.professionalTitle)}</dd>
                   <dt>{t(props.language, { es: "Especialización", en: "Specialization", pt: "Especializacao" })}</dt>
                   <dd>{selectedProfessional.specialization?.trim() || "—"}</dd>
                   <dt>{t(props.language, { es: "Área de enfoque", en: "Focus area", pt: "Foco" })}</dt>

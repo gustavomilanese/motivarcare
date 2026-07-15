@@ -1,6 +1,6 @@
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ADMIN_TRIAL_BOOKING_CANCEL_PHRASE, SESSION_REASON_OPTIONS, TIMEZONE_OPTIONS } from "../constants";
 import {
   type BookingDraft,
@@ -89,8 +89,10 @@ function patientStatusLabel(status: PatientStatus | string, language: AppLanguag
 }
 
 export function PatientsOpsPage(props: { token: string; language: AppLanguage; currency: SupportedCurrency }) {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const handledDeepLinkPatientIdRef = useRef<string | null>(null);
+  const handledStatusFilterRef = useRef<string | null>(null);
   const [packages, setPackages] = useState<AdminSessionPackage[]>([]);
   const [patients, setPatients] = useState<AdminPatientOps[]>([]);
   const [professionals, setProfessionals] = useState<AdminProfessionalOps[]>([]);
@@ -127,6 +129,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   const [createPatientError, setCreatePatientError] = useState("");
   const [patientSearchInput, setPatientSearchInput] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<PatientStatus | "">("");
   const [patientPage, setPatientPage] = useState(1);
   const [patientPagination, setPatientPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number; hasPrev: boolean; hasNext: boolean } | null>(null);
   const [riskTriageItems, setRiskTriageItems] = useState<AdminPatientRiskTriageItem[]>([]);
@@ -158,26 +161,44 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
     });
   };
 
-  const load = async (searchValue?: string, pageValue?: number) => {
+  const buildPatientsRequestPath = (searchValue: string, pageValue: number, statusValue: PatientStatus | "") => {
+    const params = new URLSearchParams();
+    if (statusValue) {
+      params.set("status", statusValue);
+    }
+    if (searchValue) {
+      params.set("search", searchValue);
+    } else if (statusValue) {
+      params.set("search", "*");
+    }
+    const listMode = Boolean(statusValue) || searchValue === "*";
+    if (listMode) {
+      params.set("page", String(pageValue));
+      params.set("pageSize", "25");
+    }
+    return `/api/admin/patients?${params.toString()}`;
+  };
+
+  const load = async (searchValue?: string, pageValue?: number, statusValue?: PatientStatus | "") => {
     setLoading(true);
     setRiskTriageLoading(true);
     setError("");
     try {
       const normalizedSearch = (searchValue ?? patientSearch).trim();
       const requestedPage = pageValue ?? patientPage;
+      const requestedStatus = statusValue !== undefined ? statusValue : statusFilter;
 
       const patientsRequest = (() => {
-        if (normalizedSearch.length === 0) {
+        if (normalizedSearch.length === 0 && !requestedStatus) {
           return Promise.resolve<PatientsResponse>({ patients: [] as AdminPatientOps[] });
         }
-        if (normalizedSearch === "*") {
-          return apiRequest<PatientsResponse>(
-            "/api/admin/patients?search=*" + "&page=" + requestedPage + "&pageSize=10",
-            {},
-            props.token
-          );
-        }
-        return apiRequest<PatientsResponse>("/api/admin/patients?search=" + encodeURIComponent(normalizedSearch), {}, props.token);
+        const requestSearch =
+          normalizedSearch.length > 0 ? normalizedSearch : requestedStatus ? "*" : "";
+        return apiRequest<PatientsResponse>(
+          buildPatientsRequestPath(requestSearch, requestedPage, requestedStatus),
+          {},
+          props.token
+        );
       })();
 
       const [packagesResponse, professionalsResponse, patientsResponse, riskTriageResponse] = await Promise.all([
@@ -205,8 +226,36 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   };
 
   useEffect(() => {
-    void load();
-  }, [props.token]);
+    const statusParam = searchParams.get("status")?.trim() ?? "";
+    const isValidStatus =
+      statusParam === "active"
+      || statusParam === "pause"
+      || statusParam === "cancelled"
+      || statusParam === "trial";
+
+    if (isValidStatus) {
+      if (handledStatusFilterRef.current === statusParam) {
+        return;
+      }
+      handledStatusFilterRef.current = statusParam;
+      setStatusFilter(statusParam);
+      setPatientSearch("*");
+      setPatientSearchInput("");
+      setPatientPage(1);
+      void load("*", 1, statusParam);
+      return;
+    }
+
+    if (handledStatusFilterRef.current === "manual-search") {
+      handledStatusFilterRef.current = null;
+      setStatusFilter("");
+      return;
+    }
+
+    handledStatusFilterRef.current = null;
+    setStatusFilter("");
+    void load("", 1, "");
+  }, [props.token, searchParams]);
 
   useEffect(() => {
     const patientId = searchParams.get("patientId")?.trim() ?? "";
@@ -249,9 +298,24 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
 
   const applyPatientSearch = async () => {
     const nextSearch = patientSearchInput.trim();
+    setStatusFilter("");
+    handledStatusFilterRef.current = searchParams.get("status") ? "manual-search" : null;
+    if (searchParams.get("status")) {
+      navigate("/patients", { replace: true });
+    }
     setPatientSearch(nextSearch);
     setPatientPage(1);
-    await load(nextSearch, 1);
+    await load(nextSearch, 1, "");
+  };
+
+  const clearStatusFilter = () => {
+    setStatusFilter("");
+    handledStatusFilterRef.current = null;
+    setPatientSearch("");
+    setPatientSearchInput("");
+    setPatients([]);
+    setPatientPagination(null);
+    navigate("/patients", { replace: true });
   };
 
   const goToPatientPage = async (nextPage: number) => {
@@ -259,7 +323,7 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       return;
     }
     setPatientPage(nextPage);
-    await load(patientSearch, nextPage);
+    await load(patientSearch || (statusFilter ? "*" : ""), nextPage, statusFilter);
   };
 
   const openCreatePatientModal = () => {
@@ -865,6 +929,8 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           setPatientSearchInput={setPatientSearchInput}
           onSearch={() => void applyPatientSearch()}
           onOpenCreate={openCreatePatientModal}
+          statusFilter={statusFilter}
+          onClearStatusFilter={clearStatusFilter}
         />
 
         {error ? <p className="error-text">{error}</p> : null}
@@ -875,9 +941,11 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           language={props.language}
           loading={loading}
           patientSearch={patientSearch}
+          statusFilter={statusFilter}
           patients={patients}
           editingPatientId={editingPatientId}
           patientPagination={patientPagination}
+          patientStatusLabel={(status) => patientStatusLabel(status, props.language)}
           onSelectPatient={(patientId) => {
             setEditingPatientId(patientId);
             setIsPatientEditModalOpen(false);

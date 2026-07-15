@@ -1,3 +1,11 @@
+export {
+  PROFESSIONAL_KIND_OPTIONS_ES,
+  DEFAULT_PROFESSIONAL_KIND_ES,
+  isKnownProfessionalKind,
+  resolveProfessionalKindLabel,
+  type ProfessionalKindEs
+} from "./professionalKind.js";
+
 export type UserRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 
 export type BookingStatus =
