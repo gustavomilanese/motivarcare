@@ -5,11 +5,7 @@ import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages"
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
 import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals } from "../services/financeApi";
-import type {
-  AdminUnpaidMonthBucket,
-  AdminUnpaidProfessional,
-  UnpaidProfessionalDetailResponse
-} from "../types/finance.types";
+import type { AdminUnpaidProfessional, UnpaidProfessionalDetailResponse } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -34,19 +30,35 @@ function formatSessionDay(value: string | null, language: AppLanguage): string {
   });
 }
 
-function formatMonthKeyLabel(monthKey: string, language: AppLanguage): string {
-  const [yearRaw, monthRaw] = monthKey.split("-");
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
-    return monthKey;
+function currentUtcMonthKey(): string {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Inclusive UTC month keys between `from` and `to` (`YYYY-MM`). Empty → []. */
+function expandMonthKeysInRange(from: string, to: string): string[] {
+  const startKey = from || to;
+  const endKey = to || from;
+  if (!startKey || !/^\d{4}-\d{2}$/.test(startKey) || !/^\d{4}-\d{2}$/.test(endKey)) {
+    return [];
   }
-  const date = new Date(Date.UTC(year, month - 1, 1));
-  return formatDateWithLocale({
-    value: date.toISOString(),
-    language,
-    options: { month: "long", year: "numeric" }
-  });
+  let [fromY, fromM] = startKey.split("-").map(Number);
+  let [toY, toM] = endKey.split("-").map(Number);
+  if (fromY > toY || (fromY === toY && fromM > toM)) {
+    [fromY, fromM, toY, toM] = [toY, toM, fromY, fromM];
+  }
+  const keys: string[] = [];
+  let cy = fromY;
+  let cm = fromM;
+  while (cy < toY || (cy === toY && cm <= toM)) {
+    keys.push(`${cy}-${String(cm).padStart(2, "0")}`);
+    cm += 1;
+    if (cm > 12) {
+      cm = 1;
+      cy += 1;
+    }
+  }
+  return keys;
 }
 
 export function AdminUnpaidProfessionalsPanel(props: {
@@ -58,14 +70,8 @@ export function AdminUnpaidProfessionalsPanel(props: {
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<AdminUnpaidProfessional[]>(props.initialRows ?? []);
-  const [monthBuckets, setMonthBuckets] = useState<AdminUnpaidMonthBucket[]>([]);
-  const [selectionTotals, setSelectionTotals] = useState({
-    sessionsCount: 0,
-    grossUsdCents: 0,
-    platformFeeUsdCents: 0,
-    professionalNetUsdCents: 0
-  });
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [monthFrom, setMonthFrom] = useState("");
+  const [monthTo, setMonthTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
@@ -76,6 +82,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [expandedLoading, setExpandedLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const selectedMonths = useMemo(() => expandMonthKeysInRange(monthFrom, monthTo), [monthFrom, monthTo]);
   const monthsKey = selectedMonths.join(",");
 
   const load = useCallback(async () => {
@@ -84,15 +91,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
     try {
       const response = await fetchUnpaidProfessionals(props.token, selectedMonths);
       setRows(response.professionals);
-      setMonthBuckets(response.months ?? []);
-      setSelectionTotals(
-        response.totals ?? {
-          sessionsCount: 0,
-          grossUsdCents: 0,
-          platformFeeUsdCents: 0,
-          professionalNetUsdCents: 0
-        }
-      );
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
@@ -134,21 +132,25 @@ export function AdminUnpaidProfessionalsPanel(props: {
     return next;
   }, [rows, search, sortKey]);
 
-  const selectedMonthBuckets = useMemo(() => {
-    if (selectedMonths.length === 0) {
-      return monthBuckets;
-    }
-    const selected = new Set(selectedMonths);
-    return monthBuckets.filter((bucket) => selected.has(bucket.monthKey));
-  }, [monthBuckets, selectedMonths]);
+  const listTotals = useMemo(() => {
+    return filteredSorted.reduce(
+      (acc, row) => {
+        acc.sessionsCount += row.sessionsCount;
+        acc.grossCents += row.grossCents;
+        acc.platformFeeCents += row.platformFeeCents;
+        acc.professionalNetCents += row.professionalNetCents;
+        return acc;
+      },
+      { sessionsCount: 0, grossCents: 0, platformFeeCents: 0, professionalNetCents: 0 }
+    );
+  }, [filteredSorted]);
 
-  const toggleMonth = (monthKey: string) => {
-    setSelectedMonths((current) => {
-      if (current.includes(monthKey)) {
-        return current.filter((key) => key !== monthKey);
-      }
-      return [...current, monthKey].sort();
-    });
+  const maxMonth = useMemo(() => currentUtcMonthKey(), []);
+  const hasMonthFilter = Boolean(monthFrom || monthTo);
+
+  const clearMonthFilter = () => {
+    setMonthFrom("");
+    setMonthTo("");
   };
 
   const toggleExpand = async (row: AdminUnpaidProfessional) => {
@@ -228,72 +230,38 @@ export function AdminUnpaidProfessionalsPanel(props: {
           </button>
         </header>
 
-        {monthBuckets.length > 0 ? (
-          <div className="admin-unpaid-month-filter">
-            <div className="admin-unpaid-month-chips" role="group" aria-label={t(props.language, { es: "Meses", en: "Months", pt: "Meses" })}>
-              {monthBuckets.map((bucket) => {
-                const active = selectedMonths.includes(bucket.monthKey);
-                return (
-                  <button
-                    key={bucket.monthKey}
-                    type="button"
-                    className={`admin-unpaid-month-chip${active ? " is-active" : ""}`}
-                    aria-pressed={active}
-                    onClick={() => toggleMonth(bucket.monthKey)}
-                  >
-                    <span className="admin-unpaid-month-chip-label">{formatMonthKeyLabel(bucket.monthKey, props.language)}</span>
-                    <strong>{formatAdminFinanceUsd(bucket.professionalNetUsdCents, props.language)}</strong>
-                    <small>
-                      {bucket.sessionsCount}{" "}
-                      {t(props.language, {
-                        es: bucket.sessionsCount === 1 ? "sesión" : "sesiones",
-                        en: bucket.sessionsCount === 1 ? "session" : "sessions",
-                        pt: bucket.sessionsCount === 1 ? "sessão" : "sessões"
-                      })}
-                    </small>
-                  </button>
-                );
-              })}
+        <div className="admin-unpaid-professionals-toolbar">
+          <div className="admin-unpaid-month-range" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Período" })}>
+            <div className="dashboard-month-field">
+              <input
+                className="dashboard-month-input"
+                type="month"
+                value={monthFrom}
+                max={monthTo || maxMonth}
+                onChange={(event) => setMonthFrom(event.target.value)}
+                aria-label={t(props.language, { es: "Desde mes", en: "From month", pt: "Desde mês" })}
+              />
             </div>
-            {selectedMonths.length > 0 ? (
-              <div className="admin-unpaid-month-selection">
-                <div className="admin-unpaid-month-selection-groups">
-                  {selectedMonthBuckets.map((bucket) => (
-                    <div key={bucket.monthKey} className="admin-unpaid-month-selection-item">
-                      <span>{formatMonthKeyLabel(bucket.monthKey, props.language)}</span>
-                      <strong>{formatAdminFinanceUsd(bucket.professionalNetUsdCents, props.language)}</strong>
-                    </div>
-                  ))}
-                </div>
-                <div className="admin-unpaid-month-selection-total">
-                  <span>
-                    {t(props.language, {
-                      es: "Total selección",
-                      en: "Selection total",
-                      pt: "Total seleção"
-                    })}
-                  </span>
-                  <strong>{formatAdminFinanceUsd(selectionTotals.professionalNetUsdCents, props.language)}</strong>
-                  <small>
-                    {selectionTotals.sessionsCount}{" "}
-                    {t(props.language, {
-                      es: "sesiones",
-                      en: "sessions",
-                      pt: "sessões"
-                    })}{" "}
-                    · {formatAdminFinanceUsd(selectionTotals.grossUsdCents, props.language)}{" "}
-                    {t(props.language, { es: "ejecutado", en: "executed", pt: "executado" })}
-                  </small>
-                </div>
-                <button type="button" className="secondary admin-unpaid-month-clear" onClick={() => setSelectedMonths([])}>
-                  {t(props.language, { es: "Ver todos los meses", en: "Show all months", pt: "Ver todos os meses" })}
-                </button>
-              </div>
+            <span className="admin-unpaid-month-range-sep" aria-hidden>
+              –
+            </span>
+            <div className="dashboard-month-field">
+              <input
+                className="dashboard-month-input"
+                type="month"
+                value={monthTo}
+                min={monthFrom || undefined}
+                max={maxMonth}
+                onChange={(event) => setMonthTo(event.target.value)}
+                aria-label={t(props.language, { es: "Hasta mes", en: "To month", pt: "Até mês" })}
+              />
+            </div>
+            {hasMonthFilter ? (
+              <button type="button" className="secondary admin-unpaid-month-clear" onClick={clearMonthFilter}>
+                {t(props.language, { es: "Todos", en: "All", pt: "Todos" })}
+              </button>
             ) : null}
           </div>
-        ) : null}
-
-        <div className="admin-unpaid-professionals-toolbar">
           <input
             type="search"
             value={search}
@@ -540,6 +508,28 @@ export function AdminUnpaidProfessionalsPanel(props: {
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr className="admin-unpaid-totals-row">
+                  <th scope="row">
+                    {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+                    <span className="admin-unpaid-totals-count">
+                      {" "}
+                      · {filteredSorted.length}{" "}
+                      {t(props.language, {
+                        es: filteredSorted.length === 1 ? "profesional" : "profesionales",
+                        en: filteredSorted.length === 1 ? "professional" : "professionals",
+                        pt: filteredSorted.length === 1 ? "profissional" : "profissionais"
+                      })}
+                    </span>
+                  </th>
+                  <td className="num">{listTotals.sessionsCount}</td>
+                  <td className="num">—</td>
+                  <td className="num">{formatAdminFinanceUsd(listTotals.grossCents, props.language)}</td>
+                  <td className="num">{formatAdminFinanceUsd(listTotals.platformFeeCents, props.language)}</td>
+                  <td className="num admin-unpaid-net">{formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}</td>
+                  <td />
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
