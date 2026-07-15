@@ -20,6 +20,7 @@ import {
   downloadAdminPlatformPurchasesExcel
 } from "../lib/buildAdminPlatformFinanceExcel";
 import { formatAdminExportDateRangeLabel } from "../lib/formatAdminExportDateRangeLabel";
+import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import {
   AdminPlatformFinanceExportModal,
   type ExportDateRange
@@ -41,12 +42,6 @@ function t(language: AppLanguage, values: LocalizedText): string {
 type FinanceTab = "executed" | "purchases";
 type MovementsSortKey = "date_desc" | "date_asc" | "gross_desc" | "gross_asc";
 type MovementsPricingFilter = "all" | "package" | "list";
-
-function formatAmount(cents: number, language: AppLanguage): string {
-  return new Intl.NumberFormat(language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-AR", {
-    maximumFractionDigits: 0
-  }).format(cents / 100);
-}
 
 function formatSessionDay(startsAt: string, language: AppLanguage): string {
   return formatDateWithLocale({
@@ -402,7 +397,6 @@ export function AdminPlatformFinanceSection(props: {
   }, [loadExecuted, loadPurchases, props.language]);
 
   const activeSummary = tab === "executed" ? executed?.summary : purchases?.summary;
-  const usdLabel = t(props.language, { es: "USD", en: "USD", pt: "USD" });
 
   return (
     <div className="admin-platform-finance">
@@ -422,89 +416,81 @@ export function AdminPlatformFinanceSection(props: {
         }}
         onConfirm={(range) => void handleExportConfirm(range)}
       />
-      <header className="admin-platform-finance-head">
-        <div>
-          <h3>{t(props.language, { es: "Ingresos de la plataforma", en: "Platform earnings", pt: "Receitas da plataforma" })}</h3>
-          <p className="admin-platform-finance-lead">
-            {t(props.language, {
-              es: "Totales en USD para toda la plataforma. Las ventas de paquetes reflejan el cobro al comprar; las sesiones ejecutadas reflejan lo ya prestado.",
-              en: "USD totals for the whole platform. Package sales reflect checkout; executed sessions reflect delivered care.",
-              pt: "Totais em USD para toda a plataforma. Vendas de pacotes refletem a compra; sessoes executadas refletem o atendimento."
-            })}
-          </p>
-        </div>
-        <div className="admin-platform-finance-toolbar" role="group">
-          <select
-            className="admin-platform-finance-control"
-            value={revenuePreset}
-            onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
-          >
-            <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
-            <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
-            <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
-            <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
-            <option value="all">{t(props.language, { es: "Todo", en: "All time", pt: "Todo" })}</option>
-          </select>
-          {revenuePreset === "day" || revenuePreset === "week" ? (
-            <input
-              className="admin-platform-finance-control"
-              type="date"
-              value={revenueDay}
-              onChange={(event) => setRevenueDay(event.target.value)}
-            />
-          ) : null}
-          {revenuePreset === "month" ? (
-            <input
-              className="admin-platform-finance-control"
-              type="month"
-              value={revenueMonth}
-              onChange={(event) => setRevenueMonth(event.target.value)}
-            />
-          ) : null}
-          {revenuePreset === "year" ? (
-            <input
-              className="admin-platform-finance-control"
-              type="number"
-              min={2020}
-              max={2035}
-              value={revenueYear}
-              onChange={(event) => setRevenueYear(event.target.value)}
-            />
-          ) : null}
-          <select
-            className="admin-platform-finance-control"
-            value={professionalId}
-            onChange={(event) => setProfessionalId(event.target.value)}
-          >
-            <option value="">{t(props.language, { es: "Todos los profesionales", en: "All professionals", pt: "Todos os profissionais" })}</option>
-            {props.professionals.map((pro) => (
-              <option key={pro.professionalId} value={pro.professionalId}>
-                {pro.professionalName}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
-
-      <div className="admin-platform-finance-tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "executed"}
-          className={tab === "executed" ? "active" : ""}
-          onClick={() => setTab("executed")}
+      <div className="admin-platform-finance-toolbar" role="group">
+        <select
+          className="admin-platform-finance-control admin-platform-finance-control--preset"
+          value={revenuePreset}
+          onChange={(event) => setRevenuePreset(event.target.value as RevenuePreset)}
+          aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Período" })}
         >
-          {t(props.language, { es: "Sesiones ejecutadas", en: "Executed sessions", pt: "Sessoes executadas" })}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "purchases"}
-          className={tab === "purchases" ? "active" : ""}
-          onClick={() => setTab("purchases")}
+          <option value="day">{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</option>
+          <option value="week">{t(props.language, { es: "Semana", en: "Week", pt: "Semana" })}</option>
+          <option value="month">{t(props.language, { es: "Mes", en: "Month", pt: "Mes" })}</option>
+          <option value="year">{t(props.language, { es: "Año", en: "Year", pt: "Ano" })}</option>
+          <option value="all">{t(props.language, { es: "Todo", en: "All time", pt: "Todo" })}</option>
+        </select>
+        {revenuePreset === "day" || revenuePreset === "week" ? (
+          <input
+            className="admin-platform-finance-control"
+            type="date"
+            value={revenueDay}
+            onChange={(event) => setRevenueDay(event.target.value)}
+            aria-label={t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}
+          />
+        ) : null}
+        {revenuePreset === "month" ? (
+          <input
+            className="admin-platform-finance-control"
+            type="month"
+            value={revenueMonth}
+            onChange={(event) => setRevenueMonth(event.target.value)}
+            aria-label={t(props.language, { es: "Mes", en: "Month", pt: "Mês" })}
+          />
+        ) : null}
+        {revenuePreset === "year" ? (
+          <input
+            className="admin-platform-finance-control admin-platform-finance-control--year"
+            type="number"
+            min={2020}
+            max={2035}
+            value={revenueYear}
+            onChange={(event) => setRevenueYear(event.target.value)}
+            aria-label={t(props.language, { es: "Año", en: "Year", pt: "Ano" })}
+          />
+        ) : null}
+        <select
+          className="admin-platform-finance-control admin-platform-finance-control--pro"
+          value={professionalId}
+          onChange={(event) => setProfessionalId(event.target.value)}
+          aria-label={t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
         >
-          {t(props.language, { es: "Ventas de paquetes", en: "Package sales", pt: "Vendas de pacotes" })}
-        </button>
+          <option value="">{t(props.language, { es: "Todos los profesionales", en: "All professionals", pt: "Todos os profissionais" })}</option>
+          {props.professionals.map((pro) => (
+            <option key={pro.professionalId} value={pro.professionalId}>
+              {pro.professionalName}
+            </option>
+          ))}
+        </select>
+        <div className="admin-platform-finance-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "executed"}
+            className={tab === "executed" ? "active" : ""}
+            onClick={() => setTab("executed")}
+          >
+            {t(props.language, { es: "Sesiones ejecutadas", en: "Executed sessions", pt: "Sessoes executadas" })}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "purchases"}
+            className={tab === "purchases" ? "active" : ""}
+            onClick={() => setTab("purchases")}
+          >
+            {t(props.language, { es: "Ventas de paquetes", en: "Package sales", pt: "Vendas de pacotes" })}
+          </button>
+        </div>
       </div>
 
       {error ? <p className="error-text">{error}</p> : null}
@@ -514,7 +500,7 @@ export function AdminPlatformFinanceSection(props: {
         <div className="admin-platform-finance-kpis">
           <article className="kpi-card">
             <span>{tab === "executed" ? t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" }) : t(props.language, { es: "Vendido", en: "Sold", pt: "Vendido" })}</span>
-            <strong>{formatAmount(activeSummary.grossCents, props.language)}</strong>
+            <strong>{formatAdminFinanceUsd(activeSummary.grossCents, props.language)}</strong>
             <small>
               {tab === "executed"
                 ? t(props.language, {
@@ -526,13 +512,12 @@ export function AdminPlatformFinanceSection(props: {
                     es: `${(activeSummary as AdminPlatformPurchasesResponse["summary"]).purchaseCount} venta(s)`,
                     en: `${(activeSummary as AdminPlatformPurchasesResponse["summary"]).purchaseCount} sale(s)`,
                     pt: `${(activeSummary as AdminPlatformPurchasesResponse["summary"]).purchaseCount} venda(s)`
-                  })}{" "}
-              · {usdLabel}
+                  })}
             </small>
           </article>
           <article className="kpi-card">
             <span>{t(props.language, { es: "Comisión plataforma", en: "Platform fee", pt: "Comissao plataforma" })}</span>
-            <strong>{formatAmount(activeSummary.platformFeeCents, props.language)}</strong>
+            <strong>{formatAdminFinanceUsd(activeSummary.platformFeeCents, props.language)}</strong>
             <small>
               {t(props.language, {
                 es: `MotivarCare · ${activeSummary.platformCommissionPercent}%`,
@@ -543,18 +528,24 @@ export function AdminPlatformFinanceSection(props: {
           </article>
           <article className="kpi-card">
             <span>{t(props.language, { es: "Neto profesionales", en: "Professional net", pt: "Liquido profissionais" })}</span>
-            <strong>{formatAmount(activeSummary.professionalNetCents, props.language)}</strong>
-            <small>{usdLabel}</small>
+            <strong>{formatAdminFinanceUsd(activeSummary.professionalNetCents, props.language)}</strong>
+            <small>
+              {t(props.language, {
+                es: "después de comisión",
+                en: "after platform fee",
+                pt: "após comissão"
+              })}
+            </small>
           </article>
         </div>
       ) : null}
 
       {tab === "executed" && executed ? (
         <section className="admin-platform-finance-list">
-          <div className="admin-platform-finance-list-toolbar">
+          <div className="admin-platform-finance-list-toolbar admin-platform-finance-list-toolbar--executed">
             <input
               type="search"
-              className="admin-platform-finance-control"
+              className="admin-platform-finance-control admin-platform-finance-control--search"
               value={movementsSearchDraft}
               placeholder={t(props.language, { es: "Buscar paciente, profesional o paquete…", en: "Search patient, professional or package…", pt: "Buscar paciente, profissional ou pacote…" })}
               onChange={(event) => setMovementsSearchDraft(event.target.value)}
@@ -621,9 +612,9 @@ export function AdminPlatformFinanceSection(props: {
                             {sessionNumberLabel(props.language, movement)}
                           </span>
                         </td>
-                        <td className="num">{formatAmount(movement.grossCents, props.language)}</td>
-                        <td className="num">{formatAmount(movement.platformFeeCents, props.language)}</td>
-                        <td className="num">{formatAmount(movement.amountCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(movement.grossCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(movement.platformFeeCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(movement.amountCents, props.language)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -661,7 +652,7 @@ export function AdminPlatformFinanceSection(props: {
           <div className="admin-platform-finance-list-toolbar">
             <input
               type="search"
-              className="admin-platform-finance-control"
+              className="admin-platform-finance-control admin-platform-finance-control--search"
               value={purchasesSearchDraft}
               placeholder={t(props.language, {
                 es: "Buscar paciente, profesional o paquete…",
@@ -720,9 +711,9 @@ export function AdminPlatformFinanceSection(props: {
                         <td>
                           {row.remainingCredits}/{row.totalCredits}
                         </td>
-                        <td className="num">{formatAmount(row.grossCents, props.language)}</td>
-                        <td className="num">{formatAmount(row.platformFeeCents, props.language)}</td>
-                        <td className="num">{formatAmount(row.professionalNetCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
+                        <td className="num">{formatAdminFinanceUsd(row.professionalNetCents, props.language)}</td>
                       </tr>
                     ))}
                   </tbody>
