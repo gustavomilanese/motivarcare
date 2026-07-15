@@ -1,5 +1,5 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PROFESSIONAL_EMPTY_ART_URL } from "../constants";
 import {
@@ -179,12 +179,14 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     if (normalizedSearch.length > 0 && normalizedSearch !== "*") {
       params.set("search", normalizedSearch);
     }
+    params.set("lite", "true");
     const qs = params.toString();
-    return qs.length > 0 ? `/api/admin/professionals?${qs}` : "/api/admin/professionals";
+    return `/api/admin/professionals?${qs}`;
   };
 
   const load = async (searchValue?: string, visibleValue?: "" | "true" | "false") => {
     setLoading(true);
+    setProfessionals([]);
     setError("");
 
     try {
@@ -281,12 +283,52 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
   };
 
   const clearVisibleFilter = () => {
+    const hadUrlVisible = Boolean(searchParams.get("visible"));
     setVisibleFilter("");
-    handledVisibleFilterRef.current = null;
+    handledVisibleFilterRef.current = hadUrlVisible ? "manual-search" : null;
+    if (hadUrlVisible) {
+      navigate("/professionals", { replace: true });
+    }
+    const typedSearch = professionalSearchInput.trim();
+    if (typedSearch.length > 0) {
+      setProfessionalSearch(typedSearch);
+      void load(typedSearch, "");
+      return;
+    }
     setProfessionalSearch("");
-    setProfessionalSearchInput("");
     setProfessionals([]);
-    navigate("/professionals", { replace: true });
+  };
+
+  const applyVisibleFilter = (visible: "true" | "false") => {
+    handledVisibleFilterRef.current = null;
+    setProfessionalSearchInput("");
+    navigate(`/professionals?visible=${visible}`, { replace: true });
+  };
+
+  const hydrateProfessionalIfLite = async (professional: AdminProfessionalOps) => {
+    const looksLite = professional.slotsCount !== undefined && professional.slots.length === 0;
+    if (!looksLite) {
+      return professional;
+    }
+    try {
+      const data = await apiRequest<ProfessionalsResponse>(
+        `/api/admin/professionals?search=${encodeURIComponent(professional.email)}`,
+        {},
+        props.token
+      );
+      const full = data.professionals.find((item) => item.id === professional.id);
+      if (!full) {
+        return professional;
+      }
+      setProfessionals((current) => current.map((item) => (item.id === full.id ? full : item)));
+      setProfessionalEditDrafts((current) => ({
+        ...current,
+        [full.id]: buildProfessionalEditDraft(full)
+      }));
+      return full;
+    } catch {
+      return professional;
+    }
   };
 
   const cancelProfileSectionEdit = (professional: AdminProfessionalOps) => {
@@ -764,34 +806,48 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
     ? splitFullNameToFirstLast(selectedProfessional.fullName)
     : { firstName: "", lastName: "" };
 
+  const filterMenuId = useId();
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!filterMenuOpen) {
+      return;
+    }
+    const onPointerDown = (event: MouseEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFilterMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterMenuOpen]);
+
+  const visibleChipLabel =
+    visibleFilter === "true"
+      ? t(props.language, { es: "publicado", en: "published", pt: "publicado" })
+      : visibleFilter === "false"
+        ? t(props.language, { es: "oculto", en: "hidden", pt: "oculto" })
+        : null;
+
   return (
     <div className="stack-lg ops-page">
       <section className="card stack ops-panel patient-search-section">
         <div className="patient-section-head">
-          <h2>
-            {visibleFilter === "true"
-              ? t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })
-              : t(props.language, { es: "Buscador de Psicólogos", en: "Psychologist search", pt: "Busca de psicólogos" })}
-          </h2>
+          <h2>{t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}</h2>
         </div>
 
-        {visibleFilter === "true" ? (
-          <div className="patient-status-filter-banner">
-            <span>
-              {t(props.language, {
-                es: "Listado alineado al KPI del dashboard (perfiles publicados).",
-                en: "List aligned with the dashboard KPI (published profiles).",
-                pt: "Lista alinhada ao KPI do dashboard (perfis publicados)."
-              })}
-            </span>
-            <button type="button" className="secondary" onClick={clearVisibleFilter}>
-              {t(props.language, { es: "Quitar filtro", en: "Clear filter", pt: "Limpar filtro" })}
-            </button>
-          </div>
-        ) : null}
-
-        <div className="patient-search-shell">
-          <div className="patient-search-inline">
+        <div className="ops-filter-toolbar">
+          <div className="ops-filter-toolbar__search">
             <input
               className="patient-search-input"
               placeholder={t(props.language, {
@@ -811,28 +867,95 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
               {t(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
             </button>
           </div>
-          {visibleFilter !== "true" ? (
-            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-              {t(props.language, {
-                es: "Para listar todos los perfiles usá * en el buscador. Las altas pendientes de aprobación se revisan en el Dashboard.",
-                en: "Use * in the search field to list all profiles. Pending sign-ups are reviewed on the Dashboard.",
-                pt: "Use * na busca para listar todos os perfis. Cadastros pendentes ficam no Dashboard."
-              })}
-            </p>
-          ) : null}
+
+          <div className="ops-filter-toolbar__filters">
+            {visibleChipLabel && visibleFilter ? (
+              <span className="ops-filter-chip">
+                <span className="ops-filter-chip__label">
+                  {t(props.language, { es: "Visibilidad", en: "Visibility", pt: "Visibilidade" })}
+                </span>
+                <strong>{visibleChipLabel}</strong>
+                <button
+                  type="button"
+                  className="ops-filter-chip__remove"
+                  onClick={clearVisibleFilter}
+                  aria-label={t(props.language, {
+                    es: "Quitar filtro de visibilidad",
+                    en: "Remove visibility filter",
+                    pt: "Remover filtro de visibilidade"
+                  })}
+                >
+                  ×
+                </button>
+              </span>
+            ) : null}
+
+            <div className="ops-filter-add" ref={filterMenuRef}>
+              <button
+                type="button"
+                className="ops-filter-add__btn"
+                aria-expanded={filterMenuOpen}
+                aria-controls={filterMenuId}
+                onClick={() => setFilterMenuOpen((open) => !open)}
+              >
+                <span aria-hidden>+</span>
+                {t(props.language, { es: "Filtro", en: "Filter", pt: "Filtro" })}
+              </button>
+              {filterMenuOpen ? (
+                <div id={filterMenuId} className="ops-filter-add__menu" role="menu">
+                  <p className="ops-filter-add__menu-title">
+                    {t(props.language, { es: "Visibilidad", en: "Visibility", pt: "Visibilidade" })}
+                  </p>
+                  {visibleFilter !== "true" ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="ops-filter-add__option"
+                      onClick={() => {
+                        applyVisibleFilter("true");
+                        setFilterMenuOpen(false);
+                      }}
+                    >
+                      {t(props.language, { es: "publicado", en: "published", pt: "publicado" })}
+                    </button>
+                  ) : null}
+                  {visibleFilter !== "false" ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="ops-filter-add__option"
+                      onClick={() => {
+                        applyVisibleFilter("false");
+                        setFilterMenuOpen(false);
+                      }}
+                    >
+                      {t(props.language, { es: "oculto", en: "hidden", pt: "oculto" })}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
-        {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+        {loading ? (
+          <div className="ops-list-loading" role="status" aria-live="polite">
+            <span className="ops-list-loading__spinner" aria-hidden />
+            <p>{t(props.language, { es: "Cargando listado…", en: "Loading list…", pt: "Carregando lista…" })}</p>
+          </div>
+        ) : null}
 
         <section className="ops-section results-section">
           {!loading && (professionalSearch.length > 0 || Boolean(visibleFilter)) && professionals.length > 0 ? (
             <header className="ops-section-head">
               <h3>
                 {visibleFilter === "true"
-                  ? t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })
-                  : t(props.language, { es: "Resultados de búsqueda", en: "Search results", pt: "Resultados da busca" })}
+                  ? t(props.language, { es: "Profesionales publicados", en: "Published professionals", pt: "Profissionais publicados" })
+                  : visibleFilter === "false"
+                    ? t(props.language, { es: "Profesionales ocultos", en: "Hidden professionals", pt: "Profissionais ocultos" })
+                    : t(props.language, { es: "Resultados de búsqueda", en: "Search results", pt: "Resultados da busca" })}
               </h3>
             </header>
           ) : null}
@@ -845,6 +968,12 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                       en: "No published professionals.",
                       pt: "Não há profissionais publicados."
                     })
+                  : visibleFilter === "false"
+                    ? t(props.language, {
+                        es: "No hay profesionales ocultos.",
+                        en: "No hidden professionals.",
+                        pt: "Não há profissionais ocultos."
+                      })
                   : t(props.language, {
                       es: "No se encontraron profesionales.",
                       en: "No professionals found.",
@@ -875,6 +1004,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                     setSelectedProfessionalId(professional.id);
                     setIsProfessionalEditModalOpen(false);
                     setEditingProfileSection(null);
+                    void hydrateProfessionalIfLite(professional);
                   }}
                 >
                   <div className="patient-result-row-body">
@@ -891,11 +1021,11 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                       ) : null}
                       <span className="patient-result-fact">{approvalLabel}</span>
                       <span className="patient-result-fact patient-result-fact--muted">
-                        {professional.slots.length}{" "}
+                        {professional.slotsCount ?? professional.slots.length}{" "}
                         {t(props.language, {
-                          es: professional.slots.length === 1 ? "slot" : "slots",
-                          en: professional.slots.length === 1 ? "slot" : "slots",
-                          pt: professional.slots.length === 1 ? "slot" : "slots"
+                          es: (professional.slotsCount ?? professional.slots.length) === 1 ? "slot" : "slots",
+                          en: (professional.slotsCount ?? professional.slots.length) === 1 ? "slot" : "slots",
+                          pt: (professional.slotsCount ?? professional.slots.length) === 1 ? "slot" : "slots"
                         })}
                       </span>
                     </div>
@@ -908,6 +1038,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                         setSelectedProfessionalId(professional.id);
                         setEditingProfileSection(null);
                         setIsProfessionalEditModalOpen(true);
+                        void hydrateProfessionalIfLite(professional);
                       }}
                     >
                       {t(props.language, {
@@ -1054,7 +1185,7 @@ export function ProfessionalsOpsPage(props: { token: string; language: AppLangua
                   <dt>Email</dt>
                   <dd>{selectedProfessional.email}</dd>
                   <dt>{t(props.language, { es: "Slots disponibles", en: "Available slots", pt: "Horarios" })}</dt>
-                  <dd>{selectedProfessional.slots.length}</dd>
+                  <dd>{selectedProfessional.slotsCount ?? selectedProfessional.slots.length}</dd>
                   <dt>{t(props.language, { es: "Sesiones confirmadas", en: "Confirmed sessions", pt: "Sessoes confirmadas" })}</dt>
                   <dd>{confirmedSessionsCount}</dd>
                 </dl>

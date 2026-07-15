@@ -353,7 +353,9 @@ const updateBookingSchema = z
 const listProfessionalsQuerySchema = z.object({
   visible: z.enum(["true", "false"]).optional(),
   registrationApproval: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
-  search: z.string().trim().min(1).max(120).optional()
+  search: z.string().trim().min(1).max(120).optional(),
+  /** Listado rápido: sin diplomas, slots ni media pesada. */
+  lite: z.enum(["true", "1"]).optional()
 });
 
 const updateProfessionalSchema = z
@@ -402,7 +404,9 @@ const listPatientsQuerySchema = z.object({
   status: patientStatusSchema.optional(),
   search: z.string().trim().min(1).max(120).optional(),
   page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(100).optional()
+  pageSize: z.coerce.number().int().min(1).max(100).optional(),
+  /** Listado rápido: omite bookings/ledger/triage pesados. */
+  lite: z.enum(["true", "1"]).optional()
 });
 const intakeRiskLevelSchema = z.enum(["low", "medium", "high"]);
 const intakeTriageDecisionSchema = z.enum(["pending", "approved", "cancelled"]);
@@ -1812,21 +1816,120 @@ adminRouter.get("/professionals", async (req, res) => {
   }
 
   const search = parsed.data.search?.toLowerCase();
+  const lite = Boolean(parsed.data.lite);
+  const where = {
+    ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
+    ...(parsed.data.registrationApproval
+      ? { registrationApproval: parsed.data.registrationApproval }
+      : {}),
+    ...(search
+      ? {
+          user: {
+            OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
+          }
+        }
+      : {})
+  };
+
+  if (lite) {
+    const [professionals, displayOverridesConfig] = await Promise.all([
+      prisma.professionalProfile.findMany({
+        where,
+        select: {
+          id: true,
+          userId: true,
+          visible: true,
+          registrationApproval: true,
+          professionalTitle: true,
+          specialization: true,
+          experienceBand: true,
+          practiceBand: true,
+          gender: true,
+          graduationYear: true,
+          focusPrimary: true,
+          cancellationHours: true,
+          yearsExperience: true,
+          birthCountry: true,
+          residencyCountry: true,
+          market: true,
+          sessionPriceArs: true,
+          sessionPriceUsd: true,
+          user: { select: { id: true, fullName: true, email: true } },
+          _count: {
+            select: {
+              bookings: true
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200
+      }),
+      prisma.systemConfig.findUnique({ where: { key: PROFESSIONAL_DISPLAY_OVERRIDES_KEY } })
+    ]);
+    const displayOverrides = parseProfessionalDisplayOverrides(displayOverridesConfig?.value);
+    const upcomingFloor = new Date(Date.now() - 1000 * 60 * 60 * 24);
+    const professionalIds = professionals.map((item) => item.id);
+    const slotGroups =
+      professionalIds.length > 0
+        ? await prisma.availabilitySlot.groupBy({
+            by: ["professionalId"],
+            where: {
+              professionalId: { in: professionalIds },
+              startsAt: { gte: upcomingFloor }
+            },
+            _count: { _all: true }
+          })
+        : [];
+    const upcomingSlotsByProfessional = new Map(
+      slotGroups.map((group) => [group.professionalId, group._count._all])
+    );
+
+    return res.json({
+      professionals: professionals.map((item) => {
+        const upcomingSlots = Math.min(upcomingSlotsByProfessional.get(item.id) ?? 0, 60);
+        return {
+          id: item.id,
+          userId: item.userId,
+          fullName: item.user.fullName,
+          email: item.user.email,
+          visible: item.visible,
+          registrationApproval: item.registrationApproval,
+          professionalTitle: item.professionalTitle,
+          specialization: item.specialization,
+          experienceBand: item.experienceBand,
+          practiceBand: item.practiceBand,
+          gender: item.gender,
+          graduationYear: item.graduationYear,
+          focusPrimary: item.focusPrimary,
+          cancellationHours: item.cancellationHours,
+          bio: null,
+          therapeuticApproach: null,
+          yearsExperience: item.yearsExperience,
+          birthCountry: item.birthCountry,
+          residencyCountry: item.residencyCountry ?? null,
+          market: item.market,
+          sessionPriceArs: item.sessionPriceArs,
+          sessionPriceUsd: item.sessionPriceUsd,
+          ratingAverage: displayOverrides[item.id]?.ratingAverage ?? null,
+          reviewsCount: displayOverrides[item.id]?.reviewsCount ?? 0,
+          sessionDurationMinutes: displayOverrides[item.id]?.sessionDurationMinutes ?? null,
+          activePatientsCount: displayOverrides[item.id]?.activePatientsCount ?? null,
+          sessionsCount: displayOverrides[item.id]?.sessionsCount ?? null,
+          completedSessionsCount: displayOverrides[item.id]?.completedSessionsCount ?? null,
+          photoUrl: null,
+          videoUrl: null,
+          diplomas: [],
+          bookingsCount: item._count.bookings,
+          slotsCount: upcomingSlots,
+          slots: []
+        };
+      })
+    });
+  }
+
   const [professionals, displayOverridesConfig] = await Promise.all([
     prisma.professionalProfile.findMany({
-      where: {
-        ...(parsed.data.visible ? { visible: parsed.data.visible === "true" } : {}),
-        ...(parsed.data.registrationApproval
-          ? { registrationApproval: parsed.data.registrationApproval }
-          : {}),
-        ...(search
-          ? {
-              user: {
-                OR: [{ fullName: { contains: search } }, { email: { contains: search } }]
-              }
-            }
-          : {})
-      },
+      where,
       include: {
         user: { select: { id: true, fullName: true, email: true } },
         diplomas: {
@@ -2073,9 +2176,10 @@ adminRouter.get("/patients", async (req, res) => {
   const rawSearch = parsed.data.search?.toLowerCase().trim();
   const isWildcardSearch = rawSearch === "*";
   const search = rawSearch && !isWildcardSearch ? rawSearch : undefined;
+  const lite = Boolean(parsed.data.lite);
 
   const page = parsed.data.page ?? 1;
-  const defaultPageSize = isWildcardSearch ? 10 : 250;
+  const defaultPageSize = isWildcardSearch || Boolean(parsed.data.status) ? 10 : 250;
   const pageSize = parsed.data.pageSize ?? defaultPageSize;
   const skip = (page - 1) * pageSize;
 
@@ -2089,6 +2193,88 @@ adminRouter.get("/patients", async (req, res) => {
         }
       : {})
   };
+
+  if (lite) {
+    const [total, patients] = await Promise.all([
+      prisma.patientProfile.count({ where }),
+      prisma.patientProfile.findMany({
+        where,
+        select: {
+          id: true,
+          userId: true,
+          timezone: true,
+          status: true,
+          user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+          purchases: {
+            select: {
+              id: true,
+              packageId: true,
+              totalCredits: true,
+              remainingCredits: true,
+              purchasedAt: true,
+              sessionPackage: { select: { id: true, name: true } }
+            },
+            orderBy: { purchasedAt: "desc" },
+            take: 1
+          },
+          _count: { select: { bookings: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize
+      })
+    ]);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    return res.json({
+      patients: patients.map((patient) => {
+        const latest = patient.purchases[0] ?? null;
+        return {
+          id: patient.id,
+          userId: patient.userId,
+          fullName: patient.user.fullName,
+          email: patient.user.email,
+          avatarUrl: patient.user.avatarUrl ?? null,
+          timezone: patient.timezone,
+          status: patient.status,
+          intakeRiskLevel: null,
+          intakeCompletedAt: null,
+          riskTriageDecision: null,
+          riskBlocked: false,
+          purchases: latest
+            ? [
+                {
+                  id: latest.id,
+                  packageId: latest.packageId,
+                  packageName: latest.sessionPackage.name,
+                  totalCredits: latest.totalCredits,
+                  remainingCredits: latest.remainingCredits,
+                  purchasedAt: latest.purchasedAt
+                }
+              ]
+            : [],
+          latestPurchase: latest
+            ? {
+                id: latest.id,
+                packageName: latest.sessionPackage.name,
+                totalCredits: latest.totalCredits,
+                remainingCredits: latest.remainingCredits,
+                purchasedAt: latest.purchasedAt
+              }
+            : null,
+          bookingsCount: patient._count.bookings,
+          creditBalance: latest?.remainingCredits ?? 0
+        };
+      }),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasPrev: page > 1,
+        hasNext: page < totalPages
+      }
+    });
+  }
 
   const [total, patients] = await Promise.all([
     prisma.patientProfile.count({ where }),

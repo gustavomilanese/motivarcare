@@ -426,6 +426,8 @@ export interface AdminProfessionalOps {
   videoUrl: string | null;
   diplomas?: AdminProfessionalDiploma[];
   bookingsCount: number;
+  /** Presente en listados `lite`; si falta, usar `slots.length`. */
+  slotsCount?: number;
   slots: Array<{
     id: string;
     startsAt: string;

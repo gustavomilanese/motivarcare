@@ -1,6 +1,6 @@
 import type { AppLanguage } from "@therapy/i18n-config";
 import { textByLanguage } from "@therapy/i18n-config";
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { PATIENT_EMPTY_ART_URL } from "../../constants";
 import { resolveApiAssetUrl } from "../../services/api";
 import type {
@@ -26,6 +26,21 @@ export function PatientOpsAvatar(props: { url?: string | null; label: string; si
   );
 }
 
+const PATIENT_STATUS_FILTERS: PatientStatus[] = ["active", "pause", "cancelled", "trial"];
+
+function patientStatusFilterLabel(status: PatientStatus, language: AppLanguage): string {
+  if (status === "active") {
+    return textByLanguage(language, { es: "activo", en: "active", pt: "ativo" });
+  }
+  if (status === "pause") {
+    return textByLanguage(language, { es: "en pausa", en: "paused", pt: "em pausa" });
+  }
+  if (status === "cancelled") {
+    return textByLanguage(language, { es: "cancelado", en: "cancelled", pt: "cancelado" });
+  }
+  return textByLanguage(language, { es: "prueba", en: "trial", pt: "teste" });
+}
+
 export function PatientsSearchHeader(props: {
   language: AppLanguage;
   patientSearchInput: string;
@@ -34,23 +49,45 @@ export function PatientsSearchHeader(props: {
   onOpenCreate: () => void;
   statusFilter?: PatientStatus | "";
   onClearStatusFilter?: () => void;
+  onApplyStatusFilter?: (status: PatientStatus) => void;
 }) {
-  const isActiveList = props.statusFilter === "active";
+  const menuId = useId();
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!filterMenuOpen) {
+      return;
+    }
+    const onPointerDown = (event: MouseEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFilterMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterMenuOpen]);
+
+  const availableStatusFilters = PATIENT_STATUS_FILTERS.filter((status) => status !== props.statusFilter);
+
   return (
     <>
       <div className="patient-section-head">
         <h2>
-          {isActiveList
-            ? textByLanguage(props.language, {
-                es: "Pacientes activos",
-                en: "Active patients",
-                pt: "Pacientes ativos"
-              })
-            : textByLanguage(props.language, {
-                es: "Buscador de Pacientes",
-                en: "Patient search",
-                pt: "Busca de pacientes"
-              })}
+          {textByLanguage(props.language, {
+            es: "Pacientes",
+            en: "Patients",
+            pt: "Pacientes"
+          })}
         </h2>
         <button className="new-patient-btn" type="button" onClick={props.onOpenCreate}>
           {textByLanguage(props.language, {
@@ -61,29 +98,8 @@ export function PatientsSearchHeader(props: {
         </button>
       </div>
 
-      {isActiveList ? (
-        <div className="patient-status-filter-banner">
-          <span>
-            {textByLanguage(props.language, {
-              es: "Listado filtrado por estado activo (mismo criterio del dashboard).",
-              en: "List filtered by active status (same as dashboard).",
-              pt: "Lista filtrada por status ativo (mesmo critério do dashboard)."
-            })}
-          </span>
-          {props.onClearStatusFilter ? (
-            <button type="button" className="secondary" onClick={props.onClearStatusFilter}>
-              {textByLanguage(props.language, {
-                es: "Quitar filtro",
-                en: "Clear filter",
-                pt: "Limpar filtro"
-              })}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="patient-search-shell">
-        <div className="patient-search-inline">
+      <div className="ops-filter-toolbar">
+        <div className="ops-filter-toolbar__search">
           <input
             className="patient-search-input"
             placeholder={textByLanguage(props.language, {
@@ -102,6 +118,67 @@ export function PatientsSearchHeader(props: {
           <button type="button" className="primary" onClick={props.onSearch}>
             {textByLanguage(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
           </button>
+        </div>
+
+        <div className="ops-filter-toolbar__filters">
+          {props.statusFilter ? (
+            <span className="ops-filter-chip">
+              <span className="ops-filter-chip__label">
+                {textByLanguage(props.language, { es: "Estado", en: "Status", pt: "Status" })}
+              </span>
+              <strong>{patientStatusFilterLabel(props.statusFilter, props.language)}</strong>
+              {props.onClearStatusFilter ? (
+                <button
+                  type="button"
+                  className="ops-filter-chip__remove"
+                  onClick={props.onClearStatusFilter}
+                  aria-label={textByLanguage(props.language, {
+                    es: "Quitar filtro de estado",
+                    en: "Remove status filter",
+                    pt: "Remover filtro de status"
+                  })}
+                >
+                  ×
+                </button>
+              ) : null}
+            </span>
+          ) : null}
+
+          {props.onApplyStatusFilter && availableStatusFilters.length > 0 ? (
+            <div className="ops-filter-add" ref={filterMenuRef}>
+              <button
+                type="button"
+                className="ops-filter-add__btn"
+                aria-expanded={filterMenuOpen}
+                aria-controls={menuId}
+                onClick={() => setFilterMenuOpen((open) => !open)}
+              >
+                <span aria-hidden>+</span>
+                {textByLanguage(props.language, { es: "Filtro", en: "Filter", pt: "Filtro" })}
+              </button>
+              {filterMenuOpen ? (
+                <div id={menuId} className="ops-filter-add__menu" role="menu">
+                  <p className="ops-filter-add__menu-title">
+                    {textByLanguage(props.language, { es: "Estado", en: "Status", pt: "Status" })}
+                  </p>
+                  {availableStatusFilters.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      role="menuitem"
+                      className="ops-filter-add__option"
+                      onClick={() => {
+                        props.onApplyStatusFilter?.(status);
+                        setFilterMenuOpen(false);
+                      }}
+                    >
+                      {patientStatusFilterLabel(status, props.language)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </>
@@ -133,6 +210,24 @@ export function PatientsSearchResults(props: {
                 en: "No active patients.",
                 pt: "Não há pacientes ativos."
               })
+            : props.statusFilter === "pause"
+              ? textByLanguage(props.language, {
+                  es: "No hay pacientes en pausa.",
+                  en: "No paused patients.",
+                  pt: "Não há pacientes em pausa."
+                })
+              : props.statusFilter === "cancelled"
+                ? textByLanguage(props.language, {
+                    es: "No hay pacientes cancelados.",
+                    en: "No cancelled patients.",
+                    pt: "Não há pacientes cancelados."
+                  })
+                : props.statusFilter === "trial"
+                  ? textByLanguage(props.language, {
+                      es: "No hay pacientes en prueba.",
+                      en: "No trial patients.",
+                      pt: "Não há pacientes em teste."
+                    })
             : textByLanguage(props.language, {
                 es: "No se encontraron pacientes.",
                 en: "No patients found.",
@@ -164,6 +259,24 @@ export function PatientsSearchResults(props: {
                     en: "Active patients",
                     pt: "Pacientes ativos"
                   })
+                : props.statusFilter === "pause"
+                  ? textByLanguage(props.language, {
+                      es: "Pacientes en pausa",
+                      en: "Paused patients",
+                      pt: "Pacientes em pausa"
+                    })
+                  : props.statusFilter === "cancelled"
+                    ? textByLanguage(props.language, {
+                        es: "Pacientes cancelados",
+                        en: "Cancelled patients",
+                        pt: "Pacientes cancelados"
+                      })
+                    : props.statusFilter === "trial"
+                      ? textByLanguage(props.language, {
+                          es: "Pacientes en prueba",
+                          en: "Trial patients",
+                          pt: "Pacientes em teste"
+                        })
                 : textByLanguage(props.language, {
                     es: "Resultados de búsqueda",
                     en: "Search results",

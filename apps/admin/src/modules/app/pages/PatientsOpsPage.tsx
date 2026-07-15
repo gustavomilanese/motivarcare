@@ -176,52 +176,64 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
       params.set("page", String(pageValue));
       params.set("pageSize", "25");
     }
+    params.set("lite", "true");
     return `/api/admin/patients?${params.toString()}`;
+  };
+
+  const loadAuxiliaryData = async () => {
+    setRiskTriageLoading(true);
+    try {
+      const [packagesResponse, professionalsResponse, riskTriageResponse] = await Promise.all([
+        apiRequest<SessionPackagesResponse>("/api/admin/session-packages", {}, props.token),
+        apiRequest<ProfessionalsResponse>("/api/admin/professionals?lite=true", {}, props.token),
+        apiRequest<PatientRiskTriageResponse>("/api/admin/patients/risk-triage", {}, props.token)
+      ]);
+      setPackages(packagesResponse.sessionPackages);
+      setProfessionals(professionalsResponse.professionals);
+      setRiskTriageItems(riskTriageResponse.items);
+      setRiskTriagePendingCount(Number(riskTriageResponse.pending) || 0);
+    } catch {
+      // Auxiliar: no bloquea el listado principal.
+    } finally {
+      setRiskTriageLoading(false);
+    }
   };
 
   const load = async (searchValue?: string, pageValue?: number, statusValue?: PatientStatus | "") => {
     setLoading(true);
-    setRiskTriageLoading(true);
+    setPatients([]);
+    setPatientPagination(null);
     setError("");
     try {
       const normalizedSearch = (searchValue ?? patientSearch).trim();
       const requestedPage = pageValue ?? patientPage;
       const requestedStatus = statusValue !== undefined ? statusValue : statusFilter;
 
-      const patientsRequest = (() => {
-        if (normalizedSearch.length === 0 && !requestedStatus) {
-          return Promise.resolve<PatientsResponse>({ patients: [] as AdminPatientOps[] });
-        }
-        const requestSearch =
-          normalizedSearch.length > 0 ? normalizedSearch : requestedStatus ? "*" : "";
-        return apiRequest<PatientsResponse>(
-          buildPatientsRequestPath(requestSearch, requestedPage, requestedStatus),
-          {},
-          props.token
-        );
-      })();
+      if (normalizedSearch.length === 0 && !requestedStatus) {
+        setPatients([]);
+        setPatientPagination(null);
+        void loadAuxiliaryData();
+        return;
+      }
 
-      const [packagesResponse, professionalsResponse, patientsResponse, riskTriageResponse] = await Promise.all([
-        apiRequest<SessionPackagesResponse>("/api/admin/session-packages", {}, props.token),
-        apiRequest<ProfessionalsResponse>("/api/admin/professionals", {}, props.token),
-        patientsRequest,
-        apiRequest<PatientRiskTriageResponse>("/api/admin/patients/risk-triage", {}, props.token)
-      ]);
+      const requestSearch =
+        normalizedSearch.length > 0 ? normalizedSearch : requestedStatus ? "*" : "";
+      const patientsResponse = await apiRequest<PatientsResponse>(
+        buildPatientsRequestPath(requestSearch, requestedPage, requestedStatus),
+        {},
+        props.token
+      );
 
-      setPackages(packagesResponse.sessionPackages);
-      setProfessionals(professionalsResponse.professionals);
       setPatients(patientsResponse.patients);
       setPatientPagination(patientsResponse.pagination ?? null);
       setPatientPage(patientsResponse.pagination?.page ?? requestedPage);
       syncPatientDrafts(patientsResponse.patients);
-      setRiskTriageItems(riskTriageResponse.items);
-      setRiskTriagePendingCount(Number(riskTriageResponse.pending) || 0);
+      void loadAuxiliaryData();
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("patients-ops-load", props.language, raw));
     } finally {
       setLoading(false);
-      setRiskTriageLoading(false);
     }
   };
 
@@ -309,13 +321,28 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
   };
 
   const clearStatusFilter = () => {
+    const hadUrlStatus = Boolean(searchParams.get("status"));
     setStatusFilter("");
-    handledStatusFilterRef.current = null;
+    handledStatusFilterRef.current = hadUrlStatus ? "manual-search" : null;
+    if (hadUrlStatus) {
+      navigate("/patients", { replace: true });
+    }
+    const typedSearch = patientSearchInput.trim();
+    if (typedSearch.length > 0) {
+      setPatientSearch(typedSearch);
+      setPatientPage(1);
+      void load(typedSearch, 1, "");
+      return;
+    }
     setPatientSearch("");
-    setPatientSearchInput("");
     setPatients([]);
     setPatientPagination(null);
-    navigate("/patients", { replace: true });
+  };
+
+  const applyStatusFilter = (status: PatientStatus) => {
+    handledStatusFilterRef.current = null;
+    setPatientSearchInput("");
+    navigate(`/patients?status=${encodeURIComponent(status)}`, { replace: true });
   };
 
   const goToPatientPage = async (nextPage: number) => {
@@ -931,11 +958,17 @@ export function PatientsOpsPage(props: { token: string; language: AppLanguage; c
           onOpenCreate={openCreatePatientModal}
           statusFilter={statusFilter}
           onClearStatusFilter={clearStatusFilter}
+          onApplyStatusFilter={applyStatusFilter}
         />
 
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
-        {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
+        {loading ? (
+          <div className="ops-list-loading" role="status" aria-live="polite">
+            <span className="ops-list-loading__spinner" aria-hidden />
+            <p>{t(props.language, { es: "Cargando listado…", en: "Loading list…", pt: "Carregando lista…" })}</p>
+          </div>
+        ) : null}
 
         <PatientsSearchResults
           language={props.language}
