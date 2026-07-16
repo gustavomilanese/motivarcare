@@ -161,7 +161,8 @@ function pickVisible(...selectors: string[]): HTMLElement | null {
 }
 
 function tourStorageKey(sessionUserId: string): string {
-  return `motivarcare.patient.dashboardTour.v1.${sessionUserId}`;
+  // v2: v1 pudo quedar marcado “done” por destroy accidental post-checkout.
+  return `motivarcare.patient.dashboardTour.v2.${sessionUserId}`;
 }
 
 export interface DashboardTourBookingContext {
@@ -396,6 +397,28 @@ function persistTourDone(storageKey: string): void {
   }
 }
 
+function clearTourDone(storageKey: string): void {
+  try {
+    window.localStorage.removeItem(storageKey);
+  } catch {
+    // ignore
+  }
+}
+
+export const PATIENT_DASHBOARD_TOUR_EVENT = "motivarcare:patient-dashboard-tour";
+
+/** Pide arrancar (o reabrir) el tour del dashboard. Si no estás en Inicio, navegá a `/` antes. */
+export function requestPatientDashboardTour(options?: { force?: boolean }): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(
+    new CustomEvent(PATIENT_DASHBOARD_TOUR_EVENT, {
+      detail: { force: options?.force !== false }
+    })
+  );
+}
+
 function applyWelcomePopoverLayout(
   popover: { title: HTMLElement; description: HTMLElement },
   isWelcome: boolean
@@ -426,7 +449,7 @@ function applyStepRichContent(popover: {
   }
 }
 
-function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
+function tourDriverConfig(language: AppLanguage, markIntentionalEnd: () => void): Config {
   return {
     animate: true,
     smoothScroll: true,
@@ -474,8 +497,17 @@ function tourDriverConfig(language: AppLanguage, storageKey: string): Config {
         applyStepRichContent(popover, step);
       }
     },
-    onDestroyed: () => {
-      persistTourDone(storageKey);
+    onCloseClick: (_element, _step, opts) => {
+      markIntentionalEnd();
+      opts.driver.destroy();
+    },
+    onNextClick: (_element, _step, opts) => {
+      if (opts.driver.isLastStep()) {
+        markIntentionalEnd();
+        opts.driver.destroy();
+        return;
+      }
+      opts.driver.moveNext();
     }
   };
 }
@@ -492,22 +524,61 @@ export function DashboardGuidedTour(props: {
   bookingContext?: DashboardTourBookingContext | null;
 }) {
   const driverInstanceRef = useRef<ReturnType<typeof driver> | null>(null);
+  const propsRef = useRef(props);
+  propsRef.current = props;
+  const suppressTour = Boolean(props.suppressTour);
+
+  const startTour = (force: boolean) => {
+    const current = propsRef.current;
+    if (!current.sessionUserId || current.suppressTour) {
+      return;
+    }
+    if (!force && driverInstanceRef.current) {
+      return;
+    }
+    const storageKey = tourStorageKey(current.sessionUserId);
+    if (!force) {
+      try {
+        if (window.localStorage.getItem(storageKey) === "1") {
+          return;
+        }
+      } catch {
+        return;
+      }
+    } else {
+      clearTourDone(storageKey);
+    }
+
+    driverInstanceRef.current?.destroy();
+    driverInstanceRef.current = null;
+
+    const steps = buildDashboardTourSteps(current.language, current.bookingContext ?? null);
+    if (steps.length === 0) {
+      return;
+    }
+
+    const markIntentionalEnd = () => {
+      persistTourDone(storageKey);
+    };
+
+    const driverObj = driver({
+      ...tourDriverConfig(current.language, markIntentionalEnd),
+      steps,
+      onDestroyed: () => {
+        driverInstanceRef.current = null;
+      }
+    });
+    driverInstanceRef.current = driverObj;
+    driverObj.drive();
+  };
 
   useEffect(() => {
     if (!props.sessionUserId) {
       return;
     }
-    if (props.suppressTour) {
+    if (suppressTour) {
       driverInstanceRef.current?.destroy();
       driverInstanceRef.current = null;
-      return;
-    }
-    const storageKey = tourStorageKey(props.sessionUserId);
-    try {
-      if (window.localStorage.getItem(storageKey) === "1") {
-        return;
-      }
-    } catch {
       return;
     }
 
@@ -516,26 +587,30 @@ export function DashboardGuidedTour(props: {
       if (cancelled) {
         return;
       }
-      const steps = buildDashboardTourSteps(props.language, props.bookingContext ?? null);
-      if (steps.length === 0) {
-        return;
-      }
-
-      const driverObj = driver({
-        ...tourDriverConfig(props.language, storageKey),
-        steps
-      });
-      driverInstanceRef.current = driverObj;
-      driverObj.drive();
+      startTour(false);
     }, 950);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      // Destroy por cleanup/re-render: NO marcar tour como hecho.
       driverInstanceRef.current?.destroy();
       driverInstanceRef.current = null;
     };
-  }, [props.language, props.sessionUserId, props.suppressTour, props.bookingContext]);
+  }, [props.language, props.sessionUserId, suppressTour]);
+
+  useEffect(() => {
+    if (!props.sessionUserId) {
+      return;
+    }
+    const onRequest = () => {
+      window.setTimeout(() => {
+        startTour(true);
+      }, propsRef.current.suppressTour ? 450 : 80);
+    };
+    window.addEventListener(PATIENT_DASHBOARD_TOUR_EVENT, onRequest);
+    return () => window.removeEventListener(PATIENT_DASHBOARD_TOUR_EVENT, onRequest);
+  }, [props.sessionUserId]);
 
   return null;
 }

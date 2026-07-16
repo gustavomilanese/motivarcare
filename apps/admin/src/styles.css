@@ -148,15 +148,28 @@ button.primary:disabled {
 button.danger {
   border-color: #f0a5a5;
   color: #b91c1c;
+  background: #fff;
 }
 
-button.danger:hover {
-  background: #fef2f2;
-  border-color: #ef4444;
+button.danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
 }
 
-button.danger:active {
-  background: #fee2e2;
+button.danger:disabled,
+button.danger:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: #f0a5a5;
+  color: #b91c1c;
+}
+
+button.danger:active:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+  color: #fff;
 }
 
 .auth-shell {

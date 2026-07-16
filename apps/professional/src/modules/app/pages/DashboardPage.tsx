@@ -10,7 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
 import { ProPageLoader } from "../components/ProPageLoader";
-import { useProPortalChrome } from "../components/ProPortalChromeContext";
+import { useProPortalChrome, useProPortalHeaderActions } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
@@ -347,8 +347,10 @@ export function DashboardPage(props: {
 
   useProPortalChrome({
     title: t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" }),
-    toolbar: periodFilters
+    toolbar: periodFilters,
+    suppressPageHeader: true
   });
+  const headerActions = useProPortalHeaderActions();
 
   if (error) {
     return (
@@ -357,6 +359,14 @@ export function DashboardPage(props: {
           <section
             className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
           >
+            <header className="pro-dashboard-hero-head">
+              <h1 className="pro-dashboard-revenue-title--page">
+                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+              </h1>
+              <div className="pro-dashboard-hero-head-end">
+                <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
+              </div>
+            </header>
             <div className="pro-dashboard-state-panel pro-dashboard-error-card">
               <p className="pro-error">{error}</p>
               <button
@@ -380,7 +390,20 @@ export function DashboardPage(props: {
   if (!data) {
     return (
       <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
-        <ProPageLoader language={props.language} layout="block" />
+        <div className="pro-dashboard-overview">
+          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive">
+            <header className="pro-dashboard-hero-head">
+              <h1 className="pro-dashboard-revenue-title--page">
+                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+              </h1>
+              <div className="pro-dashboard-hero-head-end">
+                <div className="pro-portal-page-toolbar">{periodFilters}</div>
+                <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
+              </div>
+            </header>
+            <ProPageLoader language={props.language} layout="block" />
+          </section>
+        </div>
       </div>
     );
   }
@@ -584,6 +607,15 @@ export function DashboardPage(props: {
           className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
           data-tour="pro-tour-hero"
         >
+          <header className="pro-dashboard-hero-head">
+            <h1 className="pro-dashboard-revenue-title--page">
+              {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+            </h1>
+            <div className="pro-dashboard-hero-head-end">
+              <div className="pro-portal-page-toolbar">{periodFilters}</div>
+              <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
+            </div>
+          </header>
 
           <div
             className="pro-dashboard-kpi-row"
@@ -640,6 +672,27 @@ export function DashboardPage(props: {
         />
       ) : null}
 
+      <section
+        className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
+        id="sesiones-agendadas"
+        ref={upcomingSectionRef}
+        tabIndex={-1}
+        data-tour="pro-tour-bookings"
+      >
+        <div className="agenda-upcoming-head">
+          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
+        </div>
+        <UpcomingReservationsList
+          language={props.language}
+          reservations={upcomingReservations}
+          busyBookingId={bookingActionInProgressId}
+          onRequestReschedule={openRescheduleModal}
+          onRequestCancel={openCancelModal}
+          highlightJoinPulseBookingId={highlightJoinPulseBookingId}
+          joinTourTargetBookingId={firstMeetBookingId}
+        />
+      </section>
+
       <ProfessionalReviewsInvitePanel
         language={props.language}
         professionalId={props.user.professionalProfileId}
@@ -671,27 +724,6 @@ export function DashboardPage(props: {
           sessions={pendingExecutionSessions}
           busyBookingId={bookingActionInProgressId}
           onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
-        />
-      </section>
-
-      <section
-        className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
-        id="sesiones-agendadas"
-        ref={upcomingSectionRef}
-        tabIndex={-1}
-        data-tour="pro-tour-bookings"
-      >
-        <div className="agenda-upcoming-head">
-          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
-        </div>
-        <UpcomingReservationsList
-          language={props.language}
-          reservations={upcomingReservations}
-          busyBookingId={bookingActionInProgressId}
-          onRequestReschedule={openRescheduleModal}
-          onRequestCancel={openCancelModal}
-          highlightJoinPulseBookingId={highlightJoinPulseBookingId}
-          joinTourTargetBookingId={firstMeetBookingId}
         />
       </section>
 

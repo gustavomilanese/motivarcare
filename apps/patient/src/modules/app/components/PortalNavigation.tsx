@@ -7,7 +7,7 @@ import {
 import { avatarInitialsFromNameParts } from "@therapy/types";
 import { type ChangeEvent, type ReactNode, type SyntheticEvent, useEffect, useId, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
 import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
@@ -17,6 +17,7 @@ import { notificationKindVisual } from "../notifications/notificationKindVisual"
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import type { ProfileTab } from "../types";
 import { NotificationItemActionsMenu } from "./NotificationItemActionsMenu";
+import { requestPatientDashboardTour } from "./DashboardGuidedTour";
 import type { Market } from "@therapy/types";
 
 /** Showcase «Profesionales» en sidebar y sheet mobile (reactivar cuando esté listo). */
@@ -187,6 +188,7 @@ export function PortalNavigation(props: {
   );
   const avatarInputId = useId();
   const location = useLocation();
+  const navigate = useNavigate();
   const diaryImmersive = location.pathname.startsWith("/diario");
   const diaryHomeImmersive = location.pathname === "/diario";
   const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
@@ -767,7 +769,36 @@ export function PortalNavigation(props: {
           </nav>
 
           <div className="portal-sidebar-foot">
-            <p>{props.sessionEmail}</p>
+            <button
+              type="button"
+              className="portal-sidebar-tour"
+              onClick={() => {
+                const goHome = location.pathname !== "/";
+                if (goHome) {
+                  navigate("/");
+                }
+                window.setTimeout(
+                  () => requestPatientDashboardTour({ force: true }),
+                  goHome ? 420 : 60
+                );
+              }}
+            >
+              <span className="portal-sidebar-tour-label">
+                {t(props.language, {
+                  es: "Tour MotivarCare",
+                  en: "MotivarCare Tour",
+                  pt: "Tour MotivarCare"
+                })}
+              </span>
+            </button>
+            <div className="portal-sidebar-foot-identity">
+              {props.sessionFullName?.trim() ? (
+                <p className="portal-sidebar-foot-name">{props.sessionFullName.trim()}</p>
+              ) : null}
+              {props.sessionEmail ? (
+                <p className="portal-sidebar-foot-email">{props.sessionEmail}</p>
+              ) : null}
+            </div>
           </div>
         </aside>
       ) : null}

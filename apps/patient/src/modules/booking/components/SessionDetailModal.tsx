@@ -384,7 +384,7 @@ export function SessionDetailModal(props: {
                 ) : (
                   <button
                     type="button"
-                    className="session-detail-action session-detail-action--ghost"
+                    className="session-detail-action session-detail-action--danger-outline"
                     disabled={!canCancel}
                     title={
                       canCancel

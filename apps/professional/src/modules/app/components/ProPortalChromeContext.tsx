@@ -17,17 +17,25 @@ export type ProPortalChromeConfig = {
   title?: string;
   titleId?: string;
   toolbar?: ReactNode;
+  /** Si true, no se renderiza el header de página: el contenido lo embebe (p. ej. Dashboard). */
+  suppressPageHeader?: boolean;
 };
 
 type ProPortalChromeContextValue = {
   setChrome: (config: ProPortalChromeConfig) => void;
   clearChrome: () => void;
+  headerActions: ReactNode;
 };
 
 const ProPortalChromeContext = createContext<ProPortalChromeContextValue | null>(null);
 
 function chromeEquals(a: ProPortalChromeConfig, b: ProPortalChromeConfig): boolean {
-  return a.title === b.title && a.titleId === b.titleId && a.toolbar === b.toolbar;
+  return (
+    a.title === b.title
+    && a.titleId === b.titleId
+    && a.toolbar === b.toolbar
+    && a.suppressPageHeader === b.suppressPageHeader
+  );
 }
 
 export function ProPortalChromeProvider(props: {
@@ -51,8 +59,8 @@ export function ProPortalChromeProvider(props: {
   }, []);
 
   const contextValue = useMemo(
-    () => ({ setChrome, clearChrome }),
-    [setChrome, clearChrome]
+    () => ({ setChrome, clearChrome, headerActions: props.headerActions }),
+    [setChrome, clearChrome, props.headerActions]
   );
 
   const defaultTitle = useMemo(
@@ -61,15 +69,18 @@ export function ProPortalChromeProvider(props: {
   );
 
   const title = override.title ?? defaultTitle;
+  const suppressPageHeader = Boolean(override.suppressPageHeader);
 
   return (
     <ProPortalChromeContext.Provider value={contextValue}>
-      <ProPortalPageHeader
-        title={title}
-        titleId={override.titleId}
-        toolbar={override.toolbar}
-        actions={props.headerActions}
-      />
+      {!suppressPageHeader ? (
+        <ProPortalPageHeader
+          title={title}
+          titleId={override.titleId}
+          toolbar={override.toolbar}
+          actions={props.headerActions}
+        />
+      ) : null}
       {props.children}
     </ProPortalChromeContext.Provider>
   );
@@ -81,12 +92,20 @@ export function useProPortalChrome(config: ProPortalChromeConfig) {
     throw new Error("useProPortalChrome must be used within ProPortalChromeProvider");
   }
 
-  const { title, titleId, toolbar } = config;
+  const { title, titleId, toolbar, suppressPageHeader } = config;
 
   const { setChrome, clearChrome } = context;
 
   useLayoutEffect(() => {
-    setChrome({ title, titleId, toolbar });
+    setChrome({ title, titleId, toolbar, suppressPageHeader });
     return () => clearChrome();
-  }, [setChrome, clearChrome, title, titleId, toolbar]);
+  }, [setChrome, clearChrome, title, titleId, toolbar, suppressPageHeader]);
+}
+
+export function useProPortalHeaderActions(): ReactNode {
+  const context = useContext(ProPortalChromeContext);
+  if (!context) {
+    throw new Error("useProPortalHeaderActions must be used within ProPortalChromeProvider");
+  }
+  return context.headerActions;
 }

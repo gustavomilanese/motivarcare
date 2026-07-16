@@ -4471,7 +4471,7 @@ ul {
 
 .pro-main--immersive > .pro-main-content,
 .pro-main--dashboard-home > .pro-main-content {
-  padding-top: 16px;
+  padding-top: 10px;
 }
 
 .pro-portal-page-head,
@@ -5530,8 +5530,13 @@ select.pro-dashboard-revenue-control {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 16px;
-  margin-bottom: 14px;
+  gap: 10px 14px;
+  margin-bottom: 0;
+}
+
+.pro-card.pro-dashboard-revenue--compact .pro-dashboard-hero-head {
+  margin-bottom: 0;
+  padding-bottom: 2px;
 }
 
 .pro-dashboard-hero-head-end {
@@ -5546,6 +5551,11 @@ select.pro-dashboard-revenue-control {
 .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
   flex: 0 0 auto;
   margin: 0;
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  color: #1e293b;
 }
 
 .pro-dashboard-toolbar-mount {
@@ -16022,10 +16032,10 @@ button:disabled {
   font-size: 22px;
 }
 
-/* Título «Dashboard» + período + 4 KPIs en la misma card */
+/* Título «Dashboard» + período + toolbar + 4 KPIs en la misma card */
 .pro-dashboard-hero .pro-dashboard-kpi-row {
   margin-top: 2px;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid rgba(226, 232, 240, 0.95);
 }
 

@@ -48,6 +48,12 @@ import { PaymentActivityPanel } from "../components/PaymentActivityPanel";
 import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
+import {
+  clearPersistedBookingReturnTo,
+  persistBookingReturnTo,
+  readPersistedBookingReturnTo,
+  safeInternalReturnPath
+} from "../lib/bookingReturnTo";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
 import type {
@@ -106,23 +112,6 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
       minute: "2-digit"
     }
   });
-}
-
-/** Only allow same-app paths (e.g. `/`) — blocks open redirects. */
-function safeInternalReturnPath(raw: string | null | undefined): string | null {
-  if (!raw) {
-    return null;
-  }
-  let decoded = raw.trim();
-  try {
-    decoded = decodeURIComponent(decoded).trim();
-  } catch {
-    return null;
-  }
-  if (!decoded.startsWith("/") || decoded.startsWith("//") || decoded.includes("://")) {
-    return null;
-  }
-  return decoded;
 }
 
 export function BookingPage(props: {
@@ -712,7 +701,12 @@ export function BookingPage(props: {
       return;
     }
 
-    bookingReturnToRef.current = safeInternalReturnPath(searchParams.get("returnTo"));
+    bookingReturnToRef.current =
+      safeInternalReturnPath(searchParams.get("returnTo")) ?? readPersistedBookingReturnTo();
+    if (bookingReturnToRef.current) {
+      persistBookingReturnTo(bookingReturnToRef.current);
+    }
+
     const openAsTrialRebook = searchParams.get("trial") === "1" && props.state.trialRebookAvailable;
 
     if (isCheckoutFlow) {
@@ -754,7 +748,11 @@ export function BookingPage(props: {
       return;
     }
 
-    bookingReturnToRef.current = safeInternalReturnPath(searchParams.get("returnTo"));
+    bookingReturnToRef.current =
+      safeInternalReturnPath(searchParams.get("returnTo")) ?? readPersistedBookingReturnTo();
+    if (bookingReturnToRef.current) {
+      persistBookingReturnTo(bookingReturnToRef.current);
+    }
 
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("reschedule");
@@ -1114,11 +1112,21 @@ export function BookingPage(props: {
     setSlotHoldLoading(false);
     setTrialRebookMode(false);
     bookingReturnToRef.current = null;
+    clearPersistedBookingReturnTo();
   };
 
   const finishBookingFlowAndMaybeReturn = () => {
-    const returnTo = bookingReturnToRef.current;
-    closeBookingPanel();
+    const returnTo = bookingReturnToRef.current ?? readPersistedBookingReturnTo();
+    bookingReturnToRef.current = null;
+    clearPersistedBookingReturnTo();
+    holdAcquireGenerationRef.current += 1;
+    void releaseCurrentSlotHold();
+    setPanelMode(null);
+    setEditingBookingId(null);
+    setSelectedSlotId("");
+    setBookingActionError("");
+    setSlotHoldLoading(false);
+    setTrialRebookMode(false);
     if (returnTo) {
       navigate(returnTo);
     }
@@ -1183,6 +1191,8 @@ export function BookingPage(props: {
       onShowNoCreditsAlert: () => setShowNoCreditsAlert(true),
       onOpenNewBookingPanel: () => {
         setShowNoCreditsAlert(false);
+        clearPersistedBookingReturnTo();
+        bookingReturnToRef.current = null;
         setPanelMode("new");
       }
     }),
@@ -1217,8 +1227,13 @@ export function BookingPage(props: {
         setShowNoCreditsAlert(false);
         setSlotHoldLoading(false);
         setTrialRebookMode(false);
+        clearPersistedBookingReturnTo();
+        bookingReturnToRef.current = null;
         return null;
       }
+      // Abrir desde Sesiones (no desde Inicio): quedarse acá al terminar.
+      clearPersistedBookingReturnTo();
+      bookingReturnToRef.current = null;
       if (pendingSessions <= 0) {
         if (props.state.trialRebookAvailable) {
           setShowNoCreditsAlert(false);

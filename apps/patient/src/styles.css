@@ -1020,6 +1020,22 @@ button:disabled {
 button.danger {
   border-color: #ef4444;
   color: #dc2626;
+  background: #fff;
+}
+
+button.danger:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+button.danger:disabled,
+button.danger:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: #ef4444;
+  color: #dc2626;
 }
 
 .question-card {
@@ -1306,8 +1322,79 @@ button.danger {
 }
 
 .portal-sidebar-foot {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.portal-sidebar-tour {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 246, 255, 0.96) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  color: #4338ca;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.portal-sidebar-tour:hover {
+  border-color: rgba(95, 68, 235, 0.28);
+  color: #3730a3;
+  background:
+    linear-gradient(180deg, #ffffff 0%, rgba(245, 243, 255, 0.98) 100%);
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.1);
+}
+
+.portal-sidebar-tour:focus-visible {
+  outline: 2px solid rgba(95, 68, 235, 0.45);
+  outline-offset: 2px;
+}
+
+.portal-sidebar-tour-label {
+  min-width: 0;
+}
+
+.portal-sidebar-foot-identity {
   border-top: 1px solid rgba(226, 232, 240, 0.95);
   padding-top: 14px;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.portal-sidebar-foot-name,
+.portal-sidebar-foot-email {
+  margin: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.portal-sidebar-foot-name {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.portal-sidebar-foot-email {
+  color: var(--text-soft);
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .portal-sidebar-foot p {
@@ -6685,9 +6772,13 @@ button.danger {
   color: #fff;
 }
 
-.session-detail-action--primary:disabled {
+.session-detail-action--primary:disabled,
+.session-detail-action--primary:disabled:hover,
+.session-detail-action--primary:disabled:focus-visible {
   opacity: 0.45;
   cursor: not-allowed;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  color: #fff;
 }
 
 .session-detail-action--ghost {
@@ -6697,13 +6788,39 @@ button.danger {
 }
 
 .session-detail-action--ghost:hover:not(:disabled) {
-  background: #f8fafc;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.session-detail-action--ghost:disabled,
+.session-detail-action--ghost:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #fff;
   color: #4a5568;
 }
 
-.session-detail-action--ghost:disabled {
+/* Cancelar sesión: outline rojo; hover = rojo sólido (no blanco del button:hover global). */
+.session-detail-action--danger-outline {
+  border: 1px solid rgba(180, 35, 24, 0.45);
+  background: #fff;
+  color: #b42318;
+}
+
+.session-detail-action--danger-outline:hover:not(:disabled) {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+
+.session-detail-action--danger-outline:disabled,
+.session-detail-action--danger-outline:disabled:hover {
   opacity: 0.45;
   cursor: not-allowed;
+  background: #fff;
+  border-color: rgba(180, 35, 24, 0.35);
+  color: #b42318;
 }
 
 .session-detail-action--danger {
@@ -6717,9 +6834,13 @@ button.danger {
   color: #fff;
 }
 
-.session-detail-action--danger:disabled {
+.session-detail-action--danger:disabled,
+.session-detail-action--danger:disabled:hover,
+.session-detail-action--danger:disabled:focus-visible {
   opacity: 0.55;
   cursor: not-allowed;
+  background: #b42318;
+  color: #fff;
 }
 
 .session-detail-cancel-confirm {
@@ -9889,6 +10010,15 @@ button.sessions-balance {
   color: #fff;
 }
 
+.sessions-calendar-popover-action.danger-ghost:disabled,
+.sessions-calendar-popover-action.danger-ghost:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: rgba(214, 69, 69, 0.35);
+  color: #c0392b;
+}
+
 .sessions-calendar-popover-action.danger {
   background: #d64545;
   color: #fff;
@@ -9896,6 +10026,14 @@ button.sessions-balance {
 
 .sessions-calendar-popover-action.danger:hover:not(:disabled) {
   background: #bf3b3b;
+}
+
+.sessions-calendar-popover-action.danger:disabled,
+.sessions-calendar-popover-action.danger:disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #d64545;
+  color: #fff;
 }
 
 .sessions-calendar-popover-hint {

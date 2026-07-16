@@ -1,4 +1,9 @@
 import type { PatientAppState } from "../types";
+import {
+  clearPersistedBookingReturnTo,
+  persistBookingReturnTo,
+  safeInternalReturnPath
+} from "../lib/bookingReturnTo";
 
 function withReturnToQuery(path: string, returnTo?: string): string {
   const trimmed = typeof returnTo === "string" ? returnTo.trim() : "";
@@ -20,14 +25,27 @@ export function usePortalNavigation(params: {
         therapistSelectionCompleted: true,
         selectedProfessionalId: professionalId
       }));
-      params.navigate(withReturnToQuery("/sessions?focus=new-booking", options?.returnTo));
+      const returnTo = safeInternalReturnPath(options?.returnTo ?? null);
+      if (returnTo) {
+        persistBookingReturnTo(returnTo);
+      } else {
+        clearPersistedBookingReturnTo();
+      }
+      params.navigate(withReturnToQuery("/sessions?focus=new-booking", returnTo ?? undefined));
     },
     handleGoToReservations: () => {
+      clearPersistedBookingReturnTo();
       params.navigate("/sessions?focus=reservations");
     },
     handleRescheduleBookingFromAnywhere: (bookingId: string, options?: { returnTo?: string }) => {
+      const returnTo = safeInternalReturnPath(options?.returnTo ?? null);
+      if (returnTo) {
+        persistBookingReturnTo(returnTo);
+      } else {
+        clearPersistedBookingReturnTo();
+      }
       params.navigate(
-        withReturnToQuery(`/sessions?reschedule=${encodeURIComponent(bookingId)}`, options?.returnTo)
+        withReturnToQuery(`/sessions?reschedule=${encodeURIComponent(bookingId)}`, returnTo ?? undefined)
       );
     },
     handleGoToProfessional: (professionalId: string) => {

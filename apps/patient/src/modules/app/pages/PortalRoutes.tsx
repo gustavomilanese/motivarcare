@@ -24,6 +24,7 @@ import { API_BASE } from "../services/api";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import type { PackagePlan, PatientAppState, Professional, TimeSlot } from "../types";
 import type { PortalPurchaseResult } from "../hooks/usePortalActions";
+import { persistBookingReturnTo } from "../lib/bookingReturnTo";
 
 function t(language: PatientAppState["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -227,9 +228,10 @@ export function PortalRoutes(props: {
                   onNavigateToSessionsCheckout={startSessionsCheckoutFromDashboard}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
-                  onNavigateToRebookTrial={() =>
-                    props.navigate("/sessions?focus=new-booking&trial=1&returnTo=/")
-                  }
+                  onNavigateToRebookTrial={() => {
+                    persistBookingReturnTo("/");
+                    props.navigate("/sessions?focus=new-booking&trial=1&returnTo=/");
+                  }}
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
                   showPatientGoogleCalendarReconnectCta={props.showPatientGoogleCalendarReconnectCta}
                   onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
