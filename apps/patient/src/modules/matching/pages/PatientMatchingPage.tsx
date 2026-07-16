@@ -470,6 +470,25 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       return;
     }
 
+    if (props.trialRebookAvailable && props.onCreateBooking) {
+      setSummaryContinueLoading(true);
+      setPaymentError("");
+      try {
+        await props.onCreateBooking(bookingProfessionalId, bookingSlot, { holdId: slotHoldId });
+        closeBookingFlow();
+      } catch (requestError) {
+        setPaymentError(
+          friendlyBookingFailureMessage(
+            requestError instanceof Error ? requestError.message : "",
+            props.language
+          )
+        );
+      } finally {
+        setSummaryContinueLoading(false);
+      }
+      return;
+    }
+
     if (usesDlocalCheckout && props.onStartTrialCheckout) {
       setSummaryContinueLoading(true);
       setCheckoutLoadingPhase("creating");

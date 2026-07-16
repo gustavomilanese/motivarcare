@@ -121,6 +121,8 @@ export interface MatchingPageProps {
   fxRates?: DisplayFxRates;
   authToken?: string | null;
   mode?: "portal" | "onboarding-final";
+  /** Prueba ya pagada: reservar sin pasar por checkout de nuevo. */
+  trialRebookAvailable?: boolean;
   intakeAnswers: Record<string, string>;
   isFirstSelectionRequired: boolean;
   showOnlyFavorites?: boolean;

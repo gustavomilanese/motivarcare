@@ -79,6 +79,8 @@ export interface ProfileMeApiResponse {
       priceCents?: number | null;
       currency?: string | null;
     }>;
+    /** Prueba pagada sin reserva activa: puede elegir otro horario sin pagar de nuevo. */
+    trialRebookAvailable?: boolean;
     activeProfessional?: {
       id: string;
       userId: string;
@@ -285,6 +287,8 @@ export interface PatientAppState {
   favoriteProfessionalIds: string[];
   bookings: Booking[];
   trialUsedProfessionalIds: string[];
+  /** Prueba pagada lista para reagendar (API /profiles/me). */
+  trialRebookAvailable: boolean;
   messages: Message[];
   subscription: SubscriptionState;
   profile: PatientProfile;

@@ -61,6 +61,7 @@ function OnboardingFinalMatching(p: {
       fxRates={p.fxRates}
       authToken={p.state.authToken}
       mode="onboarding-final"
+      trialRebookAvailable={p.state.trialRebookAvailable}
       intakeAnswers={p.state.intake?.answers ?? {}}
       isFirstSelectionRequired={p.needsInitialTherapistSelection}
       showOnlyFavorites={false}
@@ -115,7 +116,8 @@ function OnboardingFinalMatching(p: {
         }
         p.onStateChange((current) => ({
           ...current,
-          onboardingFinalCompleted: true
+          onboardingFinalCompleted: true,
+          trialRebookAvailable: false
         }));
         await Promise.resolve(p.onRefreshPortalFromApi?.());
         p.navigate("/", { replace: true });

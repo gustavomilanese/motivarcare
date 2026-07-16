@@ -408,7 +408,11 @@ export function usePortalActions(params: {
           : {
               ...current.subscription,
               ...(purchaseHistory ? { purchaseHistory } : {})
-            }
+            },
+        trialRebookAvailable:
+          typeof response.profile?.trialRebookAvailable === "boolean"
+            ? response.profile.trialRebookAvailable
+            : current.trialRebookAvailable
       }));
     } catch (error) {
       console.error("Could not refresh subscription from API", error);
@@ -828,6 +832,10 @@ export function usePortalActions(params: {
           ),
           bookedSlotIds: current.bookedSlotIds.filter((id) => id !== releasedSlotId),
           trialUsedProfessionalIds,
+          trialRebookAvailable:
+            trialCreditReleased && booking.bookingMode === "trial"
+              ? true
+              : current.trialRebookAvailable,
           subscription:
             refundedCredits > 0
               ? {
@@ -841,7 +849,7 @@ export function usePortalActions(params: {
       // Sync inmediato para que Dashboard / calendario / banner de prueba queden al día con el API.
       await Promise.resolve(params.onRefreshPortalFromApi?.());
 
-      return { ok: true, refundedCredits, trialCreditReleased };
+      return { ok: true, refundedCredits, trialCreditReleased: trialCreditReleased || booking.bookingMode === "trial" };
     } catch (error) {
       console.error("Could not cancel booking", error);
       const message = error instanceof Error ? error.message : "Could not cancel booking";

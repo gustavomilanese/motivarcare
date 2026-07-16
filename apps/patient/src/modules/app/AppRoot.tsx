@@ -132,6 +132,7 @@ const defaultState: PatientAppState = {
   favoriteProfessionalIds: [],
   bookings: [],
   trialUsedProfessionalIds: [],
+  trialRebookAvailable: false,
   messages: initialMessages,
   subscription: {
     packageId: null,
@@ -470,6 +471,10 @@ function loadState(): { state: PatientAppState; storageParseFailed: boolean } {
         return /^[A-Z]{2}$/.test(u) ? u : null;
       })(),
       trialUsedProfessionalIds: parsed.trialUsedProfessionalIds ?? [],
+      trialRebookAvailable:
+        typeof (parsed as { trialRebookAvailable?: unknown }).trialRebookAvailable === "boolean"
+          ? Boolean((parsed as { trialRebookAvailable?: unknown }).trialRebookAvailable)
+          : false,
       session: parsed.session
         ? {
             ...parsed.session,
@@ -1457,6 +1462,16 @@ export function App() {
               latestPackage,
               profileResponse?.profile?.recentPackages
             ),
+            trialRebookAvailable:
+              typeof profileResponse?.profile?.trialRebookAvailable === "boolean"
+                ? profileResponse.profile.trialRebookAvailable
+                : current.trialRebookAvailable,
+            trialUsedProfessionalIds:
+              profileResponse?.profile?.trialRebookAvailable && remoteAssignedProfessional?.id
+                ? current.trialUsedProfessionalIds.filter(
+                    (id) => id !== remoteAssignedProfessional.id
+                  )
+                : current.trialUsedProfessionalIds,
             bookings: syncedBookings
           };
         });

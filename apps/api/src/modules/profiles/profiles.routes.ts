@@ -48,7 +48,10 @@ import {
   getReviewStatsByProfessionalIds,
   listProfessionalReviews
 } from "./professionalReviews.service.js";
-import { listPaymentCheckoutsForPatient } from "../payments/paymentCheckout.service.js";
+import {
+  listPaymentCheckoutsForPatient,
+  patientHasReusableTrialCredit
+} from "../payments/paymentCheckout.service.js";
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const PATIENT_INTAKE_TRIAGE_KEY = "patient-intake-triage";
 const PROFESSIONAL_DISPLAY_OVERRIDES_KEY = "professional-display-overrides";
@@ -845,6 +848,13 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
       .slice(0, 20);
 
+    const trialRebookAvailable = patient
+      ? await patientHasReusableTrialCredit({
+          patientId: patient.id,
+          professionalId: activeProfessionalId
+        })
+      : false;
+
     return res.json({
       role: actor.role,
       profile: {
@@ -861,6 +871,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         intakeTriageDecision,
         intakeRiskBlocked,
         intakeCompletedAt: patient?.intake?.createdAt ?? null,
+        trialRebookAvailable,
         latestPackage: patient?.purchases[0]
           ? {
               id: patient.purchases[0].id,

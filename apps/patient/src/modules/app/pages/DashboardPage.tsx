@@ -267,11 +267,14 @@ export function DashboardPage(props: {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null;
   const hasTrialPlanned = trialBookings.some((booking) => new Date(booking.endsAt).getTime() >= now);
   const hasCompletedTrial = trialBookings.some((booking) => new Date(booking.endsAt).getTime() < now);
-  const trialStatus: "pending" | "reserved" | "completed" = hasCompletedTrial
+  const canRebookPaidTrial = props.state.trialRebookAvailable && !hasTrialPlanned;
+  const trialStatus: "pending" | "reserved" | "completed" | "rebook" = hasCompletedTrial
     ? "completed"
     : hasTrialPlanned
       ? "reserved"
-      : "pending";
+      : canRebookPaidTrial
+        ? "rebook"
+        : "pending";
   const nextConfirmedBooking = nextBooking ?? confirmedBookings[0] ?? null;
   const fallbackBooking = confirmedBookings[0] ?? null;
   const activeProfessionalBooking = nextBooking ?? fallbackBooking;
@@ -739,7 +742,9 @@ export function DashboardPage(props: {
             ? t(props.language, { es: "Sesión de prueba pendiente", en: "Pending trial session", pt: "Sessao de teste pendente" })
             : trialStatus === "reserved"
               ? t(props.language, { es: "Sesión de prueba planificada", en: "Trial session scheduled", pt: "Sessao de teste agendada" })
-              : t(props.language, { es: "Sesión de prueba completada", en: "Trial session completed", pt: "Sessao de teste concluida" })}
+              : trialStatus === "rebook"
+                ? t(props.language, { es: "Sesión de prueba pagada", en: "Trial session paid", pt: "Sessao de teste paga" })
+                : t(props.language, { es: "Sesión de prueba completada", en: "Trial session completed", pt: "Sessao de teste concluida" })}
         </h2>
         <p>
           {trialStatus === "reserved" && activeTrialBooking
@@ -754,11 +759,17 @@ export function DashboardPage(props: {
                   timezone: props.state.profile.timezone,
                   language: props.language
                 })
-              : t(props.language, {
-                  es: "Elige un horario para dejar tu primera sesión ya agendada.",
-                  en: "Choose a time to leave your first session already scheduled.",
-                  pt: "Escolha um horario para deixar sua primeira sessao ja agendada."
-                })}
+              : trialStatus === "rebook"
+                ? t(props.language, {
+                    es: "Cancelaste la reserva anterior. Elegí un nuevo horario sin volver a pagar.",
+                    en: "You cancelled the previous booking. Pick a new time without paying again.",
+                    pt: "Voce cancelou a reserva anterior. Escolha um novo horario sem pagar de novo."
+                  })
+                : t(props.language, {
+                    es: "Elige un horario para dejar tu primera sesión ya agendada.",
+                    en: "Choose a time to leave your first session already scheduled.",
+                    pt: "Escolha um horario para deixar sua primeira sessao ja agendada."
+                  })}
         </p>
         {hasTrialPlanned ? (
           <div className="trial-inline-actions">
@@ -773,7 +784,7 @@ export function DashboardPage(props: {
               {t(props.language, { es: "Modificar", en: "Modify", pt: "Modificar" })}
             </button>
           </div>
-        ) : trialStatus === "pending" ? (
+        ) : trialStatus === "pending" || trialStatus === "rebook" ? (
           <button
             className="trial-inline-action"
             type="button"
@@ -782,11 +793,17 @@ export function DashboardPage(props: {
               props.onNavigateToBookTrial();
             }}
           >
-            {t(props.language, {
-              es: "Reservar sesión de prueba",
-              en: "Book trial session",
-              pt: "Reservar sessao de teste"
-            })}
+            {trialStatus === "rebook"
+              ? t(props.language, {
+                  es: "Elegir nuevo horario",
+                  en: "Pick a new time",
+                  pt: "Escolher novo horario"
+                })
+              : t(props.language, {
+                  es: "Reservar sesión de prueba",
+                  en: "Book trial session",
+                  pt: "Reservar sessao de teste"
+                })}
           </button>
         ) : null}
       </section>
