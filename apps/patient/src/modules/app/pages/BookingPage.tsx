@@ -142,7 +142,7 @@ export function BookingPage(props: {
     holdId?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   onRescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => void;
-  onCancelBooking?: (bookingId: string) => Promise<{ ok: boolean; error?: string }>;
+  onCancelBooking?: (bookingId: string, reason: string) => Promise<{ ok: boolean; error?: string }>;
   onOpenBookingDetail: (bookingId: string) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
   onPurchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
@@ -373,13 +373,13 @@ export function BookingPage(props: {
   );
 
   const handleCancelBookingFromCalendar = useCallback(
-    async (booking: Booking) => {
+    async (booking: Booking, reason: string) => {
       if (!props.onCancelBooking || calendarCancelBookingId) {
         return;
       }
       setCalendarCancelBookingId(booking.id);
       try {
-        await props.onCancelBooking(booking.id);
+        await props.onCancelBooking(booking.id, reason);
       } finally {
         setCalendarCancelBookingId(null);
       }
@@ -1705,7 +1705,10 @@ export function BookingPage(props: {
             <p className="sessions-collapsible-empty">{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
           ) : (
             <ul className="simple-list session-history-list sessions-collapsible-list">
-              {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => {
+              {[...props.state.subscription.purchaseHistory]
+                .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
+                .slice(0, 20)
+                .map((item) => {
                 const amountLabel = formatSubscriptionPurchasePrice({
                   priceCents: item.priceCents,
                   language: props.language,

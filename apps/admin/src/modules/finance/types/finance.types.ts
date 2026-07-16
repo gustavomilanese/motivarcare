@@ -365,6 +365,8 @@ export type AdminPlatformPurchase = {
   platformFeeCents: number;
   professionalNetCents: number;
   currency: string;
+  /** package = PatientPackagePurchase; trial = PaymentCheckout TRIAL cobrado */
+  saleKind?: "package" | "trial";
 };
 
 export type AdminPlatformExecutedResponse = {

@@ -122,9 +122,9 @@ function buildMetaRows(input: { meta: AdminPlatformExportMeta; rowCount: number 
           pt: "MotivarCare — Sessoes executadas (Admin)"
         })
       : t(input.meta.language, {
-          es: "MotivarCare — Ventas de paquetes (Admin)",
-          en: "MotivarCare — Package sales (Admin)",
-          pt: "MotivarCare — Vendas de pacotes (Admin)"
+          es: "MotivarCare — Ventas (Admin)",
+          en: "MotivarCare — Sales (Admin)",
+          pt: "MotivarCare — Vendas (Admin)"
         });
 
   const metaRows: string[] = [];

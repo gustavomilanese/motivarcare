@@ -41,19 +41,6 @@ function parsePurchasesListQuery(query: Record<string, unknown>) {
   };
 }
 
-function purchasesOrderBy(sort: ReturnType<typeof parsePurchasesListQuery>["sort"]) {
-  switch (sort) {
-    case "date_asc":
-      return [{ purchasedAt: "asc" as const }];
-    case "gross_desc":
-      return [{ packagePriceUsdCentsSnapshot: "desc" as const }, { purchasedAt: "desc" as const }];
-    case "gross_asc":
-      return [{ packagePriceUsdCentsSnapshot: "asc" as const }, { purchasedAt: "desc" as const }];
-    default:
-      return [{ purchasedAt: "desc" as const }];
-  }
-}
-
 function buildPurchasesWhere(input: {
   statsFrom: Date | null;
   statsTo: Date;
@@ -261,39 +248,120 @@ export async function getAdminPlatformPackagePurchases(query: Record<string, unk
     searchProfessionalIds
   });
 
-  const purchasesSkip = (purchasesQuery.page - 1) * purchasesQuery.pageSize;
+  /** Pruebas cobradas y fulfilled (excluye reintentos PAID sin fulfill). */
+  const trialPaidFulfilledBase = {
+    kind: "TRIAL" as const,
+    status: { in: ["PAID" as const, "FULFILLED" as const] },
+    fulfilledAt: { not: null },
+    ...(statsFrom
+      ? { paidAt: { gte: statsFrom, lte: statsTo } }
+      : { paidAt: { lte: statsTo } }),
+    ...(professionalId ? { trialProfessionalId: professionalId } : {}),
+    ...(patientId ? { patientId } : {})
+  };
 
-  const [allRangePurchases, purchaseRows, purchasesTotal, financeRules] = await Promise.all([
-    prisma.patientPackagePurchase.findMany({
-      where: {
-        ...packagePurchasedAtRangeWhere(statsFrom, statsTo),
-        ...(professionalId ? { professionalIdSnapshot: professionalId } : {}),
-        ...(patientId ? { patientId } : {})
-      },
-      select: {
-        packagePriceUsdCentsSnapshot: true,
-        packagePriceCentsSnapshot: true,
-        packageCurrencySnapshot: true,
-        fxArsPerUsdSnapshot: true,
-        platformCommissionPercentSnapshot: true
-      }
-    }),
-    prisma.patientPackagePurchase.findMany({
-      where: purchasesWhere,
-      include: {
-        patient: { include: { user: { select: { fullName: true } } } },
-        sessionPackage: { select: { name: true, credits: true } }
-      },
-      orderBy: purchasesOrderBy(purchasesQuery.sort),
-      skip: purchasesSkip,
-      take: purchasesQuery.pageSize
-    }),
-    prisma.patientPackagePurchase.count({ where: purchasesWhere }),
-    getFinanceRules()
-  ]);
+  const trialCheckoutWhere = {
+    ...trialPaidFulfilledBase,
+    ...(purchasesQuery.search
+      ? {
+          OR: [
+            {
+              patient: {
+                user: {
+                  fullName: { contains: purchasesQuery.search }
+                }
+              }
+            },
+            {
+              displayName: { contains: purchasesQuery.search }
+            },
+            ...(searchProfessionalIds.length > 0
+              ? [{ trialProfessionalId: { in: searchProfessionalIds } }]
+              : [])
+          ]
+        }
+      : {})
+  };
+
+  const [allRangePurchases, allRangeTrialCheckouts, purchaseRows, trialCheckoutRows, financeRules] =
+    await Promise.all([
+      prisma.patientPackagePurchase.findMany({
+        where: {
+          ...packagePurchasedAtRangeWhere(statsFrom, statsTo),
+          ...(professionalId ? { professionalIdSnapshot: professionalId } : {}),
+          ...(patientId ? { patientId } : {})
+        },
+        select: {
+          packagePriceUsdCentsSnapshot: true,
+          packagePriceCentsSnapshot: true,
+          packageCurrencySnapshot: true,
+          fxArsPerUsdSnapshot: true,
+          platformCommissionPercentSnapshot: true
+        }
+      }),
+      prisma.paymentCheckout.findMany({
+        where: trialPaidFulfilledBase,
+        select: {
+          id: true,
+          metadata: true,
+          trialProfessionalId: true
+        }
+      }),
+      prisma.patientPackagePurchase.findMany({
+        where: purchasesWhere,
+        include: {
+          patient: { include: { user: { select: { fullName: true } } } },
+          sessionPackage: { select: { name: true, credits: true } }
+        }
+      }),
+      prisma.paymentCheckout.findMany({
+        where: trialCheckoutWhere,
+        include: {
+          patient: { include: { user: { select: { fullName: true } } } }
+        }
+      }),
+      getFinanceRules()
+    ]);
+
+  const trialUsdFromMetadata = (metadata: unknown): number => {
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+      return 0;
+    }
+    const pricing = (metadata as { pricing?: { priceCents?: unknown; listPriceCents?: unknown } }).pricing;
+    const price =
+      typeof pricing?.priceCents === "number"
+        ? pricing.priceCents
+        : typeof pricing?.listPriceCents === "number"
+          ? pricing.listPriceCents
+          : 0;
+    return Number.isFinite(price) && price > 0 ? Math.round(price) : 0;
+  };
+
+  type SaleRow = {
+    purchaseId: string;
+    purchasedAt: string;
+    patientId: string;
+    patientName: string;
+    professionalId: string | null;
+    professionalName: string;
+    packageName: string;
+    packageCredits: number;
+    totalCredits: number;
+    remainingCredits: number;
+    grossCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    currency: "usd";
+    saleKind: "package" | "trial";
+  };
 
   const professionalIds = [
-    ...new Set(purchaseRows.map((row) => row.professionalIdSnapshot).filter(Boolean) as string[])
+    ...new Set(
+      [
+        ...purchaseRows.map((row) => row.professionalIdSnapshot),
+        ...trialCheckoutRows.map((row) => row.trialProfessionalId)
+      ].filter(Boolean) as string[]
+    )
   ];
   const professionalsById = new Map<string, string>();
   if (professionalIds.length > 0) {
@@ -309,6 +377,8 @@ export async function getAdminPlatformPackagePurchases(query: Record<string, unk
   let grossCents = 0;
   let platformFeeCents = 0;
   let professionalNetCents = 0;
+  let saleCount = 0;
+
   for (const row of allRangePurchases) {
     const priceUsd = resolvePurchasePriceUsdCents(row);
     if (priceUsd <= 0) {
@@ -321,7 +391,88 @@ export async function getAdminPlatformPackagePurchases(query: Record<string, unk
     grossCents += priceUsd;
     platformFeeCents += split.platformFeeCents;
     professionalNetCents += split.professionalNetCents;
+    saleCount += 1;
   }
+
+  for (const row of allRangeTrialCheckouts) {
+    const priceUsd = trialUsdFromMetadata(row.metadata);
+    if (priceUsd <= 0) {
+      continue;
+    }
+    const split = splitPlatformFee(priceUsd, financeRules.trialPlatformPercent);
+    grossCents += priceUsd;
+    platformFeeCents += split.platformFeeCents;
+    professionalNetCents += split.professionalNetCents;
+    saleCount += 1;
+  }
+
+  const packageSaleRows: SaleRow[] = purchaseRows.map((row) => {
+    const grossUsd = resolvePurchasePriceUsdCents(row);
+    const split = splitPlatformFee(
+      grossUsd,
+      row.platformCommissionPercentSnapshot ?? financeRules.platformCommissionPercent
+    );
+    const proId = row.professionalIdSnapshot;
+    return {
+      purchaseId: row.id,
+      purchasedAt: row.purchasedAt.toISOString(),
+      patientId: row.patientId,
+      patientName: row.patient.user.fullName,
+      professionalId: proId,
+      professionalName: proId ? professionalsById.get(proId) ?? "—" : "—",
+      packageName: row.packageNameSnapshot ?? row.sessionPackage.name,
+      packageCredits: row.packageCreditsSnapshot ?? row.sessionPackage.credits,
+      totalCredits: row.totalCredits,
+      remainingCredits: row.remainingCredits,
+      grossCents: grossUsd,
+      platformFeeCents: split.platformFeeCents,
+      professionalNetCents: split.professionalNetCents,
+      currency: "usd" as const,
+      saleKind: "package" as const
+    };
+  });
+
+  const trialSaleRows: SaleRow[] = trialCheckoutRows.map((row) => {
+    const grossUsd = trialUsdFromMetadata(row.metadata);
+    const split = splitPlatformFee(grossUsd, financeRules.trialPlatformPercent);
+    const proId = row.trialProfessionalId;
+    const purchasedAt = (row.paidAt ?? row.fulfilledAt ?? row.createdAt).toISOString();
+    return {
+      purchaseId: row.id,
+      purchasedAt,
+      patientId: row.patientId,
+      patientName: row.patient.user.fullName,
+      professionalId: proId,
+      professionalName: proId ? professionalsById.get(proId) ?? "—" : "—",
+      packageName: row.displayName?.trim() || "Sesión de prueba",
+      packageCredits: 1,
+      totalCredits: 1,
+      remainingCredits: 0,
+      grossCents: grossUsd,
+      platformFeeCents: split.platformFeeCents,
+      professionalNetCents: split.professionalNetCents,
+      currency: "usd" as const,
+      saleKind: "trial" as const
+    };
+  });
+
+  const merged = [...packageSaleRows, ...trialSaleRows].filter((row) => row.grossCents > 0);
+  switch (purchasesQuery.sort) {
+    case "date_asc":
+      merged.sort((a, b) => a.purchasedAt.localeCompare(b.purchasedAt));
+      break;
+    case "gross_desc":
+      merged.sort((a, b) => b.grossCents - a.grossCents || b.purchasedAt.localeCompare(a.purchasedAt));
+      break;
+    case "gross_asc":
+      merged.sort((a, b) => a.grossCents - b.grossCents || b.purchasedAt.localeCompare(a.purchasedAt));
+      break;
+    default:
+      merged.sort((a, b) => b.purchasedAt.localeCompare(a.purchasedAt));
+  }
+
+  const purchasesSkip = (purchasesQuery.page - 1) * purchasesQuery.pageSize;
+  const pageRows = merged.slice(purchasesSkip, purchasesSkip + purchasesQuery.pageSize);
 
   return {
     currency: "usd",
@@ -334,38 +485,15 @@ export async function getAdminPlatformPackagePurchases(query: Record<string, unk
       grossCents,
       platformFeeCents,
       professionalNetCents,
-      purchaseCount: allRangePurchases.length,
+      purchaseCount: saleCount,
       platformCommissionPercent: financeRules.platformCommissionPercent
     },
-    purchases: purchaseRows.map((row) => {
-      const grossUsd = resolvePurchasePriceUsdCents(row);
-      const split = splitPlatformFee(
-        grossUsd,
-        row.platformCommissionPercentSnapshot ?? financeRules.platformCommissionPercent
-      );
-      const proId = row.professionalIdSnapshot;
-      return {
-        purchaseId: row.id,
-        purchasedAt: row.purchasedAt.toISOString(),
-        patientId: row.patientId,
-        patientName: row.patient.user.fullName,
-        professionalId: proId,
-        professionalName: proId ? professionalsById.get(proId) ?? "—" : "—",
-        packageName: row.packageNameSnapshot ?? row.sessionPackage.name,
-        packageCredits: row.packageCreditsSnapshot ?? row.sessionPackage.credits,
-        totalCredits: row.totalCredits,
-        remainingCredits: row.remainingCredits,
-        grossCents: grossUsd,
-        platformFeeCents: split.platformFeeCents,
-        professionalNetCents: split.professionalNetCents,
-        currency: "usd"
-      };
-    }),
+    purchases: pageRows,
     purchasesPagination: {
       page: purchasesQuery.page,
       pageSize: purchasesQuery.pageSize,
-      total: purchasesTotal,
-      totalPages: Math.max(1, Math.ceil(purchasesTotal / purchasesQuery.pageSize))
+      total: merged.length,
+      totalPages: Math.max(1, Math.ceil(merged.length / purchasesQuery.pageSize))
     }
   };
 }

@@ -519,8 +519,9 @@ export function DashboardPage(props: {
       );
 
       setUpcomingReservations((current) =>
-        current.map((item) => (item.id === cancelTargetBooking.id ? { ...item, status: "cancelled" } : item))
+        current.filter((item) => item.id !== cancelTargetBooking.id)
       );
+      setDashboardReloadKey((value) => value + 1);
       setIsCancelModalOpen(false);
       setCancelTargetBooking(null);
       setCancelReason("");

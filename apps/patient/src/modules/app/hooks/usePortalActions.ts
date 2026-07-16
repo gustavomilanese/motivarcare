@@ -58,6 +58,7 @@ export function usePortalActions(params: {
   sessionTimezone: string;
   professionalDirectory: Professional[];
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
+  onRefreshPortalFromApi?: () => void | Promise<void>;
 }) {
   const syncActiveProfessionalAssignment = async (professionalId: string | null) => {
     if (!params.state.authToken) {
@@ -341,8 +342,8 @@ export function usePortalActions(params: {
               endsAt: slot.endsAt,
               holdId,
               patientTimezone: params.sessionTimezone,
-              successUrl: `${origin}/onboarding/final/matching?trialPayment=success`,
-              cancelUrl: `${origin}/onboarding/final/matching?trialPayment=cancel`
+              successUrl: `${origin}/?trialPayment=success`,
+              cancelUrl: `${origin}/?trialPayment=cancel`
             })
         },
         authToken
@@ -380,29 +381,34 @@ export function usePortalActions(params: {
       const response = await apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, authToken);
       const latestPackage = response.profile?.latestPackage;
       const recentPackages = response.profile?.recentPackages;
-      if (!latestPackage) {
-        return;
-      }
+      const purchaseHistory = recentPackages?.length
+        ? [...recentPackages]
+            .map((item) => ({
+              id: item.id,
+              name: item.name,
+              credits: item.credits,
+              purchasedAt: item.purchasedAt,
+              priceCents: item.priceCents ?? null,
+              currency: item.currency ?? null
+            }))
+            .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
+        : null;
 
       params.onStateChange((current) => ({
         ...current,
-        subscription: {
-          packageId: latestPackage.id,
-          packageName: latestPackage.name,
-          creditsTotal: latestPackage.totalCredits,
-          creditsRemaining: latestPackage.remainingCredits,
-          purchasedAt: latestPackage.purchasedAt,
-          purchaseHistory: recentPackages?.length
-            ? recentPackages.map((item) => ({
-                id: item.id,
-                name: item.name,
-                credits: item.credits,
-                purchasedAt: item.purchasedAt,
-                priceCents: item.priceCents ?? null,
-                currency: item.currency ?? null
-              }))
-            : current.subscription.purchaseHistory
-        }
+        subscription: latestPackage
+          ? {
+              packageId: latestPackage.id,
+              packageName: latestPackage.name,
+              creditsTotal: latestPackage.totalCredits,
+              creditsRemaining: latestPackage.remainingCredits,
+              purchasedAt: latestPackage.purchasedAt,
+              purchaseHistory: purchaseHistory ?? current.subscription.purchaseHistory
+            }
+          : {
+              ...current.subscription,
+              ...(purchaseHistory ? { purchaseHistory } : {})
+            }
       }));
     } catch (error) {
       console.error("Could not refresh subscription from API", error);
@@ -763,10 +769,25 @@ export function usePortalActions(params: {
     });
   };
 
-  const cancelBooking = async (bookingId: string): Promise<{ ok: boolean; error?: string }> => {
+  const cancelBooking = async (
+    bookingId: string,
+    reason: string
+  ): Promise<{ ok: boolean; error?: string; refundedCredits?: number; trialCreditReleased?: boolean }> => {
     const booking = params.state.bookings.find((item) => item.id === bookingId);
     if (!booking || booking.status !== "confirmed") {
       return { ok: false, error: "Booking cannot be cancelled" };
+    }
+
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length < 3) {
+      return {
+        ok: false,
+        error: t(params.state.language, {
+          es: "Indicá el motivo de la cancelación (mínimo 3 caracteres).",
+          en: "Please enter a cancellation reason (at least 3 characters).",
+          pt: "Informe o motivo do cancelamento (mínimo 3 caracteres)."
+        })
+      };
     }
 
     if (!params.state.authToken) {
@@ -774,14 +795,20 @@ export function usePortalActions(params: {
     }
 
     try {
-      await apiRequest<{ booking: { id: string; status: string } }>(
+      const response = await apiRequest<{
+        refundedCredits: number;
+        trialCreditReleased?: boolean;
+      }>(
         `/api/bookings/${bookingId}/cancel`,
         {
           method: "POST",
-          body: JSON.stringify({ reason: "cancelled_by_patient" })
+          body: JSON.stringify({ reason: trimmedReason })
         },
         params.state.authToken
       );
+
+      const refundedCredits = response.refundedCredits ?? 0;
+      const trialCreditReleased = Boolean(response.trialCreditReleased);
 
       params.onStateChange((current) => {
         const releasedSlotId = findSlotIdForBooking(
@@ -800,10 +827,21 @@ export function usePortalActions(params: {
             item.id === bookingId ? { ...item, status: "cancelled" as const } : item
           ),
           bookedSlotIds: current.bookedSlotIds.filter((id) => id !== releasedSlotId),
-          trialUsedProfessionalIds
+          trialUsedProfessionalIds,
+          subscription:
+            refundedCredits > 0
+              ? {
+                  ...current.subscription,
+                  creditsRemaining: current.subscription.creditsRemaining + refundedCredits
+                }
+              : current.subscription
         };
       });
-      return { ok: true };
+
+      // Sync inmediato para que Dashboard / calendario / banner de prueba queden al día con el API.
+      await Promise.resolve(params.onRefreshPortalFromApi?.());
+
+      return { ok: true, refundedCredits, trialCreditReleased };
     } catch (error) {
       console.error("Could not cancel booking", error);
       const message = error instanceof Error ? error.message : "Could not cancel booking";

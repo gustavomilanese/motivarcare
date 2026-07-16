@@ -78,11 +78,12 @@ export function SessionDetailModal(props: {
   onImageFallback?: (event: SyntheticEvent<HTMLImageElement>) => void;
   noticeHours?: number;
   onReschedule?: () => void;
-  onCancel?: () => void;
+  onCancel?: (reason: string) => void | Promise<void>;
   cancelSubmitting?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const noticeHours = resolvePatientChangeNoticeHours(props.noticeHours);
   const isTrialBooking = props.booking.bookingMode === "trial";
   const canReschedule = canPatientRescheduleBooking(props.booking.startsAt, noticeHours);
@@ -111,6 +112,12 @@ export function SessionDetailModal(props: {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [props.onClose]);
+
+  useEffect(() => {
+    if (!confirmCancel) {
+      setCancelReason("");
+    }
+  }, [confirmCancel]);
 
   const copyMeetLink = async () => {
     if (!joinUrl) {
@@ -322,22 +329,43 @@ export function SessionDetailModal(props: {
                     <p>
                       {isTrialBooking
                         ? t(props.language, {
-                            es: "¿Cancelar tu sesión de prueba? Podrás elegir otro horario después.",
-                            en: "Cancel your trial session? You can choose another time later.",
-                            pt: "Cancelar sua sessão de teste? Você poderá escolher outro horário depois."
+                            es: `¿Cancelar tu sesión de prueba? Si cancelás con al menos ${noticeHours} h de anticipación, no se devuelve el dinero pero podés elegir otro horario sin volver a pagar.`,
+                            en: `Cancel your trial session? If you cancel at least ${noticeHours} h in advance, money is not refunded but you can pick another time without paying again.`,
+                            pt: `Cancelar sua sessão de teste? Se cancelar com pelo menos ${noticeHours} h de antecedência, o dinheiro não é devolvido, mas você pode escolher outro horário sem pagar de novo.`
                           })
                         : t(props.language, {
-                            es: "¿Cancelar esta sesión? El crédito vuelve a tus sesiones disponibles.",
-                            en: "Cancel this session? The credit returns to your available sessions.",
-                            pt: "Cancelar esta sessão? O crédito volta para suas sessões disponíveis."
+                            es: `¿Cancelar esta sesión? Si cancelás con al menos ${noticeHours} h de anticipación, no se devuelve el dinero: el crédito vuelve a tus sesiones disponibles.`,
+                            en: `Cancel this session? If you cancel at least ${noticeHours} h in advance, money is not refunded — the credit returns to your available sessions.`,
+                            pt: `Cancelar esta sessão? Se cancelar com pelo menos ${noticeHours} h de antecedência, o dinheiro não é devolvido — o crédito volta para suas sessões disponíveis.`
                           })}
                     </p>
+                    <label className="session-detail-cancel-reason">
+                      <span>
+                        {t(props.language, {
+                          es: "Motivo de la cancelación",
+                          en: "Cancellation reason",
+                          pt: "Motivo do cancelamento"
+                        })}
+                      </span>
+                      <textarea
+                        value={cancelReason}
+                        onChange={(event) => setCancelReason(event.target.value)}
+                        rows={3}
+                        maxLength={500}
+                        placeholder={t(props.language, {
+                          es: "Contanos brevemente por qué cancelás…",
+                          en: "Briefly tell us why you are cancelling…",
+                          pt: "Conte brevemente por que está cancelando…"
+                        })}
+                        disabled={props.cancelSubmitting}
+                      />
+                    </label>
                     <div className="session-detail-cancel-confirm-actions">
                       <button
                         type="button"
                         className="session-detail-action session-detail-action--danger"
-                        disabled={!canCancel || props.cancelSubmitting}
-                        onClick={() => void props.onCancel?.()}
+                        disabled={!canCancel || props.cancelSubmitting || cancelReason.trim().length < 3}
+                        onClick={() => void props.onCancel?.(cancelReason.trim())}
                       >
                         {props.cancelSubmitting
                           ? t(props.language, { es: "Cancelando...", en: "Cancelling...", pt: "Cancelando..." })

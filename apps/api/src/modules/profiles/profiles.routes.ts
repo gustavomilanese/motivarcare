@@ -24,6 +24,7 @@ import {
 import { roundSessionPriceArsFromUsd } from "../../lib/usdArsExchange.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getFinanceRules } from "../finance/finance.service.js";
+import { readTrialProfessionalRateUsdCents } from "../finance/resolveFinanceSessionPricing.js";
 import { prismaErrorUserMessage, isPrismaUniqueViolation } from "../../lib/prismaUserError.js";
 import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackageMarketAccess.js";
 import { rankProfessionalMatch, parseIntakeAnswers, type MatchingLanguage } from "./matching.service.js";
@@ -758,7 +759,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
       }
     });
 
-    const [creditSummary, assignmentConfig, triageConfig] = await Promise.all([
+    const [creditSummary, assignmentConfig, triageConfig, paidTrialCheckouts] = await Promise.all([
       prisma.patientPackagePurchase.aggregate({
         where: {
           patientId: actor.patientProfileId
@@ -769,7 +770,25 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         }
       }),
       prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
-      prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } })
+      prisma.systemConfig.findUnique({ where: { key: PATIENT_INTAKE_TRIAGE_KEY } }),
+      prisma.paymentCheckout.findMany({
+        where: {
+          patientId: actor.patientProfileId,
+          kind: "TRIAL",
+          status: { in: ["PAID", "FULFILLED"] },
+          paidAt: { not: null }
+        },
+        orderBy: { paidAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          displayName: true,
+          metadata: true,
+          paidAt: true,
+          fulfilledAt: true,
+          createdAt: true
+        }
+      })
     ]);
     const assignments = parsePatientAssignments(assignmentConfig?.value);
     const triageByPatient = parsePatientIntakeTriage(triageConfig?.value);
@@ -797,6 +816,35 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
         })
       : null;
 
+    const packagePurchaseRows = (patient?.purchases ?? []).map((purchase) => ({
+      id: purchase.id,
+      name: purchase.sessionPackage.name,
+      credits: purchase.packageCreditsSnapshot ?? purchase.sessionPackage.credits,
+      purchasedAt: purchase.purchasedAt,
+      priceCents: purchase.packagePriceCentsSnapshot ?? null,
+      currency: purchase.packageCurrencySnapshot
+        ? String(purchase.packageCurrencySnapshot).toLowerCase()
+        : null
+    }));
+
+    const trialPurchaseRows = paidTrialCheckouts.map((checkout) => {
+      const purchasedAt = checkout.paidAt ?? checkout.fulfilledAt ?? checkout.createdAt;
+      const priceCents = readTrialProfessionalRateUsdCents(checkout.metadata);
+      const label = checkout.displayName?.trim();
+      return {
+        id: checkout.id,
+        name: label && label.length > 0 ? label : "Sesión de prueba",
+        credits: 1,
+        purchasedAt,
+        priceCents,
+        currency: "usd" as const
+      };
+    });
+
+    const recentPackages = [...packagePurchaseRows, ...trialPurchaseRows]
+      .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
+      .slice(0, 20);
+
     return res.json({
       role: actor.role,
       profile: {
@@ -822,16 +870,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
               purchasedAt: patient.purchases[0].purchasedAt
             }
           : null,
-        recentPackages: (patient?.purchases ?? []).map((purchase) => ({
-          id: purchase.id,
-          name: purchase.sessionPackage.name,
-          credits: purchase.packageCreditsSnapshot ?? purchase.sessionPackage.credits,
-          purchasedAt: purchase.purchasedAt,
-          priceCents: purchase.packagePriceCentsSnapshot ?? null,
-          currency: purchase.packageCurrencySnapshot
-            ? String(purchase.packageCurrencySnapshot).toLowerCase()
-            : null
-        })),
+        recentPackages,
         activeProfessional: activeProfessional
           ? (() => {
               const apName = resolvedFirstLastFromUserRecord({

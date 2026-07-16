@@ -1020,7 +1020,10 @@ export function DashboardPage(props: {
             <p className="sessions-collapsible-empty">{t(props.language, { es: "Todavía no tienes paquetes comprados.", en: "You do not have purchased packages yet.", pt: "Voce ainda nao tem pacotes comprados." })}</p>
           ) : (
             <ul className="simple-list session-history-list sessions-collapsible-list">
-              {props.state.subscription.purchaseHistory.slice(0, 20).map((item) => {
+              {[...props.state.subscription.purchaseHistory]
+                .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
+                .slice(0, 20)
+                .map((item) => {
                 const amountLabel = formatSubscriptionPurchasePrice({
                   priceCents: item.priceCents,
                   language: props.language,

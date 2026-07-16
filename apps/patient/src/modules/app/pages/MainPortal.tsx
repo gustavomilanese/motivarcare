@@ -18,6 +18,7 @@ import { usePortalActions } from "../hooks/usePortalActions";
 import { usePortalUiState } from "../hooks/usePortalUiState";
 import { usePortalNavigation } from "../hooks/usePortalNavigation";
 import { useDlocalCheckoutReturn } from "../hooks/useDlocalCheckoutReturn";
+import { useTrialCheckoutReturn } from "../hooks/useTrialCheckoutReturn";
 import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
@@ -34,6 +35,7 @@ import type {
   Message,
   PatientAppState,
   Professional,
+  TimeSlot
 } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -330,7 +332,8 @@ export function MainPortal(props: {
     state: props.state,
     sessionTimezone: props.sessionTimezone,
     professionalDirectory: props.professionalDirectory,
-    onStateChange: props.onStateChange
+    onStateChange: props.onStateChange,
+    onRefreshPortalFromApi: props.onRefreshPortalFromApi
   });
 
   /**
@@ -354,8 +357,39 @@ export function MainPortal(props: {
     }
   });
 
-  /** Mientras se confirma un retorno de dLocal no bloqueamos a matching. */
-  const lockToTherapistSelection = shouldLockToTherapistSelection && !checkoutReturnActive;
+  const {
+    trialReturnActive,
+    loaderVisible: trialLoaderVisible,
+    errorMessage: trialReturnError,
+    dismissError: dismissTrialReturnError
+  } = useTrialCheckoutReturn({
+    language: props.state.language,
+    onSyncTrialPayment: syncTrialPayment,
+    confirmTrialBooking: async (professionalId: string, slot: TimeSlot, holdId?: string) => {
+      const result = await confirmBooking(professionalId, slot, true, holdId);
+      if (!result.ok) {
+        return { ok: false, error: result.error };
+      }
+      props.onStateChange((current) => ({
+        ...current,
+        onboardingFinalCompleted: true,
+        therapistSelectionCompleted: true
+      }));
+      return { ok: true };
+    },
+    onRefreshPortalFromApi: props.onRefreshPortalFromApi
+  });
+
+  /** Mientras se confirma un retorno de dLocal (paquete o prueba) no bloqueamos a matching. */
+  const lockToTherapistSelection =
+    shouldLockToTherapistSelection && !checkoutReturnActive && !trialReturnActive;
+
+  const portalReturnLoaderVisible = checkoutLoaderVisible || trialLoaderVisible;
+  const portalReturnError = checkoutReturnError || trialReturnError;
+  const dismissPortalReturnError = () => {
+    dismissCheckoutError();
+    dismissTrialReturnError();
+  };
 
   const onBookingSelectProfessional = useCallback(
     (professionalId: string) => {
@@ -368,7 +402,7 @@ export function MainPortal(props: {
     if (!location.pathname.startsWith("/onboarding/final")) {
       return;
     }
-    if (lockToTherapistSelection) {
+    if (lockToTherapistSelection || trialReturnActive || checkoutReturnActive) {
       return;
     }
     navigate("/", { replace: true });
@@ -378,7 +412,13 @@ export function MainPortal(props: {
       }
     }, 200);
     return () => window.clearTimeout(fallbackTimeout);
-  }, [location.pathname, navigate, lockToTherapistSelection]);
+  }, [
+    location.pathname,
+    navigate,
+    lockToTherapistSelection,
+    trialReturnActive,
+    checkoutReturnActive
+  ]);
 
   return (
     <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : "portal-shell--site-footer"}`}>
@@ -501,13 +541,12 @@ export function MainPortal(props: {
             setSelectedBookingId("");
             handleRescheduleBookingFromAnywhere(bookingId);
           }}
-          onCancel={async () => {
+          onCancel={async (reason) => {
             setCancelSubmitting(true);
-            const result = await cancelBooking(selectedBooking.id);
+            const result = await cancelBooking(selectedBooking.id, reason);
             setCancelSubmitting(false);
             if (result.ok) {
               setSelectedBookingId("");
-              void props.onRefreshPortalFromApi?.();
             }
           }}
           cancelSubmitting={cancelSubmitting}
@@ -565,7 +604,7 @@ export function MainPortal(props: {
           }));
         }}
       />
-      {checkoutLoaderVisible ? (
+      {portalReturnLoaderVisible ? (
         <div className="checkout-return-loader-overlay" role="presentation">
           <MotivarCarePageLoader language={props.state.language} layout="block" />
         </div>
@@ -577,11 +616,11 @@ export function MainPortal(props: {
           onDismiss={dismissCheckoutSuccess}
         />
       ) : null}
-      {checkoutReturnError ? (
+      {portalReturnError ? (
         <div
           className="matching-flow-backdrop payment-modal-backdrop"
           role="presentation"
-          onClick={dismissCheckoutError}
+          onClick={dismissPortalReturnError}
         >
           <section
             className="matching-flow-modal payment-modal"
@@ -596,12 +635,12 @@ export function MainPortal(props: {
                 pt: "Precisamos confirmar seu pagamento"
               })}
             </h3>
-            <p className="payment-success-detail">{checkoutReturnError}</p>
+            <p className="payment-success-detail">{portalReturnError}</p>
             <footer className="matching-flow-footer payment-modal-footer">
               <button
                 type="button"
                 className="matching-flow-primary payment-modal-primary"
-                onClick={dismissCheckoutError}
+                onClick={dismissPortalReturnError}
               >
                 {t(props.state.language, { es: "Entendido", en: "Got it", pt: "Entendi" })}
               </button>

@@ -46,6 +46,7 @@ import {
 import { financeRouter } from "../finance/finance.routes.js";
 import { patientEmailSettingsRouter } from "../notifications/patientEmailSettings.routes.js";
 import { getFinanceRules, upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import { cancelBookingCalendarEvents } from "../video/cancelBookingCalendarEvents.js";
 import { getAdminKpisUsd } from "./adminKpis.service.js";
 import { sendPatientEmailForProfessionalAssigned } from "../notifications/patientEmailService.js";
 import {
@@ -1804,6 +1805,10 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
       return res.status(409).json({ error: message });
     }
     throw financeError;
+  }
+
+  if (nextStatus === "CANCELLED" && existing.status !== "CANCELLED") {
+    await cancelBookingCalendarEvents(existing.id);
   }
 
   return res.json({ booking: updated });

@@ -5,6 +5,7 @@ import {
   canPatientCancelBooking,
   canPatientRescheduleBooking,
   formatDateWithLocale,
+  isPatientBookingLiveStatus,
   replaceTemplate,
   resolvePatientChangeNoticeHours,
   textByLanguage
@@ -130,7 +131,7 @@ export function SessionsCalendar(props: {
   language: AppLanguage;
   onOpenBookingDetail: (bookingId: string) => void;
   onRescheduleBooking?: (booking: Booking) => void;
-  onCancelBooking?: (booking: Booking) => void | Promise<void>;
+  onCancelBooking?: (booking: Booking, reason: string) => void | Promise<void>;
   cancelBusyBookingId?: string | null;
   variant?: "week" | "dashboard";
   hideTitle?: boolean;
@@ -139,6 +140,7 @@ export function SessionsCalendar(props: {
   const variant = props.variant ?? "week";
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [pendingCancelEventId, setPendingCancelEventId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
   const hasEventActions = Boolean(props.onRescheduleBooking || props.onCancelBooking);
   const [viewDate, setViewDate] = useState(() => {
     const nextBooking = getNextBooking(props.bookings);
@@ -184,7 +186,10 @@ export function SessionsCalendar(props: {
   );
 
   const sortedBookings = useMemo(
-    () => [...props.bookings].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
+    () =>
+      [...props.bookings]
+        .filter((booking) => isPatientBookingLiveStatus(booking.status))
+        .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
     [props.bookings]
   );
   const today = new Date();
@@ -225,6 +230,7 @@ export function SessionsCalendar(props: {
   const closePopover = () => {
     setOpenEventId(null);
     setPendingCancelEventId(null);
+    setCancelReason("");
   };
 
   useEffect(() => {
@@ -466,21 +472,45 @@ export function SessionsCalendar(props: {
                                     <p>
                                       {isTrial
                                         ? t(props.language, {
-                                            es: "¿Cancelar tu sesión de prueba? Podrás elegir otro horario después.",
-                                            en: "Cancel your trial session? You can choose another time later.",
-                                            pt: "Cancelar sua sessão de teste? Você poderá escolher outro horário depois."
+                                            es: `¿Cancelar tu sesión de prueba? Con al menos ${noticeHours} h de anticipación no se devuelve el dinero, pero podés elegir otro horario sin pagar de nuevo.`,
+                                            en: `Cancel your trial session? With at least ${noticeHours} h notice, money is not refunded but you can pick another time without paying again.`,
+                                            pt: `Cancelar sua sessão de teste? Com pelo menos ${noticeHours} h de antecedência o dinheiro não é devolvido, mas você pode escolher outro horário sem pagar de novo.`
                                           })
                                         : t(props.language, {
-                                            es: "¿Cancelar esta sesión? El crédito vuelve a estar disponible.",
-                                            en: "Cancel this session? The credit becomes available again.",
-                                            pt: "Cancelar esta sessao? O credito volta a ficar disponivel."
+                                            es: `¿Cancelar esta sesión? Con al menos ${noticeHours} h de anticipación no se devuelve el dinero; el crédito vuelve a tus sesiones disponibles.`,
+                                            en: `Cancel this session? With at least ${noticeHours} h notice, money is not refunded — the credit returns to your available sessions.`,
+                                            pt: `Cancelar esta sessão? Com pelo menos ${noticeHours} h de antecedência o dinheiro não é devolvido — o crédito volta para suas sessões disponíveis.`
                                           })}
                                     </p>
+                                    <label className="session-detail-cancel-reason">
+                                      <span>
+                                        {t(props.language, {
+                                          es: "Motivo de la cancelación",
+                                          en: "Cancellation reason",
+                                          pt: "Motivo do cancelamento"
+                                        })}
+                                      </span>
+                                      <textarea
+                                        value={cancelReason}
+                                        onChange={(event) => setCancelReason(event.target.value)}
+                                        rows={2}
+                                        maxLength={500}
+                                        placeholder={t(props.language, {
+                                          es: "Contanos brevemente por qué cancelás…",
+                                          en: "Briefly tell us why you are cancelling…",
+                                          pt: "Conte brevemente por que está cancelando…"
+                                        })}
+                                        disabled={cancelBusy}
+                                      />
+                                    </label>
                                     <div className="sessions-calendar-popover-actions">
                                       <button
                                         type="button"
                                         className="sessions-calendar-popover-action ghost"
-                                        onClick={() => setPendingCancelEventId(null)}
+                                        onClick={() => {
+                                          setPendingCancelEventId(null);
+                                          setCancelReason("");
+                                        }}
                                         disabled={cancelBusy}
                                       >
                                         {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
@@ -488,9 +518,9 @@ export function SessionsCalendar(props: {
                                       <button
                                         type="button"
                                         className="sessions-calendar-popover-action danger"
-                                        disabled={cancelBusy}
+                                        disabled={cancelBusy || !canCancel || cancelReason.trim().length < 3}
                                         onClick={async () => {
-                                          await props.onCancelBooking?.(booking);
+                                          await props.onCancelBooking?.(booking, cancelReason.trim());
                                           closePopover();
                                         }}
                                       >

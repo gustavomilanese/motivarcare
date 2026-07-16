@@ -488,7 +488,7 @@ export function AdminPlatformFinanceSection(props: {
             className={tab === "purchases" ? "active" : ""}
             onClick={() => setTab("purchases")}
           >
-            {t(props.language, { es: "Ventas de paquetes", en: "Package sales", pt: "Vendas de pacotes" })}
+            {t(props.language, { es: "Ventas", en: "Sales", pt: "Vendas" })}
           </button>
         </div>
       </div>

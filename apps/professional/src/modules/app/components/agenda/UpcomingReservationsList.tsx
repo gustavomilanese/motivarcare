@@ -103,7 +103,12 @@ export function UpcomingReservationsList(props: {
     return <p className="pro-error">{error}</p>;
   }
 
-  if (props.reservations.length === 0) {
+  const liveReservations = props.reservations.filter((booking) => {
+    const status = booking.status.toLowerCase();
+    return status === "confirmed" || status === "requested";
+  });
+
+  if (liveReservations.length === 0) {
     return (
       <div className="agenda-upcoming-empty">
         <strong>{t(props.language, { es: "No tienes reservas próximas", en: "You have no upcoming bookings", pt: "Voce nao tem reservas proximas" })}</strong>
@@ -122,7 +127,7 @@ export function UpcomingReservationsList(props: {
         <span>{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
       </div>
       <div className="agenda-upcoming-list">
-        {props.reservations.map((booking) => {
+        {liveReservations.map((booking) => {
           const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
           const joinTrim = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
           const pulseJoin =

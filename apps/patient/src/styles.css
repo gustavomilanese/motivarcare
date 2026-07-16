@@ -6673,6 +6673,11 @@ button.danger {
   color: #fff;
 }
 
+.session-detail-action--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+  color: #fff;
+}
+
 .session-detail-action--primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -6684,6 +6689,11 @@ button.danger {
   color: #4a5568;
 }
 
+.session-detail-action--ghost:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #4a5568;
+}
+
 .session-detail-action--ghost:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -6692,6 +6702,11 @@ button.danger {
 .session-detail-action--danger {
   border: 0;
   background: #b42318;
+  color: #fff;
+}
+
+.session-detail-action--danger:hover:not(:disabled) {
+  background: #912018;
   color: #fff;
 }
 
@@ -6710,6 +6725,34 @@ button.danger {
   margin: 0;
   color: #4a5568;
   font-size: 13px;
+}
+
+.session-detail-cancel-reason {
+  display: grid;
+  gap: 6px;
+}
+
+.session-detail-cancel-reason span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.session-detail-cancel-reason textarea {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.session-detail-cancel-reason textarea:focus {
+  outline: 2px solid rgba(95, 68, 235, 0.25);
+  border-color: #7b5bff;
 }
 
 .session-detail-cancel-confirm-actions {

@@ -9,6 +9,12 @@ import { BookingSummaryModal } from "../components/BookingSummaryModal";
 import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import { friendlyBookingFailureMessage, friendlyCheckoutPackageMessage } from "../../app/lib/friendlyPatientMessages";
 import { patientUsesDlocalCheckout } from "../../app/lib/patientDlocalCheckout";
+import {
+  ONBOARDING_TRIAL_BOOKING_STORAGE_KEY,
+  clearPendingTrialBooking,
+  writePendingTrialBooking,
+  type PendingTrialBooking
+} from "../../app/lib/pendingTrialBooking";
 import { useProfessionalMatching } from "../hooks/useProfessionalMatching";
 import { fetchProfessionalAvailability } from "../services/availability";
 import { acquireBookingSlotHold, releaseBookingSlotHold } from "../services/slotHold";
@@ -21,15 +27,6 @@ import type {
   SortOption,
   SortMode
 } from "../types";
-
-const ONBOARDING_TRIAL_BOOKING_STORAGE_KEY = "mc:onboarding-trial-booking";
-
-type PendingTrialBooking = {
-  professionalId: string;
-  slot: MatchTimeSlot;
-  paymentId: string;
-  holdId?: string;
-};
 
 function t(language: MatchingPageProps["language"], values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -359,7 +356,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     window.history.replaceState({}, "", window.location.pathname);
 
     if (trialPayment === "cancel") {
-      sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+      clearPendingTrialBooking();
       setPaymentError(
         t(props.language, {
           es: "Cancelaste el pago. Podés elegir otro horario o intentar de nuevo cuando quieras.",
@@ -383,11 +380,11 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     try {
       pending = JSON.parse(raw) as PendingTrialBooking;
     } catch {
-      sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+      clearPendingTrialBooking();
       return;
     }
 
-    sessionStorage.removeItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY);
+    clearPendingTrialBooking();
     setPaymentLoading(true);
     setPaymentError("");
 
@@ -486,7 +483,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
             paymentId: checkout.paymentId,
             holdId: slotHoldId
           };
-          sessionStorage.setItem(ONBOARDING_TRIAL_BOOKING_STORAGE_KEY, JSON.stringify(pending));
+          writePendingTrialBooking(pending);
           checkoutRedirectingRef.current = true;
           setCheckoutLoadingPhase("redirecting");
           window.location.assign(checkout.checkoutUrl);
@@ -551,7 +548,9 @@ export function PatientMatchingPage(props: MatchingPageProps) {
       />
 
       {paymentLoading && !bookingStep ? (
-        <MotivarCarePageLoader language={props.language} layout="block" />
+        <div className="checkout-return-loader-overlay" role="presentation">
+          <MotivarCarePageLoader language={props.language} layout="block" />
+        </div>
       ) : null}
 
       {paymentError && !bookingStep ? (

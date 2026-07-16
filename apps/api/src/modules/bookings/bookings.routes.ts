@@ -12,8 +12,6 @@ import { notifyPatientOnProfessionalBookingChange } from "../notifications/booki
 import { sendPatientEmailForBooking } from "../notifications/patientEmailService.js";
 import { sendProfessionalInAppBookingCancellation } from "../notifications/professionalInAppNotifications.js";
 import {
-  cancelGoogleMeetEventForPlatformCalendar,
-  cancelGoogleMeetEventForUserCalendar,
   createLinkedCalendarEventForUserCalendar,
   createGoogleMeetForPlatformCalendar,
   createGoogleMeetForUserCalendar,
@@ -21,6 +19,7 @@ import {
   rescheduleGoogleMeetEventForPlatformCalendar,
   rescheduleGoogleMeetEventForUserCalendar
 } from "../video/googleMeet.service.js";
+import { cancelBookingCalendarEvents } from "../video/cancelBookingCalendarEvents.js";
 import {
   decodeGoogleMeetSyncTargets,
   encodeGoogleMeetSyncTargets,
@@ -36,7 +35,8 @@ import {
 } from "../payments/dlocalGoCheckout.service.js";
 import {
   findPaidTrialCheckoutProof,
-  linkPaymentCheckoutTrialBooking
+  linkPaymentCheckoutTrialBooking,
+  releaseTrialCheckoutOnBookingCancel
 } from "../payments/paymentCheckout.service.js";
 import {
   acquireBookingSlotHold,
@@ -1405,6 +1405,10 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
         minimumBookingNoticeHours: patientChangeNoticeHours
       });
     }
+    const reason = parsed.data.reason?.trim() ?? "";
+    if (reason.length < 3) {
+      return res.status(400).json({ error: "Cancellation reason is required (at least 3 characters)." });
+    }
   }
 
   const previousStartsAt = booking.startsAt;
@@ -1414,6 +1418,7 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   /** Reintegrar créditos del paquete si la sesión aún no empezó (cancelación de una reserva futura). */
   const shouldRefundCredits =
     booking.consumedCredits > 0 && cancelledAt.getTime() < booking.startsAt.getTime();
+  const shouldReleaseTrialCredit = isTrialBooking && cancelledAt.getTime() < booking.startsAt.getTime();
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedBooking = await tx.booking.update({
@@ -1463,38 +1468,11 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
     return updatedBooking;
   });
 
-  if (booking.videoSession?.provider === "google_meet_user" && booking.videoSession.externalRoomId && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-    const targets = listGoogleMeetSyncTargets(booking.videoSession.externalRoomId);
-    for (const target of targets) {
-      const ownerConnection = await prisma.googleCalendarConnection.findUnique({
-        where: { userId: target.ownerUserId }
-      });
-      if (!ownerConnection) {
-        continue;
-      }
-      try {
-        await cancelGoogleMeetEventForUserCalendar({
-          clientId: env.GOOGLE_CLIENT_ID,
-          clientSecret: env.GOOGLE_CLIENT_SECRET,
-          refreshToken: ownerConnection.refreshToken,
-          calendarId: ownerConnection.calendarId,
-          eventId: target.eventId
-        });
-      } catch (googleMeetError) {
-        console.error("Could not cancel Google Meet event", googleMeetError);
-      }
-    }
+  if (shouldReleaseTrialCredit) {
+    await releaseTrialCheckoutOnBookingCancel(booking.id);
   }
 
-  if (booking.videoSession?.provider === "google_meet_platform" && booking.videoSession.externalRoomId) {
-    try {
-      await cancelGoogleMeetEventForPlatformCalendar({
-        eventId: booking.videoSession.externalRoomId
-      });
-    } catch (googleMeetError) {
-      console.error("Could not cancel Google Meet event", googleMeetError);
-    }
-  }
+  await cancelBookingCalendarEvents(booking.id);
 
   if (canCancelAsProfessional) {
     try {
@@ -1528,8 +1506,13 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   return res.json({
     message: "Booking cancelled",
     bookingId: updated.id,
-    appliedPolicy: shouldRefundCredits ? "refund_before_session_start" : "cancel_no_credit_refund",
+    appliedPolicy: shouldRefundCredits
+      ? "refund_before_session_start"
+      : shouldReleaseTrialCredit
+        ? "trial_credit_released"
+        : "cancel_no_credit_refund",
     refundedCredits: shouldRefundCredits ? booking.consumedCredits : 0,
+    trialCreditReleased: shouldReleaseTrialCredit,
     freeCancellationHours: FREE_CANCELLATION_HOURS,
     hoursBeforeSession: Math.round(hoursBeforeSession * 10) / 10,
     status: normalizeStatus(updated.status)

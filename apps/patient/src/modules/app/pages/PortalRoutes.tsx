@@ -50,6 +50,7 @@ function OnboardingFinalMatching(p: {
   handleReserveFromAnywhere: (professionalId: string, options?: { returnTo?: string }) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
+  onRefreshPortalFromApi?: () => void | Promise<void>;
 }) {
   return (
     <MatchingPage
@@ -116,6 +117,7 @@ function OnboardingFinalMatching(p: {
           ...current,
           onboardingFinalCompleted: true
         }));
+        await Promise.resolve(p.onRefreshPortalFromApi?.());
         p.navigate("/", { replace: true });
       }}
       onStartTrialCheckout={p.startTrialCheckout}
@@ -158,7 +160,7 @@ export function PortalRoutes(props: {
   startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
   syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
   rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
-  cancelBooking: (bookingId: string) => Promise<{ ok: boolean; error?: string }>;
+  cancelBooking: (bookingId: string, reason: string) => Promise<{ ok: boolean; error?: string }>;
   planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
   addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<PortalPurchaseResult>;
   purchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
@@ -289,6 +291,7 @@ export function PortalRoutes(props: {
                   handleReserveFromAnywhere={props.handleReserveFromAnywhere}
                   handleChatFromAnywhere={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
+                  onRefreshPortalFromApi={props.onRefreshPortalFromApi}
                 />
               )
             : <Navigate replace to="/" />
@@ -317,6 +320,7 @@ export function PortalRoutes(props: {
                     handleReserveFromAnywhere={props.handleReserveFromAnywhere}
                     handleChatFromAnywhere={props.handleChatFromAnywhere}
                     onImageFallback={props.onImageFallback}
+                    onRefreshPortalFromApi={props.onRefreshPortalFromApi}
                   />
                 )
         }

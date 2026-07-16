@@ -474,17 +474,22 @@ export async function linkPaymentCheckoutTrialBooking(params: {
 }): Promise<void> {
   const startsAt = new Date(params.startsAt);
   const endsAt = new Date(params.endsAt);
-  const checkout = await prisma.paymentCheckout.findFirst({
-    where: {
+  const checkout =
+    (await prisma.paymentCheckout.findFirst({
+      where: {
+        patientId: params.patientId,
+        kind: "TRIAL",
+        status: { in: ["PAID", "FULFILLED"] },
+        trialProfessionalId: params.professionalId,
+        trialStartsAt: startsAt,
+        trialEndsAt: endsAt
+      },
+      orderBy: { createdAt: "desc" }
+    }))
+    ?? (await findReusablePaidTrialCheckout({
       patientId: params.patientId,
-      kind: "TRIAL",
-      status: { in: ["PAID", "FULFILLED"] },
-      trialProfessionalId: params.professionalId,
-      trialStartsAt: startsAt,
-      trialEndsAt: endsAt
-    },
-    orderBy: { createdAt: "desc" }
-  });
+      professionalId: params.professionalId
+    }));
   if (!checkout) {
     return;
   }
@@ -494,7 +499,9 @@ export async function linkPaymentCheckoutTrialBooking(params: {
     data: {
       status: "FULFILLED",
       fulfillmentBookingId: params.bookingId,
-      fulfilledAt: new Date()
+      fulfilledAt: new Date(),
+      trialStartsAt: startsAt,
+      trialEndsAt: endsAt
     }
   });
 
@@ -507,13 +514,61 @@ export async function linkPaymentCheckoutTrialBooking(params: {
   });
 }
 
+/** Prueba pagada sin reserva activa (p. ej. tras cancelar dentro de plazo). */
+export async function findReusablePaidTrialCheckout(params: {
+  patientId: string;
+  professionalId: string;
+}): Promise<PaymentCheckout | null> {
+  return prisma.paymentCheckout.findFirst({
+    where: {
+      patientId: params.patientId,
+      kind: "TRIAL",
+      status: { in: ["PAID", "FULFILLED"] },
+      trialProfessionalId: params.professionalId,
+      paidAt: { not: null },
+      fulfillmentBookingId: null
+    },
+    orderBy: { paidAt: "desc" }
+  });
+}
+
+/** Libera el cobro de prueba al cancelar la reserva (permite elegir otro horario sin pagar de nuevo). */
+export async function releaseTrialCheckoutOnBookingCancel(bookingId: string): Promise<void> {
+  const checkout = await prisma.paymentCheckout.findFirst({
+    where: {
+      kind: "TRIAL",
+      fulfillmentBookingId: bookingId
+    },
+    orderBy: { paidAt: "desc" }
+  });
+  if (!checkout) {
+    return;
+  }
+
+  await prisma.paymentCheckout.update({
+    where: { id: checkout.id },
+    data: {
+      status: "PAID",
+      fulfillmentBookingId: null
+    }
+  });
+
+  await logPaymentCheckoutEvent({
+    checkoutId: checkout.id,
+    eventType: "checkout.trial_released",
+    message: "Trial booking cancelled — payment credit released for rebooking",
+    payload: { bookingId },
+    actorRole: "SYSTEM"
+  });
+}
+
 export async function findPaidTrialCheckoutProof(params: {
   patientId: string;
   professionalId: string;
   startsAt: Date;
   endsAt: Date;
 }): Promise<PaymentCheckout | null> {
-  return prisma.paymentCheckout.findFirst({
+  const exactMatch = await prisma.paymentCheckout.findFirst({
     where: {
       patientId: params.patientId,
       kind: "TRIAL",
@@ -524,6 +579,13 @@ export async function findPaidTrialCheckoutProof(params: {
       fulfillmentBookingId: null
     },
     orderBy: { paidAt: "desc" }
+  });
+  if (exactMatch) {
+    return exactMatch;
+  }
+  return findReusablePaidTrialCheckout({
+    patientId: params.patientId,
+    professionalId: params.professionalId
   });
 }
 
