@@ -384,12 +384,15 @@ function mergeSubscriptionFromApi(
   recentPackages: SubscriptionState["purchaseHistory"] | undefined
 ): SubscriptionState {
   const purchaseHistory = mergePurchaseHistory(current.purchaseHistory, recentPackages);
-  const localCredits = normalizeCredits(current.creditsRemaining);
 
   if (!latestPackage) {
+    /** Server sin paquete = sin créditos. No conservar wallet stale de localStorage. */
     return {
-      ...current,
-      creditsRemaining: localCredits,
+      packageId: "",
+      packageName: "",
+      creditsTotal: 0,
+      creditsRemaining: 0,
+      purchasedAt: "",
       purchaseHistory
     };
   }
@@ -1103,11 +1106,9 @@ export function App() {
   ]);
 
   /**
-   * Post-login: si el paciente ya pasó el intake y NO tiene Calendar conectado,
-   * mostrar el modal de oferta apenas entra al portal. Pensado para el reviewer
-   * de Google App Verification: entra con cuenta lista y ve el OAuth screen
-   * sin tener que buscar el botón en Perfil. Para usuarios reales, si pinchan
-   * "Lo hago después" se persiste el dismiss y no vuelve a aparecer.
+   * Post-login: si el paciente ya pasó matching y NO tiene Calendar conectado,
+   * ofrecer el modal. No bloquear usuarios que aún deben elegir profesional
+   * (p. ej. tras reconcile sin compras/reservas): matching primero.
    */
   useEffect(() => {
     if (!sessionId || !state.authToken || !profileSyncReady) {
@@ -1120,6 +1121,9 @@ export function App() {
       return;
     }
     if (calendarPromptDismissedUserIds.includes(sessionId)) {
+      return;
+    }
+    if (!state.therapistSelectionCompleted) {
       return;
     }
     if (!state.intake?.completed || state.intake?.riskBlocked) {
@@ -1144,6 +1148,7 @@ export function App() {
     showCalendarOnboarding,
     calendarPromptDismissedUserIds,
     state.googleCalendarConnected,
+    state.therapistSelectionCompleted,
     state.intake?.completed,
     state.intake?.riskBlocked
   ]);
@@ -1313,15 +1318,23 @@ export function App() {
             || Boolean(latestPackage);
 
           /**
-           * Hasta que el paciente cierre el onboarding (trial reservado, paquete o señal remota),
-           * no usar "active professional" del admin ni bookings remotos para saltar el matching:
-           * evita redirect a Inicio tras OAuth o con asignación de prueba en SystemConfig.
+           * Intake recién completado (ventana corta): no saltar matching solo por
+           * asignación admin/SystemConfig. Si el intake es viejo (p. ej. tras un
+           * reconcile que borró compras/reservas), sí respetar el profesional activo.
            */
+          const intakeCompletedAtMs = current.intake?.completedAt
+            ? Date.parse(String(current.intake.completedAt))
+            : Number.NaN;
+          const intakeSettledForMatching =
+            Number.isFinite(intakeCompletedAtMs)
+            && Date.now() - intakeCompletedAtMs > 10 * 60 * 1000;
+
           const gateMatchingFromApiAssignment =
             !current.onboardingFinalCompleted
             && !hasRemoteOnboardingCompletionSignal
             && syncedBookings.length === 0
-            && !latestPackage;
+            && !latestPackage
+            && !intakeSettledForMatching;
 
           const therapistSelectionCompletedMerged = gateMatchingFromApiAssignment
             ? current.therapistSelectionCompleted
@@ -1329,22 +1342,19 @@ export function App() {
               || Boolean(remoteAssignedProfessional)
               || syncedBookings.length > 0;
 
-          const assignedProfessionalIdMerged = gateMatchingFromApiAssignment
-            ? current.assignedProfessionalId
-            : remoteAssignedProfessional?.id ?? current.assignedProfessionalId;
+          const assignedProfessionalIdMerged =
+            remoteAssignedProfessional?.id ?? current.assignedProfessionalId;
 
-          const assignedProfessionalNameMerged = gateMatchingFromApiAssignment
-            ? current.assignedProfessionalName
-            : (() => {
-                if (!remoteAssignedProfessional) {
-                  return current.assignedProfessionalName;
-                }
-                const joined = joinFirstLastToFullName(
-                  remoteAssignedProfessional.firstName ?? "",
-                  remoteAssignedProfessional.lastName ?? ""
-                ).trim();
-                return joined || remoteAssignedProfessional.fullName;
-              })();
+          const assignedProfessionalNameMerged = (() => {
+            if (!remoteAssignedProfessional) {
+              return current.assignedProfessionalName;
+            }
+            const joined = joinFirstLastToFullName(
+              remoteAssignedProfessional.firstName ?? "",
+              remoteAssignedProfessional.lastName ?? ""
+            ).trim();
+            return joined || remoteAssignedProfessional.fullName;
+          })();
 
           const selectionFromApiDirectory =
             directoryListForClamp && directoryListForClamp.length > 0
@@ -1929,19 +1939,23 @@ export function App() {
               type="button"
               onClick={() => {
                 setCalendarOnboardingError("");
-                if (state.session?.id) {
-                  const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
-                  writeDismissedCalendarPromptUsers(nextDismissed);
-                  setCalendarPromptDismissedUserIds(nextDismissed);
-                }
                 const ctx = getCalendarOfferContext();
-                clearCalendarOfferContext();
-                clearPostTrialCalendarPending();
-                setShowCalendarOnboarding(false);
-                navigate(
-                  ctx === "post-trial" || ctx === "post-login" ? "/" : "/onboarding/final/matching",
-                  { replace: true }
-                );
+                const goHome =
+                  ctx === "post-trial"
+                  || ctx === "post-login"
+                  || state.therapistSelectionCompleted
+                  || Boolean(state.assignedProfessionalId);
+                flushSync(() => {
+                  if (state.session?.id) {
+                    const nextDismissed = [...calendarPromptDismissedUserIds, state.session.id];
+                    writeDismissedCalendarPromptUsers(nextDismissed);
+                    setCalendarPromptDismissedUserIds(nextDismissed);
+                  }
+                  clearCalendarOfferContext();
+                  clearPostTrialCalendarPending();
+                  setShowCalendarOnboarding(false);
+                });
+                navigate(goHome ? "/" : "/onboarding/final/matching", { replace: true });
               }}
               disabled={calendarOnboardingLoading}
             >

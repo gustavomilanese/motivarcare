@@ -35,6 +35,7 @@
     "db:sync": "npm run db:up && npm run db:wait && npm run db:push",
     "db:seed": "npm run prisma:seed -w @therapy/api",
     "db:wipe-non-admin": "npm run db:wipe-non-admin -w @therapy/api",
+    "db:reconcile-testing": "npm run db:reconcile-testing -w @therapy/api --",
     "dev:landing": "npm run dev -w @therapy/landing",
     "dev:patient-landing": "npm run dev -w @therapy/patient-landing",
     "dev:patient-landing-v2": "npm run dev -w @therapy/patient-landing-v2",

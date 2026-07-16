@@ -119,6 +119,9 @@ export async function hardDeleteUserInTransaction(
         ].filter((value): value is NonNullable<typeof value> => Boolean(value))
       }
     });
+    await tx.financePayoutRun.deleteMany({
+      where: { payoutLines: { none: {} } }
+    });
     await tx.creditLedger.deleteMany({
       where: {
         OR: [
@@ -127,6 +130,8 @@ export async function hardDeleteUserInTransaction(
         ].filter((value): value is NonNullable<typeof value> => Boolean(value))
       }
     });
+    // Checkouts cascade from PatientProfile, but delete early so purchase FKs / fulfillment refs stay clean.
+    await tx.paymentCheckout.deleteMany({ where: { patientId } });
     if (bookingIds.length > 0) {
       await tx.booking.deleteMany({
         where: { id: { in: bookingIds } }
@@ -234,6 +239,10 @@ export async function hardDeleteUserInTransaction(
     }
     await tx.financePayoutLine.deleteMany({
       where: { professionalId }
+    });
+    // Drop empty payout runs left without lines after professional teardown.
+    await tx.financePayoutRun.deleteMany({
+      where: { payoutLines: { none: {} } }
     });
     await tx.aIAuditJob.deleteMany({ where: { professionalId } });
     await tx.availabilitySlot.deleteMany({ where: { professionalId } });

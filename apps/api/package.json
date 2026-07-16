@@ -21,6 +21,7 @@
     "prisma:push": "node scripts/prisma-with-root-env.mjs db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "db:wipe-non-admin": "tsx scripts/wipe-non-admin.ts",
+    "db:reconcile-testing": "tsx scripts/reconcile-testing-activity.ts",
     "db:delete-user-email": "tsx scripts/delete-user-by-email.ts",
     "db:seed-patient-web-content": "tsx scripts/seed-patient-web-content.ts",
     "db:backfill-names": "tsx scripts/backfill-user-name-columns.ts",
