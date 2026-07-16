@@ -6708,6 +6708,11 @@ button.primary.finance-hero-search {
   padding-bottom: 2px;
 }
 
+.admin-platform-finance-list {
+  display: grid;
+  gap: 12px;
+}
+
 .admin-platform-finance-list-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -6829,6 +6834,10 @@ button.primary.finance-hero-search {
   text-overflow: clip;
 }
 
+.admin-platform-finance-table th:nth-last-child(-n + 3) {
+  text-align: right;
+}
+
 .admin-platform-finance-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -6848,15 +6857,40 @@ button.primary.finance-hero-search {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.admin-platform-finance-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .admin-platform-finance-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: #fff;
+  color: #334155;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-platform-finance-pagination button:hover:not(:disabled) {
+  border-color: #a5b4fc;
+  background: #f5f7ff;
+}
+
+.admin-platform-finance-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 @media (max-width: 900px) {
