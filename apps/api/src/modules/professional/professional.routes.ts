@@ -5,6 +5,7 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
+import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
 import { buildProfessionalPracticeHealth } from "../../lib/professionalPracticeHealth.js";
 import {
   buildProfessionalFinanceDisplay,
@@ -197,50 +198,6 @@ function movementsOrderBy(sort: MovementsSortKey) {
     default:
       return [{ bookingCompletedAt: "desc" as const }, { bookingStartsAt: "desc" as const }];
   }
-}
-
-async function buildPackageSessionIndexByBookingId(
-  professionalProfileId: string,
-  purchaseIds: string[]
-): Promise<Map<string, number>> {
-  const indexByBookingId = new Map<string, number>();
-  const uniquePurchaseIds = [...new Set(purchaseIds)];
-  if (uniquePurchaseIds.length === 0) {
-    return indexByBookingId;
-  }
-
-  const records = await prisma.financeSessionRecord.findMany({
-    where: {
-      professionalId: professionalProfileId,
-      purchaseId: { in: uniquePurchaseIds },
-      bookingStatus: "COMPLETED"
-    },
-    select: {
-      bookingId: true,
-      purchaseId: true,
-      bookingStartsAt: true,
-      bookingCompletedAt: true
-    },
-    orderBy: [{ bookingStartsAt: "asc" }, { bookingCompletedAt: "asc" }]
-  });
-
-  const byPurchase = new Map<string, string[]>();
-  for (const record of records) {
-    if (!record.purchaseId) {
-      continue;
-    }
-    const bookingIds = byPurchase.get(record.purchaseId) ?? [];
-    bookingIds.push(record.bookingId);
-    byPurchase.set(record.purchaseId, bookingIds);
-  }
-
-  for (const bookingIds of byPurchase.values()) {
-    bookingIds.forEach((bookingId, index) => {
-      indexByBookingId.set(bookingId, index + 1);
-    });
-  }
-
-  return indexByBookingId;
 }
 
 type PatientStatus = "active" | "pause" | "cancelled" | "trial";
@@ -1059,7 +1016,9 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
           select: {
             fxArsPerUsdSnapshot: true,
             packagePriceCentsSnapshot: true,
-            packageCreditsSnapshot: true
+            packageCreditsSnapshot: true,
+            packageNameSnapshot: true,
+            packageDiscountPercentSnapshot: true
           }
         },
         package: {
@@ -1070,7 +1029,8 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
         },
         booking: {
           select: {
-            endsAt: true
+            endsAt: true,
+            packageSessionOrdinal: true
           }
         }
       },
@@ -1139,7 +1099,6 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
   ]);
 
   const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
-    actor.professionalProfileId,
     movementRows.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
   );
 
@@ -1243,11 +1202,14 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
         isTrial: record.isTrial,
         pricingSource: fromPackage ? "package" : "list",
         packageId: record.packageId,
-        packageName: record.package?.name ?? null,
+        packageName: record.purchase?.packageNameSnapshot ?? record.package?.name ?? null,
         packageCredits,
+        packageDiscountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null,
         packagePriceCents,
         packageSessionNumber: record.purchaseId
-          ? packageSessionIndexByBookingId.get(record.bookingId) ?? null
+          ? record.booking.packageSessionOrdinal
+            ?? packageSessionIndexByBookingId.get(record.bookingId)
+            ?? null
           : null,
         fxArsPerUsdUsed:
           display.currency === "ARS" && record.currency.toLowerCase() === "usd"

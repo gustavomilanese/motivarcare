@@ -658,6 +658,18 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
                         {bookingStatusLabel(props.language, draft.status)}
                       </span>
                       {trial ? <span className="ops-session-pill ops-session-pill--requested">Trial</span> : null}
+                      {!trial
+                      && booking.packageSessionNumber
+                      && booking.packageCredits
+                      && booking.packageSessionNumber > 0
+                      && booking.packageCredits > 0 ? (
+                        <span className="ops-session-pill ops-session-pill--confirmed" title={booking.packageName ?? undefined}>
+                          {booking.packageSessionNumber}/{booking.packageCredits}
+                          {booking.packageDiscountPercent != null && booking.packageDiscountPercent > 0
+                            ? ` (−${booking.packageDiscountPercent}%)`
+                            : ""}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="ops-session-summary-meta">
                       {formatSessionWhen(props.language, booking.startsAt, booking.endsAt)}
@@ -680,6 +692,18 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
                         <p className="ops-session-id">
                           {t(props.language, { es: "Motivo cancelación:", en: "Cancel reason:", pt: "Motivo:" })}{" "}
                           {booking.cancellationReason}
+                        </p>
+                      ) : null}
+                      {!trial && booking.packageName ? (
+                        <p className="ops-session-id">
+                          {t(props.language, { es: "Paquete:", en: "Package:", pt: "Pacote:" })}{" "}
+                          {booking.packageName}
+                          {booking.packageSessionNumber && booking.packageCredits
+                            ? ` · ${booking.packageSessionNumber}/${booking.packageCredits}`
+                            : ""}
+                          {booking.packageDiscountPercent != null && booking.packageDiscountPercent > 0
+                            ? ` · −${booking.packageDiscountPercent}%`
+                            : ""}
                         </p>
                       ) : null}
 

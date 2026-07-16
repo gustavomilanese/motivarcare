@@ -6,6 +6,7 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { LockNotAcquiredError, withDistributedLock } from "../../lib/distributedLock.js";
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
+import { allocateNextPackageSessionOrdinal } from "../../lib/packageSessionAttribution.js";
 import { prisma } from "../../lib/prisma.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import { notifyPatientOnProfessionalBookingChange } from "../notifications/bookingLifecycleNotifications.js";
@@ -52,7 +53,9 @@ const createBookingSchema = z.object({
   endsAt: z.string().datetime(),
   patientTimezone: z.string().trim().min(3).max(120).optional(),
   idempotencyKey: z.string().trim().min(8).max(120).optional(),
-  holdId: z.string().uuid().optional()
+  holdId: z.string().uuid().optional(),
+  /** Reagendar prueba pagada: no consumir créditos de paquete aunque haya saldo. */
+  preferTrialCredit: z.boolean().optional()
 });
 
 const createSlotHoldSchema = z.object({
@@ -606,16 +609,23 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             throw new Error("PATIENT_PROFILE_NOT_FOUND");
           }
 
-          const latestPurchase = await tx.patientPackagePurchase.findFirst({
+          /** FIFO: consumir primero la compra más antigua con créditos disponibles. */
+          const purchaseToConsume = await tx.patientPackagePurchase.findFirst({
             where: {
               patientId: patientProfileId,
               remainingCredits: { gt: 0 }
             },
-            orderBy: { purchasedAt: "desc" },
-            select: { id: true, remainingCredits: true }
+            orderBy: { purchasedAt: "asc" },
+            select: {
+              id: true,
+              remainingCredits: true,
+              packageCreditsSnapshot: true,
+              totalCredits: true
+            }
           });
           let consumedPurchaseId: string | null = null;
           let consumedCredits = 0;
+          let packageSessionOrdinal: number | null = null;
 
           if (parsed.data.patientTimezone) {
             const nextSeenTimezone = sanitizeTimezone(parsed.data.patientTimezone);
@@ -630,10 +640,41 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             }
           }
 
-          if (latestPurchase && latestPurchase.remainingCredits > 0) {
+          const preferTrialCredit = Boolean(parsed.data.preferTrialCredit);
+          if (preferTrialCredit) {
+            const existingTrialBooking = await tx.booking.findFirst({
+              where: {
+                patientId: patientProfileId,
+                OR: [{ consumedPurchaseId: null }, { consumedCredits: 0 }],
+                status: { not: BOOKING_STATUS.CANCELLED }
+              },
+              select: { id: true }
+            });
+            if (existingTrialBooking) {
+              throw new Error("TRIAL_ALREADY_USED");
+            }
+
+            const dbTrialProof = await findPaidTrialCheckoutProof({
+              patientId: patientProfileId,
+              professionalId: professional.id,
+              startsAt,
+              endsAt
+            });
+            const trialProof = await loadTrialPaymentProof(patientProfileId);
+            const hasReusablePaidTrial =
+              dbTrialProof != null
+              || (trialProof != null && trialProof.professionalId === professional.id);
+            if (!hasReusablePaidTrial) {
+              throw new Error("TRIAL_PAYMENT_REQUIRED");
+            }
+
+            consumedPurchaseId = null;
+            consumedCredits = 0;
+          } else if (purchaseToConsume && purchaseToConsume.remainingCredits > 0) {
+            const allocated = await allocateNextPackageSessionOrdinal(tx, purchaseToConsume.id);
             const decremented = await tx.patientPackagePurchase.updateMany({
               where: {
-                id: latestPurchase.id,
+                id: purchaseToConsume.id,
                 remainingCredits: { gt: 0 }
               },
               data: {
@@ -643,8 +684,9 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             if (decremented.count === 0) {
               throw new Error("NO_AVAILABLE_CREDITS");
             }
-            consumedPurchaseId = latestPurchase.id;
+            consumedPurchaseId = purchaseToConsume.id;
             consumedCredits = 1;
+            packageSessionOrdinal = allocated.ordinal;
           } else {
             const existingTrialBooking = await tx.booking.findFirst({
               where: {
@@ -684,6 +726,7 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
               patientId: patientProfileId,
               professionalId: professional.id,
               consumedPurchaseId,
+              packageSessionOrdinal,
               patientTimezoneAtBooking,
               professionalTimezoneAtBooking,
               startsAt,
@@ -1441,7 +1484,7 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
           })
         : await tx.patientPackagePurchase.findFirst({
             where: { patientId: booking.patientId },
-            orderBy: { purchasedAt: "desc" },
+            orderBy: { purchasedAt: "asc" },
             select: { id: true }
           });
 

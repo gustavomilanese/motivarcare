@@ -7,6 +7,7 @@ import { hashPassword, requireAuth, requireRole, type AuthenticatedRequest } fro
 import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
+import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
 import {
   TEST_PATIENT_EMAIL,
   TEST_PROFESSIONAL_EMAIL,
@@ -1674,24 +1675,74 @@ adminRouter.get("/bookings", async (req, res) => {
     take: 500
   });
 
+  const purchaseIds = [
+    ...new Set(
+      bookings
+        .filter((booking) => booking.consumedPurchaseId != null && booking.consumedCredits > 0)
+        .map((booking) => booking.consumedPurchaseId as string)
+    )
+  ];
+
+  const purchases =
+    purchaseIds.length > 0
+      ? await prisma.patientPackagePurchase.findMany({
+          where: { id: { in: purchaseIds } },
+          select: {
+            id: true,
+            packageNameSnapshot: true,
+            packageCreditsSnapshot: true,
+            packageDiscountPercentSnapshot: true,
+            sessionPackage: { select: { name: true, credits: true } }
+          }
+        })
+      : [];
+  const purchaseById = new Map(purchases.map((purchase) => [purchase.id, purchase]));
+
+  const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(purchaseIds);
+
   return res.json({
-    bookings: bookings.map((booking) => ({
-      id: booking.id,
-      patientId: booking.patientId,
-      patientName: booking.patient.user.fullName,
-      professionalId: booking.professionalId,
-      professionalName: booking.professional.user.fullName,
-      startsAt: booking.startsAt,
-      endsAt: booking.endsAt,
-      status: booking.status,
-      consumedCredits: booking.consumedCredits,
-      consumedPurchaseId: booking.consumedPurchaseId,
-      cancellationReason: booking.cancellationReason,
-      cancelledAt: booking.cancelledAt,
-      completedAt: booking.completedAt,
-      joinUrlPatient: booking.videoSession?.joinUrlPatient ?? null,
-      joinUrlProfessional: booking.videoSession?.joinUrlProfessional ?? null
-    }))
+    bookings: bookings.map((booking) => {
+      const isPackageCredit = booking.consumedPurchaseId != null && booking.consumedCredits > 0;
+      const purchase =
+        isPackageCredit && booking.consumedPurchaseId
+          ? purchaseById.get(booking.consumedPurchaseId)
+          : undefined;
+      const packageCredits =
+        purchase?.packageCreditsSnapshot
+        ?? purchase?.sessionPackage.credits
+        ?? null;
+      const packageName =
+        purchase?.packageNameSnapshot?.trim()
+        || purchase?.sessionPackage.name?.trim()
+        || null;
+      const packageSessionNumber = isPackageCredit
+        ? booking.packageSessionOrdinal
+          ?? packageSessionIndexByBookingId.get(booking.id)
+          ?? null
+        : null;
+
+      return {
+        id: booking.id,
+        patientId: booking.patientId,
+        patientName: booking.patient.user.fullName,
+        professionalId: booking.professionalId,
+        professionalName: booking.professional.user.fullName,
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        status: booking.status,
+        consumedCredits: booking.consumedCredits,
+        consumedPurchaseId: booking.consumedPurchaseId,
+        packageName,
+        packageCredits,
+        packageDiscountPercent: purchase?.packageDiscountPercentSnapshot ?? null,
+        packageSessionNumber,
+        cancellationReason: booking.cancellationReason,
+        cancelledAt: booking.cancelledAt,
+        completedAt: booking.completedAt,
+        joinUrlPatient: booking.videoSession?.joinUrlPatient ?? null,
+        joinUrlProfessional: booking.videoSession?.joinUrlProfessional ?? null
+      };
+    })
   });
 });
 
@@ -1770,7 +1821,7 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
           })
         : await tx.patientPackagePurchase.findFirst({
             where: { patientId: existing.patientId },
-            orderBy: { purchasedAt: "desc" },
+            orderBy: { purchasedAt: "asc" },
             select: { id: true }
           });
 
@@ -2481,11 +2532,35 @@ adminRouter.post("/patients/:patientId/credits", async (req, res) => {
   });
 
   if (patient.purchases[0]) {
-    const nextCredits = Math.max(0, patient.purchases[0].remainingCredits + parsed.data.amount);
-    await prisma.patientPackagePurchase.update({
-      where: { id: patient.purchases[0].id },
-      data: { remainingCredits: nextCredits }
-    });
+    const latest = patient.purchases[0];
+    if (parsed.data.amount < 0) {
+      let left = -parsed.data.amount;
+      const purchasesWithCredits = await prisma.patientPackagePurchase.findMany({
+        where: {
+          patientId: patient.id,
+          remainingCredits: { gt: 0 }
+        },
+        orderBy: { purchasedAt: "asc" },
+        select: { id: true, remainingCredits: true }
+      });
+      for (const purchase of purchasesWithCredits) {
+        if (left <= 0) break;
+        const take = Math.min(purchase.remainingCredits, left);
+        await prisma.patientPackagePurchase.update({
+          where: { id: purchase.id },
+          data: { remainingCredits: purchase.remainingCredits - take }
+        });
+        left -= take;
+      }
+    } else if (parsed.data.amount > 0) {
+      await prisma.patientPackagePurchase.update({
+        where: { id: latest.id },
+        data: {
+          remainingCredits: { increment: parsed.data.amount },
+          totalCredits: { increment: parsed.data.amount }
+        }
+      });
+    }
   }
 
   return res.status(201).json({ creditMovement: adjustment });
@@ -2566,6 +2641,29 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
         }, {})
       : null;
 
+  const managementPurchaseIds = [
+    ...new Set(
+      patient.bookings
+        .filter((booking) => booking.consumedPurchaseId != null && booking.consumedCredits > 0)
+        .map((booking) => booking.consumedPurchaseId as string)
+    )
+  ];
+  const managementPurchases =
+    managementPurchaseIds.length > 0
+      ? await prisma.patientPackagePurchase.findMany({
+          where: { id: { in: managementPurchaseIds } },
+          select: {
+            id: true,
+            packageNameSnapshot: true,
+            packageCreditsSnapshot: true,
+            packageDiscountPercentSnapshot: true,
+            sessionPackage: { select: { name: true, credits: true } }
+          }
+        })
+      : [];
+  const managementPurchaseById = new Map(managementPurchases.map((purchase) => [purchase.id, purchase]));
+  const managementSessionIndex = await buildPackageSessionIndexByBookingId(managementPurchaseIds);
+
   return res.json({
     patient: {
       id: patient.id,
@@ -2593,21 +2691,42 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
             purchasedAt: latestPurchase.purchasedAt
           }
         : null,
-      confirmedBookings: patient.bookings.map((booking) => ({
-        id: booking.id,
-        patientId: booking.patientId,
-        patientName: patient.user.fullName,
-        professionalId: booking.professionalId,
-        professionalName: booking.professional.user.fullName,
-        startsAt: booking.startsAt,
-        endsAt: booking.endsAt,
-        status: booking.status,
-        consumedCredits: booking.consumedCredits,
-        consumedPurchaseId: booking.consumedPurchaseId,
-        cancellationReason: booking.cancellationReason,
-        cancelledAt: booking.cancelledAt,
-        completedAt: booking.completedAt
-      }))
+      confirmedBookings: patient.bookings.map((booking) => {
+        const isPackageCredit = booking.consumedPurchaseId != null && booking.consumedCredits > 0;
+        const purchase =
+          isPackageCredit && booking.consumedPurchaseId
+            ? managementPurchaseById.get(booking.consumedPurchaseId)
+            : undefined;
+        return {
+          id: booking.id,
+          patientId: booking.patientId,
+          patientName: patient.user.fullName,
+          professionalId: booking.professionalId,
+          professionalName: booking.professional.user.fullName,
+          startsAt: booking.startsAt,
+          endsAt: booking.endsAt,
+          status: booking.status,
+          consumedCredits: booking.consumedCredits,
+          consumedPurchaseId: booking.consumedPurchaseId,
+          packageName:
+            purchase?.packageNameSnapshot?.trim()
+            || purchase?.sessionPackage.name?.trim()
+            || null,
+          packageCredits:
+            purchase?.packageCreditsSnapshot
+            ?? purchase?.sessionPackage.credits
+            ?? null,
+          packageDiscountPercent: purchase?.packageDiscountPercentSnapshot ?? null,
+          packageSessionNumber: isPackageCredit
+            ? booking.packageSessionOrdinal
+              ?? managementSessionIndex.get(booking.id)
+              ?? null
+            : null,
+          cancellationReason: booking.cancellationReason,
+          cancelledAt: booking.cancelledAt,
+          completedAt: booking.completedAt
+        };
+      })
     }
   });
 });
@@ -2846,19 +2965,37 @@ adminRouter.patch("/patients/:patientId/sessions-available", async (req, res) =>
   const delta = parsed.data.remainingCredits - currentWalletRemaining;
 
   const updatedPurchase = await prisma.$transaction(async (tx) => {
-    await tx.patientPackagePurchase.updateMany({
-      where: {
-        patientId: patient.id,
-        remainingCredits: { gt: 0 }
-      },
-      data: {
-        remainingCredits: 0
+    if (delta < 0) {
+      let left = -delta;
+      const purchasesWithCredits = await tx.patientPackagePurchase.findMany({
+        where: {
+          patientId: patient.id,
+          remainingCredits: { gt: 0 }
+        },
+        orderBy: { purchasedAt: "asc" },
+        select: { id: true, remainingCredits: true }
+      });
+      for (const purchase of purchasesWithCredits) {
+        if (left <= 0) break;
+        const take = Math.min(purchase.remainingCredits, left);
+        await tx.patientPackagePurchase.update({
+          where: { id: purchase.id },
+          data: { remainingCredits: purchase.remainingCredits - take }
+        });
+        left -= take;
       }
-    });
+    } else if (delta > 0) {
+      await tx.patientPackagePurchase.update({
+        where: { id: latestPurchase.id },
+        data: {
+          remainingCredits: { increment: delta },
+          totalCredits: { increment: delta }
+        }
+      });
+    }
 
-    return tx.patientPackagePurchase.update({
-      where: { id: latestPurchase.id },
-      data: { remainingCredits: parsed.data.remainingCredits }
+    return tx.patientPackagePurchase.findUniqueOrThrow({
+      where: { id: latestPurchase.id }
     });
   });
 

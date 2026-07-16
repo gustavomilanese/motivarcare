@@ -44,20 +44,7 @@ export async function fulfillPaidPackagePurchase(params: {
       throw new Error("Session package not found or inactive");
     }
 
-    const creditSummary = await tx.patientPackagePurchase.aggregate({
-      where: { patientId: patient.id },
-      _sum: { remainingCredits: true }
-    });
-    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
-
-    if (carryOverCredits > 0) {
-      await tx.patientPackagePurchase.updateMany({
-        where: { patientId: patient.id, remainingCredits: { gt: 0 } },
-        data: { remainingCredits: 0 }
-      });
-    }
-
-    const nextWalletCredits = carryOverCredits + sessionPackage.credits;
+    /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
     const purchaseCurrency = params.billingCurrency.toLowerCase();
     const fxSnapshot = await computeFxSnapshot({
       priceCents: params.pricing.priceCents,
@@ -69,8 +56,8 @@ export async function fulfillPaidPackagePurchase(params: {
         patientId: patient.id,
         packageId: sessionPackage.id,
         stripeCheckoutSessionId: params.checkoutSessionId,
-        totalCredits: nextWalletCredits,
-        remainingCredits: nextWalletCredits,
+        totalCredits: sessionPackage.credits,
+        remainingCredits: sessionPackage.credits,
         packageNameSnapshot: sessionPackage.name,
         packageCreditsSnapshot: sessionPackage.credits,
         packageListPriceCentsSnapshot: params.pricing.listPriceCents,
@@ -155,20 +142,7 @@ export async function fulfillPaidIndividualSessionsPurchase(params: {
       throw new Error("Patient profile not found for checkout");
     }
 
-    const creditSummary = await tx.patientPackagePurchase.aggregate({
-      where: { patientId: patient.id },
-      _sum: { remainingCredits: true }
-    });
-    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
-
-    if (carryOverCredits > 0) {
-      await tx.patientPackagePurchase.updateMany({
-        where: { patientId: patient.id, remainingCredits: { gt: 0 } },
-        data: { remainingCredits: 0 }
-      });
-    }
-
-    const nextWalletCredits = carryOverCredits + params.sessionCount;
+    /** Cada compra mantiene su saldo; al reservar se consume FIFO (más antigua primero). */
     const purchaseCurrency = params.billingCurrency.toLowerCase();
     const fxSnapshot = await computeFxSnapshot({
       priceCents: params.pricing.priceCents,
@@ -180,8 +154,8 @@ export async function fulfillPaidIndividualSessionsPurchase(params: {
         patientId: patient.id,
         packageId: params.packageId,
         stripeCheckoutSessionId: params.checkoutSessionId,
-        totalCredits: nextWalletCredits,
-        remainingCredits: nextWalletCredits,
+        totalCredits: params.sessionCount,
+        remainingCredits: params.sessionCount,
         packageNameSnapshot: params.displayName,
         packageCreditsSnapshot: params.sessionCount,
         packageListPriceCentsSnapshot: params.pricing.listPriceCents,

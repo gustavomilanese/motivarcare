@@ -6337,6 +6337,13 @@ button.danger {
   font-variant-numeric: tabular-nums;
 }
 
+.session-booking-trial-rebook-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4a5568;
+}
+
 .session-booking-footer {
   display: grid;
   gap: 10px;

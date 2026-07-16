@@ -59,6 +59,10 @@ function sessionNumberLabel(language: AppLanguage, movement: EarningsMovement): 
     const credits = movement.packageCredits ?? 0;
     const sessionNumber = movement.packageSessionNumber ?? 0;
     if (credits > 0 && sessionNumber > 0) {
+      const discount = movement.packageDiscountPercent;
+      if (discount != null && discount > 0) {
+        return `${sessionNumber}/${credits} (−${discount}%)`;
+      }
       return `${sessionNumber}/${credits}`;
     }
   }

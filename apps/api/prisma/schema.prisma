@@ -493,6 +493,8 @@ model Booking {
   patientId          String
   professionalId     String
   consumedPurchaseId String?
+  /// Posición 1-based dentro de la compra consumida (ej. 2 de un pack 4 → 2).
+  packageSessionOrdinal Int?
   patientTimezoneAtBooking String         @default("UTC")
   professionalTimezoneAtBooking String    @default("UTC")
   startsAt           DateTime

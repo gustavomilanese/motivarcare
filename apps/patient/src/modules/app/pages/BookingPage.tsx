@@ -160,6 +160,8 @@ export function BookingPage(props: {
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [panelMode, setPanelMode] = useState<"new" | "reschedule" | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+  /** Abierto desde Dashboard “Elegir nuevo horario” de prueba pagada. */
+  const [trialRebookMode, setTrialRebookMode] = useState(false);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
@@ -333,6 +335,8 @@ export function BookingPage(props: {
   });
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
   const pendingSessions = props.state.subscription.creditsRemaining;
+  const canBookPaidTrialRebook = props.state.trialRebookAvailable && trialRebookMode;
+  const canOpenNewBooking = pendingSessions > 0 || canBookPaidTrialRebook;
   slotHoldIdRef.current = slotHoldId;
 
   const releaseCurrentSlotHold = useCallback(async () => {
@@ -441,7 +445,7 @@ export function BookingPage(props: {
 
   const canConfirmBooking = panelMode === "reschedule"
     ? Boolean(selectedSlot && editingBooking)
-    : Boolean(selectedSlot) && pendingSessions > 0 && Boolean(slotHoldId) && !slotHoldLoading;
+    : Boolean(selectedSlot) && canOpenNewBooking && Boolean(slotHoldId) && !slotHoldLoading;
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const hasProfessionalsOnPortal = props.professionals.length > 0;
   const packageCatalogView = useMemo(
@@ -709,6 +713,7 @@ export function BookingPage(props: {
     }
 
     bookingReturnToRef.current = safeInternalReturnPath(searchParams.get("returnTo"));
+    const openAsTrialRebook = searchParams.get("trial") === "1" && props.state.trialRebookAvailable;
 
     if (isCheckoutFlow) {
       setCheckoutPaymentLoading(false);
@@ -724,20 +729,22 @@ export function BookingPage(props: {
     nextParams.delete("purchase");
     nextParams.delete("source");
     nextParams.delete("returnTo");
+    nextParams.delete("trial");
     setSearchParams(nextParams, { replace: true });
 
     setEditingBookingId(null);
     setSelectedSlotId("");
     setBookingActionError("");
+    setTrialRebookMode(openAsTrialRebook);
 
-    if (pendingSessions <= 0) {
+    if (pendingSessions <= 0 && !openAsTrialRebook) {
       setShowNoCreditsAlert(true);
       setPanelMode(null);
     } else {
       setShowNoCreditsAlert(false);
       setPanelMode("new");
     }
-  }, [isCheckoutFlow, pendingSessions, searchParams, setSearchParams]);
+  }, [isCheckoutFlow, pendingSessions, props.state.trialRebookAvailable, searchParams, setSearchParams]);
 
   // Abrir el popup de reprogramación cuando llega ?reschedule=<bookingId>
   // (desde el botón Reprogramar del Inicio o del detalle de sesión).
@@ -1074,7 +1081,7 @@ export function BookingPage(props: {
       result = await props.onConfirmBooking(
         bookingProfessionalId,
         selectedSlot,
-        false,
+        canBookPaidTrialRebook,
         panelMode === "new" ? slotHoldId : undefined
       );
     } finally {
@@ -1105,6 +1112,7 @@ export function BookingPage(props: {
     setSelectedSlotId("");
     setBookingActionError("");
     setSlotHoldLoading(false);
+    setTrialRebookMode(false);
     bookingReturnToRef.current = null;
   };
 
@@ -1208,13 +1216,20 @@ export function BookingPage(props: {
         void releaseCurrentSlotHold();
         setShowNoCreditsAlert(false);
         setSlotHoldLoading(false);
+        setTrialRebookMode(false);
         return null;
       }
       if (pendingSessions <= 0) {
+        if (props.state.trialRebookAvailable) {
+          setShowNoCreditsAlert(false);
+          setTrialRebookMode(true);
+          return "new";
+        }
         dispatchAcquireSessions("book_without_credits");
         return null;
       }
       setShowNoCreditsAlert(false);
+      setTrialRebookMode(false);
       return "new";
     });
   };
@@ -1860,6 +1875,7 @@ export function BookingPage(props: {
         availableSlots={availableSlots}
         slotsLoading={slotsLoading}
         pendingSessions={pendingSessions}
+        trialRebookMode={trialRebookMode && canBookPaidTrialRebook}
         bookingActionError={bookingActionError}
         canConfirmBooking={canConfirmBooking}
         slotHoldLoading={slotHoldLoading}

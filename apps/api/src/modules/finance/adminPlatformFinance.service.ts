@@ -136,11 +136,13 @@ export async function getAdminPlatformExecutedEarnings(query: Record<string, unk
           select: {
             fxArsPerUsdSnapshot: true,
             packagePriceCentsSnapshot: true,
-            packageCreditsSnapshot: true
+            packageCreditsSnapshot: true,
+            packageNameSnapshot: true,
+            packageDiscountPercentSnapshot: true
           }
         },
         package: { select: { name: true, credits: true } },
-        booking: { select: { endsAt: true } }
+        booking: { select: { endsAt: true, packageSessionOrdinal: true } }
       },
       orderBy: movementsOrderBy(movementsQuery.sort),
       skip: movementsSkip,
@@ -187,6 +189,11 @@ export async function getAdminPlatformExecutedEarnings(query: Record<string, unk
       const packageCredits =
         record.purchase?.packageCreditsSnapshot ?? record.package?.credits ?? null;
       const fromPackage = Boolean(record.packageId);
+      const packageSessionNumber = record.purchaseId
+        ? record.booking.packageSessionOrdinal
+          ?? packageSessionIndexByBookingId.get(record.bookingId)
+          ?? null
+        : null;
       return {
         bookingId: record.bookingId,
         patientId: record.patientId,
@@ -198,11 +205,10 @@ export async function getAdminPlatformExecutedEarnings(query: Record<string, unk
         completedAt: record.bookingCompletedAt?.toISOString() ?? record.bookingStartsAt.toISOString(),
         isTrial: record.isTrial,
         pricingSource: fromPackage ? "package" : "list",
-        packageName: record.package?.name ?? null,
+        packageName: record.purchase?.packageNameSnapshot ?? record.package?.name ?? null,
         packageCredits,
-        packageSessionNumber: record.purchaseId
-          ? packageSessionIndexByBookingId.get(record.bookingId) ?? null
-          : null,
+        packageDiscountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null,
+        packageSessionNumber,
         grossCents: convertFinanceMinorToUsdMinor(record.sessionPriceCents, record.currency, fx, liveFx),
         platformFeeCents: convertFinanceMinorToUsdMinor(record.platformFeeCents, record.currency, fx, liveFx),
         amountCents: convertFinanceMinorToUsdMinor(record.professionalNetCents, record.currency, fx, liveFx),

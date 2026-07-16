@@ -1355,29 +1355,6 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
   });
 
   const purchase = await prisma.$transaction(async (tx) => {
-    const creditSummary = await tx.patientPackagePurchase.aggregate({
-      where: {
-        patientId: patient.id
-      },
-      _sum: {
-        remainingCredits: true
-      }
-    });
-    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
-
-    if (carryOverCredits > 0) {
-      await tx.patientPackagePurchase.updateMany({
-        where: {
-          patientId: patient.id,
-          remainingCredits: { gt: 0 }
-        },
-        data: {
-          remainingCredits: 0
-        }
-      });
-    }
-
-    const nextWalletCredits = carryOverCredits + sessionPackage.credits;
     const checkoutSessionId = [
       "manual-checkout",
       patient.id,
@@ -1390,8 +1367,8 @@ profilesRouter.post("/me/purchase-package", requireAuth, async (req: Authenticat
         patientId: patient.id,
         packageId: sessionPackage.id,
         stripeCheckoutSessionId: checkoutSessionId,
-        totalCredits: nextWalletCredits,
-        remainingCredits: nextWalletCredits,
+        totalCredits: sessionPackage.credits,
+        remainingCredits: sessionPackage.credits,
         packageNameSnapshot: sessionPackage.name,
         packageCreditsSnapshot: sessionPackage.credits,
         packageListPriceCentsSnapshot: pricing.listPriceCents,
@@ -1513,27 +1490,6 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
   const displayName = `Sesiones individuales (×${sessionCount})`;
 
   const purchase = await prisma.$transaction(async (tx) => {
-    const creditSummary = await tx.patientPackagePurchase.aggregate({
-      where: { patientId: patient.id },
-      _sum: {
-        remainingCredits: true
-      }
-    });
-    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
-
-    if (carryOverCredits > 0) {
-      await tx.patientPackagePurchase.updateMany({
-        where: {
-          patientId: patient.id,
-          remainingCredits: { gt: 0 }
-        },
-        data: {
-          remainingCredits: 0
-        }
-      });
-    }
-
-    const nextWalletCredits = carryOverCredits + sessionCount;
     const checkoutSessionId = [
       "manual-individual",
       patient.id,
@@ -1546,8 +1502,8 @@ profilesRouter.post("/me/purchase-individual-sessions", requireAuth, async (req:
         patientId: patient.id,
         packageId: unitPackage.id,
         stripeCheckoutSessionId: checkoutSessionId,
-        totalCredits: nextWalletCredits,
-        remainingCredits: nextWalletCredits,
+        totalCredits: sessionCount,
+        remainingCredits: sessionCount,
         packageNameSnapshot: displayName,
         packageCreditsSnapshot: sessionCount,
         packageListPriceCentsSnapshot: totalListPriceCents,

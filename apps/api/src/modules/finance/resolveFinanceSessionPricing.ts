@@ -8,6 +8,7 @@ export type FinancePurchasePricingInput = {
   packagePriceCentsSnapshot: number | null;
   packagePriceUsdCentsSnapshot: number | null;
   packageCurrencySnapshot: string | null;
+  packageDiscountPercentSnapshot?: number | null;
   platformCommissionPercentSnapshot: number | null;
   trialPlatformPercentSnapshot: number | null;
   sessionPackage: {
@@ -131,6 +132,11 @@ export function resolvePackageSessionPricing(params: {
     purchase.packageNameSnapshot?.trim()
     || purchase.sessionPackage.name?.trim()
     || "Package";
+  const discountPercent = purchase.packageDiscountPercentSnapshot ?? null;
+  const sourceLabel =
+    discountPercent != null && discountPercent > 0
+      ? `${packageName} (${credits} cr · −${discountPercent}%)`
+      : `${packageName} (${credits} cr)`;
 
   return {
     sessionPriceCents,
@@ -140,7 +146,7 @@ export function resolvePackageSessionPricing(params: {
     professionalNetCents,
     packageId: purchase.packageId,
     purchaseId: purchase.id,
-    sourceLabel: `${packageName} (${credits} cr)`,
+    sourceLabel,
     packageCredits: credits
   };
 }

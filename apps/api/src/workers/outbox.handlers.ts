@@ -149,28 +149,6 @@ async function processStripeCheckoutCompleted(payload: unknown) {
       throw new Error("Could not resolve package for checkout session");
     }
 
-    const creditSummary = await tx.patientPackagePurchase.aggregate({
-      where: { patientId: patient.id },
-      _sum: {
-        remainingCredits: true
-      }
-    });
-    const carryOverCredits = creditSummary._sum.remainingCredits ?? 0;
-
-    if (carryOverCredits > 0) {
-      await tx.patientPackagePurchase.updateMany({
-        where: {
-          patientId: patient.id,
-          remainingCredits: { gt: 0 }
-        },
-        data: {
-          remainingCredits: 0
-        }
-      });
-    }
-
-    const nextWalletCredits = carryOverCredits + sessionPackage.credits;
-
     const discountPct = sessionPackage.discountPercent ?? 0;
     const listPriceCents =
       discountPct > 0 && discountPct < 100
@@ -188,8 +166,8 @@ async function processStripeCheckoutCompleted(payload: unknown) {
         patientId: patient.id,
         packageId: sessionPackage.id,
         stripeCheckoutSessionId: checkoutSessionId,
-        totalCredits: nextWalletCredits,
-        remainingCredits: nextWalletCredits,
+        totalCredits: sessionPackage.credits,
+        remainingCredits: sessionPackage.credits,
         packageNameSnapshot: sessionPackage.name,
         packageCreditsSnapshot: sessionPackage.credits,
         packageListPriceCentsSnapshot: listPriceCents,

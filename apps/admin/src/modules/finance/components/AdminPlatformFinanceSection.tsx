@@ -67,7 +67,12 @@ function sessionNumberLabel(language: AppLanguage, movement: AdminPlatformExecut
     const credits = movement.packageCredits ?? 0;
     const n = movement.packageSessionNumber ?? 0;
     if (credits > 0 && n > 0) {
-      return `${n}/${credits}`;
+      const base = `${n}/${credits}`;
+      const discount = movement.packageDiscountPercent;
+      if (discount != null && discount > 0) {
+        return `${base} (−${discount}%)`;
+      }
+      return base;
     }
   }
   return "—";

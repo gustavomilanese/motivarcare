@@ -1,5 +1,5 @@
 import { financeCompletedReferenceWhere } from "./financeStatsRange.js";
-import { prisma } from "./prisma.js";
+export { buildPackageSessionIndexByBookingId } from "./packageSessionAttribution.js";
 
 export type MovementsPricingFilter = "all" | "package" | "list";
 export type MovementsSortKey = "date_desc" | "date_asc" | "gross_desc" | "gross_asc";
@@ -95,44 +95,3 @@ export function buildMovementsWhere(input: {
   };
 }
 
-export async function buildPackageSessionIndexByBookingId(
-  purchaseIds: string[]
-): Promise<Map<string, number>> {
-  const indexByBookingId = new Map<string, number>();
-  const uniquePurchaseIds = [...new Set(purchaseIds)];
-  if (uniquePurchaseIds.length === 0) {
-    return indexByBookingId;
-  }
-
-  const records = await prisma.financeSessionRecord.findMany({
-    where: {
-      purchaseId: { in: uniquePurchaseIds },
-      bookingStatus: "COMPLETED"
-    },
-    select: {
-      bookingId: true,
-      purchaseId: true,
-      bookingStartsAt: true,
-      bookingCompletedAt: true
-    },
-    orderBy: [{ bookingStartsAt: "asc" }, { bookingCompletedAt: "asc" }]
-  });
-
-  const byPurchase = new Map<string, string[]>();
-  for (const record of records) {
-    if (!record.purchaseId) {
-      continue;
-    }
-    const bookingIds = byPurchase.get(record.purchaseId) ?? [];
-    bookingIds.push(record.bookingId);
-    byPurchase.set(record.purchaseId, bookingIds);
-  }
-
-  for (const bookingIds of byPurchase.values()) {
-    bookingIds.forEach((bookingId, index) => {
-      indexByBookingId.set(bookingId, index + 1);
-    });
-  }
-
-  return indexByBookingId;
-}

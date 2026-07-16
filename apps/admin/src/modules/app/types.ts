@@ -452,6 +452,10 @@ export interface AdminBookingOps {
   status: "REQUESTED" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
   consumedCredits: number;
   consumedPurchaseId?: string | null;
+  packageName?: string | null;
+  packageCredits?: number | null;
+  packageDiscountPercent?: number | null;
+  packageSessionNumber?: number | null;
   cancellationReason: string | null;
   cancelledAt: string | null;
   completedAt: string | null;

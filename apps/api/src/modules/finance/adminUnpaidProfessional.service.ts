@@ -10,6 +10,10 @@ import {
 } from "../../lib/professionalFinanceDisplay.js";
 import { isDlocalGoConfigured } from "../../lib/dlocalGoPayouts.js";
 import { prisma } from "../../lib/prisma.js";
+import {
+  buildPackageSessionIndexByBookingId,
+  formatPackageSessionSourceLabel
+} from "../../lib/packageSessionAttribution.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getUsdDisplayFxRates } from "../../lib/usdDisplayFxRates.js";
 import {
@@ -209,6 +213,9 @@ export type UnpaidProfessionalSessionRow = {
   sourceKind: "trial" | "package";
   sourceLabel: string;
   purchaseId: string | null;
+  packageSessionNumber?: number | null;
+  packageCredits?: number | null;
+  packageDiscountPercent?: number | null;
   paymentCheckoutId: string | null;
   currency: string;
   sessionPriceCents: number;
@@ -292,7 +299,13 @@ export async function getUnpaidProfessionalDetail(
           id: true,
           packageNameSnapshot: true,
           packageCreditsSnapshot: true,
+          packageDiscountPercentSnapshot: true,
           fxArsPerUsdSnapshot: true
+        }
+      },
+      booking: {
+        select: {
+          packageSessionOrdinal: true
         }
       },
       payoutLine: { select: { id: true, status: true, paidAt: true, payoutReference: true } }
@@ -303,6 +316,10 @@ export async function getUnpaidProfessionalDetail(
     selectedMonths.length === 0
       ? allRecords
       : allRecords.filter((record) => selectedMonths.includes(financeRecordMonthKey(record)));
+
+  const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
+    records.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
+  );
 
   const bookingIds = records.map((record) => record.bookingId);
   const trialCheckouts = bookingIds.length
@@ -387,14 +404,20 @@ export async function getUnpaidProfessionalDetail(
       record.purchase?.packageCreditsSnapshot
       ?? record.package?.credits
       ?? null;
+    const packageSessionNumber = record.purchaseId
+      ? record.booking.packageSessionOrdinal
+        ?? packageSessionIndexByBookingId.get(record.bookingId)
+        ?? null
+      : null;
     const sourceKind = record.isTrial ? ("trial" as const) : ("package" as const);
     const sourceLabel = record.isTrial
       ? "Rate × sesión"
-      : packageName
-        ? packageCredits != null
-          ? `${packageName} (${packageCredits} cr)`
-          : packageName
-        : "Paquete";
+      : formatPackageSessionSourceLabel({
+          packageName: packageName ?? "Paquete",
+          packageCredits,
+          packageSessionNumber,
+          discountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null
+        });
 
     return {
       id: record.id,
@@ -408,6 +431,9 @@ export async function getUnpaidProfessionalDetail(
       sourceKind,
       sourceLabel,
       purchaseId: record.purchaseId,
+      packageSessionNumber,
+      packageCredits,
+      packageDiscountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null,
       paymentCheckoutId: trialCheckout?.id ?? null,
       currency: record.currency,
       sessionPriceCents: record.sessionPriceCents,

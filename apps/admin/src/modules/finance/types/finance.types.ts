@@ -235,6 +235,7 @@ export type AdminPlatformMovement = {
   pricingSource?: "package" | "list";
   packageName?: string | null;
   packageCredits?: number | null;
+  packageDiscountPercent?: number | null;
   packageSessionNumber?: number | null;
   grossCents: number;
   platformFeeCents: number;
@@ -284,6 +285,9 @@ export type UnpaidProfessionalSessionDetail = {
   sourceKind: "trial" | "package";
   sourceLabel: string;
   purchaseId: string | null;
+  packageSessionNumber?: number | null;
+  packageCredits?: number | null;
+  packageDiscountPercent?: number | null;
   paymentCheckoutId: string | null;
   currency: string;
   sessionPriceCents: number;

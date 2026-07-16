@@ -493,7 +493,16 @@ export function PatientEditModal(props: {
               return (
                 <details key={booking.id} className="card stack">
                   <summary className="patient-inline-head">
-                    <h4>{booking.professionalName} · {props.formatDate(booking.startsAt)}</h4>
+                    <h4>
+                      {booking.professionalName} · {props.formatDate(booking.startsAt)}
+                      {!isTrialBooking
+                      && booking.packageSessionNumber
+                      && booking.packageCredits
+                        ? ` · ${booking.packageSessionNumber}/${booking.packageCredits}`
+                        : isTrialBooking
+                          ? " · Trial"
+                          : ""}
+                    </h4>
                     <span>Expandir</span>
                   </summary>
                   <div className="grid-form">

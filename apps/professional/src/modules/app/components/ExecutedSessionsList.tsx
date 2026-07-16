@@ -67,7 +67,12 @@ function sessionNumberLabel(
     const credits = movement.packageCredits ?? 0;
     const sessionNumber = movement.packageSessionNumber ?? 0;
     if (credits > 0 && sessionNumber > 0) {
-      return { label: `${sessionNumber}/${credits}`, isBadge: true, variant: "package" };
+      const discount = movement.packageDiscountPercent;
+      const label =
+        discount != null && discount > 0
+          ? `${sessionNumber}/${credits} (−${discount}%)`
+          : `${sessionNumber}/${credits}`;
+      return { label, isBadge: true, variant: "package" };
     }
     return { label: "—", isBadge: false };
   }

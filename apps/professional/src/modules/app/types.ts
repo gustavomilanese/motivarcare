@@ -290,6 +290,7 @@ export type EarningsMovement = {
   packageId?: string | null;
   packageName?: string | null;
   packageCredits?: number | null;
+  packageDiscountPercent?: number | null;
   packagePriceCents?: number | null;
   packageSessionNumber?: number | null;
   fxArsPerUsdUsed?: number | null;

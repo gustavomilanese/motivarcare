@@ -227,6 +227,9 @@ export function PortalRoutes(props: {
                   onNavigateToSessionsCheckout={startSessionsCheckoutFromDashboard}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
+                  onNavigateToRebookTrial={() =>
+                    props.navigate("/sessions?focus=new-booking&trial=1&returnTo=/")
+                  }
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
                   showPatientGoogleCalendarReconnectCta={props.showPatientGoogleCalendarReconnectCta}
                   onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}

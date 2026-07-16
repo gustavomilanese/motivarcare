@@ -506,8 +506,10 @@ export function usePortalActions(params: {
     useTrialSession: boolean,
     holdId?: string
   ): Promise<{ ok: boolean; error?: string }> => {
-    const trialAlreadyUsed = params.state.trialUsedProfessionalIds.includes(professionalId);
-    const bookingAsTrial = useTrialSession && !trialAlreadyUsed;
+    const preferTrialCredit = useTrialSession && params.state.trialRebookAvailable;
+    const trialAlreadyUsed =
+      !preferTrialCredit && params.state.trialUsedProfessionalIds.includes(professionalId);
+    const bookingAsTrial = (useTrialSession && !trialAlreadyUsed) || preferTrialCredit;
     const authToken = params.state.authToken;
     let remoteBooking:
       | {
@@ -539,7 +541,8 @@ export function usePortalActions(params: {
               endsAt: slot.endsAt,
               patientTimezone: params.sessionTimezone,
               idempotencyKey,
-              ...(holdId ? { holdId } : {})
+              ...(holdId ? { holdId } : {}),
+              ...(preferTrialCredit ? { preferTrialCredit: true } : {})
             })
           },
           authToken
@@ -661,6 +664,7 @@ export function usePortalActions(params: {
           currentBookingAsTrial && !currentTrialAlreadyUsed
             ? [...current.trialUsedProfessionalIds, professionalId]
             : current.trialUsedProfessionalIds,
+        trialRebookAvailable: currentBookingAsTrial ? false : current.trialRebookAvailable,
         subscription: {
           ...current.subscription,
           creditsRemaining: currentBookingAsTrial

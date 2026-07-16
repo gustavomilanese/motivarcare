@@ -19,6 +19,7 @@ export function BookingActionModal(props: {
   availableSlots: TimeSlot[];
   slotsLoading: boolean;
   pendingSessions: number;
+  trialRebookMode?: boolean;
   bookingActionError: string;
   canConfirmBooking: boolean;
   slotHoldLoading?: boolean;
@@ -177,9 +178,26 @@ export function BookingActionModal(props: {
           )}
 
           <div className="session-booking-credits-pill">
-            <span>{t(props.language, { es: "Sesiones disponibles", en: "Available sessions", pt: "Sessoes disponiveis" })}</span>
-            <strong>{props.pendingSessions}</strong>
+            <span>
+              {props.trialRebookMode
+                ? t(props.language, {
+                    es: "Sesión de prueba pagada",
+                    en: "Paid trial session",
+                    pt: "Sessao de teste paga"
+                  })
+                : t(props.language, { es: "Sesiones disponibles", en: "Available sessions", pt: "Sessoes disponiveis" })}
+            </span>
+            <strong>{props.trialRebookMode ? 1 : props.pendingSessions}</strong>
           </div>
+          {props.trialRebookMode ? (
+            <p className="session-booking-trial-rebook-note">
+              {t(props.language, {
+                es: "Reagendás con tu profesional asignado, sin cambiar de terapeuta ni volver a pagar.",
+                en: "You’re rebooking with your assigned professional — no therapist change and no second payment.",
+                pt: "Voce reagenda com o profissional atribuido, sem trocar de terapeuta nem pagar de novo."
+              })}
+            </p>
+          ) : null}
         </article>
 
         <footer className="session-booking-footer">
