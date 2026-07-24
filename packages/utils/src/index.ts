@@ -309,6 +309,7 @@ export {
   convertUsdMajorToDisplayMajor,
   displayCurrencyForMarket,
   defaultDisplayCurrencyForPatient,
+  formatLocalMajorForPatientDisplay,
   formatUsdMajorForPatientDisplay,
   niceDisplayRoundStep,
   resolveFxRatePerUsd,

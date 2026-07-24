@@ -6,7 +6,10 @@ import {
   type LocalizedText,
   type SupportedCurrency
 } from "@therapy/i18n-config";
-import { formatPatientUsdPrice } from "../../lib/formatPatientUsdPrice";
+import {
+  formatPackageCardMoney,
+  resolvePackageCardDisplayPricing
+} from "../../lib/packageCardDisplayPricing";
 import { useMobilePortal } from "../../hooks/useMobilePortal";
 import { packageBenefitLines, packageRhythmLabel } from "../../lib/packageCatalog";
 import {
@@ -18,26 +21,6 @@ import type { PackagePlan } from "../../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-/**
- * `amountMajor` está en USD (priceCents/100). Convierte a moneda local de display.
- */
-function formatMoney(
-  amountMajor: number,
-  language: AppLanguage,
-  displayCurrency: SupportedCurrency,
-  fxRates?: DisplayFxRates,
-  residencyCountry?: string | null
-): string {
-  return formatPatientUsdPrice({
-    usdMajor: amountMajor,
-    displayCurrency,
-    language,
-    fxRates,
-    residencyCountry,
-    maximumFractionDigits: 0
-  });
 }
 
 export function CheckoutPackagesPanel(props: {
@@ -155,12 +138,22 @@ export function CheckoutPackagesPanel(props: {
         <>
         <div className="deal-grid sessions-package-options-grid">
           {bundlePlans.map((plan) => {
-            const listPriceAmount = props.pricingReady
-              ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
-              : 0;
-            const finalPriceAmount = props.pricingReady ? plan.priceCents / 100 : 0;
-            const savingAmount = props.pricingReady ? Math.max(0, listPriceAmount - finalPriceAmount) : 0;
-            const pricePerSession = props.pricingReady ? finalPriceAmount / Math.max(1, plan.credits) : 0;
+            const pricing = props.pricingReady
+              ? resolvePackageCardDisplayPricing({
+                  priceCents: plan.priceCents,
+                  discountPercent: plan.discountPercent,
+                  credits: plan.credits,
+                  displayCurrency: props.currency,
+                  fxRates: props.fxRates
+                })
+              : null;
+            const money = (amountMajor: number) =>
+              formatPackageCardMoney({
+                amountMajor,
+                displayCurrency: props.currency,
+                language: props.language,
+                residencyCountry: props.residencyCountry
+              });
             const benefitLines = packageBenefitLines(plan.credits, (values) => t(props.language, values));
 
             return (
@@ -177,14 +170,14 @@ export function CheckoutPackagesPanel(props: {
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
                       <span className="sessions-package-card-saving">
-                        {props.pricingReady
+                        {pricing
                           ? replaceTemplate(
                               t(props.language, {
                                 es: "Ahorras {amount}",
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates, props.residencyCountry) }
+                              { amount: money(pricing.savingLocalMajor) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -193,13 +186,13 @@ export function CheckoutPackagesPanel(props: {
                             })}
                       </span>
                     </div>
-                    <h3>{plan.name}</h3>
+                    <h3>{plan.name} X{plan.credits}</h3>
                     <p className="sessions-package-card-description">{plan.description}</p>
                     <div className="deal-pricing-top">
-                      {props.pricingReady ? (
+                      {pricing ? (
                         <>
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry)}</span>
-                          <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                          <span className="deal-list-price">{money(pricing.listLocalMajor)}</span>
+                          <span className="deal-discount-badge">{pricing.discountPercent}% OFF</span>
                         </>
                       ) : (
                         <span className="deal-price-pending-label">
@@ -211,10 +204,10 @@ export function CheckoutPackagesPanel(props: {
                         </span>
                       )}
                     </div>
-                    <p className={`deal-main-price${props.pricingReady ? "" : " deal-main-price--placeholder"}`}>
-                      {props.pricingReady ? (
+                    <p className={`deal-main-price${pricing ? "" : " deal-main-price--placeholder"}`}>
+                      {pricing ? (
                         <>
-                          {formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.residencyCountry)}
+                          {money(pricing.perSessionLocalMajor)}
                           <span className="deal-main-price-unit">
                             {t(props.language, { es: "/sesión", en: "/session", pt: "/sessao" })}
                           </span>
@@ -224,17 +217,14 @@ export function CheckoutPackagesPanel(props: {
                       )}
                     </p>
                     <p className="sessions-package-card-unit">
-                      {props.pricingReady
+                      {pricing
                         ? replaceTemplate(
                             t(props.language, {
-                              es: "Total {amount} por {count} sesiones",
-                              en: "Total {amount} for {count} sessions",
-                              pt: "Total {amount} por {count} sessoes"
+                              es: "Total del paquete {amount}",
+                              en: "Package total {amount}",
+                              pt: "Total do pacote {amount}"
                             }),
-                            {
-                              amount: formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.residencyCountry),
-                              count: String(plan.credits)
-                            }
+                            { amount: money(pricing.totalLocalMajor) }
                           )
                         : t(props.language, {
                             es: "Tarifa del profesional × sesiones − descuento del paquete",

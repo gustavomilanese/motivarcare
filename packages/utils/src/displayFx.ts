@@ -154,9 +154,10 @@ function resolveDisplayLocale(params: {
   return LANGUAGE_LOCALE[params.language];
 }
 
-function formatDisplayMajor(params: {
+/** Formatea un monto ya convertido a moneda local (sin volver a aplicar FX). */
+export function formatLocalMajorForPatientDisplay(params: {
   amountMajor: number;
-  currency: SupportedCurrency;
+  displayCurrency: SupportedCurrency;
   language: "es" | "en" | "pt";
   residencyCountry?: string | null;
   maximumFractionDigits?: number;
@@ -167,12 +168,12 @@ function formatDisplayMajor(params: {
   });
   const fractionDigits =
     params.maximumFractionDigits
-    ?? (params.currency === "USD" || params.currency === "EUR" || params.currency === "BRL" || params.currency === "MXN"
+    ?? (params.displayCurrency === "USD" || params.displayCurrency === "EUR" || params.displayCurrency === "BRL" || params.displayCurrency === "MXN"
       ? 0
       : 0);
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: params.currency,
+    currency: params.displayCurrency,
     currencyDisplay: "code",
     maximumFractionDigits: fractionDigits
   }).format(params.amountMajor);
@@ -192,9 +193,9 @@ export function formatUsdMajorForPatientDisplay(params: {
     params.displayCurrency,
     params.fxRates
   );
-  return formatDisplayMajor({
+  return formatLocalMajorForPatientDisplay({
     amountMajor: converted,
-    currency: params.displayCurrency,
+    displayCurrency: params.displayCurrency,
     language: params.language,
     residencyCountry: params.residencyCountry,
     maximumFractionDigits: params.maximumFractionDigits

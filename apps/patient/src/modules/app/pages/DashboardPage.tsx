@@ -42,7 +42,10 @@ import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
 import { usePackageCheckout } from "../hooks/usePackageCheckout";
 import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
-import { formatPatientUsdPrice } from "../lib/formatPatientUsdPrice";
+import {
+  formatPackageCardMoney,
+  resolvePackageCardDisplayPricing
+} from "../lib/packageCardDisplayPricing";
 import {
   portalHasPricingProfessional,
   resolvePortalPricingProfessionalId
@@ -121,26 +124,6 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
       hour: "numeric",
       minute: "2-digit"
     }
-  });
-}
-
-/**
- * `amountMajor` está en USD (priceCents/100). Convierte a moneda local de display.
- */
-function formatMoney(
-  amountMajor: number,
-  language: AppLanguage,
-  displayCurrency: SupportedCurrency,
-  fxRates?: DisplayFxRates,
-  residencyCountry?: string | null
-): string {
-  return formatPatientUsdPrice({
-    usdMajor: amountMajor,
-    displayCurrency,
-    language,
-    fxRates,
-    residencyCountry,
-    maximumFractionDigits: 0
   });
 }
 
@@ -1158,12 +1141,22 @@ export function DashboardPage(props: {
           ) : (
           <div className="deal-grid sessions-package-options-grid">
             {displayPackagePlans.slice(0, 3).map((plan) => {
-              const listPriceAmount = pricingReady
-                ? Math.round(plan.priceCents / 100 / Math.max(0.01, 1 - plan.discountPercent / 100))
-                : 0;
-              const finalPriceAmount = pricingReady ? plan.priceCents / 100 : 0;
-              const savingAmount = pricingReady ? Math.max(0, listPriceAmount - finalPriceAmount) : 0;
-              const pricePerSession = pricingReady ? finalPriceAmount / Math.max(1, plan.credits) : 0;
+              const pricing = pricingReady
+                ? resolvePackageCardDisplayPricing({
+                    priceCents: plan.priceCents,
+                    discountPercent: plan.discountPercent,
+                    credits: plan.credits,
+                    displayCurrency: props.currency,
+                    fxRates: props.fxRates
+                  })
+                : null;
+              const money = (amountMajor: number) =>
+                formatPackageCardMoney({
+                  amountMajor,
+                  displayCurrency: props.currency,
+                  language: props.language,
+                  residencyCountry: props.state.profileResidencyCountry
+                });
               const benefitLines = packageBenefitLines(plan.credits, (values) => t(props.language, values));
 
               return (
@@ -1179,14 +1172,14 @@ export function DashboardPage(props: {
                     <div className="sessions-package-card-topline">
                       <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
                       <span className="sessions-package-card-saving">
-                        {pricingReady
+                        {pricing
                           ? replaceTemplate(
                               t(props.language, {
                                 es: "Ahorras {amount}",
                                 en: "You save {amount}",
                                 pt: "Voce economiza {amount}"
                               }),
-                              { amount: formatMoney(savingAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry) }
+                              { amount: money(pricing.savingLocalMajor) }
                             )
                           : t(props.language, {
                               es: "Precio según profesional",
@@ -1195,16 +1188,16 @@ export function DashboardPage(props: {
                             })}
                       </span>
                     </div>
-                    <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
+                    <h3>{localizedPackageName(plan.id, plan.name, props.language)} X{plan.credits}</h3>
                     <p className="sessions-package-card-description">{localizedPackageDescription(plan.id, plan.description)}</p>
-                    {pricingReady ? (
+                    {pricing ? (
                       <>
                         <div className="deal-pricing-top">
-                          <span className="deal-list-price">{formatMoney(listPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}</span>
-                          <span className="deal-discount-badge">{plan.discountPercent}% OFF</span>
+                          <span className="deal-list-price">{money(pricing.listLocalMajor)}</span>
+                          <span className="deal-discount-badge">{pricing.discountPercent}% OFF</span>
                         </div>
                         <p className="deal-main-price">
-                          {formatMoney(pricePerSession, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry)}
+                          {money(pricing.perSessionLocalMajor)}
                           <span className="deal-main-price-unit">
                             {t(props.language, { es: "/sesión", en: "/session", pt: "/sessao" })}
                           </span>
@@ -1212,14 +1205,11 @@ export function DashboardPage(props: {
                         <p className="sessions-package-card-unit">
                           {replaceTemplate(
                             t(props.language, {
-                              es: "Total {amount} por {count} sesiones",
-                              en: "Total {amount} for {count} sessions",
-                              pt: "Total {amount} por {count} sessoes"
+                              es: "Total del paquete {amount}",
+                              en: "Package total {amount}",
+                              pt: "Total do pacote {amount}"
                             }),
-                            {
-                              amount: formatMoney(finalPriceAmount, props.language, props.currency, props.fxRates, props.state.profileResidencyCountry),
-                              count: String(plan.credits)
-                            }
+                            { amount: money(pricing.totalLocalMajor) }
                           )}
                         </p>
                       </>
