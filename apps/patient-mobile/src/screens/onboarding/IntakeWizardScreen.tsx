@@ -263,30 +263,6 @@ function buildIntakeStyles(colors: AppThemeColors) {
     introPointWrap: {
       gap: 12
     },
-    couplesNoticeBackdrop: {
-      flex: 1,
-      backgroundColor: "rgba(15,23,42,0.45)",
-      justifyContent: "center",
-      padding: 20
-    },
-    couplesNoticeCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 20,
-      padding: 20,
-      gap: 14,
-      borderWidth: 1,
-      borderColor: colors.border
-    },
-    couplesNoticeTitle: {
-      fontSize: 20,
-      fontWeight: "800",
-      color: colors.text
-    },
-    couplesNoticeBullet: {
-      fontSize: 14,
-      lineHeight: 20,
-      color: colors.textMuted
-    },
     rootCouplesFocus: {
       backgroundColor: "#fff5f9"
     },
@@ -350,8 +326,6 @@ export function IntakeWizardScreen() {
   const [error, setError] = useState("");
   const [crisisGate, setCrisisGate] = useState(false);
   const [safetyFrequentModal, setSafetyFrequentModal] = useState(false);
-  const [couplesTherapyNoticeOpen, setCouplesTherapyNoticeOpen] = useState(false);
-  const [couplesNoticeAcknowledged, setCouplesNoticeAcknowledged] = useState(false);
   const [picker, setPicker] = useState<null | "gender" | "age" | "lgbt">(null);
 
   const openSafetyReferral = useCallback(
@@ -397,24 +371,11 @@ export function IntakeWizardScreen() {
     ? (["#DB2777", "#A855F7", "#7C3AED"] as const)
     : gradients.hero;
 
-  const handleMainReasonCategoryChange = useCallback(
-    (category: "individual" | "couples") => {
-      setError("");
-      if (category === "couples" && !couplesNoticeAcknowledged) {
-        setCouplesTherapyNoticeOpen(true);
-        return;
-      }
-      setAnswers((prev) =>
-        category === "couples" ? activateCouplesMainReason(prev) : activateIndividualMainReason(prev)
-      );
-    },
-    [couplesNoticeAcknowledged]
-  );
-
-  const confirmCouplesTherapySelection = useCallback(() => {
-    setCouplesTherapyNoticeOpen(false);
-    setCouplesNoticeAcknowledged(true);
-    setAnswers((prev) => activateCouplesMainReason(prev));
+  const handleMainReasonCategoryChange = useCallback((category: "individual" | "couples") => {
+    setError("");
+    setAnswers((prev) =>
+      category === "couples" ? activateCouplesMainReason(prev) : activateIndividualMainReason(prev)
+    );
   }, []);
 
   const persistAnswer = useCallback(
@@ -892,39 +853,6 @@ export function IntakeWizardScreen() {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
-
-      <Modal visible={couplesTherapyNoticeOpen} transparent animationType="fade" onRequestClose={() => setCouplesTherapyNoticeOpen(false)}>
-        <View style={styles.couplesNoticeBackdrop}>
-          <View style={styles.couplesNoticeCard}>
-            <Text style={styles.couplesNoticeTitle}>Terapia de pareja por videollamada</Text>
-            <Text style={styles.couplesNoticeBullet}>
-              Si en la videollamada se conectan 3 o más personas, la versión gratuita de Google Meet dura hasta 45
-              minutos.
-            </Text>
-            <Text style={styles.couplesNoticeBullet}>
-              Para sesiones completas de 60 minutos, el enlace debe generarse desde una cuenta con Google Meet de pago
-              (Google Workspace).
-            </Text>
-            <Text style={styles.couplesNoticeBullet}>
-              Si cada integrante se conecta desde un dispositivo distinto, todos deben usar el mismo enlace de Meet que
-              comparte tu profesional.
-            </Text>
-            <View style={styles.actions}>
-              <PrimaryButton
-                label="Elegir otra opción"
-                variant="ghost"
-                onPress={() => setCouplesTherapyNoticeOpen(false)}
-                style={styles.half}
-              />
-              <PrimaryButton
-                label="Entendido"
-                onPress={confirmCouplesTherapySelection}
-                style={styles.half}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <Modal
         visible={safetyFrequentModal}

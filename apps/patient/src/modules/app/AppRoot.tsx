@@ -341,6 +341,7 @@ function readPersistedPortalStateForUser(userId: string): Partial<PatientAppStat
           : Boolean(parsed.assignedProfessionalId) || slice.bookings.length > 0,
       assignedProfessionalId: parsed.assignedProfessionalId ?? null,
       assignedProfessionalName: parsed.assignedProfessionalName ?? null,
+      intake: parsed.intake?.completed ? parsed.intake : undefined,
       bookedSlotIds: Array.isArray(parsed.bookedSlotIds)
         ? parsed.bookedSlotIds.filter((value): value is string => typeof value === "string")
         : []
@@ -1317,18 +1318,28 @@ export function App() {
             : bookingsBaseline;
 
           const hasRemoteConfirmedTrialBooking = hasConfirmedTrialBooking(syncedBookings);
+          /**
+           * Señales server-side de que el matching/onboarding final ya ocurrió.
+           * Incluye profesional activo: tras reconcile (sin compras/reservas) no hay
+           * que volver a /onboarding/final/matching.
+           */
           const hasRemoteOnboardingCompletionSignal =
             hasRemoteConfirmedTrialBooking
             || syncedBookings.length > 0
-            || Boolean(latestPackage);
+            || Boolean(latestPackage)
+            || Boolean(remoteAssignedProfessional?.id);
 
           /**
            * Intake recién completado (ventana corta): no saltar matching solo por
            * asignación admin/SystemConfig. Si el intake es viejo (p. ej. tras un
            * reconcile que borró compras/reservas), sí respetar el profesional activo.
+           * Usar la fecha del API en este mismo sync (current.intake suele estar vacío
+           * en un login fresco y bloqueaba incorrectamente la asignación remota).
            */
-          const intakeCompletedAtMs = current.intake?.completedAt
-            ? Date.parse(String(current.intake.completedAt))
+          const intakeCompletedAtRaw =
+            profileResponse?.profile?.intakeCompletedAt ?? current.intake?.completedAt ?? null;
+          const intakeCompletedAtMs = intakeCompletedAtRaw
+            ? Date.parse(String(intakeCompletedAtRaw))
             : Number.NaN;
           const intakeSettledForMatching =
             Number.isFinite(intakeCompletedAtMs)
@@ -1456,7 +1467,9 @@ export function App() {
                   triageDecision: profileResponse.profile.intakeTriageDecision ?? null,
                   answers: current.intake?.answers ?? {}
                 }
-              : current.intake,
+              : profileResponse
+                ? null
+                : current.intake,
             subscription: mergeSubscriptionFromApi(
               subscriptionBaseline,
               latestPackage,
@@ -1517,22 +1530,36 @@ export function App() {
         if (professionalDirectoryResult.status === "rejected") {
           console.error("Could not sync professional directory from API", professionalDirectoryResult.reason);
         }
-        } catch (error) {
-          console.error("Could not sync patient portal from API", error);
-        }
-      } finally {
+
+        /**
+         * Solo desbloquear el shell cuando /profiles/me respondió. Si falló, reintentar:
+         * si no, un login fresco con intake=null mostraría el onboarding por error.
+         */
         const deps = portalSyncDepsRef.current;
         const hasAuth =
           Boolean(String(deps.sessionId ?? "").trim()) && Boolean(deps.authToken);
-        /** Misma sesión que el batch (evita desbloquear con respuesta vieja tras logout rápido). Sin comparar epoch: evita quedar colgados si Strict Mode / resync mueve el epoch pero el login es el mismo. */
         const stillSameSession =
-          attemptedSync
-          && Boolean(sid && tokenSnapshot)
+          Boolean(sid && tokenSnapshot)
           && String(deps.sessionId ?? "") === String(sid)
           && deps.authToken === tokenSnapshot;
-        if (hasAuth && stillSameSession) {
+        if (hasAuth && stillSameSession && profileResult.status === "fulfilled") {
           setProfileSyncReady(true);
+        } else if (hasAuth && stillSameSession && profileResult.status === "rejected") {
+          window.setTimeout(() => {
+            schedulePortalSyncRef.current?.(true);
+          }, 1500);
         }
+        } catch (error) {
+          console.error("Could not sync patient portal from API", error);
+          const deps = portalSyncDepsRef.current;
+          if (deps.sessionId && deps.authToken) {
+            window.setTimeout(() => {
+              schedulePortalSyncRef.current?.(true);
+            }, 1500);
+          }
+        }
+      } finally {
+        // profileSyncReady se setea arriba solo si /profiles/me cumplió.
       }
     };
 

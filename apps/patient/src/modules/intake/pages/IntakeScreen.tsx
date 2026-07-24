@@ -1,4 +1,4 @@
-import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
 
 function preIntakeIntroCopy(language: AppLanguage): readonly [string, string] {
@@ -40,7 +40,6 @@ import {
   buildTherapistPreferencesStored,
   parseTherapistPreferencesStored
 } from "../patientClinicalIntakeQuestions";
-import { PatientCouplesTherapyNoticeDialog } from "../components/PatientCouplesTherapyNoticeDialog";
 import { PatientMainReasonStep } from "../components/PatientMainReasonStep";
 import { buildPatientIntakeWizardSteps, wizardStepIndexForQuestion } from "../lib/patientIntakeWizardSteps";
 import {
@@ -340,8 +339,6 @@ export function IntakeScreen(props: {
   const [crisisGate, setCrisisGate] = useState(false);
   const [safetyReferralGate, setSafetyReferralGate] = useState(false);
   const [safetyReferralResources, setSafetyReferralResources] = useState<CountryEmergencyResources | null>(null);
-  const [couplesTherapyNoticeOpen, setCouplesTherapyNoticeOpen] = useState(false);
-  const [couplesNoticeAcknowledged, setCouplesNoticeAcknowledged] = useState(false);
   const [residencyCountry, setResidencyCountry] = useState("");
 
   const presetIso = useMemo(
@@ -722,25 +719,14 @@ export function IntakeScreen(props: {
 
   const handleMainReasonCategoryChange = (category: "individual" | "couples") => {
     setError("");
-    if (category === "couples" && !couplesNoticeAcknowledged) {
-      setCouplesTherapyNoticeOpen(true);
-      return;
-    }
     setAnswers((prev) =>
       category === "couples" ? activateCouplesMainReason(prev) : activateIndividualMainReason(prev)
     );
   };
 
-  const confirmCouplesTherapySelection = () => {
-    setCouplesTherapyNoticeOpen(false);
-    setCouplesNoticeAcknowledged(true);
-    setAnswers((prev) => activateCouplesMainReason(prev));
-  };
-
   const isMainReasonCouplesView = current?.id === "mainReason" && mainReasonCategory === "couples";
 
   return (
-    <Fragment>
     <div
       className={`intake-shell intake-shell--wizard${isMainReasonCouplesView ? " intake-shell--couples-focus" : ""}`}
     >
@@ -1211,13 +1197,5 @@ export function IntakeScreen(props: {
         </form>
       </section>
     </div>
-    {couplesTherapyNoticeOpen ? (
-      <PatientCouplesTherapyNoticeDialog
-        language={props.language}
-        onDismiss={() => setCouplesTherapyNoticeOpen(false)}
-        onConfirm={confirmCouplesTherapySelection}
-      />
-    ) : null}
-    </Fragment>
   );
 }

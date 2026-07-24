@@ -253,16 +253,21 @@ export function MainPortal(props: {
     Boolean(props.state.subscription.packageId)
     || props.state.subscription.creditsTotal > 0
     || props.state.subscription.creditsRemaining > 0;
-  const hasCompletedOnboardingPreviously = hasAnyBookingHistory || hasAnyPurchasedCredits;
+  const hasAssignedTherapist =
+    props.state.therapistSelectionCompleted
+    || Boolean(props.state.assignedProfessionalId?.trim());
+  /**
+   * Onboarding final = matching. Queda hecho si ya eligió profesional, o si hay
+   * historial de compras/reservas (aunque un reconcile haya vaciado el wallet).
+   */
+  const hasCompletedOnboardingPreviously =
+    hasAnyBookingHistory || hasAnyPurchasedCredits || hasAssignedTherapist;
   const needsOnboardingFinalFlow =
     !props.state.intake?.riskBlocked
     && !hasCompletedOnboardingPreviously
     && !props.state.onboardingFinalCompleted;
   /** Solo forzar pantalla de matching hasta elegir terapeuta; después el resto del portal debe ser usable (comprar, chat, etc.). */
-  const canLeaveMatchingOnboarding =
-    props.state.therapistSelectionCompleted
-    || Boolean(props.state.assignedProfessionalId)
-    || props.state.bookings.length > 0;
+  const canLeaveMatchingOnboarding = hasAssignedTherapist || props.state.bookings.length > 0;
   const shouldLockToTherapistSelection = needsOnboardingFinalFlow && !canLeaveMatchingOnboarding;
   const isOnboardingMatchingView =
     shouldLockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
@@ -270,7 +275,7 @@ export function MainPortal(props: {
   const hideSidebar = isOnboardingMatchingView || isBookTrialView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
-    && !props.state.assignedProfessionalId
+    && !props.state.assignedProfessionalId?.trim()
     && props.state.bookings.length === 0;
   const stateForDisplay = useMemo(
     () => ({

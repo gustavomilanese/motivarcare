@@ -12,8 +12,14 @@ vi.mock("./prisma.js", () => ({
   }
 }));
 
+vi.mock("./dlocalGoFx.js", () => ({
+  getDlocalGoUsdFxRates: vi.fn(async () => ({})),
+  resetDlocalGoFxCacheForTests: vi.fn()
+}));
+
 const { __resetUsdArsCacheForTests } = await import("./usdArsExchange.js");
 const { __resetResilientCacheForTests, getResilientUsdArsQuote } = await import("./usdArsExchangeResilient.js");
+const { resetDlocalGoFxCacheForTests } = await import("./dlocalGoFx.js");
 
 type FetchSpy = MockInstance<typeof globalThis.fetch>;
 
@@ -26,6 +32,7 @@ describe("getResilientUsdArsQuote", () => {
   beforeEach(() => {
     __resetUsdArsCacheForTests();
     __resetResilientCacheForTests();
+    resetDlocalGoFxCacheForTests();
     systemConfigFindUnique.mockReset();
     systemConfigUpsert.mockReset();
     systemConfigUpsert.mockResolvedValue({});

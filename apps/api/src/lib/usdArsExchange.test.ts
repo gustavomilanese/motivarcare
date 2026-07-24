@@ -6,6 +6,13 @@ import {
 } from "./usdArsExchange.js";
 import { roundSessionPriceArsFromUsd } from "@therapy/i18n-config";
 
+vi.mock("./dlocalGoFx.js", () => ({
+  getDlocalGoUsdFxRates: vi.fn(async () => ({})),
+  resetDlocalGoFxCacheForTests: vi.fn()
+}));
+
+import { getDlocalGoUsdFxRates } from "./dlocalGoFx.js";
+
 type FetchSpy = MockInstance<typeof globalThis.fetch>;
 
 describe("roundSessionPriceArsFromUsd (shared)", () => {
@@ -21,6 +28,8 @@ describe("getUsdArsRate", () => {
 
   beforeEach(() => {
     __resetUsdArsCacheForTests();
+    vi.mocked(getDlocalGoUsdFxRates).mockReset();
+    vi.mocked(getDlocalGoUsdFxRates).mockResolvedValue({});
     fetchSpy = vi.spyOn(globalThis, "fetch");
   });
 
@@ -49,6 +58,14 @@ describe("getUsdArsRate", () => {
     expect(rate).toBe(1400);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("prioriza FX dLocal Go para ARS cuando está disponible", async () => {
+    delete process.env.USD_ARS_RATE_OVERRIDE;
+    vi.mocked(getDlocalGoUsdFxRates).mockResolvedValue({ ARS: 1320.5 });
+    const rate = await getUsdArsRate();
+    expect(rate).toBe(1320.5);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe("getUsdArsQuote", () => {
@@ -57,6 +74,8 @@ describe("getUsdArsQuote", () => {
 
   beforeEach(() => {
     __resetUsdArsCacheForTests();
+    vi.mocked(getDlocalGoUsdFxRates).mockReset();
+    vi.mocked(getDlocalGoUsdFxRates).mockResolvedValue({});
     fetchSpy = vi.spyOn(globalThis, "fetch");
   });
 
@@ -78,7 +97,16 @@ describe("getUsdArsQuote", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("devuelve provider='bluelytics' cuando es el primario", async () => {
+  it("devuelve provider='dlocalgo' cuando currency-exchanges trae ARS", async () => {
+    delete process.env.USD_ARS_RATE_OVERRIDE;
+    vi.mocked(getDlocalGoUsdFxRates).mockResolvedValue({ ARS: 1320.47 });
+    const quote = await getUsdArsQuote();
+    expect(quote.rate).toBe(1320.47);
+    expect(quote.provider).toBe("dlocalgo");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("devuelve provider='bluelytics' cuando dLocal no trae ARS", async () => {
     delete process.env.USD_ARS_RATE_OVERRIDE;
     fetchSpy.mockResolvedValueOnce(
       new Response(JSON.stringify({ oficial: { value_avg: 1400 } }), { status: 200 })

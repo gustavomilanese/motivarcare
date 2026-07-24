@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { computeFxSnapshot } from "./fxSnapshot.js";
 import { __resetUsdArsCacheForTests } from "./usdArsExchange.js";
 
+vi.mock("./dlocalGoFx.js", () => ({
+  getDlocalGoUsdFxRates: vi.fn(async () => ({}))
+}));
+
 type FetchSpy = MockInstance<typeof globalThis.fetch>;
 
 describe("computeFxSnapshot", () => {

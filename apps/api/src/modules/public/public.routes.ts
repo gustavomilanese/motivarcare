@@ -278,7 +278,7 @@ publicRouter.get("/fx/usd-ars", async (_req, res) => {
   }
 });
 
-/** Cotizaciones USD → monedas de display del portal paciente (cache 15 min). */
+/** Cotizaciones USD → monedas de display del portal paciente (LATAM vía dLocal Go; cache 15 min). */
 publicRouter.get("/fx/display-rates", async (_req, res) => {
   try {
     const ratesPerUsd = await getUsdDisplayFxRates();

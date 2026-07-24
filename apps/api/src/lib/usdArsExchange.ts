@@ -1,11 +1,17 @@
 /**
- * USD → ARS para precio de lista profesional (Argentina).
- * Usa tipo de cambio oficial con caché en memoria; override por env en dev/staging.
+ * USD → ARS para precio de lista profesional (Argentina) y cobro dLocal AR.
+ * Prioriza FX de dLocal Go (misma tasa del checkout); si falta, oficial Bluelytics/DolarAPI.
+ * Override por env en dev/staging.
  */
+
+import { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP } from "@therapy/i18n-config";
+import { getDlocalGoUsdFxRates } from "./dlocalGoFx.js";
+
+export { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP };
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
-export type UsdArsProvider = "bluelytics" | "dolarapi" | "override";
+export type UsdArsProvider = "dlocalgo" | "bluelytics" | "dolarapi" | "override";
 
 export interface UsdArsQuote {
   /** ARS por 1 USD. */
@@ -26,10 +32,6 @@ function parseEnvOverride(): number | null {
   const n = Number(raw);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
-
-import { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP } from "@therapy/i18n-config";
-
-export { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP };
 
 async function fetchBluelyticsOfficial(): Promise<number | null> {
   const response = await fetch("https://api.bluelytics.com.ar/v2/latest", {
@@ -60,8 +62,8 @@ async function fetchDolarApiOfficial(): Promise<number | null> {
 }
 
 /**
- * Cotización ARS por 1 USD (oficial) con metadata de provider y timestamp.
- * Cache ~15 min. Útil para snapshot al cobrar (auditoría / liquidación).
+ * Cotización ARS por 1 USD con metadata de provider y timestamp.
+ * Cache ~15 min. Prioriza dLocal Go; útil para snapshot al cobrar.
  */
 export async function getUsdArsQuote(): Promise<UsdArsQuote> {
   const override = parseEnvOverride();
@@ -75,16 +77,30 @@ export async function getUsdArsQuote(): Promise<UsdArsQuote> {
   }
 
   const fetchedAt = new Date();
-  const fromBluelytics = await fetchBluelyticsOfficial();
   let quote: UsdArsQuote | null = null;
-  if (fromBluelytics !== null) {
-    quote = { rate: fromBluelytics, provider: "bluelytics", fetchedAt };
-  } else {
-    const fromDolarApi = await fetchDolarApiOfficial();
-    if (fromDolarApi !== null) {
-      quote = { rate: fromDolarApi, provider: "dolarapi", fetchedAt };
+
+  try {
+    const dlocalRates = await getDlocalGoUsdFxRates();
+    const dlocalArs = dlocalRates.ARS;
+    if (typeof dlocalArs === "number" && Number.isFinite(dlocalArs) && dlocalArs > 0) {
+      quote = { rate: dlocalArs, provider: "dlocalgo", fetchedAt };
+    }
+  } catch {
+    // fall through to market FX
+  }
+
+  if (quote === null) {
+    const fromBluelytics = await fetchBluelyticsOfficial();
+    if (fromBluelytics !== null) {
+      quote = { rate: fromBluelytics, provider: "bluelytics", fetchedAt };
+    } else {
+      const fromDolarApi = await fetchDolarApiOfficial();
+      if (fromDolarApi !== null) {
+        quote = { rate: fromDolarApi, provider: "dolarapi", fetchedAt };
+      }
     }
   }
+
   if (quote === null) {
     throw new Error("USD_ARS_RATE_UNAVAILABLE");
   }

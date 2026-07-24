@@ -26,7 +26,8 @@ alwaysApply: true
 | País → moneda display | `packages/types/src/patientDisplayCurrency.ts` |
 | Cobertura dLocal | `packages/types/src/dlocalGoCoverage.ts` |
 | FX + formato | `packages/utils/src/currencies.ts`, `displayFx.ts` |
-| FX API pública | `apps/api/src/lib/usdDisplayFxRates.ts`, `public.routes.ts` |
+| FX API pública | `apps/api/src/lib/usdDisplayFxRates.ts`, `dlocalGoFx.ts`, `public.routes.ts` |
+| FX dLocal Go | `GET /v1/currency-exchanges` — display LATAM (+ ARS cobro) prioriza tasa dLocal; cache ~15 min |
 | Checkout backend | `apps/api/src/modules/payments/dlocalGoCheckout.service.ts` |
 | Portal paciente | `apps/patient/src/modules/app/AppRoot.tsx`, `useDisplayFxRates.ts`, `usePortalActions.ts`, `BookingPage.tsx`, matching |
 
