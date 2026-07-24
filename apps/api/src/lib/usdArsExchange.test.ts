@@ -18,7 +18,7 @@ type FetchSpy = MockInstance<typeof globalThis.fetch>;
 describe("roundSessionPriceArsFromUsd (shared)", () => {
   it("re-exporta la regla canónica de @therapy/i18n-config", () => {
     expect(roundSessionPriceArsFromUsd(50, 1400)).toBe(70_000);
-    expect(roundSessionPriceArsFromUsd(40, 1275)).toBe(52_000);
+    expect(roundSessionPriceArsFromUsd(40, 1275)).toBe(51_000);
   });
 });
 

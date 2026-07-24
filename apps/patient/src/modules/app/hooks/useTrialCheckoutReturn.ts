@@ -68,13 +68,6 @@ export function useTrialCheckoutReturn(options: {
       try {
         if (wasCancel) {
           clearPendingTrialBooking();
-          setErrorMessage(
-            t(options.language, {
-              es: "Cancelaste el pago. Podés elegir otro horario o intentar de nuevo cuando quieras.",
-              en: "You cancelled payment. You can pick another time or try again whenever you like.",
-              pt: "Voce cancelou o pagamento. Pode escolher outro horario ou tentar de novo quando quiser."
-            })
-          );
           return;
         }
 

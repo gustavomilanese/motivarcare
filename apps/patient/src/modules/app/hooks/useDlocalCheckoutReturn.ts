@@ -158,6 +158,12 @@ export function useDlocalCheckoutReturn(options: {
 
     void (async () => {
       try {
+        if (wasCancel) {
+          clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
+          goHome();
+          return;
+        }
+
         if (!paymentId && !orderId) {
           setErrorMessage(
             t(options.language, {
@@ -180,18 +186,6 @@ export function useDlocalCheckoutReturn(options: {
             return;
           }
           if (!synced.fulfilled) {
-            if (wasCancel) {
-              setErrorMessage(
-                t(options.language, {
-                  es: "Cancelaste el pago. Podés elegir otra opción o intentar de nuevo cuando quieras.",
-                  en: "You cancelled payment. You can choose another option or try again whenever you like.",
-                  pt: "Voce cancelou o pagamento. Pode escolher outra opcao ou tentar de novo quando quiser."
-                })
-              );
-              clearPendingCheckoutDlocalReturn({ clearIdempotency: wasCancel });
-              goHome();
-              return;
-            }
             setErrorMessage(
               t(options.language, {
                 es: "Recibimos tu pago, pero todavía lo estamos confirmando. Actualizá la página en unos segundos o escribinos si no ves las sesiones.",

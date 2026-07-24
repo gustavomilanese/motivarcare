@@ -1,7 +1,7 @@
 import { PATIENT_LIVE_FX_CURRENCY_CODES } from "@therapy/types";
 import { STATIC_FX_RATE_FROM_USD } from "@therapy/i18n-config";
 import {
-  DLOCAL_GO_LATAM_DISPLAY_CURRENCIES,
+  DLOCAL_GO_DISPLAY_CURRENCIES,
   getDlocalGoUsdFxRates
 } from "./dlocalGoFx.js";
 import { getUsdArsRate } from "./usdArsExchange.js";
@@ -52,7 +52,7 @@ function staticFallbackRates(): Record<string, number> {
 
 /**
  * Cotizaciones para display del portal paciente (1 USD = N moneda local).
- * LATAM dLocal Go: prioriza `GET /v1/currency-exchanges` (misma FX del checkout).
+ * Países dLocal Go: prioriza `GET /v1/currency-exchanges` (misma FX del checkout/cobro).
  * Resto / fallback: open.er-api + estático; ARS también puede venir de Bluelytics si dLocal falla.
  */
 export async function getUsdDisplayFxRates(): Promise<Record<string, number>> {
@@ -64,7 +64,7 @@ export async function getUsdDisplayFxRates(): Promise<Record<string, number>> {
 
   try {
     const dlocalRates = await getDlocalGoUsdFxRates();
-    for (const code of DLOCAL_GO_LATAM_DISPLAY_CURRENCIES) {
+    for (const code of DLOCAL_GO_DISPLAY_CURRENCIES) {
       const candidate = dlocalRates[code];
       if (isPositiveRate(candidate)) {
         rates[code] = candidate;

@@ -1,27 +1,49 @@
 /**
- * Precio de lista ARS derivado de USD × tipo de cambio.
- * Fuente única de verdad para persistencia, display y validación.
+ * Conversión USD → moneda local de lista / display / cobro dLocal.
+ * Fuente única: ceil al múltiplo de {@link PATIENT_LOCAL_PRICE_ROUND_STEP}.
  */
 
-/** Múltiplo de redondeo ARS ("pares": 50.000, 52.000, …). */
-export const SESSION_PRICE_ARS_ROUND_STEP = 2_000;
+/** Múltiplo de redondeo local (40.500, 54.500, …). */
+export const PATIENT_LOCAL_PRICE_ROUND_STEP = 500;
+
+/** @deprecated Usar {@link PATIENT_LOCAL_PRICE_ROUND_STEP}. */
+export const SESSION_PRICE_ARS_ROUND_STEP = PATIENT_LOCAL_PRICE_ROUND_STEP;
 
 /**
- * Convierte USD (enteros mayores) a ARS de lista con el TC vigente.
- * Redondea al múltiplo de {@link SESSION_PRICE_ARS_ROUND_STEP} más cercano (half-up).
+ * Convierte USD (unidades mayores) a moneda local con el TC vigente.
+ * Siempre redondea **hacia arriba** al múltiplo de {@link PATIENT_LOCAL_PRICE_ROUND_STEP}.
  * Valores positivos muy chicos suben al primer múltiplo válido.
  */
-export function roundSessionPriceArsFromUsd(usdMajor: number, arsPerUsd: number): number {
-  if (!Number.isFinite(usdMajor) || !Number.isFinite(arsPerUsd) || usdMajor <= 0 || arsPerUsd <= 0) {
+export function ceilUsdToLocalMajor(
+  usdMajor: number,
+  ratePerUsd: number,
+  step: number = PATIENT_LOCAL_PRICE_ROUND_STEP
+): number {
+  if (
+    !Number.isFinite(usdMajor)
+    || !Number.isFinite(ratePerUsd)
+    || !Number.isFinite(step)
+    || usdMajor <= 0
+    || ratePerUsd <= 0
+    || step <= 0
+  ) {
     return 0;
   }
 
-  const raw = usdMajor * arsPerUsd;
-  let rounded = Math.round(raw / SESSION_PRICE_ARS_ROUND_STEP) * SESSION_PRICE_ARS_ROUND_STEP;
+  const raw = usdMajor * ratePerUsd;
+  let rounded = Math.ceil(raw / step) * step;
 
-  if (raw > 0 && rounded < SESSION_PRICE_ARS_ROUND_STEP) {
-    rounded = SESSION_PRICE_ARS_ROUND_STEP;
+  if (raw > 0 && rounded < step) {
+    rounded = step;
   }
 
   return rounded;
+}
+
+/**
+ * Compatibilidad: mismo ceil ×500 que el resto de monedas dLocal.
+ * Preferir {@link ceilUsdToLocalMajor} en código nuevo.
+ */
+export function roundSessionPriceArsFromUsd(usdMajor: number, arsPerUsd: number): number {
+  return ceilUsdToLocalMajor(usdMajor, arsPerUsd);
 }

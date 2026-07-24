@@ -7,6 +7,7 @@ import { listPriceMajorUnitsForPackageMarket } from "../../lib/professionalSessi
 import { prisma } from "../../lib/prisma.js";
 import { resolvePackagePricingFromUsd } from "../../lib/resolveSessionPackagePrice.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
+import { getUsdDisplayFxRates } from "../../lib/usdDisplayFxRates.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackageMarketAccess.js";
 import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSessionPurchase.js";
@@ -293,7 +294,7 @@ async function createDlocalCheckoutForPackageCore(params: {
     throw new Error("Session package is not active");
   }
 
-  const [assignmentConfig, packageProfessional, arsPerUsdForPurchase] = await Promise.all([
+  const [assignmentConfig, packageProfessional, arsPerUsdForPurchase, ratesPerUsd] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
     sessionPackage.professionalId
       ? prisma.professionalProfile.findUnique({
@@ -309,7 +310,8 @@ async function createDlocalCheckoutForPackageCore(params: {
           }
         })
       : Promise.resolve(null),
-    loadUsdArsRateOrNull()
+    loadUsdArsRateOrNull(),
+    getUsdDisplayFxRates()
   ]);
 
   const assignments = parsePatientAssignments(assignmentConfig?.value);
@@ -347,9 +349,9 @@ async function createDlocalCheckoutForPackageCore(params: {
   });
 
   const charge = resolveDlocalChargeAmount({
-    market: patient.market,
+    payerCountry,
     priceUsdCents: pricing.priceCents,
-    arsPerUsd: arsPerUsdForPurchase
+    ratesPerUsd
   });
 
   const orderId = buildOrderId(patient.id, sessionPackage.id);
@@ -398,7 +400,7 @@ async function createDlocalCheckoutForPackageCore(params: {
     description: `MotivarCare · ${sessionPackage.name}`,
     notificationUrl,
     successUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
-    backUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
+    backUrl: appendDlocalOrderToUrl(params.backUrl, orderId),
     payer: {
       name: payerName,
       email: patient.user.email
@@ -561,7 +563,7 @@ export async function createDlocalCheckoutForTrialSession(params: {
     throw new Error("Professional not found");
   }
 
-  const arsPerUsd = await loadUsdArsRateOrNull();
+  const [arsPerUsd, ratesPerUsd] = await Promise.all([loadUsdArsRateOrNull(), getUsdDisplayFxRates()]);
   const sessionListPriceUsdMajor = listPriceMajorUnitsForPackageMarket(professional, patient.market, arsPerUsd);
   if (sessionListPriceUsdMajor == null || sessionListPriceUsdMajor <= 0) {
     throw new Error("Session price unavailable for trial checkout");
@@ -569,9 +571,9 @@ export async function createDlocalCheckoutForTrialSession(params: {
 
   const listPriceCents = Math.round(sessionListPriceUsdMajor * 100);
   const charge = resolveDlocalChargeAmount({
-    market: patient.market,
+    payerCountry,
     priceUsdCents: listPriceCents,
-    arsPerUsd
+    ratesPerUsd
   });
 
   const orderId = buildTrialOrderId(patient.id);
@@ -625,7 +627,7 @@ export async function createDlocalCheckoutForTrialSession(params: {
     }),
     notificationUrl,
     successUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
-    backUrl: appendDlocalOrderToUrl(params.successUrl, orderId),
+    backUrl: appendDlocalOrderToUrl(params.backUrl, orderId),
     payer: {
       name: payerName,
       email: patient.user.email

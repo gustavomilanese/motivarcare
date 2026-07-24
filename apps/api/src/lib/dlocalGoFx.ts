@@ -3,10 +3,10 @@ import { dlocalGoRequest, isDlocalGoConfigured } from "./dlocalGoClient.js";
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
 /**
- * Monedas de display LATAM cubiertas por dLocal Go en MotivarCare.
- * (EC es USD → no necesita FX.)
+ * Monedas locales de países dLocal Go (EC es USD → no necesita FX).
+ * Incluye LATAM + ID/MY/KE/NG.
  */
-export const DLOCAL_GO_LATAM_DISPLAY_CURRENCIES = [
+export const DLOCAL_GO_DISPLAY_CURRENCIES = [
   "ARS",
   "BOB",
   "BRL",
@@ -17,10 +17,17 @@ export const DLOCAL_GO_LATAM_DISPLAY_CURRENCIES = [
   "MXN",
   "PEN",
   "PYG",
-  "UYU"
+  "UYU",
+  "IDR",
+  "MYR",
+  "KES",
+  "NGN"
 ] as const;
 
-export type DlocalGoLatamDisplayCurrency = (typeof DLOCAL_GO_LATAM_DISPLAY_CURRENCIES)[number];
+/** @deprecated Usar {@link DLOCAL_GO_DISPLAY_CURRENCIES}. */
+export const DLOCAL_GO_LATAM_DISPLAY_CURRENCIES = DLOCAL_GO_DISPLAY_CURRENCIES;
+
+export type DlocalGoLatamDisplayCurrency = (typeof DLOCAL_GO_DISPLAY_CURRENCIES)[number];
 
 export type DlocalGoCurrencyExchange = {
   source_currency?: string;

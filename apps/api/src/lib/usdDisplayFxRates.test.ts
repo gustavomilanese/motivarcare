@@ -2,6 +2,23 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getUsdDisplayFxRates, resetUsdDisplayFxRatesCacheForTests } from "./usdDisplayFxRates.js";
 
 vi.mock("./dlocalGoFx.js", () => ({
+  DLOCAL_GO_DISPLAY_CURRENCIES: [
+    "ARS",
+    "BOB",
+    "BRL",
+    "CLP",
+    "COP",
+    "CRC",
+    "GTQ",
+    "MXN",
+    "PEN",
+    "PYG",
+    "UYU",
+    "IDR",
+    "MYR",
+    "KES",
+    "NGN"
+  ],
   DLOCAL_GO_LATAM_DISPLAY_CURRENCIES: [
     "ARS",
     "BOB",
@@ -13,7 +30,11 @@ vi.mock("./dlocalGoFx.js", () => ({
     "MXN",
     "PEN",
     "PYG",
-    "UYU"
+    "UYU",
+    "IDR",
+    "MYR",
+    "KES",
+    "NGN"
   ],
   getDlocalGoUsdFxRates: vi.fn(async () => ({}))
 }));

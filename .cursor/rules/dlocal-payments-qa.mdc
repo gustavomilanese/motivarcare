@@ -15,8 +15,9 @@ alwaysApply: true
 
 - Checkout DLocal para **todos los países dLocal Go** (AR, BO, BR, CL, CO, CR, EC, GT, MX, PY, PE, UY, ID, MY, KE, NG) — ver `packages/types/src/dlocalGoCoverage.ts`.
 - **Moneda local en pantalla** para el paciente según país de residencia (no solo AR/USD).
-- Catálogo interno sigue en **USD**; conversión es solo **display**.
-- Cobro DLocal: **ARS en Argentina**; resto de países dLocal cobra en **USD** y DLocal muestra moneda local en checkout.
+- Catálogo interno sigue en **USD**; conversión display + cobro usan la misma FX (prioridad dLocal `currency-exchanges`).
+- **Redondeo local:** ceil al múltiplo de **500** (p. ej. 40.500, 54.500) — display y cobro alineados (`ceilUsdToLocalMajor`).
+- Cobro DLocal: **moneda local del país pagador** (ARS, COP, MXN, …) enviada en el amount; **EC** cobra en **USD** (dolarizado).
 - Google Pay simulado fue **eliminado**; flujo unificado vía DLocal cuando aplica.
 
 ## Archivos clave
@@ -27,7 +28,8 @@ alwaysApply: true
 | Cobertura dLocal | `packages/types/src/dlocalGoCoverage.ts` |
 | FX + formato | `packages/utils/src/currencies.ts`, `displayFx.ts` |
 | FX API pública | `apps/api/src/lib/usdDisplayFxRates.ts`, `dlocalGoFx.ts`, `public.routes.ts` |
-| FX dLocal Go | `GET /v1/currency-exchanges` — display LATAM (+ ARS cobro) prioriza tasa dLocal; cache ~15 min |
+| FX dLocal Go | `GET /v1/currency-exchanges` — display + cobro priorizan tasa dLocal; cache ~15 min |
+| Monto cobro | `apps/api/src/lib/dlocalChargeAmount.ts` (`resolveDlocalChargeAmount`) |
 | Checkout backend | `apps/api/src/modules/payments/dlocalGoCheckout.service.ts` |
 | Portal paciente | `apps/patient/src/modules/app/AppRoot.tsx`, `useDisplayFxRates.ts`, `usePortalActions.ts`, `BookingPage.tsx`, matching |
 
@@ -41,12 +43,12 @@ alwaysApply: true
 
 Probar en **sandbox** mañana, por país si es posible:
 
-1. Intake/residencia (ej. CO) → precios en moneda local (COP)
+1. Intake/residencia (ej. CO) → precios en moneda local (COP), múltiplos de 500 (ceil)
 2. Matching → precio del profesional en moneda local
-3. Paquete individual, paquete multi-sesión, sesión de prueba → redirect DLocal sandbox
+3. Paquete individual, paquete multi-sesión, sesión de prueba → redirect DLocal sandbox con **amount en moneda local** (= display)
 4. Return post-pago → fulfillment / historial de compras
 5. País **sin** cobertura dLocal (ej. ES/US sin residencia dLocal) → mensaje claro, sin crash
-6. Ecuador (EC) → display USD (dolarizado)
+6. Ecuador (EC) → display y cobro en USD
 7. Verificar que cotizaciones live cargan (`GET /api/public/fx/display-rates`); sin API, fallback estático
 
 ## Deploy

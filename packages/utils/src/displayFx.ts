@@ -1,10 +1,10 @@
-import { defaultDisplayCurrencyCodeForPatient } from "@therapy/types";
-import { roundSessionPriceArsFromUsd } from "./sessionPriceArs.js";
+import { ceilUsdToLocalMajor } from "./sessionPriceArs.js";
 import {
   STATIC_FX_RATE_FROM_USD,
   coerceSupportedCurrency,
   type SupportedCurrency
 } from "./currencies.js";
+import { defaultDisplayCurrencyCodeForPatient } from "@therapy/types";
 
 const LANGUAGE_LOCALE: Record<"es" | "en" | "pt", string> = {
   es: "es-AR",
@@ -115,30 +115,23 @@ export function niceDisplayRoundStep(value: number): number {
 }
 
 /**
- * Redondea el equivalente en moneda local a una cifra "con sentido".
- * ARS mantiene su regla de negocio (múltiplo de 2.000 vía `roundSessionPriceArsFromUsd`);
- * USD/EUR/GBP se muestran exactos; el resto usa redondeo natural por magnitud.
- * Es solo display: el cobro canónico interno sigue en USD.
+ * Redondea el equivalente en moneda local para display y cobro dLocal.
+ * USD/EUR/GBP: conversión exacta (centavos/enteros).
+ * Resto (LATAM dLocal, etc.): ceil al múltiplo de 500.
  */
 export function roundDisplayMajorFromUsd(
   usdMajor: number,
   displayCurrency: SupportedCurrency,
   ratePerUsd: number
 ): number {
-  if (displayCurrency === "ARS") {
-    return roundSessionPriceArsFromUsd(usdMajor, ratePerUsd);
-  }
-  const raw = usdMajor * ratePerUsd;
-  if (!Number.isFinite(raw) || raw <= 0) {
-    return Math.max(0, Math.round(raw));
-  }
   if (HARD_LOW_DENOMINATION_CURRENCIES.has(displayCurrency)) {
+    const raw = usdMajor * ratePerUsd;
+    if (!Number.isFinite(raw) || raw <= 0) {
+      return Math.max(0, Math.round(raw));
+    }
     return Math.round(raw);
   }
-  const step = niceDisplayRoundStep(raw);
-  const rounded = Math.round(raw / step) * step;
-  // Evita colapsar a 0 valores positivos chicos: sube al primer múltiplo válido.
-  return rounded < step ? step : rounded;
+  return ceilUsdToLocalMajor(usdMajor, ratePerUsd);
 }
 
 export function convertUsdMajorToDisplayMajor(

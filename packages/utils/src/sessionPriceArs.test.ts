@@ -1,40 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { roundSessionPriceArsFromUsd, SESSION_PRICE_ARS_ROUND_STEP } from "./sessionPriceArs.js";
+import {
+  ceilUsdToLocalMajor,
+  PATIENT_LOCAL_PRICE_ROUND_STEP,
+  roundSessionPriceArsFromUsd,
+  SESSION_PRICE_ARS_ROUND_STEP
+} from "./sessionPriceArs.js";
 
-describe("roundSessionPriceArsFromUsd", () => {
-  it("multiplica USD por la cotización cuando ya cae en múltiplo de 2.000", () => {
-    expect(roundSessionPriceArsFromUsd(50, 1400)).toBe(70_000);
+describe("ceilUsdToLocalMajor / roundSessionPriceArsFromUsd", () => {
+  it("exporta el step de 500", () => {
+    expect(PATIENT_LOCAL_PRICE_ROUND_STEP).toBe(500);
+    expect(SESSION_PRICE_ARS_ROUND_STEP).toBe(500);
+  });
+
+  it("multiplica USD por la cotización cuando ya cae en múltiplo de 500", () => {
+    expect(ceilUsdToLocalMajor(50, 1400)).toBe(70_000);
     expect(roundSessionPriceArsFromUsd(30, 1000)).toBe(30_000);
+    expect(ceilUsdToLocalMajor(81, 500)).toBe(40_500);
   });
 
-  it("redondea al múltiplo de 2.000 más cercano", () => {
+  it("siempre redondea hacia arriba al múltiplo de 500", () => {
     // 50 * 1392.50 = 69_625 → 70_000
-    expect(roundSessionPriceArsFromUsd(50, 1392.5)).toBe(70_000);
-    // 80 * 1418 = 113_440 → 114_000
-    expect(roundSessionPriceArsFromUsd(80, 1418)).toBe(114_000);
-    // 40 * 1272.5 = 50_900 → 50_000 (más cerca que 52_000)
-    expect(roundSessionPriceArsFromUsd(40, 1272.5)).toBe(50_000);
-    // 40 * 1277.5 = 51_100 → 52_000
-    expect(roundSessionPriceArsFromUsd(40, 1277.5)).toBe(52_000);
-  });
-
-  it("en empate exacto entre dos múltiplos de 2.000 redondea hacia arriba (half-up)", () => {
-    // 51_000 está a mitad entre 50_000 y 52_000
-    expect(roundSessionPriceArsFromUsd(40, 1275)).toBe(52_000);
+    expect(ceilUsdToLocalMajor(50, 1392.5)).toBe(70_000);
+    // 40 * 1272.5 = 50_900 → 51_000
+    expect(ceilUsdToLocalMajor(40, 1272.5)).toBe(51_000);
+    // 40.001 * 1000 = 40_001 → 40_500
+    expect(ceilUsdToLocalMajor(40.001, 1000)).toBe(40_500);
+    // apenas por encima de un múltiplo exacto → siguiente
+    expect(ceilUsdToLocalMajor(50, 1400.02)).toBe(70_500);
   });
 
   it("sube al primer múltiplo válido cuando el producto es positivo pero muy chico", () => {
-    expect(roundSessionPriceArsFromUsd(1, 1)).toBe(SESSION_PRICE_ARS_ROUND_STEP);
+    expect(ceilUsdToLocalMajor(1, 1)).toBe(PATIENT_LOCAL_PRICE_ROUND_STEP);
   });
 
   it("devuelve 0 para entradas inválidas o no positivas", () => {
-    expect(roundSessionPriceArsFromUsd(0, 1400)).toBe(0);
-    expect(roundSessionPriceArsFromUsd(50, 0)).toBe(0);
-    expect(roundSessionPriceArsFromUsd(NaN, 1400)).toBe(0);
-  });
-
-  it("no infla de más montos apenas por encima de un múltiplo exacto", () => {
-    // 50 * 1400.02 = 70_001 → 70_000 (más cerca que 72_000)
-    expect(roundSessionPriceArsFromUsd(50, 1400.02)).toBe(70_000);
+    expect(ceilUsdToLocalMajor(0, 1400)).toBe(0);
+    expect(ceilUsdToLocalMajor(50, 0)).toBe(0);
+    expect(ceilUsdToLocalMajor(NaN, 1400)).toBe(0);
   });
 });

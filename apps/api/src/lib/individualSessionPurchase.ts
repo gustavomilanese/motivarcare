@@ -2,12 +2,14 @@ import type { Market } from "@prisma/client";
 import { billingCurrencyCodeForMarket } from "@therapy/types";
 import { prisma } from "./prisma.js";
 import { resolveDlocalChargeAmount } from "./dlocalChargeAmount.js";
+import { assertPatientDlocalCheckoutAllowed } from "./dlocalPatientCheckout.js";
 import { listPriceMajorUnitsForPackageMarket } from "./professionalSessionListPrice.js";
 import {
   normalizeCatalogFallbackToUsdCents,
   resolvePackagePricingFromUsd
 } from "./resolveSessionPackagePrice.js";
 import { getResilientUsdArsRate } from "./usdArsExchangeResilient.js";
+import { getUsdDisplayFxRates } from "./usdDisplayFxRates.js";
 
 const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
 const AUTO_INDIVIDUAL_SESSION_STRIPE_ID = "motivar-auto-catalog-individual-1";
@@ -134,9 +136,9 @@ export type IndividualSessionsPurchaseQuote = {
 };
 
 export function chargeAmountMajorForMarket(params: {
-  market: import("@prisma/client").Market;
+  payerCountry: string;
   priceUsdCents: number;
-  arsPerUsd: number | null;
+  ratesPerUsd: Partial<Record<string, number>> | null | undefined;
 }): { amountMajor: number; currency: string } {
   return resolveDlocalChargeAmount(params);
 }
@@ -153,16 +155,18 @@ export async function resolveIndividualSessionsPurchaseQuote(params: {
 
   const patient = await prisma.patientProfile.findUnique({
     where: { id: params.patientId },
-    select: { id: true, market: true }
+    select: { id: true, market: true, residencyCountry: true }
   });
   if (!patient) {
     throw new Error("Patient profile not found");
   }
+  const payerCountry = assertPatientDlocalCheckoutAllowed(patient);
 
   const unitPackage = await getOrCreateGlobalIndividualSessionPackage(patient.market);
-  const [assignmentConfig, arsPerUsd] = await Promise.all([
+  const [assignmentConfig, arsPerUsd, ratesPerUsd] = await Promise.all([
     prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } }),
-    loadUsdArsRateOrNull()
+    loadUsdArsRateOrNull(),
+    getUsdDisplayFxRates()
   ]);
 
   const assignments = parsePatientAssignments(assignmentConfig?.value);
@@ -206,9 +210,9 @@ export async function resolveIndividualSessionsPurchaseQuote(params: {
     discountPercent: unitPricing.discountPercent
   };
   const charge = chargeAmountMajorForMarket({
-    market: patient.market,
+    payerCountry,
     priceUsdCents: totalPricing.priceCents,
-    arsPerUsd
+    ratesPerUsd
   });
 
   return {

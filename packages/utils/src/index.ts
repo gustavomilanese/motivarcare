@@ -317,6 +317,8 @@ export {
 } from "./displayFx.js";
 
 export {
+  PATIENT_LOCAL_PRICE_ROUND_STEP,
   SESSION_PRICE_ARS_ROUND_STEP,
+  ceilUsdToLocalMajor,
   roundSessionPriceArsFromUsd
 } from "./sessionPriceArs.js";
