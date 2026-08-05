@@ -15,6 +15,35 @@ function localized(language: AppLanguage, values: { es: string; en: string; pt: 
   return values[language as "es" | "en" | "pt"] ?? values.es;
 }
 
+const SUPPORT_EMAIL = "soporte@motivarcare.com";
+
+function payoutSupportMailto(language: AppLanguage, residencyCountry?: string | null): string {
+  const residency = (residencyCountry ?? "").trim().toUpperCase();
+  const subject = t(language, {
+    es: "Cobro profesional — país no disponible",
+    en: "Professional payout — country not available",
+    pt: "Recebimento profissional — país não disponível"
+  });
+  const body = t(language, {
+    es: [
+      "Hola, quiero cobrar como profesional en MotivarCare.",
+      residency ? `Mi país de residencia es: ${residency}.` : "Mi país de residencia es: (indicá el país).",
+      "El país de mi cuenta bancaria no está en la lista de payouts. ¿Me pueden ayudar?"
+    ].join("\n\n"),
+    en: [
+      "Hi, I’d like to get paid as a professional on MotivarCare.",
+      residency ? `My country of residence is: ${residency}.` : "My country of residence is: (please fill in).",
+      "My bank-account country isn’t on the payout list. Can you help?"
+    ].join("\n\n"),
+    pt: [
+      "Olá, quero receber como profissional na MotivarCare.",
+      residency ? `Meu país de residência é: ${residency}.` : "Meu país de residência é: (indique o país).",
+      "O país da minha conta bancária não está na lista de payouts. Podem me ajudar?"
+    ].join("\n\n")
+  });
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 /**
  * Formulario de datos bancarios **dinámico por país de cobro** (`transfer_country`),
  * armado a partir de la spec compartida de dLocal (`@therapy/types → dlocalPayouts.ts`).
@@ -26,6 +55,8 @@ export function DlocalPayoutCountryFields(props: {
   language: AppLanguage;
   fields: PayoutFormFields;
   onFormChange: (patch: Partial<PayoutFormFields>) => void;
+  /** Residencia del profesional: se usa para prellenar el email a soporte. */
+  residencyCountry?: string | null;
 }) {
   const { language, fields, onFormChange } = props;
   const countryOptions = dlocalPayoutCountryOptions(language as "es" | "en" | "pt");
@@ -33,6 +64,7 @@ export function DlocalPayoutCountryFields(props: {
   const bankList = isDlocalPayoutCountry(fields.payoutCountry)
     ? dlocalPayoutBankCodes(fields.payoutCountry)
     : null;
+  const supportMailto = payoutSupportMailto(language, props.residencyCountry);
 
   return (
     <div className="pro-payout-dlocal">
@@ -68,15 +100,30 @@ export function DlocalPayoutCountryFields(props: {
         </select>
       </label>
 
-      {!fields.payoutCountry ? (
-        <p className="pro-payout-card__hint">
+      <p className="pro-payout-card__hint">
+        {t(language, {
+          es: "Solo mostramos países donde hoy podemos transferirte (AR, BR, EC, MX, PE, PY, UY) y los bancos habilitados de cada uno.",
+          en: "We only list countries where we can currently transfer (AR, BR, EC, MX, PE, PY, UY) and the enabled banks for each.",
+          pt: "Mostramos apenas países onde hoje podemos transferir (AR, BR, EC, MX, PE, PY, UY) e os bancos habilitados de cada um."
+        })}{" "}
+        {t(language, {
+          es: "Si tu país no está en la lista,",
+          en: "If your country isn’t on the list,",
+          pt: "Se o seu país não estiver na lista,"
+        })}{" "}
+        <a href={supportMailto}>
           {t(language, {
-            es: "Sólo mostramos países donde hoy podemos transferirte tus pagos.",
-            en: "We only list countries where we can currently transfer your payments.",
-            pt: "Mostramos apenas países onde hoje podemos transferir seus pagamentos."
+            es: `escribinos a ${SUPPORT_EMAIL}`,
+            en: `email us at ${SUPPORT_EMAIL}`,
+            pt: `escreva para ${SUPPORT_EMAIL}`
           })}
-        </p>
-      ) : null}
+        </a>{" "}
+        {t(language, {
+          es: "e indicá de qué país sos.",
+          en: "and tell us which country you’re in.",
+          pt: "e indique de qual país você é."
+        })}
+      </p>
 
       {fields.payoutCountry && !config ? (
         <p className="pro-payout-card__warning">

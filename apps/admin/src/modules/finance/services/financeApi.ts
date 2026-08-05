@@ -94,8 +94,13 @@ export async function rebuildFinanceSessionRecords(token: string): Promise<{ pro
   });
 }
 
-export async function createPayoutRun(token: string, input: { periodStart: string; periodEnd: string; notes?: string }): Promise<{ id: string }> {
-  const idempotencyKey = `payout-${input.periodStart}-${input.periodEnd}`;
+export async function createPayoutRun(
+  token: string,
+  input: { periodStart?: string; periodEnd?: string; notes?: string; months?: string[] }
+): Promise<{ id: string }> {
+  const idempotencyKey = input.months?.length
+    ? `payout-months-${input.months.join("_")}`
+    : `payout-${input.periodStart}-${input.periodEnd}`;
   const response = await apiRequest<{ run: { id: string } }>("/api/admin/finance/payouts/runs", token, {
     method: "POST",
     headers: { "X-Idempotency-Key": idempotencyKey },
@@ -110,6 +115,21 @@ export async function markPayoutLinePaid(token: string, lineId: string): Promise
 
 export async function closePayoutRun(token: string, runId: string): Promise<void> {
   await apiRequest<unknown>(`/api/admin/finance/payouts/runs/${runId}/close`, token, { method: "POST" });
+}
+
+export async function submitPayoutRunToDlocal(
+  token: string,
+  runId: string
+): Promise<{ submitted: number; failed: number; skipped: number; results: unknown[] }> {
+  return apiRequest(`/api/admin/finance/payouts/runs/${runId}/submit-dlocal`, token, { method: "POST" });
+}
+
+export async function refreshPayoutRunDlocal(token: string, runId: string): Promise<{ refreshed: unknown[] }> {
+  return apiRequest(`/api/admin/finance/payouts/runs/${runId}/refresh-dlocal`, token, { method: "POST" });
+}
+
+export async function retryPayoutLineDlocal(token: string, lineId: string): Promise<void> {
+  await apiRequest<unknown>(`/api/admin/finance/payouts/lines/${lineId}/retry-dlocal`, token, { method: "POST" });
 }
 
 export async function fetchStripeOperations(token: string, query: string): Promise<FinanceStripeOpsResponse> {
@@ -151,14 +171,15 @@ export async function fetchUnpaidProfessionalDetail(
 export async function payProfessionalUnpaid(
   token: string,
   professionalId: string,
-  input?: { method?: "ledger" | "dlocal"; payoutReference?: string }
+  input?: { method?: "ledger" | "dlocal"; payoutReference?: string; months?: string[] }
 ): Promise<PayUnpaidProfessionalResponse> {
   return apiRequest(`/api/admin/finance/unpaid-professionals/${encodeURIComponent(professionalId)}/pay`, token, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       method: input?.method ?? "ledger",
-      payoutReference: input?.payoutReference ?? undefined
+      payoutReference: input?.payoutReference ?? undefined,
+      months: input?.months?.length ? input.months : undefined
     })
   });
 }

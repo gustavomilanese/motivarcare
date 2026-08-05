@@ -11,7 +11,10 @@ import {
   fetchStripeOperations,
   markPayoutLinePaid,
   patchFinanceSettings,
-  retryStripeEvent
+  refreshPayoutRunDlocal,
+  retryPayoutLineDlocal,
+  retryStripeEvent,
+  submitPayoutRunToDlocal
 } from "../services/financeApi";
 import {
   EMPTY_CREATE_PAYOUT_DRAFT,
@@ -64,6 +67,8 @@ export function useFinanceDashboard({ token, formatDate, language }: UseFinanceD
   const [loading, setLoading] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
   const [creatingRun, setCreatingRun] = useState(false);
+  const [submittingDlocal, setSubmittingDlocal] = useState(false);
+  const [refreshingDlocal, setRefreshingDlocal] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -200,6 +205,90 @@ export function useFinanceDashboard({ token, formatDate, language }: UseFinanceD
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("finance-close-run", language, raw));
+    }
+  };
+
+  const submitSelectedRunToDlocal = async (runId: string) => {
+    setSubmittingDlocal(true);
+    setError("");
+    setSuccess("");
+    try {
+      const result = await submitPayoutRunToDlocal(token, runId);
+      setSuccess(
+        `dLocal: ${result.submitted} enviados, ${result.failed} fallidos, ${result.skipped} omitidos`
+      );
+      await loadRunDetail(runId);
+      await loadPayoutRuns(payoutPage);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-payout-create", language, raw));
+    } finally {
+      setSubmittingDlocal(false);
+    }
+  };
+
+  const refreshSelectedRunDlocal = async (runId: string) => {
+    setRefreshingDlocal(true);
+    setError("");
+    setSuccess("");
+    try {
+      await refreshPayoutRunDlocal(token, runId);
+      setSuccess("Estados dLocal actualizados");
+      await loadRunDetail(runId);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-run-detail", language, raw));
+    } finally {
+      setRefreshingDlocal(false);
+    }
+  };
+
+  const retryLineDlocal = async (lineId: string) => {
+    if (!selectedRun) {
+      return;
+    }
+    setError("");
+    setSuccess("");
+    try {
+      await retryPayoutLineDlocal(token, lineId);
+      setSuccess("Reintento dLocal enviado");
+      await loadRunDetail(selectedRun.id);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-payout-create", language, raw));
+    }
+  };
+
+  const createPayoutRunFromMonths = async (months: string[], notes?: string) => {
+    if (months.length === 0) {
+      setError(
+        t({
+          es: "Elegí al menos un mes en Pendiente de pagar para crear la liquidación.",
+          en: "Pick at least one month in Unpaid to create the payout run.",
+          pt: "Escolha pelo menos um mes em Pendentes para criar a liquidacao."
+        })
+      );
+      return null;
+    }
+    setCreatingRun(true);
+    setError("");
+    setSuccess("");
+    try {
+      const run = await createPayoutRun(token, {
+        months,
+        notes: notes?.trim() || `Liquidación ${months.join(", ")}`
+      });
+      setSuccess("Corrida de liquidación creada desde pendientes");
+      await loadPayoutRuns(1);
+      setPayoutPage(1);
+      await loadRunDetail(run.id);
+      return run.id;
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-payout-create", language, raw));
+      return null;
+    } finally {
+      setCreatingRun(false);
     }
   };
 
@@ -404,6 +493,8 @@ export function useFinanceDashboard({ token, formatDate, language }: UseFinanceD
     loading,
     savingRules,
     creatingRun,
+    submittingDlocal,
+    refreshingDlocal,
     error,
     success,
     topProfessionals,
@@ -425,6 +516,10 @@ export function useFinanceDashboard({ token, formatDate, language }: UseFinanceD
     submitCreatePayoutRun,
     markLineAsPaid,
     closeSelectedRun,
+    submitSelectedRunToDlocal,
+    refreshSelectedRunDlocal,
+    retryLineDlocal,
+    createPayoutRunFromMonths,
     clearFilters,
     clearStripeFilters,
     applyQuickRange,

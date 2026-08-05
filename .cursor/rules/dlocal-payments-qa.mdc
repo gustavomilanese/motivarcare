@@ -13,7 +13,7 @@ alwaysApply: true
 
 ## Qué se implementó (pendiente QA manual)
 
-- Checkout DLocal para **todos los países dLocal Go** (AR, BO, BR, CL, CO, CR, EC, GT, MX, PY, PE, UY, ID, MY, KE, NG) — ver `packages/types/src/dlocalGoCoverage.ts`.
+- Checkout DLocal para **todos los países dLocal Go** (AR, BO, BR, CL, CO, CR, EC, GT, MX, PA, PY, PE, UY, ID, MY, KE, NG) — ver `packages/types/src/dlocalGoCoverage.ts`.
 - **Moneda local en pantalla** para el paciente según país de residencia (no solo AR/USD).
 - Catálogo interno sigue en **USD**; conversión display + cobro usan la misma FX (prioridad dLocal `currency-exchanges`).
 - **Redondeo local:** ceil al múltiplo de **500** (p. ej. 40.500, 54.500) — display y cobro alineados (`ceilUsdToLocalMajor`).
@@ -48,7 +48,7 @@ Probar en **sandbox** mañana, por país si es posible:
 3. Paquete individual, paquete multi-sesión, sesión de prueba → redirect DLocal sandbox con **amount en moneda local** (= display)
 4. Return post-pago → fulfillment / historial de compras
 5. País **sin** cobertura dLocal (ej. ES/US sin residencia dLocal) → mensaje claro, sin crash
-6. Ecuador (EC) → display y cobro en USD
+6. Ecuador (EC) / Panamá (PA) → display y cobro en USD
 7. Verificar que cotizaciones live cargan (`GET /api/public/fx/display-rates`); sin API, fallback estático
 
 ## Deploy

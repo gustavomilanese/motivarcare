@@ -205,7 +205,12 @@ export function ProfessionalStripeVerificationStep(props: {
         </div>
 
         {isDlocal ? (
-          <DlocalPayoutCountryFields language={props.language} fields={props.form} onFormChange={props.onFormChange} />
+          <DlocalPayoutCountryFields
+            language={props.language}
+            fields={props.form}
+            onFormChange={props.onFormChange}
+            residencyCountry={props.residencyCountry}
+          />
         ) : (
           <input
             value={props.form.taxId}

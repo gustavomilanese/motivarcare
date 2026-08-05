@@ -67,6 +67,8 @@ export function AdminUnpaidProfessionalsPanel(props: {
   /** Si viene del KPI, se usa como prefetch hasta el primer fetch con meses. */
   initialRows?: AdminUnpaidProfessional[];
   compact?: boolean;
+  creatingLiquidacion?: boolean;
+  onCreateLiquidacion?: (months: string[]) => void;
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<AdminUnpaidProfessional[]>(props.initialRows ?? []);
@@ -259,6 +261,27 @@ export function AdminUnpaidProfessionalsPanel(props: {
             {hasMonthFilter ? (
               <button type="button" className="secondary admin-unpaid-month-clear" onClick={clearMonthFilter}>
                 {t(props.language, { es: "Todos", en: "All", pt: "Todos" })}
+              </button>
+            ) : null}
+            {props.onCreateLiquidacion ? (
+              <button
+                type="button"
+                className="primary"
+                disabled={props.creatingLiquidacion || selectedMonths.length === 0 || filteredSorted.length === 0}
+                onClick={() => props.onCreateLiquidacion?.(selectedMonths)}
+                title={t(props.language, {
+                  es: "Crea una corrida de liquidación con las sesiones unpaid del mes seleccionado",
+                  en: "Creates a payout run with unpaid sessions for the selected month(s)",
+                  pt: "Cria uma corrida de liquidacao com sessoes pendentes do(s) mes(es) selecionado(s)"
+                })}
+              >
+                {props.creatingLiquidacion
+                  ? t(props.language, { es: "Creando…", en: "Creating…", pt: "Criando…" })
+                  : t(props.language, {
+                      es: "Crear liquidación del mes",
+                      en: "Create month payout run",
+                      pt: "Criar liquidacao do mes"
+                    })}
               </button>
             ) : null}
           </div>
@@ -552,6 +575,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
           language={props.language}
           professionalId={reviewTarget.professionalId}
           professionalName={reviewTarget.professionalName}
+          months={selectedMonths}
           onClose={() => setReviewTarget(null)}
           onPaid={() => {
             setReviewTarget(null);

@@ -580,9 +580,14 @@ model FinancePayoutLine {
   grossCents            Int                  @default(0)
   platformFeeCents      Int                  @default(0)
   professionalNetCents  Int                  @default(0)
+  /** PENDING | SUBMITTED | PAID | FAILED */
   status                String               @default("PENDING")
   paidAt                DateTime?
   payoutReference       String?
+  /** dLocal Go payout_id when submitted via API. */
+  dlocalPayoutId        String?
+  dlocalStatus          String?
+  submissionError       String?              @db.Text
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   payoutRun             FinancePayoutRun     @relation(fields: [payoutRunId], references: [id])
@@ -591,6 +596,7 @@ model FinancePayoutLine {
 
   @@index([payoutRunId, professionalId])
   @@index([status, paidAt])
+  @@index([dlocalPayoutId])
 }
 
 model ChatThread {

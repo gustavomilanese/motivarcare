@@ -50,6 +50,8 @@ export type StoredPayoutRecord = {
   createdAt: string;
   updatedAt: string;
   bankName?: string | null;
+  /** FinancePayoutLine id when created from a liquidación. */
+  payoutLineId?: string | null;
 };
 
 export async function loadProfessionalPayoutAdmin(
@@ -133,6 +135,7 @@ export async function createProfessionalPayout(params: {
   externalReference?: string | null;
   beneficiaryEmail?: string | null;
   description?: string | null;
+  payoutLineId?: string | null;
 }): Promise<{ payout: DlocalGoPayout; record: StoredPayoutRecord }> {
   if (!isDlocalGoConfigured()) {
     throw new ProfessionalPayoutError("dlocal_not_configured", "dLocal Go no está configurado (faltan credenciales).");
@@ -197,7 +200,8 @@ export async function createProfessionalPayout(params: {
     externalReference: params.externalReference ?? null,
     createdAt: now,
     updatedAt: now,
-    bankName: payout.bank_name ?? null
+    bankName: payout.bank_name ?? null,
+    payoutLineId: params.payoutLineId ?? null
   };
   await upsertPayoutRecord(record);
 
@@ -238,5 +242,19 @@ export async function syncPayoutStatus(payoutId: string): Promise<StoredPayoutRe
     to: payout.status,
     professionalProfileId: existing.professionalProfileId
   });
+
+  try {
+    const { applyDlocalStatusToPayoutLine } = await import("../finance/payoutRunDlocal.service.js");
+    await applyDlocalStatusToPayoutLine({
+      payoutId,
+      status: String(payout.status)
+    });
+  } catch (error) {
+    console.error(`${LOG_PREFIX} ledger sync failed`, {
+      payoutId,
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
+
   return updated;
 }

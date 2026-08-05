@@ -525,8 +525,10 @@ export async function payUnpaidProfessional(input: {
   professionalId: string;
   method: "ledger" | "dlocal";
   payoutReference?: string;
+  months?: string[];
 }) {
-  const detail = await getUnpaidProfessionalDetail(input.professionalId);
+  const months = [...new Set((input.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  const detail = await getUnpaidProfessionalDetail(input.professionalId, { months });
   if ("notFound" in detail) {
     return { notFound: true as const };
   }
@@ -535,7 +537,10 @@ export async function payUnpaidProfessional(input: {
   }
 
   if (input.method === "ledger") {
-    return payProfessionalUnpaidBalance(input.professionalId, input.payoutReference);
+    return payProfessionalUnpaidBalance(input.professionalId, input.payoutReference, {
+      months,
+      markPaidImmediately: true
+    });
   }
 
   if (!detail.payout.dlocalConfigured) {
@@ -554,28 +559,51 @@ export async function payUnpaidProfessional(input: {
     );
   }
 
-  const { payout, record } = await createProfessionalPayout({
-    professionalProfileId: input.professionalId,
-    amount: detail.payout.estimatedLocal.amount,
-    externalReference: `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`,
-    beneficiaryEmail: detail.professional.email,
-    description: `MotivarCare · ${detail.totals.pendingSessionsCount} sesiones`
+  // 1) Reservar sesiones en una corrida DRAFT (línea SUBMITTED sin dLocal aún).
+  const ledger = await payProfessionalUnpaidBalance(input.professionalId, undefined, {
+    months,
+    markPaidImmediately: false,
+    notes: "Pago dLocal desde pendientes (awaiting webhook)"
   });
-
-  const ledger = await payProfessionalUnpaidBalance(
-    input.professionalId,
-    input.payoutReference?.trim() || `dlocal:${payout.payout_id}`
-  );
-
   if ("notFound" in ledger || "noRecords" in ledger) {
     return ledger;
   }
 
-  return {
-    ...ledger,
-    dlocalPayoutId: payout.payout_id,
-    dlocalStatus: record.status,
-    dlocalAmount: detail.payout.estimatedLocal.amount,
-    dlocalCurrency: detail.payout.estimatedLocal.currency
-  };
+  try {
+    const { payout, record } = await createProfessionalPayout({
+      professionalProfileId: input.professionalId,
+      amount: detail.payout.estimatedLocal.amount,
+      externalReference: `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`,
+      beneficiaryEmail: detail.professional.email,
+      description: `MotivarCare · ${detail.totals.pendingSessionsCount} sesiones${months.length ? ` · ${months.join(",")}` : ""}`,
+      payoutLineId: ledger.payoutLineId
+    });
+
+    await prisma.financePayoutLine.update({
+      where: { id: ledger.payoutLineId },
+      data: {
+        dlocalPayoutId: payout.payout_id,
+        dlocalStatus: record.status,
+        payoutReference: input.payoutReference?.trim() || `dlocal:${payout.payout_id}`,
+        submissionError: null
+      }
+    });
+
+    return {
+      ...ledger,
+      dlocalPayoutId: payout.payout_id,
+      dlocalStatus: record.status,
+      dlocalAmount: detail.payout.estimatedLocal.amount,
+      dlocalCurrency: detail.payout.estimatedLocal.currency
+    };
+  } catch (error) {
+    await prisma.financePayoutLine.update({
+      where: { id: ledger.payoutLineId },
+      data: {
+        status: "FAILED",
+        submissionError: (error instanceof Error ? error.message : String(error)).slice(0, 2000)
+      }
+    });
+    throw error;
+  }
 }

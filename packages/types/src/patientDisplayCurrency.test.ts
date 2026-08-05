@@ -19,8 +19,9 @@ describe("patientDisplayCurrency", () => {
     expect(displayCurrencyCodeForResidencyCountry("PY")).toBe("PYG");
   });
 
-  it("uses USD for Ecuador (dollarized)", () => {
+  it("uses USD for Ecuador and Panama (dollarized)", () => {
     expect(displayCurrencyCodeForResidencyCountry("EC")).toBe("USD");
+    expect(displayCurrencyCodeForResidencyCountry("PA")).toBe("USD");
   });
 
   it("maps Africa and Asia dLocal countries", () => {

@@ -14,6 +14,7 @@ export const RESIDENCY_DISPLAY_CURRENCY: Record<string, string> = {
   EC: "USD",
   GT: "GTQ",
   MX: "MXN",
+  PA: "USD",
   PY: "PYG",
   PE: "PEN",
   UY: "UYU",

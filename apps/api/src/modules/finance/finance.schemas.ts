@@ -28,13 +28,26 @@ export const financeOverviewQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional()
 });
 
-export const createPayoutRunSchema = z.object({
-  periodStart: z.string().datetime(),
-  periodEnd: z.string().datetime(),
-  notes: z.string().trim().max(2000).optional(),
-  includePreviouslyPaid: z.boolean().optional().default(false),
-  idempotencyKey: z.string().trim().min(8).max(120).optional()
-});
+export const createPayoutRunSchema = z
+  .object({
+    periodStart: z.string().datetime().optional(),
+    periodEnd: z.string().datetime().optional(),
+    notes: z.string().trim().max(2000).optional(),
+    includePreviouslyPaid: z.boolean().optional().default(false),
+    idempotencyKey: z.string().trim().min(8).max(120).optional(),
+    /** Atajo: meses UTC YYYY-MM; si vienen, se usan para derivar periodStart/End. */
+    months: z.array(z.string().regex(/^\d{4}-\d{2}$/)).max(24).optional()
+  })
+  .superRefine((data, ctx) => {
+    const hasMonths = (data.months?.length ?? 0) > 0;
+    if (!hasMonths && (!data.periodStart || !data.periodEnd)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide periodStart/periodEnd or months",
+        path: ["periodStart"]
+      });
+    }
+  });
 
 export const listPayoutRunsQuerySchema = z.object({
   status: z.enum(["DRAFT", "CLOSED"]).optional(),
@@ -51,7 +64,9 @@ export const markPayoutLinePaidSchema = z.object({
 
 export const payUnpaidProfessionalSchema = z.object({
   method: z.enum(["ledger", "dlocal"]).default("ledger"),
-  payoutReference: z.string().trim().min(2).max(120).optional()
+  payoutReference: z.string().trim().min(2).max(120).optional(),
+  /** Meses UTC YYYY-MM (vacío = todas las sesiones unpaid). */
+  months: z.array(z.string().regex(/^\d{4}-\d{2}$/)).max(24).optional()
 });
 
 export const financeDailyAggregateQuerySchema = z.object({

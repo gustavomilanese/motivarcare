@@ -119,9 +119,16 @@ export interface FinancePayoutRunDetailResponse {
       grossCents: number;
       platformFeeCents: number;
       professionalNetCents: number;
-      status: "PENDING" | "PAID";
+      status: "PENDING" | "SUBMITTED" | "PAID" | "FAILED";
       paidAt: string | null;
       payoutReference: string | null;
+      dlocalPayoutId?: string | null;
+      dlocalStatus?: string | null;
+      submissionError?: string | null;
+      ready?: boolean;
+      readyReason?: string | null;
+      payoutCountry?: string | null;
+      estimatedLocal?: { currency: string; amount: number; ratePerUsd: number | null } | null;
       sessionRecords: Array<{
         id: string;
         bookingId: string;

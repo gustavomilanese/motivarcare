@@ -10,6 +10,9 @@
  * Fuente: https://docs.dlocalgo.com/integration-api/llms-full.txt (Country requirements).
  * Última sincronización: 2026-07 (dLocal Go).
  *
+ * No confundir con el PDF "dLocal Go Bank List" (bancos de settlement de la empresa).
+ * Esa lista no es el contrato de `bank_code` de payouts B2C.
+ *
  * Para regenerar: bajar el corpus y volver a parsear las tablas "### Bank codes" por país.
  */
 
@@ -262,11 +265,6 @@ const EC_BANK_CODES: DlocalBankCode[] = [
   { name: "Banco del Pichincha", code: "010" },
   { name: "Banco Delbank", code: "027" },
   { name: "Banco Ecuatoriano de la Vivienda", code: "052" },
-  { name: "Banco Económico", code: "007" },
-  { name: "Banco Ecofuturo", code: "047" },
-  { name: "Banco FIE", code: "045" },
-  { name: "Banco Fortaleza", code: "049" },
-  { name: "Banco Ganadero", code: "009" },
   { name: "Banco General Rumiñahui", code: "042" },
   { name: "Banco Internacional", code: "032" },
   { name: "Banco Procredit", code: "060" },
@@ -444,18 +442,14 @@ const EC_BANK_CODES: DlocalBankCode[] = [
   { name: "COOP Aho Y Cred Indigena Alfa", code: "675" },
   { name: "COOP Aho Y Cred Maquita Cushunchic", code: "669" },
   { name: "Financiera - Diners Club del Ecuador", code: "232" },
-  { name: "Financiera Acceso La Paz", code: "43" },
   { name: "Financiera Financoop", code: "097" },
-  { name: "Fondo Financiero de la Comunidad", code: "44" },
   { name: "FONDO DE CESANTIA DEL MAGISTERIO ECUATORIANO FCME-", code: "667" },
   { name: "Interdin S.A.", code: "349" },
   { name: "La Cooperativa de Ah Y Cred Simon Bolivar", code: "198" },
-  { name: "Magisterio Rural", code: "39" },
   { name: "Mutualista Ambato", code: "098" },
   { name: "Mutualista Azuay", code: "070" },
   { name: "Mutualista Imbabura", code: "099" },
   { name: "Mutualista Pichincha", code: "071" },
-  { name: "Nacional Financiera Boliviana SAN", code: "42" },
   { name: "Pacificard", code: "005" }
 ];
 

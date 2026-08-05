@@ -2,7 +2,7 @@ import type { Market } from "./market.js";
 
 /**
  * Países desde los que dLocal Go puede cobrar a pagadores locales (ISO 3166-1 alpha-2).
- * Fuente: helpcenter.dlocalgo.com — LATAM + ID, MY, KE, NG.
+ * Fuente: helpcenter.dlocalgo.com — LATAM (incl. PA) + ID, MY, KE, NG.
  */
 export const DLOCAL_GO_PAYER_COUNTRIES = new Set<string>([
   "AR",
@@ -14,6 +14,7 @@ export const DLOCAL_GO_PAYER_COUNTRIES = new Set<string>([
   "EC",
   "GT",
   "MX",
+  "PA",
   "PY",
   "PE",
   "UY",

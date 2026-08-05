@@ -743,8 +743,28 @@ export async function closePayoutRun(runId: string) {
   return { run: updated };
 }
 
-/** Liquida todas las sesiones sin payout de un profesional: crea corrida, marca pagado y cierra. */
-export async function payProfessionalUnpaidBalance(professionalId: string, payoutReference?: string) {
+function utcMonthKey(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+/**
+ * Liquida sesiones sin payout de un profesional.
+ * - `months`: limita a meses UTC YYYY-MM (vacío = todas).
+ * - `markPaidImmediately: false` deja la corrida en DRAFT / línea SUBMITTED (flujo dLocal async).
+ */
+export async function payProfessionalUnpaidBalance(
+  professionalId: string,
+  payoutReference?: string,
+  options?: {
+    months?: string[];
+    markPaidImmediately?: boolean;
+    dlocalPayoutId?: string | null;
+    dlocalStatus?: string | null;
+    notes?: string;
+  }
+) {
   const professional = await prisma.professionalProfile.findUnique({
     where: { id: professionalId },
     select: { id: true }
@@ -753,7 +773,10 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
     return { notFound: true as const };
   }
 
-  const eligibleRecords = await prisma.financeSessionRecord.findMany({
+  const monthFilter = [...new Set((options?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))];
+  const markPaidImmediately = options?.markPaidImmediately !== false;
+
+  let eligibleRecords = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId,
       bookingStatus: "COMPLETED",
@@ -761,6 +784,13 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
     },
     orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }]
   });
+
+  if (monthFilter.length > 0) {
+    eligibleRecords = eligibleRecords.filter((record) => {
+      const key = utcMonthKey(record.bookingCompletedAt ?? record.bookingStartsAt);
+      return monthFilter.includes(key);
+    });
+  }
 
   if (eligibleRecords.length === 0) {
     return { noRecords: true as const };
@@ -786,12 +816,12 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
       data: {
         periodStart,
         periodEnd,
-        status: "CLOSED",
+        status: markPaidImmediately ? "CLOSED" : "DRAFT",
         totalGrossCents: grossCents,
         totalFeeCents: platformFeeCents,
         totalNetCents: professionalNetCents,
-        notes: "Pago directo desde pendientes",
-        closedAt: paidAt
+        notes: options?.notes?.trim() || "Pago directo desde pendientes",
+        closedAt: markPaidImmediately ? paidAt : null
       }
     });
     const line = await tx.financePayoutLine.create({
@@ -802,9 +832,12 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
         grossCents,
         platformFeeCents,
         professionalNetCents,
-        status: "PAID",
-        paidAt,
-        payoutReference: payoutReference?.trim() || null
+        status: markPaidImmediately ? "PAID" : "SUBMITTED",
+        paidAt: markPaidImmediately ? paidAt : null,
+        payoutReference: payoutReference?.trim() || null,
+        dlocalPayoutId: options?.dlocalPayoutId ?? null,
+        dlocalStatus: options?.dlocalStatus ?? null,
+        submissionError: null
       }
     });
     await Promise.all(
@@ -817,7 +850,9 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
     );
     await tx.outboxEvent.create({
       data: {
-        eventType: "finance.professional_unpaid_paid",
+        eventType: markPaidImmediately
+          ? "finance.professional_unpaid_paid"
+          : "finance.professional_unpaid_submitted_dlocal",
         aggregateType: "financePayoutLine",
         aggregateId: line.id,
         payload: {
@@ -826,7 +861,8 @@ export async function payProfessionalUnpaidBalance(professionalId: string, payou
           professionalId,
           sessionsCount: eligibleRecords.length,
           professionalNetCents,
-          paidAt: paidAt.toISOString()
+          paidAt: markPaidImmediately ? paidAt.toISOString() : null,
+          dlocalPayoutId: options?.dlocalPayoutId ?? null
         }
       }
     });

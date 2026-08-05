@@ -249,6 +249,10 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
               token={props.token}
               language={props.language}
               initialRows={kpisResponse?.unpaidByProfessional}
+              creatingLiquidacion={model.creatingRun}
+              onCreateLiquidacion={(months) => {
+                void model.createPayoutRunFromMonths(months);
+              }}
               onChanged={() => {
                 setKpisRefreshToken((value) => value + 1);
                 void model.loadAll();
@@ -385,12 +389,23 @@ export function FinancesPage(props: { token: string; language: AppLanguage; curr
           language={props.language}
           currency={props.currency}
           run={selectedRun}
+          submittingDlocal={model.submittingDlocal}
+          refreshingDlocal={model.refreshingDlocal}
           onCloseDetail={() => model.setSelectedRun(null)}
           onCloseRun={() => {
             void model.closeSelectedRun(selectedRun.id);
           }}
           onMarkLinePaid={(lineId) => {
             void model.markLineAsPaid(lineId);
+          }}
+          onSubmitDlocal={() => {
+            void model.submitSelectedRunToDlocal(selectedRun.id);
+          }}
+          onRefreshDlocal={() => {
+            void model.refreshSelectedRunDlocal(selectedRun.id);
+          }}
+          onRetryLineDlocal={(lineId) => {
+            void model.retryLineDlocal(lineId);
           }}
           formatMoney={formatMoneyCents}
         />

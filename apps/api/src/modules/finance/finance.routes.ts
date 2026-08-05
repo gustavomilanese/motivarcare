@@ -165,8 +165,29 @@ financeRouter.post("/payouts/runs", async (req, res) => {
     return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid payload", details: parsed.error.flatten() });
   }
   const headerIdempotencyKey = req.header("x-idempotency-key")?.trim();
+  let periodStart = parsed.data.periodStart;
+  let periodEnd = parsed.data.periodEnd;
+  if (parsed.data.months && parsed.data.months.length > 0) {
+    const { periodBoundsFromMonthKeys } = await import("./payoutRunDlocal.service.js");
+    const bounds = periodBoundsFromMonthKeys(parsed.data.months);
+    if (!bounds) {
+      return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "Invalid months" });
+    }
+    periodStart = bounds.periodStart;
+    periodEnd = bounds.periodEnd;
+  }
+  if (!periodStart || !periodEnd) {
+    return sendApiError({ res, status: 400, code: "BAD_REQUEST", message: "periodStart and periodEnd are required" });
+  }
   const created = await createPayoutRun({
-    ...parsed.data,
+    periodStart,
+    periodEnd,
+    notes:
+      parsed.data.notes?.trim()
+      || (parsed.data.months?.length
+        ? `Liquidación ${parsed.data.months.join(", ")}`
+        : undefined),
+    includePreviouslyPaid: parsed.data.includePreviouslyPaid,
     idempotencyKey: parsed.data.idempotencyKey?.trim() || headerIdempotencyKey || null
   });
 
@@ -203,6 +224,20 @@ financeRouter.get("/payouts/runs/:runId", async (req, res) => {
   if (!run) {
     return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Payout run not found" });
   }
+  const { enrichPayoutLinesForAdmin } = await import("./payoutRunDlocal.service.js");
+  const enrichment = await enrichPayoutLinesForAdmin(
+    run.payoutLines.map((line) => ({
+      id: line.id,
+      professionalId: line.professionalId,
+      status: line.status,
+      dlocalPayoutId: line.dlocalPayoutId,
+      dlocalStatus: line.dlocalStatus,
+      submissionError: line.submissionError,
+      professionalNetCents: line.professionalNetCents
+    }))
+  );
+  const enrichById = new Map(enrichment.map((item) => [item.lineId, item]));
+
   return res.json({
     run: {
       id: run.id,
@@ -216,36 +251,115 @@ financeRouter.get("/payouts/runs/:runId", async (req, res) => {
       notes: run.notes,
       createdAt: run.createdAt,
       closedAt: run.closedAt,
-      payoutLines: run.payoutLines.map((line) => ({
-        id: line.id,
-        professionalId: line.professionalId,
-        professionalName: line.professional.user.fullName,
-        professionalEmail: line.professional.user.email,
-        sessionsCount: line.sessionsCount,
-        grossCents: line.grossCents,
-        platformFeeCents: line.platformFeeCents,
-        professionalNetCents: line.professionalNetCents,
-        status: line.status,
-        paidAt: line.paidAt,
-        payoutReference: line.payoutReference,
-        sessionRecords: line.sessionRecords.map((record) => ({
-          id: record.id,
-          bookingId: record.bookingId,
-          bookingStartsAt: record.bookingStartsAt,
-          bookingCompletedAt: record.bookingCompletedAt,
-          isTrial: record.isTrial,
-          patientId: record.patientId,
-          patientName: record.patient.user.fullName,
-          patientEmail: record.patient.user.email,
-          packageId: record.packageId,
-          packageName: record.package?.name ?? null,
-          sessionPriceCents: record.sessionPriceCents,
-          platformFeeCents: record.platformFeeCents,
-          professionalNetCents: record.professionalNetCents
-        }))
-      }))
+      payoutLines: run.payoutLines.map((line) => {
+        const extra = enrichById.get(line.id);
+        return {
+          id: line.id,
+          professionalId: line.professionalId,
+          professionalName: line.professional.user.fullName,
+          professionalEmail: line.professional.user.email,
+          sessionsCount: line.sessionsCount,
+          grossCents: line.grossCents,
+          platformFeeCents: line.platformFeeCents,
+          professionalNetCents: line.professionalNetCents,
+          status: line.status,
+          paidAt: line.paidAt,
+          payoutReference: line.payoutReference,
+          dlocalPayoutId: line.dlocalPayoutId,
+          dlocalStatus: line.dlocalStatus,
+          submissionError: line.submissionError,
+          ready: extra?.ready ?? false,
+          readyReason: extra?.readyReason ?? null,
+          payoutCountry: extra?.payoutCountry ?? null,
+          estimatedLocal: extra?.estimatedLocal ?? null,
+          sessionRecords: line.sessionRecords.map((record) => ({
+            id: record.id,
+            bookingId: record.bookingId,
+            bookingStartsAt: record.bookingStartsAt,
+            bookingCompletedAt: record.bookingCompletedAt,
+            isTrial: record.isTrial,
+            patientId: record.patientId,
+            patientName: record.patient.user.fullName,
+            patientEmail: record.patient.user.email,
+            packageId: record.packageId,
+            packageName: record.package?.name ?? null,
+            sessionPriceCents: record.sessionPriceCents,
+            platformFeeCents: record.platformFeeCents,
+            professionalNetCents: record.professionalNetCents
+          }))
+        };
+      })
     }
   });
+});
+
+financeRouter.post("/payouts/runs/:runId/submit-dlocal", async (req, res) => {
+  const { submitPayoutRunToDlocal } = await import("./payoutRunDlocal.service.js");
+  const { ProfessionalPayoutError } = await import("../payouts/professionalPayouts.service.js");
+  try {
+    const result = await submitPayoutRunToDlocal(req.params.runId);
+    if ("notFound" in result && result.notFound) {
+      return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Payout run not found" });
+    }
+    if ("closedRun" in result && result.closedRun) {
+      return sendApiError({ res, status: 409, code: "CONFLICT", message: "Payout run already closed" });
+    }
+    if ("dlocalNotConfigured" in result && result.dlocalNotConfigured) {
+      return sendApiError({
+        res,
+        status: 501,
+        code: "SERVICE_UNAVAILABLE",
+        message: "dLocal Go no está configurado en este entorno."
+      });
+    }
+    return res.json({
+      message: "Envío a dLocal finalizado",
+      submitted: result.submitted,
+      failed: result.failed,
+      skipped: result.skipped,
+      results: result.results
+    });
+  } catch (error) {
+    if (error instanceof ProfessionalPayoutError) {
+      return sendApiError({
+        res,
+        status: 422,
+        code: "BAD_REQUEST",
+        message: error.message,
+        details: { payoutErrorCode: error.code }
+      });
+    }
+    throw error;
+  }
+});
+
+financeRouter.post("/payouts/runs/:runId/refresh-dlocal", async (req, res) => {
+  const { refreshPayoutRunDlocalStatuses } = await import("./payoutRunDlocal.service.js");
+  const result = await refreshPayoutRunDlocalStatuses(req.params.runId);
+  if ("notFound" in result && result.notFound) {
+    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Payout run not found" });
+  }
+  return res.json({ message: "Estados dLocal actualizados", refreshed: result.refreshed });
+});
+
+financeRouter.post("/payouts/lines/:lineId/retry-dlocal", async (req, res) => {
+  const { retryPayoutLineDlocal } = await import("./payoutRunDlocal.service.js");
+  const result = await retryPayoutLineDlocal(req.params.lineId);
+  if ("notFound" in result && result.notFound) {
+    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Payout line not found" });
+  }
+  if ("closedRun" in result && result.closedRun) {
+    return sendApiError({ res, status: 409, code: "CONFLICT", message: "Payout run already closed" });
+  }
+  if ("dlocalNotConfigured" in result && result.dlocalNotConfigured) {
+    return sendApiError({
+      res,
+      status: 501,
+      code: "SERVICE_UNAVAILABLE",
+      message: "dLocal Go no está configurado en este entorno."
+    });
+  }
+  return res.json({ message: "Reintento dLocal", result: result.result });
 });
 
 financeRouter.post("/payouts/lines/:lineId/mark-paid", async (req, res) => {
@@ -342,7 +456,8 @@ financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res)
     const result = await payUnpaidProfessional({
       professionalId: req.params.professionalId,
       method: parsed.data.method,
-      payoutReference: parsed.data.payoutReference
+      payoutReference: parsed.data.payoutReference,
+      months: parsed.data.months
     });
     if ("notFound" in result) {
       return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "Professional not found" });
@@ -353,7 +468,7 @@ financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res)
     return res.json({
       message:
         parsed.data.method === "dlocal"
-          ? "Payout enviado a dLocal y sesiones liquidadas en el ledger"
+          ? "Payout enviado a dLocal; el ledger se marcará pagado cuando dLocal confirme la entrega"
           : "Professional payout recorded",
       currency: "usd",
       method: parsed.data.method,

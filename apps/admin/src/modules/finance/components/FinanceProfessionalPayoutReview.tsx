@@ -46,6 +46,8 @@ export function FinanceProfessionalPayoutReview(props: {
   language: AppLanguage;
   professionalId: string;
   professionalName: string;
+  /** Meses UTC seleccionados en Pendientes; se respetan al pagar. */
+  months?: string[];
   onClose: () => void;
   onPaid: () => void;
 }) {
@@ -60,7 +62,11 @@ export function FinanceProfessionalPayoutReview(props: {
     setLoading(true);
     setError("");
     try {
-      const response = await fetchUnpaidProfessionalDetail(props.token, props.professionalId);
+      const response = await fetchUnpaidProfessionalDetail(
+        props.token,
+        props.professionalId,
+        props.months ?? []
+      );
       setDetail(response);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -68,7 +74,7 @@ export function FinanceProfessionalPayoutReview(props: {
     } finally {
       setLoading(false);
     }
-  }, [props.language, props.professionalId, props.token]);
+  }, [props.language, props.months, props.professionalId, props.token]);
 
   useEffect(() => {
     void load();
@@ -116,14 +122,15 @@ export function FinanceProfessionalPayoutReview(props: {
     try {
       const result = await payProfessionalUnpaid(props.token, props.professionalId, {
         method,
-        payoutReference: reference.trim() || undefined
+        payoutReference: reference.trim() || undefined,
+        months: props.months
       });
       setSuccess(
         method === "dlocal" && result.dlocalPayoutId
           ? t(props.language, {
-              es: `Pago enviado (dLocal ${result.dlocalPayoutId}).`,
-              en: `Payout sent (dLocal ${result.dlocalPayoutId}).`,
-              pt: `Pagamento enviado (dLocal ${result.dlocalPayoutId}).`
+              es: `Pago enviado a dLocal (${result.dlocalPayoutId}). Se marcará pagado cuando confirme la entrega.`,
+              en: `Payout sent to dLocal (${result.dlocalPayoutId}). It will be marked paid when delivery is confirmed.`,
+              pt: `Pagamento enviado ao dLocal (${result.dlocalPayoutId}). Será marcado como pago quando a entrega for confirmada.`
             })
           : t(props.language, {
               es: "Pago registrado correctamente.",

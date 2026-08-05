@@ -128,6 +128,7 @@ export function ProfessionalPayoutSetupPanel(props: {
             language={props.language}
             fields={props.form}
             onFormChange={props.onFormChange}
+            residencyCountry={props.residencyCountry}
           />
         ) : (
           <>
