@@ -130,6 +130,7 @@ export type ProfessionalSurfaceContext =
   | "dashboard-reschedule-save"
   | "dashboard-cancel-booking"
   | "dashboard-complete-booking"
+  | "dashboard-uncomplete-booking"
   | "chat-threads"
   | "chat-messages"
   | "chat-send"
@@ -300,9 +301,14 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     pt: "Nao foi possivel cancelar pelo painel. Atualize ou use a agenda publicada."
   },
   "dashboard-complete-booking": {
-    es: "No pudimos marcar la sesión como ejecutada. Si ya empezó, reintentá; si persiste, avisá a Admin.",
-    en: "We couldn’t mark the session as executed. If it already started, retry; if it keeps failing, contact Admin.",
-    pt: "Nao foi possivel marcar a sessao como executada. Se ja comecou, tente de novo; se persistir, avise o Admin."
+    es: "No pudimos registrar la sesión. Si ya empezó, reintentá; si persiste, avisá a Admin.",
+    en: "We couldn’t record the session. If it already started, retry; if it keeps failing, contact Admin.",
+    pt: "Nao foi possivel registrar a sessao. Se ja comecou, tente de novo; se persistir, avise o Admin."
+  },
+  "dashboard-uncomplete-booking": {
+    es: "No pudimos deshacer el registro. Si ya entró en una liquidación, pedile ajuste a Admin.",
+    en: "We couldn’t undo the recording. If it’s already in a payout, ask Admin to adjust it.",
+    pt: "Nao foi possivel desfazer o registro. Se ja entrou numa liquidacao, peca ajuste ao Admin."
   },
   "chat-threads": {
     es: "No cargaron las conversaciones. Tirá para actualizar o salí del chat y volvé a entrar.",

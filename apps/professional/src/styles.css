@@ -5783,6 +5783,13 @@ select.pro-dashboard-revenue-control {
   gap: 10px;
   background: #eceff6;
   border-color: #d4dced;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.agenda-upcoming-panel:has(.agenda-section-toggle:hover),
+.agenda-upcoming-panel:has(.agenda-section-toggle:focus-visible) {
+  background: #e4e8f2;
+  border-color: #c8d0e0;
 }
 
 .pro-dashboard-upcoming-gap {
@@ -5794,7 +5801,7 @@ select.pro-dashboard-revenue-control {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 16px;
+  padding: 0;
 }
 
 .agenda-upcoming-head h2 {
@@ -5816,12 +5823,24 @@ select.pro-dashboard-revenue-control {
   align-items: center;
   gap: 10px;
   margin: 0;
-  padding: 0 16px;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
   text-align: left;
   cursor: pointer;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.agenda-section-toggle:hover,
+.agenda-section-toggle:focus,
+.agenda-section-toggle:focus-visible,
+.agenda-section-toggle:active {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
 }
 
 .agenda-section-toggle h2 {
@@ -5836,18 +5855,19 @@ select.pro-dashboard-revenue-control {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  border: 1px solid #d4dced;
-  background: #fff;
-  color: #334155;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
   font-size: 18px;
   font-weight: 600;
   line-height: 1;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .agenda-section-toggle:hover .agenda-section-toggle-icon,
 .agenda-section-toggle:focus-visible .agenda-section-toggle-icon {
-  border-color: #c4b5fd;
-  color: #5f44eb;
+  border-color: color-mix(in srgb, #64748b 28%, transparent);
+  color: #475569;
 }
 
 .agenda-execution-status {
@@ -5861,6 +5881,152 @@ select.pro-dashboard-revenue-control {
   color: #047857;
   font-size: 13px;
   font-weight: 700;
+}
+
+.agenda-execution-status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.agenda-uncomplete-button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #d4dced;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-uncomplete-button:hover:not(:disabled),
+.agenda-uncomplete-button:focus-visible:not(:disabled) {
+  border-color: #cbd5e1;
+  color: #334155;
+  background: color-mix(in srgb, #fff 40%, transparent);
+}
+
+.agenda-uncomplete-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.agenda-execution-locked {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.agenda-session-list-meta {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.agenda-session-inbox {
+  display: grid;
+  gap: 10px;
+}
+
+.agenda-session-inbox-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.agenda-session-inbox-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-session-inbox-tab em {
+  font-style: normal;
+  min-width: 1.25rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #64748b 12%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.agenda-session-inbox-tab:hover,
+.agenda-session-inbox-tab:focus-visible {
+  color: #334155;
+  background: color-mix(in srgb, #fff 35%, transparent);
+}
+
+.agenda-session-inbox-tab.is-active {
+  color: #1e293b;
+  border-color: #c8d0e0;
+  background: color-mix(in srgb, #fff 70%, #eceff6);
+}
+
+.agenda-session-inbox-tab.is-active em {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.agenda-execution-row--pending {
+  box-shadow: inset 3px 0 0 #6366f1;
+}
+
+.agenda-session-inbox-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.agenda-session-inbox-pagination-range {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.agenda-session-inbox-pagination-nav {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.agenda-session-inbox-pagination-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d4dced;
+  background: color-mix(in srgb, #fff 55%, transparent);
+  color: #334155;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.agenda-session-inbox-pagination-arrow:hover:not(:disabled),
+.agenda-session-inbox-pagination-arrow:focus-visible:not(:disabled) {
+  border-color: #c8d0e0;
+  color: #1e293b;
+}
+
+.agenda-session-inbox-pagination-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .agenda-execution-row--done {
@@ -5883,22 +6049,40 @@ select.pro-dashboard-revenue-control {
 }
 
 .agenda-upcoming-empty {
-  border: 1px dashed #d4dced;
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: #f7f9ff;
+  padding: 2px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .agenda-upcoming-empty strong {
   display: block;
-  font-size: 17px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: #334155;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: #64748b;
 }
 
 .agenda-upcoming-empty p {
-  margin-top: 4px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+#sesiones-por-ejecutar .agenda-upcoming-empty {
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid #d4dced;
+  border-radius: 0;
+  background: transparent;
+}
+
+#sesiones-por-ejecutar .agenda-upcoming-empty strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
 }
 
 .agenda-upcoming-table-wrap {

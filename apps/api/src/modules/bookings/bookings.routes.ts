@@ -1639,3 +1639,74 @@ bookingsRouter.post("/:bookingId/complete", requireAuth, async (req: Authenticat
     }
   });
 });
+
+bookingsRouter.post("/:bookingId/uncomplete", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can undo session completion" });
+  }
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: req.params.bookingId },
+    include: {
+      financeRecord: { select: { payoutLineId: true } }
+    }
+  });
+  if (!booking) {
+    return res.status(404).json({ error: "Booking not found" });
+  }
+
+  if (booking.professionalId !== actor.professionalProfileId) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  if (booking.status !== BOOKING_STATUS.COMPLETED) {
+    return res.status(409).json({ error: "Only completed sessions can be reverted" });
+  }
+
+  if (booking.financeRecord?.payoutLineId) {
+    return res.status(409).json({
+      error: "This session is already in a payout. Contact Admin to adjust it."
+    });
+  }
+
+  const updated = await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      status: BOOKING_STATUS.CONFIRMED,
+      completedAt: null
+    }
+  });
+
+  try {
+    await upsertFinanceRecordForBooking(updated.id);
+  } catch (financeError) {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: BOOKING_STATUS.COMPLETED,
+        completedAt: booking.completedAt
+      }
+    });
+    const message =
+      financeError instanceof Error
+        ? financeError.message
+        : "Could not reverse finance record for this session";
+    return res.status(409).json({ error: message });
+  }
+
+  return res.json({
+    message: "Booking completion undone",
+    booking: {
+      id: updated.id,
+      startsAt: updated.startsAt,
+      endsAt: updated.endsAt,
+      status: normalizeStatus(updated.status),
+      completedAt: updated.completedAt
+    }
+  });
+});

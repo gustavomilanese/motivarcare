@@ -153,15 +153,24 @@ export function DashboardPage(props: {
               patientEmail: session.patientEmail,
               patientAvatarUrl: session.patientAvatarUrl ?? null,
               status: session.status,
-              joinUrl: session.joinUrl ?? null
+              joinUrl: session.joinUrl ?? null,
+              canUncomplete: session.canUncomplete
             }));
             const apiIds = new Set(fromApi.map((session) => session.id));
-            const recentlyRecorded = previous.filter(
-              (session) => session.status.toLowerCase() === "completed" && !apiIds.has(session.id)
+            const recentlyTouched = previous.filter(
+              (session) => !apiIds.has(session.id) && (
+                session.status.toLowerCase() === "completed"
+                || session.status.toLowerCase() === "confirmed"
+              )
             );
-            return [...fromApi, ...recentlyRecorded].sort(
-              (a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()
-            );
+            return [...fromApi, ...recentlyTouched].sort((a, b) => {
+              const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
+              const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
+              if (aDone !== bDone) {
+                return aDone - bDone;
+              }
+              return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+            });
           });
           if (!upcomingExpandInitializedRef.current) {
             upcomingExpandInitializedRef.current = true;
@@ -566,12 +575,54 @@ export function DashboardPage(props: {
         body: JSON.stringify({})
       });
       setPendingExecutionSessions((current) =>
-        current.map((item) => (item.id === booking.id ? { ...item, status: "completed" } : item))
+        current
+          .map((item) =>
+            item.id === booking.id ? { ...item, status: "completed", canUncomplete: true } : item
+          )
+          .sort((a, b) => {
+            const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
+            const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
+            if (aDone !== bDone) {
+              return aDone - bDone;
+            }
+            return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+          })
       );
       setDashboardReloadKey((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setBookingActionError(professionalSurfaceMessage("dashboard-complete-booking", props.language, raw));
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const submitUndoExecuted = async (booking: UpcomingReservationItem) => {
+    setBookingActionError("");
+    setBookingActionInProgressId(booking.id);
+    try {
+      await apiRequest<{ message: string }>(`/api/bookings/${booking.id}/uncomplete`, props.token, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      setPendingExecutionSessions((current) =>
+        current
+          .map((item) =>
+            item.id === booking.id ? { ...item, status: "confirmed", canUncomplete: undefined } : item
+          )
+          .sort((a, b) => {
+            const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
+            const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
+            if (aDone !== bDone) {
+              return aDone - bDone;
+            }
+            return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+          })
+      );
+      setDashboardReloadKey((value) => value + 1);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-uncomplete-booking", props.language, raw));
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -705,17 +756,27 @@ export function DashboardPage(props: {
               pt: "Lista de sessoes"
             })}
           </h2>
-          {pendingExecutionSessions.some((session) => session.status.toLowerCase() !== "completed") ? (
-            <span className="agenda-execution-count">
-              {pendingExecutionSessions.filter((session) => session.status.toLowerCase() !== "completed").length}
+          {pendingExecutionSessions.length > 0 ? (
+            <span className="agenda-session-list-meta" aria-live="polite">
+              {(() => {
+                const pendingCount = pendingExecutionSessions.filter(
+                  (session) => session.status.toLowerCase() !== "completed"
+                ).length;
+                const recordedCount = pendingExecutionSessions.length - pendingCount;
+                return t(props.language, {
+                  es: `${pendingCount} por confirmar · ${recordedCount} registradas`,
+                  en: `${pendingCount} to confirm · ${recordedCount} recorded`,
+                  pt: `${pendingCount} por confirmar · ${recordedCount} registradas`
+                });
+              })()}
             </span>
           ) : null}
         </div>
         <p className="agenda-execution-lead">
           {t(props.language, {
-            es: "Sesiones ya iniciadas. Al confirmarlas quedan registradas para tu liquidación.",
-            en: "Sessions that already started. Confirming them records them for your payout.",
-            pt: "Sessoes ja iniciadas. Ao confirma-las ficam registradas na sua liquidacao."
+            es: "Confirmá las realizadas o deshacé si te equivocaste. Empezá por «Por confirmar».",
+            en: "Confirm completed sessions or undo mistakes. Start with “To confirm”.",
+            pt: "Confirme as realizadas ou desfaca se errou. Comece por «Por confirmar»."
           })}
         </p>
         <PendingExecutionSessionsList
@@ -723,6 +784,7 @@ export function DashboardPage(props: {
           sessions={pendingExecutionSessions}
           busyBookingId={bookingActionInProgressId}
           onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
+          onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
         />
       </section>
 

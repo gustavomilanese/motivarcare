@@ -302,6 +302,8 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  /** Sesiones ejecutadas recientes que siguen visibles en «Lista de sesiones». */
+  const sessionListSince = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
   const { statsFrom, statsTo, statsAll } = parseProfessionalStatsRange(req.query as Record<string, unknown>);
 
@@ -345,8 +347,19 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.booking.findMany({
       where: {
         professionalId: actor.professionalProfileId,
-        status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
-        startsAt: { lte: now }
+        OR: [
+          {
+            status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
+            startsAt: { lte: now }
+          },
+          {
+            status: BOOKING_STATUS.COMPLETED,
+            OR: [
+              { completedAt: { gte: sessionListSince } },
+              { completedAt: null, startsAt: { gte: sessionListSince } }
+            ]
+          }
+        ]
       },
       include: {
         patient: {
@@ -354,10 +367,11 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
             user: { select: { fullName: true, email: true, avatarUrl: true } }
           }
         },
-        videoSession: true
+        videoSession: true,
+        financeRecord: { select: { payoutLineId: true } }
       },
       orderBy: { startsAt: "desc" },
-      take: 40
+      take: 100
     }),
     prisma.booking.count({
       where: {
@@ -673,17 +687,28 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       status: booking.status.toLowerCase(),
       joinUrl: booking.videoSession?.joinUrlProfessional ?? null
     })),
-    pendingExecutionSessions: pendingExecutionBookings.map((booking: any) => ({
-      id: booking.id,
-      patientId: booking.patientId,
-      patientName: booking.patient.user.fullName,
-      patientEmail: booking.patient.user.email,
-      patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
-      startsAt: booking.startsAt,
-      endsAt: booking.endsAt,
-      status: booking.status.toLowerCase(),
-      joinUrl: booking.videoSession?.joinUrlProfessional ?? null
-    }))
+    pendingExecutionSessions: pendingExecutionBookings
+      .map((booking: any) => ({
+        id: booking.id,
+        patientId: booking.patientId,
+        patientName: booking.patient.user.fullName,
+        patientEmail: booking.patient.user.email,
+        patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        status: booking.status.toLowerCase(),
+        joinUrl: booking.videoSession?.joinUrlProfessional ?? null,
+        canUncomplete:
+          booking.status === BOOKING_STATUS.COMPLETED && !booking.financeRecord?.payoutLineId
+      }))
+      .sort((a: { status: string; startsAt: string | Date }, b: { status: string; startsAt: string | Date }) => {
+        const aDone = a.status === "completed" ? 1 : 0;
+        const bDone = b.status === "completed" ? 1 : 0;
+        if (aDone !== bDone) {
+          return aDone - bDone;
+        }
+        return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+      })
   });
   } catch (err) {
     console.error("[api] GET /professional/dashboard failed", err);

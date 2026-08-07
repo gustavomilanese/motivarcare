@@ -56,6 +56,7 @@ export type UpcomingReservationItem = {
   patientAvatarUrl?: string | null;
   status: string;
   joinUrl: string | null;
+  canUncomplete?: boolean;
 };
 
 export function UpcomingReservationsList(props: {
@@ -111,14 +112,7 @@ export function UpcomingReservationsList(props: {
   if (liveReservations.length === 0) {
     return (
       <div className="agenda-upcoming-empty">
-        <strong>{t(props.language, { es: "No tenés reservas próximas", en: "You have no upcoming bookings", pt: "Voce nao tem reservas proximas" })}</strong>
-        <p>
-          {t(props.language, {
-            es: "Cuando un paciente reserve, vas a ver acá las próximas sesiones ordenadas por fecha.",
-            en: "When a patient books, upcoming sessions will show here ordered by date.",
-            pt: "Quando um paciente reservar, as proximas sessoes aparecerao aqui ordenadas por data."
-          })}
-        </p>
+        <strong>{t(props.language, { es: "No tenés reservas", en: "No upcoming bookings", pt: "Sem reservas proximas" })}</strong>
       </div>
     );
   }

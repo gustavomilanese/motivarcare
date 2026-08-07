@@ -134,7 +134,7 @@ export interface DashboardResponse {
     status: string;
     joinUrl?: string | null;
   }>;
-  /** Sesiones ya iniciadas (CONFIRMADAS) que el profesional aún no marcó como ejecutadas. */
+  /** Sesiones ya iniciadas pendientes de confirmar + ejecutadas recientes (Lista de sesiones). */
   pendingExecutionSessions?: Array<{
     id: string;
     patientId: string;
@@ -145,6 +145,8 @@ export interface DashboardResponse {
     endsAt: string;
     status: string;
     joinUrl?: string | null;
+    /** false si ya está en una liquidación/payout. */
+    canUncomplete?: boolean;
   }>;
 }
 
