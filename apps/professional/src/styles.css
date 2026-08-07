@@ -6001,8 +6001,20 @@ select.pro-dashboard-revenue-control {
   padding: 0 0 4px;
 }
 
+.pro-dashboard-sessions-hub-tabs .pro-schedule-hub-tabs-track {
+  width: auto;
+  max-width: 100%;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
 .pro-dashboard-sessions-hub .pro-schedule-hub-tab {
+  flex: 0 0 auto;
+  min-width: 0;
   gap: 8px;
+  padding-left: 14px;
+  padding-right: 14px;
 }
 
 .pro-dashboard-sessions-hub-count {
