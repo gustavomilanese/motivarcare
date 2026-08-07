@@ -5993,6 +5993,55 @@ select.pro-dashboard-revenue-control {
   font-weight: 600;
 }
 
+.pro-dashboard-sessions-hub {
+  padding-top: 10px !important;
+}
+
+.pro-dashboard-sessions-hub-tabs {
+  padding: 0 0 4px;
+}
+
+.pro-dashboard-sessions-hub .pro-schedule-hub-tab {
+  gap: 8px;
+}
+
+.pro-dashboard-sessions-hub-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(95, 68, 235, 0.12);
+  color: #5f44eb;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pro-dashboard-sessions-hub-tab.active .pro-dashboard-sessions-hub-count,
+.pro-dashboard-sessions-hub .pro-schedule-hub-tab.active .pro-dashboard-sessions-hub-count {
+  background: rgba(95, 68, 235, 0.14);
+}
+
+.pro-dashboard-sessions-hub-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 16px;
+  margin-bottom: 4px;
+}
+
+.pro-dashboard-sessions-hub-toolbar .agenda-session-lead {
+  flex: 1 1 220px;
+  margin: 0;
+}
+
+.pro-dashboard-sessions-hub-toolbar .agenda-session-panel-filters {
+  margin-left: 0;
+}
+
 .agenda-session-filter {
   margin-left: 0;
   display: inline-flex;
