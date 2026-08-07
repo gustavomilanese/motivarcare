@@ -16576,6 +16576,13 @@ button:disabled {
   gap: 8px;
 }
 
+.pro-dashboard-home > .pro-card.pro-practice-health,
+.pro-dashboard-home > .pro-card.pro-practice-health.pro-practice-health--gauges {
+  background: #ffffff !important;
+  border-color: #e2e8f0;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
 .pro-dashboard-revenue--compact .pro-dashboard-revenue-toolbar--minimal {
   margin-top: 2px;
 }
