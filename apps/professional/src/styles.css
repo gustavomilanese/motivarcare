@@ -6584,12 +6584,20 @@ select.pro-dashboard-revenue-control {
 .pro-reschedule-modal header button {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  border: 1px solid #d2daea;
-  background: #fff;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: #41516f;
   font-size: 24px;
   line-height: 1;
+  cursor: pointer;
+}
+
+.pro-reschedule-modal header button:hover {
+  color: #1a2744;
+  background: transparent;
 }
 
 .pro-reschedule-modal label {
