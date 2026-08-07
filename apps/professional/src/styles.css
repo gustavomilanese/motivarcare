@@ -5995,17 +5995,17 @@ select.pro-dashboard-revenue-control {
 
 .pro-dashboard-sessions-hub {
   padding: 8px 12px 10px !important;
-  background: #dfe3ee !important;
-  border-color: #c5ccd9;
-  box-shadow: 0 8px 24px rgba(55, 65, 100, 0.07);
+  background: #f7f8fc !important;
+  border-color: #d5dae6;
+  box-shadow: 0 8px 24px rgba(55, 65, 100, 0.06);
 }
 
 .pro-dashboard-sessions-hub .agenda-session-table-head {
-  border-bottom-color: #c4cad8;
+  border-bottom-color: #d4d9e6;
 }
 
 .pro-dashboard-sessions-hub .agenda-session-table-row {
-  border-bottom-color: #d0d5e2;
+  border-bottom-color: #e2e6f0;
 }
 
 /* Gana a `.pro-schedule-hub-tabs` (padding horizontal 20px) para alinear con la tabla. */
