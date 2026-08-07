@@ -386,22 +386,20 @@ export function DashboardPage(props: {
     return (
       <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
         <div className="pro-dashboard-overview">
-          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero">
-            <div className="pro-dashboard-state-panel pro-dashboard-error-card">
-              <p className="pro-error">{error}</p>
-              <button
-                type="button"
-                className="pro-btn pro-btn--secondary"
-                onClick={() => {
-                  setError("");
-                  setData(null);
-                  setDashboardReloadKey((n) => n + 1);
-                }}
-              >
-                {t(props.language, { es: "Reintentar", en: "Try again", pt: "Tentar de novo" })}
-              </button>
-            </div>
-          </section>
+          <div className="pro-dashboard-state-panel pro-dashboard-error-card">
+            <p className="pro-error">{error}</p>
+            <button
+              type="button"
+              className="pro-btn pro-btn--secondary"
+              onClick={() => {
+                setError("");
+                setData(null);
+                setDashboardReloadKey((n) => n + 1);
+              }}
+            >
+              {t(props.language, { es: "Reintentar", en: "Try again", pt: "Tentar de novo" })}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -411,9 +409,7 @@ export function DashboardPage(props: {
     return (
       <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
         <div className="pro-dashboard-overview">
-          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero">
-            <ProPageLoader language={props.language} layout="block" />
-          </section>
+          <ProPageLoader language={props.language} layout="block" />
         </div>
       </div>
     );
@@ -657,17 +653,13 @@ export function DashboardPage(props: {
           {profileSavedNotice}
         </p>
       ) : null}
-      <div className="pro-dashboard-overview">
-        <section
-          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero"
-          data-tour="pro-tour-hero"
+      <div className="pro-dashboard-overview" data-tour="pro-tour-hero">
+        <div
+          className="pro-dashboard-kpi-row"
+          role="group"
+          aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}
+          data-tour="pro-tour-kpis"
         >
-          <div
-            className="pro-dashboard-kpi-row"
-            role="group"
-            aria-label={t(props.language, { es: "Resumen rápido", en: "Quick summary", pt: "Resumo rapido" })}
-            data-tour="pro-tour-kpis"
-          >
           <KpiWithTooltip tipId="pro-dashboard-tip-ejecutado" tooltip={executedMoneyTooltip} focusable>
             <NavLink className="pro-kpi-card pro-kpi-card-link pro-kpi-card--executed-revenue" to="/ingresos#sesiones-ejecutadas">
               <span className="pro-executed-revenue-label">
@@ -705,8 +697,7 @@ export function DashboardPage(props: {
               <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
             </NavLink>
           </KpiWithTooltip>
-          </div>
-        </section>
+        </div>
       </div>
 
       <section

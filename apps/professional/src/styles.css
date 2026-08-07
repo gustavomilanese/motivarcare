@@ -5519,6 +5519,15 @@ select.pro-dashboard-revenue-control {
 
 .pro-dashboard-home .pro-dashboard-overview {
   margin-top: 0;
+  width: 100%;
+}
+
+/* KPIs flotantes sin card contenedora; alineados al margen de las secciones */
+.pro-dashboard-home .pro-dashboard-kpi-row {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  justify-items: stretch;
 }
 
 .pro-dashboard-hero--immersive {
@@ -16434,11 +16443,11 @@ button:disabled {
   font-size: 22px;
 }
 
-/* KPIs del dashboard (el título/acciones viven en el page header) */
-.pro-dashboard-hero .pro-dashboard-kpi-row {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
+/* KPIs del dashboard (sin container; título/acciones viven en el page header) */
+.pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card-link {
+  background: #ffffff;
+  border: 1px solid #e8e4f8;
+  box-shadow: 0 8px 24px rgba(95, 68, 235, 0.05);
 }
 
 .pro-dashboard-revenue--compact.pro-dashboard-revenue--floating {
