@@ -4846,7 +4846,7 @@ ul {
 }
 
 .pro-dashboard-stack {
-  gap: 14px;
+  gap: 22px;
 }
 
 .pro-dashboard-flash {
@@ -7866,7 +7866,8 @@ select.pro-dashboard-revenue-control {
 }
 
 .pro-dashboard-reviews-invite .pro-profile-studio__reviews-invite-copy {
-  max-width: 62ch;
+  max-width: none;
+  width: 100%;
 }
 
 @media (max-width: 720px) {
