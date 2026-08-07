@@ -125,13 +125,20 @@ export interface MatchingPageProps {
   trialRebookAvailable?: boolean;
   intakeAnswers: Record<string, string>;
   isFirstSelectionRequired: boolean;
+  /**
+   * Flujo “cambiar profesional” (portal): misma sticky de confirmación que la primera elección,
+   * con copy distinto y sin tratarlo como onboarding.
+   */
+  changeProfessionalMode?: boolean;
+  /** Profesional actual: no se puede “cambiar” al mismo. */
+  excludeProfessionalId?: string | null;
   showOnlyFavorites?: boolean;
   favoriteProfessionalIds: string[];
   selectedProfessionalId: string;
   onSelectProfessional: (professionalId: string) => void;
   onToggleFavorite: (professionalId: string) => void;
   onToggleFavoritesView?: (showOnlyFavorites: boolean) => void;
-  onCompleteFirstSelection: (payload: { professionalId: string; professionalName: string }) => void;
+  onCompleteFirstSelection: (payload: { professionalId: string; professionalName: string }) => void | Promise<void>;
   /** Onboarding: omitir asignación y entrar al portal sin profesional activo. */
   onDeferTherapistSelection?: () => void | Promise<void>;
   onCreateBooking: (

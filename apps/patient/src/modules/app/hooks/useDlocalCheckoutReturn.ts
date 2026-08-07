@@ -119,6 +119,8 @@ export function useDlocalCheckoutReturn(options: {
 
   const handledParamRef = useRef(false);
   const resumeRef = useRef(false);
+  /** Evita que el efecto de resume dispare un segundo sync mientras el retorno principal sigue en curso. */
+  const checkoutHandlingRef = useRef(false);
 
   const dismissSuccess = useCallback(() => setSuccessSummary(null), []);
   const dismissError = useCallback(() => setErrorMessage(null), []);
@@ -130,13 +132,13 @@ export function useDlocalCheckoutReturn(options: {
   // Retorno explícito desde dLocal (con parámetro `payment` en la URL).
   useEffect(() => {
     if (!hasReturnParam) {
-      handledParamRef.current = false;
       return;
     }
     if (handledParamRef.current) {
       return;
     }
     handledParamRef.current = true;
+    checkoutHandlingRef.current = true;
     setProcessing(true);
     setErrorMessage(null);
 
@@ -206,6 +208,7 @@ export function useDlocalCheckoutReturn(options: {
         clearPendingCheckoutDlocalReturn({ clearIdempotency: true });
         setSuccessSummary(buildSuccessSummary(options.language, pending));
       } finally {
+        checkoutHandlingRef.current = false;
         setProcessing(false);
       }
     })();
@@ -216,7 +219,13 @@ export function useDlocalCheckoutReturn(options: {
   // URL (p. ej. el paciente reabrió la app). Intentamos confirmar en segundo
   // plano y, si ya está acreditado, mostramos el éxito.
   useEffect(() => {
-    if (hasReturnParam || resumeRef.current || !options.onSyncDlocalPayment) {
+    if (
+      hasReturnParam
+      || checkoutHandlingRef.current
+      || processing
+      || resumeRef.current
+      || !options.onSyncDlocalPayment
+    ) {
       return;
     }
     const pending = readPendingCheckoutDlocalReturn();
@@ -238,7 +247,7 @@ export function useDlocalCheckoutReturn(options: {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasReturnParam]);
+  }, [hasReturnParam, processing]);
 
   return {
     // Mantener el lock suprimido también mientras el modal de éxito está

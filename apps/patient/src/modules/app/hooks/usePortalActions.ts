@@ -60,9 +60,11 @@ export function usePortalActions(params: {
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   onRefreshPortalFromApi?: () => void | Promise<void>;
 }) {
-  const syncActiveProfessionalAssignment = async (professionalId: string | null) => {
+  const syncActiveProfessionalAssignment = async (
+    professionalId: string | null
+  ): Promise<{ ok: boolean; error?: string }> => {
     if (!params.state.authToken) {
-      return;
+      return { ok: false, error: "Unauthorized" };
     }
 
     try {
@@ -74,8 +76,11 @@ export function usePortalActions(params: {
         },
         params.state.authToken
       );
+      return { ok: true };
     } catch (error) {
       console.error("Could not sync active professional assignment", error);
+      const message = error instanceof Error ? error.message : "Could not update active professional";
+      return { ok: false, error: message };
     }
   };
 

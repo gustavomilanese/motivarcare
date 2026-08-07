@@ -129,12 +129,20 @@ export function PatientMatchingPage(props: MatchingPageProps) {
     isFirstSelectionRequired: props.isFirstSelectionRequired
   });
   const favoriteIds = useMemo(() => new Set(props.favoriteProfessionalIds), [props.favoriteProfessionalIds]);
+  const excludeProfessionalId = props.excludeProfessionalId?.trim() || "";
+  const changeProfessionalMode = Boolean(props.changeProfessionalMode);
+  const selectionConfirmRequired = props.isFirstSelectionRequired || changeProfessionalMode;
   const visibleOrdered = useMemo(
-    () =>
-      props.showOnlyFavorites
+    () => {
+      const base = props.showOnlyFavorites
         ? ordered.filter((item) => favoriteIds.has(item.professional.id))
-        : ordered,
-    [favoriteIds, ordered, props.showOnlyFavorites]
+        : ordered;
+      if (!excludeProfessionalId) {
+        return base;
+      }
+      return base.filter((item) => item.professional.id !== excludeProfessionalId);
+    },
+    [excludeProfessionalId, favoriteIds, ordered, props.showOnlyFavorites]
   );
 
   /**
@@ -170,6 +178,12 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         en: "Your favorite professionals",
         pt: "Seus profissionais favoritos"
       })
+    : changeProfessionalMode
+      ? t(props.language, {
+          es: "Elegí tu nuevo profesional",
+          en: "Choose your new professional",
+          pt: "Escolha seu novo profissional"
+        })
     : mode === "onboarding-final"
       ? t(props.language, {
           es: "Psicólogos sugeridos para vos",
@@ -187,6 +201,12 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         en: "Quickly access the therapists you saved to book again.",
         pt: "Acesse rapidamente os terapeutas que voce salvou para reservar novamente."
       })
+    : changeProfessionalMode
+      ? t(props.language, {
+          es: "Al confirmar, vas a comprar nuevas sesiones al precio publicado por este profesional.",
+          en: "When you confirm, you’ll buy new sessions at this professional’s published price.",
+          pt: "Ao confirmar, voce comprara novas sessoes pelo preco publicado deste profissional."
+        })
     : mode === "onboarding-final"
       ? t(props.language, {
           es: "Elegí un profesional y reservá tu sesión de prueba.",
@@ -606,7 +626,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
                 onShowAllSlots={openAvailabilityFlow}
                 onChat={props.onChat}
                 onImageFallback={props.onImageFallback}
-                showChatAction={!bookingFlowEnabled && !props.isFirstSelectionRequired}
+                showChatAction={!bookingFlowEnabled && !selectionConfirmRequired}
                 cardOpensAvailability={bookingFlowEnabled}
               />
             ))}
@@ -651,17 +671,37 @@ export function PatientMatchingPage(props: MatchingPageProps) {
         </>
       ) : null}
 
-      {props.isFirstSelectionRequired && selected && !bookingFlowEnabled ? (
+      {selectionConfirmRequired && selected && !bookingFlowEnabled ? (
         <MatchingStickyAction
           language={props.language}
           professionalName={selected.professional.fullName}
           score={selected.score}
-          onContinue={() =>
-            props.onCompleteFirstSelection({
-              professionalId: selected.professional.id,
-              professionalName: selected.professional.fullName
-            })
+          helperText={
+            changeProfessionalMode
+              ? t(props.language, {
+                  es: `Vas a cambiar a este profesional (${selected.score}% compatibilidad). Después comprás sesiones a su precio.`,
+                  en: `You’ll switch to this professional (${selected.score}% match). Then buy sessions at their price.`,
+                  pt: `Voce vai mudar para este profissional (${selected.score}% compatibilidade). Depois compra sessoes pelo preco dele.`
+                })
+              : undefined
           }
+          continueLabel={
+            changeProfessionalMode
+              ? t(props.language, {
+                  es: "Confirmar nuevo profesional",
+                  en: "Confirm new professional",
+                  pt: "Confirmar novo profissional"
+                })
+              : undefined
+          }
+          onContinue={() => {
+            void Promise.resolve(
+              props.onCompleteFirstSelection({
+                professionalId: selected.professional.id,
+                professionalName: selected.professional.fullName
+              })
+            );
+          }}
         />
       ) : null}
 

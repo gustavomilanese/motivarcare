@@ -38,13 +38,16 @@ function rejectAfter(ms: number, message: string): Promise<never> {
 async function runPatientPortalSyncBatch(params: {
   token: string;
   language: AppLanguage;
+  skipThrottle?: boolean;
 }): Promise<PatientPortalSyncBatchSettled> {
   const tokenKey = params.token;
-  const lastEnd = lastBatchEndedAtByToken.get(tokenKey) ?? 0;
-  const now = Date.now();
-  const sinceLastEnd = now - lastEnd;
-  if (lastEnd !== 0 && sinceLastEnd < MIN_MS_BETWEEN_BATCH_STARTS) {
-    await new Promise((resolve) => setTimeout(resolve, MIN_MS_BETWEEN_BATCH_STARTS - sinceLastEnd));
+  if (!params.skipThrottle) {
+    const lastEnd = lastBatchEndedAtByToken.get(tokenKey) ?? 0;
+    const now = Date.now();
+    const sinceLastEnd = now - lastEnd;
+    if (lastEnd !== 0 && sinceLastEnd < MIN_MS_BETWEEN_BATCH_STARTS) {
+      await new Promise((resolve) => setTimeout(resolve, MIN_MS_BETWEEN_BATCH_STARTS - sinceLastEnd));
+    }
   }
 
   const [profileResult, bookingsResult, authResult, professionalDirectoryResult] = await Promise.allSettled([
@@ -66,16 +69,38 @@ export function fetchPatientPortalSyncBatchShared(params: {
   /** Conservado por compatibilidad; la coalescencia es solo por `token`. */
   epoch: number;
   language: AppLanguage;
+  /** Tras checkout: no reutilizar lote en vuelo ni esperar el throttle entre lotes. */
+  forceFresh?: boolean;
 }): Promise<PatientPortalSyncBatchSettled> {
   void params.epoch;
   const tokenKey = params.token;
-  const existing = inFlightByToken.get(tokenKey);
-  if (existing) {
-    return existing;
+
+  if (params.forceFresh) {
+    lastBatchEndedAtByToken.delete(tokenKey);
+    const existing = inFlightByToken.get(tokenKey);
+    if (existing) {
+      return existing.then(() =>
+        fetchPatientPortalSyncBatchShared({
+          token: params.token,
+          epoch: params.epoch,
+          language: params.language,
+          forceFresh: true
+        })
+      );
+    }
+  } else {
+    const existing = inFlightByToken.get(tokenKey);
+    if (existing) {
+      return existing;
+    }
   }
 
   const pending = Promise.race([
-    runPatientPortalSyncBatch(params),
+    runPatientPortalSyncBatch({
+      token: params.token,
+      language: params.language,
+      skipThrottle: Boolean(params.forceFresh)
+    }),
     rejectAfter(PATIENT_PORTAL_SYNC_TIMEOUT_MS, "Patient portal sync timed out waiting for API")
   ]).finally(() => {
     inFlightByToken.delete(tokenKey);

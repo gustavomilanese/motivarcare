@@ -965,9 +965,16 @@ export function App() {
     language: state.language
   };
 
-  const portalSyncMutexRef = useRef<{ inFlight: boolean; rerun: boolean; current: Promise<void> | null }>({
+  const portalSyncMutexRef = useRef<{
+    inFlight: boolean;
+    rerun: boolean;
+    /** Si un force llega mientras hay sync en vuelo, el rerun debe pedir lote fresco (post-checkout). */
+    forceFreshNext: boolean;
+    current: Promise<void> | null;
+  }>({
     inFlight: false,
     rerun: false,
+    forceFreshNext: false,
     current: null
   });
   /** Evita GET /matching duplicado al montar; solo refetch de directorio cuando el usuario cambia idioma. */
@@ -1227,7 +1234,7 @@ export function App() {
      * Evita ráfagas paralelas a /profiles/me + /bookings/mine + /auth/me.
      * Throttle entre lotes (salvo `force`) corta bucles si el efecto se re-dispara más rápido que ~1s.
      */
-    const runSyncFromApi = async () => {
+    const runSyncFromApi = async (opts?: { forceFresh?: boolean }) => {
       const batchEpoch = portalSyncEpochRef.current;
       const { sessionId: sid, authToken: tokenFromRef, language: languageSnapshot } = portalSyncDepsRef.current;
       const tokenSnapshot = tokenFromRef ?? undefined;
@@ -1242,7 +1249,8 @@ export function App() {
           await fetchPatientPortalSyncBatchShared({
             token: tokenSnapshot,
             epoch: batchEpoch,
-            language: languageSnapshot
+            language: languageSnapshot,
+            forceFresh: Boolean(opts?.forceFresh)
           });
 
         if (batchEpoch !== portalSyncEpochRef.current) {
@@ -1470,11 +1478,13 @@ export function App() {
               : profileResponse
                 ? null
                 : current.intake,
-            subscription: mergeSubscriptionFromApi(
-              subscriptionBaseline,
-              latestPackage,
-              profileResponse?.profile?.recentPackages
-            ),
+            subscription: profileResponse
+              ? mergeSubscriptionFromApi(
+                  subscriptionBaseline,
+                  latestPackage,
+                  profileResponse.profile?.recentPackages
+                )
+              : current.subscription,
             trialRebookAvailable:
               typeof profileResponse?.profile?.trialRebookAvailable === "boolean"
                 ? profileResponse.profile.trialRebookAvailable
@@ -1569,18 +1579,25 @@ export function App() {
       const startBatch = (): Promise<void> => {
         if (portalSyncMutexRef.current.inFlight) {
           portalSyncMutexRef.current.rerun = true;
+          if (force) {
+            portalSyncMutexRef.current.forceFreshNext = true;
+          }
           return portalSyncMutexRef.current.current ?? Promise.resolve();
         }
 
         const runWithRetry = async (): Promise<void> => {
           portalSyncMutexRef.current.inFlight = true;
+          let forceFresh = force;
           try {
             do {
               portalSyncMutexRef.current.rerun = false;
-              await runSyncFromApi();
+              await runSyncFromApi({ forceFresh });
+              forceFresh = portalSyncMutexRef.current.forceFreshNext;
+              portalSyncMutexRef.current.forceFreshNext = false;
             } while (portalSyncMutexRef.current.rerun);
           } finally {
             portalSyncMutexRef.current.inFlight = false;
+            portalSyncMutexRef.current.forceFreshNext = false;
             portalSyncMutexRef.current.current = null;
           }
         };

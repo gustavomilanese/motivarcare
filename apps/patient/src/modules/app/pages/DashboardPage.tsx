@@ -51,6 +51,7 @@ import {
   resolvePortalPricingProfessionalId
 } from "../lib/patientPricingProfessional";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
+import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type {
   Booking,
@@ -160,6 +161,8 @@ export function DashboardPage(props: {
   onNavigateToRebookTrial: () => void;
   /** Sin profesional asignado: volver al matching del onboarding para elegir uno. */
   onNavigateToAssignProfessional: () => void;
+  /** Cambio self-serve (solo visible con 0 créditos y sin reservas). */
+  onNavigateToChangeProfessional: () => void;
   /** El usuario eligió «Lo hago después» en el modal de Calendar: CTA para reabrir OAuth. */
   showPatientGoogleCalendarReconnectCta?: boolean;
   onOpenPatientGoogleCalendarConnect?: () => void;
@@ -185,6 +188,12 @@ export function DashboardPage(props: {
     upcomingBookingProfessionalIds
   });
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
+  const canSelfChangeProfessional = canPatientSelfChangeProfessional({
+    creditsRemaining: props.state.subscription.creditsRemaining,
+    bookings: props.state.bookings,
+    assignedProfessionalId: props.state.assignedProfessionalId,
+    nowMs: now
+  });
   const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
   const pricingProfessionalId =
     resolvePortalPricingProfessionalId({
@@ -926,7 +935,13 @@ export function DashboardPage(props: {
                 )}
               </p>
             </div>
-            <div className="active-professional-actions active-professional-actions--solo">
+            <div
+              className={
+                canSelfChangeProfessional
+                  ? "active-professional-actions"
+                  : "active-professional-actions active-professional-actions--solo"
+              }
+            >
               <button
                 className="active-professional-action-btn active-professional-action-btn--primary"
                 type="button"
@@ -937,6 +952,22 @@ export function DashboardPage(props: {
               >
                 {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
               </button>
+              {canSelfChangeProfessional ? (
+                <button
+                  className="active-professional-action-btn active-professional-action-btn--secondary"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    props.onNavigateToChangeProfessional();
+                  }}
+                >
+                  {t(props.language, {
+                    es: "Cambiar profesional",
+                    en: "Change professional",
+                    pt: "Trocar profissional"
+                  })}
+                </button>
+              ) : null}
             </div>
           </div>
         ) : (

@@ -10,25 +10,30 @@ export function MatchingStickyAction(props: {
   professionalName: string;
   score: number;
   onContinue: () => void;
+  /** Copy del CTA (p. ej. cambio de profesional vs primera elección). */
+  continueLabel?: string;
+  helperText?: string;
 }) {
   return (
     <section className="patient-matching-sticky">
       <div>
         <strong>{props.professionalName}</strong>
         <p>
-          {t(props.language, {
-            es: `Listo para continuar con ${props.score}% de compatibilidad.`,
-            en: `Ready to continue with ${props.score}% compatibility.`,
-            pt: `Pronto para continuar com ${props.score}% de compatibilidade.`
-          })}
+          {props.helperText
+            ?? t(props.language, {
+              es: `Listo para continuar con ${props.score}% de compatibilidad.`,
+              en: `Ready to continue with ${props.score}% compatibility.`,
+              pt: `Pronto para continuar com ${props.score}% de compatibilidade.`
+            })}
         </p>
       </div>
       <button type="button" onClick={props.onContinue}>
-        {t(props.language, {
-          es: "Continuar con este terapeuta",
-          en: "Continue with this therapist",
-          pt: "Continuar com este terapeuta"
-        })}
+        {props.continueLabel
+          ?? t(props.language, {
+            es: "Continuar con este terapeuta",
+            en: "Continue with this therapist",
+            pt: "Continuar com este terapeuta"
+          })}
       </button>
     </section>
   );

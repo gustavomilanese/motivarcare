@@ -1,8 +1,10 @@
 import { syncUserTimezone } from "@therapy/auth";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
 import { textByLanguage, type DisplayFxRates, type LocalizedText } from "@therapy/i18n-config";
-import { Navigate, Route, Routes, type NavigateFunction } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams, type NavigateFunction } from "react-router-dom";
 import type { SyntheticEvent } from "react";
+import { useCallback } from "react";
+import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
 import { DashboardPage } from "./DashboardPage";
 import { BookingPage } from "./BookingPage";
 import { ChatPage } from "./ChatPage";
@@ -39,7 +41,7 @@ function OnboardingFinalMatching(p: {
   navigate: NavigateFunction;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
-  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
+  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<{ ok: boolean; error?: string }>;
   confirmBooking: (
     professionalId: string,
     slot: TimeSlot,
@@ -153,7 +155,7 @@ export function PortalRoutes(props: {
   handleGoToProfessional: (professionalId: string) => void;
   handleChatFromAnywhere: (professionalId: string) => void;
   toggleFavoriteProfessional: (professionalId: string) => void;
-  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<void>;
+  syncActiveProfessionalAssignment: (professionalId: string | null) => Promise<{ ok: boolean; error?: string }>;
   confirmBooking: (
     professionalId: string,
     slot: TimeSlot,
@@ -178,6 +180,9 @@ export function PortalRoutes(props: {
   showPatientGoogleCalendarReconnectCta?: boolean;
   onOpenPatientGoogleCalendarConnect?: () => void;
 }) {
+  const [searchParams] = useSearchParams();
+  const changeProfessionalMode = searchParams.get("changeProfessional") === "1";
+
   const startPackagePurchase = (plan: PackagePlan) => {
     props.navigate(`/sessions?flow=checkout&plan=${plan.id}&source=dashboard`);
   };
@@ -193,6 +198,56 @@ export function PortalRoutes(props: {
   const navigateToAssignProfessional = () => {
     props.navigate("/onboarding/final/matching");
   };
+
+  const navigateToChangeProfessional = () => {
+    props.navigate("/matching?changeProfessional=1");
+  };
+
+  const completeChangeProfessional = useCallback(
+    async (payload: { professionalId: string; professionalName: string }) => {
+      if (
+        !canPatientSelfChangeProfessional({
+          creditsRemaining: props.state.subscription.creditsRemaining,
+          bookings: props.state.bookings,
+          assignedProfessionalId: props.state.assignedProfessionalId
+        })
+      ) {
+        props.navigate("/", { replace: true });
+        return;
+      }
+
+      const synced = await props.syncActiveProfessionalAssignment(payload.professionalId);
+      if (!synced.ok) {
+        window.alert(
+          synced.error
+          ?? t(props.state.language, {
+            es: "No pudimos cambiar el profesional. Probá de nuevo.",
+            en: "We couldn’t change the professional. Please try again.",
+            pt: "Nao foi possivel trocar o profissional. Tente novamente."
+          })
+        );
+        return;
+      }
+
+      props.onStateChange((current) => ({
+        ...current,
+        selectedProfessionalId: payload.professionalId,
+        assignedProfessionalId: payload.professionalId,
+        assignedProfessionalName: payload.professionalName,
+        activeChatProfessionalId: payload.professionalId
+      }));
+      props.navigate("/sessions?flow=checkout&source=change-professional", { replace: true });
+    },
+    [
+      props.navigate,
+      props.onStateChange,
+      props.state.assignedProfessionalId,
+      props.state.bookings,
+      props.state.language,
+      props.state.subscription.creditsRemaining,
+      props.syncActiveProfessionalAssignment
+    ]
+  );
 
   return (
     <Routes>
@@ -233,6 +288,7 @@ export function PortalRoutes(props: {
                     props.navigate("/sessions?focus=new-booking&trial=1&returnTo=/");
                   }}
                   onNavigateToAssignProfessional={navigateToAssignProfessional}
+                  onNavigateToChangeProfessional={navigateToChangeProfessional}
                   showPatientGoogleCalendarReconnectCta={props.showPatientGoogleCalendarReconnectCta}
                   onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
                 />
@@ -244,6 +300,13 @@ export function PortalRoutes(props: {
         element={
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
+            : changeProfessionalMode
+              && !canPatientSelfChangeProfessional({
+                creditsRemaining: props.state.subscription.creditsRemaining,
+                bookings: props.state.bookings,
+                assignedProfessionalId: props.state.assignedProfessionalId
+              })
+              ? <Navigate replace to="/" />
             : (
                 <MatchingPage
                   language={props.state.language}
@@ -256,17 +319,29 @@ export function PortalRoutes(props: {
                   mode="portal"
                   intakeAnswers={props.state.intake?.answers ?? {}}
                   isFirstSelectionRequired={false}
+                  changeProfessionalMode={changeProfessionalMode}
+                  excludeProfessionalId={
+                    changeProfessionalMode ? props.state.assignedProfessionalId : null
+                  }
                   showOnlyFavorites={false}
                   favoriteProfessionalIds={props.state.favoriteProfessionalIds}
                   selectedProfessionalId={props.state.selectedProfessionalId}
                   onToggleFavorite={props.toggleFavoriteProfessional}
                   onToggleFavoritesView={(showOnlyFavorites) => {
-                    props.navigate(showOnlyFavorites ? "/favorites" : "/matching");
+                    props.navigate(
+                      showOnlyFavorites
+                        ? "/favorites"
+                        : changeProfessionalMode
+                          ? "/matching?changeProfessional=1"
+                          : "/matching"
+                    );
                   }}
                   onSelectProfessional={(professionalId) =>
                     props.onStateChange((current) => ({ ...current, selectedProfessionalId: professionalId }))
                   }
-                  onCompleteFirstSelection={() => {}}
+                  onCompleteFirstSelection={
+                    changeProfessionalMode ? completeChangeProfessional : () => {}
+                  }
                   onCreateBooking={async () => {}}
                   onReserve={props.handleReserveFromAnywhere}
                   onChat={props.handleChatFromAnywhere}

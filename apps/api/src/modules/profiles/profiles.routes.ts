@@ -37,6 +37,7 @@ import {
   sendPatientEmailForProfessionalAssigned,
   sendPatientEmailForPurchase
 } from "../notifications/patientEmailService.js";
+import { assertPatientMaySwitchActiveProfessional } from "../../lib/patientActiveProfessionalChange.js";
 import {
   createProfessionalReviewSchema,
   listProfessionalReviewsQuerySchema
@@ -1197,6 +1198,19 @@ profilesRouter.patch("/me/active-professional", requireAuth, async (req: Authent
   const assignmentConfig = await prisma.systemConfig.findUnique({ where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY } });
   const assignments = parsePatientAssignments(assignmentConfig?.value);
   const previousProfessionalId = assignments[patient.id] ?? null;
+  const nextProfessionalId = activeProfessional?.id ?? null;
+
+  const switchGate = await assertPatientMaySwitchActiveProfessional({
+    patientId: patient.id,
+    previousProfessionalId,
+    nextProfessionalId
+  });
+  if (!switchGate.ok) {
+    return res.status(switchGate.status).json({
+      error: switchGate.error,
+      code: switchGate.code
+    });
+  }
 
   if (activeProfessional) {
     assignments[patient.id] = activeProfessional.id;

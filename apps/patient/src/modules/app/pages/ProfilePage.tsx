@@ -605,9 +605,9 @@ export function ProfilePage(props: {
               <h3>{t(props.language, { es: "Cambio de profesional", en: "Change professional", pt: "Troca de profissional" })}</h3>
               <p className="profile-panel-lead">
                 {t(props.language, {
-                  es: "Si necesitás otro profesional, solicitá el cambio y el equipo de soporte te guía por email.",
-                  en: "If you need a different therapist, request a change and support will guide you by email.",
-                  pt: "Se precisar de outro profissional, solicite a troca e o suporte orientara por e-mail."
+                  es: "Si no te quedan sesiones disponibles ni reservas, en Inicio podés cambiar de profesional y comprar nuevas sesiones a su precio. Si tenés créditos o reservas, o necesitás ayuda excepcional, solicitá el cambio acá y soporte te guía por email.",
+                  en: "If you have no available sessions and no reservations, you can change professionals from Home and buy new sessions at their price. If you still have credits or bookings, or need an exception, request a change here and support will guide you by email.",
+                  pt: "Se nao tiver sessoes disponiveis nem reservas, em Inicio voce pode trocar de profissional e comprar novas sessoes pelo preco dele. Se ainda tiver creditos ou reservas, ou precisar de uma excecao, solicite a troca aqui e o suporte orientara por e-mail."
                 })}
               </p>
               <ProfessionalChangeSupportPanel

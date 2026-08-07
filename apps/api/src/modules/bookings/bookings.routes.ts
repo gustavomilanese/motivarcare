@@ -609,11 +609,18 @@ bookingsRouter.post("/", requireAuth, async (req: AuthenticatedRequest, res) => 
             throw new Error("PATIENT_PROFILE_NOT_FOUND");
           }
 
-          /** FIFO: consumir primero la compra más antigua con créditos disponibles. */
+          /**
+           * FIFO: compra más antigua con créditos, solo del profesional de la reserva
+           * (o snapshot null legacy). Evita gastar créditos comprados a otro pro.
+           */
           const purchaseToConsume = await tx.patientPackagePurchase.findFirst({
             where: {
               patientId: patientProfileId,
-              remainingCredits: { gt: 0 }
+              remainingCredits: { gt: 0 },
+              OR: [
+                { professionalIdSnapshot: professional.id },
+                { professionalIdSnapshot: null }
+              ]
             },
             orderBy: { purchasedAt: "asc" },
             select: {
