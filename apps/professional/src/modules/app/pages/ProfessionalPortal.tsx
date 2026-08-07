@@ -231,7 +231,8 @@ export function ProfessionalPortal(props: {
         </nav>
 
         <div className="pro-sidebar-foot">
-          <p>{props.user.email}</p>
+          <strong className="pro-sidebar-foot-name">{props.user.fullName}</strong>
+          <p className="pro-sidebar-foot-email">{props.user.email}</p>
         </div>
       </aside>
 

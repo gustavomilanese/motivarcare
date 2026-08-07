@@ -73,6 +73,21 @@ function firstQueryString(value: unknown): string | undefined {
   return undefined;
 }
 
+function parseSessionsMonthBounds(
+  query: Record<string, unknown>,
+  now: Date
+): { monthStart: Date; monthEnd: Date } {
+  const raw = firstQueryString(query.sessionsMonth);
+  const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
+  const year = match ? Number(match[1]) : now.getFullYear();
+  const monthIndex = match ? Number(match[2]) - 1 : now.getMonth();
+  const safeYear = Number.isFinite(year) ? year : now.getFullYear();
+  const safeMonth = Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11 ? monthIndex : now.getMonth();
+  const monthStart = new Date(safeYear, safeMonth, 1, 0, 0, 0, 0);
+  const monthEnd = new Date(safeYear, safeMonth + 1, 0, 23, 59, 59, 999);
+  return { monthStart, monthEnd };
+}
+
 function parseProfessionalStatsRange(query: Record<string, unknown>): {
   statsFrom: Date | null;
   statsTo: Date;
@@ -302,10 +317,9 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  /** Sesiones ejecutadas recientes que siguen visibles en «Lista de sesiones». */
-  const sessionListSince = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
   const { statsFrom, statsTo, statsAll } = parseProfessionalStatsRange(req.query as Record<string, unknown>);
+  const sessionsMonthBounds = parseSessionsMonthBounds(req.query as Record<string, unknown>, now);
 
   const revenueWhere = {
     professionalId: actor.professionalProfileId,
@@ -347,17 +361,17 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.booking.findMany({
       where: {
         professionalId: actor.professionalProfileId,
+        startsAt: {
+          gte: sessionsMonthBounds.monthStart,
+          lte: sessionsMonthBounds.monthEnd
+        },
         OR: [
           {
             status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
             startsAt: { lte: now }
           },
           {
-            status: BOOKING_STATUS.COMPLETED,
-            OR: [
-              { completedAt: { gte: sessionListSince } },
-              { completedAt: null, startsAt: { gte: sessionListSince } }
-            ]
+            status: BOOKING_STATUS.COMPLETED
           }
         ]
       },
@@ -371,7 +385,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         financeRecord: { select: { payoutLineId: true } }
       },
       orderBy: { startsAt: "desc" },
-      take: 100
+      take: 200
     }),
     prisma.booking.count({
       where: {

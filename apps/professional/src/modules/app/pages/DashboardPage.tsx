@@ -9,6 +9,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
+import { RevenueMonthPicker } from "../components/RevenueMonthPicker";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
@@ -112,6 +113,7 @@ export function DashboardPage(props: {
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const [upcomingExpanded, setUpcomingExpanded] = useState(false);
   const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("reserved");
+  const [sessionListMonth, setSessionListMonth] = useState(() => ymLocal(new Date()));
   const upcomingExpandInitializedRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,13 +126,14 @@ export function DashboardPage(props: {
   dashboardSpotlightBlockersRef.current = isRescheduleModalOpen || isCancelModalOpen;
 
   const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
+  const dashboardQuery = `${revenueQuery}&sessionsMonth=${encodeURIComponent(sessionListMonth)}`;
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       try {
-        const response = await apiRequest<DashboardResponse>(`/api/professional/dashboard${revenueQuery}`, props.token);
+        const response = await apiRequest<DashboardResponse>(`/api/professional/dashboard${dashboardQuery}`, props.token);
         if (active) {
           setData(response);
           setUpcomingReservations(
@@ -145,8 +148,8 @@ export function DashboardPage(props: {
               joinUrl: session.joinUrl ?? null
             }))
           );
-          setPendingExecutionSessions((previous) => {
-            const fromApi = (response.pendingExecutionSessions ?? []).map((session) => ({
+          setPendingExecutionSessions(
+            (response.pendingExecutionSessions ?? []).map((session) => ({
               id: session.id,
               startsAt: session.startsAt,
               endsAt: session.endsAt,
@@ -156,23 +159,8 @@ export function DashboardPage(props: {
               status: session.status,
               joinUrl: session.joinUrl ?? null,
               canUncomplete: session.canUncomplete
-            }));
-            const apiIds = new Set(fromApi.map((session) => session.id));
-            const recentlyTouched = previous.filter(
-              (session) => !apiIds.has(session.id) && (
-                session.status.toLowerCase() === "completed"
-                || session.status.toLowerCase() === "confirmed"
-              )
-            );
-            return [...fromApi, ...recentlyTouched].sort((a, b) => {
-              const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
-              const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
-              if (aDone !== bDone) {
-                return aDone - bDone;
-              }
-              return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
-            });
-          });
+            }))
+          );
           if (!upcomingExpandInitializedRef.current) {
             upcomingExpandInitializedRef.current = true;
             setUpcomingExpanded((response.upcomingSessions ?? []).length > 0);
@@ -197,7 +185,7 @@ export function DashboardPage(props: {
       active = false;
       unsubscribe();
     };
-  }, [props.language, props.token, revenueQuery, dashboardReloadKey]);
+  }, [props.language, props.token, dashboardQuery, dashboardReloadKey]);
 
   useEffect(() => {
     const state = location.state as DashboardLocationState | null;
@@ -754,26 +742,39 @@ export function DashboardPage(props: {
               pt: "Sessoes a liquidar"
             })}
           </h2>
-          <label className="agenda-session-filter">
-            <span className="sr-only">
-              {t(props.language, { es: "Filtrar sesiones", en: "Filter sessions", pt: "Filtrar sessoes" })}
-            </span>
-            <select
-              value={sessionListFilter}
-              onChange={(event) => setSessionListFilter(event.target.value as SessionListFilter)}
-            >
-              <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
-              <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
-              <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
-              <option value="liquidated">{t(props.language, { es: "Liquidadas", en: "Settled", pt: "Liquidadas" })}</option>
-            </select>
-          </label>
+          <div className="agenda-session-panel-filters">
+            <RevenueMonthPicker
+              language={props.language}
+              value={sessionListMonth}
+              compact
+              ariaLabel={t(props.language, {
+                es: "Mes de sesiones a liquidar",
+                en: "Month for sessions to settle",
+                pt: "Mes das sessoes a liquidar"
+              })}
+              onChange={setSessionListMonth}
+            />
+            <label className="agenda-session-filter">
+              <span className="sr-only">
+                {t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por status" })}
+              </span>
+              <select
+                value={sessionListFilter}
+                onChange={(event) => setSessionListFilter(event.target.value as SessionListFilter)}
+              >
+                <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
+                <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
+                <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
+                <option value="liquidated">{t(props.language, { es: "Liquidadas", en: "Settled", pt: "Liquidadas" })}</option>
+              </select>
+            </label>
+          </div>
         </div>
         <p className="agenda-session-lead">
           {t(props.language, {
-            es: "Marcá como ejecutadas las sesiones del mes para la próxima liquidación.",
-            en: "Mark this month’s sessions as executed for the next payout.",
-            pt: "Marque como executadas as sessoes do mes para a proxima liquidacao."
+            es: "Marcá como ejecutadas las sesiones del mes elegido para la próxima liquidación.",
+            en: "Mark the selected month’s sessions as executed for the next payout.",
+            pt: "Marque como executadas as sessoes do mes escolhido para a proxima liquidacao."
           })}
         </p>
         <PendingExecutionSessionsList
