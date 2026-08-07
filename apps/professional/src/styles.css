@@ -6104,6 +6104,12 @@ select.pro-dashboard-revenue-control {
   font-weight: 600;
 }
 
+.agenda-session-status-locked--liquidated {
+  background: #efeaff;
+  color: #5f44eb;
+  border: 1px solid #ddd6fe;
+}
+
 .agenda-session-empty {
   padding: 8px 0 2px;
 }

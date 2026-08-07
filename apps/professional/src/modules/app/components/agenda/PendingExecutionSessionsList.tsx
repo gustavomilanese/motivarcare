@@ -32,13 +32,23 @@ function formatTime(value: string, language: AppLanguage): string {
   });
 }
 
-function isExecutedSession(session: UpcomingReservationItem): boolean {
+function isCompletedBooking(session: UpcomingReservationItem): boolean {
   return session.status.toLowerCase() === "completed";
+}
+
+/** Ejecutada ya tomada por una corrida de payout: solo lectura. */
+function isLiquidatedSession(session: UpcomingReservationItem): boolean {
+  return isCompletedBooking(session) && session.canUncomplete === false;
+}
+
+/** Ejecutada y aún reversible (pendiente de liquidación). */
+function isExecutedPendingSession(session: UpcomingReservationItem): boolean {
+  return isCompletedBooking(session) && session.canUncomplete !== false;
 }
 
 const PAGE_SIZE = 10;
 
-export type SessionListFilter = "all" | "reserved" | "executed";
+export type SessionListFilter = "all" | "reserved" | "executed" | "liquidated";
 
 export function PendingExecutionSessionsList(props: {
   language: AppLanguage;
@@ -53,10 +63,13 @@ export function PendingExecutionSessionsList(props: {
 
   const filteredSessions = useMemo(() => {
     if (props.filter === "reserved") {
-      return props.sessions.filter((session) => !isExecutedSession(session));
+      return props.sessions.filter((session) => !isCompletedBooking(session));
     }
     if (props.filter === "executed") {
-      return props.sessions.filter((session) => isExecutedSession(session));
+      return props.sessions.filter((session) => isExecutedPendingSession(session));
+    }
+    if (props.filter === "liquidated") {
+      return props.sessions.filter((session) => isLiquidatedSession(session));
     }
     return props.sessions;
   }, [props.filter, props.sessions]);
@@ -98,15 +111,21 @@ export function PendingExecutionSessionsList(props: {
                 })
               : props.filter === "executed"
                 ? t(props.language, {
-                    es: "No hay sesiones ejecutadas",
-                    en: "No executed sessions",
-                    pt: "Nao ha sessoes executadas"
+                    es: "No hay sesiones ejecutadas pendientes de liquidar",
+                    en: "No executed sessions pending payout",
+                    pt: "Nao ha sessoes executadas pendentes de liquidar"
                   })
-                : t(props.language, {
-                    es: "No hay sesiones",
-                    en: "No sessions",
-                    pt: "Nao ha sessoes"
-                  })}
+                : props.filter === "liquidated"
+                  ? t(props.language, {
+                      es: "No hay sesiones liquidadas",
+                      en: "No settled sessions",
+                      pt: "Nao ha sessoes liquidadas"
+                    })
+                  : t(props.language, {
+                      es: "No hay sesiones",
+                      en: "No sessions",
+                      pt: "Nao ha sessoes"
+                    })}
           </strong>
         </div>
       ) : (
@@ -122,9 +141,9 @@ export function PendingExecutionSessionsList(props: {
               {pageSessions.map((booking) => {
                 const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
                 const busy = props.busyBookingId === booking.id;
-                const executed = isExecutedSession(booking);
-                const canUncomplete = booking.canUncomplete !== false;
-                const statusValue = executed ? "executed" : "reserved";
+                const liquidated = isLiquidatedSession(booking);
+                const executed = isExecutedPendingSession(booking);
+                const statusValue = executed || liquidated ? "executed" : "reserved";
 
                 return (
                   <article className="agenda-session-table-row" key={booking.id}>
@@ -162,9 +181,9 @@ export function PendingExecutionSessionsList(props: {
                       <span className="agenda-upcoming-cell-label">
                         {t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
                       </span>
-                      {executed && !canUncomplete ? (
-                        <span className="agenda-session-status-locked">
-                          {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
+                      {liquidated ? (
+                        <span className="agenda-session-status-locked agenda-session-status-locked--liquidated">
+                          {t(props.language, { es: "Liquidada", en: "Settled", pt: "Liquidada" })}
                         </span>
                       ) : (
                         <select

@@ -774,6 +774,7 @@ export function DashboardPage(props: {
               <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
               <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
               <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
+              <option value="liquidated">{t(props.language, { es: "Liquidadas", en: "Settled", pt: "Liquidadas" })}</option>
             </select>
           </label>
         </div>
