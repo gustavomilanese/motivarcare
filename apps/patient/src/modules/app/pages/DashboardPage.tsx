@@ -52,6 +52,7 @@ import {
 } from "../lib/patientPricingProfessional";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
+import { fetchProfessionalAvailability } from "../../matching/services/availability";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type {
   Booking,
@@ -210,6 +211,8 @@ export function DashboardPage(props: {
   const [trialSlotId, setTrialSlotId] = useState("");
   const [trialSaveBusy, setTrialSaveBusy] = useState(false);
   const [trialSaveError, setTrialSaveError] = useState<string | null>(null);
+  const [liveTrialSlots, setLiveTrialSlots] = useState<TimeSlot[]>([]);
+  const [liveTrialSlotsLoading, setLiveTrialSlotsLoading] = useState(false);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
@@ -294,9 +297,49 @@ export function DashboardPage(props: {
     activeTrialBooking?.professionalId ?? trialProfessionalId,
     props.professionals
   );
-  const availableTrialSlots = (trialProfessional?.slots ?? []).filter(
-    (slot) => !props.state.bookedSlotIds.includes(slot.id) || slot.id === activeTrialSlotId
-  );
+  /** Preferir slots vivos del API; si aún cargan, no usar el catálogo estático (puede no existir en agenda real). */
+  const availableTrialSlots = useMemo(() => {
+    const currentId = activeTrialBooking
+      ? `${activeTrialBooking.startsAt}__${activeTrialBooking.endsAt}`
+      : "";
+    const fromLive = liveTrialSlots.filter(
+      (slot) =>
+        !props.state.bookedSlotIds.includes(slot.id)
+        || (activeTrialBooking
+          && slot.startsAt === activeTrialBooking.startsAt
+          && slot.endsAt === activeTrialBooking.endsAt)
+    );
+    if (liveTrialSlotsLoading || liveTrialSlots.length > 0 || trialModalOpen) {
+      if (
+        activeTrialBooking
+        && !fromLive.some(
+          (slot) =>
+            slot.startsAt === activeTrialBooking.startsAt && slot.endsAt === activeTrialBooking.endsAt
+        )
+      ) {
+        return [
+          {
+            id: currentId || `current-trial-${activeTrialBooking.id}`,
+            startsAt: activeTrialBooking.startsAt,
+            endsAt: activeTrialBooking.endsAt
+          },
+          ...fromLive
+        ];
+      }
+      return fromLive;
+    }
+    return (trialProfessional?.slots ?? []).filter(
+      (slot) => !props.state.bookedSlotIds.includes(slot.id) || slot.id === activeTrialSlotId
+    );
+  }, [
+    activeTrialBooking,
+    activeTrialSlotId,
+    liveTrialSlots,
+    liveTrialSlotsLoading,
+    props.state.bookedSlotIds,
+    trialModalOpen,
+    trialProfessional?.slots
+  ]);
   const selectedTrialSlot = availableTrialSlots.find((slot) => slot.id === trialSlotId) ?? null;
 
   const openTrialModal = () => {
@@ -305,11 +348,57 @@ export function DashboardPage(props: {
     }
     const initialProfessionalId = activeTrialBooking.professionalId;
     setTrialProfessionalId(initialProfessionalId);
-    setTrialSlotId(activeTrialSlotId);
+    setTrialSlotId(
+      activeTrialSlotId
+      || `${activeTrialBooking.startsAt}__${activeTrialBooking.endsAt}`
+    );
     setTrialSaveError(null);
     setTrialSaveBusy(false);
+    setLiveTrialSlots([]);
     setTrialModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!trialModalOpen || !activeTrialBooking?.professionalId) {
+      return;
+    }
+    let cancelled = false;
+    setLiveTrialSlotsLoading(true);
+    void fetchProfessionalAvailability(activeTrialBooking.professionalId, props.authToken)
+      .then((slots) => {
+        if (cancelled) {
+          return;
+        }
+        setLiveTrialSlots(
+          slots.map((slot) => ({
+            id: slot.id,
+            startsAt: slot.startsAt,
+            endsAt: slot.endsAt
+          }))
+        );
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        console.error("Could not load trial reschedule slots", error);
+        setTrialSaveError(
+          t(props.language, {
+            es: "No pudimos cargar horarios disponibles. Cerrá y volvé a intentar.",
+            en: "We couldn’t load available times. Close and try again.",
+            pt: "Nao foi possivel carregar horarios. Feche e tente de novo."
+          })
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLiveTrialSlotsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTrialBooking?.professionalId, props.authToken, props.language, trialModalOpen]);
 
   const trialCardClickable = Boolean(activeTrialBooking);
   const openTrialDetail = () => {
@@ -1368,10 +1457,16 @@ export function DashboardPage(props: {
                     setTrialSaveError(null);
                     setTrialSlotId(event.target.value);
                   }}
-                  disabled={trialSaveBusy}
+                  disabled={trialSaveBusy || liveTrialSlotsLoading}
                 >
                   <option value="">
-                    {availableTrialSlots.length === 0
+                    {liveTrialSlotsLoading
+                      ? t(props.language, {
+                          es: "Cargando horarios…",
+                          en: "Loading times…",
+                          pt: "Carregando horarios…"
+                        })
+                      : availableTrialSlots.length === 0
                       ? t(props.language, {
                           es: "Sin slots esta semana",
                           en: "No slots this week",
@@ -1410,7 +1505,7 @@ export function DashboardPage(props: {
                 <button
                   className="primary"
                   type="button"
-                  disabled={!selectedTrialSlot || !hasTrialPlanned || trialSaveBusy || !activeTrialBooking}
+                  disabled={!selectedTrialSlot || !hasTrialPlanned || trialSaveBusy || liveTrialSlotsLoading || !activeTrialBooking}
                   onClick={() => {
                     if (!selectedTrialSlot || !activeTrialBooking) {
                       return;
