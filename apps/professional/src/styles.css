@@ -5994,12 +5994,12 @@ select.pro-dashboard-revenue-control {
 }
 
 .pro-dashboard-sessions-hub {
-  padding-top: 10px !important;
+  padding: 8px 12px 10px !important;
 }
 
 /* Gana a `.pro-schedule-hub-tabs` (padding horizontal 20px) para alinear con la tabla. */
 .pro-dashboard-sessions-hub > .pro-schedule-hub-tabs.pro-dashboard-sessions-hub-tabs {
-  padding: 0 0 10px;
+  padding: 0 0 8px;
   margin: 0;
 }
 
@@ -6008,14 +6008,15 @@ select.pro-dashboard-revenue-control {
   display: flex;
   flex-wrap: nowrap;
   box-sizing: border-box;
+  padding: 3px;
 }
 
 .pro-dashboard-sessions-hub .pro-schedule-hub-tab {
   flex: 1 1 50%;
   min-width: 0;
   gap: 8px;
-  padding-left: 14px;
-  padding-right: 14px;
+  min-height: 38px;
+  padding: 8px 12px;
 }
 
 .pro-dashboard-sessions-hub .agenda-session-table-head,
