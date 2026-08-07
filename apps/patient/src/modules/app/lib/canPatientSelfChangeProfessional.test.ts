@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { canPatientSelfChangeProfessional } from "./canPatientSelfChangeProfessional";
 
 describe("canPatientSelfChangeProfessional", () => {
