@@ -14,7 +14,7 @@ import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
-import { PendingExecutionSessionsList } from "../components/agenda/PendingExecutionSessionsList";
+import { PendingExecutionSessionsList, type SessionListFilter } from "../components/agenda/PendingExecutionSessionsList";
 import {
   buildProfessionalStatsQuery,
   type RevenuePreset,
@@ -111,6 +111,7 @@ export function DashboardPage(props: {
   /** Solo la card «Dinero ejecutado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const [upcomingExpanded, setUpcomingExpanded] = useState(false);
+  const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("reserved");
   const upcomingExpandInitializedRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -747,8 +748,12 @@ export function DashboardPage(props: {
         ) : null}
       </section>
 
-      <section className="pro-card agenda-upcoming-panel" id="sesiones-por-ejecutar" data-tour="pro-tour-pending-execution">
-        <div className="agenda-upcoming-head">
+      <section
+        className="pro-card agenda-upcoming-panel agenda-session-panel"
+        id="sesiones-por-ejecutar"
+        data-tour="pro-tour-pending-execution"
+      >
+        <div className="agenda-upcoming-head agenda-session-panel-head">
           <h2>
             {t(props.language, {
               es: "Lista de sesiones",
@@ -756,33 +761,25 @@ export function DashboardPage(props: {
               pt: "Lista de sessoes"
             })}
           </h2>
-          {pendingExecutionSessions.length > 0 ? (
-            <span className="agenda-session-list-meta" aria-live="polite">
-              {(() => {
-                const pendingCount = pendingExecutionSessions.filter(
-                  (session) => session.status.toLowerCase() !== "completed"
-                ).length;
-                const recordedCount = pendingExecutionSessions.length - pendingCount;
-                return t(props.language, {
-                  es: `${pendingCount} por confirmar · ${recordedCount} registradas`,
-                  en: `${pendingCount} to confirm · ${recordedCount} recorded`,
-                  pt: `${pendingCount} por confirmar · ${recordedCount} registradas`
-                });
-              })()}
+          <label className="agenda-session-filter">
+            <span className="sr-only">
+              {t(props.language, { es: "Filtrar sesiones", en: "Filter sessions", pt: "Filtrar sessoes" })}
             </span>
-          ) : null}
+            <select
+              value={sessionListFilter}
+              onChange={(event) => setSessionListFilter(event.target.value as SessionListFilter)}
+            >
+              <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
+              <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
+              <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
+            </select>
+          </label>
         </div>
-        <p className="agenda-execution-lead">
-          {t(props.language, {
-            es: "Confirmá las realizadas o deshacé si te equivocaste. Empezá por «Por confirmar».",
-            en: "Confirm completed sessions or undo mistakes. Start with “To confirm”.",
-            pt: "Confirme as realizadas ou desfaca se errou. Comece por «Por confirmar»."
-          })}
-        </p>
         <PendingExecutionSessionsList
           language={props.language}
           sessions={pendingExecutionSessions}
           busyBookingId={bookingActionInProgressId}
+          filter={sessionListFilter}
           onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
           onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
         />
