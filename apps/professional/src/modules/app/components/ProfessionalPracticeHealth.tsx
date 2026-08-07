@@ -327,13 +327,6 @@ export function ProfessionalPracticeHealth(props: {
           <p className="pro-practice-health-lead">
             <strong>{title}</strong> — {subtitle}
           </p>
-          <p className="pro-practice-health-live-note">
-            {t(props.language, {
-              es: "Valores calculados en tiempo real con tu perfil, agenda y reservas.",
-              en: "Values computed live from your profile, schedule, and bookings.",
-              pt: "Valores calculados em tempo real com seu perfil, agenda e reservas."
-            })}
-          </p>
         </div>
       </div>
       <div className="pro-practice-health-gauges" role="list" aria-label={t(props.language, { es: "Señales", en: "Signals", pt: "Sinais" })}>

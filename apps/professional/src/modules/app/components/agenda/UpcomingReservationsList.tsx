@@ -111,8 +111,14 @@ export function UpcomingReservationsList(props: {
   if (liveReservations.length === 0) {
     return (
       <div className="agenda-upcoming-empty">
-        <strong>{t(props.language, { es: "No tienes reservas próximas", en: "You have no upcoming bookings", pt: "Voce nao tem reservas proximas" })}</strong>
-        <p>{t(props.language, { es: "Aqui apareceran los pacientes que tienes que atender, ordenados por cercania.", en: "Patients you need to attend will appear here, sorted by proximity.", pt: "Aqui aparecerao os pacientes que voce precisa atender, ordenados por proximidade." })}</p>
+        <strong>{t(props.language, { es: "No tenés reservas próximas", en: "You have no upcoming bookings", pt: "Voce nao tem reservas proximas" })}</strong>
+        <p>
+          {t(props.language, {
+            es: "Cuando un paciente reserve, vas a ver acá las próximas sesiones ordenadas por fecha.",
+            en: "When a patient books, upcoming sessions will show here ordered by date.",
+            pt: "Quando um paciente reservar, as proximas sessoes aparecerao aqui ordenadas por data."
+          })}
+        </p>
       </div>
     );
   }

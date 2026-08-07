@@ -4846,7 +4846,7 @@ ul {
 }
 
 .pro-dashboard-stack {
-  gap: 20px;
+  gap: 14px;
 }
 
 .pro-dashboard-flash {
@@ -5786,7 +5786,7 @@ select.pro-dashboard-revenue-control {
 }
 
 .pro-dashboard-upcoming-gap {
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .agenda-upcoming-head {
@@ -6778,10 +6778,10 @@ select.pro-dashboard-revenue-control {
 }
 
 .agenda-execution-lead {
-  margin: 0 0 14px;
+  margin: 0;
   color: #5b647a;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .agenda-execution-count {
@@ -16032,16 +16032,23 @@ button:disabled {
   font-size: 22px;
 }
 
-/* Título «Dashboard» + período + toolbar + 4 KPIs en la misma card */
+/* Título «Hoy» + período + toolbar + 4 KPIs en la misma card */
 .pro-dashboard-hero .pro-dashboard-kpi-row {
-  margin-top: 2px;
-  padding-top: 12px;
+  margin-top: 0;
+  padding-top: 10px;
   border-top: 1px solid rgba(226, 232, 240, 0.95);
 }
 
 .pro-dashboard-revenue--compact.pro-dashboard-revenue--floating {
-  gap: 10px;
-  padding: clamp(12px, 2.8vw, 18px) clamp(12px, 2.6vw, 20px) clamp(12px, 2.8vw, 16px);
+  gap: 8px;
+  padding: clamp(10px, 2.4vw, 14px) clamp(12px, 2.6vw, 18px) clamp(10px, 2.4vw, 14px);
+}
+
+.pro-dashboard-home > .pro-card.agenda-upcoming-panel,
+.pro-dashboard-home > .pro-card.pro-practice-health,
+.pro-dashboard-home > .pro-card.pro-dashboard-reviews-invite {
+  padding: 14px 16px;
+  gap: 8px;
 }
 
 .pro-dashboard-revenue--compact .pro-dashboard-revenue-toolbar--minimal {

@@ -345,8 +345,10 @@ export function DashboardPage(props: {
     [props.language, periodGroupLabel, revenuePreset, revenueDay, revenueMonth, revenueYear]
   );
 
+  const pageTitle = t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" });
+
   useProPortalChrome({
-    title: t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" }),
+    title: pageTitle,
     toolbar: periodFilters,
     suppressPageHeader: true
   });
@@ -360,9 +362,7 @@ export function DashboardPage(props: {
             className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
           >
             <header className="pro-dashboard-hero-head">
-              <h1 className="pro-dashboard-revenue-title--page">
-                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-              </h1>
+              <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
               <div className="pro-dashboard-hero-head-end">
                 <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
               </div>
@@ -393,9 +393,7 @@ export function DashboardPage(props: {
         <div className="pro-dashboard-overview">
           <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive">
             <header className="pro-dashboard-hero-head">
-              <h1 className="pro-dashboard-revenue-title--page">
-                {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-              </h1>
+              <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
               <div className="pro-dashboard-hero-head-end">
                 <div className="pro-portal-page-toolbar">{periodFilters}</div>
                 <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
@@ -608,9 +606,7 @@ export function DashboardPage(props: {
           data-tour="pro-tour-hero"
         >
           <header className="pro-dashboard-hero-head">
-            <h1 className="pro-dashboard-revenue-title--page">
-              {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-            </h1>
+            <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
             <div className="pro-dashboard-hero-head-end">
               <div className="pro-portal-page-toolbar">{periodFilters}</div>
               <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
@@ -664,23 +660,15 @@ export function DashboardPage(props: {
         </section>
       </div>
 
-      {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
-        <ProfessionalPracticeHealth
-          language={props.language}
-          variant={data.practiceHealth.variant}
-          items={data.practiceHealth.items}
-        />
-      ) : null}
-
       <section
-        className={`pro-card agenda-upcoming-panel pro-dashboard-upcoming-gap${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
+        className={`pro-card agenda-upcoming-panel${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
         id="sesiones-agendadas"
         ref={upcomingSectionRef}
         tabIndex={-1}
         data-tour="pro-tour-bookings"
       >
         <div className="agenda-upcoming-head">
-          <h2>{t(props.language, { es: "Próximas Reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
+          <h2>{t(props.language, { es: "Próximas reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
         </div>
         <UpcomingReservationsList
           language={props.language}
@@ -693,19 +681,13 @@ export function DashboardPage(props: {
         />
       </section>
 
-      <ProfessionalReviewsInvitePanel
-        language={props.language}
-        professionalId={props.user.professionalProfileId}
-        variant="dashboard"
-      />
-
       <section className="pro-card agenda-upcoming-panel" id="sesiones-por-ejecutar" data-tour="pro-tour-pending-execution">
         <div className="agenda-upcoming-head">
           <h2>
             {t(props.language, {
-              es: "Sesiones por marcar como ejecutadas",
-              en: "Sessions to mark as executed",
-              pt: "Sessoes para marcar como executadas"
+              es: "Marcar ejecutadas",
+              en: "Mark as executed",
+              pt: "Marcar executadas"
             })}
           </h2>
           {pendingExecutionSessions.length > 0 ? (
@@ -714,9 +696,9 @@ export function DashboardPage(props: {
         </div>
         <p className="agenda-execution-lead">
           {t(props.language, {
-            es: "Marcá las sesiones ya realizadas. Así entran a tu liquidación pendiente en Admin.",
-            en: "Mark sessions you’ve already run. They enter your pending payout in Admin.",
-            pt: "Marque as sessoes ja realizadas. Elas entram na sua liquidacao pendente no Admin."
+            es: "Sesiones ya iniciadas. Al marcarlas entran a tu liquidación pendiente.",
+            en: "Sessions that already started. Marking them adds them to your pending payout.",
+            pt: "Sessoes ja iniciadas. Ao marca-las entram na sua liquidacao pendente."
           })}
         </p>
         <PendingExecutionSessionsList
@@ -726,6 +708,20 @@ export function DashboardPage(props: {
           onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
         />
       </section>
+
+      {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
+        <ProfessionalPracticeHealth
+          language={props.language}
+          variant={data.practiceHealth.variant}
+          items={data.practiceHealth.items}
+        />
+      ) : null}
+
+      <ProfessionalReviewsInvitePanel
+        language={props.language}
+        professionalId={props.user.professionalProfileId}
+        variant="dashboard"
+      />
 
       {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
 
