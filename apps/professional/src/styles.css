@@ -5997,14 +5997,17 @@ select.pro-dashboard-revenue-control {
   padding-top: 10px !important;
 }
 
-.pro-dashboard-sessions-hub-tabs {
-  padding: 0 0 4px;
+/* Gana a `.pro-schedule-hub-tabs` (padding horizontal 20px) para alinear con la tabla. */
+.pro-dashboard-sessions-hub > .pro-schedule-hub-tabs.pro-dashboard-sessions-hub-tabs {
+  padding: 0 0 10px;
+  margin: 0;
 }
 
 .pro-dashboard-sessions-hub-tabs .pro-schedule-hub-tabs-track {
   width: 100%;
   display: flex;
   flex-wrap: nowrap;
+  box-sizing: border-box;
 }
 
 .pro-dashboard-sessions-hub .pro-schedule-hub-tab {
@@ -6013,6 +6016,12 @@ select.pro-dashboard-revenue-control {
   gap: 8px;
   padding-left: 14px;
   padding-right: 14px;
+}
+
+.pro-dashboard-sessions-hub .agenda-session-table-head,
+.pro-dashboard-sessions-hub .agenda-session-table-row {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .pro-dashboard-sessions-hub-count {
