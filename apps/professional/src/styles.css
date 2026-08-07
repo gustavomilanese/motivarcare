@@ -5939,6 +5939,14 @@ select.pro-dashboard-revenue-control {
   gap: 12px;
 }
 
+.agenda-session-lead {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: none;
+}
+
 .agenda-session-title,
 .agenda-session-panel-head h2,
 .agenda-section-toggle .agenda-session-title {

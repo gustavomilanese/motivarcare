@@ -758,9 +758,9 @@ export function DashboardPage(props: {
         <div className="agenda-upcoming-head agenda-session-panel-head">
           <h2 className="agenda-session-title">
             {t(props.language, {
-              es: "Lista de sesiones",
-              en: "Session list",
-              pt: "Lista de sessoes"
+              es: "Sesiones a liquidar",
+              en: "Sessions to settle",
+              pt: "Sessoes a liquidar"
             })}
           </h2>
           <label className="agenda-session-filter">
@@ -777,6 +777,13 @@ export function DashboardPage(props: {
             </select>
           </label>
         </div>
+        <p className="agenda-session-lead">
+          {t(props.language, {
+            es: "Marcá como ejecutadas las sesiones del mes para la próxima liquidación.",
+            en: "Mark this month’s sessions as executed for the next payout.",
+            pt: "Marque como executadas as sessoes do mes para a proxima liquidacao."
+          })}
+        </p>
         <PendingExecutionSessionsList
           language={props.language}
           sessions={pendingExecutionSessions}
