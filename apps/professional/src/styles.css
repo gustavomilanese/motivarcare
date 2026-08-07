@@ -5995,9 +5995,17 @@ select.pro-dashboard-revenue-control {
 
 .pro-dashboard-sessions-hub {
   padding: 8px 12px 10px !important;
-  background: #e6e9f2 !important;
-  border-color: #d0d6e6;
-  box-shadow: 0 8px 24px rgba(55, 65, 100, 0.06);
+  background: #dfe3ee !important;
+  border-color: #c5ccd9;
+  box-shadow: 0 8px 24px rgba(55, 65, 100, 0.07);
+}
+
+.pro-dashboard-sessions-hub .agenda-session-table-head {
+  border-bottom-color: #c4cad8;
+}
+
+.pro-dashboard-sessions-hub .agenda-session-table-row {
+  border-bottom-color: #d0d5e2;
 }
 
 /* Gana a `.pro-schedule-hub-tabs` (padding horizontal 20px) para alinear con la tabla. */
