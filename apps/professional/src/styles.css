@@ -5930,12 +5930,24 @@ select.pro-dashboard-revenue-control {
 
 .agenda-session-panel {
   background: #ffffff !important;
-  border-color: #e2e8f0;
+  border-color: #e8e4f8;
+  box-shadow: 0 8px 24px rgba(95, 68, 235, 0.04);
 }
 
 .agenda-session-panel-head {
   align-items: center;
   gap: 12px;
+}
+
+.agenda-session-title,
+.agenda-session-panel-head h2,
+.agenda-section-toggle .agenda-session-title {
+  margin: 0;
+  color: #5f44eb;
+  font-size: 19px;
+  line-height: normal;
+  letter-spacing: -0.018em;
+  font-weight: 600;
 }
 
 .agenda-session-filter {
@@ -5948,12 +5960,12 @@ select.pro-dashboard-revenue-control {
   min-height: 34px;
   padding: 0 28px 0 12px;
   border-radius: 8px;
-  border: 1px solid #d4dced;
+  border: 1px solid #ddd6fe;
   background:
     #fff
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1.1 1.2 6 6.1l4.9-4.9 1.1 1.1L6 8.3.0 2.3z'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235f44eb' d='M1.1 1.2 6 6.1l4.9-4.9 1.1 1.1L6 8.3.0 2.3z'/%3E%3C/svg%3E")
     no-repeat right 10px center;
-  color: #334155;
+  color: #5f44eb;
   font-size: 13px;
   font-weight: 600;
   appearance: none;
@@ -5962,7 +5974,7 @@ select.pro-dashboard-revenue-control {
 
 .agenda-session-filter select:hover,
 .agenda-session-filter select:focus-visible {
-  border-color: #c8d0e0;
+  border-color: #c4b5fd;
   outline: none;
 }
 
@@ -5985,9 +5997,14 @@ select.pro-dashboard-revenue-control {
   padding: 11px 0;
 }
 
+.agenda-session-table--upcoming .agenda-session-table-head,
+.agenda-session-table--upcoming .agenda-session-table-row {
+  grid-template-columns: minmax(110px, 0.95fr) minmax(140px, 1.05fr) minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(180px, 1.15fr);
+}
+
 .agenda-session-table-head {
-  border-bottom: 1px solid #e8edf5;
-  color: #64748b;
+  border-bottom: 1px solid #ebe4ff;
+  color: #5f44eb;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -5999,7 +6016,7 @@ select.pro-dashboard-revenue-control {
 }
 
 .agenda-session-table-row {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f3f0fb;
 }
 
 .agenda-session-table-row:last-child {
@@ -6016,13 +6033,17 @@ select.pro-dashboard-revenue-control {
   color: #1e293b;
 }
 
-.agenda-session-cell > span:not(.agenda-upcoming-cell-label) {
+.agenda-session-cell > span:not(.agenda-upcoming-cell-label):not(.agenda-status):not(.agenda-no-link) {
   font-size: 14px;
   color: #475569;
 }
 
 .agenda-session-cell--status {
   justify-self: start;
+}
+
+.agenda-session-cell--actions .agenda-row-actions {
+  justify-content: flex-start;
 }
 
 .agenda-session-status-select {
@@ -6046,7 +6067,10 @@ select.pro-dashboard-revenue-control {
 .agenda-session-status-select.is-reserved {
   border-color: #c7d2fe;
   background-color: #f8faff;
-  color: #4338ca;
+  color: #5f44eb;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235f44eb' d='M1.1 1.2 6 6.1l4.9-4.9 1.1 1.1L6 8.3.0 2.3z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
 .agenda-session-status-select.is-executed {
@@ -6099,9 +6123,9 @@ select.pro-dashboard-revenue-control {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid #d4dced;
+  border: 1px solid #ddd6fe;
   background: #fff;
-  color: #334155;
+  color: #5f44eb;
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -6109,8 +6133,8 @@ select.pro-dashboard-revenue-control {
 
 .agenda-session-inbox-pagination-arrow:hover:not(:disabled),
 .agenda-session-inbox-pagination-arrow:focus-visible:not(:disabled) {
-  border-color: #c8d0e0;
-  color: #1e293b;
+  border-color: #c4b5fd;
+  color: #4c35c7;
 }
 
 .agenda-session-inbox-pagination-arrow:disabled {
@@ -6118,12 +6142,29 @@ select.pro-dashboard-revenue-control {
   cursor: default;
 }
 
+.agenda-section-toggle-icon {
+  border-color: #ddd6fe;
+  color: #5f44eb;
+}
+
+.agenda-section-toggle:hover .agenda-section-toggle-icon,
+.agenda-section-toggle:focus-visible .agenda-section-toggle-icon {
+  border-color: #c4b5fd;
+  color: #5f44eb;
+}
+
+.agenda-execution-count {
+  background: #efeaff;
+  color: #5f44eb;
+}
+
 @media (max-width: 860px) {
   .agenda-session-table-head {
     display: none;
   }
 
-  .agenda-session-table-row {
+  .agenda-session-table-row,
+  .agenda-session-table--upcoming .agenda-session-table-row {
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 14px 0;

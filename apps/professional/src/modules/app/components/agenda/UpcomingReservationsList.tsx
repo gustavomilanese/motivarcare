@@ -12,7 +12,7 @@ function formatDateHeading(value: string, language: AppLanguage): string {
     value,
     language,
     options: {
-      weekday: "long",
+      weekday: "short",
       month: "short",
       day: "numeric"
     }
@@ -111,22 +111,22 @@ export function UpcomingReservationsList(props: {
 
   if (liveReservations.length === 0) {
     return (
-      <div className="agenda-upcoming-empty">
+      <div className="agenda-upcoming-empty agenda-session-empty">
         <strong>{t(props.language, { es: "No tenés reservas", en: "No upcoming bookings", pt: "Sem reservas proximas" })}</strong>
       </div>
     );
   }
 
   return (
-    <div className="agenda-upcoming-table-wrap">
-      <div className="agenda-upcoming-table-head" aria-hidden="true">
+    <div className="agenda-session-table agenda-session-table--upcoming">
+      <div className="agenda-session-table-head" aria-hidden="true">
         <span>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
         <span>{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
         <span>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
         <span>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
         <span>{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
       </div>
-      <div className="agenda-upcoming-list">
+      <div className="agenda-session-table-body">
         {liveReservations.map((booking) => {
           const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
           const joinTrim = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
@@ -135,79 +135,83 @@ export function UpcomingReservationsList(props: {
           const joinTourTarget =
             Boolean(props.joinTourTargetBookingId && props.joinTourTargetBookingId === booking.id && joinTrim);
           return (
-          <article className="agenda-upcoming-row" key={booking.id}>
-            <div className="agenda-upcoming-cell">
-              <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
-              <strong>{formatDateHeading(booking.startsAt, props.language)}</strong>
-            </div>
-            <div className="agenda-upcoming-cell">
-              <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
-              <span>{formatTime(booking.startsAt, props.language)}</span>
-            </div>
-            <div className="agenda-upcoming-cell agenda-upcoming-patient">
-              <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
-              <div className="agenda-upcoming-patient-inner">
-                <PatientAvatarImage
-                  src={patientPhotoSrc}
-                  imgClassName="agenda-patient-avatar"
-                  emptyClassName="agenda-patient-avatar agenda-patient-avatar--empty"
-                />
-                <div className="agenda-upcoming-patient-text">
-                  <strong>{booking.patientName || "-"}</strong>
-                  <small>{booking.patientEmail || ""}</small>
+            <article className="agenda-session-table-row" key={booking.id}>
+              <div className="agenda-session-cell">
+                <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
+                <strong>{formatDateHeading(booking.startsAt, props.language)}</strong>
+              </div>
+              <div className="agenda-session-cell">
+                <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
+                <span>
+                  {formatTime(booking.startsAt, props.language)} – {formatTime(booking.endsAt, props.language)}
+                </span>
+              </div>
+              <div className="agenda-session-cell agenda-session-cell--patient">
+                <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
+                <div className="agenda-upcoming-patient-inner">
+                  <PatientAvatarImage
+                    src={patientPhotoSrc}
+                    imgClassName="agenda-patient-avatar"
+                    emptyClassName="agenda-patient-avatar agenda-patient-avatar--empty"
+                  />
+                  <div className="agenda-upcoming-patient-text">
+                    <strong>{booking.patientName || "-"}</strong>
+                    <small>{booking.patientEmail || ""}</small>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="agenda-upcoming-cell">
-              <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-              <span className={`agenda-status agenda-status-${booking.status.toLowerCase()}`}>{formatBookingStatus(booking.status, props.language)}</span>
-            </div>
-            <div className="agenda-upcoming-cell agenda-upcoming-actions">
-              <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
-              <div className="agenda-row-actions">
-                {booking.joinUrl ? (
-                  <a
-                    href={booking.joinUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`agenda-join-button${pulseJoin ? " pro-join-session--pulse" : ""}`}
-                    title={joinSessionTooltip}
-                    data-tour={joinTourTarget ? "pro-join-first-meet" : undefined}
-                  >
-                    {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}
-                  </a>
-                ) : (
-                  <span className="agenda-no-link" title={noLinkTooltip}>
-                    {t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}
-                  </span>
-                )}
-                {props.onRequestReschedule && (booking.status === "confirmed" || booking.status === "requested") ? (
-                  <button
-                    type="button"
-                    className="icon-only"
-                    aria-label={t(props.language, { es: "Reagendar", en: "Reschedule", pt: "Reagendar" })}
-                    title={rescheduleTooltip}
-                    onClick={() => props.onRequestReschedule?.(booking)}
-                    disabled={props.busyBookingId === booking.id}
-                  >
-                    <span className="session-action-icon reschedule" aria-hidden="true" />
-                  </button>
-                ) : null}
-                {props.onRequestCancel && (booking.status === "confirmed" || booking.status === "requested") ? (
-                  <button
-                    type="button"
-                    className="danger icon-only"
-                    aria-label={t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-                    title={cancelTooltip}
-                    onClick={() => props.onRequestCancel?.(booking)}
-                    disabled={props.busyBookingId === booking.id}
-                  >
-                    <span className="session-action-icon cancel" aria-hidden="true" />
-                  </button>
-                ) : null}
+              <div className="agenda-session-cell">
+                <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
+                <span className={`agenda-status agenda-status-${booking.status.toLowerCase()}`}>
+                  {formatBookingStatus(booking.status, props.language)}
+                </span>
               </div>
-            </div>
-          </article>
+              <div className="agenda-session-cell agenda-session-cell--actions">
+                <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
+                <div className="agenda-row-actions">
+                  {booking.joinUrl ? (
+                    <a
+                      href={booking.joinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`agenda-join-button${pulseJoin ? " pro-join-session--pulse" : ""}`}
+                      title={joinSessionTooltip}
+                      data-tour={joinTourTarget ? "pro-join-first-meet" : undefined}
+                    >
+                      {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}
+                    </a>
+                  ) : (
+                    <span className="agenda-no-link" title={noLinkTooltip}>
+                      {t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}
+                    </span>
+                  )}
+                  {props.onRequestReschedule && (booking.status === "confirmed" || booking.status === "requested") ? (
+                    <button
+                      type="button"
+                      className="icon-only"
+                      aria-label={t(props.language, { es: "Reagendar", en: "Reschedule", pt: "Reagendar" })}
+                      title={rescheduleTooltip}
+                      onClick={() => props.onRequestReschedule?.(booking)}
+                      disabled={props.busyBookingId === booking.id}
+                    >
+                      <span className="session-action-icon reschedule" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                  {props.onRequestCancel && (booking.status === "confirmed" || booking.status === "requested") ? (
+                    <button
+                      type="button"
+                      className="danger icon-only"
+                      aria-label={t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                      title={cancelTooltip}
+                      onClick={() => props.onRequestCancel?.(booking)}
+                      disabled={props.busyBookingId === booking.id}
+                    >
+                      <span className="session-action-icon cancel" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </article>
           );
         })}
       </div>

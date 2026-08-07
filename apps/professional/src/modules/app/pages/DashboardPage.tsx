@@ -710,13 +710,13 @@ export function DashboardPage(props: {
       </div>
 
       <section
-        className={`pro-card agenda-upcoming-panel${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
+        className={`pro-card agenda-upcoming-panel agenda-session-panel${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
         id="sesiones-agendadas"
         ref={upcomingSectionRef}
         tabIndex={-1}
         data-tour="pro-tour-bookings"
       >
-        <div className="agenda-upcoming-head agenda-section-toggle-head">
+        <div className="agenda-upcoming-head agenda-section-toggle-head agenda-session-panel-head">
           <button
             type="button"
             className="agenda-section-toggle"
@@ -724,7 +724,9 @@ export function DashboardPage(props: {
             aria-controls="sesiones-agendadas-body"
             onClick={() => setUpcomingExpanded((current) => !current)}
           >
-            <h2>{t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" })}</h2>
+            <h2 className="agenda-session-title">
+              {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" })}
+            </h2>
             {upcomingReservations.length > 0 ? (
               <span className="agenda-execution-count">{upcomingReservations.length}</span>
             ) : null}
@@ -754,7 +756,7 @@ export function DashboardPage(props: {
         data-tour="pro-tour-pending-execution"
       >
         <div className="agenda-upcoming-head agenda-session-panel-head">
-          <h2>
+          <h2 className="agenda-session-title">
             {t(props.language, {
               es: "Lista de sesiones",
               en: "Session list",
