@@ -164,9 +164,16 @@ export function PortalRoutes(props: {
   ) => Promise<{ ok: boolean; error?: string }>;
   startTrialCheckout: (professionalId: string, slot: TimeSlot, holdId: string) => Promise<PortalPurchaseResult>;
   syncTrialPayment: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
-  rescheduleBooking: (bookingId: string, professionalId: string, slot: TimeSlot) => Promise<void>;
+  rescheduleBooking: (
+    bookingId: string,
+    professionalId: string,
+    slot: TimeSlot
+  ) => Promise<{ ok: boolean; error?: string }>;
   cancelBooking: (bookingId: string, reason: string) => Promise<{ ok: boolean; error?: string }>;
-  planTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
+  planTrialFromDashboard: (
+    professionalId: string,
+    slot: TimeSlot
+  ) => Promise<{ ok: boolean; error?: string }>;
   addPackage: (plan: PackagePlan, source: "checkout_button") => Promise<PortalPurchaseResult>;
   purchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
   syncDlocalPayment: (params: {

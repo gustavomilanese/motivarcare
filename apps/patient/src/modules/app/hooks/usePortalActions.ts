@@ -691,10 +691,22 @@ export function usePortalActions(params: {
     return { ok: true };
   };
 
-  const rescheduleBooking = async (bookingId: string, professionalId: string, slot: TimeSlot) => {
+  const rescheduleBooking = async (
+    bookingId: string,
+    professionalId: string,
+    slot: TimeSlot
+  ): Promise<{ ok: boolean; error?: string }> => {
     const booking = params.state.bookings.find((item) => item.id === bookingId);
     if (!booking || booking.status !== "confirmed") {
-      return;
+      return { ok: false, error: "Booking not found or not confirmed" };
+    }
+
+    // El endpoint de reschedule no cambia de profesional: solo fecha/hora.
+    if (professionalId !== booking.professionalId) {
+      return {
+        ok: false,
+        error: "Cannot change professional while rescheduling. Cancel and book again if needed."
+      };
     }
 
     if (params.state.authToken) {
@@ -734,10 +746,7 @@ export function usePortalActions(params: {
             ...current,
             bookings: current.bookings.map((item) => (
               item.id === bookingId
-                ? {
-                    ...mergeRescheduledBooking(item, response.booking),
-                    professionalId
-                  }
+                ? mergeRescheduledBooking(item, response.booking)
                 : item
             )),
             bookedSlotIds: [
@@ -746,10 +755,12 @@ export function usePortalActions(params: {
             ]
           };
         });
-        return;
+        await Promise.resolve(params.onRefreshPortalFromApi?.());
+        return { ok: true };
       } catch (error) {
         console.error("Could not reschedule booking", error);
-        return;
+        const message = error instanceof Error ? error.message : "Could not reschedule booking";
+        return { ok: false, error: message };
       }
     }
 
@@ -768,7 +779,6 @@ export function usePortalActions(params: {
           item.id === bookingId
             ? {
                 ...item,
-                professionalId,
                 startsAt: slot.startsAt,
                 endsAt: slot.endsAt
               }
@@ -780,6 +790,7 @@ export function usePortalActions(params: {
         ]
       };
     });
+    return { ok: true };
   };
 
   const cancelBooking = async (
@@ -866,10 +877,17 @@ export function usePortalActions(params: {
     }
   };
 
-  const planTrialFromDashboard = (professionalId: string, slot: TimeSlot) => {
-    params.onStateChange((current) => {
-      const now = Date.now();
-      const activeTrial = current.bookings
+  /**
+   * Reprograma la sesión de prueba activa vía API (mismo profesional).
+   * Antes solo mutaba localStorage y el portal profesional no veía el cambio.
+   */
+  const planTrialFromDashboard = async (
+    professionalId: string,
+    slot: TimeSlot
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const now = Date.now();
+    const activeTrial =
+      params.state.bookings
         .filter(
           (booking) =>
             booking.bookingMode === "trial" &&
@@ -878,44 +896,25 @@ export function usePortalActions(params: {
         )
         .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null;
 
-      if (!activeTrial) {
-        return current;
-      }
+    if (!activeTrial) {
+      return { ok: false, error: "No active trial booking to update" };
+    }
 
-      const previousSlotId =
-        findProfessionalById(activeTrial.professionalId, params.professionalDirectory)?.slots.find(
-          (candidate) => candidate.startsAt === activeTrial.startsAt && candidate.endsAt === activeTrial.endsAt
-        )?.id ?? null;
-
-      if (activeTrial.professionalId === professionalId && activeTrial.startsAt === slot.startsAt) {
-        return current;
-      }
-
+    // Mantener el profesional de la prueba; el reschedule de API no cambia assignment.
+    const targetProfessionalId = activeTrial.professionalId;
+    if (professionalId && professionalId !== targetProfessionalId) {
       return {
-        ...current,
-        onboardingFinalCompleted: true,
-        therapistSelectionCompleted: true,
-        selectedProfessionalId: professionalId,
-        assignedProfessionalId: professionalId,
-        bookings: current.bookings.map((booking) =>
-          booking.id === activeTrial.id
-            ? {
-                ...booking,
-                professionalId,
-                startsAt: slot.startsAt,
-                endsAt: slot.endsAt
-              }
-            : booking
-        ),
-        bookedSlotIds: [
-          ...current.bookedSlotIds.filter((id) => id !== previousSlotId),
-          slot.id
-        ],
-        trialUsedProfessionalIds: current.trialUsedProfessionalIds.includes(professionalId)
-          ? current.trialUsedProfessionalIds
-          : [...current.trialUsedProfessionalIds, professionalId]
+        ok: false,
+        error:
+          "Para cambiar de profesional tenés que cancelar la prueba y reservar con otro. Acá solo podés cambiar fecha y hora."
       };
-    });
+    }
+
+    if (activeTrial.startsAt === slot.startsAt && activeTrial.endsAt === slot.endsAt) {
+      return { ok: true };
+    }
+
+    return rescheduleBooking(activeTrial.id, targetProfessionalId, slot);
   };
 
   const sendMessage = (professionalId: string, text: string) => {

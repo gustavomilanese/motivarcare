@@ -148,7 +148,10 @@ export function DashboardPage(props: {
   onGoToProfessional: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
-  onPlanTrialFromDashboard: (professionalId: string, slot: TimeSlot) => void;
+  onPlanTrialFromDashboard: (
+    professionalId: string,
+    slot: TimeSlot
+  ) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
   onStartPackagePurchase: (plan: PackagePlan) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
   /** Sesiones → checkout de paquetes (sin plan concreto; el catálogo carga en destino). */
@@ -205,6 +208,8 @@ export function DashboardPage(props: {
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [trialProfessionalId, setTrialProfessionalId] = useState(props.state.assignedProfessionalId ?? props.state.selectedProfessionalId);
   const [trialSlotId, setTrialSlotId] = useState("");
+  const [trialSaveBusy, setTrialSaveBusy] = useState(false);
+  const [trialSaveError, setTrialSaveError] = useState<string | null>(null);
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
@@ -285,7 +290,10 @@ export function DashboardPage(props: {
         (slot) => slot.startsAt === activeTrialBooking?.startsAt && slot.endsAt === activeTrialBooking?.endsAt
       )?.id ?? ""
     : "";
-  const trialProfessional = findProfessionalById(trialProfessionalId, props.professionals);
+  const trialProfessional = findProfessionalById(
+    activeTrialBooking?.professionalId ?? trialProfessionalId,
+    props.professionals
+  );
   const availableTrialSlots = (trialProfessional?.slots ?? []).filter(
     (slot) => !props.state.bookedSlotIds.includes(slot.id) || slot.id === activeTrialSlotId
   );
@@ -295,9 +303,11 @@ export function DashboardPage(props: {
     if (!hasTrialPlanned || !activeTrialBooking) {
       return;
     }
-    const initialProfessionalId = activeTrialBooking?.professionalId ?? props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
+    const initialProfessionalId = activeTrialBooking.professionalId;
     setTrialProfessionalId(initialProfessionalId);
     setTrialSlotId(activeTrialSlotId);
+    setTrialSaveError(null);
+    setTrialSaveBusy(false);
     setTrialModalOpen(true);
   };
 
@@ -1335,12 +1345,16 @@ export function DashboardPage(props: {
               <label>
                 {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
                 <select
-                  value={trialProfessionalId}
-                  onChange={(event) => setTrialProfessionalId(event.target.value)}
+                  value={activeTrialBooking?.professionalId ?? trialProfessionalId}
+                  disabled
+                  aria-readonly="true"
                 >
-                  {props.professionals.map((item) => (
+                  {(activeTrialProfessional
+                    ? [activeTrialProfessional]
+                    : props.professionals.filter((item) => item.id === trialProfessionalId)
+                  ).map((item) => (
                     <option key={item.id} value={item.id}>
-                      {professionalAccessibleName(item)} - {item.compatibility}%
+                      {professionalAccessibleName(item)}
                     </option>
                   ))}
                 </select>
@@ -1348,7 +1362,14 @@ export function DashboardPage(props: {
 
               <label>
                 {t(props.language, { es: "Slot disponible", en: "Available slot", pt: "Horario disponivel" })}
-                <select value={trialSlotId} onChange={(event) => setTrialSlotId(event.target.value)}>
+                <select
+                  value={trialSlotId}
+                  onChange={(event) => {
+                    setTrialSaveError(null);
+                    setTrialSlotId(event.target.value);
+                  }}
+                  disabled={trialSaveBusy}
+                >
                   <option value="">
                     {availableTrialSlots.length === 0
                       ? t(props.language, {
@@ -1375,25 +1396,49 @@ export function DashboardPage(props: {
             <div className="booking-confirm-row">
               <p>
                 {t(props.language, {
-                  es: "Actualizarás la sesión de prueba ya reservada y mantendras el seguimiento en tu agenda.",
-                  en: "You will update your already reserved trial session and keep tracking in your schedule.",
-                  pt: "Voce atualizara a sessao de teste ja reservada e mantera o acompanhamento na agenda."
+                  es: "Actualizarás la sesión de prueba ya reservada. El cambio se guarda en el servidor y también lo ve tu profesional.",
+                  en: "You will update your reserved trial session. The change is saved on the server and your professional will see it too.",
+                  pt: "Voce atualizara a sessao de teste ja reservada. A mudanca e salva no servidor e seu profissional tambem vera."
                 })}
               </p>
+              {trialSaveError ? (
+                <p className="form-error" role="alert">
+                  {trialSaveError}
+                </p>
+              ) : null}
               <div className="button-row">
                 <button
                   className="primary"
                   type="button"
-                  disabled={!selectedTrialSlot || !hasTrialPlanned}
+                  disabled={!selectedTrialSlot || !hasTrialPlanned || trialSaveBusy || !activeTrialBooking}
                   onClick={() => {
-                    if (!selectedTrialSlot) {
+                    if (!selectedTrialSlot || !activeTrialBooking) {
                       return;
                     }
-                    props.onPlanTrialFromDashboard(trialProfessionalId, selectedTrialSlot);
-                    setTrialModalOpen(false);
+                    setTrialSaveBusy(true);
+                    setTrialSaveError(null);
+                    void Promise.resolve(
+                      props.onPlanTrialFromDashboard(activeTrialBooking.professionalId, selectedTrialSlot)
+                    ).then((result) => {
+                      setTrialSaveBusy(false);
+                      if (!result.ok) {
+                        setTrialSaveError(
+                          result.error
+                          ?? t(props.language, {
+                            es: "No pudimos guardar el cambio. Probá de nuevo.",
+                            en: "We couldn’t save the change. Please try again.",
+                            pt: "Nao foi possivel salvar a alteracao. Tente novamente."
+                          })
+                        );
+                        return;
+                      }
+                      setTrialModalOpen(false);
+                    });
                   }}
                 >
-                  {t(props.language, { es: "Guardar cambios", en: "Save changes", pt: "Salvar alteracoes" })}
+                  {trialSaveBusy
+                    ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                    : t(props.language, { es: "Guardar cambios", en: "Save changes", pt: "Salvar alteracoes" })}
                 </button>
               </div>
             </div>
