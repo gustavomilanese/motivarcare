@@ -3,7 +3,6 @@ import {
   type ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useState
@@ -45,10 +44,6 @@ export function ProPortalChromeProvider(props: {
 }) {
   const location = useLocation();
   const [override, setOverride] = useState<ProPortalChromeConfig>({});
-
-  useEffect(() => {
-    setOverride({});
-  }, [location.pathname]);
 
   const setChrome = useCallback((config: ProPortalChromeConfig) => {
     setOverride((prev) => (chromeEquals(prev, config) ? prev : config));

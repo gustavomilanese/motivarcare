@@ -10,7 +10,7 @@ import {
 } from "@therapy/i18n-config";
 import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
 import { ProPageLoader } from "../components/ProPageLoader";
-import { useProPortalChrome, useProPortalHeaderActions } from "../components/ProPortalChromeContext";
+import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
@@ -110,6 +110,8 @@ export function DashboardPage(props: {
   const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
   /** Solo la card «Dinero ejecutado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
+  const [upcomingExpanded, setUpcomingExpanded] = useState(false);
+  const upcomingExpandInitializedRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,8 +144,8 @@ export function DashboardPage(props: {
               joinUrl: session.joinUrl ?? null
             }))
           );
-          setPendingExecutionSessions(
-            (response.pendingExecutionSessions ?? []).map((session) => ({
+          setPendingExecutionSessions((previous) => {
+            const fromApi = (response.pendingExecutionSessions ?? []).map((session) => ({
               id: session.id,
               startsAt: session.startsAt,
               endsAt: session.endsAt,
@@ -152,8 +154,19 @@ export function DashboardPage(props: {
               patientAvatarUrl: session.patientAvatarUrl ?? null,
               status: session.status,
               joinUrl: session.joinUrl ?? null
-            }))
-          );
+            }));
+            const apiIds = new Set(fromApi.map((session) => session.id));
+            const recentlyRecorded = previous.filter(
+              (session) => session.status.toLowerCase() === "completed" && !apiIds.has(session.id)
+            );
+            return [...fromApi, ...recentlyRecorded].sort(
+              (a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()
+            );
+          });
+          if (!upcomingExpandInitializedRef.current) {
+            upcomingExpandInitializedRef.current = true;
+            setUpcomingExpanded((response.upcomingSessions ?? []).length > 0);
+          }
           setError("");
         }
       } catch (requestError) {
@@ -203,6 +216,7 @@ export function DashboardPage(props: {
       return;
     }
 
+    setUpcomingExpanded(true);
     const section = upcomingSectionRef.current;
     if (!section) {
       return;
@@ -325,6 +339,12 @@ export function DashboardPage(props: {
   const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
   const highlightJoinPulseBookingId = meetJoinHighlight && firstMeetBookingId ? firstMeetBookingId : null;
 
+  useEffect(() => {
+    if (upcomingSpotlightRing) {
+      setUpcomingExpanded(true);
+    }
+  }, [upcomingSpotlightRing]);
+
   const periodGroupLabel = t(props.language, { es: "Periodo de ingresos", en: "Revenue period", pt: "Periodo de receita" });
 
   const periodFilters = useMemo(
@@ -345,28 +365,18 @@ export function DashboardPage(props: {
     [props.language, periodGroupLabel, revenuePreset, revenueDay, revenueMonth, revenueYear]
   );
 
-  const pageTitle = t(props.language, { es: "Hoy", en: "Today", pt: "Hoje" });
+  const pageTitle = t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
 
   useProPortalChrome({
     title: pageTitle,
-    toolbar: periodFilters,
-    suppressPageHeader: true
+    toolbar: periodFilters
   });
-  const headerActions = useProPortalHeaderActions();
 
   if (error) {
     return (
       <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
         <div className="pro-dashboard-overview">
-          <section
-            className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
-          >
-            <header className="pro-dashboard-hero-head">
-              <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
-              <div className="pro-dashboard-hero-head-end">
-                <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
-              </div>
-            </header>
+          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero">
             <div className="pro-dashboard-state-panel pro-dashboard-error-card">
               <p className="pro-error">{error}</p>
               <button
@@ -391,14 +401,7 @@ export function DashboardPage(props: {
     return (
       <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
         <div className="pro-dashboard-overview">
-          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive">
-            <header className="pro-dashboard-hero-head">
-              <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
-              <div className="pro-dashboard-hero-head-end">
-                <div className="pro-portal-page-toolbar">{periodFilters}</div>
-                <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
-              </div>
-            </header>
+          <section className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero">
             <ProPageLoader language={props.language} layout="block" />
           </section>
         </div>
@@ -562,7 +565,9 @@ export function DashboardPage(props: {
         method: "POST",
         body: JSON.stringify({})
       });
-      setPendingExecutionSessions((current) => current.filter((item) => item.id !== booking.id));
+      setPendingExecutionSessions((current) =>
+        current.map((item) => (item.id === booking.id ? { ...item, status: "completed" } : item))
+      );
       setDashboardReloadKey((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -602,17 +607,9 @@ export function DashboardPage(props: {
       ) : null}
       <div className="pro-dashboard-overview">
         <section
-          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero pro-dashboard-hero--immersive"
+          className="pro-card pro-dashboard-revenue pro-dashboard-revenue--floating pro-dashboard-revenue--compact pro-dashboard-hero"
           data-tour="pro-tour-hero"
         >
-          <header className="pro-dashboard-hero-head">
-            <h1 className="pro-dashboard-revenue-title--page">{pageTitle}</h1>
-            <div className="pro-dashboard-hero-head-end">
-              <div className="pro-portal-page-toolbar">{periodFilters}</div>
-              <div className="pro-dashboard-toolbar-mount">{headerActions}</div>
-            </div>
-          </header>
-
           <div
             className="pro-dashboard-kpi-row"
             role="group"
@@ -667,38 +664,58 @@ export function DashboardPage(props: {
         tabIndex={-1}
         data-tour="pro-tour-bookings"
       >
-        <div className="agenda-upcoming-head">
-          <h2>{t(props.language, { es: "Próximas reservas", en: "Upcoming bookings", pt: "Próximas reservas" })}</h2>
+        <div className="agenda-upcoming-head agenda-section-toggle-head">
+          <button
+            type="button"
+            className="agenda-section-toggle"
+            aria-expanded={upcomingExpanded}
+            aria-controls="sesiones-agendadas-body"
+            onClick={() => setUpcomingExpanded((current) => !current)}
+          >
+            <h2>{t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" })}</h2>
+            {upcomingReservations.length > 0 ? (
+              <span className="agenda-execution-count">{upcomingReservations.length}</span>
+            ) : null}
+            <span className="agenda-section-toggle-icon" aria-hidden>
+              {upcomingExpanded ? "−" : "+"}
+            </span>
+          </button>
         </div>
-        <UpcomingReservationsList
-          language={props.language}
-          reservations={upcomingReservations}
-          busyBookingId={bookingActionInProgressId}
-          onRequestReschedule={openRescheduleModal}
-          onRequestCancel={openCancelModal}
-          highlightJoinPulseBookingId={highlightJoinPulseBookingId}
-          joinTourTargetBookingId={firstMeetBookingId}
-        />
+        {upcomingExpanded ? (
+          <div id="sesiones-agendadas-body">
+            <UpcomingReservationsList
+              language={props.language}
+              reservations={upcomingReservations}
+              busyBookingId={bookingActionInProgressId}
+              onRequestReschedule={openRescheduleModal}
+              onRequestCancel={openCancelModal}
+              highlightJoinPulseBookingId={highlightJoinPulseBookingId}
+              joinTourTargetBookingId={firstMeetBookingId}
+            />
+          </div>
+        ) : null}
       </section>
 
       <section className="pro-card agenda-upcoming-panel" id="sesiones-por-ejecutar" data-tour="pro-tour-pending-execution">
         <div className="agenda-upcoming-head">
           <h2>
             {t(props.language, {
-              es: "Marcar ejecutadas",
-              en: "Mark as executed",
-              pt: "Marcar executadas"
+              es: "Lista de sesiones",
+              en: "Session list",
+              pt: "Lista de sessoes"
             })}
           </h2>
-          {pendingExecutionSessions.length > 0 ? (
-            <span className="agenda-execution-count">{pendingExecutionSessions.length}</span>
+          {pendingExecutionSessions.some((session) => session.status.toLowerCase() !== "completed") ? (
+            <span className="agenda-execution-count">
+              {pendingExecutionSessions.filter((session) => session.status.toLowerCase() !== "completed").length}
+            </span>
           ) : null}
         </div>
         <p className="agenda-execution-lead">
           {t(props.language, {
-            es: "Sesiones ya iniciadas. Al marcarlas entran a tu liquidación pendiente.",
-            en: "Sessions that already started. Marking them adds them to your pending payout.",
-            pt: "Sessoes ja iniciadas. Ao marca-las entram na sua liquidacao pendente."
+            es: "Sesiones ya iniciadas. Al confirmarlas quedan registradas para tu liquidación.",
+            en: "Sessions that already started. Confirming them records them for your payout.",
+            pt: "Sessoes ja iniciadas. Ao confirma-las ficam registradas na sua liquidacao."
           })}
         </p>
         <PendingExecutionSessionsList

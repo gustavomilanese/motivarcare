@@ -47,16 +47,16 @@ export function PendingExecutionSessionsList(props: {
       <div className="agenda-upcoming-empty">
         <strong>
           {t(props.language, {
-            es: "No hay sesiones pendientes de marcar",
-            en: "No sessions waiting to be marked",
-            pt: "Nao ha sessoes pendentes de marcar"
+            es: "No hay sesiones en esta lista",
+            en: "No sessions in this list",
+            pt: "Nao ha sessoes nesta lista"
           })}
         </strong>
         <p>
           {t(props.language, {
-            es: "Cuando termine un turno, aparecerá acá para que lo marques como ejecutado y sume a tu liquidación.",
-            en: "After a session ends, it will show up here so you can mark it as executed and include it in payouts.",
-            pt: "Ao terminar um turno, ele aparecera aqui para voce marcar como executado e incluir na liquidacao."
+            es: "Cuando una sesión ya haya iniciado, aparecerá acá para confirmarla y registrarla en liquidación.",
+            en: "When a session has started, it will show here so you can confirm it and record it for payout.",
+            pt: "Quando uma sessao ja tiver iniciado, aparecera aqui para confirma-la e registra-la na liquidacao."
           })}
         </p>
       </div>
@@ -69,14 +69,18 @@ export function PendingExecutionSessionsList(props: {
         <span>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
         <span>{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
         <span>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
-        <span>{t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}</span>
+        <span>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
       </div>
       <div className="agenda-upcoming-list">
         {props.sessions.map((booking) => {
           const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
           const busy = props.busyBookingId === booking.id;
+          const isCompleted = booking.status.toLowerCase() === "completed";
           return (
-            <article className="agenda-upcoming-row agenda-execution-row" key={booking.id}>
+            <article
+              className={`agenda-upcoming-row agenda-execution-row${isCompleted ? " agenda-execution-row--done" : ""}`}
+              key={booking.id}
+            >
               <div className="agenda-upcoming-cell">
                 <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
                 <strong>{formatDateHeading(booking.startsAt, props.language)}</strong>
@@ -103,23 +107,33 @@ export function PendingExecutionSessionsList(props: {
               </div>
               <div className="agenda-upcoming-cell agenda-execution-action">
                 <span className="agenda-upcoming-cell-label">
-                  {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
+                  {t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
                 </span>
-                <button
-                  type="button"
-                  className="agenda-complete-button"
-                  disabled={busy}
-                  onClick={() => props.onMarkExecuted(booking)}
-                  title={t(props.language, {
-                    es: "Marcar esta sesión como ejecutada. Entra a tu liquidación pendiente.",
-                    en: "Mark this session as executed. It will enter your pending payout.",
-                    pt: "Marcar esta sessao como executada. Entra na sua liquidacao pendente."
-                  })}
-                >
-                  {busy
-                    ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
-                    : t(props.language, { es: "✓ Marcar ejecutada", en: "✓ Mark executed", pt: "✓ Marcar executada" })}
-                </button>
+                {isCompleted ? (
+                  <span className="agenda-execution-status">
+                    {t(props.language, { es: "Registrada", en: "Recorded", pt: "Registrada" })}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="agenda-complete-button"
+                    disabled={busy}
+                    onClick={() => props.onMarkExecuted(booking)}
+                    title={t(props.language, {
+                      es: "Confirmar sesión y registrarla en liquidación.",
+                      en: "Confirm session and record it for payout.",
+                      pt: "Confirmar sessao e registra-la na liquidacao."
+                    })}
+                  >
+                    {busy
+                      ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                      : t(props.language, {
+                          es: "Confirmar sesión",
+                          en: "Confirm session",
+                          pt: "Confirmar sessao"
+                        })}
+                  </button>
+                )}
               </div>
             </article>
           );

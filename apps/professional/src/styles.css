@@ -5806,6 +5806,67 @@ select.pro-dashboard-revenue-control {
   color: #1e293b;
 }
 
+.agenda-section-toggle-head {
+  padding: 0;
+}
+
+.agenda-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.agenda-section-toggle h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.agenda-section-toggle-icon {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #d4dced;
+  background: #fff;
+  color: #334155;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.agenda-section-toggle:hover .agenda-section-toggle-icon,
+.agenda-section-toggle:focus-visible .agenda-section-toggle-icon {
+  border-color: #c4b5fd;
+  color: #5f44eb;
+}
+
+.agenda-execution-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agenda-execution-row--done {
+  opacity: 0.92;
+}
+
 .agenda-today-button {
   min-height: 34px;
   padding: 6px 14px;
@@ -16032,11 +16093,11 @@ button:disabled {
   font-size: 22px;
 }
 
-/* Título «Hoy» + período + toolbar + 4 KPIs en la misma card */
+/* KPIs del dashboard (el título/acciones viven en el page header) */
 .pro-dashboard-hero .pro-dashboard-kpi-row {
   margin-top: 0;
-  padding-top: 10px;
-  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  padding-top: 0;
+  border-top: none;
 }
 
 .pro-dashboard-revenue--compact.pro-dashboard-revenue--floating {

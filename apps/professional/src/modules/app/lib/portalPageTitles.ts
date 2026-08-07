@@ -1,7 +1,7 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 
 const PAGE_TITLES: Record<string, LocalizedText> = {
-  "/": { es: "Hoy", en: "Today", pt: "Hoje" },
+  "/": { es: "Dashboard", en: "Dashboard", pt: "Dashboard" },
   "/horarios": { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" },
   "/horarios/disponibilidad": { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" },
   "/agenda/ajustes": { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" },
