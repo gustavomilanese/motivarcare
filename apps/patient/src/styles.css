@@ -14609,7 +14609,7 @@ button.sessions-balance {
   max-width: none;
 }
 
-/* Top bar MotivarCare (estructura tipo ML) */
+/* Top bar MotivarCare (estructura tipo ML) — blanco + violeta */
 .portal-home-ml-bar {
   position: sticky;
   top: 0;
@@ -14620,9 +14620,9 @@ button.sessions-balance {
   gap: 18px;
   min-height: 64px;
   padding: 10px clamp(16px, 3vw, 28px);
-  background: linear-gradient(180deg, #5f44eb 0%, #4f38d4 100%);
-  color: #fff;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: #5f44eb;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
 }
 
 .portal-home-ml-brand {
@@ -14630,7 +14630,7 @@ button.sessions-balance {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: inherit;
+  color: #5f44eb;
   min-width: 0;
 }
 
@@ -14638,7 +14638,8 @@ button.sessions-balance {
   width: 36px;
   height: auto;
   display: block;
-  filter: brightness(0) invert(1);
+  /* Silueta sólida en violeta MotivarCare (#5f44eb) */
+  filter: brightness(0) saturate(100%) invert(28%) sepia(86%) saturate(2800%) hue-rotate(239deg) brightness(92%) contrast(98%);
 }
 
 .portal-home-ml-brand-text {
@@ -14646,6 +14647,7 @@ button.sessions-balance {
   font-weight: 750;
   letter-spacing: -0.03em;
   white-space: nowrap;
+  color: #5f44eb;
 }
 
 .portal-home-ml-nav {
@@ -14660,7 +14662,7 @@ button.sessions-balance {
 .portal-home-ml-link {
   appearance: none;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.88);
+  color: #5f44eb;
   font-size: 0.92rem;
   font-weight: 600;
   padding: 8px 12px;
@@ -14669,13 +14671,13 @@ button.sessions-balance {
 }
 
 .portal-home-ml-link:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(95, 68, 235, 0.08);
+  color: #4c31d8;
 }
 
 .portal-home-ml-link.is-active {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(95, 68, 235, 0.12);
+  color: #4c31d8;
 }
 
 .portal-home-ml-actions {
@@ -14690,12 +14692,17 @@ button.sessions-balance {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.18);
+  background: rgba(95, 68, 235, 0.06);
+  color: #5f44eb;
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.portal-home-ml-icon-btn.is-active,
+.portal-home-ml-icon-btn:hover {
+  background: rgba(95, 68, 235, 0.12);
 }
 
 .portal-home-ml-icon-btn .header-bell-icon {
@@ -14729,22 +14736,23 @@ button.sessions-balance {
   min-height: 42px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: #fff;
-  color: #312e81;
+  border: 1px solid rgba(95, 68, 235, 0.28);
+  background: #5f44eb;
+  color: #fff;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.22);
 }
 
-.portal-home-ml-account-btn.is-open {
-  background: #f5f3ff;
+.portal-home-ml-account-btn.is-open,
+.portal-home-ml-account-btn:hover {
+  background: #4c31d8;
 }
 
 .portal-home-ml-account-chevron {
   font-size: 0.65rem;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 /* Panel cuenta que se DESPLIEGA desde la derecha */
