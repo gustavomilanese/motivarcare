@@ -201,6 +201,7 @@ export function PortalNavigation(props: {
   const [diaryHeroToolbarMount, setDiaryHeroToolbarMount] = useState<HTMLElement | null>(null);
   const diaryPortalToolbarMount = useDiaryPortalToolbarMountElement();
   const [dashboardHeroToolbarMount, setDashboardHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const [dashboardHomeChromeEpoch, setDashboardHomeChromeEpoch] = useState(0);
   const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
   const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
@@ -230,6 +231,15 @@ export function PortalNavigation(props: {
     };
   }, [diaryHomeImmersive, location.pathname]);
 
+  useEffect(() => {
+    if (!dashboardHomeImmersive) {
+      return undefined;
+    }
+    const bump = () => setDashboardHomeChromeEpoch((current) => current + 1);
+    window.addEventListener("mc-patient-home-variant", bump);
+    return () => window.removeEventListener("mc-patient-home-variant", bump);
+  }, [dashboardHomeImmersive]);
+
   useLayoutEffect(() => {
     if (!dashboardHomeImmersive) {
       setDashboardHeroToolbarMount(null);
@@ -253,7 +263,7 @@ export function PortalNavigation(props: {
     return () => {
       cancelled = true;
     };
-  }, [dashboardHomeImmersive, location.pathname]);
+  }, [dashboardHomeImmersive, location.pathname, dashboardHomeChromeEpoch]);
 
   useLayoutEffect(() => {
     if (!sessionsHomeImmersive) {

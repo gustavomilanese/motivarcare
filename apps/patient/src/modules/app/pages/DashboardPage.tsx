@@ -53,8 +53,16 @@ import {
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
 import { countAvailablePatientSessions } from "../lib/countAvailablePatientSessions";
+import {
+  readPatientHomeVariant,
+  writePatientHomeVariant,
+  type PatientHomeVariant
+} from "../lib/patientHomeVariant";
+import { resolveDashboardNextActionKind } from "../lib/resolveDashboardNextActionKind";
 import { fetchProfessionalAvailability } from "../../matching/services/availability";
 import { useMobilePortal } from "../hooks/useMobilePortal";
+import { DashboardHomeVariantToggle } from "../components/DashboardHomeVariantToggle";
+import { DashboardNextActionHome } from "../components/DashboardNextActionHome";
 import type {
   Booking,
   PackageId,
@@ -174,6 +182,7 @@ export function DashboardPage(props: {
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobilePortal = useMobilePortal();
+  const [homeVariant, setHomeVariant] = useState<PatientHomeVariant>(() => readPatientHomeVariant());
   const meetHintHandledRef = useRef(false);
   const [meetJoinHighlight, setMeetJoinHighlight] = useState(false);
   const [sessionRnLayout, setSessionRnLayout] = useState(() =>
@@ -761,6 +770,29 @@ export function DashboardPage(props: {
 
   const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
 
+  const selectHomeVariant = useCallback((variant: PatientHomeVariant) => {
+    writePatientHomeVariant(variant);
+    setHomeVariant(variant);
+    try {
+      window.dispatchEvent(new Event("mc-patient-home-variant"));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const nextActionKind = resolveDashboardNextActionKind({
+    hasAssignedProfessional,
+    trialRebookAvailable: Boolean(props.state.trialRebookAvailable && !hasTrialPlanned),
+    hasNextBooking: Boolean(nextBooking),
+    trialPending: trialStatus === "pending",
+    availableSessions
+  });
+
+  const greetingFirstName =
+    (props.state.session?.firstName ?? "").trim()
+    || (props.state.session?.fullName ?? "").trim().split(/\s+/)[0]
+    || t(props.language, { es: "paciente", en: "there", pt: "paciente" });
+
   const dashboardIntroTitle = t(props.language, {
     es: "Gestioná tu bienestar desde acá",
     en: "Manage your wellbeing here",
@@ -774,7 +806,43 @@ export function DashboardPage(props: {
 
   return (
     <div className="page-stack sessions-page-layout patient-dashboard-home session-rn-root">
+      {homeVariant === "next" ? (
+        <DashboardNextActionHome
+          language={props.language}
+          timezone={props.state.profile.timezone}
+          heroImage={landingPatientHeroImage}
+          onHeroFallback={props.onHeroFallback}
+          onImageFallback={props.onImageFallback}
+          greetingName={greetingFirstName}
+          availableSessions={availableSessions}
+          actionKind={nextActionKind}
+          nextBooking={nextBooking}
+          activeProfessional={activeProfessional}
+          professionalPhotoMap={props.professionalPhotoMap}
+          canSelfChangeProfessional={canSelfChangeProfessional}
+          showGoogleCalendarCta={showGoogleCalendarCta}
+          googleCalendarCtaPulse={googleCalendarCtaPulse}
+          onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
+          onNavigateToAssignProfessional={props.onNavigateToAssignProfessional}
+          onNavigateToRebookTrial={props.onNavigateToRebookTrial}
+          onNavigateToBookTrial={props.onNavigateToBookTrial}
+          onGoToBooking={props.onGoToBooking}
+          onBuySessions={() => dispatchAcquireSessions("buy_cta")}
+          onOpenBookingDetail={props.onOpenBookingDetail}
+          onRescheduleBooking={props.onRescheduleBooking}
+          onGoToChat={props.onGoToChat}
+          onGoToProfessional={props.onGoToProfessional}
+          onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
+          pricingProfessionalId={pricingProfessionalId}
+          onSelectHomeVariant={selectHomeVariant}
+        />
+      ) : (
       <div className="dashboard-legacy-home">
+      <DashboardHomeVariantToggle
+        language={props.language}
+        variant="classic"
+        onSelect={selectHomeVariant}
+      />
       <section className="dashboard-hero-immersive" data-tour="patient-tour-hero">
         <div className="dashboard-hero-banner-wrap">
           <div className={`dashboard-hero-banner${landingPatientHeroImage === null ? " dashboard-hero-banner--loading" : ""}`}>
@@ -1551,6 +1619,7 @@ export function DashboardPage(props: {
         </div>
       ) : null}
       </div>
+      )}
 
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div className="dashboard-rn-scroll" data-tour="patient-tour-hero-rn">
