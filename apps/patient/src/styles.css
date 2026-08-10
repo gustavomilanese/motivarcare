@@ -15180,25 +15180,27 @@ button.sessions-balance {
   pointer-events: none;
   user-select: none;
   cursor: default;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .dashboard-ml-credits-num {
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #5f44eb;
+  color: #fff;
   line-height: 1;
 }
 
 .dashboard-ml-credits-label {
   font-size: 0.92rem;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .dashboard-ml-credits-label--empty {
-  color: #666;
-  font-weight: 550;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
 }
 
 /* Card Comprar sesiones: invertida en azul */
