@@ -1,4 +1,4 @@
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useMemo, type SyntheticEvent } from "react";
 import {
   type AppLanguage,
   type DisplayFxRates,
@@ -91,10 +91,6 @@ export function DashboardNextActionHome(props: {
   joinTourPulse?: boolean;
   onSelectHomeVariant: (variant: "next" | "classic") => void;
 }) {
-  const [packagesOpen, setPackagesOpen] = useState(true);
-  const [historyOpen, setHistoryOpen] = useState(true);
-  const [activityOpen, setActivityOpen] = useState(true);
-
   const pastBookings = useMemo(() => {
     const now = Date.now();
     return [...props.allBookings]
@@ -106,14 +102,14 @@ export function DashboardNextActionHome(props: {
         return new Date(booking.startsAt).getTime() < now;
       })
       .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
-      .slice(0, 8);
+      .slice(0, 5);
   }, [props.allBookings]);
 
   const purchasesSorted = useMemo(
     () =>
       [...props.purchaseHistory]
         .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
-        .slice(0, 8),
+        .slice(0, 5),
     [props.purchaseHistory]
   );
 
@@ -165,7 +161,6 @@ export function DashboardNextActionHome(props: {
           </div>
         ) : null}
 
-        {/* Cards tipo Mercado Libre: altas, iguales, título + imagen + CTA */}
         <section
           className="dashboard-ml-market-cards"
           aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
@@ -225,16 +220,18 @@ export function DashboardNextActionHome(props: {
           </article>
         </section>
 
-        {/* Continuación: Sesiones */}
-        <section className="dashboard-ml-section content-card booking-session-card booking-card-minimal sessions-confirmed-panel" data-tour="patient-tour-bookings">
-          <div className="sessions-panel-head">
+        {/* Sesiones: exploración tipo marketplace (cards), no tabla clásica */}
+        <section className="dashboard-ml-sessions" data-tour="patient-tour-bookings" aria-labelledby="dashboard-ml-sessions-title">
+          <div className="dashboard-ml-sessions-head">
             <div>
-              <h2>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</h2>
+              <h2 id="dashboard-ml-sessions-title">
+                {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+              </h2>
               <p className="dashboard-ml-section-lead">
                 {t(props.language, {
-                  es: "Tus próximas reservas y el calendario de la semana.",
-                  en: "Your upcoming bookings and this week’s calendar.",
-                  pt: "Suas proximas reservas e o calendario da semana."
+                  es: "Tus próximas reservas, listas para abrir.",
+                  en: "Your upcoming bookings, ready to open.",
+                  pt: "Suas proximas reservas, prontas para abrir."
                 })}
               </p>
             </div>
@@ -243,215 +240,210 @@ export function DashboardNextActionHome(props: {
             </button>
           </div>
 
-          {props.upcomingBookings.length === 0 ? (
-            <div className="sessions-empty-state">
-              <strong>
+          <div className="dashboard-ml-sessions-grid">
+            <article className="dashboard-ml-panel dashboard-ml-panel--bookings">
+              {props.upcomingBookings.length === 0 ? (
+                <div className="dashboard-ml-empty">
+                  <strong>
+                    {t(props.language, {
+                      es: "Todavía no tenés sesiones reservadas",
+                      en: "You have no booked sessions yet",
+                      pt: "Voce ainda nao tem sessoes reservadas"
+                    })}
+                  </strong>
+                  <button type="button" className="dashboard-ml-market-card-cta" onClick={runUpcomingCard}>
+                    {t(props.language, { es: "Ir a Sesiones", en: "Go to Sessions", pt: "Ir para Sessoes" })}
+                  </button>
+                </div>
+              ) : (
+                <div className="dashboard-ml-bookings-list dashboard-upcoming-lists-root">
+                  <UpcomingBookingsList
+                    bookings={props.upcomingBookings.slice(0, 4)}
+                    professionals={props.professionals}
+                    professionalPhotoMap={props.professionalPhotoMap}
+                    timezone={props.timezone}
+                    language={props.language}
+                    layout="card"
+                    surface="dashboard"
+                    onImageFallback={props.onImageFallback}
+                    onOpenBookingDetail={props.onOpenBookingDetail}
+                    onReschedule={(booking) => props.onRescheduleBooking(booking.id)}
+                    firstMeetBookingId={props.firstMeetBookingId}
+                    joinTourPulse={props.joinTourPulse}
+                  />
+                </div>
+              )}
+            </article>
+
+            <article className="dashboard-ml-panel dashboard-ml-panel--calendar">
+              <h3 className="dashboard-ml-panel-title">
                 {t(props.language, {
-                  es: "Todavía no tenés sesiones reservadas",
-                  en: "You have no booked sessions yet",
-                  pt: "Voce ainda nao tem sessoes reservadas"
+                  es: "Calendario de la semana",
+                  en: "This week’s calendar",
+                  pt: "Calendario da semana"
                 })}
-              </strong>
-            </div>
-          ) : (
-            <div className="dashboard-upcoming-lists-root">
-              <UpcomingBookingsList
+              </h3>
+              <SessionsCalendar
                 bookings={props.upcomingBookings}
-                professionals={props.professionals}
-                professionalPhotoMap={props.professionalPhotoMap}
                 timezone={props.timezone}
                 language={props.language}
-                layout={props.isMobilePortal ? "card" : "table"}
-                surface="dashboard"
-                onImageFallback={props.onImageFallback}
                 onOpenBookingDetail={props.onOpenBookingDetail}
-                onReschedule={(booking) => props.onRescheduleBooking(booking.id)}
-                firstMeetBookingId={props.firstMeetBookingId}
-                joinTourPulse={props.joinTourPulse}
+                variant="week"
+                hideTitle
               />
-            </div>
-          )}
-
-          <div className="dashboard-ml-calendar-block">
-            <h3 className="dashboard-ml-subsection-title">
-              {t(props.language, {
-                es: "Calendario de sesiones",
-                en: "Sessions calendar",
-                pt: "Calendario de sessoes"
-              })}
-            </h3>
-            <SessionsCalendar
-              bookings={props.upcomingBookings}
-              timezone={props.timezone}
-              language={props.language}
-              onOpenBookingDetail={props.onOpenBookingDetail}
-              variant="week"
-              hideTitle
-            />
+            </article>
           </div>
         </section>
 
-        {/* Tres tarjetas inferiores */}
+        {/* Paneles inferiores: imagen + lista + CTA */}
         <section
           className="dashboard-ml-history-grid"
           aria-label={t(props.language, { es: "Actividad", en: "Activity", pt: "Atividade" })}
         >
-          <article className="dashboard-ml-history-card">
-            <button
-              type="button"
-              className="dashboard-ml-history-toggle"
-              aria-expanded={packagesOpen}
-              onClick={() => setPackagesOpen((current) => !current)}
-            >
-              <h3>
+          <article className="dashboard-ml-history-card dashboard-ml-history-card--rich">
+            <h3 className="dashboard-ml-market-card-title">
+              {t(props.language, {
+                es: "Paquetes comprados",
+                en: "Purchased packages",
+                pt: "Pacotes comprados"
+              })}
+            </h3>
+            <div className="dashboard-ml-history-media">
+              <img src="/home/cards/packages.png" alt="" loading="lazy" />
+            </div>
+            {purchasesSorted.length === 0 ? (
+              <p className="dashboard-ml-history-empty">
                 {t(props.language, {
-                  es: "Paquetes comprados",
-                  en: "Purchased packages",
-                  pt: "Pacotes comprados"
+                  es: "Todavía no tenés paquetes comprados.",
+                  en: "You don’t have purchased packages yet.",
+                  pt: "Voce ainda nao tem pacotes comprados."
                 })}
-              </h3>
-              <span aria-hidden="true">{packagesOpen ? "−" : "+"}</span>
+              </p>
+            ) : (
+              <ul className="dashboard-ml-history-list">
+                {purchasesSorted.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.name}</strong>
+                    <span>
+                      {replaceTemplate(
+                        t(props.language, {
+                          es: "{count} sesiones",
+                          en: "{count} sessions",
+                          pt: "{count} sessoes"
+                        }),
+                        { count: String(item.credits) }
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button type="button" className="dashboard-ml-market-card-cta" onClick={() => props.onBuySessions()}>
+              {acquireNewSessionsButtonLabel(props.language)}
             </button>
-            {packagesOpen ? (
-              purchasesSorted.length === 0 ? (
-                <p className="dashboard-ml-history-empty">
-                  {t(props.language, {
-                    es: "Todavía no tenés paquetes comprados.",
-                    en: "You don’t have purchased packages yet.",
-                    pt: "Voce ainda nao tem pacotes comprados."
-                  })}
-                </p>
-              ) : (
-                <ul className="dashboard-ml-history-list">
-                  {purchasesSorted.map((item) => (
-                    <li key={item.id}>
-                      <strong>{item.name}</strong>
-                      <span>
-                        {replaceTemplate(
-                          t(props.language, {
-                            es: "{count} sesiones",
-                            en: "{count} sessions",
-                            pt: "{count} sessoes"
-                          }),
-                          { count: String(item.credits) }
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )
-            ) : null}
           </article>
 
-          <article className="dashboard-ml-history-card">
-            <button
-              type="button"
-              className="dashboard-ml-history-toggle"
-              aria-expanded={historyOpen}
-              onClick={() => setHistoryOpen((current) => !current)}
-            >
-              <h3>
+          <article className="dashboard-ml-history-card dashboard-ml-history-card--rich">
+            <h3 className="dashboard-ml-market-card-title">
+              {t(props.language, {
+                es: "Historial de sesiones",
+                en: "Session history",
+                pt: "Historico de sessoes"
+              })}
+            </h3>
+            <div className="dashboard-ml-history-media">
+              <img src="/home/cards/history.png" alt="" loading="lazy" />
+            </div>
+            {pastBookings.length === 0 ? (
+              <p className="dashboard-ml-history-empty">
                 {t(props.language, {
-                  es: "Historial de sesiones",
-                  en: "Session history",
-                  pt: "Historico de sessoes"
+                  es: "Todavía no hay sesiones finalizadas.",
+                  en: "No completed sessions yet.",
+                  pt: "Ainda nao ha sessoes finalizadas."
                 })}
-              </h3>
-              <span aria-hidden="true">{historyOpen ? "−" : "+"}</span>
-            </button>
-            {historyOpen ? (
-              pastBookings.length === 0 ? (
-                <p className="dashboard-ml-history-empty">
-                  {t(props.language, {
-                    es: "Todavía no hay sesiones finalizadas.",
-                    en: "No completed sessions yet.",
-                    pt: "Ainda nao ha sessoes finalizadas."
-                  })}
-                </p>
-              ) : (
-                <ul className="dashboard-ml-history-list">
-                  {pastBookings.map((booking) => {
-                    const pro = findProfessionalById(booking.professionalId, props.professionals);
-                    return (
-                      <li key={booking.id}>
-                        <button type="button" className="dashboard-ml-history-item" onClick={() => props.onOpenBookingDetail(booking.id)}>
-                          <strong>
-                            {formatDateTime({
-                              isoDate: booking.startsAt,
-                              timezone: props.timezone,
-                              language: props.language
-                            })}
-                          </strong>
-                          <span>
-                            {pro
-                              ? professionalAccessibleName(pro)
-                              : t(props.language, {
-                                  es: "Tu profesional",
-                                  en: "Your professional",
-                                  pt: "Seu profissional"
-                                })}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )
-            ) : null}
-          </article>
-
-          <article className="dashboard-ml-history-card">
-            <button
-              type="button"
-              className="dashboard-ml-history-toggle"
-              aria-expanded={activityOpen}
-              onClick={() => setActivityOpen((current) => !current)}
-            >
-              <h3>
-                {t(props.language, {
-                  es: "Actividad de compras",
-                  en: "Purchase activity",
-                  pt: "Atividade de compras"
-                })}
-              </h3>
-              <span aria-hidden="true">{activityOpen ? "−" : "+"}</span>
-            </button>
-            {activityOpen ? (
-              purchasesSorted.length === 0 ? (
-                <p className="dashboard-ml-history-empty">
-                  {t(props.language, {
-                    es: "Todavía no hay actividad de compras.",
-                    en: "No purchase activity yet.",
-                    pt: "Ainda nao ha atividade de compras."
-                  })}
-                </p>
-              ) : (
-                <ul className="dashboard-ml-history-list">
-                  {purchasesSorted.map((item) => {
-                    const amountLabel = formatSubscriptionPurchasePrice({
-                      priceCents: item.priceCents,
-                      language: props.language,
-                      displayCurrency: props.currency,
-                      purchaseCurrency: item.currency ?? null,
-                      fxRates: props.fxRates
-                    });
-                    return (
-                      <li key={`activity-${item.id}`}>
-                        <strong>{item.name}</strong>
-                        <span>
-                          {formatDateOnly({
-                            isoDate: item.purchasedAt,
+              </p>
+            ) : (
+              <ul className="dashboard-ml-history-list">
+                {pastBookings.map((booking) => {
+                  const pro = findProfessionalById(booking.professionalId, props.professionals);
+                  return (
+                    <li key={booking.id}>
+                      <button type="button" className="dashboard-ml-history-item" onClick={() => props.onOpenBookingDetail(booking.id)}>
+                        <strong>
+                          {formatDateTime({
+                            isoDate: booking.startsAt,
                             timezone: props.timezone,
                             language: props.language
                           })}
-                          {amountLabel ? ` · ${amountLabel}` : ""}
+                        </strong>
+                        <span>
+                          {pro
+                            ? professionalAccessibleName(pro)
+                            : t(props.language, {
+                                es: "Tu profesional",
+                                en: "Your professional",
+                                pt: "Seu profissional"
+                              })}
                         </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )
-            ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <button type="button" className="dashboard-ml-market-card-cta" onClick={() => props.onGoToReservations()}>
+              {t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
+            </button>
+          </article>
+
+          <article className="dashboard-ml-history-card dashboard-ml-history-card--rich">
+            <h3 className="dashboard-ml-market-card-title">
+              {t(props.language, {
+                es: "Actividad de compras",
+                en: "Purchase activity",
+                pt: "Atividade de compras"
+              })}
+            </h3>
+            <div className="dashboard-ml-history-media">
+              <img src="/home/cards/activity.png" alt="" loading="lazy" />
+            </div>
+            {purchasesSorted.length === 0 ? (
+              <p className="dashboard-ml-history-empty">
+                {t(props.language, {
+                  es: "Todavía no hay actividad de compras.",
+                  en: "No purchase activity yet.",
+                  pt: "Ainda nao ha atividade de compras."
+                })}
+              </p>
+            ) : (
+              <ul className="dashboard-ml-history-list">
+                {purchasesSorted.map((item) => {
+                  const amountLabel = formatSubscriptionPurchasePrice({
+                    priceCents: item.priceCents,
+                    language: props.language,
+                    displayCurrency: props.currency,
+                    purchaseCurrency: item.currency ?? null,
+                    fxRates: props.fxRates
+                  });
+                  return (
+                    <li key={`activity-${item.id}`}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {formatDateOnly({
+                          isoDate: item.purchasedAt,
+                          timezone: props.timezone,
+                          language: props.language
+                        })}
+                        {amountLabel ? ` · ${amountLabel}` : ""}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <button type="button" className="dashboard-ml-market-card-cta" onClick={() => props.onBuySessions()}>
+              {t(props.language, { es: "Comprar de nuevo", en: "Buy again", pt: "Comprar de novo" })}
+            </button>
           </article>
         </section>
 

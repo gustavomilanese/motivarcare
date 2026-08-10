@@ -5,7 +5,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-type PromoBannerTone = "violet" | "navy" | "slate";
+type PromoBannerTone = "care" | "access" | "match";
 
 type PromoBanner = {
   id: string;
@@ -19,7 +19,7 @@ type PromoBanner = {
 const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "therapy-value",
-    tone: "violet",
+    tone: "care",
     imageSrc: "/home/banner-therapy-value.png",
     kicker: {
       es: "Cuidado premium",
@@ -39,7 +39,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   },
   {
     id: "access-24h",
-    tone: "navy",
+    tone: "access",
     imageSrc: "/home/banner-access-24h.png",
     kicker: {
       es: "Siempre disponible",
@@ -59,7 +59,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   },
   {
     id: "specialist-match",
-    tone: "slate",
+    tone: "match",
     imageSrc: "/home/banner-specialist-match.png",
     kicker: {
       es: "Matching inteligente",
@@ -140,7 +140,7 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
                   loading={bannerIndex === 0 ? "eager" : "lazy"}
                 />
                 <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
-                <div className="dashboard-ml-promo-copy dashboard-ml-promo-copy--centered">
+                <div className="dashboard-ml-promo-copy">
                   <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
                   <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
                   <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>

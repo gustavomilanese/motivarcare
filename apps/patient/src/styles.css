@@ -14572,7 +14572,7 @@ button.sessions-balance {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
   align-items: stretch;
-  background: #f5f5f5;
+  background: #e4e0f0;
 }
 
 .portal-shell.portal-shell--home-ml.portal-shell--site-footer {
@@ -14794,13 +14794,14 @@ button.sessions-balance {
   }
 }
 
-/* Home stacked body — contraste tipo ML con paleta MotivarCare */
+/* Home stacked body — contraste ML + MotivarCare */
 .dashboard-ml-home {
-  --dashboard-ml-page: #f5f5f5;
-  --dashboard-ml-ink: #1a1a1a;
-  --dashboard-ml-muted: #666;
+  --dashboard-ml-page: #e4e0f0;
+  --dashboard-ml-ink: #1a1530;
+  --dashboard-ml-muted: #5b5670;
   --dashboard-ml-cta: #5f44eb;
-  --dashboard-ml-cta-soft: #ede9fe;
+  --dashboard-ml-panel: #ffffff;
+  --dashboard-ml-panel-tint: #f3f0ff;
   width: 100%;
   max-width: none;
   display: grid;
@@ -14825,15 +14826,15 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Carrusel: un solo banner con difuminado al fondo de página */
+/* Carrusel lifestyle con scrim lateral para texto legible */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
-  min-height: clamp(260px, 38vh, 380px);
+  min-height: clamp(280px, 40vh, 400px);
   background: transparent;
   overflow: visible;
   isolation: isolate;
-  margin-bottom: -64px;
+  margin-bottom: -56px;
 }
 
 .dashboard-ml-promo-viewport {
@@ -14841,7 +14842,7 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #2a1f6e;
+  background: #5f44eb;
   border-radius: 0;
 }
 
@@ -14859,19 +14860,19 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #2a1f6e;
+  background: #5f44eb;
 }
 
-.dashboard-ml-promo-slide--violet {
-  background: #3b2a9e;
+.dashboard-ml-promo-slide--care {
+  background: #4c35c8;
 }
 
-.dashboard-ml-promo-slide--navy {
-  background: #1e3a5f;
+.dashboard-ml-promo-slide--access {
+  background: #3b5bdb;
 }
 
-.dashboard-ml-promo-slide--slate {
-  background: #334155;
+.dashboard-ml-promo-slide--match {
+  background: #5f44eb;
 }
 
 .dashboard-ml-promo-photo {
@@ -14891,41 +14892,40 @@ button.sessions-balance {
   pointer-events: none;
 }
 
-.dashboard-ml-promo-slide--violet .dashboard-ml-promo-scrim {
+.dashboard-ml-promo-slide--care .dashboard-ml-promo-scrim {
   background:
-    radial-gradient(ellipse at center, rgba(42, 31, 110, 0.22) 0%, rgba(42, 31, 110, 0.58) 72%),
-    linear-gradient(180deg, rgba(42, 31, 110, 0.28) 0%, rgba(42, 31, 110, 0.12) 38%, rgba(42, 31, 110, 0.4) 100%);
+    linear-gradient(90deg, rgba(42, 24, 110, 0.82) 0%, rgba(42, 24, 110, 0.55) 38%, rgba(42, 24, 110, 0.18) 68%, rgba(42, 24, 110, 0.05) 100%),
+    linear-gradient(180deg, rgba(42, 24, 110, 0.15) 0%, rgba(42, 24, 110, 0.05) 45%, rgba(42, 24, 110, 0.35) 100%);
 }
 
-.dashboard-ml-promo-slide--navy .dashboard-ml-promo-scrim {
+.dashboard-ml-promo-slide--access .dashboard-ml-promo-scrim {
   background:
-    radial-gradient(ellipse at center, rgba(30, 58, 95, 0.25) 0%, rgba(30, 58, 95, 0.6) 72%),
-    linear-gradient(180deg, rgba(30, 58, 95, 0.3) 0%, rgba(30, 58, 95, 0.12) 38%, rgba(30, 58, 95, 0.42) 100%);
+    linear-gradient(90deg, rgba(30, 48, 120, 0.84) 0%, rgba(30, 48, 120, 0.52) 40%, rgba(30, 48, 120, 0.16) 70%, rgba(30, 48, 120, 0.04) 100%),
+    linear-gradient(180deg, rgba(30, 48, 120, 0.12) 0%, rgba(30, 48, 120, 0.04) 45%, rgba(30, 48, 120, 0.32) 100%);
 }
 
-.dashboard-ml-promo-slide--slate .dashboard-ml-promo-scrim {
+.dashboard-ml-promo-slide--match .dashboard-ml-promo-scrim {
   background:
-    radial-gradient(ellipse at center, rgba(51, 65, 85, 0.25) 0%, rgba(51, 65, 85, 0.6) 72%),
-    linear-gradient(180deg, rgba(51, 65, 85, 0.3) 0%, rgba(51, 65, 85, 0.12) 38%, rgba(51, 65, 85, 0.42) 100%);
+    linear-gradient(90deg, rgba(48, 28, 130, 0.8) 0%, rgba(48, 28, 130, 0.5) 36%, rgba(48, 28, 130, 0.16) 66%, rgba(48, 28, 130, 0.04) 100%),
+    linear-gradient(180deg, rgba(48, 28, 130, 0.14) 0%, rgba(48, 28, 130, 0.05) 45%, rgba(48, 28, 130, 0.34) 100%);
 }
 
-/* Difuminado largo al gris de página (como Mercado Libre) */
 .dashboard-ml-promo::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: clamp(96px, 18vw, 150px);
+  height: clamp(88px, 16vw, 140px);
   z-index: 4;
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(245, 245, 245, 0) 0%,
-    rgba(245, 245, 245, 0.35) 28%,
-    rgba(245, 245, 245, 0.72) 62%,
-    rgba(245, 245, 245, 0.94) 86%,
-    var(--dashboard-ml-page, #f5f5f5) 100%
+    rgba(228, 224, 240, 0) 0%,
+    rgba(228, 224, 240, 0.4) 30%,
+    rgba(228, 224, 240, 0.78) 64%,
+    rgba(228, 224, 240, 0.96) 88%,
+    var(--dashboard-ml-page, #e4e0f0) 100%
   );
 }
 
@@ -14935,24 +14935,14 @@ button.sessions-balance {
   display: grid;
   gap: 10px;
   align-content: center;
+  justify-items: start;
+  text-align: left;
   min-height: inherit;
-  max-width: 640px;
-  padding: clamp(28px, 4vw, 48px);
-  padding-bottom: clamp(56px, 9vw, 88px);
+  max-width: 560px;
+  padding: clamp(28px, 4vw, 52px);
+  padding-bottom: clamp(64px, 10vw, 100px);
   color: #fff;
-}
-
-.dashboard-ml-promo-copy--centered {
-  margin: 0 auto;
-  text-align: center;
-  justify-items: center;
-  max-width: 720px;
-  padding-left: clamp(56px, 8vw, 96px);
-  padding-right: clamp(56px, 8vw, 96px);
-}
-
-.dashboard-ml-promo-copy--centered .dashboard-ml-promo-body {
-  max-width: 34rem;
+  text-shadow: 0 2px 18px rgba(20, 10, 60, 0.35);
 }
 
 .dashboard-ml-promo-kicker {
@@ -14961,12 +14951,12 @@ button.sessions-balance {
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .dashboard-ml-promo-title {
   margin: 0;
-  font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+  font-size: clamp(1.55rem, 3.2vw, 2.4rem);
   line-height: 1.08;
   letter-spacing: -0.03em;
   font-weight: 750;
@@ -14977,8 +14967,8 @@ button.sessions-balance {
   margin: 0;
   font-size: clamp(0.98rem, 1.4vw, 1.12rem);
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 36rem;
+  color: rgba(255, 255, 255, 0.94);
+  max-width: 32rem;
 }
 
 .dashboard-ml-promo-arrow {
@@ -14990,12 +14980,12 @@ button.sessions-balance {
   height: 44px;
   border-radius: 999px;
   border: none;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   color: #1e293b;
   font-size: 1.6rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
 }
 
 .dashboard-ml-promo-arrow--prev {
@@ -15013,14 +15003,14 @@ button.sessions-balance {
 .dashboard-ml-promo-dots {
   position: absolute;
   left: 50%;
-  bottom: clamp(56px, 9vw, 92px);
+  bottom: clamp(52px, 8vw, 88px);
   z-index: 5;
   transform: translateX(-50%);
   display: inline-flex;
   gap: 8px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(30, 20, 80, 0.42);
   backdrop-filter: blur(6px);
 }
 
@@ -15040,12 +15030,11 @@ button.sessions-balance {
   background: #fff;
 }
 
-/* Superficie de contenido: cards blancas sobre gris */
 .dashboard-ml-surface {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 18px;
+  gap: 20px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -15063,15 +15052,14 @@ button.sessions-balance {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(95, 68, 235, 0.22);
   background: #fff;
   font: inherit;
   font-weight: 650;
   color: #1e293b;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(50, 30, 120, 0.1);
 }
 
-/* Cards tipo Mercado Libre: más altas que anchas, blancas, iguales */
 .dashboard-ml-market-cards {
   display: grid;
   gap: 16px;
@@ -15088,13 +15076,14 @@ button.sessions-balance {
 
 .dashboard-ml-market-card {
   display: grid;
-  grid-template-rows: auto minmax(180px, 1fr) auto;
+  grid-template-rows: auto minmax(190px, 1fr) auto;
   gap: 14px;
-  min-height: 340px;
+  min-height: 360px;
   padding: 18px 16px 16px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  background: var(--dashboard-ml-panel, #fff);
+  border: 1px solid rgba(95, 68, 235, 0.08);
+  box-shadow: 0 8px 24px rgba(50, 30, 110, 0.12);
 }
 
 .dashboard-ml-market-card-title {
@@ -15102,24 +15091,24 @@ button.sessions-balance {
   font-size: 1.08rem;
   line-height: 1.25;
   font-weight: 700;
-  color: var(--dashboard-ml-ink, #1a1a1a);
+  color: var(--dashboard-ml-ink, #1a1530);
   letter-spacing: -0.01em;
 }
 
 .dashboard-ml-market-card-media {
   display: grid;
   place-items: center;
-  min-height: 180px;
-  border-radius: 10px;
+  min-height: 190px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: linear-gradient(160deg, #efeaff 0%, #e0e7ff 100%);
 }
 
 .dashboard-ml-market-card-media img {
   width: 100%;
   height: 100%;
-  min-height: 180px;
-  max-height: 210px;
+  min-height: 190px;
+  max-height: 220px;
   object-fit: cover;
   object-position: center;
   display: block;
@@ -15130,37 +15119,27 @@ button.sessions-balance {
   border: none;
   cursor: pointer;
   justify-self: stretch;
-  min-height: 40px;
+  min-height: 42px;
   padding: 0 14px;
-  border-radius: 8px;
-  background: var(--dashboard-ml-cta-soft, #ede9fe);
-  color: var(--dashboard-ml-cta, #5f44eb);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #5f44eb 0%, #7359f5 100%);
+  color: #fff;
   font: inherit;
   font-size: 0.95rem;
   font-weight: 700;
   text-align: center;
+  box-shadow: 0 8px 18px rgba(95, 68, 235, 0.28);
 }
 
 .dashboard-ml-market-card-cta:hover {
-  filter: brightness(0.97);
+  filter: brightness(1.04);
   text-decoration: none;
-}
-
-.dashboard-ml-section {
-  margin-top: 4px;
-}
-
-.dashboard-ml-section .sessions-panel-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .dashboard-ml-section-lead {
   margin: 6px 0 0;
   font-size: 0.92rem;
-  color: var(--dashboard-ml-muted, #666);
+  color: var(--dashboard-ml-muted, #5b5670);
 }
 
 .dashboard-ml-section-link {
@@ -15176,21 +15155,87 @@ button.sessions-balance {
   white-space: nowrap;
 }
 
-.dashboard-ml-calendar-block {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
+/* Sesiones: dos paneles con contraste real vs página */
+.dashboard-ml-sessions {
+  display: grid;
+  gap: 14px;
+  margin-top: 2px;
 }
 
-.dashboard-ml-subsection-title {
-  margin: 0 0 12px;
-  font-size: 1rem;
-  color: #1a1a1a;
+.dashboard-ml-sessions-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 0;
+}
+
+.dashboard-ml-sessions-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--dashboard-ml-ink, #1a1530);
+}
+
+.dashboard-ml-sessions-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+  .dashboard-ml-sessions-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+}
+
+.dashboard-ml-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--dashboard-ml-panel, #fff);
+  border: 1px solid rgba(95, 68, 235, 0.1);
+  box-shadow: 0 10px 28px rgba(50, 30, 110, 0.14);
+}
+
+.dashboard-ml-panel--calendar {
+  background: linear-gradient(165deg, #f6f3ff 0%, #ffffff 55%, #eef2ff 100%);
+  border-color: rgba(95, 68, 235, 0.16);
+}
+
+.dashboard-ml-panel-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--dashboard-ml-ink, #1a1530);
+}
+
+.dashboard-ml-empty {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding: 12px 4px 4px;
+}
+
+.dashboard-ml-empty strong {
+  color: var(--dashboard-ml-ink, #1a1530);
+}
+
+.dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+  gap: 12px;
+}
+
+.dashboard-ml-bookings-list .session-management-card {
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  background: var(--dashboard-ml-panel-tint, #f3f0ff);
+  box-shadow: none;
 }
 
 .dashboard-ml-history-grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   grid-template-columns: 1fr;
 }
 
@@ -15202,46 +15247,39 @@ button.sessions-balance {
 
 .dashboard-ml-history-card {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   align-content: start;
-  min-height: 200px;
-  padding: 16px 16px 14px;
+  min-height: 280px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--dashboard-ml-panel, #fff);
+  border: 1px solid rgba(95, 68, 235, 0.08);
+  box-shadow: 0 8px 24px rgba(50, 30, 110, 0.12);
+}
+
+.dashboard-ml-history-card--rich {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.dashboard-ml-history-media {
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-height: 140px;
+  background: linear-gradient(160deg, #efeaff 0%, #e0e7ff 100%);
 }
 
-.dashboard-ml-history-toggle {
-  appearance: none;
+.dashboard-ml-history-media img {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-}
-
-.dashboard-ml-history-toggle h3 {
-  margin: 0;
-  font-size: 1.02rem;
-  color: var(--dashboard-ml-ink, #1a1a1a);
-}
-
-.dashboard-ml-history-toggle span {
-  color: #999;
-  font-size: 1.2rem;
-  line-height: 1;
+  height: 140px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 .dashboard-ml-history-empty {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--dashboard-ml-muted, #666);
+  color: var(--dashboard-ml-muted, #5b5670);
   line-height: 1.4;
 }
 
@@ -15251,6 +15289,7 @@ button.sessions-balance {
   padding: 0;
   display: grid;
   gap: 8px;
+  align-content: start;
 }
 
 .dashboard-ml-history-list li,
@@ -15262,20 +15301,20 @@ button.sessions-balance {
 .dashboard-ml-history-list strong,
 .dashboard-ml-history-item strong {
   font-size: 0.9rem;
-  color: var(--dashboard-ml-ink, #1a1a1a);
+  color: var(--dashboard-ml-ink, #1a1530);
 }
 
 .dashboard-ml-history-list span,
 .dashboard-ml-history-item span {
   font-size: 0.82rem;
-  color: var(--dashboard-ml-muted, #666);
+  color: var(--dashboard-ml-muted, #5b5670);
 }
 
 .dashboard-ml-history-item {
   appearance: none;
   width: 100%;
   border: none;
-  background: #f5f5f5;
+  background: #f3f0ff;
   border-radius: 8px;
   padding: 10px 11px;
   cursor: pointer;
@@ -15284,7 +15323,7 @@ button.sessions-balance {
 }
 
 .dashboard-ml-history-item:hover {
-  background: #eee;
+  background: #ebe6ff;
 }
 
 .dashboard-ml-foot {
