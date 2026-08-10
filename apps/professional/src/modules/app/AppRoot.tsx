@@ -1041,6 +1041,8 @@ export function App() {
       onLogout={handleLogout}
       language={language}
       currency={currency}
+      onLanguageChange={setLanguage}
+      onCurrencyChange={setCurrency}
       onUserChange={handleUserChange}
     />
   );

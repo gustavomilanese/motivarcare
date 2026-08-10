@@ -195,12 +195,14 @@ export function PortalNavigation(props: {
   const diaryHomeImmersive = location.pathname === "/diario";
   const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
   const dashboardHomeImmersive = location.pathname === "/" && !props.homeMlChrome;
+  const homeMlFloatingToolbar = Boolean(props.homeMlChrome) && location.pathname === "/";
   const sessionsHomeImmersive = location.pathname === "/sessions";
   const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica";
   const chatImmersive = location.pathname === "/chat";
   const immersivePortalHome =
     diaryImmersive ||
     dashboardHomeImmersive ||
+    homeMlFloatingToolbar ||
     sessionsHomeImmersive ||
     wellbeingRelaxImmersive ||
     chatImmersive ||
@@ -248,7 +250,7 @@ export function PortalNavigation(props: {
   }, [dashboardHomeImmersive]);
 
   useLayoutEffect(() => {
-    if (!dashboardHomeImmersive) {
+    if (!dashboardHomeImmersive && !homeMlFloatingToolbar) {
       setDashboardHeroToolbarMount(null);
       return;
     }
@@ -270,7 +272,7 @@ export function PortalNavigation(props: {
     return () => {
       cancelled = true;
     };
-  }, [dashboardHomeImmersive, location.pathname, dashboardHomeChromeEpoch]);
+  }, [dashboardHomeImmersive, homeMlFloatingToolbar, location.pathname, dashboardHomeChromeEpoch]);
 
   useLayoutEffect(() => {
     if (!sessionsHomeImmersive) {
@@ -672,7 +674,7 @@ export function PortalNavigation(props: {
   }
 
   function renderHeaderActions(onImmersiveToolbar = false) {
-    if (props.hideSidebar) {
+    if (props.hideSidebar && !props.homeMlChrome) {
       return null;
     }
 
@@ -741,87 +743,136 @@ export function PortalNavigation(props: {
   }
 
   function renderHomeMlChrome() {
+    const railLinkClass = ({ isActive }: { isActive: boolean }) =>
+      `portal-home-ml-rail-link${isActive ? " is-active" : ""}`;
+
     return (
-      <header className="portal-home-ml-bar" data-tour="patient-tour-home-ml-chrome">
-        <NavLink to="/" className="portal-home-ml-brand" end>
-          <img
-            className="portal-home-ml-brand-mark"
-            src="/brand/motivarcare-mark.png"
-            alt=""
-            width={40}
-            height={36}
-          />
-          <span className="portal-home-ml-brand-text">MotivarCare</span>
-        </NavLink>
-
-        <nav className="portal-home-ml-nav" aria-label={t(props.language, { es: "Secciones", en: "Sections", pt: "Secoes" })}>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} end to="/">
-            {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/sessions">
-            {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/diario" end={false}>
-            {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/ejercicios">
-            {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/bienestar/musica">
-            {t(props.language, { es: "Música", en: "Music", pt: "Musica" })}
-          </NavLink>
-          <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/chat">
-            <span className="nav-link-with-badge">
-              {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-              {props.unreadMessagesCount > 0 ? (
-                <span className="chat-badge-pill" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
-                  {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+      <>
+        <aside
+          className="portal-home-ml-rail"
+          aria-label={t(props.language, { es: "Menú de la aplicación", en: "App menu", pt: "Menu do aplicativo" })}
+        >
+          <div className="portal-home-ml-rail-edge" aria-hidden="true" />
+          <div className="portal-home-ml-rail-panel">
+            <nav className="portal-home-ml-rail-nav">
+              <NavLink className={railLinkClass} end to="/">
+                <IconHome className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/sessions">
+                <IconSessions className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/diario" end={false}>
+                <IconNotes className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/ejercicios">
+                <IconExercises className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/bienestar/musica">
+                <IconMusic className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Música", en: "Music", pt: "Musica" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/chat">
+                <span className="portal-home-ml-rail-icon-wrap">
+                  <IconChat className="portal-home-ml-rail-icon" />
+                  {props.unreadMessagesCount > 0 ? (
+                    <span className="portal-home-ml-rail-badge" aria-hidden="true">
+                      {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                    </span>
+                  ) : null}
                 </span>
-              ) : null}
-            </span>
-          </NavLink>
-        </nav>
+                <span className="portal-home-ml-rail-label">
+                  {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                </span>
+              </NavLink>
+            </nav>
+          </div>
+        </aside>
 
-        <div className="portal-home-ml-actions">
-          <div className={`notifications-wrap${props.notificationsOpen ? " notifications-wrap--open" : ""}`}>
+        <header className="portal-home-ml-bar" data-tour="patient-tour-home-ml-chrome">
+          <NavLink to="/" className="portal-home-ml-brand" end>
+            <img
+              className="portal-home-ml-brand-mark"
+              src="/brand/motivarcare-mark.png"
+              alt=""
+              width={40}
+              height={36}
+            />
+            <span className="portal-home-ml-brand-text">MotivarCare</span>
+          </NavLink>
+
+          <nav className="portal-home-ml-nav" aria-label={t(props.language, { es: "Secciones", en: "Sections", pt: "Secoes" })}>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} end to="/">
+              {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/sessions">
+              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/diario" end={false}>
+              {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/ejercicios">
+              {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/bienestar/musica">
+              {t(props.language, { es: "Música", en: "Music", pt: "Musica" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/chat">
+              <span className="nav-link-with-badge">
+                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                {props.unreadMessagesCount > 0 ? (
+                  <span className="chat-badge-pill" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                  </span>
+                ) : null}
+              </span>
+            </NavLink>
+          </nav>
+
+          <div className="portal-home-ml-actions">
+            <div className={`notifications-wrap${props.notificationsOpen ? " notifications-wrap--open" : ""}`}>
+              <button
+                type="button"
+                className={`portal-home-ml-icon-btn ${props.notificationsOpen ? "is-active" : ""}`}
+                aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
+                onClick={props.onToggleNotifications}
+              >
+                <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
+                  <path d="M10 18a2 2 0 0 0 4 0" />
+                </svg>
+                {props.notificationsUnreadCount > 0 ? (
+                  <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small>
+                ) : null}
+              </button>
+              {props.notificationsOpen ? (
+                <>
+                  {createPortal(renderNotificationsBackdrop(), document.body)}
+                  {createPortal(renderNotificationsDropdown(), document.body)}
+                </>
+              ) : null}
+            </div>
             <button
               type="button"
-              className={`portal-home-ml-icon-btn ${props.notificationsOpen ? "is-active" : ""}`}
-              aria-label={t(props.language, { es: "Ver notificaciones", en: "View notifications", pt: "Ver notificacoes" })}
-              onClick={props.onToggleNotifications}
+              className={`portal-home-ml-account-btn${props.menuOpen ? " is-open" : ""}`}
+              aria-expanded={props.menuOpen}
+              aria-haspopup="dialog"
+              onClick={props.onToggleMenu}
             >
-              <svg className="header-bell-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3a5 5 0 0 0-5 5v2.7c0 .9-.3 1.8-.8 2.5L4.8 15a1 1 0 0 0 .8 1.6h12.8a1 1 0 0 0 .8-1.6l-1.4-1.8c-.6-.7-.8-1.6-.8-2.5V8a5 5 0 0 0-5-5Z" />
-                <path d="M10 18a2 2 0 0 0 4 0" />
-              </svg>
-              {props.notificationsUnreadCount > 0 ? (
-                <small>{props.notificationsUnreadCount > 99 ? "99+" : props.notificationsUnreadCount}</small>
-              ) : null}
+              {t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}
+              <span className="portal-home-ml-account-chevron" aria-hidden="true">
+                {props.menuOpen ? "▲" : "▼"}
+              </span>
             </button>
-            {props.notificationsOpen ? (
-              <>
-                {createPortal(renderNotificationsBackdrop(), document.body)}
-                {createPortal(renderNotificationsDropdown(), document.body)}
-              </>
-            ) : null}
           </div>
-          <button
-            type="button"
-            className={`portal-home-ml-account-btn${props.menuOpen ? " is-open" : ""}`}
-            aria-expanded={props.menuOpen}
-            aria-haspopup="dialog"
-            onClick={props.onToggleMenu}
-          >
-            {t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}
-            <span className="portal-home-ml-account-chevron" aria-hidden="true">
-              {props.menuOpen ? "▲" : "▼"}
-            </span>
-          </button>
-        </div>
-        {props.menuOpen
-          ? createPortal(renderAccountMenuDropdown({ homeMlDrawer: true }), document.body)
-          : null}
-      </header>
+          {props.menuOpen
+            ? createPortal(renderAccountMenuDropdown({ homeMlDrawer: true }), document.body)
+            : null}
+        </header>
+      </>
     );
   }
 
@@ -1070,6 +1121,9 @@ export function PortalNavigation(props: {
           ? createPortal(renderHeaderActions(true), diaryPortalToolbarMount)
           : null}
         {dashboardHomeImmersive && dashboardHeroToolbarMount
+          ? createPortal(renderHeaderActions(true), dashboardHeroToolbarMount)
+          : null}
+        {homeMlFloatingToolbar && dashboardHeroToolbarMount
           ? createPortal(renderHeaderActions(true), dashboardHeroToolbarMount)
           : null}
         {sessionsHomeImmersive && sessionsHeroToolbarMount

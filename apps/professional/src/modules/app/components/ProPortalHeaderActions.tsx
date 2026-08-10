@@ -4,6 +4,7 @@ import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i
 import type { PatientMessageNotificationItem } from "../lib/portalPatientNotifications";
 import {
   ProHeaderIconBell,
+  ProHeaderIconLocale,
   ProHeaderIconLogOut,
   ProHeaderIconMore,
   ProHeaderIconSettings,
@@ -20,8 +21,11 @@ export function ProPortalHeaderActions(props: {
   notificationsOpen: boolean;
   notificationsUnreadCount: number;
   notificationItems: PatientMessageNotificationItem[];
+  languageSummary: string;
+  currencySummary: string;
   onToggleNotifications: () => void;
   onCloseNotifications: () => void;
+  onOpenPreferences: () => void;
   onLogout: () => void;
   listingVisibility?: ReactNode;
 }) {
@@ -73,6 +77,12 @@ export function ProPortalHeaderActions(props: {
   const toggleNotifications = () => {
     setAccountMenuOpen(false);
     props.onToggleNotifications();
+  };
+
+  const openPreferences = () => {
+    setAccountMenuOpen(false);
+    props.onCloseNotifications();
+    props.onOpenPreferences();
   };
 
   return (
@@ -128,6 +138,14 @@ export function ProPortalHeaderActions(props: {
           </div>
         ) : null}
       </div>
+      <button
+        type="button"
+        className="pro-header-icon-link pro-header-direct-action"
+        aria-label={t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}
+        onClick={openPreferences}
+      >
+        <ProHeaderIconLocale className="pro-header-svg-icon" />
+      </button>
       <NavLink
         to="/perfil"
         className={({ isActive }) => `pro-header-icon-link pro-header-direct-action ${isActive ? "active" : ""}`}
@@ -187,6 +205,20 @@ export function ProPortalHeaderActions(props: {
                 <ProHeaderIconSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
                 {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
               </NavLink>
+              <button
+                type="button"
+                role="menuitem"
+                className="pro-header-account-dropdown-item pro-header-account-dropdown-item--value"
+                onClick={openPreferences}
+              >
+                <ProHeaderIconLocale className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                <span className="pro-header-account-dropdown-copy">
+                  <strong>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</strong>
+                  <small>
+                    {props.languageSummary} · {props.currencySummary}
+                  </small>
+                </span>
+              </button>
               <div className="menu-sep" role="separator" />
               <button
                 type="button"

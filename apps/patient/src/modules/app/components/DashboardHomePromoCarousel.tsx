@@ -10,10 +10,12 @@ type PromoBannerTone = "care" | "access" | "match";
 type PromoBanner = {
   id: string;
   tone: PromoBannerTone;
-  imageSrc: string;
+  imageSrc?: string;
   kicker: LocalizedText;
   title: LocalizedText;
   body: LocalizedText;
+  /** Si está, el cuerpo se muestra en líneas fijas (evita viudas / wraps raros). */
+  bodyLines?: Record<AppLanguage, string[]>;
   badge: LocalizedText;
 };
 
@@ -21,11 +23,11 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "therapy-value",
     tone: "care",
-    imageSrc: "/home/banner-therapy-value.png",
+    imageSrc: "/home/banner-therapy-value.png?v=therapy-flat-1",
     kicker: {
-      es: "Cuidado premium",
-      en: "Premium care",
-      pt: "Cuidado premium"
+      es: "Habla con expertos",
+      en: "Talk to experts",
+      pt: "Fale com especialistas"
     },
     title: {
       es: "Hacer terapia es cuidarte",
@@ -46,7 +48,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "access-24h",
     tone: "access",
-    imageSrc: "/home/banner-access-24h.png",
+    imageSrc: "/home/banner-access-24h.png?v=clock-24h-1",
     kicker: {
       es: "Siempre disponible",
       en: "Always available",
@@ -62,6 +64,11 @@ const PROMO_BANNERS: PromoBanner[] = [
       en: "Book, chat, and continue your care on your schedule, any day.",
       pt: "Agende, converse e retome seu acompanhamento no seu ritmo, qualquer dia."
     },
+    bodyLines: {
+      es: ["Reservá, chatá y retomá tu acompañamiento a tu ritmo,", "cualquier día."],
+      en: ["Book, chat, and continue your care on your schedule,", "any day."],
+      pt: ["Agende, converse e retome seu acompanhamento no seu ritmo,", "qualquer dia."]
+    },
     badge: {
       es: "Acceso continuo",
       en: "Always on",
@@ -71,7 +78,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "specialist-match",
     tone: "match",
-    imageSrc: "/home/banner-specialist-match.png",
+    imageSrc: "/home/banner-specialist-match.png?v=handshake-4",
     kicker: {
       es: "Matching inteligente",
       en: "Smart matching",
@@ -142,19 +149,45 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
         >
           {PROMO_BANNERS.map((banner, bannerIndex) => {
             const isActive = bannerIndex === index;
+            const hasMedia = Boolean(banner.imageSrc);
             return (
               <article
                 key={banner.id}
-                className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""}`}
+                className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""}${hasMedia ? " dashboard-ml-promo-slide--media" : ""}`}
                 aria-hidden={!isActive}
                 data-active={isActive ? "true" : "false"}
               >
                 <div className="dashboard-ml-promo-orbs" aria-hidden="true" />
-                <div className="dashboard-ml-promo-copy">
-                  <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
-                  <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
-                  <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
-                  <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
+                <div className={`dashboard-ml-promo-frame${hasMedia ? " dashboard-ml-promo-frame--media" : ""}`}>
+                  <div className="dashboard-ml-promo-copy">
+                    <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
+                    <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                    {banner.bodyLines ? (
+                      <p className="dashboard-ml-promo-body dashboard-ml-promo-body--lines">
+                        {banner.bodyLines[props.language].map((line, lineIndex) => (
+                          <span
+                            key={`${banner.id}-body-${lineIndex}`}
+                            className={`dashboard-ml-promo-body-line${lineIndex === 0 ? " dashboard-ml-promo-body-line--lead" : ""}`}
+                          >
+                            {line}
+                          </span>
+                        ))}
+                      </p>
+                    ) : (
+                      <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
+                    )}
+                    <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
+                  </div>
+                  {banner.imageSrc ? (
+                    <div className="dashboard-ml-promo-media" aria-hidden="true">
+                      <img
+                        className="dashboard-ml-promo-photo"
+                        src={banner.imageSrc}
+                        alt=""
+                        decoding="async"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </article>
             );

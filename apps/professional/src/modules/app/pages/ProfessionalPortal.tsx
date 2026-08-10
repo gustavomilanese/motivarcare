@@ -4,6 +4,11 @@ import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLan
 import { ProMobileNavIcon } from "../components/ProMobileNavIcon";
 import { ProPortalChromeProvider } from "../components/ProPortalChromeContext";
 import { ProPortalHeaderActions } from "../components/ProPortalHeaderActions";
+import {
+  PortalPreferencesModal,
+  PROFESSIONAL_LANGUAGE_CHOICES
+} from "../components/PortalPreferencesModal";
+import { ProHeaderIconLocale } from "../components/ProHeaderIcons";
 import { ProfessionalListingVisibilityControl } from "../components/ProfessionalListingVisibilityControl";
 import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav";
 import { useProfessionalListingVisibility } from "../hooks/useProfessionalListingVisibility";
@@ -24,6 +29,23 @@ import { TreatmentReportsPage } from "./TreatmentReportsPage";
 import { PROFESSIONAL_CALENDAR_OAUTH_RETURN_PATH_KEY } from "../services/api";
 import type { AuthUser, PortalSection } from "../types";
 import { ProfessionalPortalGuidedTour } from "../components/ProfessionalPortalGuidedTour";
+
+function currencySymbolOnly(currency: SupportedCurrency): string {
+  switch (currency) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "EUR";
+    case "GBP":
+      return "GBP";
+    case "BRL":
+      return "R$";
+    case "ARS":
+      return "$";
+    default:
+      return currency;
+  }
+}
 
 function portalNavTourKey(to: PortalSection): string | undefined {
   if (to === "/") {
@@ -54,13 +76,19 @@ export function ProfessionalPortal(props: {
   onLogout: () => void;
   language: AppLanguage;
   currency: SupportedCurrency;
+  onLanguageChange: (language: AppLanguage) => void;
+  onCurrencyChange: (currency: SupportedCurrency) => void;
   onUserChange: (user: AuthUser) => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const links = useMemo(() => getPortalNavLinks(props.language), [props.language]);
   const { threads, unreadMessagesCount, reloadThreads } = usePortalChatThreads(props.token);
+  const languageSummary =
+    PROFESSIONAL_LANGUAGE_CHOICES.find((item) => item.value === props.language)?.nativeLabel ?? "Espanol";
+  const currencySummary = currencySymbolOnly(props.currency);
 
   const notificationItems = useMemo(
     () => buildPatientMessageNotificationItems(props.language, threads),
@@ -145,13 +173,21 @@ export function ProfessionalPortal(props: {
     pt: "Novas mensagens"
   });
 
+  const openPreferences = () => {
+    setNotificationsOpen(false);
+    setPreferencesOpen(true);
+  };
+
   const headerActionsProps = {
     language: props.language,
     notificationsOpen,
     notificationsUnreadCount,
     notificationItems,
+    languageSummary,
+    currencySummary,
     onToggleNotifications: () => setNotificationsOpen((current) => !current),
     onCloseNotifications: () => setNotificationsOpen(false),
+    onOpenPreferences: openPreferences,
     onLogout: props.onLogout,
     listingVisibility:
       listingVisibility.ready && listingVisibility.visible !== null && listingVisibility.registrationApproval
@@ -231,6 +267,15 @@ export function ProfessionalPortal(props: {
         </nav>
 
         <div className="pro-sidebar-foot">
+          <button type="button" className="pro-sidebar-prefs-btn" onClick={openPreferences}>
+            <ProHeaderIconLocale className="pro-sidebar-prefs-icon" />
+            <span className="pro-sidebar-prefs-copy">
+              <strong>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</strong>
+              <small>
+                {languageSummary} · {currencySummary}
+              </small>
+            </span>
+          </button>
           <strong className="pro-sidebar-foot-name">{props.user.fullName}</strong>
           <p className="pro-sidebar-foot-email">{props.user.email}</p>
         </div>
@@ -327,6 +372,16 @@ export function ProfessionalPortal(props: {
           </ProPortalChromeProvider>
         </main>
       </div>
+
+      <PortalPreferencesModal
+        open={preferencesOpen}
+        language={props.language}
+        currency={props.currency}
+        languageChoices={PROFESSIONAL_LANGUAGE_CHOICES}
+        onClose={() => setPreferencesOpen(false)}
+        onLanguageChange={props.onLanguageChange}
+        onCurrencyChange={props.onCurrencyChange}
+      />
     </div>
   );
 }
