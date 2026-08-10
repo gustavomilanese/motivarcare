@@ -286,38 +286,34 @@ export function DashboardNextActionHome(props: {
           </div>
         ) : null}
 
-        <div className="dashboard-ml-credits" aria-live="polite">
-          <div
-            className={`dashboard-ml-credits-pill${props.availableSessions < 1 ? " dashboard-ml-credits-pill--empty" : ""}`}
-          >
-            {props.availableSessions > 0 ? (
-              <>
-                <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
-                <span className="dashboard-ml-credits-label">
-                  {props.availableSessions === 1
-                    ? t(props.language, {
-                        es: "Sesión disponible",
-                        en: "Session available",
-                        pt: "Sessao disponivel"
-                      })
-                    : t(props.language, {
-                        es: "Sesiones disponibles",
-                        en: "Sessions available",
-                        pt: "Sessoes disponiveis"
-                      })}
-                </span>
-              </>
-            ) : (
+        <p className="dashboard-ml-credits" aria-live="polite">
+          {props.availableSessions > 0 ? (
+            <>
+              <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
               <span className="dashboard-ml-credits-label">
-                {t(props.language, {
-                  es: "Sin sesiones disponibles",
-                  en: "No sessions available",
-                  pt: "Sem sessoes disponiveis"
-                })}
+                {props.availableSessions === 1
+                  ? t(props.language, {
+                      es: "Sesión disponible",
+                      en: "Session available",
+                      pt: "Sessao disponivel"
+                    })
+                  : t(props.language, {
+                      es: "Sesiones disponibles",
+                      en: "Sessions available",
+                      pt: "Sessoes disponiveis"
+                    })}
               </span>
-            )}
-          </div>
-        </div>
+            </>
+          ) : (
+            <span className="dashboard-ml-credits-label dashboard-ml-credits-label--empty">
+              {t(props.language, {
+                es: "Sin sesiones disponibles",
+                en: "No sessions available",
+                pt: "Sem sessoes disponiveis"
+              })}
+            </span>
+          )}
+        </p>
 
         {/* Cards tipo ML: ícono + título + texto + CTA suave */}
         <section
@@ -354,7 +350,11 @@ export function DashboardNextActionHome(props: {
               en: "Add credits and continue your care.",
               pt: "Adicione creditos e continue seu acompanhamento."
             })}
-            cta={acquireNewSessionsButtonLabel(props.language)}
+            cta={t(props.language, {
+              es: "+ Nuevas sesiones",
+              en: "+ New sessions",
+              pt: "+ Novas sessoes"
+            })}
             onClick={() => props.onBuySessions()}
           />
           <BenefitCard

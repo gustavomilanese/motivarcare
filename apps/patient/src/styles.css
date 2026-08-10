@@ -14963,31 +14963,51 @@ button.sessions-balance {
 }
 
 /*
-  Degradé ML detallado: un solo tono (#5f44eb) desvaneciéndose a transparente
-  sobre el gris de página — sin saltos de color (evita banding).
+  Degradé ML suave:
+  1) capa sólida con mask (evita banding de rgba apilado)
+  2) blur liviano para difuminar cualquier posterización
+  3) interpolación oklab cuando el browser la soporta
 */
 .dashboard-ml-promo::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% - 28px);
-  height: clamp(160px, 20vw, 220px);
+  top: calc(100% - 56px);
+  height: clamp(180px, 22vw, 240px);
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(
+  background: #5f44eb;
+  -webkit-mask-image: linear-gradient(
     180deg,
-    rgba(95, 68, 235, 1) 0%,
-    rgba(95, 68, 235, 0.92) 8%,
-    rgba(95, 68, 235, 0.82) 16%,
-    rgba(95, 68, 235, 0.7) 26%,
-    rgba(95, 68, 235, 0.56) 38%,
-    rgba(95, 68, 235, 0.42) 50%,
-    rgba(95, 68, 235, 0.28) 62%,
-    rgba(95, 68, 235, 0.16) 74%,
-    rgba(95, 68, 235, 0.07) 86%,
-    rgba(95, 68, 235, 0) 100%
+    #000 0%,
+    #000 18%,
+    rgba(0, 0, 0, 0.72) 42%,
+    rgba(0, 0, 0, 0.38) 68%,
+    rgba(0, 0, 0, 0.12) 88%,
+    transparent 100%
   );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 18%,
+    rgba(0, 0, 0, 0.72) 42%,
+    rgba(0, 0, 0, 0.38) 68%,
+    rgba(0, 0, 0, 0.12) 88%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  transform: scaleY(1.08);
+  transform-origin: top center;
+}
+
+@supports (background: linear-gradient(in oklab, #5f44eb, #ebebeb)) {
+  .dashboard-ml-promo::after {
+    background: linear-gradient(in oklab, #5f44eb 0%, #5f44eb 14%, #ebebeb 100%);
+    -webkit-mask-image: none;
+    mask-image: none;
+    filter: blur(8px);
+  }
 }
 
 .dashboard-ml-promo-arrow {
@@ -15164,31 +15184,21 @@ button.sessions-balance {
   fill: #5f44eb;
 }
 
-/* Saldo de sesiones / créditos — centro sobre las cards */
+/* Saldo de sesiones — texto informativo al margen izquierdo (no clickeable) */
 .dashboard-ml-credits {
   display: flex;
-  justify-content: center;
-  margin: 0 0 2px;
-}
-
-.dashboard-ml-credits-pill {
-  display: inline-flex;
+  justify-content: flex-start;
   align-items: baseline;
   gap: 8px;
-  min-height: 44px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
-  border: 1px solid rgba(95, 68, 235, 0.12);
-}
-
-.dashboard-ml-credits-pill--empty {
-  border-color: rgba(15, 23, 42, 0.08);
+  margin: 2px 0 4px;
+  padding: 0 2px;
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
 }
 
 .dashboard-ml-credits-num {
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #5f44eb;
@@ -15197,12 +15207,13 @@ button.sessions-balance {
 
 .dashboard-ml-credits-label {
   font-size: 0.92rem;
-  font-weight: 650;
+  font-weight: 600;
   color: #1a1a1a;
 }
 
-.dashboard-ml-credits-pill--empty .dashboard-ml-credits-label {
+.dashboard-ml-credits-label--empty {
   color: #666;
+  font-weight: 550;
 }
 
 /* Card Comprar sesiones: invertida en azul */
@@ -15234,6 +15245,9 @@ button.sessions-balance {
 .dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta {
   background: #fff;
   color: var(--dashboard-ml-buy);
+  white-space: nowrap;
+  font-size: 0.82rem;
+  padding: 0 8px;
 }
 
 .dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta:hover {
