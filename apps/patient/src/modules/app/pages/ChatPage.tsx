@@ -53,6 +53,8 @@ export function ChatPage(props: {
   onSendMessage: (professionalId: string, text: string) => void;
   onMarkRead: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
+  /** Modal desde Inicio: sin toolbar del portal y conversación enfocada. */
+  embedded?: boolean;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState("");
@@ -395,12 +397,17 @@ export function ChatPage(props: {
   ]);
 
   return (
-    <div className="chat-page-root">
-      <div className="chat-portal-toolbar-shell">
-        <div id="chat-hero-toolbar-mount" className="chat-hero-toolbar-mount" />
-      </div>
+    <div className={`chat-page-root${props.embedded ? " chat-page-root--embedded" : ""}`}>
+      {props.embedded ? null : (
+        <div className="chat-portal-toolbar-shell">
+          <div id="chat-hero-toolbar-mount" className="chat-hero-toolbar-mount" />
+        </div>
+      )}
       <div className="chat-page-body">
-      <div className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}`}>
+      <div
+        className={`wa-shell${showMobileInbox ? " wa-shell--mobile-inbox" : ""}${props.embedded ? " wa-shell--embedded" : ""}`}
+      >
+      {props.embedded ? null : (
       <aside className="wa-sidebar">
         <header className="wa-sidebar-header">
           <h2>{t(props.language, { es: "Mensajes", en: "Messages", pt: "Mensagens" })}</h2>
@@ -465,10 +472,11 @@ export function ChatPage(props: {
           ) : null}
         </div>
       </aside>
+      )}
 
       <section className="wa-main">
         <header className="wa-main-header">
-          {mobileLayout && availableProfessionals.length > 1 ? (
+          {mobileLayout && !props.embedded && availableProfessionals.length > 1 ? (
             <button
               type="button"
               className="wa-mobile-back"

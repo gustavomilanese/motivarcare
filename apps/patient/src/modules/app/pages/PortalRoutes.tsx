@@ -284,6 +284,15 @@ export function PortalRoutes(props: {
                   }
                   onGoToProfessional={props.handleGoToProfessional}
                   onGoToChat={props.handleChatFromAnywhere}
+                  onSetActiveChatProfessional={(professionalId) =>
+                    props.onStateChange((current) => ({
+                      ...current,
+                      therapistSelectionCompleted: true,
+                      activeChatProfessionalId: professionalId
+                    }))
+                  }
+                  onSendChatMessage={props.sendMessage}
+                  onMarkChatRead={props.markThreadAsRead}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}

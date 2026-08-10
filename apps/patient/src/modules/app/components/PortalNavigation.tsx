@@ -416,17 +416,18 @@ export function PortalNavigation(props: {
     );
   }
 
-  function renderAccountMenuDropdown() {
+  function renderAccountMenuDropdown(options?: { portaledDesktop?: boolean }) {
+    const portaledDesktop = Boolean(options?.portaledDesktop);
     return (
       <>
         <button
           type="button"
-          className="menu-dropdown-backdrop"
+          className={`menu-dropdown-backdrop${portaledDesktop ? " menu-dropdown-backdrop--portaled" : ""}`}
           aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
           onClick={props.onCloseMenu}
         />
         <div
-          className={`menu-dropdown${isMobilePortal ? " menu-dropdown--account-sheet" : ""}`}
+          className={`menu-dropdown${isMobilePortal ? " menu-dropdown--account-sheet" : ""}${portaledDesktop ? " menu-dropdown--portaled" : ""}`}
           role="dialog"
           aria-modal="true"
           aria-label={t(props.language, { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" })}
@@ -719,8 +720,11 @@ export function PortalNavigation(props: {
             <IconMenu className="menu-toggle-icon" />
           </button>
           {props.menuOpen
-            ? isMobilePortal
-              ? createPortal(renderAccountMenuDropdown(), document.body)
+            ? isMobilePortal || onImmersiveToolbar
+              ? createPortal(
+                  renderAccountMenuDropdown({ portaledDesktop: onImmersiveToolbar && !isMobilePortal }),
+                  document.body
+                )
               : renderAccountMenuDropdown()
             : null}
         </div>

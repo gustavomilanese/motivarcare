@@ -63,6 +63,7 @@ import { fetchProfessionalAvailability } from "../../matching/services/availabil
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { DashboardHomeVariantToggle } from "../components/DashboardHomeVariantToggle";
 import { DashboardHomePurchaseModal } from "../components/DashboardHomePurchaseModal";
+import { DashboardHomeChatModal } from "../components/DashboardHomeChatModal";
 import { DashboardNextActionHome } from "../components/DashboardNextActionHome";
 import type {
   Booking,
@@ -158,6 +159,9 @@ export function DashboardPage(props: {
   onGoToBooking: (professionalId: string) => void;
   onGoToProfessional: (professionalId: string) => void;
   onGoToChat: (professionalId: string) => void;
+  onSetActiveChatProfessional: (professionalId: string) => void;
+  onSendChatMessage: (professionalId: string, text: string) => void;
+  onMarkChatRead: (professionalId: string) => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onPlanTrialFromDashboard: (
     professionalId: string,
@@ -234,10 +238,15 @@ export function DashboardPage(props: {
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const [homePurchaseModalOpen, setHomePurchaseModalOpen] = useState(false);
+  const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current =
-    assignProModalOpen || acquireSessionsModalOpen || homePurchaseModalOpen || trialModalOpen;
+    assignProModalOpen ||
+    acquireSessionsModalOpen ||
+    homePurchaseModalOpen ||
+    homeChatModalOpen ||
+    trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const hasProfessionalsOnPortal = props.professionals.length > 0;
@@ -767,7 +776,7 @@ export function DashboardPage(props: {
         window.clearTimeout(endSpotlightTimer);
       }
     };
-  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, trialModalOpen]);
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, homeChatModalOpen, trialModalOpen]);
 
   useEffect(() => {
     if (!showGoogleCalendarCta) {
@@ -838,7 +847,10 @@ export function DashboardPage(props: {
           onBuySessions={() => setHomePurchaseModalOpen(true)}
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
-          onGoToChat={props.onGoToChat}
+          onGoToChat={(professionalId) => {
+            props.onSetActiveChatProfessional(professionalId);
+            setHomeChatModalOpen(true);
+          }}
           onGoToProfessional={props.onGoToProfessional}
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
           onGoToReservations={props.onGoToReservations}
@@ -1135,7 +1147,8 @@ export function DashboardPage(props: {
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  props.onGoToChat(activeProfessional.id);
+                  props.onSetActiveChatProfessional(activeProfessional.id);
+                  setHomeChatModalOpen(true);
                 }}
               >
                 {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
@@ -1914,6 +1927,32 @@ export function DashboardPage(props: {
         />
       ) : null}
 
+      {homeChatModalOpen ? (
+        <DashboardHomeChatModal
+          language={props.language}
+          state={props.state}
+          professionals={props.professionals}
+          professionalPhotoMap={props.professionalPhotoMap}
+          authToken={props.authToken}
+          sessionUserId={props.state.session?.id ?? ""}
+          onClose={() => setHomeChatModalOpen(false)}
+          onOpenFullChat={() => {
+            setHomeChatModalOpen(false);
+            const professionalId =
+              props.state.activeChatProfessionalId.trim() ||
+              props.state.assignedProfessionalId?.trim() ||
+              "";
+            if (professionalId) {
+              props.onGoToChat(professionalId);
+            }
+          }}
+          onSetActiveProfessional={props.onSetActiveChatProfessional}
+          onSendMessage={props.onSendChatMessage}
+          onMarkRead={props.onMarkChatRead}
+          onImageFallback={props.onImageFallback}
+        />
+      ) : null}
+
       {acquireSessionsModalOpen ? (
         <AcquireSessionsChoiceModal
           language={props.language}
@@ -1933,7 +1972,13 @@ export function DashboardPage(props: {
       <DashboardGuidedTour
         language={props.language}
         sessionUserId={props.state.session?.id ?? null}
-        suppressTour={assignProModalOpen || acquireSessionsModalOpen || homePurchaseModalOpen || trialModalOpen}
+        suppressTour={
+          assignProModalOpen ||
+          acquireSessionsModalOpen ||
+          homePurchaseModalOpen ||
+          homeChatModalOpen ||
+          trialModalOpen
+        }
         bookingContext={dashboardTourBookingContext}
       />
     </div>
