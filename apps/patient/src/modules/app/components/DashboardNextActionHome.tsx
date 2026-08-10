@@ -420,7 +420,7 @@ export function DashboardNextActionHome(props: {
                   </button>
                 </div>
               ) : (
-                <div className="dashboard-ml-bookings-list dashboard-upcoming-lists-root">
+                <div className="dashboard-ml-bookings-list dashboard-upcoming-lists-root session-rn-root">
                   <UpcomingBookingsList
                     bookings={props.upcomingBookings.slice(0, 4)}
                     professionals={props.professionals}

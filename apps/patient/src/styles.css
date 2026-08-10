@@ -14826,15 +14826,16 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner: imagen full-bleed, texto centrado, contraste sin blur violeta */
+/* Banner ML: full-bleed + degradé que continúa detrás de las cards */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
-  min-height: clamp(240px, 34vh, 340px);
+  min-height: clamp(280px, 38vh, 380px);
   background: transparent;
   overflow: visible;
   isolation: isolate;
-  margin-bottom: -28px;
+  margin-bottom: 0;
+  z-index: 1;
 }
 
 .dashboard-ml-promo-viewport {
@@ -14842,7 +14843,7 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #3a2a8a;
+  background: #5f44eb;
   border-radius: 0;
 }
 
@@ -14860,7 +14861,7 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #3a2a8a;
+  background: #5f44eb;
   display: grid;
   place-items: center;
 }
@@ -14868,7 +14869,7 @@ button.sessions-balance {
 .dashboard-ml-promo-slide--care,
 .dashboard-ml-promo-slide--access,
 .dashboard-ml-promo-slide--match {
-  background: #3a2a8a;
+  background: #5f44eb;
 }
 
 .dashboard-ml-promo-photo {
@@ -14881,13 +14882,13 @@ button.sessions-balance {
   display: block;
 }
 
-/* Scrim neutro (negro) para contraste del texto — sin tinte violeta */
+/* Scrim neutro para legibilidad del texto centrado */
 .dashboard-ml-promo-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.28) 48%, rgba(0, 0, 0, 0.18) 100%);
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0.22) 52%, rgba(0, 0, 0, 0.12) 100%);
 }
 
 .dashboard-ml-promo-copy {
@@ -14900,7 +14901,8 @@ button.sessions-balance {
   text-align: center;
   width: min(720px, 100%);
   padding: clamp(28px, 4vw, 48px) clamp(48px, 8vw, 96px);
-  padding-bottom: clamp(48px, 7vw, 72px);
+  /* Más aire abajo: las cards quedan más bajas, como ML */
+  padding-bottom: clamp(88px, 12vw, 128px);
   color: #fff;
   box-sizing: border-box;
 }
@@ -14952,19 +14954,25 @@ button.sessions-balance {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
-/* Fade corto al gris de página — sin violeta */
+/*
+  Degradé ML: el color del banner NO corta al final de la imagen.
+  Continúa debajo (detrás de las cards) y baja de tono hasta el gris de página.
+*/
 .dashboard-ml-promo::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 36px;
-  z-index: 4;
+  top: 100%;
+  height: clamp(110px, 14vw, 150px);
+  z-index: 1;
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(235, 235, 235, 0) 0%,
+    #5f44eb 0%,
+    #7b6af0 28%,
+    #b7aef5 58%,
+    #ddd8f2 78%,
     var(--dashboard-ml-page, #ebebeb) 100%
   );
 }
@@ -15001,7 +15009,7 @@ button.sessions-balance {
 .dashboard-ml-promo-dots {
   position: absolute;
   left: 50%;
-  bottom: 44px;
+  bottom: 72px;
   z-index: 5;
   transform: translateX(-50%);
   display: inline-flex;
@@ -15031,7 +15039,7 @@ button.sessions-balance {
   gap: 18px;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: -72px auto 0;
   padding: 0 clamp(16px, 3vw, 28px) 32px;
   box-sizing: border-box;
 }
@@ -15225,11 +15233,89 @@ button.sessions-balance {
   gap: 12px;
 }
 
-.dashboard-ml-bookings-list .session-management-card {
+.dashboard-ml-bookings-list .session-management-card,
+.dashboard-ml-bookings-list .session-rn-card.session-management-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px 14px;
   border-radius: 6px;
   border: 1px solid #eee;
-  background: #fafafa;
+  background: #fff;
   box-shadow: none;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.dashboard-ml-bookings-list .session-rn-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-ml-bookings-list .session-rn-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4ff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-ml-bookings-list .session-rn-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-ml-bookings-list .session-rn-body-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard-ml-bookings-list .session-rn-body-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+}
+
+.dashboard-ml-bookings-list .session-rn-date-line {
+  font-size: 12px;
+  color: #6d6d72;
+  text-transform: capitalize;
+}
+
+.dashboard-ml-bookings-list .session-rn-name {
+  font-size: 15px;
+  font-weight: 650;
+  color: #1a1a1a;
+}
+
+.dashboard-ml-bookings-list .session-rn-status {
+  font-size: 12px;
+  color: #5f44eb;
+}
+
+.dashboard-ml-panel--bookings,
+.dashboard-ml-panel--calendar {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.dashboard-ml-panel--calendar .sessions-calendar-card,
+.dashboard-ml-panel--calendar .content-card {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
 }
 
 .dashboard-ml-history-grid {
