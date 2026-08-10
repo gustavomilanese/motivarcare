@@ -14810,33 +14810,45 @@ button.sessions-balance {
   --dashboard-ml-cta: #3483fa;
   --dashboard-ml-brand: #5f44eb;
   --dashboard-ml-panel: #ffffff;
-  /* Continuidad ML: el violeta del banner ES el fondo (full-bleed) y baja de tono */
-  --dashboard-ml-brand-solid-end: clamp(300px, 40vh, 400px);
-  --dashboard-ml-brand-fade-end: clamp(470px, 58vh, 620px);
   width: 100%;
   max-width: none;
   display: grid;
   gap: 0;
-  background: linear-gradient(
-    180deg,
-    var(--dashboard-ml-brand) 0,
-    var(--dashboard-ml-brand) var(--dashboard-ml-brand-solid-end),
-    var(--dashboard-ml-page) var(--dashboard-ml-brand-fade-end),
-    var(--dashboard-ml-page) 100%
-  );
+  background: var(--dashboard-ml-page);
   position: relative;
+  overflow-x: clip;
 }
 
-@supports (background: linear-gradient(in oklab, #5f44eb, #ebebeb)) {
-  .dashboard-ml-home {
-    background: linear-gradient(
-      in oklab,
-      var(--dashboard-ml-brand) 0,
-      var(--dashboard-ml-brand) var(--dashboard-ml-brand-solid-end),
-      var(--dashboard-ml-page) var(--dashboard-ml-brand-fade-end),
-      var(--dashboard-ml-page) 100%
-    );
-  }
+/*
+  Degradé full-bleed: arranca en el MISMO #5f44eb del banner (sin salto),
+  se sostiene sólido un tramo y baja tono por tono en la familia violeta.
+*/
+.dashboard-ml-home::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  height: clamp(520px, 68vh, 700px);
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #5f44eb 0%,
+    #5f44eb 46%,
+    #6148ec 52%,
+    #664eec 57%,
+    #6f58ee 62%,
+    #7a65ef 67%,
+    #8976f1 72%,
+    #9b8af3 77%,
+    #b0a2f4 82%,
+    #c6bbf5 87%,
+    #dbd4f3 92%,
+    #e8e5f2 96%,
+    #ebebeb 100%
+  );
 }
 
 .dashboard-ml-home .dashboard-ml-toolbar-mount.dashboard-hero-toolbar-mount {
@@ -14860,7 +14872,7 @@ button.sessions-balance {
   position: relative;
   width: 100%;
   min-height: clamp(280px, 38vh, 380px);
-  background: transparent;
+  background: #5f44eb;
   overflow: visible;
   margin-bottom: 0;
   z-index: 1;
@@ -14875,17 +14887,22 @@ button.sessions-balance {
   border-radius: 0;
 }
 
-/* Une el borde inferior de la imagen con el violeta del home */
+/* Une la imagen con el #5f44eb continuo (mismo hex, sin otro tono) */
 .dashboard-ml-promo-viewport::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 56px;
+  height: 72px;
   z-index: 3;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(95, 68, 235, 0) 0%, #5f44eb 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(95, 68, 235, 0) 0%,
+    rgba(95, 68, 235, 0.55) 55%,
+    #5f44eb 100%
+  );
 }
 
 .dashboard-ml-promo-track {
@@ -15057,10 +15074,10 @@ button.sessions-balance {
   gap: 16px;
   width: 100%;
   max-width: 1200px;
-  /* Cards sobre la zona donde el violeta del home ya baja de tono */
   margin: 0 auto;
-  padding: 8px clamp(16px, 3vw, 28px) 32px;
+  padding: 12px clamp(16px, 3vw, 28px) 32px;
   box-sizing: border-box;
+  background: transparent;
 }
 
 .dashboard-ml-calendar-wrap {
