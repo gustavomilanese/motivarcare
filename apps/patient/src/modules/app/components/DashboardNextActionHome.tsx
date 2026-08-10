@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode, type SyntheticEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type DisplayFxRates,
@@ -129,10 +130,10 @@ function BenefitCard(props: {
   const variantClass = props.variant === "buy" ? " dashboard-ml-benefit-card--buy" : "";
   return (
     <article className={`dashboard-ml-benefit-card${variantClass}`} data-tour={props.tourAttr}>
-      <div className="dashboard-ml-benefit-icon">
+      <h3 className="dashboard-ml-benefit-title">{props.title}</h3>
+      <div className="dashboard-ml-benefit-icon" aria-hidden="true">
         <BenefitIcon kind={props.icon} />
       </div>
-      <h3 className="dashboard-ml-benefit-title">{props.title}</h3>
       <p className="dashboard-ml-benefit-body">{props.body}</p>
       <button
         type="button"
@@ -186,6 +187,7 @@ export function DashboardNextActionHome(props: {
   joinTourPulse?: boolean;
   onSelectHomeVariant: (variant: "next" | "classic") => void;
 }) {
+  const navigate = useNavigate();
   const pastBookings = useMemo(() => {
     const now = Date.now();
     return [...props.allBookings]
@@ -338,112 +340,114 @@ export function DashboardNextActionHome(props: {
               })}
             </button>
           </div>
-
-          <section
-            className="dashboard-ml-benefit-row"
-            aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
-            data-tour="patient-tour-kpis"
-          >
-            <BenefitCard
-              icon="professional"
-              tourAttr="patient-tour-hero"
-              title={t(props.language, {
-                es: "Tu profesional",
-                en: "Your professional",
-                pt: "Seu profissional"
-              })}
-              body={t(props.language, {
-                es: "Chatá o elegí al profesional de tu proceso.",
-                en: "Chat or choose the professional for your care.",
-                pt: "Converse ou escolha o profissional do seu processo."
-              })}
-              cta={professionalCta}
-              onClick={runProfessionalCard}
-            />
-            <BenefitCard
-              icon="buy"
-              variant="buy"
-              title={t(props.language, {
-                es: "Comprar sesiones",
-                en: "Buy sessions",
-                pt: "Comprar sessoes"
-              })}
-              body={t(props.language, {
-                es: "Sumá créditos y seguí con tu acompañamiento.",
-                en: "Add credits and continue your care.",
-                pt: "Adicione creditos e continue seu acompanhamento."
-              })}
-              cta={t(props.language, {
-                es: "+ Nuevas sesiones",
-                en: "+ New sessions",
-                pt: "+ Novas sessoes"
-              })}
-              onClick={() => props.onBuySessions()}
-            />
-            <BenefitCard
-              icon="upcoming"
-              tourAttr="patient-tour-trial"
-              ctaTourAttr="patient-tour-next-primary"
-              title={t(props.language, {
-                es: "Próximas sesiones",
-                en: "Upcoming sessions",
-                pt: "Proximas sessoes"
-              })}
-              body={t(props.language, {
-                es: "Revisá tu próxima reserva o andá a Sesiones.",
-                en: "Check your next booking or go to Sessions.",
-                pt: "Veja sua proxima reserva ou va para Sessoes."
-              })}
-              cta={upcomingCta}
-              onClick={runUpcomingCard}
-            />
-            <BenefitCard
-              icon="packages"
-              title={t(props.language, {
-                es: "Paquetes comprados",
-                en: "Purchased packages",
-                pt: "Pacotes comprados"
-              })}
-              body={t(props.language, {
-                es: "Mirá tus paquetes activos y sumá más sesiones.",
-                en: "See your active packages and add more sessions.",
-                pt: "Veja seus pacotes ativos e some mais sessoes."
-              })}
-              cta={t(props.language, { es: "Ver paquetes", en: "View packages", pt: "Ver pacotes" })}
-              onClick={() => props.onBuySessions()}
-            />
-            <BenefitCard
-              icon="history"
-              title={t(props.language, {
-                es: "Historial",
-                en: "History",
-                pt: "Historico"
-              })}
-              body={t(props.language, {
-                es: "Consultá sesiones anteriores de tu proceso.",
-                en: "Review past sessions from your care.",
-                pt: "Consulte sessoes anteriores do seu processo."
-              })}
-              cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
-              onClick={() => props.onGoToReservations()}
-            />
-            <BenefitCard
-              icon="activity"
-              title={t(props.language, {
-                es: "Actividad",
-                en: "Activity",
-                pt: "Atividade"
-              })}
-              body={t(props.language, {
-                es: "Seguí tus compras y movimientos recientes.",
-                en: "Track your recent purchases and activity.",
-                pt: "Acompanhe suas compras e atividade recente."
-              })}
-              cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
-              onClick={() => props.onBuySessions()}
-            />
-          </section>
         </div>
+      </div>
+
+      <div className="dashboard-ml-surface dashboard-ml-surface--bridge">
+        <section
+          className="dashboard-ml-benefit-row"
+          aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
+          data-tour="patient-tour-kpis"
+        >
+          <BenefitCard
+            icon="professional"
+            tourAttr="patient-tour-hero"
+            title={t(props.language, {
+              es: "Tu profesional",
+              en: "Your professional",
+              pt: "Seu profissional"
+            })}
+            body={t(props.language, {
+              es: "Chatá o elegí al profesional de tu proceso.",
+              en: "Chat or choose the professional for your care.",
+              pt: "Converse ou escolha o profissional do seu processo."
+            })}
+            cta={professionalCta}
+            onClick={runProfessionalCard}
+          />
+          <BenefitCard
+            icon="buy"
+            variant="buy"
+            title={t(props.language, {
+              es: "Comprar sesiones",
+              en: "Buy sessions",
+              pt: "Comprar sessoes"
+            })}
+            body={t(props.language, {
+              es: "Sumá créditos y seguí con tu acompañamiento.",
+              en: "Add credits and continue your care.",
+              pt: "Adicione creditos e continue seu acompanhamento."
+            })}
+            cta={t(props.language, {
+              es: "+ Nuevas sesiones",
+              en: "+ New sessions",
+              pt: "+ Novas sessoes"
+            })}
+            onClick={() => props.onBuySessions()}
+          />
+          <BenefitCard
+            icon="upcoming"
+            tourAttr="patient-tour-trial"
+            ctaTourAttr="patient-tour-next-primary"
+            title={t(props.language, {
+              es: "Próximas sesiones",
+              en: "Upcoming sessions",
+              pt: "Proximas sessoes"
+            })}
+            body={t(props.language, {
+              es: "Revisá tu próxima reserva o andá a Sesiones.",
+              en: "Check your next booking or go to Sessions.",
+              pt: "Veja sua proxima reserva ou va para Sessoes."
+            })}
+            cta={upcomingCta}
+            onClick={runUpcomingCard}
+          />
+          <BenefitCard
+            icon="packages"
+            title={t(props.language, {
+              es: "Paquetes comprados",
+              en: "Purchased packages",
+              pt: "Pacotes comprados"
+            })}
+            body={t(props.language, {
+              es: "Mirá tus paquetes activos y sumá más sesiones.",
+              en: "See your active packages and add more sessions.",
+              pt: "Veja seus pacotes ativos e some mais sessoes."
+            })}
+            cta={t(props.language, { es: "Ver paquetes", en: "View packages", pt: "Ver pacotes" })}
+            onClick={() => props.onBuySessions()}
+          />
+          <BenefitCard
+            icon="history"
+            title={t(props.language, {
+              es: "Historial",
+              en: "History",
+              pt: "Historico"
+            })}
+            body={t(props.language, {
+              es: "Consultá sesiones anteriores de tu proceso.",
+              en: "Review past sessions from your care.",
+              pt: "Consulte sessoes anteriores do seu processo."
+            })}
+            cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
+            onClick={() => props.onGoToReservations()}
+          />
+          <BenefitCard
+            icon="activity"
+            title={t(props.language, {
+              es: "Actividad",
+              en: "Activity",
+              pt: "Atividade"
+            })}
+            body={t(props.language, {
+              es: "Seguí tus compras y movimientos recientes.",
+              en: "Track your recent purchases and activity.",
+              pt: "Acompanhe suas compras e atividade recente."
+            })}
+            cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
+            onClick={() => props.onBuySessions()}
+          />
+        </section>
       </div>
 
       <div className="dashboard-ml-surface">
@@ -647,6 +651,59 @@ export function DashboardNextActionHome(props: {
             <button type="button" className="dashboard-ml-benefit-cta" onClick={() => props.onBuySessions()}>
               {t(props.language, { es: "Comprar de nuevo", en: "Buy again", pt: "Comprar de novo" })}
             </button>
+          </article>
+        </section>
+
+        <section
+          className="dashboard-ml-diary"
+          aria-labelledby="dashboard-ml-diary-title"
+        >
+          <div className="dashboard-ml-sessions-head">
+            <div>
+              <h2 id="dashboard-ml-diary-title">
+                {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
+              </h2>
+              <p className="dashboard-ml-section-lead">
+                {t(props.language, {
+                  es: "Registrá cómo te sentís y seguí tu proceso emocional en un solo lugar.",
+                  en: "Log how you feel and follow your emotional process in one place.",
+                  pt: "Registre como se sente e acompanhe seu processo emocional em um so lugar."
+                })}
+              </p>
+            </div>
+            <button type="button" className="dashboard-ml-section-link" onClick={() => navigate("/diario")}>
+              {t(props.language, { es: "Abrir diario", en: "Open diary", pt: "Abrir diario" })}
+            </button>
+          </div>
+
+          <article className="dashboard-ml-diary-panel">
+            <p className="dashboard-ml-section-lead">
+              {t(props.language, {
+                es: "Un espacio privado para anotar emociones, revisar entradas anteriores y volver a ellas cuando quieras.",
+                en: "A private space to note emotions, review past entries, and return whenever you need.",
+                pt: "Um espaco privado para anotar emocoes, revisar entradas anteriores e voltar quando quiser."
+              })}
+            </p>
+            <div className="dashboard-ml-diary-actions">
+              <button type="button" className="dashboard-ml-diary-cta" onClick={() => navigate("/diario/nueva")}>
+                {t(props.language, {
+                  es: "Nueva entrada",
+                  en: "New entry",
+                  pt: "Nova entrada"
+                })}
+              </button>
+              <button
+                type="button"
+                className="dashboard-ml-diary-cta dashboard-ml-diary-cta--ghost"
+                onClick={() => navigate("/diario/registros")}
+              >
+                {t(props.language, {
+                  es: "Ver registros",
+                  en: "View records",
+                  pt: "Ver registros"
+                })}
+              </button>
+            </div>
           </article>
         </section>
 

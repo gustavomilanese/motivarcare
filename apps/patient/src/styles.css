@@ -14590,6 +14590,7 @@ button.sessions-balance {
   min-width: 0;
   gap: 0;
   padding: 0;
+  overflow-x: visible;
 }
 
 .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
@@ -14604,6 +14605,7 @@ button.sessions-balance {
   gap: 0;
   padding: 0;
   max-width: none;
+  overflow-x: visible;
 }
 
 .portal-main--home-ml .patient-dashboard-home.page-stack,
@@ -14611,6 +14613,7 @@ button.sessions-balance {
   gap: 0;
   width: 100%;
   max-width: none;
+  overflow-x: visible;
 }
 
 /* Top bar MotivarCare (estructura tipo ML) — blanco + violeta */
@@ -14824,18 +14827,22 @@ button.sessions-balance {
 }
 
 /*
-  Banda violeta sólida (#5f44eb) — sin indigo raro.
-  Termina antes de Sesiones; fade corto al gris.
+  Patron Mercado Libre (violeta MotivarCare):
+  - banda full-bleed con glow suave
+  - hero contenido centrado (~1180px): texto izq + arte der
+  - cards blancas montadas: la banda termina a la mitad de las cards
 */
 .dashboard-ml-brand-band {
   position: relative;
   z-index: 1;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
   background: #5f44eb;
-  padding-bottom: 36px;
-  overflow: hidden;
+  padding-bottom: 96px;
+  overflow: visible;
 }
 
-/* Círculos de fondo tipo ML, visibles, misma familia violeta */
 .dashboard-ml-brand-band::before {
   content: "";
   position: absolute;
@@ -14843,30 +14850,13 @@ button.sessions-balance {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle 340px at 12% 28%, rgba(167, 139, 250, 0.72) 0%, rgba(167, 139, 250, 0) 68%),
-    radial-gradient(circle 420px at 78% 18%, rgba(124, 92, 240, 0.55) 0%, rgba(124, 92, 240, 0) 70%),
-    radial-gradient(circle 280px at 92% 72%, rgba(199, 180, 255, 0.62) 0%, rgba(199, 180, 255, 0) 68%),
-    radial-gradient(circle 360px at 28% 88%, rgba(79, 55, 220, 0.45) 0%, rgba(79, 55, 220, 0) 70%),
-    radial-gradient(circle 240px at 55% 45%, rgba(196, 181, 253, 0.4) 0%, rgba(196, 181, 253, 0) 65%),
-    radial-gradient(circle 300px at 48% 8%, rgba(139, 110, 245, 0.5) 0%, rgba(139, 110, 245, 0) 68%);
+    radial-gradient(ellipse 70% 80% at 50% 35%, rgba(167, 139, 250, 0.55) 0%, rgba(95, 68, 235, 0) 70%),
+    radial-gradient(circle 320px at 12% 60%, rgba(199, 180, 255, 0.35) 0%, rgba(199, 180, 255, 0) 70%),
+    radial-gradient(circle 360px at 88% 55%, rgba(199, 180, 255, 0.4) 0%, rgba(199, 180, 255, 0) 72%);
 }
 
 .dashboard-ml-brand-band::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 100vw;
-  height: 48px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 3;
-  background: linear-gradient(
-    180deg,
-    rgba(95, 68, 235, 0) 0%,
-    #5f44eb 40%,
-    #ebebeb 100%
-  );
+  display: none;
 }
 
 .dashboard-ml-home .dashboard-ml-toolbar-mount.dashboard-hero-toolbar-mount {
@@ -14885,11 +14875,11 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner sobre el violeta + orbes de la brand-band */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
-  min-height: clamp(300px, 40vh, 400px);
+  height: clamp(240px, 32vh, 300px);
+  min-height: 240px;
   background: transparent;
   overflow: visible;
   margin-bottom: 0;
@@ -14899,10 +14889,10 @@ button.sessions-balance {
 .dashboard-ml-promo-viewport {
   position: relative;
   width: 100%;
+  height: 100%;
   min-height: inherit;
   overflow: hidden;
   background: transparent;
-  border-radius: 0;
 }
 
 .dashboard-ml-promo-viewport::after {
@@ -14912,21 +14902,24 @@ button.sessions-balance {
 .dashboard-ml-promo-track {
   display: flex;
   width: 100%;
+  height: 100%;
   min-height: inherit;
   transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
-/* Layout ML: arte grande a la izquierda, copy a la derecha */
 .dashboard-ml-promo-slide {
   position: relative;
   flex: 0 0 100%;
   width: 100%;
+  height: 100%;
   min-height: inherit;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
-  display: block;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
+  padding: 28px max(28px, calc((100% - 1180px) / 2)) 44px;
 }
 
 .dashboard-ml-promo-slide--care,
@@ -14935,118 +14928,81 @@ button.sessions-balance {
   background: transparent;
 }
 
-/* Orbes extra por slide (refuerzo local) */
 .dashboard-ml-promo-orbs {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle 260px at 18% 55%, rgba(199, 180, 255, 0.55) 0%, rgba(199, 180, 255, 0) 70%),
-    radial-gradient(circle 200px at 42% 20%, rgba(148, 120, 245, 0.45) 0%, rgba(148, 120, 245, 0) 68%),
-    radial-gradient(circle 300px at 8% 10%, rgba(221, 214, 254, 0.4) 0%, rgba(221, 214, 254, 0) 65%);
+    radial-gradient(circle 280px at 78% 48%, rgba(221, 214, 254, 0.35) 0%, transparent 70%),
+    radial-gradient(circle 220px at 22% 40%, rgba(196, 181, 253, 0.28) 0%, transparent 68%);
 }
 
-/*
-  Imagen grande tipo producto ML: llena ~mitad izquierda del banner,
-  sin “marco” (cover + disolución al violeta a la derecha).
-*/
 .dashboard-ml-promo-photo {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(54%, 640px);
-  height: 92%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    #000 0%,
-    #000 58%,
-    rgba(0, 0, 0, 0.65) 78%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    #000 0%,
-    #000 58%,
-    rgba(0, 0, 0, 0.65) 78%,
-    transparent 100%
-  );
-  filter: none;
+  display: none;
 }
 
 .dashboard-ml-promo-copy {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 12px;
+  gap: 14px;
   align-content: center;
-  justify-items: start;
-  text-align: left;
-  width: min(520px, 46%);
-  max-width: 34rem;
-  margin-left: auto;
-  margin-right: clamp(48px, 7vw, 96px);
-  min-height: inherit;
-  padding: clamp(28px, 4vw, 48px) 0;
+  justify-items: center;
+  text-align: center;
+  width: min(720px, 100%);
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0;
   color: #fff;
   box-sizing: border-box;
 }
 
 .dashboard-ml-promo-kicker {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 750;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .dashboard-ml-promo-title {
   margin: 0;
-  font-size: clamp(1.85rem, 4vw, 3rem);
-  line-height: 1.02;
+  font-size: clamp(2rem, 4.2vw, 3.25rem);
+  line-height: 0.98;
   letter-spacing: -0.04em;
   font-weight: 800;
   text-wrap: balance;
   color: #fff;
-  text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.35),
-    0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .dashboard-ml-promo-body {
+  display: block;
   margin: 0;
-  font-size: clamp(0.98rem, 1.35vw, 1.12rem);
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.95);
-  max-width: 34rem;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 32rem;
 }
 
 .dashboard-ml-promo-badge {
   display: inline-flex;
   align-items: center;
   min-height: 34px;
-  margin-top: 4px;
+  margin-top: 2px;
   padding: 0 14px;
   border-radius: 999px;
   background: #fff;
   color: #1a1a1a;
   font-size: 0.82rem;
   font-weight: 750;
-  letter-spacing: 0.01em;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
 }
 
 .dashboard-ml-promo-arrow {
   position: absolute;
-  top: 46%;
+  top: 42%;
   z-index: 5;
   transform: translateY(-50%);
   width: 40px;
@@ -15076,7 +15032,7 @@ button.sessions-balance {
 .dashboard-ml-promo-dots {
   position: absolute;
   left: 50%;
-  bottom: 56px;
+  bottom: 18px;
   z-index: 5;
   transform: translateX(-50%);
   display: inline-flex;
@@ -15113,9 +15069,17 @@ button.sessions-balance {
 }
 
 .dashboard-ml-surface--brand {
-  padding-top: 12px;
-  padding-bottom: 20px;
+  padding-top: 0;
+  padding-bottom: 8px;
   z-index: 2;
+}
+
+.dashboard-ml-surface--bridge {
+  position: relative;
+  z-index: 3;
+  padding-top: 0;
+  padding-bottom: 12px;
+  margin-top: -96px;
 }
 
 .dashboard-ml-calendar-wrap {
@@ -15136,10 +15100,9 @@ button.sessions-balance {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-/* Fila de cards tipo ML: ícono + título + texto + CTA suave */
 .dashboard-ml-benefit-row {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   grid-template-columns: 1fr;
   align-items: stretch;
 }
@@ -15153,84 +15116,118 @@ button.sessions-balance {
 @media (min-width: 1100px) {
   .dashboard-ml-benefit-row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
+    gap: 14px;
   }
 }
 
 .dashboard-ml-benefit-card {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "title"
+    "visual"
+    "cta";
   gap: 10px;
-  min-height: 220px;
-  padding: 18px 14px 14px;
-  border-radius: 6px;
+  min-height: 196px;
+  padding: 14px 12px 12px;
+  border-radius: 8px;
   background: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-ml-benefit-icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 2px;
-  color: #1a1a1a;
-}
-
-.dashboard-ml-benefit-icon-svg {
-  width: 52px;
-  height: 52px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-ml-benefit-title {
+  grid-area: title;
   margin: 0;
-  text-align: center;
-  font-size: 0.98rem;
+  text-align: left;
+  font-size: 0.92rem;
   line-height: 1.25;
   font-weight: 700;
   color: #1a1a1a;
 }
 
-.dashboard-ml-benefit-body {
+.dashboard-ml-benefit-icon {
+  grid-area: visual;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 72px;
   margin: 0;
-  text-align: center;
-  font-size: 0.84rem;
-  line-height: 1.35;
-  color: #666;
+  color: #1a1a1a;
+}
+
+.dashboard-ml-benefit-icon-svg {
+  width: 56px;
+  height: 56px;
+}
+
+.dashboard-ml-benefit-body {
+  display: none;
 }
 
 .dashboard-ml-benefit-cta {
+  grid-area: cta;
   appearance: none;
   border: none;
   cursor: pointer;
-  justify-self: stretch;
-  min-height: 36px;
-  padding: 0 10px;
-  border-radius: 6px;
-  background: #ede9fe;
+  justify-self: start;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
   color: #5f44eb;
   font: inherit;
   font-size: 0.86rem;
   font-weight: 650;
-  text-align: center;
+  text-align: left;
 }
 
 .dashboard-ml-benefit-cta:hover {
-  background: #e0d9ff;
-  text-decoration: none;
+  text-decoration: underline;
+  background: transparent;
 }
 
 .dashboard-ml-benefit-icon-accent {
   fill: #5f44eb;
 }
 
-/* Saldo + reservar: izquierda informativo, derecha CTA si hay créditos */
+.dashboard-ml-benefit-card--buy {
+  --dashboard-ml-buy: #2563eb;
+  --dashboard-ml-buy-deep: #1d4ed8;
+  background: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-title {
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon {
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-accent {
+  fill: #bfdbfe;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta {
+  color: #fff;
+  font-weight: 700;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta:hover {
+  color: #dbeafe;
+  background: transparent;
+  text-decoration: underline;
+}
+
 .dashboard-ml-credits-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 2px 0 4px;
+  margin: 0 0 4px;
   padding: 0 2px;
 }
 
@@ -15285,46 +15282,6 @@ button.sessions-balance {
 .dashboard-ml-book-cta:hover {
   background: #f5f3ff;
   color: #4c31d8;
-}
-
-/* Card Comprar sesiones: invertida en azul */
-.dashboard-ml-benefit-card--buy {
-  --dashboard-ml-buy: #2563eb;
-  --dashboard-ml-buy-deep: #1d4ed8;
-  background: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
-  border: 1px solid rgba(29, 78, 216, 0.35);
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
-  color: #fff;
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon {
-  color: #fff;
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-accent {
-  fill: #bfdbfe;
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-title {
-  color: #fff;
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-body {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta {
-  background: #fff;
-  color: var(--dashboard-ml-buy);
-  white-space: nowrap;
-  font-size: 0.82rem;
-  padding: 0 8px;
-}
-
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta:hover {
-  background: #dbeafe;
-  color: var(--dashboard-ml-buy-deep);
-  filter: none;
 }
 
 .dashboard-ml-section-lead {
@@ -15532,17 +15489,18 @@ button.sessions-balance {
 }
 
 .dashboard-ml-history-card {
-  --dashboard-ml-history-blue: #2563eb;
-  --dashboard-ml-history-blue-deep: #1d4ed8;
+  --dashboard-ml-history-violet: #5f44eb;
+  --dashboard-ml-history-violet-deep: #4c31d8;
   display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 12px;
-  align-content: start;
+  align-content: stretch;
   min-height: 200px;
   padding: 16px;
   border-radius: 6px;
-  background: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
-  border: 1px solid rgba(29, 78, 216, 0.35);
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  background: linear-gradient(165deg, #7c6aef 0%, #5f44eb 48%, #4c31d8 100%);
+  border: 1px solid rgba(76, 49, 216, 0.35);
+  box-shadow: 0 8px 22px rgba(95, 68, 235, 0.28);
   color: #fff;
 }
 
@@ -15564,19 +15522,21 @@ button.sessions-balance {
 }
 
 .dashboard-ml-history-card .dashboard-ml-benefit-icon-accent {
-  fill: #dbeafe;
-  stroke: #dbeafe;
+  fill: #ddd6fe;
+  stroke: #ddd6fe;
 }
 
 .dashboard-ml-history-card .dashboard-ml-benefit-cta {
+  margin-top: auto;
+  align-self: stretch;
   background: #fff;
-  color: var(--dashboard-ml-history-blue-deep);
+  color: var(--dashboard-ml-history-violet-deep);
   white-space: nowrap;
 }
 
 .dashboard-ml-history-card .dashboard-ml-benefit-cta:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #ede9fe;
+  color: #3b28b5;
 }
 
 .dashboard-ml-history-empty {
@@ -15630,41 +15590,75 @@ button.sessions-balance {
   background: rgba(255, 255, 255, 0.24);
 }
 
+/* Diario — bloque tipo single-page debajo de actividad */
+.dashboard-ml-diary {
+  display: grid;
+  gap: 16px;
+  margin-top: 56px;
+  padding-top: 8px;
+}
+
+.dashboard-ml-diary-panel {
+  display: grid;
+  gap: 18px;
+  padding: clamp(22px, 3vw, 32px);
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-ml-diary-panel .dashboard-ml-section-lead {
+  margin: 0;
+  max-width: 42rem;
+}
+
+.dashboard-ml-diary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-ml-diary-cta {
+  appearance: none;
+  cursor: pointer;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: none;
+  background: #5f44eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+}
+
+.dashboard-ml-diary-cta:hover {
+  background: #4c31d8;
+}
+
+.dashboard-ml-diary-cta--ghost {
+  background: #ede9fe;
+  color: #5f44eb;
+}
+
+.dashboard-ml-diary-cta--ghost:hover {
+  background: #ddd6fe;
+  color: #4c31d8;
+}
+
 .dashboard-ml-foot {
   padding: 4px 2px 8px;
+  margin-top: 28px;
 }
 
 @media (max-width: 860px) {
-  .dashboard-ml-promo-photo {
-    width: min(70%, 420px);
-    height: 58%;
-    top: 8%;
-    transform: none;
-    left: 50%;
-    translate: -50% 0;
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      #000 55%,
-      rgba(0, 0, 0, 0.45) 80%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      #000 55%,
-      rgba(0, 0, 0, 0.45) 80%,
-      transparent 100%
-    );
+  .dashboard-ml-promo-slide {
+    padding: 24px 40px 36px;
   }
 
   .dashboard-ml-promo-copy {
     width: min(920px, 100%);
     max-width: none;
-    margin: 0;
-    padding: 140px 56px 36px;
-    justify-items: center;
-    text-align: center;
   }
 
   .dashboard-ml-promo-title {
@@ -15884,17 +15878,22 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo {
-    min-height: clamp(220px, 48vw, 280px);
+    height: clamp(200px, 42vw, 260px);
+    min-height: 200px;
     margin-bottom: 0;
   }
 
+  .patient-dashboard-home .dashboard-ml-promo-slide {
+    padding: 18px 28px 28px;
+  }
+
   .patient-dashboard-home .dashboard-ml-promo-photo {
-    height: 48%;
-    width: min(78%, 320px);
+    max-height: 120px;
+    width: min(70%, 240px);
   }
 
   .patient-dashboard-home .dashboard-ml-promo-copy {
-    padding: 108px 48px 28px;
+    padding: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-title {
