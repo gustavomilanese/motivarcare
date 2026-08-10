@@ -3,7 +3,7 @@
  * Starts MySQL + Redis for local dev without failing when fixed-name containers
  * already exist (e.g. created by an older compose file or manual docker run).
  */
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +21,26 @@ function run(command, args, inherit = true) {
     stdio: inherit ? "inherit" : "pipe",
     encoding: "utf8"
   });
+}
+
+function assertDockerDaemon() {
+  const result = run("docker", ["info"], false);
+  if (result.status === 0) {
+    return;
+  }
+  const detail = `${result.stderr ?? ""}${result.stdout ?? ""}`.trim();
+  process.stderr.write(
+    [
+      "",
+      "[db:up] Docker no responde. Abrí Docker Desktop y esperá a que diga Running,",
+      "después volvé a correr: npm run dev",
+      detail ? `Detalle: ${detail.split("\n")[0]}` : "",
+      ""
+    ]
+      .filter(Boolean)
+      .join("\n")
+  );
+  process.exit(1);
 }
 
 function containerState(name) {
@@ -46,6 +66,8 @@ function composeCreate(service) {
     throw new Error(`docker compose up failed for ${service}`);
   }
 }
+
+assertDockerDaemon();
 
 for (const { container, service } of SERVICES) {
   const state = containerState(container);

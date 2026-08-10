@@ -287,6 +287,7 @@ export function MainPortal(props: {
     readPatientHomeVariant() === "next" &&
     homeVariantEpoch >= 0;
   const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;
+  const showSiteFooter = !isOnboardingMatchingView && !isBookTrialView;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
     && !props.state.assignedProfessionalId?.trim()
@@ -540,7 +541,7 @@ export function MainPortal(props: {
         </main>
       </PortalNavigation>
 
-      {!hideSidebar ? (
+      {showSiteFooter ? (
         <PortalFooter
           language={props.state.language}
           residencyCountry={props.state.profileResidencyCountry}

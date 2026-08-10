@@ -14601,6 +14601,9 @@ button.sessions-balance {
   width: 100%;
   margin: 0;
   border-radius: 0;
+  /* Por encima del rail fixed para que el menú no tape el pie */
+  position: relative;
+  z-index: 80;
 }
 
 .portal-main--home-ml .portal-main-content {
@@ -15710,7 +15713,7 @@ button.sessions-balance {
 .dashboard-ml-sessions {
   display: grid;
   gap: 8px;
-  margin-top: 48px;
+  margin-top: 64px;
 }
 
 .dashboard-ml-sessions-head {
@@ -15757,7 +15760,7 @@ button.sessions-balance {
 
 .dashboard-ml-sessions-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: 1fr;
   width: 100%;
 }
@@ -15803,10 +15806,6 @@ button.sessions-balance {
 .dashboard-ml-panel--bookings > * {
   position: relative;
   z-index: 1;
-}
-
-.dashboard-ml-panel--calendar {
-  background: #fff;
 }
 
 .dashboard-ml-panel-title {
@@ -15925,124 +15924,32 @@ button.sessions-balance {
   cursor: not-allowed;
 }
 
-.dashboard-ml-panel--bookings,
-.dashboard-ml-panel--calendar {
+.dashboard-ml-panel--bookings {
   overflow: hidden;
   min-width: 0;
 }
 
-.dashboard-ml-panel--calendar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 12px;
-  row-gap: 12px;
-}
-
-.dashboard-ml-panel--calendar.is-collapsed {
-  grid-template-rows: auto;
-  row-gap: 0;
-}
-
-.dashboard-ml-calendar-toggle {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-}
-
-.dashboard-ml-calendar-toggle:hover {
-  background: transparent;
-}
-
-.dashboard-ml-calendar-toggle:focus-visible {
-  outline: 2px solid #5f44eb;
-  outline-offset: 3px;
-  border-radius: 6px;
-}
-
-.dashboard-ml-panel--calendar > .dashboard-ml-panel-title,
-.dashboard-ml-calendar-toggle .dashboard-ml-panel-title {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.dashboard-ml-panel--calendar.is-expanded .dashboard-ml-calendar-toggle {
-  grid-column: 1;
-  width: auto;
-  justify-content: flex-start;
-  gap: 10px;
-}
-
-.dashboard-ml-panel--calendar.is-expanded .dashboard-ml-calendar-toggle .sessions-collapse-icon {
-  margin-left: 4px;
-}
-
-.dashboard-ml-panel--calendar .sessions-calendar-card,
-.dashboard-ml-panel--calendar .content-card {
-  display: contents;
-  box-shadow: none;
-  border: none;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-}
-
-.dashboard-ml-panel--calendar .sessions-calendar-head.no-title {
-  grid-column: 2;
-  grid-row: 1;
-  justify-content: flex-end;
-  align-items: center;
-  align-self: center;
-  padding: 0;
-  gap: 0;
-}
-
-.dashboard-ml-panel--calendar .sessions-calendar-month-nav {
-  align-items: center;
-  gap: 6px;
-}
-
-.dashboard-ml-panel--calendar .sessions-calendar-month-nav strong {
-  min-width: 0;
-  font-size: 0.92rem;
-  font-weight: 650;
-  color: #1a1a1a;
-  white-space: nowrap;
-}
-
-.dashboard-ml-panel--calendar .sessions-calendar-layout {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-
 .dashboard-ml-history-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: 1fr;
-  /* surface gap 16 + 32 = 48 (3× el aire previo) */
-  margin-top: 32px;
+  /* Mismo aire que entre lista y cards: un solo paquete */
+  margin-top: 10px;
 }
 
 @media (min-width: 900px) {
   .dashboard-ml-history-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-ml-history-card--calendar.is-expanded {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .dashboard-ml-history-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -16051,10 +15958,10 @@ button.sessions-balance {
   isolation: isolate;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  min-height: 220px;
-  padding: 16px;
+  grid-template-rows: auto;
+  gap: 0;
+  min-height: 0;
+  padding: 14px 16px;
   border-radius: 8px;
   background:
     linear-gradient(165deg, rgba(239, 246, 255, 0.95) 0%, rgba(255, 255, 255, 0) 44%),
@@ -16065,6 +15972,13 @@ button.sessions-balance {
     0 10px 28px rgba(95, 68, 235, 0.1),
     0 18px 36px rgba(37, 99, 235, 0.06);
   color: #1a1a1a;
+}
+
+.dashboard-ml-history-card.is-expanded {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 220px;
+  padding: 16px;
 }
 
 .dashboard-ml-history-card::before {
@@ -16087,6 +16001,33 @@ button.sessions-balance {
   z-index: 1;
 }
 
+.dashboard-ml-history-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.dashboard-ml-history-toggle:hover {
+  background: transparent;
+}
+
+.dashboard-ml-history-toggle:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 .dashboard-ml-history-head {
   display: flex;
   align-items: center;
@@ -16094,7 +16035,8 @@ button.sessions-balance {
   min-width: 0;
 }
 
-.dashboard-ml-history-card .dashboard-ml-panel-title {
+.dashboard-ml-history-card .dashboard-ml-panel-title,
+.dashboard-ml-history-toggle .dashboard-ml-panel-title {
   margin: 0;
   color: #1a1a1a;
   font-size: 1rem;
@@ -16129,6 +16071,37 @@ button.sessions-balance {
   min-height: 0;
   display: grid;
   align-content: start;
+}
+
+.dashboard-ml-history-card--calendar.is-expanded {
+  min-height: 0;
+}
+
+.dashboard-ml-history-preview--calendar {
+  width: 100%;
+  min-width: 0;
+}
+
+.dashboard-ml-history-preview--calendar .sessions-calendar-card,
+.dashboard-ml-history-preview--calendar .content-card {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.dashboard-ml-history-preview--calendar .sessions-calendar-head.no-title {
+  justify-content: flex-end;
+  padding: 0 0 8px;
+  gap: 0;
+}
+
+.dashboard-ml-history-preview--calendar .sessions-calendar-month-nav strong {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #1a1a1a;
+  white-space: nowrap;
 }
 
 .dashboard-ml-history-empty {
@@ -16211,60 +16184,604 @@ button.sessions-balance {
   color: #4c31d8;
 }
 
-/* Diario — bloque tipo single-page debajo de actividad */
+/* Diario — banner + acciones debajo de actividad */
 .dashboard-ml-diary {
   display: grid;
-  gap: 16px;
-  margin-top: 56px;
+  gap: 0;
+  margin-top: 96px;
   padding-top: 8px;
 }
 
-.dashboard-ml-diary-panel {
+.dashboard-ml-diary-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background: #5f44eb;
+  box-shadow: none;
+}
+
+.dashboard-ml-diary-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 260px at 82% 45%, rgba(221, 214, 254, 0.32) 0%, transparent 70%),
+    radial-gradient(circle 180px at 18% 30%, rgba(196, 181, 253, 0.24) 0%, transparent 68%);
+}
+
+.dashboard-ml-diary-banner-frame {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 18px;
-  padding: clamp(22px, 3vw, 32px);
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 280px);
+  align-items: center;
+  gap: clamp(16px, 3vw, 28px);
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(22px, 3vw, 32px) clamp(20px, 3vw, 28px);
+  box-sizing: border-box;
 }
 
-.dashboard-ml-diary-panel .dashboard-ml-section-lead {
-  margin: 0;
-  max-width: 42rem;
-}
-
-.dashboard-ml-diary-actions {
-  display: flex;
-  flex-wrap: wrap;
+.dashboard-ml-diary-banner-copy {
+  display: grid;
   gap: 10px;
+  justify-items: start;
+  color: #fff;
+  min-width: 0;
 }
 
-.dashboard-ml-diary-cta {
+.dashboard-ml-diary-banner-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-diary-banner-title {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dashboard-ml-diary-banner-body {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-diary-banner-cta {
   appearance: none;
   cursor: pointer;
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 8px;
+  margin-top: 4px;
+  padding: 0;
   border: none;
-  background: #5f44eb;
-  color: #fff;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
   font: inherit;
+  font-size: 0.95rem;
   font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  padding-bottom: 2px;
 }
 
-.dashboard-ml-diary-cta:hover {
-  background: #4c31d8;
+.dashboard-ml-diary-banner-cta:hover {
+  background: transparent;
+  color: #fff;
+  border-bottom-color: #fff;
 }
 
-.dashboard-ml-diary-cta--ghost {
-  background: #ede9fe;
+.dashboard-ml-diary-banner-media {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-ml-diary-banner-photo,
+.dashboard-ml-feature-banner-photo {
+  display: block;
+  width: 220px;
+  height: 180px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.28));
+  pointer-events: none;
+  user-select: none;
+}
+
+.dashboard-ml-diary-actions-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+@media (min-width: 720px) {
+  .dashboard-ml-diary-actions-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dashboard-ml-diary-action-card {
+  appearance: none;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 10px;
+  justify-items: start;
+  width: 100%;
+  min-height: 148px;
+  padding: 16px 14px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(15, 23, 42, 0.1),
+    0 18px 36px rgba(95, 68, 235, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-ml-diary-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12),
+    0 22px 40px rgba(95, 68, 235, 0.12);
+  background: #fff;
+}
+
+.dashboard-ml-diary-action-card:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+
+.dashboard-ml-diary-action-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.dashboard-ml-diary-action-icon .dashboard-ml-benefit-icon-svg {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+}
+
+.dashboard-ml-diary-action-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-ml-diary-action-cta {
+  margin-top: auto;
+  color: #5f44eb;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-ml-diary-action-card:hover .dashboard-ml-diary-action-cta {
+  color: #4c31d8;
+}
+
+@media (max-width: 720px) {
+  .dashboard-ml-diary-banner-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 168px);
+    padding: 20px 18px;
+    gap: 12px;
+  }
+
+  .dashboard-ml-diary-banner-photo,
+  .dashboard-ml-feature-banner-photo {
+    width: 148px;
+    height: 122px;
+  }
+
+  .dashboard-ml-diary-banner-title {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-ml-diary-banner-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-ml-diary-banner-media {
+    justify-self: end;
+    max-width: 140px;
+  }
+}
+
+/* Ejercicios + Música — banners premium + primera fila */
+.dashboard-ml-feature-section {
+  display: grid;
+  gap: 0;
+  margin-top: 96px;
+}
+
+.dashboard-ml-feature-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background: #5f44eb;
+  box-shadow: none;
+}
+
+.dashboard-ml-feature-banner--purple {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(165deg, #9b4de8 0%, #7e22ce 48%, #6b21a8 100%);
+  box-shadow: none;
+}
+
+.dashboard-ml-feature-banner--purple::before {
+  display: block;
+  background:
+    radial-gradient(ellipse 70% 80% at 92% 18%, rgba(233, 213, 255, 0.42) 0%, transparent 62%),
+    radial-gradient(circle 220px at 12% 78%, rgba(192, 132, 252, 0.36) 0%, transparent 68%),
+    radial-gradient(circle 160px at 58% 100%, rgba(126, 34, 206, 0.35) 0%, transparent 70%);
+}
+
+.dashboard-ml-feature-banner--pistachio {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16) 0%, transparent 44%),
+    linear-gradient(165deg, #97b582 0%, #7d9b6a 50%, #658254 100%);
+  box-shadow: none;
+}
+
+.dashboard-ml-feature-banner--pistachio::before {
+  display: block;
+  background:
+    radial-gradient(ellipse 68% 78% at 90% 16%, rgba(236, 253, 245, 0.38) 0%, transparent 60%),
+    radial-gradient(circle 210px at 10% 80%, rgba(187, 247, 208, 0.28) 0%, transparent 68%),
+    radial-gradient(circle 150px at 55% 100%, rgba(74, 102, 58, 0.28) 0%, transparent 70%);
+}
+
+.dashboard-ml-feature-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 260px at 82% 45%, rgba(221, 214, 254, 0.32) 0%, transparent 70%),
+    radial-gradient(circle 180px at 18% 30%, rgba(196, 181, 253, 0.24) 0%, transparent 68%);
+}
+
+.dashboard-ml-feature-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.12) 0%, transparent 34%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+.dashboard-ml-feature-banner-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 280px);
+  align-items: center;
+  gap: clamp(16px, 3vw, 28px);
+  width: 100%;
+  padding: clamp(22px, 3vw, 32px) clamp(20px, 3vw, 28px);
+  box-sizing: border-box;
+}
+
+.dashboard-ml-feature-banner-copy {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  color: #fff;
+  min-width: 0;
+}
+
+.dashboard-ml-feature-banner-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-feature-banner-title {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dashboard-ml-feature-banner-body {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-feature-banner-cta {
+  appearance: none;
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-ml-feature-banner-cta:hover {
+  background: transparent;
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+.dashboard-ml-feature-banner-media {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-ml-feature-panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 0 0 12px 12px;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.1);
+  border-top: none;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.dashboard-ml-feature-panel.is-collapsed {
+  gap: 0;
+}
+
+.dashboard-ml-feature-panel--open {
+  gap: 14px;
+}
+
+.dashboard-ml-feature-panel--empty {
+  display: grid;
+  place-items: center;
+  min-height: 112px;
+  padding: 28px 24px;
+}
+
+.dashboard-ml-feature-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.dashboard-ml-feature-toggle:hover {
+  background: transparent;
+}
+
+.dashboard-ml-feature-toggle:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.dashboard-ml-feature-toggle--static {
+  cursor: default;
+}
+
+.dashboard-ml-feature-toggle-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-ml-feature-empty {
+  margin: 0;
+  padding: 12px 4px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.dashboard-ml-feature-empty--solo {
+  max-width: 28rem;
+  padding: 0;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 550;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: #64748b;
+}
+
+.dashboard-ml-feature-preview-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+@media (min-width: 720px) {
+  .dashboard-ml-feature-preview-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dashboard-ml-feature-preview-card {
+  appearance: none;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  justify-items: start;
+  width: 100%;
+  min-height: 132px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(15, 23, 42, 0.1),
+    0 18px 36px rgba(95, 68, 235, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-ml-feature-preview-card:hover {
+  transform: translateY(-2px);
+  background: #fff;
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12),
+    0 22px 40px rgba(95, 68, 235, 0.12);
+}
+
+.dashboard-ml-feature-preview-card:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+
+.dashboard-ml-feature-preview-card strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-ml-feature-preview-card > span:last-child {
+  color: #666;
+  font-size: 0.86rem;
+}
+
+.dashboard-ml-feature-preview-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.dashboard-ml-feature-preview-card--media {
+  grid-template-rows: auto auto auto;
+}
+
+.dashboard-ml-feature-preview-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%);
+}
+
+.dashboard-ml-feature-media-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dashboard-ml-feature-media-fallback {
+  font-size: 1.6rem;
   color: #5f44eb;
 }
 
-.dashboard-ml-diary-cta--ghost:hover {
-  background: #ddd6fe;
+.dashboard-ml-feature-more {
+  appearance: none;
+  justify-self: start;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #5f44eb;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-ml-feature-more:hover {
+  background: transparent;
   color: #4c31d8;
+}
+
+@media (max-width: 720px) {
+  .dashboard-ml-feature-banner-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 168px);
+    padding: 20px 18px;
+    gap: 12px;
+  }
+
+  .dashboard-ml-feature-banner-title {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-ml-feature-banner-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-ml-feature-banner-media {
+    justify-self: end;
+    max-width: 140px;
+  }
 }
 
 .dashboard-ml-foot {

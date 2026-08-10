@@ -13,6 +13,10 @@ import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { DashboardHomeVariantToggle } from "./DashboardHomeVariantToggle";
 import { DashboardHomePromoCarousel } from "./DashboardHomePromoCarousel";
+import {
+  DashboardHomeExercisesSection,
+  DashboardHomeMusicSection
+} from "./DashboardHomeFeatureSections";
 import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
@@ -306,6 +310,7 @@ function BenefitCard(props: {
 }
 
 function HistoryPreviewCard(props: {
+  language: AppLanguage;
   icon: BenefitIconKind;
   title: string;
   empty: string;
@@ -314,20 +319,92 @@ function HistoryPreviewCard(props: {
   children?: ReactNode;
   hasItems: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <article className="dashboard-ml-history-card">
-      <header className="dashboard-ml-history-head">
-        <div className="dashboard-ml-history-icon" aria-hidden="true">
-          <BenefitIcon kind={props.icon} />
-        </div>
-        <h3 className="dashboard-ml-panel-title">{props.title}</h3>
-      </header>
-      <div className="dashboard-ml-history-preview">
-        {props.hasItems ? props.children : <p className="dashboard-ml-history-empty">{props.empty}</p>}
-      </div>
-      <button type="button" className="dashboard-ml-history-link" onClick={props.onCta}>
-        {props.cta}
+    <article className={`dashboard-ml-history-card${expanded ? " is-expanded" : " is-collapsed"}`}>
+      <button
+        type="button"
+        className="dashboard-ml-history-toggle"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <span className="dashboard-ml-history-head">
+          <span className="dashboard-ml-history-icon" aria-hidden="true">
+            <BenefitIcon kind={props.icon} />
+          </span>
+          <span className="dashboard-ml-panel-title">{props.title}</span>
+        </span>
+        <SessionsCollapsibleToggle expanded={expanded} language={props.language} />
       </button>
+      {expanded ? (
+        <>
+          <div className="dashboard-ml-history-preview">
+            {props.hasItems ? props.children : <p className="dashboard-ml-history-empty">{props.empty}</p>}
+          </div>
+          <button type="button" className="dashboard-ml-history-link" onClick={props.onCta}>
+            {props.cta}
+          </button>
+        </>
+      ) : null}
+    </article>
+  );
+}
+
+function CalendarPreviewCard(props: {
+  language: AppLanguage;
+  bookings: Booking[];
+  timezone: string;
+  onOpenBookingDetail: (bookingId: string) => void;
+  onCta: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <article
+      className={`dashboard-ml-history-card dashboard-ml-history-card--calendar${expanded ? " is-expanded" : " is-collapsed"}`}
+    >
+      <button
+        type="button"
+        className="dashboard-ml-history-toggle"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <span className="dashboard-ml-history-head">
+          <span className="dashboard-ml-history-icon" aria-hidden="true">
+            <BenefitIcon kind="upcoming" />
+          </span>
+          <span className="dashboard-ml-panel-title" id="dashboard-ml-calendar-title">
+            {t(props.language, {
+              es: "Calendario",
+              en: "Calendar",
+              pt: "Calendario"
+            })}
+          </span>
+        </span>
+        <SessionsCollapsibleToggle expanded={expanded} language={props.language} />
+      </button>
+      {expanded ? (
+        <>
+          <div className="dashboard-ml-history-preview dashboard-ml-history-preview--calendar">
+            <SessionsCalendar
+              bookings={props.bookings}
+              timezone={props.timezone}
+              language={props.language}
+              onOpenBookingDetail={props.onOpenBookingDetail}
+              variant="week"
+              hideTitle
+            />
+          </div>
+          <button type="button" className="dashboard-ml-history-link" onClick={props.onCta}>
+            {t(props.language, {
+              es: "Ver reservas",
+              en: "View bookings",
+              pt: "Ver reservas"
+            })}
+          </button>
+        </>
+      ) : null}
     </article>
   );
 }
@@ -373,7 +450,6 @@ export function DashboardNextActionHome(props: {
   onSelectHomeVariant: (variant: "next" | "classic") => void;
 }) {
   const navigate = useNavigate();
-  const [calendarExpanded, setCalendarExpanded] = useState(false);
   const pastBookings = useMemo(() => {
     const now = Date.now();
     return [...props.allBookings]
@@ -690,36 +766,6 @@ export function DashboardNextActionHome(props: {
                 </div>
               )}
             </article>
-
-            <article
-              className={`dashboard-ml-panel dashboard-ml-panel--calendar${calendarExpanded ? " is-expanded" : " is-collapsed"}`}
-            >
-              <button
-                type="button"
-                className="dashboard-ml-calendar-toggle"
-                aria-expanded={calendarExpanded}
-                onClick={() => setCalendarExpanded((current) => !current)}
-              >
-                <h3 className="dashboard-ml-panel-title" id="dashboard-ml-calendar-title">
-                  {t(props.language, {
-                    es: "Calendario de la semana",
-                    en: "This week’s calendar",
-                    pt: "Calendario da semana"
-                  })}
-                </h3>
-                <SessionsCollapsibleToggle expanded={calendarExpanded} language={props.language} />
-              </button>
-              {calendarExpanded ? (
-                <SessionsCalendar
-                  bookings={props.upcomingBookings}
-                  timezone={props.timezone}
-                  language={props.language}
-                  onOpenBookingDetail={props.onOpenBookingDetail}
-                  variant="week"
-                  hideTitle
-                />
-              ) : null}
-            </article>
           </div>
         </section>
 
@@ -727,7 +773,16 @@ export function DashboardNextActionHome(props: {
           className="dashboard-ml-history-grid"
           aria-label={t(props.language, { es: "Detalle de actividad", en: "Activity detail", pt: "Detalhe da atividade" })}
         >
+          <CalendarPreviewCard
+            language={props.language}
+            bookings={props.upcomingBookings}
+            timezone={props.timezone}
+            onOpenBookingDetail={props.onOpenBookingDetail}
+            onCta={() => props.onGoToReservations()}
+          />
+
           <HistoryPreviewCard
+            language={props.language}
             icon="packages"
             title={t(props.language, {
               es: "Paquetes comprados",
@@ -751,6 +806,7 @@ export function DashboardNextActionHome(props: {
           </HistoryPreviewCard>
 
           <HistoryPreviewCard
+            language={props.language}
             icon="history"
             title={t(props.language, {
               es: "Historial de sesiones",
@@ -800,6 +856,7 @@ export function DashboardNextActionHome(props: {
           </HistoryPreviewCard>
 
           <HistoryPreviewCard
+            language={props.language}
             icon="activity"
             title={t(props.language, {
               es: "Actividad de compras",
@@ -842,58 +899,126 @@ export function DashboardNextActionHome(props: {
           </HistoryPreviewCard>
         </section>
 
-        <section
-          className="dashboard-ml-diary"
-          aria-labelledby="dashboard-ml-diary-title"
-        >
-          <div className="dashboard-ml-sessions-head">
-            <h2 id="dashboard-ml-diary-title">
-              {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
-            </h2>
-            <div className="dashboard-ml-sessions-subrow">
-              <p className="dashboard-ml-section-lead">
-                {t(props.language, {
-                  es: "Registrá cómo te sentís y seguí tu proceso emocional en un solo lugar.",
-                  en: "Log how you feel and follow your emotional process in one place.",
-                  pt: "Registre como se sente e acompanhe seu processo emocional em um so lugar."
-                })}
-              </p>
-              <button type="button" className="dashboard-ml-section-link" onClick={() => navigate("/diario")}>
-                {t(props.language, { es: "Abrir diario", en: "Open diary", pt: "Abrir diario" })}
-              </button>
+        <section className="dashboard-ml-diary" aria-labelledby="dashboard-ml-diary-title">
+          <article className="dashboard-ml-diary-banner">
+            <div className="dashboard-ml-diary-banner-frame">
+              <div className="dashboard-ml-diary-banner-copy">
+                <p className="dashboard-ml-diary-banner-kicker">
+                  {t(props.language, {
+                    es: "Diario emocional",
+                    en: "Emotional diary",
+                    pt: "Diario emocional"
+                  })}
+                </p>
+                <h2 id="dashboard-ml-diary-title" className="dashboard-ml-diary-banner-title">
+                  {t(props.language, {
+                    es: "Acompañá tu proceso día a día",
+                    en: "Support your process day by day",
+                    pt: "Acompanhe seu processo dia a dia"
+                  })}
+                </h2>
+                <p className="dashboard-ml-diary-banner-body">
+                  {t(props.language, {
+                    es: "Registrá cómo te sentís, revisá entradas anteriores y volvé a ellas cuando quieras.",
+                    en: "Log how you feel, review past entries, and return whenever you need.",
+                    pt: "Registre como se sente, revise entradas anteriores e volte quando quiser."
+                  })}
+                </p>
+                <button
+                  type="button"
+                  className="dashboard-ml-diary-banner-cta"
+                  onClick={() => navigate("/diario/nueva")}
+                >
+                  {t(props.language, {
+                    es: "Escribir ahora",
+                    en: "Write now",
+                    pt: "Escrever agora"
+                  })}
+                </button>
+              </div>
+              <div className="dashboard-ml-diary-banner-media" aria-hidden="true">
+                  <img
+                  className="dashboard-ml-diary-banner-photo"
+                  src="/home/banner-home-diary.png?v=1"
+                  alt=""
+                  decoding="async"
+                />
+              </div>
             </div>
-          </div>
+          </article>
 
-          <article className="dashboard-ml-diary-panel">
-            <p className="dashboard-ml-section-lead">
-              {t(props.language, {
-                es: "Un espacio privado para anotar emociones, revisar entradas anteriores y volver a ellas cuando quieras.",
-                en: "A private space to note emotions, review past entries, and return whenever you need.",
-                pt: "Um espaco privado para anotar emocoes, revisar entradas anteriores e voltar quando quiser."
-              })}
-            </p>
-            <div className="dashboard-ml-diary-actions">
-              <button type="button" className="dashboard-ml-diary-cta" onClick={() => navigate("/diario/nueva")}>
+          <div
+            className="dashboard-ml-diary-actions-row"
+            aria-label={t(props.language, {
+              es: "Acciones del diario",
+              en: "Diary actions",
+              pt: "Acoes do diario"
+            })}
+          >
+            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario/nueva")}>
+              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
+                <BenefitIcon kind="diary" />
+              </span>
+              <strong className="dashboard-ml-diary-action-title">
                 {t(props.language, {
                   es: "Nueva entrada",
                   en: "New entry",
                   pt: "Nova entrada"
                 })}
-              </button>
-              <button
-                type="button"
-                className="dashboard-ml-diary-cta dashboard-ml-diary-cta--ghost"
-                onClick={() => navigate("/diario/registros")}
-              >
+              </strong>
+              <span className="dashboard-ml-diary-action-cta">
+                {t(props.language, {
+                  es: "Escribir hoy",
+                  en: "Write today",
+                  pt: "Escrever hoje"
+                })}
+              </span>
+            </button>
+
+            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario/registros")}>
+              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
+                <BenefitIcon kind="history" />
+              </span>
+              <strong className="dashboard-ml-diary-action-title">
                 {t(props.language, {
                   es: "Ver registros",
                   en: "View records",
                   pt: "Ver registros"
                 })}
-              </button>
-            </div>
-          </article>
+              </strong>
+              <span className="dashboard-ml-diary-action-cta">
+                {t(props.language, {
+                  es: "Abrir historial",
+                  en: "Open history",
+                  pt: "Abrir historico"
+                })}
+              </span>
+            </button>
+
+            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario")}>
+              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
+                <BenefitIcon kind="activity" />
+              </span>
+              <strong className="dashboard-ml-diary-action-title">
+                {t(props.language, {
+                  es: "Abrir diario",
+                  en: "Open diary",
+                  pt: "Abrir diario"
+                })}
+              </strong>
+              <span className="dashboard-ml-diary-action-cta">
+                {t(props.language, {
+                  es: "Ir al inicio",
+                  en: "Go to home",
+                  pt: "Ir ao inicio"
+                })}
+              </span>
+            </button>
+          </div>
         </section>
+
+        <DashboardHomeExercisesSection language={props.language} />
+        <DashboardHomeMusicSection language={props.language} />
 
         <div className="dashboard-ml-foot">
           <DashboardHomeVariantToggle
