@@ -15439,20 +15439,57 @@ button.sessions-balance {
 }
 
 .dashboard-ml-history-card {
+  --dashboard-ml-history-blue: #5b9cf5;
+  --dashboard-ml-history-blue-deep: #3b82f6;
   display: grid;
   gap: 12px;
   align-content: start;
   min-height: 200px;
   padding: 16px;
   border-radius: 6px;
+  background: linear-gradient(165deg, #74b0f8 0%, #5b9cf5 55%, #4d8fea 100%);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.18);
+  color: #fff;
+}
+
+.dashboard-ml-history-card .dashboard-ml-panel-title {
+  color: #fff;
+}
+
+.dashboard-ml-history-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: #fff;
+}
+
+.dashboard-ml-history-icon .dashboard-ml-benefit-icon-svg {
+  width: 44px;
+  height: 44px;
+}
+
+.dashboard-ml-history-card .dashboard-ml-benefit-icon-accent {
+  fill: #dbeafe;
+  stroke: #dbeafe;
+}
+
+.dashboard-ml-history-card .dashboard-ml-benefit-cta {
   background: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+  color: var(--dashboard-ml-history-blue-deep);
+  white-space: nowrap;
+}
+
+.dashboard-ml-history-card .dashboard-ml-benefit-cta:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .dashboard-ml-history-empty {
   margin: 0;
   font-size: 0.9rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.92);
   line-height: 1.4;
 }
 
@@ -15474,29 +15511,30 @@ button.sessions-balance {
 .dashboard-ml-history-list strong,
 .dashboard-ml-history-item strong {
   font-size: 0.9rem;
-  color: #1a1a1a;
+  color: #fff;
 }
 
 .dashboard-ml-history-list span,
 .dashboard-ml-history-item span {
   font-size: 0.82rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .dashboard-ml-history-item {
   appearance: none;
   width: 100%;
   border: none;
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.16);
   border-radius: 6px;
   padding: 10px 11px;
   cursor: pointer;
   text-align: left;
   font: inherit;
+  color: #fff;
 }
 
 .dashboard-ml-history-item:hover {
-  background: #eee;
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .dashboard-ml-foot {

@@ -12,7 +12,6 @@ import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { DashboardHomeVariantToggle } from "./DashboardHomeVariantToggle";
 import { DashboardHomePromoCarousel } from "./DashboardHomePromoCarousel";
-import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
 import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { findProfessionalById } from "../lib/professionals";
@@ -85,7 +84,7 @@ function BenefitIcon(props: { kind: BenefitIconKind }) {
           <rect x="14" y="16" width="36" height="34" rx="6" stroke="currentColor" strokeWidth="2.4" />
           <path d="M14 26h36" stroke="currentColor" strokeWidth="2.4" />
           <path d="M24 12v8M40 12v8" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-          <circle cx="32" cy="38" r="5" fill="#5f44eb" />
+          <circle cx="32" cy="38" r="5" className="dashboard-ml-benefit-icon-accent" fill="currentColor" />
         </svg>
       );
     case "packages":
@@ -93,7 +92,7 @@ function BenefitIcon(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <path d="M16 28l16-8 16 8v16l-16 8-16-8V28z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
           <path d="M32 20v32M16 28l16 8 16-8" stroke="currentColor" strokeWidth="2.4" />
-          <path d="M40 24l8 4" stroke="#5f44eb" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M40 24l8 4" className="dashboard-ml-benefit-icon-accent" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
         </svg>
       );
     case "history":
@@ -101,7 +100,7 @@ function BenefitIcon(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <circle cx="32" cy="32" r="18" stroke="currentColor" strokeWidth="2.4" />
           <path d="M32 20v14l10 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M18 24l-4-2" stroke="#5f44eb" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M18 24l-4-2" className="dashboard-ml-benefit-icon-accent" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
         </svg>
       );
     case "activity":
@@ -109,7 +108,7 @@ function BenefitIcon(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <rect x="16" y="14" width="32" height="38" rx="4" stroke="currentColor" strokeWidth="2.4" />
           <path d="M24 24h16M24 32h16M24 40h10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-          <circle cx="42" cy="42" r="5" fill="#5f44eb" />
+          <circle cx="42" cy="42" r="5" className="dashboard-ml-benefit-icon-accent" fill="currentColor" />
         </svg>
       );
     default:
@@ -500,6 +499,9 @@ export function DashboardNextActionHome(props: {
           aria-label={t(props.language, { es: "Detalle de actividad", en: "Activity detail", pt: "Detalhe da atividade" })}
         >
           <article className="dashboard-ml-history-card">
+            <div className="dashboard-ml-history-icon" aria-hidden="true">
+              <BenefitIcon kind="packages" />
+            </div>
             <h3 className="dashboard-ml-panel-title">
               {t(props.language, {
                 es: "Paquetes comprados",
@@ -509,11 +511,18 @@ export function DashboardNextActionHome(props: {
             </h3>
             {packagesSummary}
             <button type="button" className="dashboard-ml-benefit-cta" onClick={() => props.onBuySessions()}>
-              {acquireNewSessionsButtonLabel(props.language)}
+              {t(props.language, {
+                es: "+ Nuevas sesiones",
+                en: "+ New sessions",
+                pt: "+ Novas sessoes"
+              })}
             </button>
           </article>
 
           <article className="dashboard-ml-history-card">
+            <div className="dashboard-ml-history-icon" aria-hidden="true">
+              <BenefitIcon kind="history" />
+            </div>
             <h3 className="dashboard-ml-panel-title">
               {t(props.language, {
                 es: "Historial de sesiones",
@@ -564,6 +573,9 @@ export function DashboardNextActionHome(props: {
           </article>
 
           <article className="dashboard-ml-history-card">
+            <div className="dashboard-ml-history-icon" aria-hidden="true">
+              <BenefitIcon kind="activity" />
+            </div>
             <h3 className="dashboard-ml-panel-title">
               {t(props.language, {
                 es: "Actividad de compras",
