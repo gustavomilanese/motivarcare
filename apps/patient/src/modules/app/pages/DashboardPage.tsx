@@ -788,11 +788,6 @@ export function DashboardPage(props: {
     availableSessions
   });
 
-  const greetingFirstName =
-    (props.state.session?.firstName ?? "").trim()
-    || (props.state.session?.fullName ?? "").trim().split(/\s+/)[0]
-    || t(props.language, { es: "paciente", en: "there", pt: "paciente" });
-
   const dashboardIntroTitle = t(props.language, {
     es: "Gestioná tu bienestar desde acá",
     en: "Manage your wellbeing here",
@@ -813,7 +808,6 @@ export function DashboardPage(props: {
           heroImage={landingPatientHeroImage}
           onHeroFallback={props.onHeroFallback}
           onImageFallback={props.onImageFallback}
-          greetingName={greetingFirstName}
           availableSessions={availableSessions}
           actionKind={nextActionKind}
           nextBooking={nextBooking}

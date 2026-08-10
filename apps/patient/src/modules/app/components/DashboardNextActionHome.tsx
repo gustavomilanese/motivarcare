@@ -42,7 +42,6 @@ export function DashboardNextActionHome(props: {
   heroImage: string | null;
   onHeroFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
-  greetingName: string;
   availableSessions: number;
   actionKind: DashboardNextActionKind;
   nextBooking: Booking | null;
@@ -240,6 +239,9 @@ export function DashboardNextActionHome(props: {
           { count: String(props.availableSessions) }
         );
 
+  const showBuySecondary =
+    props.actionKind !== "buy_sessions" && props.actionKind !== "assign_professional";
+
   return (
     <div className="dashboard-next-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
       <section className="dashboard-next-atmosphere" data-tour="patient-tour-hero">
@@ -264,15 +266,12 @@ export function DashboardNextActionHome(props: {
       <div className="dashboard-next-body">
         <header className="dashboard-next-header">
           <p className="dashboard-next-kicker">MotivarCare</p>
-          <h2 className="dashboard-next-greeting">
-            {replaceTemplate(
-              t(props.language, {
-                es: "Hola, {name}",
-                en: "Hi, {name}",
-                pt: "Ola, {name}"
-              }),
-              { name: props.greetingName }
-            )}
+          <h2 className="dashboard-next-title">
+            {t(props.language, {
+              es: "Qué sigue",
+              en: "What’s next",
+              pt: "O que vem a seguir"
+            })}
           </h2>
           <p className="dashboard-next-balance" aria-live="polite">
             {props.availableSessions > 0
@@ -285,112 +284,138 @@ export function DashboardNextActionHome(props: {
           </p>
         </header>
 
-        <section
-          className="dashboard-next-action"
-          data-tour="patient-tour-trial"
-          aria-labelledby="dashboard-next-action-title"
-        >
-          <h3 id="dashboard-next-action-title" className="dashboard-next-action-title">
-            {actionTitle}
-          </h3>
-          {actionBody ? <p className="dashboard-next-action-body">{actionBody}</p> : null}
-          <div className="dashboard-next-action-row">
-            <button
-              type="button"
-              className="dashboard-next-primary"
-              data-tour="patient-tour-next-primary"
-              onClick={runPrimaryAction}
-            >
-              {primaryCtaLabel}
-            </button>
-            {props.actionKind === "next_session" && props.nextBooking ? (
+        <div className="dashboard-next-grid">
+          <section
+            className="dashboard-next-action"
+            data-tour="patient-tour-trial"
+            aria-labelledby="dashboard-next-action-title"
+          >
+            <h3 id="dashboard-next-action-title" className="dashboard-next-action-title">
+              {actionTitle}
+            </h3>
+            {actionBody ? <p className="dashboard-next-action-body">{actionBody}</p> : null}
+            <div className="dashboard-next-action-row">
               <button
                 type="button"
-                className="dashboard-next-secondary"
-                onClick={() => props.onRescheduleBooking(props.nextBooking!.id)}
+                className="dashboard-next-primary"
+                data-tour="patient-tour-next-primary"
+                onClick={runPrimaryAction}
               >
-                {t(props.language, { es: "Modificar", en: "Reschedule", pt: "Modificar" })}
+                {primaryCtaLabel}
               </button>
-            ) : null}
-          </div>
-        </section>
-
-        {props.showGoogleCalendarCta ? (
-          <div className="dashboard-next-calendar-cta">
-            <button
-              type="button"
-              className={`dashboard-next-secondary${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-              onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-            >
-              {t(props.language, {
-                es: "Conectá Google Calendar",
-                en: "Connect Google Calendar",
-                pt: "Conectar o Google Calendar"
-              })}
-            </button>
-          </div>
-        ) : null}
-
-        {props.activeProfessional ? (
-          <section className="dashboard-next-pro" data-tour="patient-tour-kpis">
-            <button
-              type="button"
-              className="dashboard-next-pro-hit"
-              onClick={() => props.onGoToProfessional(props.activeProfessional!.id)}
-              aria-label={t(props.language, {
-                es: `Profesional activo: ${professionalAccessibleName(props.activeProfessional)}. Abrir ficha.`,
-                en: `Active professional: ${professionalAccessibleName(props.activeProfessional)}. Open profile.`,
-                pt: `Profissional ativo: ${professionalAccessibleName(props.activeProfessional)}. Abrir ficha.`
-              })}
-            >
-              <img
-                className="dashboard-next-pro-avatar"
-                src={professionalPhotoSrc(props.professionalPhotoMap[props.activeProfessional.id])}
-                alt={professionalPhotoAlt(props.activeProfessional)}
-                onError={props.onImageFallback}
-              />
-              <div className="dashboard-next-pro-copy">
-                <span className="dashboard-next-pro-label">
-                  {t(props.language, {
-                    es: "Tu profesional",
-                    en: "Your professional",
-                    pt: "Seu profissional"
-                  })}
-                </span>
-                <ProfessionalNameStack professional={props.activeProfessional} as="span" />
-                <span className="dashboard-next-pro-title">{props.activeProfessional.title}</span>
-              </div>
-            </button>
-            <div
-              className={
-                props.canSelfChangeProfessional
-                  ? "dashboard-next-pro-actions"
-                  : "dashboard-next-pro-actions dashboard-next-pro-actions--solo"
-              }
-            >
-              <button
-                type="button"
-                className="dashboard-next-pro-chat"
-                onClick={() => props.onGoToChat(props.activeProfessional!.id)}
-              >
-                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-              </button>
-              {props.canSelfChangeProfessional ? (
+              {props.actionKind === "next_session" && props.nextBooking ? (
                 <button
                   type="button"
-                  className="dashboard-next-pro-change"
-                  onClick={() => props.onNavigateToChangeProfessional()}
+                  className="dashboard-next-secondary"
+                  onClick={() => props.onRescheduleBooking(props.nextBooking!.id)}
                 >
-                  {t(props.language, {
-                    es: "Cambiar profesional",
-                    en: "Change professional",
-                    pt: "Trocar profissional"
-                  })}
+                  {t(props.language, { es: "Modificar", en: "Reschedule", pt: "Modificar" })}
                 </button>
               ) : null}
             </div>
           </section>
-        ) : null}
+
+          <aside className="dashboard-next-side">
+            {props.showGoogleCalendarCta ? (
+              <div className="dashboard-next-calendar-cta">
+                <button
+                  type="button"
+                  className={`dashboard-next-secondary${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+                  onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+                >
+                  {t(props.language, {
+                    es: "Conectá Google Calendar",
+                    en: "Connect Google Calendar",
+                    pt: "Conectar o Google Calendar"
+                  })}
+                </button>
+              </div>
+            ) : null}
+
+            {props.activeProfessional ? (
+              <section className="dashboard-next-pro" data-tour="patient-tour-kpis">
+                <button
+                  type="button"
+                  className="dashboard-next-pro-hit"
+                  onClick={() => props.onGoToProfessional(props.activeProfessional!.id)}
+                  aria-label={t(props.language, {
+                    es: `Profesional activo: ${professionalAccessibleName(props.activeProfessional)}. Abrir ficha.`,
+                    en: `Active professional: ${professionalAccessibleName(props.activeProfessional)}. Open profile.`,
+                    pt: `Profissional ativo: ${professionalAccessibleName(props.activeProfessional)}. Abrir ficha.`
+                  })}
+                >
+                  <img
+                    className="dashboard-next-pro-avatar"
+                    src={professionalPhotoSrc(props.professionalPhotoMap[props.activeProfessional.id])}
+                    alt={professionalPhotoAlt(props.activeProfessional)}
+                    onError={props.onImageFallback}
+                  />
+                  <div className="dashboard-next-pro-copy">
+                    <span className="dashboard-next-pro-label">
+                      {t(props.language, {
+                        es: "Tu profesional",
+                        en: "Your professional",
+                        pt: "Seu profissional"
+                      })}
+                    </span>
+                    <ProfessionalNameStack professional={props.activeProfessional} as="span" />
+                    <span className="dashboard-next-pro-title">{props.activeProfessional.title}</span>
+                  </div>
+                </button>
+                <div
+                  className={
+                    props.canSelfChangeProfessional
+                      ? "dashboard-next-pro-actions"
+                      : "dashboard-next-pro-actions dashboard-next-pro-actions--solo"
+                  }
+                >
+                  <button
+                    type="button"
+                    className="dashboard-next-pro-chat"
+                    onClick={() => props.onGoToChat(props.activeProfessional!.id)}
+                  >
+                    {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                  </button>
+                  {props.canSelfChangeProfessional ? (
+                    <button
+                      type="button"
+                      className="dashboard-next-pro-change"
+                      onClick={() => props.onNavigateToChangeProfessional()}
+                    >
+                      {t(props.language, {
+                        es: "Cambiar profesional",
+                        en: "Change professional",
+                        pt: "Trocar profissional"
+                      })}
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
+            {showBuySecondary ? (
+              <section className="dashboard-next-buy" aria-label={acquireNewSessionsButtonLabel(props.language)}>
+                <h3 className="dashboard-next-buy-title">
+                  {t(props.language, {
+                    es: "Comprar sesiones",
+                    en: "Buy sessions",
+                    pt: "Comprar sessoes"
+                  })}
+                </h3>
+                <p className="dashboard-next-buy-body">
+                  {t(props.language, {
+                    es: "Paquete o sesión individual al precio de tu profesional.",
+                    en: "Package or single session at your professional’s rate.",
+                    pt: "Pacote ou sessao individual pelo preco do seu profissional."
+                  })}
+                </p>
+                <button type="button" className="dashboard-next-secondary dashboard-next-buy-cta" onClick={() => props.onBuySessions()}>
+                  {acquireNewSessionsButtonLabel(props.language)}
+                </button>
+              </section>
+            ) : null}
+          </aside>
+        </div>
 
         <DashboardHomeVariantToggle
           language={props.language}
