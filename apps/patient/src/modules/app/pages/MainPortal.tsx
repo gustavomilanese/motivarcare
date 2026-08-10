@@ -23,6 +23,8 @@ import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
+import { readPatientHomeVariant } from "../lib/patientHomeVariant";
+import { useMobilePortal } from "../hooks/useMobilePortal";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
 import { ProfessionalReviewModal } from "../../reviews/components/ProfessionalReviewModal";
@@ -272,7 +274,19 @@ export function MainPortal(props: {
   const isOnboardingMatchingView =
     shouldLockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
   const isBookTrialView = location.pathname === "/book/trial";
-  const hideSidebar = isOnboardingMatchingView || isBookTrialView;
+  const isMobilePortal = useMobilePortal();
+  const [homeVariantEpoch, setHomeVariantEpoch] = useState(0);
+  useEffect(() => {
+    const bump = () => setHomeVariantEpoch((current) => current + 1);
+    window.addEventListener("mc-patient-home-variant", bump);
+    return () => window.removeEventListener("mc-patient-home-variant", bump);
+  }, []);
+  const homeMlChrome =
+    !isMobilePortal &&
+    location.pathname === "/" &&
+    readPatientHomeVariant() === "next" &&
+    homeVariantEpoch >= 0;
+  const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;
   const needsInitialTherapistSelection =
     !props.state.therapistSelectionCompleted
     && !props.state.assignedProfessionalId?.trim()
@@ -426,7 +440,9 @@ export function MainPortal(props: {
   ]);
 
   return (
-    <div className={`portal-shell ${hideSidebar ? "onboarding-match-focus" : "portal-shell--site-footer"}`}>
+    <div
+      className={`portal-shell ${hideSidebar && !homeMlChrome ? "onboarding-match-focus" : "portal-shell--site-footer"}${homeMlChrome ? " portal-shell--home-ml" : ""}`}
+    >
       <DiaryPortalToolbarMountProvider>
       <PortalNavigation
         language={props.state.language}
@@ -456,6 +472,7 @@ export function MainPortal(props: {
         onOpenPreferences={ui.openPreferences}
         onLogout={ui.logoutFromMenu}
         hideSidebar={hideSidebar}
+        homeMlChrome={homeMlChrome}
         patientHeaderAvatarSrc={patientHeaderAvatarSrc}
         onPatientAvatarError={handleImageFallback}
         authToken={props.state.authToken}

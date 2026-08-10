@@ -9,6 +9,7 @@ import {
 } from "@therapy/i18n-config";
 import { ProfessionalNameStack, professionalPhotoAlt } from "./ProfessionalNameStack";
 import { DashboardHomeVariantToggle } from "./DashboardHomeVariantToggle";
+import { DashboardHomePromoCarousel } from "./DashboardHomePromoCarousel";
 import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
 import { findProfessionalById } from "../lib/professionals";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
@@ -244,30 +245,33 @@ export function DashboardNextActionHome(props: {
           { count: String(props.availableSessions) }
         );
 
+  const nextBookingId = props.nextBooking?.id ?? null;
+  const upcomingForTiles = props.upcomingBookings.filter((booking) => booking.id !== nextBookingId).slice(0, 2);
+
   return (
-    <div className="dashboard-next-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
-      <section className="dashboard-next-hero" data-tour="patient-tour-hero">
-        <div className={`dashboard-next-hero-media${props.heroImage === null ? " dashboard-next-hero-media--loading" : ""}`}>
-          {props.heroImage === null ? (
-            <span className="dashboard-next-hero-skeleton" aria-hidden="true" />
-          ) : (
-            <img
-              className="dashboard-next-hero-photo"
-              src={props.heroImage}
-              alt=""
-              loading="eager"
-              decoding="async"
-              onError={props.onHeroFallback}
-            />
-          )}
-          <div className="dashboard-next-hero-scrim" aria-hidden="true" />
-        </div>
+    <div className="dashboard-ml-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
+      <DashboardHomePromoCarousel language={props.language} />
 
-        <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-next-toolbar-mount" />
-
-        <div className="dashboard-next-hero-stage">
-          <p className="dashboard-next-hero-brand">MotivarCare</p>
-          <p className="dashboard-next-hero-balance" aria-live="polite">
+      <section
+        className={`dashboard-ml-hero${props.heroImage === null ? " dashboard-ml-hero--loading" : ""}`}
+        data-tour="patient-tour-hero"
+      >
+        {props.heroImage === null ? (
+          <span className="dashboard-ml-hero-skeleton" aria-hidden="true" />
+        ) : (
+          <img
+            className="dashboard-ml-hero-photo"
+            src={props.heroImage}
+            alt=""
+            loading="eager"
+            decoding="async"
+            onError={props.onHeroFallback}
+          />
+        )}
+        <div className="dashboard-ml-hero-scrim" aria-hidden="true" />
+        <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
+        <div className="dashboard-ml-hero-inner">
+          <p className="dashboard-ml-hero-balance" aria-live="polite">
             {props.availableSessions > 0
               ? balanceLabel
               : t(props.language, {
@@ -276,14 +280,14 @@ export function DashboardNextActionHome(props: {
                   pt: "Sem sessoes disponiveis"
                 })}
           </p>
-          <h2 id="dashboard-next-action-title" className="dashboard-next-hero-title" data-tour="patient-tour-trial">
+          <h2 id="dashboard-next-action-title" className="dashboard-ml-hero-title" data-tour="patient-tour-trial">
             {actionTitle}
           </h2>
-          {actionBody ? <p className="dashboard-next-hero-lead">{actionBody}</p> : null}
-          <div className="dashboard-next-hero-actions">
+          {actionBody ? <p className="dashboard-ml-hero-lead">{actionBody}</p> : null}
+          <div className="dashboard-ml-hero-actions">
             <button
               type="button"
-              className="dashboard-next-hero-primary"
+              className="dashboard-ml-hero-primary"
               data-tour="patient-tour-next-primary"
               onClick={runPrimaryAction}
             >
@@ -292,14 +296,14 @@ export function DashboardNextActionHome(props: {
             {props.actionKind === "next_session" && props.nextBooking ? (
               <button
                 type="button"
-                className="dashboard-next-hero-ghost"
+                className="dashboard-ml-hero-ghost"
                 onClick={() => props.onRescheduleBooking(props.nextBooking!.id)}
               >
                 {t(props.language, { es: "Modificar", en: "Reschedule", pt: "Modificar" })}
               </button>
             ) : null}
             {props.actionKind !== "buy_sessions" && props.actionKind !== "assign_professional" ? (
-              <button type="button" className="dashboard-next-hero-ghost" onClick={() => props.onBuySessions()}>
+              <button type="button" className="dashboard-ml-hero-ghost" onClick={() => props.onBuySessions()}>
                 {t(props.language, {
                   es: "Comprar sesiones",
                   en: "Buy sessions",
@@ -311,30 +315,30 @@ export function DashboardNextActionHome(props: {
         </div>
       </section>
 
-      <div className="dashboard-next-body">
-        {props.showGoogleCalendarCta ? (
-          <div className="dashboard-next-calendar-strip">
-            <button
-              type="button"
-              className={`dashboard-next-rail-button${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-              onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-            >
-              {t(props.language, {
-                es: "Conectá Google Calendar",
-                en: "Connect Google Calendar",
-                pt: "Conectar o Google Calendar"
-              })}
-            </button>
-          </div>
-        ) : null}
+      {props.showGoogleCalendarCta ? (
+        <div className="dashboard-ml-band dashboard-ml-band--calendar">
+          <button
+            type="button"
+            className={`dashboard-ml-calendar-btn${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+            onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+          >
+            {t(props.language, {
+              es: "Conectá Google Calendar",
+              en: "Connect Google Calendar",
+              pt: "Conectar o Google Calendar"
+            })}
+          </button>
+        </div>
+      ) : null}
 
-        <div className="dashboard-next-rail">
-          <section className="dashboard-next-rail-card" data-tour="patient-tour-kpis">
+      <section className="dashboard-ml-band dashboard-ml-band--tiles" aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}>
+        <div className="dashboard-ml-tiles" data-tour="patient-tour-kpis">
+          <article className="dashboard-ml-tile">
             {props.activeProfessional ? (
               <>
                 <button
                   type="button"
-                  className="dashboard-next-pro-hit"
+                  className="dashboard-ml-tile-pro"
                   onClick={() => props.onGoToProfessional(props.activeProfessional!.id)}
                   aria-label={t(props.language, {
                     es: `Profesional activo: ${professionalAccessibleName(props.activeProfessional)}. Abrir ficha.`,
@@ -343,13 +347,13 @@ export function DashboardNextActionHome(props: {
                   })}
                 >
                   <img
-                    className="dashboard-next-pro-avatar"
+                    className="dashboard-ml-tile-avatar"
                     src={professionalPhotoSrc(props.professionalPhotoMap[props.activeProfessional.id])}
                     alt={professionalPhotoAlt(props.activeProfessional)}
                     onError={props.onImageFallback}
                   />
-                  <div className="dashboard-next-pro-copy">
-                    <span className="dashboard-next-pro-label">
+                  <div className="dashboard-ml-tile-pro-copy">
+                    <span className="dashboard-ml-tile-kicker">
                       {t(props.language, {
                         es: "Tu profesional",
                         en: "Your professional",
@@ -357,19 +361,13 @@ export function DashboardNextActionHome(props: {
                       })}
                     </span>
                     <ProfessionalNameStack professional={props.activeProfessional} as="span" />
-                    <span className="dashboard-next-pro-title">{props.activeProfessional.title}</span>
+                    <span className="dashboard-ml-tile-meta">{props.activeProfessional.title}</span>
                   </div>
                 </button>
-                <div
-                  className={
-                    props.canSelfChangeProfessional
-                      ? "dashboard-next-pro-actions"
-                      : "dashboard-next-pro-actions dashboard-next-pro-actions--solo"
-                  }
-                >
+                <div className="dashboard-ml-tile-actions">
                   <button
                     type="button"
-                    className="dashboard-next-pro-chat"
+                    className="dashboard-ml-tile-cta"
                     onClick={() => props.onGoToChat(props.activeProfessional!.id)}
                   >
                     {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
@@ -377,35 +375,31 @@ export function DashboardNextActionHome(props: {
                   {props.canSelfChangeProfessional ? (
                     <button
                       type="button"
-                      className="dashboard-next-pro-change"
+                      className="dashboard-ml-tile-secondary"
                       onClick={() => props.onNavigateToChangeProfessional()}
                     >
-                      {t(props.language, {
-                        es: "Cambiar",
-                        en: "Change",
-                        pt: "Trocar"
-                      })}
+                      {t(props.language, { es: "Cambiar", en: "Change", pt: "Trocar" })}
                     </button>
                   ) : null}
                 </div>
               </>
             ) : (
               <>
-                <h3 className="dashboard-next-rail-title">
+                <h3 className="dashboard-ml-tile-title">
                   {t(props.language, {
                     es: "Tu profesional",
                     en: "Your professional",
                     pt: "Seu profissional"
                   })}
                 </h3>
-                <p className="dashboard-next-rail-copy">
+                <p className="dashboard-ml-tile-copy">
                   {t(props.language, {
                     es: "Todavía no tenés uno asignado.",
                     en: "You don’t have one assigned yet.",
                     pt: "Voce ainda nao tem um atribuido."
                   })}
                 </p>
-                <button type="button" className="dashboard-next-rail-button" onClick={() => props.onNavigateToAssignProfessional()}>
+                <button type="button" className="dashboard-ml-tile-cta" onClick={() => props.onNavigateToAssignProfessional()}>
                   {t(props.language, {
                     es: "Elegir profesional",
                     en: "Choose professional",
@@ -414,72 +408,78 @@ export function DashboardNextActionHome(props: {
                 </button>
               </>
             )}
-          </section>
+          </article>
 
-          <section className="dashboard-next-rail-card dashboard-next-rail-card--buy">
-            <h3 className="dashboard-next-rail-title">
+          <article className="dashboard-ml-tile dashboard-ml-tile--buy">
+            <h3 className="dashboard-ml-tile-title">
               {t(props.language, {
                 es: "Comprar sesiones",
                 en: "Buy sessions",
                 pt: "Comprar sessoes"
               })}
             </h3>
-            <p className="dashboard-next-rail-copy">
+            <p className="dashboard-ml-tile-copy">
               {t(props.language, {
-                es: "Paquetes o sesión individual. El catálogo se abre acá mismo.",
-                en: "Packages or a single session. The catalog opens right here.",
-                pt: "Pacotes ou sessao individual. O catalogo abre aqui mesmo."
+                es: "Paquetes o sesión individual, sin salir de Inicio.",
+                en: "Packages or a single session, without leaving Home.",
+                pt: "Pacotes ou sessao individual, sem sair do Inicio."
               })}
             </p>
-            <button type="button" className="dashboard-next-rail-primary" onClick={() => props.onBuySessions()}>
+            <button type="button" className="dashboard-ml-tile-cta" onClick={() => props.onBuySessions()}>
               {acquireNewSessionsButtonLabel(props.language)}
             </button>
-          </section>
+          </article>
 
-          <section className="dashboard-next-rail-card" data-tour="patient-tour-bookings">
-            <div className="dashboard-next-upcoming-head">
-              <h3 className="dashboard-next-rail-title">
+          <article className="dashboard-ml-tile" data-tour="patient-tour-bookings">
+            <div className="dashboard-ml-tile-head">
+              <h3 className="dashboard-ml-tile-title">
                 {t(props.language, {
                   es: "Próximas",
                   en: "Upcoming",
                   pt: "Proximas"
                 })}
               </h3>
-              <button type="button" className="dashboard-next-upcoming-all" onClick={() => props.onGoToReservations()}>
+              <button type="button" className="dashboard-ml-tile-link" onClick={() => props.onGoToReservations()}>
                 {t(props.language, {
-                  es: "Sesiones",
-                  en: "Sessions",
-                  pt: "Sessoes"
+                  es: "Ver Sesiones",
+                  en: "View Sessions",
+                  pt: "Ver Sessoes"
                 })}
               </button>
             </div>
-            {props.upcomingBookings.length === 0 ? (
-              <p className="dashboard-next-upcoming-empty">
-                {t(props.language, {
-                  es: "Sin turnos agendados por ahora.",
-                  en: "No appointments scheduled yet.",
-                  pt: "Sem horarios agendados por enquanto."
-                })}
+            {upcomingForTiles.length === 0 ? (
+              <p className="dashboard-ml-tile-copy">
+                {props.upcomingBookings.length > 0
+                  ? t(props.language, {
+                      es: "Tu próxima sesión ya está arriba. Mirá el resto en Sesiones.",
+                      en: "Your next session is above. See the rest in Sessions.",
+                      pt: "Sua proxima sessao ja esta acima. Veja o resto em Sessoes."
+                    })
+                  : t(props.language, {
+                      es: "Sin turnos agendados por ahora.",
+                      en: "No appointments scheduled yet.",
+                      pt: "Sem horarios agendados por enquanto."
+                    })}
               </p>
             ) : (
-              <ul className="dashboard-next-upcoming-list">
-                {props.upcomingBookings.slice(0, 2).map((booking) => {
+              <ul className="dashboard-ml-upcoming-list">
+                {upcomingForTiles.map((booking) => {
                   const pro = findProfessionalById(booking.professionalId, props.professionals);
                   return (
                     <li key={booking.id}>
                       <button
                         type="button"
-                        className="dashboard-next-upcoming-item"
+                        className="dashboard-ml-upcoming-item"
                         onClick={() => props.onOpenBookingDetail(booking.id)}
                       >
-                        <span className="dashboard-next-upcoming-when">
+                        <span className="dashboard-ml-upcoming-when">
                           {formatDateTime({
                             isoDate: booking.startsAt,
                             timezone: props.timezone,
                             language: props.language
                           })}
                         </span>
-                        <span className="dashboard-next-upcoming-who">
+                        <span className="dashboard-ml-upcoming-who">
                           {pro
                             ? professionalAccessibleName(pro)
                             : t(props.language, {
@@ -494,9 +494,11 @@ export function DashboardNextActionHome(props: {
                 })}
               </ul>
             )}
-          </section>
+          </article>
         </div>
+      </section>
 
+      <div className="dashboard-ml-band dashboard-ml-band--foot">
         <DashboardHomeVariantToggle
           language={props.language}
           variant="next"
