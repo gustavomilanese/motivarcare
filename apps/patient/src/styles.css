@@ -14810,12 +14810,33 @@ button.sessions-balance {
   --dashboard-ml-cta: #3483fa;
   --dashboard-ml-brand: #5f44eb;
   --dashboard-ml-panel: #ffffff;
+  /* Continuidad ML: el violeta del banner ES el fondo (full-bleed) y baja de tono */
+  --dashboard-ml-brand-solid-end: clamp(300px, 40vh, 400px);
+  --dashboard-ml-brand-fade-end: clamp(470px, 58vh, 620px);
   width: 100%;
   max-width: none;
   display: grid;
   gap: 0;
-  background: var(--dashboard-ml-page);
+  background: linear-gradient(
+    180deg,
+    var(--dashboard-ml-brand) 0,
+    var(--dashboard-ml-brand) var(--dashboard-ml-brand-solid-end),
+    var(--dashboard-ml-page) var(--dashboard-ml-brand-fade-end),
+    var(--dashboard-ml-page) 100%
+  );
   position: relative;
+}
+
+@supports (background: linear-gradient(in oklab, #5f44eb, #ebebeb)) {
+  .dashboard-ml-home {
+    background: linear-gradient(
+      in oklab,
+      var(--dashboard-ml-brand) 0,
+      var(--dashboard-ml-brand) var(--dashboard-ml-brand-solid-end),
+      var(--dashboard-ml-page) var(--dashboard-ml-brand-fade-end),
+      var(--dashboard-ml-page) 100%
+    );
+  }
 }
 
 .dashboard-ml-home .dashboard-ml-toolbar-mount.dashboard-hero-toolbar-mount {
@@ -14834,14 +14855,13 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner ML: full-bleed + degradé que continúa detrás de las cards */
+/* Banner: imagen sobre el violeta continuo del home (sin capa pegada) */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
   min-height: clamp(280px, 38vh, 380px);
   background: transparent;
   overflow: visible;
-  isolation: isolate;
   margin-bottom: 0;
   z-index: 1;
 }
@@ -14853,6 +14873,19 @@ button.sessions-balance {
   overflow: hidden;
   background: #5f44eb;
   border-radius: 0;
+}
+
+/* Une el borde inferior de la imagen con el violeta del home */
+.dashboard-ml-promo-viewport::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(95, 68, 235, 0) 0%, #5f44eb 100%);
 }
 
 .dashboard-ml-promo-track {
@@ -14962,54 +14995,6 @@ button.sessions-balance {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
-/*
-  Degradé ML suave:
-  1) capa sólida con mask (evita banding de rgba apilado)
-  2) blur liviano para difuminar cualquier posterización
-  3) interpolación oklab cuando el browser la soporta
-*/
-.dashboard-ml-promo::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% - 56px);
-  height: clamp(180px, 22vw, 240px);
-  z-index: 1;
-  pointer-events: none;
-  background: #5f44eb;
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    #000 0%,
-    #000 18%,
-    rgba(0, 0, 0, 0.72) 42%,
-    rgba(0, 0, 0, 0.38) 68%,
-    rgba(0, 0, 0, 0.12) 88%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    #000 0%,
-    #000 18%,
-    rgba(0, 0, 0, 0.72) 42%,
-    rgba(0, 0, 0, 0.38) 68%,
-    rgba(0, 0, 0, 0.12) 88%,
-    transparent 100%
-  );
-  filter: blur(10px);
-  transform: scaleY(1.08);
-  transform-origin: top center;
-}
-
-@supports (background: linear-gradient(in oklab, #5f44eb, #ebebeb)) {
-  .dashboard-ml-promo::after {
-    background: linear-gradient(in oklab, #5f44eb 0%, #5f44eb 14%, #ebebeb 100%);
-    -webkit-mask-image: none;
-    mask-image: none;
-    filter: blur(8px);
-  }
-}
-
 .dashboard-ml-promo-arrow {
   position: absolute;
   top: 46%;
@@ -15072,9 +15057,9 @@ button.sessions-balance {
   gap: 16px;
   width: 100%;
   max-width: 1200px;
-  /* ~20% más abajo: se ve más banner; el degradé queda detrás */
-  margin: -28px auto 0;
-  padding: 12px clamp(16px, 3vw, 28px) 32px;
+  /* Cards sobre la zona donde el violeta del home ya baja de tono */
+  margin: 0 auto;
+  padding: 8px clamp(16px, 3vw, 28px) 32px;
   box-sizing: border-box;
 }
 
