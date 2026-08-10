@@ -14891,20 +14891,22 @@ button.sessions-balance {
   border-radius: 0;
 }
 
-/* Une la imagen con el #5f44eb continuo (mismo hex, sin otro tono) */
+/* Degradé largo: une foto → violeta de marca sin línea dura */
 .dashboard-ml-promo-viewport::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 72px;
+  height: clamp(120px, 42%, 200px);
   z-index: 3;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     rgba(95, 68, 235, 0) 0%,
+    rgba(95, 68, 235, 0.2) 28%,
     rgba(95, 68, 235, 0.55) 55%,
+    rgba(95, 68, 235, 0.88) 78%,
     #5f44eb 100%
   );
 }
@@ -14942,6 +14944,25 @@ button.sessions-balance {
   object-fit: cover;
   object-position: center;
   display: block;
+  /* Disuelve el borde inferior de la foto (el PNG no es #5f44eb exacto) */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.92) 62%,
+    rgba(0, 0, 0, 0.55) 78%,
+    rgba(0, 0, 0, 0.18) 90%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.92) 62%,
+    rgba(0, 0, 0, 0.55) 78%,
+    rgba(0, 0, 0, 0.18) 90%,
+    transparent 100%
+  );
 }
 
 /* Scrim neutro para legibilidad del texto centrado */
@@ -14950,7 +14971,14 @@ button.sessions-balance {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0.22) 52%, rgba(0, 0, 0, 0.12) 100%);
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0.22) 52%, rgba(0, 0, 0, 0.12) 100%),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 55%,
+      rgba(95, 68, 235, 0.35) 78%,
+      #5f44eb 100%
+    );
 }
 
 .dashboard-ml-promo-copy {
