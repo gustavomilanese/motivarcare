@@ -15339,7 +15339,7 @@ button.sessions-balance {
 .dashboard-ml-sessions {
   display: grid;
   gap: 14px;
-  margin-top: 2px;
+  margin-top: 28px;
 }
 
 .dashboard-ml-sessions-head {
