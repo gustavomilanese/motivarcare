@@ -521,9 +521,15 @@ async function releaseTrialCheckoutIfBookingCancelled(checkout: PaymentCheckout)
 
   const booking = await prisma.booking.findUnique({
     where: { id: checkout.fulfillmentBookingId },
-    select: { status: true }
+    select: { status: true, startsAt: true, cancelledAt: true }
   });
   if (booking?.status !== "CANCELLED") {
+    return null;
+  }
+
+  /** Solo repara cancelaciones a tiempo (paciente/pro). Admin quema el checkout a CANCELLED. */
+  const cancelledAt = booking.cancelledAt?.getTime() ?? Date.now();
+  if (cancelledAt >= booking.startsAt.getTime()) {
     return null;
   }
 
@@ -640,6 +646,39 @@ export async function releaseTrialCheckoutOnBookingCancel(bookingId: string): Pr
     message: "Trial booking cancelled — payment credit released for rebooking",
     payload: { bookingId },
     actorRole: "SYSTEM"
+  });
+}
+
+/**
+ * Admin “eliminar sesión de prueba”: anula el cobro reutilizable.
+ * No deja crédito para reagendar (a diferencia del cancel del paciente/profesional).
+ */
+export async function burnTrialCheckoutOnAdminCancel(bookingId: string): Promise<void> {
+  const checkout = await prisma.paymentCheckout.findFirst({
+    where: {
+      kind: "TRIAL",
+      fulfillmentBookingId: bookingId
+    },
+    orderBy: { paidAt: "desc" }
+  });
+  if (!checkout) {
+    return;
+  }
+
+  await prisma.paymentCheckout.update({
+    where: { id: checkout.id },
+    data: {
+      status: "CANCELLED",
+      fulfillmentBookingId: null
+    }
+  });
+
+  await logPaymentCheckoutEvent({
+    checkoutId: checkout.id,
+    eventType: "checkout.trial_admin_burned",
+    message: "Admin cancelled trial booking — payment credit burned (not reusable)",
+    payload: { bookingId },
+    actorRole: "ADMIN"
   });
 }
 

@@ -601,8 +601,8 @@ export function PatientEditModal(props: {
                   {blockedCancellationForFutureTrial ? (
                     <div className="stack admin-trial-cancel-block">
                       <p className="admin-trial-cancel-hint">
-                        Sesion de prueba futura: el paciente no puede cancelarla desde la app. Como admin, podes anularla
-                        escribiendo la frase exacta y usando el boton de abajo.
+                        Sesión de prueba futura: el paciente puede cancelarla desde la app (queda crédito para
+                        reagendar). Como admin, “Eliminar” anula la reserva y quema el crédito de prueba.
                       </p>
                       <label>
                         Escribi exactamente: <strong>{ADMIN_TRIAL_BOOKING_CANCEL_PHRASE}</strong>

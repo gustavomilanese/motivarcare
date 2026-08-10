@@ -1,13 +1,20 @@
+import { patientHasReusableTrialCredit } from "../modules/payments/paymentCheckout.service.js";
 import { prisma } from "./prisma.js";
 
 const ACTIVE_BOOKING_STATUSES = ["REQUESTED", "CONFIRMED"] as const;
 
 export type PatientActiveProfessionalChangeGate =
   | { ok: true }
-  | { ok: false; status: 409; error: string; code: "CREDITS_REMAINING" | "RESERVED_SESSIONS" };
+  | {
+      ok: false;
+      status: 409;
+      error: string;
+      code: "CREDITS_REMAINING" | "RESERVED_SESSIONS" | "TRIAL_CREDIT_REMAINING";
+    };
 
 /**
- * Cambio de profesional ya asignado: solo si no quedan créditos ni reservas vigentes.
+ * Cambio de profesional ya asignado: solo si no quedan créditos de paquete,
+ * crédito de prueba reagendable ni reservas vigentes.
  * Alta inicial, reafirmación del mismo pro o desasignación no usan este gate.
  */
 export async function assertPatientMaySwitchActiveProfessional(params: {
@@ -21,7 +28,7 @@ export async function assertPatientMaySwitchActiveProfessional(params: {
     return { ok: true };
   }
 
-  const [creditSummary, upcomingCount] = await Promise.all([
+  const [creditSummary, upcomingCount, hasTrialCredit] = await Promise.all([
     prisma.patientPackagePurchase.aggregate({
       where: { patientId },
       _sum: { remainingCredits: true }
@@ -32,6 +39,10 @@ export async function assertPatientMaySwitchActiveProfessional(params: {
         status: { in: [...ACTIVE_BOOKING_STATUSES] },
         endsAt: { gt: new Date() }
       }
+    }),
+    patientHasReusableTrialCredit({
+      patientId,
+      professionalId: previousProfessionalId
     })
   ]);
 
@@ -43,6 +54,16 @@ export async function assertPatientMaySwitchActiveProfessional(params: {
       code: "CREDITS_REMAINING",
       error:
         "No podés cambiar de profesional mientras tengas sesiones disponibles. Usálas o consultá a soporte."
+    };
+  }
+
+  if (hasTrialCredit) {
+    return {
+      ok: false,
+      status: 409,
+      code: "TRIAL_CREDIT_REMAINING",
+      error:
+        "No podés cambiar de profesional mientras tengas una sesión de prueba pagada por reagendar. Elegí un horario o consultá a soporte."
     };
   }
 

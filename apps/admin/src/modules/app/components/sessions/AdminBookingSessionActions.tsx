@@ -37,9 +37,9 @@ export function AdminBookingSessionActions(props: AdminBookingSessionActionsProp
       {isTrial ? (
         <p className="admin-trial-cancel-hint">
           {t(props.language, {
-            es: "Sesión de prueba: usá el flujo con frase para cancelarla. Las de paquete se cancelan con el botón rojo.",
-            en: "Trial session: use the phrase flow to cancel. Package sessions use the red button.",
-            pt: "Sessao de teste: use o fluxo com frase para cancelar."
+            es: "Sesión de prueba: “Eliminar” quema el crédito (no reagenda). El paciente, al cancelar a tiempo, sí conserva el crédito para otro horario.",
+            en: "Trial session: “Delete” burns the credit (no rebook). If the patient cancels on time, they keep the credit for another slot.",
+            pt: "Sessao de teste: “Eliminar” queima o credito (sem reagendar). Se o paciente cancelar a tempo, mantem o credito."
           })}
         </p>
       ) : null}

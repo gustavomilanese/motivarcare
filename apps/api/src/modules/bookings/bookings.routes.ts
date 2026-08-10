@@ -8,6 +8,7 @@ import { LockNotAcquiredError, withDistributedLock } from "../../lib/distributed
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
 import { allocateNextPackageSessionOrdinal } from "../../lib/packageSessionAttribution.js";
 import { prisma } from "../../lib/prisma.js";
+import { refundBookingCreditsToConsumedPurchase } from "../../lib/refundBookingCredits.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import { notifyPatientOnProfessionalBookingChange } from "../notifications/bookingLifecycleNotifications.js";
 import { sendPatientEmailForBooking } from "../notifications/patientEmailService.js";
@@ -1465,9 +1466,11 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
 
   const cancelledAt = parsed.data.cancelledAt ? new Date(parsed.data.cancelledAt) : new Date();
   const hoursBeforeSession = (booking.startsAt.getTime() - cancelledAt.getTime()) / (1000 * 60 * 60);
-  /** Reintegrar créditos del paquete si la sesión aún no empezó (cancelación de una reserva futura). */
+  /** Reintegrar créditos del paquete consumido si la sesión aún no empezó. */
   const shouldRefundCredits =
-    booking.consumedCredits > 0 && cancelledAt.getTime() < booking.startsAt.getTime();
+    booking.consumedCredits > 0
+    && Boolean(booking.consumedPurchaseId)
+    && cancelledAt.getTime() < booking.startsAt.getTime();
   const shouldReleaseTrialCredit = isTrialBooking && cancelledAt.getTime() < booking.startsAt.getTime();
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -1481,37 +1484,12 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
     });
 
     if (shouldRefundCredits) {
-      const purchaseToRefund = booking.consumedPurchaseId
-        ? await tx.patientPackagePurchase.findFirst({
-            where: {
-              id: booking.consumedPurchaseId,
-              patientId: booking.patientId
-            },
-            select: { id: true }
-          })
-        : await tx.patientPackagePurchase.findFirst({
-            where: { patientId: booking.patientId },
-            orderBy: { purchasedAt: "asc" },
-            select: { id: true }
-          });
-
-      if (purchaseToRefund) {
-        await tx.patientPackagePurchase.update({
-          where: { id: purchaseToRefund.id },
-          data: {
-            remainingCredits: { increment: booking.consumedCredits }
-          }
-        });
-      }
-
-      await tx.creditLedger.create({
-        data: {
-          patientId: booking.patientId,
-          bookingId: booking.id,
-          type: "SESSION_REFUND",
-          amount: booking.consumedCredits,
-          note: `Booking ${booking.id} cancelled with refund`
-        }
+      await refundBookingCreditsToConsumedPurchase(tx, {
+        patientId: booking.patientId,
+        bookingId: booking.id,
+        consumedPurchaseId: booking.consumedPurchaseId,
+        consumedCredits: booking.consumedCredits,
+        note: `Booking ${booking.id} cancelled with refund`
       });
     }
 

@@ -1,8 +1,10 @@
 import { countUpcomingPatientBookings, type PatientPortalBooking } from "@therapy/patient-core";
+import { countAvailablePatientSessions } from "./countAvailablePatientSessions";
 
-/** Misma regla que el gate de API: 0 créditos y 0 reservas vigentes. */
+/** Misma regla que el gate de API: 0 créditos (paquete o prueba) y 0 reservas vigentes. */
 export function canPatientSelfChangeProfessional(params: {
   creditsRemaining: number;
+  trialRebookAvailable?: boolean;
   bookings: PatientPortalBooking[];
   assignedProfessionalId: string | null | undefined;
   nowMs?: number;
@@ -10,7 +12,12 @@ export function canPatientSelfChangeProfessional(params: {
   if (!params.assignedProfessionalId?.trim()) {
     return false;
   }
-  if (Math.max(0, Number(params.creditsRemaining) || 0) > 0) {
+  if (
+    countAvailablePatientSessions({
+      creditsRemaining: params.creditsRemaining,
+      trialRebookAvailable: params.trialRebookAvailable
+    }) > 0
+  ) {
     return false;
   }
   return countUpcomingPatientBookings(params.bookings, params.nowMs) === 0;

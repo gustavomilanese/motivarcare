@@ -8,6 +8,7 @@ import { prismaErrorUserMessage } from "../../lib/prismaUserError.js";
 import { ADMIN_USER_DELETE_TX_OPTIONS, hardDeleteUserInTransaction } from "../../lib/hardDeleteUserInTransaction.js";
 import { prisma } from "../../lib/prisma.js";
 import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
+import { refundBookingCreditsToConsumedPurchase } from "../../lib/refundBookingCredits.js";
 import {
   TEST_PATIENT_EMAIL,
   TEST_PROFESSIONAL_EMAIL,
@@ -21,7 +22,8 @@ import {
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import {
   listPaymentCheckoutsForPatient,
-  logPaymentCheckoutEvent
+  logPaymentCheckoutEvent,
+  burnTrialCheckoutOnAdminCancel
 } from "../payments/paymentCheckout.service.js";
 import {
   processDlocalGoOrderSync,
@@ -1811,37 +1813,12 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
     });
 
     if (refundCreditsOnAdminCancel) {
-      const purchaseToRefund = existing.consumedPurchaseId
-        ? await tx.patientPackagePurchase.findFirst({
-            where: {
-              id: existing.consumedPurchaseId,
-              patientId: existing.patientId
-            },
-            select: { id: true }
-          })
-        : await tx.patientPackagePurchase.findFirst({
-            where: { patientId: existing.patientId },
-            orderBy: { purchasedAt: "asc" },
-            select: { id: true }
-          });
-
-      if (purchaseToRefund) {
-        await tx.patientPackagePurchase.update({
-          where: { id: purchaseToRefund.id },
-          data: {
-            remainingCredits: { increment: existing.consumedCredits }
-          }
-        });
-      }
-
-      await tx.creditLedger.create({
-        data: {
-          patientId: existing.patientId,
-          bookingId: existing.id,
-          type: "SESSION_REFUND",
-          amount: existing.consumedCredits,
-          note: `Booking ${existing.id} cancelled by admin with refund`
-        }
+      await refundBookingCreditsToConsumedPurchase(tx, {
+        patientId: existing.patientId,
+        bookingId: existing.id,
+        consumedPurchaseId: existing.consumedPurchaseId,
+        consumedCredits: existing.consumedCredits,
+        note: `Booking ${existing.id} cancelled by admin with refund`
       });
     }
 
@@ -1860,6 +1837,9 @@ adminRouter.patch("/bookings/:bookingId", async (req, res) => {
 
   if (nextStatus === "CANCELLED" && existing.status !== "CANCELLED") {
     await cancelBookingCalendarEvents(existing.id);
+    if (isTrialBooking) {
+      await burnTrialCheckoutOnAdminCancel(existing.id);
+    }
   }
 
   return res.json({ booking: updated });

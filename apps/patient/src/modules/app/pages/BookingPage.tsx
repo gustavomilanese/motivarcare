@@ -56,6 +56,7 @@ import {
 } from "../lib/bookingReturnTo";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
+import { countAvailablePatientSessions } from "../lib/countAvailablePatientSessions";
 import type {
   Booking,
   PackagePlan,
@@ -209,7 +210,12 @@ export function BookingPage(props: {
 
   const assignedProfessionalId = props.state.assignedProfessionalId?.trim() ?? "";
   const selectedProfessionalId = props.state.selectedProfessionalId?.trim() ?? "";
-  const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
+  const canChangeProfessionalForNewPackage =
+    !assignedProfessionalId
+    || countAvailablePatientSessions({
+      creditsRemaining: props.state.subscription.creditsRemaining,
+      trialRebookAvailable: props.state.trialRebookAvailable
+    }) <= 0;
   const effectiveProfessionalId = canChangeProfessionalForNewPackage
     ? selectedProfessionalId || assignedProfessionalId
     : assignedProfessionalId || selectedProfessionalId;
@@ -324,8 +330,12 @@ export function BookingPage(props: {
   });
   const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
   const pendingSessions = props.state.subscription.creditsRemaining;
+  const availableSessions = countAvailablePatientSessions({
+    creditsRemaining: pendingSessions,
+    trialRebookAvailable: props.state.trialRebookAvailable
+  });
   const canBookPaidTrialRebook = props.state.trialRebookAvailable && trialRebookMode;
-  const canOpenNewBooking = pendingSessions > 0 || canBookPaidTrialRebook;
+  const canOpenNewBooking = pendingSessions > 0 || canBookPaidTrialRebook || props.state.trialRebookAvailable;
   slotHoldIdRef.current = slotHoldId;
 
   const releaseCurrentSlotHold = useCallback(async () => {
@@ -1473,7 +1483,7 @@ export function BookingPage(props: {
         </div>
       </section>
 
-      {hasProfessionalsOnPortal && pendingSessions > 0 ? (
+      {hasProfessionalsOnPortal && availableSessions > 0 ? (
         <section className="sessions-hero-actions-band sessions-hero-actions-band--buy-only">
           <div className="sessions-hero-actions sessions-booking-hero-actions">
             <button
@@ -1488,7 +1498,7 @@ export function BookingPage(props: {
       ) : null}
 
       <div className="sessions-booking-body">
-      {pendingSessions <= 0 ? (
+      {availableSessions <= 0 ? (
         <div
           className="sessions-balance sessions-balance--zero sessions-booking-credits-strip sessions-balance-card-with-buy"
           role="region"
@@ -1499,7 +1509,7 @@ export function BookingPage(props: {
           })}
         >
           <div className="sessions-balance-figure" aria-hidden="true">
-            {pendingSessions}
+            {availableSessions}
           </div>
           <div className="sessions-balance-copy">
             <span className="sessions-balance-title">
@@ -1531,18 +1541,25 @@ export function BookingPage(props: {
         <button
           type="button"
           className="sessions-balance sessions-balance--interactive sessions-booking-credits-strip sessions-booking-balance-with-fab"
-          onClick={() => toggleNewBookingPanel()}
+          onClick={() => {
+            if (pendingSessions <= 0 && props.state.trialRebookAvailable) {
+              setTrialRebookMode(true);
+              setPanelMode("new");
+              return;
+            }
+            toggleNewBookingPanel();
+          }}
           aria-label={replaceTemplate(
             t(props.language, {
-              es: "Reservar sesión. Te quedan {count} en tu paquete.",
-              en: "Book a session. You have {count} left in your package.",
-              pt: "Reservar sessao. Restam {count} no seu pacote."
+              es: "Reservar sesión. Te quedan {count} disponibles.",
+              en: "Book a session. You have {count} available.",
+              pt: "Reservar sessao. Restam {count} disponiveis."
             }),
-            { count: String(pendingSessions) }
+            { count: String(availableSessions) }
           )}
         >
           <div className="sessions-balance-figure" aria-hidden="true">
-            {pendingSessions}
+            {availableSessions}
           </div>
           <div className="sessions-balance-copy">
             <span className="sessions-balance-title">
@@ -1553,14 +1570,20 @@ export function BookingPage(props: {
               })}
             </span>
             <span className="sessions-balance-sub">
-              {replaceTemplate(
-                t(props.language, {
-                  es: "Te quedan {count} en tu paquete actual.",
-                  en: "You have {count} left in your current package.",
-                  pt: "Restam {count} no seu pacote atual."
-                }),
-                { count: String(pendingSessions) }
-              )}
+              {pendingSessions <= 0 && props.state.trialRebookAvailable
+                ? t(props.language, {
+                    es: "Tenés 1 sesión de prueba pagada para reagendar.",
+                    en: "You have 1 paid trial session to rebook.",
+                    pt: "Voce tem 1 sessao de teste paga para reagendar."
+                  })
+                : replaceTemplate(
+                    t(props.language, {
+                      es: "Te quedan {count} disponibles.",
+                      en: "You have {count} available.",
+                      pt: "Restam {count} disponiveis."
+                    }),
+                    { count: String(availableSessions) }
+                  )}
             </span>
             <span className="sessions-balance-cta-hint">
               {t(props.language, {

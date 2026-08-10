@@ -215,6 +215,7 @@ export function PortalRoutes(props: {
       if (
         !canPatientSelfChangeProfessional({
           creditsRemaining: props.state.subscription.creditsRemaining,
+          trialRebookAvailable: props.state.trialRebookAvailable,
           bookings: props.state.bookings,
           assignedProfessionalId: props.state.assignedProfessionalId
         })
@@ -310,6 +311,7 @@ export function PortalRoutes(props: {
             : changeProfessionalMode
               && !canPatientSelfChangeProfessional({
                 creditsRemaining: props.state.subscription.creditsRemaining,
+                trialRebookAvailable: props.state.trialRebookAvailable,
                 bookings: props.state.bookings,
                 assignedProfessionalId: props.state.assignedProfessionalId
               })

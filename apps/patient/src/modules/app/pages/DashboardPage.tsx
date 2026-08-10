@@ -52,6 +52,7 @@ import {
 } from "../lib/patientPricingProfessional";
 import { findProfessionalById, patientHasAssignedProfessional } from "../lib/professionals";
 import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
+import { countAvailablePatientSessions } from "../lib/countAvailablePatientSessions";
 import { fetchProfessionalAvailability } from "../../matching/services/availability";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import type {
@@ -194,11 +195,17 @@ export function DashboardPage(props: {
   const hasAssignedProfessional = patientHasAssignedProfessional(props.state.assignedProfessionalId);
   const canSelfChangeProfessional = canPatientSelfChangeProfessional({
     creditsRemaining: props.state.subscription.creditsRemaining,
+    trialRebookAvailable: props.state.trialRebookAvailable,
     bookings: props.state.bookings,
     assignedProfessionalId: props.state.assignedProfessionalId,
     nowMs: now
   });
-  const canChangeProfessionalForNewPackage = !assignedProfessionalId || props.state.subscription.creditsRemaining <= 0;
+  const canChangeProfessionalForNewPackage =
+    !assignedProfessionalId
+    || countAvailablePatientSessions({
+      creditsRemaining: props.state.subscription.creditsRemaining,
+      trialRebookAvailable: props.state.trialRebookAvailable
+    }) <= 0;
   const pricingProfessionalId =
     resolvePortalPricingProfessionalId({
       assignedProfessionalId: props.state.assignedProfessionalId,
@@ -577,7 +584,10 @@ export function DashboardPage(props: {
     return resolveIndividualListUnitUsdFromPackages(packagePlans, sessionListUsdMajor);
   }, [packagePlans, pricingProfessional?.sessionPriceUsd, props.fxRates]);
   const canIndividualCtaHome = pricingReady && individualUnitHome !== null && packagePlans.length > 0;
-  const availableSessions = props.state.subscription.creditsRemaining;
+  const availableSessions = countAvailablePatientSessions({
+    creditsRemaining: props.state.subscription.creditsRemaining,
+    trialRebookAvailable: props.state.trialRebookAvailable
+  });
 
   const acquireSessionsHandlers = useMemo(
     () => ({
@@ -944,7 +954,7 @@ export function DashboardPage(props: {
             type="button"
             onClick={() => {
               const resolvedId = props.state.assignedProfessionalId ?? props.state.selectedProfessionalId;
-              if (isMobilePortal && props.state.subscription.creditsRemaining <= 0 && resolvedId) {
+              if (isMobilePortal && availableSessions <= 0 && resolvedId) {
                 dispatchAcquireSessions("book_without_credits");
                 return;
               }
@@ -963,7 +973,7 @@ export function DashboardPage(props: {
               <span className="sessions-available-icon" aria-hidden="true">◌</span>
               {t(props.language, { es: "Sesiones disponibles", en: "Available sessions", pt: "Sessoes disponiveis" })}
             </span>
-            <strong>{props.state.subscription.creditsRemaining}</strong>
+            <strong>{availableSessions}</strong>
             <p>
               {t(props.language, {
                 es: "Listas para reservar",

@@ -29,6 +29,15 @@ describe("canPatientSelfChangeProfessional", () => {
     expect(
       canPatientSelfChangeProfessional({
         creditsRemaining: 0,
+        trialRebookAvailable: true,
+        bookings: [],
+        assignedProfessionalId: "pro-a"
+      })
+    ).toBe(false);
+
+    expect(
+      canPatientSelfChangeProfessional({
+        creditsRemaining: 0,
         bookings: [baseBooking],
         assignedProfessionalId: "pro-a"
       })
