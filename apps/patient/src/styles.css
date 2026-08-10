@@ -14824,8 +14824,10 @@ button.sessions-balance {
 }
 
 /*
-  Degradé full-bleed: arranca en el MISMO #5f44eb del banner (sin salto),
-  se sostiene sólido un tramo y baja tono por tono en la familia violeta.
+  Un solo plano violeta full-bleed.
+  #5f44eb se sostiene sólido PAST el banner + créditos (evita el corte
+  oscuro→claro que se veía al terminar el promo).
+  El degradé empieza más abajo, ya sobre las cards.
 */
 .dashboard-ml-home::before {
   content: "";
@@ -14833,24 +14835,19 @@ button.sessions-balance {
   top: 0;
   left: 50%;
   width: 100vw;
-  height: clamp(520px, 68vh, 700px);
+  height: clamp(760px, 95vh, 980px);
   transform: translateX(-50%);
   z-index: 0;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     #5f44eb 0%,
-    #5f44eb 46%,
-    #6148ec 52%,
-    #664eec 57%,
-    #6f58ee 62%,
-    #7a65ef 67%,
-    #8976f1 72%,
-    #9b8af3 77%,
-    #b0a2f4 82%,
-    #c6bbf5 87%,
-    #dbd4f3 92%,
-    #e8e5f2 96%,
+    #5f44eb 68%,
+    #6550ec 74%,
+    #7360ee 80%,
+    #8a7af1 86%,
+    #a99cf4 91%,
+    #cdc4f3 95%,
     #ebebeb 100%
   );
 }
@@ -14871,12 +14868,12 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner: imagen sobre el violeta continuo del home (sin capa pegada) */
+/* Banner transparente: el violeta lo pinta solo el ::before continuo */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
   min-height: clamp(280px, 38vh, 380px);
-  background: #5f44eb;
+  background: transparent;
   overflow: visible;
   margin-bottom: 0;
   z-index: 1;
@@ -14887,27 +14884,26 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #5f44eb;
+  background: transparent;
   border-radius: 0;
 }
 
-/* Degradé largo: une foto → violeta de marca sin línea dura */
+/* Soften photo → continuous violet (no solid bar that ends in a hard edge) */
 .dashboard-ml-promo-viewport::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: clamp(120px, 42%, 200px);
+  height: clamp(140px, 48%, 220px);
   z-index: 3;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     rgba(95, 68, 235, 0) 0%,
-    rgba(95, 68, 235, 0.2) 28%,
-    rgba(95, 68, 235, 0.55) 55%,
-    rgba(95, 68, 235, 0.88) 78%,
-    #5f44eb 100%
+    rgba(95, 68, 235, 0.25) 35%,
+    rgba(95, 68, 235, 0.65) 70%,
+    rgba(95, 68, 235, 0.92) 100%
   );
 }
 
@@ -14925,7 +14921,7 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #5f44eb;
+  background: transparent;
   display: grid;
   place-items: center;
 }
@@ -14933,7 +14929,7 @@ button.sessions-balance {
 .dashboard-ml-promo-slide--care,
 .dashboard-ml-promo-slide--access,
 .dashboard-ml-promo-slide--match {
-  background: #5f44eb;
+  background: transparent;
 }
 
 .dashboard-ml-promo-photo {
@@ -14965,19 +14961,19 @@ button.sessions-balance {
   );
 }
 
-/* Scrim neutro para legibilidad del texto centrado */
+/* Scrim neutro para legibilidad; no cierra en sólido (evita línea al borde del banner) */
 .dashboard-ml-promo-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0.22) 52%, rgba(0, 0, 0, 0.12) 100%),
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0.22) 52%, rgba(0, 0, 0, 0.08) 100%),
     linear-gradient(
       180deg,
       transparent 0%,
-      transparent 55%,
-      rgba(95, 68, 235, 0.35) 78%,
-      #5f44eb 100%
+      transparent 50%,
+      rgba(95, 68, 235, 0.28) 78%,
+      rgba(95, 68, 235, 0.55) 100%
     );
 }
 
