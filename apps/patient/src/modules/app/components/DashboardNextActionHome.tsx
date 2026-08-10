@@ -316,25 +316,27 @@ export function DashboardNextActionHome(props: {
                 </span>
               )}
             </p>
-            {props.availableSessions > 0 ? (
-              <button
-                type="button"
-                className="dashboard-ml-book-cta"
-                onClick={() => {
-                  if (props.pricingProfessionalId) {
-                    props.onGoToBooking(props.pricingProfessionalId);
-                    return;
-                  }
-                  props.onNavigateToAssignProfessional();
-                }}
-              >
-                {t(props.language, {
-                  es: "Reservar sesión",
-                  en: "Book a session",
-                  pt: "Reservar sessao"
-                })}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="dashboard-ml-book-cta"
+              onClick={() => {
+                if (props.availableSessions <= 0) {
+                  props.onBuySessions();
+                  return;
+                }
+                if (props.pricingProfessionalId) {
+                  props.onGoToBooking(props.pricingProfessionalId);
+                  return;
+                }
+                props.onNavigateToAssignProfessional();
+              }}
+            >
+              {t(props.language, {
+                es: "Reservar sesión",
+                en: "Book a session",
+                pt: "Reservar sessao"
+              })}
+            </button>
           </div>
 
           <section
