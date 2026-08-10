@@ -149,21 +149,18 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
                 aria-hidden={!isActive}
                 data-active={isActive ? "true" : "false"}
               >
-                <div className="dashboard-ml-promo-layout">
-                  <div className="dashboard-ml-promo-copy">
-                    <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
-                    <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
-                    <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
-                    <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
-                  </div>
-                  <div className="dashboard-ml-promo-art" aria-hidden="true">
-                    <img
-                      className="dashboard-ml-promo-photo"
-                      src={banner.imageSrc}
-                      alt=""
-                      loading={bannerIndex === 0 ? "eager" : "lazy"}
-                    />
-                  </div>
+                <img
+                  className="dashboard-ml-promo-photo"
+                  src={banner.imageSrc}
+                  alt=""
+                  loading={bannerIndex === 0 ? "eager" : "lazy"}
+                />
+                <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
+                <div className="dashboard-ml-promo-copy">
+                  <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
+                  <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                  <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
+                  <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
                 </div>
               </article>
             );

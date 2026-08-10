@@ -14826,15 +14826,15 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner ML: color plano + tipografía grande + arte a la derecha */
+/* Banner: imagen full-bleed, texto centrado, contraste sin blur violeta */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
-  min-height: clamp(220px, 32vh, 320px);
+  min-height: clamp(240px, 34vh, 340px);
   background: transparent;
   overflow: visible;
   isolation: isolate;
-  margin-bottom: -40px;
+  margin-bottom: -28px;
 }
 
 .dashboard-ml-promo-viewport {
@@ -14842,7 +14842,7 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #5f44eb;
+  background: #3a2a8a;
   border-radius: 0;
 }
 
@@ -14860,71 +14860,81 @@ button.sessions-balance {
   width: 100%;
   min-height: inherit;
   overflow: hidden;
-  background: #5f44eb;
-}
-
-.dashboard-ml-promo-slide--care {
-  background: #5f44eb;
-}
-
-.dashboard-ml-promo-slide--access {
-  background: #6b52f0;
-}
-
-.dashboard-ml-promo-slide--match {
-  background: #5538e0;
-}
-
-.dashboard-ml-promo-layout {
-  position: relative;
-  z-index: 2;
+  background: #3a2a8a;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: center;
-  min-height: inherit;
+  place-items: center;
+}
+
+.dashboard-ml-promo-slide--care,
+.dashboard-ml-promo-slide--access,
+.dashboard-ml-promo-slide--match {
+  background: #3a2a8a;
+}
+
+.dashboard-ml-promo-photo {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px clamp(16px, 3vw, 28px) 56px;
-  box-sizing: border-box;
-  gap: 12px;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* Scrim neutro (negro) para contraste del texto — sin tinte violeta */
+.dashboard-ml-promo-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.28) 48%, rgba(0, 0, 0, 0.18) 100%);
 }
 
 .dashboard-ml-promo-copy {
+  position: relative;
+  z-index: 2;
   display: grid;
   gap: 12px;
   align-content: center;
-  justify-items: start;
-  text-align: left;
-  max-width: 520px;
+  justify-items: center;
+  text-align: center;
+  width: min(720px, 100%);
+  padding: clamp(28px, 4vw, 48px) clamp(48px, 8vw, 96px);
+  padding-bottom: clamp(48px, 7vw, 72px);
   color: #fff;
+  box-sizing: border-box;
 }
 
 .dashboard-ml-promo-kicker {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 750;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.88);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .dashboard-ml-promo-title {
   margin: 0;
-  font-size: clamp(2rem, 4.4vw, 3.15rem);
-  line-height: 0.98;
+  font-size: clamp(2rem, 4.6vw, 3.2rem);
+  line-height: 1;
   letter-spacing: -0.04em;
   font-weight: 800;
   text-wrap: balance;
   color: #fff;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .dashboard-ml-promo-body {
   margin: 0;
-  font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+  font-size: clamp(0.98rem, 1.35vw, 1.12rem);
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.92);
-  max-width: 28rem;
+  color: #fff;
+  max-width: 34rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 .dashboard-ml-promo-badge {
@@ -14934,48 +14944,27 @@ button.sessions-balance {
   margin-top: 4px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #3d2b9e;
+  background: #fff;
+  color: #1a1a1a;
   font-size: 0.82rem;
   font-weight: 750;
   letter-spacing: 0.01em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
-.dashboard-ml-promo-art {
-  position: relative;
-  min-height: clamp(180px, 26vh, 260px);
-  display: grid;
-  place-items: stretch;
-  overflow: hidden;
-  border-radius: 8px;
-}
-
-.dashboard-ml-promo-photo {
-  width: 165%;
-  max-width: none;
-  height: 100%;
-  min-height: clamp(180px, 26vh, 260px);
-  max-height: none;
-  margin-left: -55%;
-  object-fit: cover;
-  object-position: 100% center;
-  display: block;
-  filter: drop-shadow(0 14px 24px rgba(20, 10, 60, 0.22));
-}
-
+/* Fade corto al gris de página — sin violeta */
 .dashboard-ml-promo::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 48px;
+  height: 36px;
   z-index: 4;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     rgba(235, 235, 235, 0) 0%,
-    rgba(235, 235, 235, 0.55) 45%,
     var(--dashboard-ml-page, #ebebeb) 100%
   );
 }
@@ -15012,7 +15001,7 @@ button.sessions-balance {
 .dashboard-ml-promo-dots {
   position: absolute;
   left: 50%;
-  bottom: 58px;
+  bottom: 44px;
   z-index: 5;
   transform: translateX(-50%);
   display: inline-flex;
@@ -15321,19 +15310,8 @@ button.sessions-balance {
 }
 
 @media (max-width: 860px) {
-  .dashboard-ml-promo-layout {
-    grid-template-columns: 1fr;
-    padding-bottom: 64px;
-  }
-
-  .dashboard-ml-promo-art {
-    min-height: 160px;
-    order: -1;
-  }
-
-  .dashboard-ml-promo-photo {
-    max-height: 180px;
-    object-position: center;
+  .dashboard-ml-promo-copy {
+    padding: 24px 48px 56px;
   }
 
   .dashboard-ml-promo-title {
@@ -15558,11 +15536,11 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-copy {
-    padding: 0;
+    padding: 20px 48px 40px;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-title {
-    font-size: 1.45rem;
+    font-size: 1.35rem;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-body {
