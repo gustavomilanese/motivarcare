@@ -14,6 +14,7 @@ type PromoBanner = {
   kicker: LocalizedText;
   title: LocalizedText;
   body: LocalizedText;
+  badge: LocalizedText;
 };
 
 const PROMO_BANNERS: PromoBanner[] = [
@@ -32,9 +33,14 @@ const PROMO_BANNERS: PromoBanner[] = [
       pt: "Fazer terapia e cuidar de voce"
     },
     body: {
-      es: "Un espacio profesional para sostener cambios con claridad, constancia y acompañamiento real.",
-      en: "A professional space to sustain change with clarity, consistency, and real support.",
-      pt: "Um espaco profissional para sustentar mudancas com clareza, constancia e acompanhamento real."
+      es: "Un espacio profesional para sostener cambios con claridad y acompañamiento real.",
+      en: "A professional space to sustain change with clarity and real support.",
+      pt: "Um espaco profissional para sustentar mudancas com clareza e acompanhamento real."
+    },
+    badge: {
+      es: "Acompañamiento real",
+      en: "Real support",
+      pt: "Acompanhamento real"
     }
   },
   {
@@ -47,14 +53,19 @@ const PROMO_BANNERS: PromoBanner[] = [
       pt: "Sempre disponivel"
     },
     title: {
-      es: "Acceso 24 horas a tu proceso",
-      en: "24-hour access to your care",
-      pt: "Acesso 24 horas ao seu processo"
+      es: "Tu proceso, 24 horas",
+      en: "Your care, 24 hours",
+      pt: "Seu processo, 24 horas"
     },
     body: {
       es: "Reservá, chatá y retomá tu acompañamiento a tu ritmo, cualquier día.",
       en: "Book, chat, and continue your care on your schedule, any day.",
       pt: "Agende, converse e retome seu acompanhamento no seu ritmo, qualquer dia."
+    },
+    badge: {
+      es: "Acceso continuo",
+      en: "Always on",
+      pt: "Acesso continuo"
     }
   },
   {
@@ -67,14 +78,19 @@ const PROMO_BANNERS: PromoBanner[] = [
       pt: "Matching inteligente"
     },
     title: {
-      es: "Profesionales especialistas en tu necesidad",
-      en: "Specialists matched to your needs",
-      pt: "Profissionais especialistas na sua necessidade"
+      es: "Especialistas en tu necesidad",
+      en: "Specialists for your needs",
+      pt: "Especialistas na sua necessidade"
     },
     body: {
-      es: "Hacé matching con psicólogos alineados a tu motivo de consulta y encontrá el acompañamiento adecuado.",
-      en: "Match with psychologists aligned to your reason for care and find the right support.",
-      pt: "Faca matching com psicologos alinhados ao seu motivo de consulta e encontre o acompanhamento certo."
+      es: "Hacé matching con psicólogos alineados a tu motivo de consulta.",
+      en: "Match with psychologists aligned to your reason for care.",
+      pt: "Faca matching com psicologos alinhados ao seu motivo de consulta."
+    },
+    badge: {
+      es: "Match personalizado",
+      en: "Personalized match",
+      pt: "Match personalizado"
     }
   }
 ];
@@ -133,17 +149,21 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
                 aria-hidden={!isActive}
                 data-active={isActive ? "true" : "false"}
               >
-                <img
-                  className="dashboard-ml-promo-photo"
-                  src={banner.imageSrc}
-                  alt=""
-                  loading={bannerIndex === 0 ? "eager" : "lazy"}
-                />
-                <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
-                <div className="dashboard-ml-promo-copy">
-                  <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
-                  <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
-                  <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
+                <div className="dashboard-ml-promo-layout">
+                  <div className="dashboard-ml-promo-copy">
+                    <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
+                    <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                    <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
+                    <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
+                  </div>
+                  <div className="dashboard-ml-promo-art" aria-hidden="true">
+                    <img
+                      className="dashboard-ml-promo-photo"
+                      src={banner.imageSrc}
+                      alt=""
+                      loading={bannerIndex === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
                 </div>
               </article>
             );
