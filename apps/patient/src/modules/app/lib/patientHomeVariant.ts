@@ -4,7 +4,7 @@ export const PATIENT_HOME_VARIANT_STORAGE_KEY = "mc.patient.homeVariant";
 
 export function readPatientHomeVariant(): PatientHomeVariant {
   if (typeof window === "undefined") {
-    return "next";
+    return "classic";
   }
   try {
     const raw = window.localStorage.getItem(PATIENT_HOME_VARIANT_STORAGE_KEY);
@@ -14,7 +14,7 @@ export function readPatientHomeVariant(): PatientHomeVariant {
   } catch {
     // ignore
   }
-  return "next";
+  return "classic";
 }
 
 export function writePatientHomeVariant(variant: PatientHomeVariant): void {

@@ -250,44 +250,48 @@ export function DashboardNextActionHome(props: {
 
   return (
     <div className="dashboard-ml-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
+      {/* Mount mobile toolbar (desktop ML chrome vive en PortalNavigation). */}
+      <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
+
       <DashboardHomePromoCarousel language={props.language} />
 
-      <section
-        className={`dashboard-ml-hero${props.heroImage === null ? " dashboard-ml-hero--loading" : ""}`}
-        data-tour="patient-tour-hero"
-      >
-        {props.heroImage === null ? (
-          <span className="dashboard-ml-hero-skeleton" aria-hidden="true" />
-        ) : (
-          <img
-            className="dashboard-ml-hero-photo"
-            src={props.heroImage}
-            alt=""
-            loading="eager"
-            decoding="async"
-            onError={props.onHeroFallback}
-          />
-        )}
-        <div className="dashboard-ml-hero-scrim" aria-hidden="true" />
-        <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
-        <div className="dashboard-ml-hero-inner">
-          <p className="dashboard-ml-hero-balance" aria-live="polite">
-            {props.availableSessions > 0
-              ? balanceLabel
-              : t(props.language, {
-                  es: "Sin sesiones disponibles",
-                  en: "No sessions available",
-                  pt: "Sem sessoes disponiveis"
-                })}
-          </p>
-          <h2 id="dashboard-next-action-title" className="dashboard-ml-hero-title" data-tour="patient-tour-trial">
-            {actionTitle}
-          </h2>
-          {actionBody ? <p className="dashboard-ml-hero-lead">{actionBody}</p> : null}
-          <div className="dashboard-ml-hero-actions">
+      <div className="dashboard-ml-surface">
+        {props.showGoogleCalendarCta ? (
+          <div className="dashboard-ml-calendar-wrap">
             <button
               type="button"
-              className="dashboard-ml-hero-primary"
+              className={`dashboard-ml-calendar-btn${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+              onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+            >
+              {t(props.language, {
+                es: "Conectá Google Calendar",
+                en: "Connect Google Calendar",
+                pt: "Conectar o Google Calendar"
+              })}
+            </button>
+          </div>
+        ) : null}
+
+        <article className="dashboard-ml-card dashboard-ml-card--action" data-tour="patient-tour-hero">
+          <div className="dashboard-ml-card-action-copy">
+            <p className="dashboard-ml-card-kicker" aria-live="polite">
+              {props.availableSessions > 0
+                ? balanceLabel
+                : t(props.language, {
+                    es: "Sin sesiones disponibles",
+                    en: "No sessions available",
+                    pt: "Sem sessoes disponiveis"
+                  })}
+            </p>
+            <h2 id="dashboard-next-action-title" className="dashboard-ml-card-title" data-tour="patient-tour-trial">
+              {actionTitle}
+            </h2>
+            {actionBody ? <p className="dashboard-ml-card-body">{actionBody}</p> : null}
+          </div>
+          <div className="dashboard-ml-card-action-row">
+            <button
+              type="button"
+              className="dashboard-ml-card-cta"
               data-tour="patient-tour-next-primary"
               onClick={runPrimaryAction}
             >
@@ -296,14 +300,14 @@ export function DashboardNextActionHome(props: {
             {props.actionKind === "next_session" && props.nextBooking ? (
               <button
                 type="button"
-                className="dashboard-ml-hero-ghost"
+                className="dashboard-ml-card-secondary"
                 onClick={() => props.onRescheduleBooking(props.nextBooking!.id)}
               >
                 {t(props.language, { es: "Modificar", en: "Reschedule", pt: "Modificar" })}
               </button>
             ) : null}
             {props.actionKind !== "buy_sessions" && props.actionKind !== "assign_professional" ? (
-              <button type="button" className="dashboard-ml-hero-ghost" onClick={() => props.onBuySessions()}>
+              <button type="button" className="dashboard-ml-card-secondary" onClick={() => props.onBuySessions()}>
                 {t(props.language, {
                   es: "Comprar sesiones",
                   en: "Buy sessions",
@@ -312,28 +316,14 @@ export function DashboardNextActionHome(props: {
               </button>
             ) : null}
           </div>
-        </div>
-      </section>
+        </article>
 
-      {props.showGoogleCalendarCta ? (
-        <div className="dashboard-ml-band dashboard-ml-band--calendar">
-          <button
-            type="button"
-            className={`dashboard-ml-calendar-btn${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-            onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-          >
-            {t(props.language, {
-              es: "Conectá Google Calendar",
-              en: "Connect Google Calendar",
-              pt: "Conectar o Google Calendar"
-            })}
-          </button>
-        </div>
-      ) : null}
-
-      <section className="dashboard-ml-band dashboard-ml-band--tiles" aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}>
-        <div className="dashboard-ml-tiles" data-tour="patient-tour-kpis">
-          <article className="dashboard-ml-tile">
+        <section
+          className="dashboard-ml-cards"
+          aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
+          data-tour="patient-tour-kpis"
+        >
+          <article className="dashboard-ml-card">
             {props.activeProfessional ? (
               <>
                 <button
@@ -367,7 +357,7 @@ export function DashboardNextActionHome(props: {
                 <div className="dashboard-ml-tile-actions">
                   <button
                     type="button"
-                    className="dashboard-ml-tile-cta"
+                    className="dashboard-ml-card-cta"
                     onClick={() => props.onGoToChat(props.activeProfessional!.id)}
                   >
                     {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
@@ -375,7 +365,7 @@ export function DashboardNextActionHome(props: {
                   {props.canSelfChangeProfessional ? (
                     <button
                       type="button"
-                      className="dashboard-ml-tile-secondary"
+                      className="dashboard-ml-card-secondary"
                       onClick={() => props.onNavigateToChangeProfessional()}
                     >
                       {t(props.language, { es: "Cambiar", en: "Change", pt: "Trocar" })}
@@ -385,21 +375,21 @@ export function DashboardNextActionHome(props: {
               </>
             ) : (
               <>
-                <h3 className="dashboard-ml-tile-title">
+                <h3 className="dashboard-ml-card-title dashboard-ml-card-title--sm">
                   {t(props.language, {
                     es: "Tu profesional",
                     en: "Your professional",
                     pt: "Seu profissional"
                   })}
                 </h3>
-                <p className="dashboard-ml-tile-copy">
+                <p className="dashboard-ml-card-body">
                   {t(props.language, {
                     es: "Todavía no tenés uno asignado.",
                     en: "You don’t have one assigned yet.",
                     pt: "Voce ainda nao tem um atribuido."
                   })}
                 </p>
-                <button type="button" className="dashboard-ml-tile-cta" onClick={() => props.onNavigateToAssignProfessional()}>
+                <button type="button" className="dashboard-ml-card-cta" onClick={() => props.onNavigateToAssignProfessional()}>
                   {t(props.language, {
                     es: "Elegir profesional",
                     en: "Choose professional",
@@ -410,29 +400,29 @@ export function DashboardNextActionHome(props: {
             )}
           </article>
 
-          <article className="dashboard-ml-tile dashboard-ml-tile--buy">
-            <h3 className="dashboard-ml-tile-title">
+          <article className="dashboard-ml-card">
+            <h3 className="dashboard-ml-card-title dashboard-ml-card-title--sm">
               {t(props.language, {
                 es: "Comprar sesiones",
                 en: "Buy sessions",
                 pt: "Comprar sessoes"
               })}
             </h3>
-            <p className="dashboard-ml-tile-copy">
+            <p className="dashboard-ml-card-body">
               {t(props.language, {
                 es: "Paquetes o sesión individual, sin salir de Inicio.",
                 en: "Packages or a single session, without leaving Home.",
                 pt: "Pacotes ou sessao individual, sem sair do Inicio."
               })}
             </p>
-            <button type="button" className="dashboard-ml-tile-cta" onClick={() => props.onBuySessions()}>
+            <button type="button" className="dashboard-ml-card-cta" onClick={() => props.onBuySessions()}>
               {acquireNewSessionsButtonLabel(props.language)}
             </button>
           </article>
 
-          <article className="dashboard-ml-tile" data-tour="patient-tour-bookings">
+          <article className="dashboard-ml-card" data-tour="patient-tour-bookings">
             <div className="dashboard-ml-tile-head">
-              <h3 className="dashboard-ml-tile-title">
+              <h3 className="dashboard-ml-card-title dashboard-ml-card-title--sm">
                 {t(props.language, {
                   es: "Próximas",
                   en: "Upcoming",
@@ -448,12 +438,12 @@ export function DashboardNextActionHome(props: {
               </button>
             </div>
             {upcomingForTiles.length === 0 ? (
-              <p className="dashboard-ml-tile-copy">
+              <p className="dashboard-ml-card-body">
                 {props.upcomingBookings.length > 0
                   ? t(props.language, {
-                      es: "Tu próxima sesión ya está arriba. Mirá el resto en Sesiones.",
-                      en: "Your next session is above. See the rest in Sessions.",
-                      pt: "Sua proxima sessao ja esta acima. Veja o resto em Sessoes."
+                      es: "Tu próxima sesión está en la tarjeta de arriba.",
+                      en: "Your next session is in the card above.",
+                      pt: "Sua proxima sessao esta no card acima."
                     })
                   : t(props.language, {
                       es: "Sin turnos agendados por ahora.",
@@ -495,15 +485,15 @@ export function DashboardNextActionHome(props: {
               </ul>
             )}
           </article>
-        </div>
-      </section>
+        </section>
 
-      <div className="dashboard-ml-band dashboard-ml-band--foot">
-        <DashboardHomeVariantToggle
-          language={props.language}
-          variant="next"
-          onSelect={props.onSelectHomeVariant}
-        />
+        <div className="dashboard-ml-foot">
+          <DashboardHomeVariantToggle
+            language={props.language}
+            variant="next"
+            onSelect={props.onSelectHomeVariant}
+          />
+        </div>
       </div>
     </div>
   );

@@ -120,25 +120,35 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
       }}
     >
       <div className="dashboard-ml-promo-viewport">
-        {PROMO_BANNERS.map((banner, bannerIndex) => {
-          const isActive = bannerIndex === index;
-          return (
-            <article
-              key={banner.id}
-              className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""}`}
-              aria-hidden={!isActive}
-              data-active={isActive ? "true" : "false"}
-            >
-              <img className="dashboard-ml-promo-photo" src={banner.imageSrc} alt="" loading={bannerIndex === 0 ? "eager" : "lazy"} />
-              <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
-              <div className="dashboard-ml-promo-copy">
-                <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
-                <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
-                <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
-              </div>
-            </article>
-          );
-        })}
+        <div
+          className="dashboard-ml-promo-track"
+          style={{ transform: `translate3d(-${index * 100}%, 0, 0)` }}
+        >
+          {PROMO_BANNERS.map((banner, bannerIndex) => {
+            const isActive = bannerIndex === index;
+            return (
+              <article
+                key={banner.id}
+                className={`dashboard-ml-promo-slide dashboard-ml-promo-slide--${banner.tone}${isActive ? " is-active" : ""}`}
+                aria-hidden={!isActive}
+                data-active={isActive ? "true" : "false"}
+              >
+                <img
+                  className="dashboard-ml-promo-photo"
+                  src={banner.imageSrc}
+                  alt=""
+                  loading={bannerIndex === 0 ? "eager" : "lazy"}
+                />
+                <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
+                <div className="dashboard-ml-promo-copy">
+                  <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
+                  <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                  <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
 
       <button
