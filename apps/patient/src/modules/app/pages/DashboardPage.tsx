@@ -828,6 +828,8 @@ export function DashboardPage(props: {
         <DashboardNextActionHome
           language={props.language}
           timezone={props.state.profile.timezone}
+          currency={props.currency}
+          fxRates={props.fxRates}
           heroImage={landingPatientHeroImage}
           onHeroFallback={props.onHeroFallback}
           onImageFallback={props.onImageFallback}
@@ -855,8 +857,13 @@ export function DashboardPage(props: {
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
           onGoToReservations={props.onGoToReservations}
           upcomingBookings={upcomingConfirmedBookings}
+          allBookings={props.state.bookings}
           professionals={props.professionals}
           pricingProfessionalId={pricingProfessionalId}
+          purchaseHistory={props.state.subscription.purchaseHistory}
+          isMobilePortal={isMobilePortal}
+          firstMeetBookingId={firstMeetBookingId}
+          joinTourPulse={meetJoinHighlight && !sessionRnLayout}
           onSelectHomeVariant={selectHomeVariant}
         />
       ) : (

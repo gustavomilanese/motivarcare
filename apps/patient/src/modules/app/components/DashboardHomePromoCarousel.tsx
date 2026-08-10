@@ -22,19 +22,19 @@ const PROMO_BANNERS: PromoBanner[] = [
     tone: "sage",
     imageSrc: "/home/banner-therapy-value.png",
     kicker: {
-      es: "Bienestar con propósito",
-      en: "Purposeful wellbeing",
-      pt: "Bem-estar com proposito"
+      es: "Cuidado premium",
+      en: "Premium care",
+      pt: "Cuidado premium"
     },
     title: {
-      es: "Hacer terapia es cuidarte con constancia",
-      en: "Therapy is consistent self-care",
-      pt: "Fazer terapia e cuidar de voce com constancia"
+      es: "Hacer terapia es cuidarte",
+      en: "Therapy is taking care of yourself",
+      pt: "Fazer terapia e cuidar de voce"
     },
     body: {
-      es: "Un espacio profesional para ordenar lo que sentís, sostener cambios y avanzar con más claridad.",
-      en: "A professional space to make sense of what you feel, sustain change, and move forward with clarity.",
-      pt: "Um espaco profissional para organizar o que voce sente, sustentar mudancas e avancar com mais clareza."
+      es: "Un espacio profesional para sostener cambios con claridad, constancia y acompañamiento real.",
+      en: "A professional space to sustain change with clarity, consistency, and real support.",
+      pt: "Um espaco profissional para sustentar mudancas com clareza, constancia e acompanhamento real."
     }
   },
   {
@@ -42,9 +42,9 @@ const PROMO_BANNERS: PromoBanner[] = [
     tone: "navy",
     imageSrc: "/home/banner-access-24h.png",
     kicker: {
-      es: "Cuando lo necesités",
-      en: "Whenever you need it",
-      pt: "Quando voce precisar"
+      es: "Siempre disponible",
+      en: "Always available",
+      pt: "Sempre disponivel"
     },
     title: {
       es: "Acceso 24 horas a tu proceso",
@@ -52,9 +52,9 @@ const PROMO_BANNERS: PromoBanner[] = [
       pt: "Acesso 24 horas ao seu processo"
     },
     body: {
-      es: "Reservá, chatá con tu profesional y retomá tu acompañamiento a tu ritmo, cualquier día.",
-      en: "Book, chat with your professional, and continue your care on your schedule, any day.",
-      pt: "Agende, converse com seu profissional e retome seu acompanhamento no seu ritmo, qualquer dia."
+      es: "Reservá, chatá y retomá tu acompañamiento a tu ritmo, cualquier día.",
+      en: "Book, chat, and continue your care on your schedule, any day.",
+      pt: "Agende, converse e retome seu acompanhamento no seu ritmo, qualquer dia."
     }
   },
   {
@@ -72,9 +72,9 @@ const PROMO_BANNERS: PromoBanner[] = [
       pt: "Profissionais especialistas na sua necessidade"
     },
     body: {
-      es: "Podés hacer matching con psicólogos alineados a tu motivo de consulta y encontrar el acompañamiento adecuado.",
-      en: "Match with psychologists aligned to your reason for seeking care and find the right support.",
-      pt: "Voce pode fazer matching com psicologos alinhados ao seu motivo de consulta e encontrar o acompanhamento certo."
+      es: "Hacé matching con psicólogos alineados a tu motivo de consulta y encontrá el acompañamiento adecuado.",
+      en: "Match with psychologists aligned to your reason for care and find the right support.",
+      pt: "Faca matching com psicologos alinhados ao seu motivo de consulta e encontre o acompanhamento certo."
     }
   }
 ];
@@ -140,7 +140,7 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
                   loading={bannerIndex === 0 ? "eager" : "lazy"}
                 />
                 <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
-                <div className="dashboard-ml-promo-copy">
+                <div className="dashboard-ml-promo-copy dashboard-ml-promo-copy--centered">
                   <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
                   <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
                   <p className="dashboard-ml-promo-body">{t(props.language, banner.body)}</p>
