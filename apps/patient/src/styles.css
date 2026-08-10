@@ -15303,13 +15303,7 @@ button.sessions-balance {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr;
-}
-
-@media (min-width: 960px) {
-  .dashboard-ml-sessions-grid {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    align-items: start;
-  }
+  width: 100%;
 }
 
 .dashboard-ml-panel {
