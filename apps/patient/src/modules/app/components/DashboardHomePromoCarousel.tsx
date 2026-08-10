@@ -5,7 +5,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-type PromoBannerTone = "sage" | "navy" | "terracotta";
+type PromoBannerTone = "violet" | "navy" | "slate";
 
 type PromoBanner = {
   id: string;
@@ -19,7 +19,7 @@ type PromoBanner = {
 const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "therapy-value",
-    tone: "sage",
+    tone: "violet",
     imageSrc: "/home/banner-therapy-value.png",
     kicker: {
       es: "Cuidado premium",
@@ -59,7 +59,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   },
   {
     id: "specialist-match",
-    tone: "terracotta",
+    tone: "slate",
     imageSrc: "/home/banner-specialist-match.png",
     kicker: {
       es: "Matching inteligente",
