@@ -149,13 +149,13 @@ export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
                 aria-hidden={!isActive}
                 data-active={isActive ? "true" : "false"}
               >
+                <div className="dashboard-ml-promo-orbs" aria-hidden="true" />
                 <img
                   className="dashboard-ml-promo-photo"
                   src={banner.imageSrc}
                   alt=""
                   loading={bannerIndex === 0 ? "eager" : "lazy"}
                 />
-                <div className="dashboard-ml-promo-scrim" aria-hidden="true" />
                 <div className="dashboard-ml-promo-copy">
                   <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
                   <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
