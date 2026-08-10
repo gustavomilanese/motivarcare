@@ -15529,17 +15529,17 @@ button.sessions-balance {
 }
 
 .dashboard-ml-history-card {
-  --dashboard-ml-history-blue: #3483fa;
-  --dashboard-ml-history-blue-deep: #2968c8;
+  --dashboard-ml-history-blue: #2563eb;
+  --dashboard-ml-history-blue-deep: #1d4ed8;
   display: grid;
   gap: 12px;
   align-content: start;
   min-height: 200px;
   padding: 16px;
   border-radius: 6px;
-  background: #3483fa;
-  border: 1px solid #3483fa;
-  box-shadow: 0 8px 20px rgba(52, 131, 250, 0.22);
+  background: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
   color: #fff;
 }
 
