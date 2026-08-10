@@ -14824,15 +14824,31 @@ button.sessions-balance {
 }
 
 /*
-  Banda violeta atada al contenido (banner + créditos + cards).
-  Termina antes de Sesiones; el fade inferior une con el gris de página.
+  Banda violeta sólida (#5f44eb) — sin indigo raro.
+  Termina antes de Sesiones; fade corto al gris.
 */
 .dashboard-ml-brand-band {
   position: relative;
   z-index: 1;
   background: #5f44eb;
-  /* Aire bajo las cards + zona del fade hacia el gris */
   padding-bottom: 36px;
+  overflow: hidden;
+}
+
+/* Círculos de fondo tipo ML, visibles, misma familia violeta */
+.dashboard-ml-brand-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 340px at 12% 28%, rgba(167, 139, 250, 0.72) 0%, rgba(167, 139, 250, 0) 68%),
+    radial-gradient(circle 420px at 78% 18%, rgba(124, 92, 240, 0.55) 0%, rgba(124, 92, 240, 0) 70%),
+    radial-gradient(circle 280px at 92% 72%, rgba(199, 180, 255, 0.62) 0%, rgba(199, 180, 255, 0) 68%),
+    radial-gradient(circle 360px at 28% 88%, rgba(79, 55, 220, 0.45) 0%, rgba(79, 55, 220, 0) 70%),
+    radial-gradient(circle 240px at 55% 45%, rgba(196, 181, 253, 0.4) 0%, rgba(196, 181, 253, 0) 65%),
+    radial-gradient(circle 300px at 48% 8%, rgba(139, 110, 245, 0.5) 0%, rgba(139, 110, 245, 0) 68%);
 }
 
 .dashboard-ml-brand-band::after {
@@ -14841,14 +14857,14 @@ button.sessions-balance {
   left: 50%;
   bottom: 0;
   width: 100vw;
-  height: 56px;
+  height: 48px;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 3;
   background: linear-gradient(
     180deg,
     rgba(95, 68, 235, 0) 0%,
-    rgba(155, 138, 243, 0.55) 45%,
+    #5f44eb 40%,
     #ebebeb 100%
   );
 }
@@ -14869,11 +14885,11 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner transparente: el violeta lo pinta la brand-band */
+/* Banner sobre el violeta + orbes de la brand-band */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
-  min-height: clamp(280px, 38vh, 380px);
+  min-height: clamp(300px, 40vh, 400px);
   background: transparent;
   overflow: visible;
   margin-bottom: 0;
@@ -14889,21 +14905,8 @@ button.sessions-balance {
   border-radius: 0;
 }
 
-/* Soften bottom edge of banner into brand band */
 .dashboard-ml-promo-viewport::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 48px;
-  z-index: 3;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(95, 68, 235, 0) 0%,
-    rgba(95, 68, 235, 0.55) 100%
-  );
+  display: none;
 }
 
 .dashboard-ml-promo-track {
@@ -14914,6 +14917,7 @@ button.sessions-balance {
   will-change: transform;
 }
 
+/* Layout ML: arte grande a la izquierda, copy a la derecha */
 .dashboard-ml-promo-slide {
   position: relative;
   flex: 0 0 100%;
@@ -14921,11 +14925,7 @@ button.sessions-balance {
   min-height: inherit;
   overflow: hidden;
   background: transparent;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: center;
-  gap: clamp(12px, 2vw, 28px);
-  padding: clamp(20px, 3vw, 36px) clamp(56px, 7vw, 96px) clamp(36px, 5vw, 56px);
+  display: block;
   box-sizing: border-box;
 }
 
@@ -14935,35 +14935,48 @@ button.sessions-balance {
   background: transparent;
 }
 
-/* Irregularidades tipo ML: círculos en gama violeta */
+/* Orbes extra por slide (refuerzo local) */
 .dashboard-ml-promo-orbs {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 8% 22%, rgba(196, 181, 253, 0.55) 0%, rgba(196, 181, 253, 0) 42%),
-    radial-gradient(circle at 22% 78%, rgba(124, 58, 237, 0.42) 0%, rgba(124, 58, 237, 0) 40%),
-    radial-gradient(circle at 48% 12%, rgba(167, 139, 250, 0.38) 0%, rgba(167, 139, 250, 0) 36%),
-    radial-gradient(circle at 72% 68%, rgba(99, 102, 241, 0.48) 0%, rgba(99, 102, 241, 0) 44%),
-    radial-gradient(circle at 90% 28%, rgba(221, 214, 254, 0.5) 0%, rgba(221, 214, 254, 0) 38%),
-    radial-gradient(circle at 58% 88%, rgba(79, 70, 229, 0.35) 0%, rgba(79, 70, 229, 0) 42%),
-    radial-gradient(circle at 38% 48%, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0) 50%);
+    radial-gradient(circle 260px at 18% 55%, rgba(199, 180, 255, 0.55) 0%, rgba(199, 180, 255, 0) 70%),
+    radial-gradient(circle 200px at 42% 20%, rgba(148, 120, 245, 0.45) 0%, rgba(148, 120, 245, 0) 68%),
+    radial-gradient(circle 300px at 8% 10%, rgba(221, 214, 254, 0.4) 0%, rgba(221, 214, 254, 0) 65%);
 }
 
-/* Arte contenido (~mitad), sin crop full-bleed */
+/*
+  Imagen grande tipo producto ML: llena ~mitad izquierda del banner,
+  sin “marco” (cover + disolución al violeta a la derecha).
+*/
 .dashboard-ml-promo-photo {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  justify-self: center;
-  align-self: center;
-  width: min(100%, 420px);
-  height: auto;
-  max-height: min(52%, 220px);
-  object-fit: contain;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(54%, 640px);
+  height: 92%;
+  object-fit: cover;
   object-position: center;
   display: block;
-  filter: drop-shadow(0 18px 36px rgba(30, 20, 90, 0.28));
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.65) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 58%,
+    rgba(0, 0, 0, 0.65) 78%,
+    transparent 100%
+  );
+  filter: none;
 }
 
 .dashboard-ml-promo-copy {
@@ -14974,9 +14987,12 @@ button.sessions-balance {
   align-content: center;
   justify-items: start;
   text-align: left;
-  width: 100%;
+  width: min(520px, 46%);
   max-width: 34rem;
-  padding: 0;
+  margin-left: auto;
+  margin-right: clamp(48px, 7vw, 96px);
+  min-height: inherit;
+  padding: clamp(28px, 4vw, 48px) 0;
   color: #fff;
   box-sizing: border-box;
 }
@@ -15619,24 +15635,36 @@ button.sessions-balance {
 }
 
 @media (max-width: 860px) {
-  .dashboard-ml-promo-slide {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-    padding: 24px 56px 40px;
-    gap: 10px;
-  }
-
   .dashboard-ml-promo-photo {
-    max-height: 140px;
-    width: min(70%, 280px);
-    order: -1;
+    width: min(70%, 420px);
+    height: 58%;
+    top: 8%;
+    transform: none;
+    left: 50%;
+    translate: -50% 0;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 55%,
+      rgba(0, 0, 0, 0.45) 80%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      #000 55%,
+      rgba(0, 0, 0, 0.45) 80%,
+      transparent 100%
+    );
   }
 
   .dashboard-ml-promo-copy {
+    width: min(920px, 100%);
+    max-width: none;
+    margin: 0;
+    padding: 140px 56px 36px;
     justify-items: center;
     text-align: center;
-    padding: 0;
   }
 
   .dashboard-ml-promo-title {
@@ -15856,21 +15884,17 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo {
-    min-height: clamp(168px, 38vw, 240px);
+    min-height: clamp(220px, 48vw, 280px);
     margin-bottom: 0;
   }
 
-  .patient-dashboard-home .dashboard-ml-promo-slide {
-    padding: 16px 48px 28px;
-  }
-
   .patient-dashboard-home .dashboard-ml-promo-photo {
-    max-height: 96px;
-    width: min(55%, 180px);
+    height: 48%;
+    width: min(78%, 320px);
   }
 
   .patient-dashboard-home .dashboard-ml-promo-copy {
-    padding: 0;
+    padding: 108px 48px 28px;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-title {
