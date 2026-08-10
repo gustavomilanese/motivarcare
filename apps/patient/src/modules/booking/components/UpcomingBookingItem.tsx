@@ -422,14 +422,12 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                 {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
               </span>
             </div>
-            {!isTrialBooking ? (
-              <SessionRescheduleButton
-                language={props.language}
-                layout="card"
-                canReschedule={canReschedule}
-                onReschedule={props.onReschedule}
-              />
-            ) : null}
+            <SessionRescheduleButton
+              language={props.language}
+              layout="card"
+              canReschedule={canReschedule}
+              onReschedule={props.onReschedule}
+            />
           </div>
         </div>
       </div>
