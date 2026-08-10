@@ -14824,30 +14824,31 @@ button.sessions-balance {
 }
 
 /*
-  Un solo plano violeta full-bleed.
-  #5f44eb se sostiene sólido PAST el banner + créditos (evita el corte
-  oscuro→claro que se veía al terminar el promo).
-  El degradé empieza más abajo, ya sobre las cards.
+  Banda violeta atada al contenido (banner + créditos + cards).
+  Termina antes de Sesiones; el fade inferior une con el gris de página.
 */
-.dashboard-ml-home::before {
+.dashboard-ml-brand-band {
+  position: relative;
+  z-index: 1;
+  background: #5f44eb;
+  /* Aire bajo las cards + zona del fade hacia el gris */
+  padding-bottom: 36px;
+}
+
+.dashboard-ml-brand-band::after {
   content: "";
   position: absolute;
-  top: 0;
   left: 50%;
+  bottom: 0;
   width: 100vw;
-  height: clamp(760px, 95vh, 980px);
+  height: 56px;
   transform: translateX(-50%);
-  z-index: 0;
   pointer-events: none;
+  z-index: 3;
   background: linear-gradient(
     180deg,
-    #5f44eb 0%,
-    #5f44eb 68%,
-    #6550ec 74%,
-    #7360ee 80%,
-    #8a7af1 86%,
-    #a99cf4 91%,
-    #cdc4f3 95%,
+    rgba(95, 68, 235, 0) 0%,
+    rgba(155, 138, 243, 0.55) 45%,
     #ebebeb 100%
   );
 }
@@ -14868,7 +14869,7 @@ button.sessions-balance {
   overflow: visible;
 }
 
-/* Banner transparente: el violeta lo pinta solo el ::before continuo */
+/* Banner transparente: el violeta lo pinta la brand-band */
 .dashboard-ml-promo {
   position: relative;
   width: 100%;
@@ -15108,6 +15109,12 @@ button.sessions-balance {
   background: transparent;
 }
 
+.dashboard-ml-surface--brand {
+  padding-top: 12px;
+  padding-bottom: 20px;
+  z-index: 2;
+}
+
 .dashboard-ml-calendar-wrap {
   display: flex;
 }
@@ -15339,7 +15346,7 @@ button.sessions-balance {
 .dashboard-ml-sessions {
   display: grid;
   gap: 14px;
-  margin-top: 28px;
+  margin-top: 8px;
 }
 
 .dashboard-ml-sessions-head {

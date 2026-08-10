@@ -266,181 +266,185 @@ export function DashboardNextActionHome(props: {
     <div className="dashboard-ml-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
       <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
 
-      <DashboardHomePromoCarousel language={props.language} />
+      {/* Violeta solo hasta las cards de acceso; Sesiones ya va sobre el gris de página */}
+      <div className="dashboard-ml-brand-band">
+        <DashboardHomePromoCarousel language={props.language} />
+
+        <div className="dashboard-ml-surface dashboard-ml-surface--brand">
+          {props.showGoogleCalendarCta ? (
+            <div className="dashboard-ml-calendar-wrap">
+              <button
+                type="button"
+                className={`dashboard-ml-calendar-btn${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+              >
+                {t(props.language, {
+                  es: "Conectá Google Calendar",
+                  en: "Connect Google Calendar",
+                  pt: "Conectar o Google Calendar"
+                })}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="dashboard-ml-credits-bar">
+            <p className="dashboard-ml-credits" aria-live="polite">
+              {props.availableSessions > 0 ? (
+                <>
+                  <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
+                  <span className="dashboard-ml-credits-label">
+                    {props.availableSessions === 1
+                      ? t(props.language, {
+                          es: "Sesión disponible",
+                          en: "Session available",
+                          pt: "Sessao disponivel"
+                        })
+                      : t(props.language, {
+                          es: "Sesiones disponibles",
+                          en: "Sessions available",
+                          pt: "Sessoes disponiveis"
+                        })}
+                  </span>
+                </>
+              ) : (
+                <span className="dashboard-ml-credits-label dashboard-ml-credits-label--empty">
+                  {t(props.language, {
+                    es: "Sin sesiones disponibles",
+                    en: "No sessions available",
+                    pt: "Sem sessoes disponiveis"
+                  })}
+                </span>
+              )}
+            </p>
+            {props.availableSessions > 0 ? (
+              <button
+                type="button"
+                className="dashboard-ml-book-cta"
+                onClick={() => {
+                  if (props.pricingProfessionalId) {
+                    props.onGoToBooking(props.pricingProfessionalId);
+                    return;
+                  }
+                  props.onNavigateToAssignProfessional();
+                }}
+              >
+                {t(props.language, {
+                  es: "Reservar sesión",
+                  en: "Book a session",
+                  pt: "Reservar sessao"
+                })}
+              </button>
+            ) : null}
+          </div>
+
+          <section
+            className="dashboard-ml-benefit-row"
+            aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
+            data-tour="patient-tour-kpis"
+          >
+            <BenefitCard
+              icon="professional"
+              tourAttr="patient-tour-hero"
+              title={t(props.language, {
+                es: "Tu profesional",
+                en: "Your professional",
+                pt: "Seu profissional"
+              })}
+              body={t(props.language, {
+                es: "Chatá o elegí al profesional de tu proceso.",
+                en: "Chat or choose the professional for your care.",
+                pt: "Converse ou escolha o profissional do seu processo."
+              })}
+              cta={professionalCta}
+              onClick={runProfessionalCard}
+            />
+            <BenefitCard
+              icon="buy"
+              variant="buy"
+              title={t(props.language, {
+                es: "Comprar sesiones",
+                en: "Buy sessions",
+                pt: "Comprar sessoes"
+              })}
+              body={t(props.language, {
+                es: "Sumá créditos y seguí con tu acompañamiento.",
+                en: "Add credits and continue your care.",
+                pt: "Adicione creditos e continue seu acompanhamento."
+              })}
+              cta={t(props.language, {
+                es: "+ Nuevas sesiones",
+                en: "+ New sessions",
+                pt: "+ Novas sessoes"
+              })}
+              onClick={() => props.onBuySessions()}
+            />
+            <BenefitCard
+              icon="upcoming"
+              tourAttr="patient-tour-trial"
+              ctaTourAttr="patient-tour-next-primary"
+              title={t(props.language, {
+                es: "Próximas sesiones",
+                en: "Upcoming sessions",
+                pt: "Proximas sessoes"
+              })}
+              body={t(props.language, {
+                es: "Revisá tu próxima reserva o andá a Sesiones.",
+                en: "Check your next booking or go to Sessions.",
+                pt: "Veja sua proxima reserva ou va para Sessoes."
+              })}
+              cta={upcomingCta}
+              onClick={runUpcomingCard}
+            />
+            <BenefitCard
+              icon="packages"
+              title={t(props.language, {
+                es: "Paquetes comprados",
+                en: "Purchased packages",
+                pt: "Pacotes comprados"
+              })}
+              body={t(props.language, {
+                es: "Mirá tus paquetes activos y sumá más sesiones.",
+                en: "See your active packages and add more sessions.",
+                pt: "Veja seus pacotes ativos e some mais sessoes."
+              })}
+              cta={t(props.language, { es: "Ver paquetes", en: "View packages", pt: "Ver pacotes" })}
+              onClick={() => props.onBuySessions()}
+            />
+            <BenefitCard
+              icon="history"
+              title={t(props.language, {
+                es: "Historial",
+                en: "History",
+                pt: "Historico"
+              })}
+              body={t(props.language, {
+                es: "Consultá sesiones anteriores de tu proceso.",
+                en: "Review past sessions from your care.",
+                pt: "Consulte sessoes anteriores do seu processo."
+              })}
+              cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
+              onClick={() => props.onGoToReservations()}
+            />
+            <BenefitCard
+              icon="activity"
+              title={t(props.language, {
+                es: "Actividad",
+                en: "Activity",
+                pt: "Atividade"
+              })}
+              body={t(props.language, {
+                es: "Seguí tus compras y movimientos recientes.",
+                en: "Track your recent purchases and activity.",
+                pt: "Acompanhe suas compras e atividade recente."
+              })}
+              cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
+              onClick={() => props.onBuySessions()}
+            />
+          </section>
+        </div>
+      </div>
 
       <div className="dashboard-ml-surface">
-        {props.showGoogleCalendarCta ? (
-          <div className="dashboard-ml-calendar-wrap">
-            <button
-              type="button"
-              className={`dashboard-ml-calendar-btn${props.googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-              onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-            >
-              {t(props.language, {
-                es: "Conectá Google Calendar",
-                en: "Connect Google Calendar",
-                pt: "Conectar o Google Calendar"
-              })}
-            </button>
-          </div>
-        ) : null}
-
-        <div className="dashboard-ml-credits-bar">
-          <p className="dashboard-ml-credits" aria-live="polite">
-            {props.availableSessions > 0 ? (
-              <>
-                <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
-                <span className="dashboard-ml-credits-label">
-                  {props.availableSessions === 1
-                    ? t(props.language, {
-                        es: "Sesión disponible",
-                        en: "Session available",
-                        pt: "Sessao disponivel"
-                      })
-                    : t(props.language, {
-                        es: "Sesiones disponibles",
-                        en: "Sessions available",
-                        pt: "Sessoes disponiveis"
-                      })}
-                </span>
-              </>
-            ) : (
-              <span className="dashboard-ml-credits-label dashboard-ml-credits-label--empty">
-                {t(props.language, {
-                  es: "Sin sesiones disponibles",
-                  en: "No sessions available",
-                  pt: "Sem sessoes disponiveis"
-                })}
-              </span>
-            )}
-          </p>
-          {props.availableSessions > 0 ? (
-            <button
-              type="button"
-              className="dashboard-ml-book-cta"
-              onClick={() => {
-                if (props.pricingProfessionalId) {
-                  props.onGoToBooking(props.pricingProfessionalId);
-                  return;
-                }
-                props.onNavigateToAssignProfessional();
-              }}
-            >
-              {t(props.language, {
-                es: "Reservar sesión",
-                en: "Book a session",
-                pt: "Reservar sessao"
-              })}
-            </button>
-          ) : null}
-        </div>
-
-        {/* Cards tipo ML: ícono + título + texto + CTA suave */}
-        <section
-          className="dashboard-ml-benefit-row"
-          aria-label={t(props.language, { es: "Accesos", en: "Shortcuts", pt: "Atalhos" })}
-          data-tour="patient-tour-kpis"
-        >
-          <BenefitCard
-            icon="professional"
-            tourAttr="patient-tour-hero"
-            title={t(props.language, {
-              es: "Tu profesional",
-              en: "Your professional",
-              pt: "Seu profissional"
-            })}
-            body={t(props.language, {
-              es: "Chatá o elegí al profesional de tu proceso.",
-              en: "Chat or choose the professional for your care.",
-              pt: "Converse ou escolha o profissional do seu processo."
-            })}
-            cta={professionalCta}
-            onClick={runProfessionalCard}
-          />
-          <BenefitCard
-            icon="buy"
-            variant="buy"
-            title={t(props.language, {
-              es: "Comprar sesiones",
-              en: "Buy sessions",
-              pt: "Comprar sessoes"
-            })}
-            body={t(props.language, {
-              es: "Sumá créditos y seguí con tu acompañamiento.",
-              en: "Add credits and continue your care.",
-              pt: "Adicione creditos e continue seu acompanhamento."
-            })}
-            cta={t(props.language, {
-              es: "+ Nuevas sesiones",
-              en: "+ New sessions",
-              pt: "+ Novas sessoes"
-            })}
-            onClick={() => props.onBuySessions()}
-          />
-          <BenefitCard
-            icon="upcoming"
-            tourAttr="patient-tour-trial"
-            ctaTourAttr="patient-tour-next-primary"
-            title={t(props.language, {
-              es: "Próximas sesiones",
-              en: "Upcoming sessions",
-              pt: "Proximas sessoes"
-            })}
-            body={t(props.language, {
-              es: "Revisá tu próxima reserva o andá a Sesiones.",
-              en: "Check your next booking or go to Sessions.",
-              pt: "Veja sua proxima reserva ou va para Sessoes."
-            })}
-            cta={upcomingCta}
-            onClick={runUpcomingCard}
-          />
-          <BenefitCard
-            icon="packages"
-            title={t(props.language, {
-              es: "Paquetes comprados",
-              en: "Purchased packages",
-              pt: "Pacotes comprados"
-            })}
-            body={t(props.language, {
-              es: "Mirá tus paquetes activos y sumá más sesiones.",
-              en: "See your active packages and add more sessions.",
-              pt: "Veja seus pacotes ativos e some mais sessoes."
-            })}
-            cta={t(props.language, { es: "Ver paquetes", en: "View packages", pt: "Ver pacotes" })}
-            onClick={() => props.onBuySessions()}
-          />
-          <BenefitCard
-            icon="history"
-            title={t(props.language, {
-              es: "Historial",
-              en: "History",
-              pt: "Historico"
-            })}
-            body={t(props.language, {
-              es: "Consultá sesiones anteriores de tu proceso.",
-              en: "Review past sessions from your care.",
-              pt: "Consulte sessoes anteriores do seu processo."
-            })}
-            cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
-            onClick={() => props.onGoToReservations()}
-          />
-          <BenefitCard
-            icon="activity"
-            title={t(props.language, {
-              es: "Actividad",
-              en: "Activity",
-              pt: "Atividade"
-            })}
-            body={t(props.language, {
-              es: "Seguí tus compras y movimientos recientes.",
-              en: "Track your recent purchases and activity.",
-              pt: "Acompanhe suas compras e atividade recente."
-            })}
-            cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
-            onClick={() => props.onBuySessions()}
-          />
-        </section>
-
         <section className="dashboard-ml-sessions" data-tour="patient-tour-bookings" aria-labelledby="dashboard-ml-sessions-title">
           <div className="dashboard-ml-sessions-head">
             <div>
