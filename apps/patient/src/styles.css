@@ -14902,7 +14902,7 @@ button.sessions-balance {
   width: min(720px, 100%);
   padding: clamp(28px, 4vw, 48px) clamp(48px, 8vw, 96px);
   /* Más aire abajo: las cards quedan más bajas, como ML */
-  padding-bottom: clamp(88px, 12vw, 128px);
+  padding-bottom: clamp(64px, 9vw, 96px);
   color: #fff;
   box-sizing: border-box;
 }
@@ -14955,25 +14955,30 @@ button.sessions-balance {
 }
 
 /*
-  Degradé ML: el color del banner NO corta al final de la imagen.
-  Continúa debajo (detrás de las cards) y baja de tono hasta el gris de página.
+  Degradé ML detallado: un solo tono (#5f44eb) desvaneciéndose a transparente
+  sobre el gris de página — sin saltos de color (evita banding).
 */
 .dashboard-ml-promo::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: 100%;
-  height: clamp(110px, 14vw, 150px);
+  top: calc(100% - 28px);
+  height: clamp(160px, 20vw, 220px);
   z-index: 1;
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    #5f44eb 0%,
-    #7b6af0 28%,
-    #b7aef5 58%,
-    #ddd8f2 78%,
-    var(--dashboard-ml-page, #ebebeb) 100%
+    rgba(95, 68, 235, 1) 0%,
+    rgba(95, 68, 235, 0.92) 8%,
+    rgba(95, 68, 235, 0.82) 16%,
+    rgba(95, 68, 235, 0.7) 26%,
+    rgba(95, 68, 235, 0.56) 38%,
+    rgba(95, 68, 235, 0.42) 50%,
+    rgba(95, 68, 235, 0.28) 62%,
+    rgba(95, 68, 235, 0.16) 74%,
+    rgba(95, 68, 235, 0.07) 86%,
+    rgba(95, 68, 235, 0) 100%
   );
 }
 
@@ -15009,7 +15014,7 @@ button.sessions-balance {
 .dashboard-ml-promo-dots {
   position: absolute;
   left: 50%;
-  bottom: 72px;
+  bottom: 56px;
   z-index: 5;
   transform: translateX(-50%);
   display: inline-flex;
@@ -15036,11 +15041,12 @@ button.sessions-balance {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
   max-width: 1200px;
-  margin: -72px auto 0;
-  padding: 0 clamp(16px, 3vw, 28px) 32px;
+  /* ~20% más abajo: se ve más banner; el degradé queda detrás */
+  margin: -28px auto 0;
+  padding: 12px clamp(16px, 3vw, 28px) 32px;
   box-sizing: border-box;
 }
 
@@ -15144,6 +15150,88 @@ button.sessions-balance {
 .dashboard-ml-benefit-cta:hover {
   background: #e0d9ff;
   text-decoration: none;
+}
+
+.dashboard-ml-benefit-icon-accent {
+  fill: #5f44eb;
+}
+
+/* Saldo de sesiones / créditos — centro sobre las cards */
+.dashboard-ml-credits {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 2px;
+}
+
+.dashboard-ml-credits-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(95, 68, 235, 0.12);
+}
+
+.dashboard-ml-credits-pill--empty {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-ml-credits-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #5f44eb;
+  line-height: 1;
+}
+
+.dashboard-ml-credits-label {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: #1a1a1a;
+}
+
+.dashboard-ml-credits-pill--empty .dashboard-ml-credits-label {
+  color: #666;
+}
+
+/* Card Comprar sesiones: invertida en azul */
+.dashboard-ml-benefit-card--buy {
+  --dashboard-ml-buy: #2563eb;
+  --dashboard-ml-buy-deep: #1d4ed8;
+  background: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon {
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-accent {
+  fill: #bfdbfe;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-title {
+  color: #fff;
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-body {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta {
+  background: #fff;
+  color: var(--dashboard-ml-buy);
+}
+
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta:hover {
+  background: #dbeafe;
+  color: var(--dashboard-ml-buy-deep);
+  filter: none;
 }
 
 .dashboard-ml-section-lead {

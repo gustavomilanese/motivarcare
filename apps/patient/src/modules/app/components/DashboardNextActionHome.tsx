@@ -76,7 +76,7 @@ function BenefitIcon(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <rect x="14" y="18" width="36" height="28" rx="6" stroke="currentColor" strokeWidth="2.4" />
           <path d="M22 18v-2a10 10 0 0 1 20 0v2" stroke="currentColor" strokeWidth="2.4" />
-          <circle cx="32" cy="32" r="5" fill="#5f44eb" />
+          <circle cx="32" cy="32" r="5" className="dashboard-ml-benefit-icon-accent" fill="currentColor" />
         </svg>
       );
     case "upcoming":
@@ -125,9 +125,11 @@ function BenefitCard(props: {
   onClick: () => void;
   tourAttr?: string;
   ctaTourAttr?: string;
+  variant?: "default" | "buy";
 }) {
+  const variantClass = props.variant === "buy" ? " dashboard-ml-benefit-card--buy" : "";
   return (
-    <article className="dashboard-ml-benefit-card" data-tour={props.tourAttr}>
+    <article className={`dashboard-ml-benefit-card${variantClass}`} data-tour={props.tourAttr}>
       <div className="dashboard-ml-benefit-icon">
         <BenefitIcon kind={props.icon} />
       </div>
@@ -284,6 +286,39 @@ export function DashboardNextActionHome(props: {
           </div>
         ) : null}
 
+        <div className="dashboard-ml-credits" aria-live="polite">
+          <div
+            className={`dashboard-ml-credits-pill${props.availableSessions < 1 ? " dashboard-ml-credits-pill--empty" : ""}`}
+          >
+            {props.availableSessions > 0 ? (
+              <>
+                <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
+                <span className="dashboard-ml-credits-label">
+                  {props.availableSessions === 1
+                    ? t(props.language, {
+                        es: "Sesión disponible",
+                        en: "Session available",
+                        pt: "Sessao disponivel"
+                      })
+                    : t(props.language, {
+                        es: "Sesiones disponibles",
+                        en: "Sessions available",
+                        pt: "Sessoes disponiveis"
+                      })}
+                </span>
+              </>
+            ) : (
+              <span className="dashboard-ml-credits-label">
+                {t(props.language, {
+                  es: "Sin sesiones disponibles",
+                  en: "No sessions available",
+                  pt: "Sem sessoes disponiveis"
+                })}
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Cards tipo ML: ícono + título + texto + CTA suave */}
         <section
           className="dashboard-ml-benefit-row"
@@ -308,6 +343,7 @@ export function DashboardNextActionHome(props: {
           />
           <BenefitCard
             icon="buy"
+            variant="buy"
             title={t(props.language, {
               es: "Comprar sesiones",
               en: "Buy sessions",
