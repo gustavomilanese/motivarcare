@@ -10,6 +10,7 @@ import {
 import { ProfessionalNameStack, professionalPhotoAlt } from "./ProfessionalNameStack";
 import { DashboardHomeVariantToggle } from "./DashboardHomeVariantToggle";
 import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
+import { findProfessionalById } from "../lib/professionals";
 import { professionalAccessibleName } from "../lib/professionalDisplayName";
 import { professionalPhotoSrc } from "../services/api";
 import type { Booking, Professional } from "../types";
@@ -61,6 +62,9 @@ export function DashboardNextActionHome(props: {
   onGoToChat: (professionalId: string) => void;
   onGoToProfessional: (professionalId: string) => void;
   onNavigateToChangeProfessional: () => void;
+  onGoToReservations: () => void;
+  upcomingBookings: Booking[];
+  professionals: Professional[];
   pricingProfessionalId: string;
   onSelectHomeVariant: (variant: "next" | "classic") => void;
 }) {
@@ -404,9 +408,9 @@ export function DashboardNextActionHome(props: {
                 </h3>
                 <p className="dashboard-next-buy-body">
                   {t(props.language, {
-                    es: "Paquete o sesión individual al precio de tu profesional.",
-                    en: "Package or single session at your professional’s rate.",
-                    pt: "Pacote ou sessao individual pelo preco do seu profissional."
+                    es: "Abrí el catálogo: paquetes o sesión individual, sin salir de Inicio.",
+                    en: "Open the catalog: packages or a single session, without leaving Home.",
+                    pt: "Abra o catalogo: pacotes ou sessao individual, sem sair do Inicio."
                   })}
                 </p>
                 <button type="button" className="dashboard-next-secondary dashboard-next-buy-cta" onClick={() => props.onBuySessions()}>
@@ -416,6 +420,66 @@ export function DashboardNextActionHome(props: {
             ) : null}
           </aside>
         </div>
+
+        <section className="dashboard-next-upcoming" data-tour="patient-tour-bookings" aria-labelledby="dashboard-next-upcoming-title">
+          <div className="dashboard-next-upcoming-head">
+            <h3 id="dashboard-next-upcoming-title" className="dashboard-next-upcoming-title">
+              {t(props.language, {
+                es: "Próximas reservas",
+                en: "Upcoming bookings",
+                pt: "Proximas reservas"
+              })}
+            </h3>
+            <button type="button" className="dashboard-next-upcoming-all" onClick={() => props.onGoToReservations()}>
+              {t(props.language, {
+                es: "Ir a Sesiones",
+                en: "Go to Sessions",
+                pt: "Ir para Sessoes"
+              })}
+            </button>
+          </div>
+          {props.upcomingBookings.length === 0 ? (
+            <p className="dashboard-next-upcoming-empty">
+              {t(props.language, {
+                es: "Todavía no tenés turnos agendados.",
+                en: "You don’t have any appointments scheduled yet.",
+                pt: "Voce ainda nao tem horarios agendados."
+              })}
+            </p>
+          ) : (
+            <ul className="dashboard-next-upcoming-list">
+              {props.upcomingBookings.slice(0, 3).map((booking) => {
+                const pro = findProfessionalById(booking.professionalId, props.professionals);
+                return (
+                  <li key={booking.id}>
+                    <button
+                      type="button"
+                      className="dashboard-next-upcoming-item"
+                      onClick={() => props.onOpenBookingDetail(booking.id)}
+                    >
+                      <span className="dashboard-next-upcoming-when">
+                        {formatDateTime({
+                          isoDate: booking.startsAt,
+                          timezone: props.timezone,
+                          language: props.language
+                        })}
+                      </span>
+                      <span className="dashboard-next-upcoming-who">
+                        {pro
+                          ? professionalAccessibleName(pro)
+                          : t(props.language, {
+                              es: "Tu profesional",
+                              en: "Your professional",
+                              pt: "Seu profissional"
+                            })}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
         <DashboardHomeVariantToggle
           language={props.language}

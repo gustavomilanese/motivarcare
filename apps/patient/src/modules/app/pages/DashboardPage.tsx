@@ -62,6 +62,7 @@ import { resolveDashboardNextActionKind } from "../lib/resolveDashboardNextActio
 import { fetchProfessionalAvailability } from "../../matching/services/availability";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { DashboardHomeVariantToggle } from "../components/DashboardHomeVariantToggle";
+import { DashboardHomePurchaseModal } from "../components/DashboardHomePurchaseModal";
 import { DashboardNextActionHome } from "../components/DashboardNextActionHome";
 import type {
   Booking,
@@ -232,9 +233,11 @@ export function DashboardPage(props: {
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
+  const [homePurchaseModalOpen, setHomePurchaseModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   const dashboardSpotlightBlockersRef = useRef(false);
-  dashboardSpotlightBlockersRef.current = assignProModalOpen || acquireSessionsModalOpen || trialModalOpen;
+  dashboardSpotlightBlockersRef.current =
+    assignProModalOpen || acquireSessionsModalOpen || homePurchaseModalOpen || trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
   const hasProfessionalsOnPortal = props.professionals.length > 0;
@@ -601,7 +604,13 @@ export function DashboardPage(props: {
   const acquireSessionsHandlers = useMemo(
     () => ({
       onAssignProfessional: () => setAssignProModalOpen(true),
-      onShowChoiceModal: () => setAcquireSessionsModalOpen(true),
+      onShowChoiceModal: () => {
+        if (homeVariant === "next") {
+          setHomePurchaseModalOpen(true);
+          return;
+        }
+        setAcquireSessionsModalOpen(true);
+      },
       onOpenCheckout: (planId?: string | null) => {
         if (planId) {
           const plan = displayPackagePlans.find((item) => item.id === planId);
@@ -612,6 +621,10 @@ export function DashboardPage(props: {
         }
         if (!pricingReady) {
           setAssignProModalOpen(true);
+          return;
+        }
+        if (homeVariant === "next") {
+          setHomePurchaseModalOpen(true);
           return;
         }
         props.onNavigateToSessionsCheckout();
@@ -635,6 +648,7 @@ export function DashboardPage(props: {
     [
       displayPackagePlans,
       handleStartPackagePurchase,
+      homeVariant,
       pricingReady,
       pricingProfessionalId,
       props.onGoToBooking,
@@ -753,7 +767,7 @@ export function DashboardPage(props: {
         window.clearTimeout(endSpotlightTimer);
       }
     };
-  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, trialModalOpen]);
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, trialModalOpen]);
 
   useEffect(() => {
     if (!showGoogleCalendarCta) {
@@ -821,12 +835,15 @@ export function DashboardPage(props: {
           onNavigateToRebookTrial={props.onNavigateToRebookTrial}
           onNavigateToBookTrial={props.onNavigateToBookTrial}
           onGoToBooking={props.onGoToBooking}
-          onBuySessions={() => dispatchAcquireSessions("buy_cta")}
+          onBuySessions={() => setHomePurchaseModalOpen(true)}
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
           onGoToChat={props.onGoToChat}
           onGoToProfessional={props.onGoToProfessional}
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
+          onGoToReservations={props.onGoToReservations}
+          upcomingBookings={upcomingConfirmedBookings}
+          professionals={props.professionals}
           pricingProfessionalId={pricingProfessionalId}
           onSelectHomeVariant={selectHomeVariant}
         />
@@ -1865,11 +1882,48 @@ export function DashboardPage(props: {
         </div>
       ) : null}
 
+      {homePurchaseModalOpen ? (
+        <DashboardHomePurchaseModal
+          language={props.language}
+          currency={props.currency}
+          residencyCountry={props.state.profileResidencyCountry}
+          fxRates={props.fxRates}
+          packagesLoading={packagesLoadingHint === "loading"}
+          packagePlans={displayPackagePlans}
+          featuredPackageId={displayFeaturedPackageId}
+          pricingReady={pricingReady}
+          unitPriceMajor={individualUnitHome}
+          paymentLoading={packageCheckoutLoading}
+          paymentError={packageCheckoutError || undefined}
+          onClose={() => setHomePurchaseModalOpen(false)}
+          onSelectPlan={(plan) => {
+            handleStartPackagePurchase(plan);
+          }}
+          onIndividualPurchase={() => {
+            setHomePurchaseModalOpen(false);
+            if (!pricingReady) {
+              setAssignProModalOpen(true);
+              return;
+            }
+            props.onNavigateToIndividualSessions();
+          }}
+          onRequireProfessional={() => {
+            setHomePurchaseModalOpen(false);
+            setAssignProModalOpen(true);
+          }}
+        />
+      ) : null}
+
       {acquireSessionsModalOpen ? (
         <AcquireSessionsChoiceModal
           language={props.language}
           onClose={() => setAcquireSessionsModalOpen(false)}
           onChoosePackages={() => {
+            setAcquireSessionsModalOpen(false);
+            if (homeVariant === "next") {
+              setHomePurchaseModalOpen(true);
+              return;
+            }
             props.onNavigateToSessionsCheckout();
           }}
           onChooseIndividual={props.onNavigateToIndividualSessions}
@@ -1879,7 +1933,7 @@ export function DashboardPage(props: {
       <DashboardGuidedTour
         language={props.language}
         sessionUserId={props.state.session?.id ?? null}
-        suppressTour={assignProModalOpen || acquireSessionsModalOpen || trialModalOpen}
+        suppressTour={assignProModalOpen || acquireSessionsModalOpen || homePurchaseModalOpen || trialModalOpen}
         bookingContext={dashboardTourBookingContext}
       />
     </div>

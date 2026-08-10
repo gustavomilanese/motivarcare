@@ -14836,6 +14836,200 @@ button.sessions-balance {
   margin-top: 4px;
 }
 
+.dashboard-next-upcoming {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: var(--portal-radius);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--portal-border);
+  animation: dashboard-next-rise 420ms ease-out both;
+  animation-delay: 80ms;
+}
+
+.dashboard-next-upcoming-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-next-upcoming-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.dashboard-next-upcoming-all {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--dashboard-next-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-next-upcoming-empty {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+}
+
+.dashboard-next-upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-next-upcoming-item {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--portal-radius-sm);
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dashboard-next-upcoming-item:hover {
+  border-color: rgba(95, 68, 235, 0.35);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.dashboard-next-upcoming-when {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.dashboard-next-upcoming-who {
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+
+@keyframes dashboard-next-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-next-header,
+  .dashboard-next-action,
+  .dashboard-next-side,
+  .dashboard-next-upcoming,
+  .dashboard-home-purchase-modal.matching-flow-modal {
+    animation: none;
+  }
+
+  .dashboard-next-upcoming-item:hover {
+    transform: none;
+  }
+}
+
+.dashboard-next-header,
+.dashboard-next-action,
+.dashboard-next-side {
+  animation: dashboard-next-rise 420ms ease-out both;
+}
+
+.dashboard-next-side {
+  animation-delay: 40ms;
+}
+
+.dashboard-home-purchase-backdrop.matching-flow-backdrop {
+  z-index: 80;
+  align-items: center;
+  padding: clamp(16px, 3vw, 28px);
+}
+
+.dashboard-home-purchase-modal.matching-flow-modal {
+  width: min(1080px, 100%);
+  max-height: min(92vh, 920px);
+  overflow: auto;
+  border-radius: 18px;
+  padding: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  box-shadow: 0 28px 64px rgba(15, 23, 42, 0.22);
+  animation: dashboard-next-rise 280ms ease-out both;
+}
+
+.dashboard-home-purchase-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--portal-border);
+  background: linear-gradient(180deg, rgba(95, 68, 235, 0.06), transparent);
+}
+
+.dashboard-home-purchase-kicker {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.dashboard-home-purchase-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  color: #0f172a;
+}
+
+.dashboard-home-purchase-lead {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  color: var(--text-soft);
+  max-width: 42rem;
+}
+
+.dashboard-home-purchase-close {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: var(--portal-radius-sm);
+  min-height: 40px;
+  padding: 0 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.dashboard-home-purchase-body {
+  padding: 8px 20px 24px;
+}
+
+.checkout-packages-panel-root--embedded .checkout-packages-head {
+  display: none;
+}
+
+.checkout-packages-embedded-pro-cta {
+  margin: 8px 0 12px;
+}
+
 .dashboard-home-variant-toggle {
   margin: 4px 0 0;
   text-align: left;

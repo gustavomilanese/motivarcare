@@ -41,6 +41,8 @@ export function CheckoutPackagesPanel(props: {
   onRequireProfessional: () => void;
   paymentLoading?: boolean;
   paymentError?: string;
+  /** Cuando el panel vive dentro de otro modal (Inicio), oculta el chrome duplicado. */
+  hideChrome?: boolean;
 }) {
   const isMobilePortal = useMobilePortal();
   const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
@@ -56,7 +58,8 @@ export function CheckoutPackagesPanel(props: {
   });
 
   return (
-    <div className={`checkout-packages-panel-root${isMobilePortal ? " checkout-packages-panel-root--mobile" : ""}`}>
+    <div className={`checkout-packages-panel-root${isMobilePortal ? " checkout-packages-panel-root--mobile" : ""}${props.hideChrome ? " checkout-packages-panel-root--embedded" : ""}`}>
+    {!props.hideChrome ? (
       <div className="session-booking-panel-head checkout-packages-head">
         <div className="checkout-packages-head-inner sessions-package-panel-head-copy">
           <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
@@ -87,6 +90,11 @@ export function CheckoutPackagesPanel(props: {
           {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
         </button>
       </div>
+    ) : showChooseProfessionalCta ? (
+      <div className="checkout-packages-embedded-pro-cta">
+        <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
+      </div>
+    ) : null}
 
       {props.paymentError ? (
         <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
