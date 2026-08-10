@@ -15511,6 +15511,8 @@ button.sessions-balance {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr;
+  /* surface gap 16 + 32 = 48 (3× el aire previo) */
+  margin-top: 32px;
 }
 
 @media (min-width: 900px) {
