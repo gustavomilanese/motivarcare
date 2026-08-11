@@ -20071,6 +20071,13 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-head {
     gap: 10px;
     align-items: flex-end;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-stack,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-stack {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
@@ -20080,6 +20087,14 @@ button.sessions-balance {
     gap: 0.4em;
     letter-spacing: -0.01em;
     min-width: 0;
+    max-width: 100%;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title > span:last-child,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title > span:last-child {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon,
@@ -20122,12 +20137,15 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-head {
     gap: 10px;
+    align-items: center;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
@@ -20148,6 +20166,8 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title > span:last-child {
     min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-body {
@@ -20176,12 +20196,15 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-diary-banner-head {
     gap: 10px;
+    align-items: center;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
@@ -20202,6 +20225,8 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title > span:last-child {
     min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
@@ -20442,8 +20467,8 @@ button.sessions-balance {
 @media (max-width: 680px) {
   /* Banner ML mobile: copy + arte en fila (no apilar: la imagen se cortaba) */
   .patient-dashboard-home .dashboard-ml-promo {
-    height: clamp(196px, 48vw, 236px);
-    min-height: 196px;
+    height: auto;
+    min-height: clamp(220px, 52vw, 268px);
     margin-bottom: 0;
   }
 

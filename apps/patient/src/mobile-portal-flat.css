@@ -4,9 +4,12 @@
  * Web / desktop: sin efecto (todo dentro del media query).
  */
 @media (max-width: 1080px) {
-  /* Tipografía mobile ~10% más grande (escala rem / herencias) */
+  /* Tipografía mobile ~10% más grande (escala rem / herencias).
+     Usamos px fijos: el % en html a veces deja layout “cortado” hasta un resize. */
   html {
-    font-size: 110%;
+    font-size: 17.6px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   :root {
