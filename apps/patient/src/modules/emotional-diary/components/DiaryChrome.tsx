@@ -1,11 +1,11 @@
 import { type ReactNode, useLayoutEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { useDiaryPortalToolbarMountTarget } from "../context/DiaryPortalToolbarMount";
 import { t } from "../lib/labels";
 
-/** Hero del diario — journal en cama (full-bleed en home). */
-const DIARY_HEADER_IMAGE_SRC = "/images/diario-emocional-hero.png";
+/** Arte del banner Diario (mismo cutout que Home). */
+const DIARY_BANNER_IMAGE_SRC = "/home/banner-home-diary.png?v=2";
 
 const DIARY_SECTIONS = [
   {
@@ -158,35 +158,67 @@ export function DiaryBreadcrumb(props: {
   );
 }
 
-/** Hero inmersivo del home — mismas clases que Inicio / Sesiones (full-bleed, sin marco). */
+/** Banner Home-style del diario (violeta + cutout + CTAs). */
 export function DiaryHomeHero(props: {
+  language: AppLanguage;
   title: string;
   subtitle?: string;
 }) {
+  const navigate = useNavigate();
+
   return (
-    <section className="sessions-hero-immersive" aria-label={props.title}>
-      <div className="sessions-hero-banner-wrap">
-        <div className="sessions-hero-banner">
-          <img
-            className="sessions-hero-banner-photo"
-            src={DIARY_HEADER_IMAGE_SRC}
-            alt=""
-            width={1200}
-            height={520}
-            loading="eager"
-            decoding="async"
-          />
-          <div className="sessions-hero-banner-scrim" aria-hidden="true" />
-          <div className="sessions-hero-banner-copy">
-            <h1 className="sessions-hero-title-on-photo">{props.title}</h1>
-            {props.subtitle ? (
-              <p className="sessions-hero-subtitle-on-photo">{props.subtitle}</p>
-            ) : null}
+    <article className="dashboard-ml-diary-banner diary-page-ml-banner" aria-label={props.title}>
+      <div className="dashboard-ml-diary-banner-frame">
+        <div className="dashboard-ml-diary-banner-copy">
+          <p className="dashboard-ml-diary-banner-kicker">
+            {t(props.language, {
+              es: "Tu espacio",
+              en: "Your space",
+              pt: "Seu espaco"
+            })}
+          </p>
+          <h1 id="diary-page-title" className="dashboard-ml-diary-banner-title">
+            {props.title}
+          </h1>
+          {props.subtitle ? (
+            <p className="dashboard-ml-diary-banner-body">{props.subtitle}</p>
+          ) : null}
+          <div className="dashboard-ml-diary-banner-actions">
+            <button
+              type="button"
+              className="dashboard-ml-diary-banner-cta"
+              onClick={() => navigate("/diario/nueva")}
+            >
+              {t(props.language, {
+                es: "Escribir ahora",
+                en: "Write now",
+                pt: "Escrever agora"
+              })}
+            </button>
+            <button
+              type="button"
+              className="dashboard-ml-diary-banner-link"
+              onClick={() => navigate("/diario/registros")}
+            >
+              {t(props.language, {
+                es: "Ver registros",
+                en: "View records",
+                pt: "Ver registros"
+              })}
+            </button>
           </div>
         </div>
-        <div id="diary-hero-toolbar-mount" className="sessions-hero-toolbar-mount" />
+        <div className="dashboard-ml-diary-banner-media" aria-hidden="true">
+          <img
+            className="dashboard-ml-diary-banner-photo"
+            src={DIARY_BANNER_IMAGE_SRC}
+            alt=""
+            decoding="async"
+          />
+        </div>
       </div>
-    </section>
+      <div id="diary-hero-toolbar-mount" className="sessions-hero-toolbar-mount diary-page-ml-toolbar" />
+    </article>
   );
 }
 
@@ -200,6 +232,7 @@ export function DiaryPageHeader(props: {
   if (props.showHeroImage) {
     return (
       <DiaryHomeHero
+        language={props.language}
         title={props.title}
         subtitle={props.subtitle}
       />

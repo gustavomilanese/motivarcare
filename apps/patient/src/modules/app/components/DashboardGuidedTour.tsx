@@ -34,6 +34,10 @@ function macaAvatarSvg(size: "large" | "small"): string {
 </svg>`.trim();
 }
 
+function isHomeMlChrome(): boolean {
+  return Boolean(document.querySelector(".portal-shell--home-ml"));
+}
+
 function welcomeInjectHtml(language: AppLanguage): string {
   return `
 <div class="patient-tour-welcome-shell patient-tour-welcome-shell--cinematic">
@@ -73,9 +77,15 @@ function welcomeInjectHtml(language: AppLanguage): string {
       </div>
     </div>
     <p class="patient-tour-maca-hero__lead">${t(language, {
-      es: "En pocos pasos te muestro el menú, tus reservas y dónde encontrarme. Sin prisa, con buena onda.",
-      en: "In a few steps I'll show you the menu, your bookings, and where to find me. No rush — just good vibes.",
-      pt: "Em poucos passos mostro o menu, suas reservas e onde me achar. Sem pressa."
+      es: isHomeMlChrome()
+        ? "Te muestro el menú, tu saldo, los atajos, Sesiones, Diario, Ejercicios, Música y dónde encontrarme. Sin prisa."
+        : "En pocos pasos te muestro el menú, tus reservas y dónde encontrarme. Sin prisa, con buena onda.",
+      en: isHomeMlChrome()
+        ? "I'll show you the menu, your balance, shortcuts, Sessions, Diary, Exercises, Music, and where to find me. No rush."
+        : "In a few steps I'll show you the menu, your bookings, and where to find me. No rush — just good vibes.",
+      pt: isHomeMlChrome()
+        ? "Mostro o menu, seu saldo, atalhos, Sessoes, Diario, Exercicios, Musica e onde me achar. Sem pressa."
+        : "Em poucos passos mostro o menu, suas reservas e onde me achar. Sem pressa."
     })}</p>
     <p class="patient-tour-maca-hero__fine">${t(language, {
       es: "Podés saltear cuando quieras con la × arriba a la derecha.",
@@ -87,47 +97,82 @@ function welcomeInjectHtml(language: AppLanguage): string {
 }
 
 function sidebarMenuHtml(language: AppLanguage): string {
-  const items: LocalizedText[] = [
-    {
-      es: "<strong>Inicio</strong> — tu panel y resumen",
-      en: "<strong>Home</strong> — your dashboard snapshot",
-      pt: "<strong>Inicio</strong> — seu painel e resumo"
-    },
-    {
-      es: "<strong>Sesiones</strong> — reservar y ver turnos",
-      en: "<strong>Sessions</strong> — book and manage slots",
-      pt: "<strong>Sessoes</strong> — agendar e ver horarios"
-    },
-    {
-      es: "<strong>Diario emocional</strong> — registrá cómo te sentís",
-      en: "<strong>Emotional diary</strong> — log how you feel",
-      pt: "<strong>Diário emocional</strong> — registre como se sente"
-    },
-    {
-      es: "<strong>Profesionales</strong> — explorar el equipo",
-      en: "<strong>Professionals</strong> — browse the team",
-      pt: "<strong>Profissionais</strong> — conhecer a equipe"
-    },
-    {
-      es: "<strong>Ejercicios</strong> — recursos entre sesión y sesión",
-      en: "<strong>Exercises</strong> — resources between sessions",
-      pt: "<strong>Exercicios</strong> — recursos entre sessoes"
-    },
-    {
-      es: "<strong>Música relajante</strong> — sonidos para acompañarte",
-      en: "<strong>Relaxing music</strong> — sounds to unwind",
-      pt: "<strong>Musica relaxante</strong> — sons para relaxar"
-    },
-    {
-      es: "<strong>Chat</strong> — mensajes con tu equipo",
-      en: "<strong>Chat</strong> — message your team",
-      pt: "<strong>Chat</strong> — mensagens com a equipe"
-    }
-  ];
+  const isHomeMl = isHomeMlChrome();
+  const items: LocalizedText[] = isHomeMl
+    ? [
+        {
+          es: "<strong>Inicio</strong> — tu panel y próximos pasos",
+          en: "<strong>Home</strong> — your dashboard and next steps",
+          pt: "<strong>Inicio</strong> — seu painel e proximos passos"
+        },
+        {
+          es: "<strong>Sesiones</strong> — reservar y ver turnos",
+          en: "<strong>Sessions</strong> — book and manage slots",
+          pt: "<strong>Sessoes</strong> — agendar e ver horarios"
+        },
+        {
+          es: "<strong>Chat</strong> — mensajes con tu profesional",
+          en: "<strong>Chat</strong> — message your professional",
+          pt: "<strong>Chat</strong> — mensagens com seu profissional"
+        },
+        {
+          es: "<strong>Diario</strong> — registrá cómo te sentís",
+          en: "<strong>Diary</strong> — log how you feel",
+          pt: "<strong>Diario</strong> — registre como se sente"
+        },
+        {
+          es: "<strong>Ejercicios</strong> — recursos entre sesiones",
+          en: "<strong>Exercises</strong> — resources between sessions",
+          pt: "<strong>Exercicios</strong> — recursos entre sessoes"
+        },
+        {
+          es: "<strong>Música</strong> — sonidos para acompañarte",
+          en: "<strong>Music</strong> — sounds to unwind",
+          pt: "<strong>Musica</strong> — sons para relaxar"
+        }
+      ]
+    : [
+        {
+          es: "<strong>Inicio</strong> — tu panel y resumen",
+          en: "<strong>Home</strong> — your dashboard snapshot",
+          pt: "<strong>Inicio</strong> — seu painel e resumo"
+        },
+        {
+          es: "<strong>Sesiones</strong> — reservar y ver turnos",
+          en: "<strong>Sessions</strong> — book and manage slots",
+          pt: "<strong>Sessoes</strong> — agendar e ver horarios"
+        },
+        {
+          es: "<strong>Diario emocional</strong> — registrá cómo te sentís",
+          en: "<strong>Emotional diary</strong> — log how you feel",
+          pt: "<strong>Diário emocional</strong> — registre como se sente"
+        },
+        {
+          es: "<strong>Ejercicios</strong> — recursos entre sesión y sesión",
+          en: "<strong>Exercises</strong> — resources between sessions",
+          pt: "<strong>Exercicios</strong> — recursos entre sessoes"
+        },
+        {
+          es: "<strong>Música relajante</strong> — sonidos para acompañarte",
+          en: "<strong>Relaxing music</strong> — sounds to unwind",
+          pt: "<strong>Musica relaxante</strong> — sons para relaxar"
+        },
+        {
+          es: "<strong>Chat</strong> — mensajes con tu equipo",
+          en: "<strong>Chat</strong> — message your team",
+          pt: "<strong>Chat</strong> — mensagens com a equipe"
+        }
+      ];
   const intro = t(language, {
-    es: "Cada ítem te lleva a un lugar distinto. En una línea:",
-    en: "Each item takes you somewhere new. In one line each:",
-    pt: "Cada item leva a um lugar. Em uma linha:"
+    es: isHomeMl
+      ? "Pasá el mouse por el borde izquierdo para abrirlo. Abajo también están el tour y tu cuenta."
+      : "Cada ítem te lleva a un lugar distinto. En una línea:",
+    en: isHomeMl
+      ? "Hover the left edge to open it. The tour and your account sit at the bottom."
+      : "Each item takes you somewhere new. In one line each:",
+    pt: isHomeMl
+      ? "Passe o mouse na borda esquerda para abrir. Embaixo ficam o tour e sua conta."
+      : "Cada item leva a um lugar. Em uma linha:"
   });
   const lis = items.map((text) => `<li>${t(language, text)}</li>`).join("");
   return `
@@ -136,6 +181,14 @@ function sidebarMenuHtml(language: AppLanguage): string {
   <p class="patient-tour-sidebar-intro">${intro}</p>
   <ul class="patient-tour-menu-hints">${lis}</ul>
 </div>`.trim();
+}
+
+function setHomeMlRailTourExpanded(expanded: boolean): void {
+  const rail = document.querySelector(".portal-home-ml-rail");
+  if (!(rail instanceof HTMLElement)) {
+    return;
+  }
+  rail.classList.toggle("is-tour-expanded", expanded);
 }
 
 function isVisible(el: Element | null): el is HTMLElement {
@@ -161,8 +214,8 @@ function pickVisible(...selectors: string[]): HTMLElement | null {
 }
 
 function tourStorageKey(sessionUserId: string): string {
-  // v2: v1 pudo quedar marcado “done” por destroy accidental post-checkout.
-  return `motivarcare.patient.dashboardTour.v2.${sessionUserId}`;
+  // v3: tour reescrito para Inicio ML (atajos, créditos, menú rail).
+  return `motivarcare.patient.dashboardTour.v3.${sessionUserId}`;
 }
 
 export interface DashboardTourBookingContext {
@@ -172,20 +225,246 @@ export interface DashboardTourBookingContext {
   hasUpcomingMeetLink: boolean;
 }
 
-function buildDashboardTourSteps(
-  language: AppLanguage,
-  bookingContext?: DashboardTourBookingContext | null
-): DriveStep[] {
-  const steps: DriveStep[] = [];
-
+function pushJoinMeetStep(steps: DriveStep[], language: AppLanguage): void {
+  if (!pickVisible('[data-tour="patient-join-first-meet"]')) {
+    return;
+  }
   steps.push({
+    element: '[data-tour="patient-join-first-meet"]',
     popover: {
-      title: "",
-      description: welcomeInjectHtml(language),
-      side: "over",
+      title: t(language, {
+        es: "Unirte a la sesión (Meet)",
+        en: "Join your session (Meet)",
+        pt: "Entrar na sessao (Meet)"
+      }),
+      description: t(language, {
+        es: "Cuando llegue el horario, tocá acá para entrar. Se abre Google Meet en una pestaña nueva.",
+        en: "When it is time, tap here to join. Google Meet opens in a new tab.",
+        pt: "Na hora, toque aqui para entrar. O Google Meet abre numa nova aba."
+      }),
+      side: "bottom",
       align: "center"
     }
   });
+}
+
+function buildHomeMlTourSteps(
+  language: AppLanguage,
+  bookingContext?: DashboardTourBookingContext | null
+): DriveStep[] {
+  const steps: DriveStep[] = [
+    {
+      popover: {
+        title: "",
+        description: welcomeInjectHtml(language),
+        side: "over",
+        align: "center"
+      }
+    }
+  ];
+
+  if (pickVisible('[data-tour="patient-tour-sidebar"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-sidebar"]',
+      popover: {
+        title: t(language, {
+          es: "Menú a la izquierda",
+          en: "Left-side menu",
+          pt: "Menu a esquerda"
+        }),
+        description: sidebarMenuHtml(language),
+        side: "right",
+        align: "start"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-home-ml-chrome"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-home-ml-chrome"]',
+      popover: {
+        title: t(language, {
+          es: "Barra superior",
+          en: "Top bar",
+          pt: "Barra superior"
+        }),
+        description: t(language, {
+          es: "MotivarCare, las secciones principales, notificaciones y <strong>Cuenta</strong> (perfil, preferencias y salir).",
+          en: "MotivarCare, main sections, notifications, and <strong>Account</strong> (profile, preferences, and sign out).",
+          pt: "MotivarCare, secoes principais, notificacoes e <strong>Conta</strong> (perfil, preferencias e sair)."
+        }),
+        side: "bottom",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-credits"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-credits"]',
+      popover: {
+        title: t(language, {
+          es: "Tu saldo y reservar",
+          en: "Your balance & book",
+          pt: "Seu saldo e reservar"
+        }),
+        description: t(language, {
+          es: "Acá ves cuántas sesiones te quedan y el botón para <strong>Reservar sesión</strong> con tu profesional.",
+          en: "See how many sessions you have left and the button to <strong>Book a session</strong> with your professional.",
+          pt: "Veja quantas sessoes restam e o botao para <strong>Reservar sessao</strong> com seu profissional."
+        }),
+        side: "bottom",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-kpis"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-kpis"]',
+      popover: {
+        title: t(language, {
+          es: "Atajos de Inicio",
+          en: "Home shortcuts",
+          pt: "Atalhos do Inicio"
+        }),
+        description: t(language, {
+          es: "<strong>Tu profesional</strong>, <strong>Comprar sesiones</strong>, <strong>Próximas</strong>, <strong>Diario</strong>, <strong>Ejercicios</strong> y <strong>Música</strong>: un toque y vas directo.",
+          en: "<strong>Your professional</strong>, <strong>Buy sessions</strong>, <strong>Upcoming</strong>, <strong>Diary</strong>, <strong>Exercises</strong>, and <strong>Music</strong> — one tap and you go straight there.",
+          pt: "<strong>Seu profissional</strong>, <strong>Comprar sessoes</strong>, <strong>Proximas</strong>, <strong>Diario</strong>, <strong>Exercicios</strong> e <strong>Musica</strong>: um toque e vai direto."
+        }),
+        side: "bottom",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-bookings"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-bookings"]',
+      popover: {
+        title: t(language, {
+          es: "Bloque Sesiones",
+          en: "Sessions block",
+          pt: "Bloco Sessoes"
+        }),
+        description: bookingContext?.hasUpcomingConfirmed
+          ? t(language, {
+              es: "Tus próximas reservas, calendario, paquetes, historial y actividad de compras. Abrí una reserva para ver detalle o reprogramar.",
+              en: "Your upcoming bookings, calendar, packages, history, and purchase activity. Open a booking for details or to reschedule.",
+              pt: "Suas proximas reservas, calendario, pacotes, historico e atividade de compras. Abra uma reserva para detalhes ou reagendar."
+            })
+          : t(language, {
+              es: "Desde acá reservás, ves el calendario y abrís paquetes, historial o actividad de compras. Si todavía no tenés turnos, el vacío te lleva a Sesiones.",
+              en: "From here you book, check the calendar, and open packages, history, or purchase activity. If you have no slots yet, the empty state takes you to Sessions.",
+              pt: "Daqui voce reserva, ve o calendario e abre pacotes, historico ou atividade de compras. Se ainda nao tiver horarios, o vazio leva a Sessoes."
+            }),
+        side: "top",
+        align: "center"
+      }
+    });
+    if (bookingContext?.hasUpcomingMeetLink) {
+      pushJoinMeetStep(steps, language);
+    }
+  }
+
+  if (pickVisible('[data-tour="patient-tour-diary"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-diary"]',
+      popover: {
+        title: t(language, {
+          es: "Diario emocional",
+          en: "Emotional diary",
+          pt: "Diario emocional"
+        }),
+        description: t(language, {
+          es: "Escribí cómo te sentís, revisá registros o abrí el diario completo cuando lo necesites.",
+          en: "Write how you feel, review entries, or open the full diary whenever you need.",
+          pt: "Escreva como se sente, revise registros ou abra o diario completo quando precisar."
+        }),
+        side: "top",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-exercises"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-exercises"]',
+      popover: {
+        title: t(language, {
+          es: "Ejercicios",
+          en: "Exercises",
+          pt: "Exercicios"
+        }),
+        description: t(language, {
+          es: "Prácticas breves entre sesiones: respiración, postura y presencia. Tocá <strong>Ver ejercicios</strong> para abrir el catálogo completo.",
+          en: "Short practices between sessions — breathing, posture, and presence. Tap <strong>View exercises</strong> for the full catalog.",
+          pt: "Praticas breves entre sessoes: respiracao, postura e presenca. Toque <strong>Ver exercicios</strong> para o catalogo completo."
+        }),
+        side: "top",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-music"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-music"]',
+      popover: {
+        title: t(language, {
+          es: "Música",
+          en: "Music",
+          pt: "Musica"
+        }),
+        description: t(language, {
+          es: "Playlists para relajar y acompañarte. Abrí <strong>Música</strong> para escuchar y elegir lo que mejor te siente.",
+          en: "Playlists to relax and support you. Open <strong>Music</strong> to listen and pick what fits you best.",
+          pt: "Playlists para relaxar e acompanhar voce. Abra <strong>Musica</strong> para ouvir e escolher o que melhor te serve."
+        }),
+        side: "top",
+        align: "center"
+      }
+    });
+  }
+
+  if (pickVisible('[data-tour="patient-tour-maca"]')) {
+    steps.push({
+      element: '[data-tour="patient-tour-maca"]',
+      popover: {
+        title: t(language, {
+          es: "¡Acá estoy yo!",
+          en: "Here I am!",
+          pt: "Aqui estou eu!"
+        }),
+        description: t(language, {
+          es: "Soy el botón flotante de Maca: tocá cuando quieras charlar entre sesiones — un recordatorio, una duda o un empujoncito. Siempre cerca.",
+          en: "I'm Maca's floating button — tap anytime between sessions for a reminder, a question, or a little nudge. Always nearby.",
+          pt: "Sou o botao flutuante da Maca: toque entre sessoes para um lembrete, uma duvida ou um empurrarzinho. Sempre por perto."
+        }),
+        side: "top",
+        align: "end"
+      }
+    });
+  }
+
+  return steps;
+}
+
+function buildClassicTourSteps(
+  language: AppLanguage,
+  bookingContext?: DashboardTourBookingContext | null
+): DriveStep[] {
+  const steps: DriveStep[] = [
+    {
+      popover: {
+        title: "",
+        description: welcomeInjectHtml(language),
+        side: "over",
+        align: "center"
+      }
+    }
+  ];
 
   const earlyBookingsPanel: HTMLElement | null =
     bookingContext?.hasUpcomingConfirmed
@@ -220,24 +499,8 @@ function buildDashboardTourSteps(
         align: "center"
       }
     });
-    if (bookingContext?.hasUpcomingMeetLink && pickVisible('[data-tour="patient-join-first-meet"]')) {
-      steps.push({
-        element: '[data-tour="patient-join-first-meet"]',
-        popover: {
-          title: t(language, {
-            es: "Unirte a la sesión (Meet)",
-            en: "Join your session (Meet)",
-            pt: "Entrar na sessao (Meet)"
-          }),
-          description: t(language, {
-            es: "Tocá la reserva cuando llegue el horario para entrar. Se abre Google Meet en una pestaña nueva.",
-            en: "Tap the booking when it is time to join. Google Meet opens in a new tab.",
-            pt: "Toque a reserva na hora para entrar. O Google Meet abre numa nova aba."
-          }),
-          side: "bottom",
-          align: "center"
-        }
-      });
+    if (bookingContext?.hasUpcomingMeetLink) {
+      pushJoinMeetStep(steps, language);
     }
   }
 
@@ -389,6 +652,15 @@ function buildDashboardTourSteps(
   return steps;
 }
 
+function buildDashboardTourSteps(
+  language: AppLanguage,
+  bookingContext?: DashboardTourBookingContext | null
+): DriveStep[] {
+  return isHomeMlChrome()
+    ? buildHomeMlTourSteps(language, bookingContext)
+    : buildClassicTourSteps(language, bookingContext);
+}
+
 function persistTourDone(storageKey: string): void {
   try {
     window.localStorage.setItem(storageKey, "1");
@@ -489,6 +761,10 @@ function tourDriverConfig(language: AppLanguage, markIntentionalEnd: () => void)
       applyWelcomePopoverLayout(popover, stepIndex === 0);
       applyStepRichContent(popover, step);
     },
+    onHighlightStarted: (_element, step) => {
+      const stepEl = typeof step?.element === "string" ? step.element : "";
+      setHomeMlRailTourExpanded(stepEl.includes("patient-tour-sidebar"));
+    },
     onHighlighted: (_element, step, opts) => {
       const popover = opts.state.popover;
       const stepIndex = opts.state.activeIndex ?? 0;
@@ -496,14 +772,20 @@ function tourDriverConfig(language: AppLanguage, markIntentionalEnd: () => void)
         applyWelcomePopoverLayout(popover, stepIndex === 0);
         applyStepRichContent(popover, step);
       }
+      const stepEl = typeof step?.element === "string" ? step.element : "";
+      if (stepEl.includes("patient-tour-sidebar")) {
+        window.setTimeout(() => opts.driver.refresh(), 320);
+      }
     },
     onCloseClick: (_element, _step, opts) => {
       markIntentionalEnd();
+      setHomeMlRailTourExpanded(false);
       opts.driver.destroy();
     },
     onNextClick: (_element, _step, opts) => {
       if (opts.driver.isLastStep()) {
         markIntentionalEnd();
+        setHomeMlRailTourExpanded(false);
         opts.driver.destroy();
         return;
       }
@@ -565,6 +847,7 @@ export function DashboardGuidedTour(props: {
       ...tourDriverConfig(current.language, markIntentionalEnd),
       steps,
       onDestroyed: () => {
+        setHomeMlRailTourExpanded(false);
         driverInstanceRef.current = null;
       }
     });

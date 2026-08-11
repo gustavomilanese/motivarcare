@@ -24,3 +24,16 @@ export function writePatientHomeVariant(variant: PatientHomeVariant): void {
     // ignore
   }
 }
+
+/** Rutas del portal que usan el mismo chrome que Inicio next (rail + top bar + footer). */
+export function isPatientHomeMlShellPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  if (pathname === "/sessions") return true;
+  if (pathname === "/chat") return true;
+  if (pathname.startsWith("/diario")) return true;
+  if (pathname.startsWith("/ejercicios")) return true;
+  if (pathname === "/bienestar/musica") return true;
+  if (pathname.startsWith("/profile")) return true;
+  if (pathname.startsWith("/profesionales")) return true;
+  return false;
+}

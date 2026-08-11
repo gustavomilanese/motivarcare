@@ -155,6 +155,7 @@ export function BookingPage(props: {
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [activityExpandSignal, setActivityExpandSignal] = useState(0);
   const [remoteSlots, setRemoteSlots] = useState<TimeSlot[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
@@ -202,6 +203,8 @@ export function BookingPage(props: {
   const [packagePaymentSuccess, setPackagePaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const [individualPaymentSuccess, setIndividualPaymentSuccess] = useState<PaymentSuccessSummary | null>(null);
   const reservationsFocusRef = useRef<HTMLDivElement | null>(null);
+  const packagesSectionRef = useRef<HTMLElement | null>(null);
+  const historySectionRef = useRef<HTMLElement | null>(null);
   const checkoutSectionRef = useRef<HTMLElement | null>(null);
   const calendarSectionRef = useRef<HTMLElement | null>(null);
   const isCheckoutFlow = searchParams.get("flow") === "checkout";
@@ -704,6 +707,35 @@ export function BookingPage(props: {
     return () => {
       window.cancelAnimationFrame(frame);
     };
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (focus !== "packages" && focus !== "history" && focus !== "activity") {
+      return;
+    }
+
+    if (focus === "packages") {
+      setIsPackagesExpanded(true);
+    } else if (focus === "history") {
+      setIsHistoryExpanded(true);
+    } else {
+      setActivityExpandSignal((current) => current + 1);
+    }
+
+    window.setTimeout(() => {
+      if (focus === "packages") {
+        packagesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        packagesSectionRef.current?.focus({ preventScroll: true });
+      } else if (focus === "history") {
+        historySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        historySectionRef.current?.focus({ preventScroll: true });
+      }
+    }, 80);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("focus");
+    setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -1449,55 +1481,69 @@ export function BookingPage(props: {
   }
 
   return (
-    <div className="page-stack sessions-booking-page session-rn-root">
+    <div className="page-stack sessions-booking-page sessions-booking-page--ml session-rn-root">
       <section
-        className="sessions-hero-immersive"
+        className="sessions-page-ml"
         aria-label={t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
       >
-        <div className="sessions-hero-banner-wrap">
-          <div className="sessions-hero-banner">
-            <img
-              className="sessions-hero-banner-photo"
-              src="/images/hero-sesiones.png"
-              alt=""
-              width={1200}
-              height={520}
-              loading="eager"
-              decoding="async"
-            />
-            <div className="sessions-hero-banner-scrim" aria-hidden="true" />
-            <div className="sessions-hero-banner-copy">
-              <h1 className="sessions-hero-title-on-photo">
-                {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-              </h1>
-              <p className="sessions-hero-subtitle-on-photo">
+        <article className="dashboard-ml-sessions-banner sessions-page-ml-banner">
+          <div className="dashboard-ml-sessions-banner-frame">
+            <div className="dashboard-ml-sessions-banner-copy">
+              <p className="dashboard-ml-sessions-banner-kicker">
                 {t(props.language, {
-                  es: "Gestiona tus reservas",
-                  en: "Manage your bookings",
-                  pt: "Gerencie suas reservas"
+                  es: "Tu acompañamiento",
+                  en: "Your care",
+                  pt: "Seu acompanhamento"
                 })}
               </p>
+              <h1 id="sessions-page-title" className="dashboard-ml-sessions-banner-title">
+                {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+              </h1>
+              <p className="dashboard-ml-sessions-banner-body">
+                {t(props.language, {
+                  es: "Gestioná tus reservas, el calendario y el historial desde un solo lugar.",
+                  en: "Manage your bookings, calendar, and history in one place.",
+                  pt: "Gerencie suas reservas, calendario e historico em um so lugar."
+                })}
+              </p>
+              <div className="dashboard-ml-sessions-banner-actions">
+                <button
+                  type="button"
+                  className="dashboard-ml-sessions-banner-cta"
+                  onClick={toggleNewBookingPanel}
+                >
+                  {panelMode === "new"
+                    ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
+                    : t(props.language, {
+                        es: "Reservar sesión",
+                        en: "Book a session",
+                        pt: "Reservar sessao"
+                      })}
+                </button>
+                {hasProfessionalsOnPortal ? (
+                  <button
+                    type="button"
+                    className="dashboard-ml-sessions-banner-link"
+                    onClick={() => dispatchAcquireSessions("buy_cta")}
+                  >
+                    {acquireNewSessionsButtonLabel(props.language)}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
+              <img
+                className="dashboard-ml-sessions-banner-photo"
+                src="/home/banner-home-sessions.png?v=1"
+                alt=""
+                decoding="async"
+              />
             </div>
           </div>
-          <div id="sessions-hero-toolbar-mount" className="sessions-hero-toolbar-mount" />
-        </div>
-      </section>
+          <div id="sessions-hero-toolbar-mount" className="sessions-hero-toolbar-mount sessions-page-ml-toolbar" />
+        </article>
 
-      {hasProfessionalsOnPortal && availableSessions > 0 ? (
-        <section className="sessions-hero-actions-band sessions-hero-actions-band--buy-only">
-          <div className="sessions-hero-actions sessions-booking-hero-actions">
-            <button
-              className="sessions-hero-buy-button"
-              type="button"
-              onClick={() => dispatchAcquireSessions("buy_cta")}
-            >
-              {acquireNewSessionsButtonLabel(props.language)}
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="sessions-booking-body">
+      <div className="sessions-booking-body dashboard-ml-sessions-pack sessions-page-ml-pack">
       {availableSessions <= 0 ? (
         <div
           className="sessions-balance sessions-balance--zero sessions-booking-credits-strip sessions-balance-card-with-buy"
@@ -1742,7 +1788,11 @@ export function BookingPage(props: {
         </section>
       ) : null}
 
-      <section className="sessions-secondary-section sessions-purchased-history">
+      <section
+        ref={packagesSectionRef}
+        className="sessions-secondary-section sessions-purchased-history"
+        tabIndex={-1}
+      >
         <button
           type="button"
           className="sessions-calendar-toggle"
@@ -1790,7 +1840,11 @@ export function BookingPage(props: {
         ) : null}
       </section>
 
-      <section className="sessions-calendar-collapsible sessions-secondary-section sessions-history-section">
+      <section
+        ref={historySectionRef}
+        className="sessions-calendar-collapsible sessions-secondary-section sessions-history-section"
+        tabIndex={-1}
+      >
         <button
           type="button"
           className="sessions-calendar-toggle"
@@ -1874,8 +1928,13 @@ export function BookingPage(props: {
         </section>
       ) : null}
 
-      <PaymentActivityPanel language={props.language} authToken={props.state.authToken} />
+      <PaymentActivityPanel
+        language={props.language}
+        authToken={props.state.authToken}
+        expandSignal={activityExpandSignal}
+      />
       </div>
+      </section>
 
       <ProfessionalReviewsModal
         open={reviewsModalProfessional != null}

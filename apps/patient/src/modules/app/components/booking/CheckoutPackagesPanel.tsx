@@ -11,7 +11,7 @@ import {
   resolvePackageCardDisplayPricing
 } from "../../lib/packageCardDisplayPricing";
 import { useMobilePortal } from "../../hooks/useMobilePortal";
-import { packageBenefitLines, packageRhythmLabel } from "../../lib/packageCatalog";
+import { packageBenefitLines } from "../../lib/packageCatalog";
 import {
   PackageCatalogError,
   PackageCatalogLoading,
@@ -57,6 +57,17 @@ export function CheckoutPackagesPanel(props: {
     pt: "Comprar sessoes individuais"
   });
 
+  const individualCta = canIndividualCta ? (
+    <button
+      type="button"
+      className="checkout-packages-individual-top-link"
+      disabled={!canIndividualCta}
+      onClick={() => props.onIndividualPurchase()}
+    >
+      {individualLinkLabel}
+    </button>
+  ) : null;
+
   return (
     <div className={`checkout-packages-panel-root${isMobilePortal ? " checkout-packages-panel-root--mobile" : ""}${props.hideChrome ? " checkout-packages-panel-root--embedded" : ""}`}>
     {!props.hideChrome ? (
@@ -65,17 +76,11 @@ export function CheckoutPackagesPanel(props: {
           <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
           <p>
             {props.pricingReady
-              ? isMobilePortal
-                ? t(props.language, {
-                    es: "Elegí el paquete que mejor se adapte a tu proceso.",
-                    en: "Choose the package that fits your process best.",
-                    pt: "Escolha o pacote que melhor se adapta ao seu processo."
-                  })
-                : t(props.language, {
-                    es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
-                    en: "Choose a package or buy individual sessions with the link under each plan.",
-                    pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
-                  })
+              ? t(props.language, {
+                  es: "Elegí el paquete que mejor se adapte a tu proceso, o comprá sesiones sueltas arriba a la derecha.",
+                  en: "Choose the package that fits your process, or buy individual sessions from the top right.",
+                  pt: "Escolha o pacote que melhor se adapta ao seu processo, ou compre sessoes avulsas no canto superior direito."
+                })
               : t(props.language, {
                   es: "Formatos de 4, 8 y 12 sesiones. Elegí un profesional para ver precios según su tarifa.",
                   en: "4, 8, and 12 session formats. Choose a professional to see prices based on their rate.",
@@ -86,15 +91,23 @@ export function CheckoutPackagesPanel(props: {
             <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
           ) : null}
         </div>
-        <button type="button" className="checkout-packages-close" onClick={props.onClose}>
-          {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
-        </button>
+        <div className="checkout-packages-head-actions">
+          {individualCta}
+          <button type="button" className="checkout-packages-close" onClick={props.onClose}>
+            {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          </button>
+        </div>
       </div>
-    ) : showChooseProfessionalCta ? (
-      <div className="checkout-packages-embedded-pro-cta">
-        <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
-      </div>
-    ) : null}
+    ) : (
+      <>
+        {showChooseProfessionalCta ? (
+          <div className="checkout-packages-embedded-pro-cta">
+            <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
+          </div>
+        ) : null}
+        {individualCta ? <div className="checkout-packages-individual-top">{individualCta}</div> : null}
+      </>
+    )}
 
       {props.paymentError ? (
         <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
@@ -114,21 +127,11 @@ export function CheckoutPackagesPanel(props: {
           <div className="checkout-individual-only-wrap">
             <p className="checkout-packages-bundles-note">
               {t(props.language, {
-                es: "No hay paquetes multi-sesión. Podés comprar solo sesiones sueltas con el botón de abajo.",
-                en: "No multi-session bundles. Buy individual sessions with the button below.",
-                pt: "Sem pacotes multi-sessao. Compre sessoes avulsas no botao abaixo."
+                es: "No hay paquetes multi-sesión. Podés comprar solo sesiones sueltas con el botón de arriba.",
+                en: "No multi-session bundles. Buy individual sessions with the button above.",
+                pt: "Sem pacotes multi-sessao. Compre sessoes avulsas no botao acima."
               })}
             </p>
-            <div className="checkout-package-column checkout-package-column--solo">
-              <button
-                type="button"
-                className="sessions-package-individual-link sessions-package-individual-link--solo"
-                disabled={!canIndividualCta}
-                onClick={() => props.onIndividualPurchase()}
-              >
-                {individualLinkLabel}
-              </button>
-            </div>
           </div>
         ) : (
           <div className="sessions-empty-state">
@@ -143,7 +146,6 @@ export function CheckoutPackagesPanel(props: {
           </div>
         )
       ) : (
-        <>
         <div className="deal-grid sessions-package-options-grid">
           {bundlePlans.map((plan) => {
             const pricing = props.pricingReady
@@ -176,7 +178,6 @@ export function CheckoutPackagesPanel(props: {
                     className="deal-card dashboard-deal-card sessions-package-card"
                   >
                     <div className="sessions-package-card-topline">
-                      <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
                       <span className="sessions-package-card-saving">
                         {pricing
                           ? replaceTemplate(
@@ -194,7 +195,7 @@ export function CheckoutPackagesPanel(props: {
                             })}
                       </span>
                     </div>
-                    <h3>{plan.name} X{plan.credits}</h3>
+                    <h3>{plan.name}</h3>
                     <p className="sessions-package-card-description">{plan.description}</p>
                     <div className="deal-pricing-top">
                       {pricing ? (
@@ -257,62 +258,38 @@ export function CheckoutPackagesPanel(props: {
                         )}
                       </p>
                     ) : null}
-                    <button
-                      className="deal-select-button"
-                      type="button"
-                      disabled={props.paymentLoading}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (props.paymentLoading) {
-                          return;
-                        }
-                        if (!props.pricingReady) {
-                          props.onRequireProfessional();
-                          return;
-                        }
-                        props.onSelectPlan(plan);
-                      }}
-                    >
-                      {props.pricingReady
-                        ? t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })
-                        : t(props.language, {
-                            es: "Elegir profesional",
-                            en: "Choose professional",
-                            pt: "Escolher profissional"
-                          })}
-                    </button>
-                    {!isMobilePortal ? (
+                    <div className="sessions-package-card-footer">
                       <button
+                        className="deal-select-button"
                         type="button"
-                        className="sessions-package-individual-link"
-                        disabled={!canIndividualCta}
+                        disabled={props.paymentLoading}
                         onClick={(event) => {
                           event.stopPropagation();
-                          props.onIndividualPurchase();
+                          if (props.paymentLoading) {
+                            return;
+                          }
+                          if (!props.pricingReady) {
+                            props.onRequireProfessional();
+                            return;
+                          }
+                          props.onSelectPlan(plan);
                         }}
                       >
-                        {individualLinkLabel}
+                        {props.pricingReady
+                          ? t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })
+                          : t(props.language, {
+                              es: "Elegir profesional",
+                              en: "Choose professional",
+                              pt: "Escolher profissional"
+                            })}
                       </button>
-                    ) : null}
+                    </div>
                   </article>
                 </div>
               </div>
             );
           })}
         </div>
-        {isMobilePortal && canIndividualCta ? (
-          <div className="checkout-packages-mobile-footer">
-            <button
-              type="button"
-              className="checkout-packages-individual-footer-link"
-              disabled={!canIndividualCta}
-              onClick={() => props.onIndividualPurchase()}
-            >
-              {individualLinkLabel}
-            </button>
-          </div>
-        ) : null}
-        </>
       )}
     </div>
   );

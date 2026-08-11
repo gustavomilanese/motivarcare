@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
 import { apiRequest } from "../services/api";
@@ -289,12 +289,18 @@ function PaymentActivityDetail(props: {
   );
 }
 
-export function PaymentActivityPanel(props: { language: AppLanguage; authToken: string | null }) {
+export function PaymentActivityPanel(props: {
+  language: AppLanguage;
+  authToken: string | null;
+  /** Incrementar para expandir y scrollear a esta sección (p. ej. desde Inicio). */
+  expandSignal?: number;
+}) {
   const [rows, setRows] = useState<PaymentCheckoutRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   const load = useCallback(async () => {
     if (!props.authToken) {
@@ -324,12 +330,27 @@ export function PaymentActivityPanel(props: { language: AppLanguage; authToken: 
     void load();
   }, [isPanelExpanded, load]);
 
+  useEffect(() => {
+    if (!props.expandSignal) {
+      return;
+    }
+    setIsPanelExpanded(true);
+    const frame = window.requestAnimationFrame(() => {
+      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [props.expandSignal]);
+
   if (!props.authToken) {
     return null;
   }
 
   return (
-    <section className="payment-activity-panel sessions-calendar-collapsible sessions-secondary-section">
+    <section
+      ref={sectionRef}
+      className="payment-activity-panel sessions-calendar-collapsible sessions-secondary-section"
+      tabIndex={-1}
+    >
       <button
         type="button"
         className="sessions-calendar-toggle"

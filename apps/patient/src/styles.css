@@ -7255,32 +7255,41 @@ button.danger:disabled:hover {
 .sessions-package-individual-link {
   display: block;
   width: 100%;
-  margin-top: 12px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 13px;
-  font-weight: 600;
-  color: #5b21b6;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  margin-top: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #312e81;
+  border-radius: 10px;
+  background: #312e81;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
   cursor: pointer;
   text-align: center;
   font-family: inherit;
+  box-shadow: 0 6px 16px rgba(49, 46, 129, 0.28);
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.sessions-package-individual-link:hover:not(:disabled) {
-  color: #4c1d95;
+.sessions-package-individual-link:hover:not(:disabled),
+.sessions-package-individual-link:focus-visible:not(:disabled) {
+  background: #1e1b4b;
+  border-color: #1e1b4b;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.34);
 }
 
 .sessions-package-individual-link:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .sessions-package-individual-link--solo {
   margin-top: 0;
-  text-align: left;
+  text-align: center;
 }
 
 .sessions-balance {
@@ -7548,13 +7557,14 @@ button.sessions-balance {
   gap: 0;
 }
 
-.portal-main--sessions-home .sessions-booking-page > :not(.sessions-hero-immersive):not(.sessions-booking-body):not(.sessions-hero-actions-band) {
+.portal-main--sessions-home .sessions-booking-page > :not(.sessions-hero-immersive):not(.sessions-page-ml):not(.sessions-booking-body):not(.sessions-hero-actions-band) {
   padding-left: var(--portal-page-inset);
   padding-right: var(--portal-page-inset);
   box-sizing: border-box;
 }
 
-.portal-main--sessions-home .sessions-booking-page .sessions-hero-immersive {
+.portal-main--sessions-home .sessions-booking-page .sessions-hero-immersive,
+.portal-main--sessions-home .sessions-booking-page .sessions-page-ml {
   padding-left: 0;
   padding-right: 0;
   margin-bottom: 0;
@@ -7570,6 +7580,7 @@ button.sessions-balance {
 }
 
 .sessions-booking-page.page-stack > .sessions-hero-immersive,
+.sessions-booking-page.page-stack > .sessions-page-ml,
 .sessions-booking-page.page-stack > .sessions-hero-actions-band,
 .sessions-booking-page.page-stack > .sessions-booking-body {
   width: 100%;
@@ -7622,7 +7633,8 @@ button.sessions-balance {
   box-sizing: border-box;
 }
 
-.portal-main--diary-home .diary-home-page .sessions-hero-immersive {
+.portal-main--diary-home .diary-home-page .sessions-hero-immersive,
+.portal-main--diary-home .diary-home-page .diary-page-ml {
   padding-left: 0;
   padding-right: 0;
   margin-bottom: 0;
@@ -7639,10 +7651,103 @@ button.sessions-balance {
   padding-bottom: 12px;
 }
 
-.portal-main--diary-home .diary-home-page > :not(.sessions-hero-immersive):not(.sessions-hero-actions-band):not(.diary-home-band) {
+.portal-main--diary-home .diary-home-page > :not(.sessions-hero-immersive):not(.sessions-hero-actions-band):not(.diary-home-band):not(.diary-page-ml) {
   padding-left: var(--portal-page-inset);
   padding-right: var(--portal-page-inset);
   box-sizing: border-box;
+}
+
+/* Diario page — layout Home ML (banner violeta + pack adjunto) */
+.diary-home-page--ml {
+  --dashboard-ml-page: #ebebeb;
+  --dashboard-ml-brand: #5f44eb;
+  gap: 0;
+  background: var(--dashboard-ml-page);
+  padding-bottom: clamp(28px, 5vh, 48px);
+}
+
+.diary-home-page--ml .diary-page-ml {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(16px, 3vw, 28px) 0;
+  box-sizing: border-box;
+}
+
+.diary-home-page--ml .diary-page-ml-banner {
+  position: relative;
+}
+
+.diary-home-page--ml .diary-page-ml-toolbar.sessions-hero-toolbar-mount {
+  top: 12px;
+  right: 12px;
+}
+
+.diary-home-page--ml .diary-page-ml-pack {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  margin: 0;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.diary-home-page--ml .diary-page-ml-subnav {
+  margin: 0;
+  padding: 0;
+}
+
+.diary-home-page--ml .diary-page-ml-subnav .diary-subnav {
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-radius: 12px;
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 100%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.diary-home-page--ml .diary-page-ml-pack > .diary-home-band {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-bottom: 1px solid rgba(95, 68, 235, 0.12);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.diary-home-page--ml .diary-page-ml-pack > .diary-home-band--checkin {
+  background: linear-gradient(165deg, #fff 0%, #f5f0ff 55%, #eef2ff 100%);
+}
+
+.diary-home-page--ml .diary-page-ml-pack > .diary-home-band--history,
+.diary-home-page--ml .diary-page-ml-pack > .diary-home-band--extras {
+  background: #fff;
+}
+
+.diary-home-page--ml .diary-page-ml-pack .diary-hero-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .diary-home-page--ml .diary-page-ml {
+    padding: 10px 12px 0;
+  }
+
+  .diary-home-page--ml .diary-page-ml-pack {
+    padding: 12px;
+    gap: 12px;
+  }
 }
 
 .sessions-booking-page .sessions-booking-body {
@@ -7655,6 +7760,109 @@ button.sessions-balance {
   box-sizing: border-box;
   padding: 0 0 clamp(28px, 5vh, 40px);
   background: transparent;
+}
+
+/* Sesiones page — layout Home ML (banner violeta + pack adjunto) */
+.sessions-booking-page--ml {
+  --dashboard-ml-page: #ebebeb;
+  --dashboard-ml-brand: #5f44eb;
+  background: var(--dashboard-ml-page);
+  padding-bottom: clamp(28px, 5vh, 48px);
+}
+
+.sessions-booking-page--ml .sessions-page-ml {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(16px, 3vw, 28px) 0;
+  box-sizing: border-box;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-banner {
+  position: relative;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-toolbar.sessions-hero-toolbar-mount {
+  top: 12px;
+  right: 12px;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
+  gap: 14px;
+  padding: 16px;
+  margin: 0;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack > .sessions-balance,
+.sessions-booking-page--ml .sessions-page-ml-pack > button.sessions-balance {
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  border-bottom: 1px solid rgba(95, 68, 235, 0.14);
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 100%);
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack > .content-card,
+.sessions-booking-page--ml .sessions-page-ml-pack > section.content-card,
+.sessions-booking-page--ml .sessions-page-ml-pack > section {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: #fff;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-confirmed-panel.content-card {
+  background: #fff;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section,
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section,
+.sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section {
+  margin: 0 !important;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  background:
+    linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
+  overflow: hidden;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible .sessions-calendar-toggle {
+  padding: 14px 16px;
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-title {
+  font-size: 1rem;
+  font-weight: 750;
+  color: #1a1a1a;
+}
+
+@media (max-width: 720px) {
+  .sessions-booking-page--ml .sessions-page-ml {
+    padding: 10px 12px 0;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
+    padding: 12px;
+    gap: 12px;
+  }
 }
 
 .sessions-booking-page .sessions-booking-body > .sessions-balance,
@@ -8032,12 +8240,30 @@ button.sessions-balance {
 
   .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + *,
   .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + * {
-    padding: 0;
+    /* Mantener padding horizontal del panel (listas / vacío); el calendario ya trae el suyo */
+    padding: 14px 16px 16px;
+  }
+
+  .sessions-booking-page .sessions-booking-body .sessions-secondary-section .sessions-calendar-toggle + .sessions-collapsible-panel--calendar,
+  .sessions-booking-page .sessions-booking-body .sessions-calendar-collapsible .sessions-calendar-toggle + .sessions-collapsible-panel--calendar {
+    padding: 12px 16px 16px;
   }
 
   .sessions-booking-page .sessions-booking-calendar-tail {
     margin-bottom: 0;
   }
+}
+
+.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-secondary-section,
+.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
+.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .payment-activity-panel.sessions-secondary-section {
+  margin: 0 !important;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
+  overflow: hidden;
 }
 
 .sessions-booking-page .sessions-booking-body .sessions-secondary-title {
@@ -8277,22 +8503,22 @@ button.sessions-balance {
 }
 
 .sessions-package-options-grid .deal-card-shell {
-  grid-template-rows: 50px 1fr;
+  grid-template-rows: 34px 1fr;
 }
 
 .sessions-package-options-grid .deal-card-roof {
-  height: 50px;
+  height: 34px;
   padding: 0 14px;
 }
 
 .sessions-package-options-grid .deal-card-featured-kicker {
-  height: 50px;
+  height: 34px;
   border-radius: var(--portal-radius) var(--portal-radius) 0 0;
   border: 1px solid #8774fb;
   border-bottom: 0;
   background: linear-gradient(135deg, #705af2 0%, #876fff 100%);
-  font-size: 12px;
-  letter-spacing: 0.11em;
+  font-size: 11px;
+  letter-spacing: 0.1em;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.22);
 }
 
@@ -8301,15 +8527,18 @@ button.sessions-balance {
 }
 
 .sessions-package-options-grid .dashboard-deal-card.sessions-package-card {
-  min-height: 560px;
+  min-height: 480px;
   border-radius: var(--portal-radius);
   border: 1px solid #dfdaf8;
   background: linear-gradient(165deg, #ffffff 0%, #f8f6ff 100%);
-  box-shadow: 0 12px 28px rgba(52, 38, 110, 0.1);
-  padding: 28px 24px;
+  box-shadow:
+    0 4px 10px rgba(52, 38, 110, 0.08),
+    0 16px 36px rgba(52, 38, 110, 0.14),
+    0 28px 56px rgba(95, 68, 235, 0.1);
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .sessions-package-options-grid .dashboard-deal-card.sessions-package-card:hover,
@@ -8317,8 +8546,9 @@ button.sessions-balance {
   border-color: #8774fb;
   background: linear-gradient(165deg, #f5f2ff 0%, #ede7ff 60%, #e5ddff 100%);
   box-shadow:
-    0 16px 34px rgba(65, 48, 140, 0.16),
-    0 0 0 2px rgba(106, 82, 245, 0.16);
+    0 8px 16px rgba(65, 48, 140, 0.12),
+    0 22px 44px rgba(65, 48, 140, 0.18),
+    0 0 0 2px rgba(106, 82, 245, 0.14);
 }
 
 .sessions-package-options-grid .deal-card-shell.featured .dashboard-deal-card.sessions-package-card {
@@ -8450,7 +8680,7 @@ button.sessions-balance {
 }
 
 .sessions-package-options-grid .deal-select-button {
-  margin-top: auto;
+  margin-top: 0;
   min-height: 54px;
   border-radius: var(--portal-radius-sm);
   border: 1px solid #bcafff;
@@ -8458,6 +8688,13 @@ button.sessions-balance {
   color: #5a45d6;
   font-size: 16px;
   font-weight: 600;
+}
+
+.sessions-package-card-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  width: 100%;
 }
 
 .sessions-package-options-grid .dashboard-deal-card.sessions-package-card:hover .deal-select-button,
@@ -10201,6 +10438,16 @@ button.sessions-balance {
   border-radius: 0;
   border-bottom: 1px solid #d6deee;
   padding: 12px 2px;
+}
+
+/* Historial de sesiones (cards): aire horizontal para que la fecha no quede pegada */
+.sessions-history-section .session-history-list.sessions-collapsible-list li,
+.sessions-booking-page .sessions-history-section .sessions-collapsible-list li {
+  padding: 12px 14px;
+  border: 1px solid #e8ecf4;
+  border-radius: var(--sessions-ui-radius, var(--portal-radius));
+  border-bottom: 1px solid #e8ecf4;
+  background: #f8fafc;
 }
 
 .session-history-list li:last-child {
@@ -12578,12 +12825,12 @@ button.sessions-balance {
   }
 
   .sessions-package-options-grid .deal-card-shell {
-    grid-template-rows: 44px 1fr;
+    grid-template-rows: 32px 1fr;
   }
 
   .sessions-package-options-grid .deal-card-roof,
   .sessions-package-options-grid .deal-card-featured-kicker {
-    height: 44px;
+    height: 32px;
   }
 
   .sessions-package-options-grid .dashboard-deal-card.sessions-package-card {
@@ -14606,11 +14853,234 @@ button.sessions-balance {
   z-index: 80;
 }
 
+@media (min-width: 1081px) {
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    padding-left: calc(var(--portal-home-ml-rail-collapsed, 58px) + 12px);
+    padding-right: clamp(16px, 3vw, 28px);
+    box-sizing: border-box;
+  }
+
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer .portal-site-footer-inner {
+    max-width: 1200px;
+    margin-inline: auto;
+  }
+}
+
 .portal-main--home-ml .portal-main-content {
   gap: 0;
   padding: 0;
   max-width: none;
   overflow-x: visible;
+}
+
+/* Sin aire entre top bar y banner (pisa el padding-top genérico de /sessions) */
+.portal-main.portal-main--home-ml .portal-main-content:has(.sessions-booking-page),
+.portal-main.portal-main--home-ml .portal-main-content:has(.diary-home-page),
+.portal-main.portal-main--home-ml .portal-main-content:has(.exercises-page--ml),
+.portal-main.portal-main--home-ml .portal-main-content:has(.wellbeing-relax-page--ml) {
+  gap: 0;
+  padding: 0;
+}
+
+.portal-main.portal-main--home-ml:has(.sessions-booking-page),
+.portal-main.portal-main--home-ml:has(.diary-home-page),
+.portal-main.portal-main--home-ml:has(.exercises-page--ml),
+.portal-main.portal-main--home-ml:has(.wellbeing-relax-page--ml) {
+  gap: 0;
+}
+
+.portal-main--home-ml .sessions-booking-page--ml .sessions-page-ml {
+  padding-top: 0;
+}
+
+/* Color full-bleed debajo del rail; el copy/pack se centra en 1200 */
+.portal-main--home-ml .patient-dashboard-home.page-stack,
+.portal-main--home-ml .patient-dashboard-home.sessions-page-layout,
+.portal-main--home-ml .sessions-booking-page--ml,
+.portal-main--home-ml .diary-page--home,
+.portal-main--home-ml .diary-page--records,
+.portal-main--home-ml .diary-page--entry,
+.portal-main--home-ml .exercises-page--ml,
+.portal-main--home-ml .exercise-routine-page,
+.portal-main--home-ml .exercise-reader-page,
+.portal-main--home-ml .wellbeing-relax-page--ml,
+.portal-main--home-ml .chat-page-root,
+.portal-main--home-ml .profile-layout,
+.portal-main--home-ml .professionals-showcase {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1081px) {
+  /*
+    Como Inicio:
+    - banner full-bleed + degrade al gris
+    - frame/pack centrados max 1200
+    - pack montado sobre el fade
+  */
+  .portal-main--home-ml .sessions-page-ml,
+  .portal-main--home-ml .diary-page-ml,
+  .portal-main--home-ml .exercises-page-ml,
+  .portal-main--home-ml .wellbeing-relax-page-ml {
+    --section-ml-band-fade: 180px;
+    display: grid;
+    justify-items: center;
+    padding: 0;
+    gap: 0;
+  }
+
+  .portal-main--home-ml .sessions-page-ml-banner,
+  .portal-main--home-ml .diary-page-ml-banner,
+  .portal-main--home-ml .exercises-page-ml-banner,
+  .portal-main--home-ml .wellbeing-relax-page-ml-banner {
+    width: 100%;
+    justify-self: stretch;
+    border-radius: 0;
+    overflow: visible;
+    /* Igual que .dashboard-ml-brand-band: espacio para montar el pack */
+    padding-bottom: 120px;
+  }
+
+  /* Degrade al gris de página (mismo patrón que .dashboard-ml-brand-band::after) */
+  .portal-main--home-ml .sessions-page-ml-banner.dashboard-ml-sessions-banner::after,
+  .portal-main--home-ml .diary-page-ml-banner.dashboard-ml-diary-banner::after,
+  .portal-main--home-ml .exercises-page-ml-banner.dashboard-ml-feature-banner::after,
+  .portal-main--home-ml .wellbeing-relax-page-ml-banner.dashboard-ml-feature-banner::after {
+    inset: auto 0 0 0;
+    height: var(--section-ml-band-fade, 160px);
+    z-index: 2;
+    mix-blend-mode: normal;
+    opacity: 1;
+    background: linear-gradient(
+      180deg,
+      rgba(235, 235, 235, 0) 0%,
+      rgba(235, 235, 235, 0.02) 12%,
+      rgba(235, 235, 235, 0.08) 28%,
+      rgba(235, 235, 235, 0.2) 44%,
+      rgba(235, 235, 235, 0.4) 60%,
+      rgba(235, 235, 235, 0.65) 76%,
+      rgba(235, 235, 235, 0.88) 90%,
+      #ebebeb 100%
+    );
+  }
+
+  /* Contenido del banner centrado como surfaces de Inicio */
+  .portal-main--home-ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-frame,
+  .portal-main--home-ml .diary-page-ml-banner .dashboard-ml-diary-banner-frame,
+  .portal-main--home-ml .exercises-page-ml-banner .dashboard-ml-feature-banner-frame,
+  .portal-main--home-ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-frame {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: clamp(28px, 4vw, 40px) clamp(16px, 3vw, 28px) clamp(36px, 4vw, 48px);
+    box-sizing: border-box;
+  }
+
+  .portal-main--home-ml .sessions-page-ml-pack,
+  .portal-main--home-ml .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body,
+  .portal-main--home-ml .diary-page-ml-pack,
+  .portal-main--home-ml .exercises-page-ml-pack,
+  .portal-main--home-ml .wellbeing-relax-page-ml-pack {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 1200px;
+    justify-self: center;
+    /* Como .dashboard-ml-surface--bridge: montado sobre el degrade */
+    margin: -120px auto 28px;
+    padding: 16px clamp(16px, 3vw, 28px);
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.12);
+    border-top: 1px solid rgba(95, 68, 235, 0.12);
+  }
+
+  /* Inicio: packs pegados al banner, sin radio superior ni borde */
+  .portal-main--home-ml .dashboard-ml-sessions-pack:not(.sessions-page-ml-pack),
+  .portal-main--home-ml .dashboard-ml-diary-pack:not(.diary-page-ml-pack),
+  .portal-main--home-ml .dashboard-ml-feature-section .dashboard-ml-feature-panel {
+    border-radius: 0 0 12px 12px;
+    border: none;
+    border-top: none;
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.14);
+  }
+
+  /* Páginas internas: pack flotante con radio completo (incluye arriba) */
+  .portal-main--home-ml .diary-page-ml-pack.dashboard-ml-diary-pack,
+  .portal-main--home-ml .sessions-page-ml-pack.dashboard-ml-sessions-pack {
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.12);
+    border-top: 1px solid rgba(95, 68, 235, 0.12);
+  }
+
+  .portal-main--home-ml .diary-page--records > *:not(.diary-portal-toolbar),
+  .portal-main--home-ml .diary-page--entry > *:not(.diary-portal-toolbar),
+  .portal-main--home-ml .exercise-routine-page > *:not(.exercise-reader-back),
+  .portal-main--home-ml .exercise-reader-page > *:not(.exercise-reader-back),
+  .portal-main--home-ml .profile-layout,
+  .portal-main--home-ml .professionals-showcase {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+    padding-left: clamp(16px, 3vw, 28px);
+    padding-right: clamp(16px, 3vw, 28px);
+  }
+
+  .portal-main--home-ml .diary-page--records .diary-portal-toolbar,
+  .portal-main--home-ml .diary-page--entry .diary-portal-toolbar,
+  .portal-main--home-ml .exercise-reader-back {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(16px, 3vw, 28px);
+    padding-right: clamp(16px, 3vw, 28px);
+    box-sizing: border-box;
+  }
+
+  .portal-main--home-ml .chat-page-root:not(.chat-page-root--embedded) {
+    display: grid;
+    grid-template-rows: 1fr;
+    justify-items: center;
+    min-height: clamp(560px, calc(100vh - 140px), 860px);
+    padding: 16px clamp(16px, 3vw, 28px) 24px;
+    box-sizing: border-box;
+    background: transparent;
+  }
+
+  .portal-main--home-ml .chat-page-root:not(.chat-page-root--embedded) .chat-page-body {
+    width: 100%;
+    max-width: 1200px;
+    justify-self: center;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .portal-main--home-ml .wa-shell:not(.wa-shell--embedded) {
+    width: 100%;
+    max-width: 1200px;
+    justify-self: center;
+    min-height: 0;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(95, 68, 235, 0.12);
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.1);
+  }
 }
 
 .portal-main--home-ml .patient-dashboard-home.page-stack,
@@ -14619,6 +15089,45 @@ button.sessions-balance {
   width: 100%;
   max-width: none;
   overflow-x: visible;
+}
+
+/* Secciones internas bajo el mismo chrome que Inicio next */
+.portal-main--home-ml .sessions-booking-page--ml,
+.portal-main--home-ml .diary-home-page--ml,
+.portal-main--home-ml .exercises-page--ml,
+.portal-main--home-ml .wellbeing-relax-page--ml {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.portal-main--home-ml .sessions-page-ml,
+.portal-main--home-ml .diary-page-ml,
+.portal-main--home-ml .exercises-page-ml,
+.portal-main--home-ml .wellbeing-relax-page-ml {
+  padding: 0;
+}
+
+.portal-main--home-ml .diary-page--records,
+.portal-main--home-ml .diary-page--entry {
+  padding: 16px 0 48px;
+  box-sizing: border-box;
+  background: transparent;
+  min-height: 100%;
+}
+
+.portal-main--home-ml .diary-page--records .diary-portal-toolbar,
+.portal-main--home-ml .diary-page--entry .diary-portal-toolbar {
+  margin-bottom: 10px;
+}
+
+.portal-main--home-ml .exercise-routine-page,
+.portal-main--home-ml .exercise-reader-page,
+.portal-main--home-ml .profile-layout,
+.portal-main--home-ml .professionals-showcase {
+  padding: 16px 0 48px;
+  box-sizing: border-box;
+  background: transparent;
 }
 
 /* Top bar MotivarCare (estructura tipo ML) — blanco + violeta */
@@ -14651,9 +15160,14 @@ button.sessions-balance {
   transition: width 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.portal-home-ml-rail:hover,
-.portal-home-ml-rail:focus-within {
+.portal-home-ml-rail:hover {
   width: var(--portal-home-ml-rail-expanded);
+}
+
+/* Tras elegir una sección: forzar retraído aunque el mouse siga encima */
+.portal-home-ml-rail.is-nav-locked,
+.portal-home-ml-rail.is-nav-locked:hover {
+  width: var(--portal-home-ml-rail-collapsed);
 }
 
 .portal-home-ml-rail-edge {
@@ -14694,8 +15208,7 @@ button.sessions-balance {
     background 420ms ease;
 }
 
-.portal-home-ml-rail:hover .portal-home-ml-rail-panel,
-.portal-home-ml-rail:focus-within .portal-home-ml-rail-panel {
+.portal-home-ml-rail:hover .portal-home-ml-rail-panel {
   width: var(--portal-home-ml-rail-expanded);
   background: rgba(255, 255, 255, 0.98);
   box-shadow:
@@ -14703,15 +15216,162 @@ button.sessions-balance {
     0 4px 14px rgba(95, 68, 235, 0.1);
 }
 
-.portal-home-ml-rail:hover .portal-home-ml-rail-edge,
-.portal-home-ml-rail:focus-within .portal-home-ml-rail-edge {
+.portal-home-ml-rail.is-nav-locked .portal-home-ml-rail-panel,
+.portal-home-ml-rail.is-nav-locked:hover .portal-home-ml-rail-panel {
+  width: var(--portal-home-ml-rail-collapsed);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 8px 28px rgba(15, 23, 42, 0.06),
+    0 2px 8px rgba(95, 68, 235, 0.05);
+}
+
+.portal-home-ml-rail:hover .portal-home-ml-rail-edge {
   opacity: 0;
+}
+
+.portal-home-ml-rail.is-nav-locked .portal-home-ml-rail-edge,
+.portal-home-ml-rail.is-nav-locked:hover .portal-home-ml-rail-edge {
+  opacity: 0.55;
 }
 
 .portal-home-ml-rail-nav {
   display: grid;
   gap: 4px;
   align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.portal-home-ml-rail-foot-stack {
+  display: grid;
+  gap: 2px;
+  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(95, 68, 235, 0.1);
+}
+
+.portal-home-ml-rail-tour,
+.portal-home-ml-rail-foot {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #4c31d8;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background-color 280ms ease, color 280ms ease;
+}
+
+.portal-home-ml-rail-tour:hover,
+.portal-home-ml-rail-foot:hover {
+  background: rgba(95, 68, 235, 0.08);
+  color: #5f44eb;
+}
+
+.portal-home-ml-rail-foot {
+  /* identity sits last; keep subtle top separator only on stack */
+  border-top: 0;
+  border-radius: 12px;
+}
+
+.portal-home-ml-rail-foot-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+}
+
+.portal-home-ml-rail-foot-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 10px;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition:
+    opacity 260ms ease 40ms,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.portal-home-ml-rail:hover .portal-home-ml-rail-foot-copy,
+.portal-home-ml-rail.is-tour-expanded .portal-home-ml-rail-foot-copy {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 320ms ease 90ms,
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1) 40ms;
+}
+
+.portal-home-ml-rail.is-nav-locked:not(.is-tour-expanded) .portal-home-ml-rail-foot-copy,
+.portal-home-ml-rail.is-nav-locked:not(.is-tour-expanded):hover .portal-home-ml-rail-foot-copy {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition:
+    opacity 180ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.portal-home-ml-rail-foot-name,
+.portal-home-ml-rail-foot-email {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-home-ml-rail-foot-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #1e1b4b;
+}
+
+.portal-home-ml-rail-foot-email {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Tour fuerza el rail abierto para que se lean las etiquetas */
+.portal-home-ml-rail.is-tour-expanded,
+.portal-home-ml-rail.is-tour-expanded:hover,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked:hover {
+  width: var(--portal-home-ml-rail-expanded);
+}
+
+.portal-home-ml-rail.is-tour-expanded .portal-home-ml-rail-panel,
+.portal-home-ml-rail.is-tour-expanded:hover .portal-home-ml-rail-panel,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked .portal-home-ml-rail-panel,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked:hover .portal-home-ml-rail-panel {
+  width: var(--portal-home-ml-rail-expanded);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.1),
+    0 4px 14px rgba(95, 68, 235, 0.1);
+}
+
+.portal-home-ml-rail.is-tour-expanded .portal-home-ml-rail-label,
+.portal-home-ml-rail.is-tour-expanded:hover .portal-home-ml-rail-label,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked .portal-home-ml-rail-label,
+.portal-home-ml-rail.is-tour-expanded.is-nav-locked:hover .portal-home-ml-rail-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.portal-home-ml-rail.is-tour-expanded .portal-home-ml-rail-edge,
+.portal-home-ml-rail.is-tour-expanded:hover .portal-home-ml-rail-edge {
+  opacity: 0;
 }
 
 .portal-home-ml-rail-link {
@@ -14795,13 +15455,21 @@ button.sessions-balance {
     transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.portal-home-ml-rail:hover .portal-home-ml-rail-label,
-.portal-home-ml-rail:focus-within .portal-home-ml-rail-label {
+.portal-home-ml-rail:hover .portal-home-ml-rail-label {
   opacity: 1;
   transform: translateX(0);
   transition:
     opacity 320ms ease 90ms,
     transform 480ms cubic-bezier(0.22, 1, 0.36, 1) 40ms;
+}
+
+.portal-home-ml-rail.is-nav-locked .portal-home-ml-rail-label,
+.portal-home-ml-rail.is-nav-locked:hover .portal-home-ml-rail-label {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition:
+    opacity 180ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (min-width: 1081px) {
@@ -14819,9 +15487,14 @@ button.sessions-balance {
     justify-self: end;
   }
 
-  /* En desktop los controles viven en la barra; no duplicar el mount flotante */
-  .portal-shell--home-ml .dashboard-ml-toolbar-mount {
-    display: none;
+  /* En desktop los controles viven en la barra; no duplicar mounts flotantes */
+  .portal-shell--home-ml .dashboard-ml-toolbar-mount,
+  .portal-shell--home-ml .sessions-hero-toolbar-mount,
+  .portal-shell--home-ml .diary-page-ml-toolbar,
+  .portal-shell--home-ml .wellbeing-relax-toolbar-mount,
+  .portal-shell--home-ml .chat-portal-toolbar-shell,
+  .portal-shell--home-ml .chat-hero-toolbar-mount {
+    display: none !important;
   }
 }
 
@@ -14942,7 +15615,7 @@ button.sessions-balance {
   gap: 8px;
   min-height: 42px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid rgba(95, 68, 235, 0.28);
   background: #5f44eb;
   color: #fff;
@@ -15043,6 +15716,11 @@ button.sessions-balance {
   background: #5f44eb;
   padding-bottom: 120px;
   overflow: visible;
+  transition: background-color 420ms ease;
+}
+
+.dashboard-ml-brand-band--access {
+  background: #ffe600;
 }
 
 .dashboard-ml-brand-band::before {
@@ -15069,6 +15747,52 @@ button.sessions-balance {
     rgba(0, 0, 0, 0.55) calc(100% - 90px),
     transparent 100%
   );
+  transition: opacity 420ms ease;
+}
+
+.dashboard-ml-brand-band--access::before {
+  background:
+    radial-gradient(ellipse 70% 80% at 50% 32%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 230, 0, 0) 72%),
+    radial-gradient(circle 320px at 12% 55%, rgba(255, 248, 180, 0.55) 0%, rgba(255, 248, 180, 0) 72%),
+    radial-gradient(circle 360px at 88% 50%, rgba(255, 204, 0, 0.45) 0%, rgba(255, 204, 0, 0) 74%);
+}
+
+.dashboard-ml-promo-slide--access .dashboard-ml-promo-orbs {
+  background:
+    radial-gradient(circle 280px at 78% 48%, rgba(255, 255, 255, 0.35) 0%, transparent 70%),
+    radial-gradient(circle 220px at 22% 40%, rgba(255, 248, 180, 0.4) 0%, transparent 68%);
+}
+
+/* Sobre amarillo ML: texto e ícono en tinta oscura */
+.dashboard-ml-brand-band--access .dashboard-ml-promo-kicker,
+.dashboard-ml-brand-band--access .dashboard-ml-promo-title,
+.dashboard-ml-brand-band--access .dashboard-ml-promo-body,
+.dashboard-ml-brand-band--access .dashboard-ml-promo-badge {
+  color: #1a1a1a;
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-promo-body {
+  color: rgba(26, 26, 26, 0.82);
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-promo-badge {
+  background: rgba(26, 26, 26, 0.08);
+  border-color: rgba(26, 26, 26, 0.12);
+  color: #1a1a1a;
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-promo-photo {
+  /* Cutout blanco → azul (estilo sesiones) sobre amarillo ML */
+  filter:
+    brightness(0)
+    saturate(100%)
+    invert(27%)
+    sepia(94%)
+    saturate(2400%)
+    hue-rotate(214deg)
+    brightness(95%)
+    contrast(101%)
+    drop-shadow(0 10px 22px rgba(29, 78, 216, 0.28));
 }
 
 .dashboard-ml-brand-band::after {
@@ -15334,12 +16058,30 @@ button.sessions-balance {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
 }
 
+/* Pegadas al ancho útil del banner (mismo 1200 que el frame), con 10px de margen */
 .dashboard-ml-promo-arrow--prev {
-  left: 14px;
+  left: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
 }
 
 .dashboard-ml-promo-arrow--next {
-  right: 14px;
+  right: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
+}
+
+@media (min-width: 1081px) {
+  /*
+    En home-ml el rail tapa ~58px a la izquierda: anclar ambas al mismo inset
+    del frame centrado, y solo empujar la prev si haría falta para no quedar bajo el menú.
+  */
+  .portal-main--home-ml .dashboard-ml-promo-arrow--prev {
+    left: max(
+      calc(var(--portal-home-ml-rail-collapsed, 58px) + 8px),
+      calc((100% - min(1200px, 100%)) / 2 - 10px)
+    );
+  }
+
+  .portal-main--home-ml .dashboard-ml-promo-arrow--next {
+    right: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
+  }
 }
 
 .dashboard-ml-promo-arrow:hover {
@@ -15450,10 +16192,10 @@ button.sessions-balance {
     "title"
     "visual"
     "cta";
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 196px;
-  padding: 14px 12px 12px;
+  min-height: 235px;
+  padding: 16px 12px 14px;
   border-radius: 8px;
   border: 1px solid rgba(15, 23, 42, 0.04);
   background: #fff;
@@ -15539,7 +16281,7 @@ button.sessions-balance {
   margin: 0;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(26, 26, 26, 0.12);
-  text-align: left;
+  text-align: center;
   font-size: 0.92rem;
   line-height: 1.25;
   font-weight: 700;
@@ -15552,30 +16294,43 @@ button.sessions-balance {
   place-items: center;
   justify-items: center;
   width: 100%;
-  min-height: 84px;
+  min-height: 101px;
   margin: 0 auto;
   color: #1a1a1a;
 }
 
 .dashboard-ml-benefit-icon-svg {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: 77px;
+  height: 77px;
   margin-inline: auto;
   filter: drop-shadow(0 8px 16px rgba(95, 68, 235, 0.18));
 }
 
 .dashboard-ml-benefit-icon-img {
   display: block;
-  width: min(88px, 78%);
+  width: min(106px, 82%);
   height: auto;
-  max-height: 88px;
+  max-height: 106px;
   margin-inline: auto;
   aspect-ratio: 1;
   object-fit: contain;
   filter: drop-shadow(0 10px 18px rgba(95, 68, 235, 0.22));
   pointer-events: none;
   user-select: none;
+}
+
+.dashboard-ml-benefit-icon-img--photo {
+  width: 86px;
+  height: 86px;
+  max-height: 86px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.08),
+    0 10px 22px rgba(95, 68, 235, 0.2);
+  filter: none;
 }
 
 .dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-img {
@@ -15620,6 +16375,34 @@ button.sessions-balance {
   background: transparent;
 }
 
+.dashboard-ml-benefit-card--tone-sessions .dashboard-ml-benefit-cta {
+  color: #1d4ed8;
+}
+
+.dashboard-ml-benefit-card--tone-diary .dashboard-ml-benefit-cta {
+  color: #5f44eb;
+}
+
+.dashboard-ml-benefit-card--tone-exercises .dashboard-ml-benefit-cta {
+  color: #7e22ce;
+}
+
+.dashboard-ml-benefit-card--tone-music .dashboard-ml-benefit-cta {
+  color: #16a34a;
+}
+
+.dashboard-ml-benefit-card--tone-sessions .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(29, 78, 216, 0.22));
+}
+
+.dashboard-ml-benefit-card--tone-exercises .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(126, 34, 206, 0.22));
+}
+
+.dashboard-ml-benefit-card--tone-music .dashboard-ml-benefit-icon-svg {
+  filter: drop-shadow(0 8px 16px rgba(22, 163, 74, 0.22));
+}
+
 .dashboard-ml-benefit-icon-accent {
   fill: #5f44eb;
 }
@@ -15629,40 +16412,70 @@ button.sessions-balance {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 4px;
-  padding: 0 2px;
+  margin: 8px 0 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.14);
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.1),
+    0 2px 8px rgba(95, 68, 235, 0.1);
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-credits-bar {
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(234, 179, 8, 0.16);
 }
 
 .dashboard-ml-credits {
   display: flex;
   justify-content: flex-start;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
   margin: 0;
   pointer-events: none;
   user-select: none;
   cursor: default;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  color: #1e1b4b;
+  text-shadow: none;
+}
+
+.dashboard-ml-credits-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5f44eb;
+  flex-shrink: 0;
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-credits-kicker {
+  color: #854d0e;
 }
 
 .dashboard-ml-credits-num {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: #1e1b4b;
   line-height: 1;
 }
 
 .dashboard-ml-credits-label {
   font-size: 0.92rem;
   font-weight: 650;
-  color: rgba(255, 255, 255, 0.95);
+  color: #475569;
 }
 
 .dashboard-ml-credits-label--empty {
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
+  color: #64748b;
+  font-weight: 650;
+  font-size: 0.92rem;
 }
 
 .dashboard-ml-book-cta {
@@ -15670,25 +16483,56 @@ button.sessions-balance {
   border: none;
   cursor: pointer;
   flex-shrink: 0;
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: #2563eb;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: #5f44eb;
   color: #fff;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  font-size: 0.92rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 16px rgba(95, 68, 235, 0.32);
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .dashboard-ml-book-cta:hover {
-  background: #1d4ed8;
+  background: #4c31d8;
   color: #fff;
+  box-shadow: 0 8px 20px rgba(76, 49, 216, 0.38);
+  transform: translateY(-1px);
 }
 
 .dashboard-ml-book-cta:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid #c4b5fd;
   outline-offset: 2px;
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-book-cta {
+  background: #1e293b;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.24);
+}
+
+.dashboard-ml-brand-band--access .dashboard-ml-book-cta:hover {
+  background: #0f172a;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3);
+}
+
+@media (max-width: 640px) {
+  .dashboard-ml-credits-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .dashboard-ml-credits {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-ml-book-cta {
+    margin-left: auto;
+    min-height: 38px;
+  }
 }
 
 .dashboard-ml-section-lead {
@@ -15712,57 +16556,245 @@ button.sessions-balance {
 
 .dashboard-ml-sessions {
   display: grid;
-  gap: 8px;
-  margin-top: 64px;
+  gap: 0;
+  margin-top: 96px;
 }
 
-.dashboard-ml-sessions-head {
+.dashboard-ml-sessions-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(165deg, #2563eb 0%, #1d4ed8 46%, #1e40af 100%);
+  box-shadow: none;
+}
+
+.dashboard-ml-sessions-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 80% at 92% 18%, rgba(147, 197, 253, 0.38) 0%, transparent 62%),
+    radial-gradient(circle 160px at 58% 100%, rgba(30, 58, 138, 0.4) 0%, transparent 70%);
+}
+
+.dashboard-ml-sessions-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.14) 0%, transparent 34%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+.dashboard-ml-sessions-banner-frame {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 4px;
-  padding: 2px 2px 0;
-}
-
-.dashboard-ml-sessions-subrow {
-  display: flex;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: clamp(12px, 2.5vw, 22px);
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(14px, 2vw, 20px) clamp(18px, 2.5vw, 26px);
+  box-sizing: border-box;
 }
 
-.dashboard-ml-sessions-subrow .dashboard-ml-section-lead {
-  margin: 0;
-  flex: 1 1 auto;
+.dashboard-ml-sessions-banner-copy {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  color: #fff;
   min-width: 0;
 }
 
-.dashboard-ml-sessions-actions {
+.dashboard-ml-sessions-banner-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-sessions-banner-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 1.95rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dashboard-ml-sessions-banner-body {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.9rem, 1.1vw, 1rem);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dashboard-ml-sessions-banner-actions {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 14px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  margin-top: 4px;
 }
 
-.dashboard-ml-sessions-head h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #1a1a1a;
+.dashboard-ml-sessions-banner-cta {
+  appearance: none;
+  cursor: pointer;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-.dashboard-ml-sessions > .dashboard-ml-sessions-head h2 {
-  font-size: 1.45rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  color: #5f44eb;
+.dashboard-ml-sessions-banner-cta:hover {
+  background: transparent;
+  color: #fff;
+  border-bottom-color: #fff;
 }
 
-.dashboard-ml-sessions-grid {
+.dashboard-ml-sessions-banner-link {
+  appearance: none;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-ml-sessions-banner-link:hover {
+  color: #fff;
+  background: transparent;
+}
+
+.dashboard-ml-sessions-banner-media {
   display: grid;
+  place-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashboard-ml-sessions-banner-photo {
+  display: block;
+  width: 180px;
+  height: 140px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.28));
+  pointer-events: none;
+  user-select: none;
+}
+
+.dashboard-ml-sessions-pack {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.dashboard-ml-sessions-pack-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  grid-template-columns: 1fr;
-  width: 100%;
+}
+
+.dashboard-ml-sessions-pack-btn {
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.2;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.dashboard-ml-sessions-pack-btn--primary {
+  border: 1px solid #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3);
+}
+
+.dashboard-ml-sessions-pack-btn--primary:hover {
+  background: #1e40af;
+  border-color: #1e40af;
+}
+
+.dashboard-ml-sessions-pack-btn--secondary {
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  background: #fff;
+  color: #1d4ed8;
+}
+
+.dashboard-ml-sessions-pack-btn--secondary:hover {
+  background: rgba(29, 78, 216, 0.06);
+  border-color: rgba(29, 78, 216, 0.55);
+}
+
+.dashboard-ml-sessions-bookings {
+  min-width: 0;
+}
+
+.dashboard-ml-sessions .dashboard-ml-history-grid {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .dashboard-ml-sessions-banner-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 150px);
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .dashboard-ml-sessions-banner-photo {
+    width: 128px;
+    height: 104px;
+  }
+
+  .dashboard-ml-sessions-banner-title {
+    font-size: 1.28rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashboard-ml-sessions-banner-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-ml-sessions-banner-media {
+    justify-self: end;
+    max-width: 140px;
+  }
 }
 
 .dashboard-ml-panel {
@@ -15772,40 +16804,6 @@ button.sessions-balance {
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-ml-panel--bookings {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background:
-    linear-gradient(165deg, rgba(239, 246, 255, 0.95) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #ffffff 0%, #faf9ff 100%);
-  border: 1px solid rgba(95, 68, 235, 0.12);
-  box-shadow:
-    0 2px 4px rgba(15, 23, 42, 0.04),
-    0 10px 28px rgba(95, 68, 235, 0.1),
-    0 18px 36px rgba(37, 99, 235, 0.06);
-}
-
-.dashboard-ml-panel--bookings::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 58% 52% at 100% 0%, rgba(95, 68, 235, 0.2) 0%, transparent 72%),
-    radial-gradient(ellipse 42% 38% at 92% 12%, rgba(96, 165, 250, 0.16) 0%, transparent 70%);
-}
-
-.dashboard-ml-panel--bookings::after {
-  display: none;
-}
-
-.dashboard-ml-panel--bookings > * {
-  position: relative;
-  z-index: 1;
 }
 
 .dashboard-ml-panel-title {
@@ -15924,11 +16922,6 @@ button.sessions-balance {
   cursor: not-allowed;
 }
 
-.dashboard-ml-panel--bookings {
-  overflow: hidden;
-  min-width: 0;
-}
-
 .dashboard-ml-history-grid {
   display: grid;
   gap: 10px;
@@ -15945,11 +16938,20 @@ button.sessions-balance {
   .dashboard-ml-history-card--calendar.is-expanded {
     grid-column: 1 / -1;
   }
+
+  /* Calendario abierto: las 3 cards de abajo ocupan todo el ancho */
+  .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1100px) {
   .dashboard-ml-history-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -15972,6 +16974,41 @@ button.sessions-balance {
     0 10px 28px rgba(95, 68, 235, 0.1),
     0 18px 36px rgba(37, 99, 235, 0.06);
   color: #1a1a1a;
+}
+
+.dashboard-ml-history-card--nav {
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  align-content: space-between;
+  min-height: 108px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.dashboard-ml-history-card--nav:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(95, 68, 235, 0.14),
+    0 18px 36px rgba(37, 99, 235, 0.08);
+}
+
+.dashboard-ml-history-card--nav:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 3px;
+}
+
+.dashboard-ml-history-nav-cta {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: #5f44eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .dashboard-ml-history-card.is-expanded {
@@ -16184,19 +17221,20 @@ button.sessions-balance {
   color: #4c31d8;
 }
 
-/* Diario — banner + acciones debajo de actividad */
+/* Diario — banner + pack (mismo lenguaje visual que Sesiones) */
 .dashboard-ml-diary {
   display: grid;
   gap: 0;
   margin-top: 96px;
-  padding-top: 8px;
 }
 
 .dashboard-ml-diary-banner {
   position: relative;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
-  background: #5f44eb;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(165deg, #7c6aef 0%, #5f44eb 48%, #4c31d8 100%);
   box-shadow: none;
 }
 
@@ -16206,8 +17244,21 @@ button.sessions-balance {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle 260px at 82% 45%, rgba(221, 214, 254, 0.32) 0%, transparent 70%),
-    radial-gradient(circle 180px at 18% 30%, rgba(196, 181, 253, 0.24) 0%, transparent 68%);
+    radial-gradient(ellipse 70% 80% at 92% 18%, rgba(221, 214, 254, 0.4) 0%, transparent 62%),
+    radial-gradient(circle 220px at 12% 78%, rgba(167, 139, 250, 0.32) 0%, transparent 68%),
+    radial-gradient(circle 160px at 58% 100%, rgba(76, 49, 216, 0.28) 0%, transparent 70%);
+}
+
+.dashboard-ml-diary-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 28%),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.12) 0%, transparent 34%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
 }
 
 .dashboard-ml-diary-banner-frame {
@@ -16257,11 +17308,18 @@ button.sessions-balance {
   color: rgba(255, 255, 255, 0.92);
 }
 
+.dashboard-ml-diary-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
 .dashboard-ml-diary-banner-cta {
   appearance: none;
   cursor: pointer;
-  margin-top: 4px;
-  padding: 0;
+  padding: 0 0 2px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -16271,13 +17329,31 @@ button.sessions-balance {
   font-weight: 650;
   line-height: 1.3;
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-  padding-bottom: 2px;
 }
 
 .dashboard-ml-diary-banner-cta:hover {
   background: transparent;
   color: #fff;
   border-bottom-color: #fff;
+}
+
+.dashboard-ml-diary-banner-link {
+  appearance: none;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-ml-diary-banner-link:hover {
+  color: #fff;
+  background: transparent;
 }
 
 .dashboard-ml-diary-banner-media {
@@ -16300,96 +17376,29 @@ button.sessions-balance {
   user-select: none;
 }
 
-.dashboard-ml-diary-actions-row {
+.dashboard-ml-diary-pack {
   display: grid;
-  gap: 14px;
-  grid-template-columns: 1fr;
-  align-items: stretch;
-  padding: 14px;
+  gap: 16px;
+  padding: 16px;
   background: #fff;
-  border: 1px solid rgba(95, 68, 235, 0.12);
-  border-top: none;
+  border: none;
   border-radius: 0 0 12px 12px;
   box-shadow:
     0 2px 4px rgba(15, 23, 42, 0.04),
     0 12px 28px rgba(95, 68, 235, 0.14);
 }
 
+.dashboard-ml-diary-actions-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
 @media (min-width: 720px) {
   .dashboard-ml-diary-actions-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-.dashboard-ml-diary-action-card {
-  appearance: none;
-  display: grid;
-  grid-template-rows: auto auto auto;
-  gap: 10px;
-  justify-items: start;
-  width: 100%;
-  min-height: 148px;
-  padding: 16px 14px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(15, 23, 42, 0.04);
-  background: #fff;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  box-shadow:
-    0 2px 4px rgba(15, 23, 42, 0.04),
-    0 10px 28px rgba(15, 23, 42, 0.1),
-    0 18px 36px rgba(95, 68, 235, 0.08);
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
-
-.dashboard-ml-diary-action-card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 4px 8px rgba(15, 23, 42, 0.06),
-    0 14px 32px rgba(15, 23, 42, 0.12),
-    0 22px 40px rgba(95, 68, 235, 0.12);
-  background: #fff;
-}
-
-.dashboard-ml-diary-action-card:focus-visible {
-  outline: 2px solid #5f44eb;
-  outline-offset: 3px;
-}
-
-.dashboard-ml-diary-action-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-}
-
-.dashboard-ml-diary-action-icon .dashboard-ml-benefit-icon-svg {
-  width: 44px;
-  height: 44px;
-  filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
-}
-
-.dashboard-ml-diary-action-title {
-  margin: 0;
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: -0.01em;
-}
-
-.dashboard-ml-diary-action-cta {
-  margin-top: auto;
-  color: #5f44eb;
-  font-size: 0.9rem;
-  font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.dashboard-ml-diary-action-card:hover .dashboard-ml-diary-action-cta {
-  color: #4c31d8;
 }
 
 @media (max-width: 720px) {
@@ -16452,18 +17461,15 @@ button.sessions-balance {
 }
 
 .dashboard-ml-feature-banner--pistachio {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.16) 0%, transparent 44%),
-    linear-gradient(165deg, #97b582 0%, #7d9b6a 50%, #658254 100%);
+  background: linear-gradient(165deg, #22c55e 0%, #16a34a 48%, #15803d 100%);
   box-shadow: none;
 }
 
 .dashboard-ml-feature-banner--pistachio::before {
   display: block;
   background:
-    radial-gradient(ellipse 68% 78% at 90% 16%, rgba(236, 253, 245, 0.38) 0%, transparent 60%),
-    radial-gradient(circle 210px at 10% 80%, rgba(187, 247, 208, 0.28) 0%, transparent 68%),
-    radial-gradient(circle 150px at 55% 100%, rgba(74, 102, 58, 0.28) 0%, transparent 70%);
+    radial-gradient(ellipse 68% 78% at 90% 16%, rgba(187, 247, 208, 0.42) 0%, transparent 60%),
+    radial-gradient(circle 150px at 55% 100%, rgba(21, 128, 61, 0.4) 0%, transparent 70%);
 }
 
 .dashboard-ml-feature-banner::before {
@@ -16569,8 +17575,7 @@ button.sessions-balance {
   padding: 12px 14px;
   border-radius: 0 0 12px 12px;
   background: #fff;
-  border: 1px solid rgba(95, 68, 235, 0.1);
-  border-top: none;
+  border: none;
   box-shadow:
     0 2px 4px rgba(15, 23, 42, 0.04),
     0 12px 28px rgba(95, 68, 235, 0.14);
@@ -16932,6 +17937,80 @@ button.sessions-balance {
   display: none;
 }
 
+.checkout-packages-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.checkout-packages-individual-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.checkout-packages-individual-top-link,
+.portal-main .checkout-packages-individual-top-link {
+  appearance: none;
+  width: auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #312e81;
+  border-radius: 10px;
+  background: #312e81;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(49, 46, 129, 0.28);
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.checkout-packages-individual-top-link:hover:not(:disabled),
+.portal-main .checkout-packages-individual-top-link:hover:not(:disabled) {
+  background: #1e1b4b;
+  border-color: #1e1b4b;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.34);
+}
+
+.checkout-packages-individual-top-link:disabled,
+.portal-main .checkout-packages-individual-top-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .checkout-packages-individual-top {
+    justify-content: stretch;
+  }
+
+  .checkout-packages-individual-top-link,
+  .portal-main .checkout-packages-individual-top-link {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .checkout-packages-head-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .checkout-packages-head-actions .checkout-packages-individual-top-link,
+  .checkout-packages-head-actions .checkout-packages-close {
+    flex: 1 1 auto;
+  }
+}
+
 .checkout-packages-embedded-pro-cta {
   margin: 8px 0 12px;
 }
@@ -16943,6 +18022,7 @@ button.sessions-balance {
   overflow: hidden;
   border-radius: 18px;
   padding: 0;
+  gap: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   box-shadow: 0 28px 64px rgba(15, 23, 42, 0.22);
@@ -17006,6 +18086,7 @@ button.sessions-balance {
   overflow: hidden;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  border-radius: 0 0 18px 18px;
 }
 
 .chat-page-root--embedded {
@@ -17048,6 +18129,10 @@ button.sessions-balance {
 
 .chat-page-root--embedded .wa-composer {
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  padding: 12px 16px 18px;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1080px) {
@@ -20590,6 +21675,100 @@ button.sessions-balance {
   align-content: start;
 }
 
+.exercises-page--ml {
+  --dashboard-ml-page: #ebebeb;
+  gap: 0;
+  background: var(--dashboard-ml-page);
+  padding: 0 0 clamp(28px, 5vh, 48px);
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.exercises-page-ml {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(16px, 3vw, 28px) 0;
+  box-sizing: border-box;
+}
+
+.exercises-page-ml-banner {
+  position: relative;
+}
+
+.exercises-page-ml-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.exercises-page-ml-banner-link {
+  appearance: none;
+  cursor: pointer;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.exercises-page-ml-banner-link:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+.exercises-page-ml-pack {
+  gap: 16px;
+  padding: 16px;
+}
+
+.exercises-page--ml .exercises-page-disclaimer {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(95, 68, 235, 0.06);
+  border: 1px solid rgba(95, 68, 235, 0.1);
+  color: #64748b;
+  font-size: 0.86rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.exercises-page--ml .exercise-routines-section {
+  margin-bottom: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(95, 68, 235, 0.12);
+  background: linear-gradient(165deg, #fff 0%, #faf8ff 100%);
+}
+
+.exercises-page--ml .exercises-filters {
+  padding: 4px 0 2px;
+}
+
+@media (max-width: 720px) {
+  .exercises-page-ml {
+    padding: 10px 12px 0;
+  }
+
+  .exercises-page-ml-pack {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
 .exercises-page-header {
   display: grid;
   gap: 8px;
@@ -20709,7 +21888,8 @@ button.sessions-balance {
   margin-bottom: 28px;
 }
 
-.exercise-routines-section-head h3 {
+.exercise-routines-section-head h3,
+.exercise-routines-section-head h2 {
   margin: 0 0 6px;
   font-size: 1.15rem;
   color: #1a263d;
@@ -20759,7 +21939,8 @@ button.sessions-balance {
   font-size: 28px;
 }
 
-.exercise-routine-card-body h4 {
+.exercise-routine-card-body h4,
+.exercise-routine-card-body h3 {
   margin: 0 0 4px;
   font-size: 16px;
   color: #1a263d;
@@ -21582,6 +22763,91 @@ button.sessions-balance {
   padding: 0 clamp(12px, 2.4vw, 24px) 32px;
   box-sizing: border-box;
   gap: 10px;
+}
+
+.wellbeing-relax-page--ml {
+  --dashboard-ml-page: #ebebeb;
+  gap: 0;
+  background: var(--dashboard-ml-page);
+  padding: 0 0 clamp(28px, 5vh, 48px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.wellbeing-relax-page-ml {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(16px, 3vw, 28px) 0;
+  box-sizing: border-box;
+}
+
+.wellbeing-relax-page-ml-banner {
+  position: relative;
+}
+
+.wellbeing-relax-page-ml-toolbar.wellbeing-relax-toolbar-mount {
+  top: 12px;
+  right: 12px;
+}
+
+.wellbeing-relax-page-ml-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.wellbeing-relax-page-ml-banner-link {
+  appearance: none;
+  cursor: pointer;
+  padding: 0 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.wellbeing-relax-page-ml-banner-link:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+.wellbeing-relax-page-ml-pack {
+  gap: 16px;
+  padding: 16px;
+}
+
+.wellbeing-relax-page--ml .wellbeing-relax-categories {
+  margin: 0;
+}
+
+.wellbeing-relax-page--ml .wellbeing-relax-player {
+  margin: 0;
+}
+
+.wellbeing-relax-page--ml .wellbeing-relax-footnote {
+  margin: 0;
+  padding-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .wellbeing-relax-page-ml {
+    padding: 10px 12px 0;
+  }
+
+  .wellbeing-relax-page-ml-pack {
+    padding: 12px;
+    gap: 12px;
+  }
 }
 
 .wellbeing-relax-header {

@@ -1337,30 +1337,14 @@
     opacity: 0.92;
   }
 
-  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-mobile-footer {
-    padding: 4px var(--mobile-pad-x-end) 18px var(--mobile-pad-x);
-    border-top: 1px solid var(--mobile-divider);
-    background: var(--mobile-surface);
-    text-align: center;
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-top {
+    margin: 0 0 10px;
   }
 
-  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-footer-link {
+  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-top-link {
     width: 100%;
     min-height: 44px;
-    padding: 10px 12px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: var(--brand);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
     -webkit-tap-highlight-color: transparent;
-  }
-
-  .portal-main .checkout-packages-panel-root--mobile .checkout-packages-individual-footer-link:disabled {
-    opacity: 0.5;
   }
 
   /* Paquetes en dashboard home (Sumá sesiones / legacy) */
@@ -1459,8 +1443,21 @@
   .portal-main .dashboard-package-options-panel .sessions-package-individual-link {
     width: 100%;
     margin-top: 8px;
-    text-align: left;
-    padding: 8px 0;
+    text-align: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid #312e81;
+    border-radius: 10px;
+    background: #312e81;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .portal-main .dashboard-package-options-panel .sessions-package-individual-link:hover:not(:disabled) {
+    background: #1e1b4b;
+    border-color: #1e1b4b;
+    color: #fff;
+    text-decoration: none;
   }
 
   .portal-main .dashboard-package-options-panel .packages-choose-professional-cta {
@@ -2199,6 +2196,33 @@
     border-bottom: var(--mobile-section-gap) solid var(--mobile-canvas);
   }
 
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml {
+    padding: 10px var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-player {
+    border: 1px solid rgba(125, 155, 106, 0.22);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: #fff;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(125, 155, 106, 0.22);
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-grid {
+    gap: 10px;
+    background: transparent;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    min-height: 0;
+  }
+
   .portal-main .wellbeing-relax-player {
     border: none;
     border-radius: 0;
@@ -2416,6 +2440,11 @@
     margin-bottom: 0;
   }
 
+  .portal-main .diary-home-page--ml .diary-page-ml,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml {
+    padding: 10px var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+  }
+
   /* —— Diario home: ancho viewport + bandas full-bleed —— */
   .portal-main--diary-home .portal-main-content,
   .portal-main .diary-home-page.page-stack,
@@ -2442,6 +2471,10 @@
     min-width: 0;
     box-sizing: border-box;
     padding: var(--mobile-section-y) var(--mobile-pad-x-end) var(--mobile-section-y) var(--mobile-pad-x);
+  }
+
+  .portal-main .diary-home-page--ml .diary-page-ml-pack > .diary-home-band {
+    padding: 14px 16px;
   }
 
   .portal-main .diary-home-band--checkin .diary-hero-card {

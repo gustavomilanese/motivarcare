@@ -35,7 +35,6 @@ import { DEFAULT_PATIENT_HERO_IMAGE } from "../constants";
 import { API_BASE, professionalPhotoSrc, resolvePublicAssetUrl } from "../services/api";
 import {
   packageBenefitLines,
-  packageRhythmLabel,
   loadPublicPackagePlans
 } from "../lib/packageCatalog";
 import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
@@ -1328,15 +1327,15 @@ export function DashboardPage(props: {
 
       {showPackageSection ? (
         <section ref={packageSectionRef} className="content-card sessions-package-options-panel dashboard-package-options-panel">
-          <div className={`session-booking-panel-head${showGoogleCalendarCta ? " session-booking-panel-head--split" : ""}`}>
+          <div className={`session-booking-panel-head${showGoogleCalendarCta || canIndividualCtaHome ? " session-booking-panel-head--split" : ""}`}>
             <div className="sessions-package-panel-head-copy">
               <h3>{t(props.language, { es: "Adquirir nuevas sesiones", en: "Get new sessions", pt: "Adquirir novas sessoes" })}</h3>
               <p>
                 {pricingReady
                   ? t(props.language, {
-                      es: "Elegí un paquete o comprá sesiones sueltas con el enlace debajo de cada plan.",
-                      en: "Choose a package or buy individual sessions with the link under each plan.",
-                      pt: "Escolha um pacote ou compre sessoes avulsas no link abaixo de cada plano."
+                      es: "Elegí el paquete que mejor se adapte a tu proceso, o comprá sesiones sueltas arriba a la derecha.",
+                      en: "Choose the package that fits your process, or buy individual sessions from the top right.",
+                      pt: "Escolha o pacote que melhor se adapta ao seu processo, ou compre sessoes avulsas no canto superior direito."
                     })
                   : packagesLoadingHint === "unpriced_formats"
                     ? t(props.language, {
@@ -1354,19 +1353,41 @@ export function DashboardPage(props: {
                 <PackageChooseProfessionalCta language={props.language} onClick={openChooseProfessional} />
               ) : null}
             </div>
-            {showGoogleCalendarCta ? (
-              <button
-                type="button"
-                className={`dashboard-package-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
-                onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
-              >
-                {t(props.language, {
-                  es: "Conectá Google Calendar",
-                  en: "Connect Google Calendar",
-                  pt: "Conectar o Google Calendar"
-                })}
-              </button>
-            ) : null}
+            <div className="checkout-packages-head-actions">
+              {canIndividualCtaHome ? (
+                <button
+                  type="button"
+                  className="checkout-packages-individual-top-link"
+                  disabled={!canIndividualCtaHome}
+                  onClick={() => {
+                    if (!pricingReady) {
+                      setAssignProModalOpen(true);
+                      return;
+                    }
+                    props.onNavigateToIndividualSessions();
+                  }}
+                >
+                  {t(props.language, {
+                    es: "Comprar sesiones individuales",
+                    en: "Buy individual sessions",
+                    pt: "Comprar sessoes individuais"
+                  })}
+                </button>
+              ) : null}
+              {showGoogleCalendarCta ? (
+                <button
+                  type="button"
+                  className={`dashboard-package-google-calendar-button${googleCalendarCtaPulse ? " patient-google-calendar-cta--pulse" : ""}`}
+                  onClick={() => props.onOpenPatientGoogleCalendarConnect?.()}
+                >
+                  {t(props.language, {
+                    es: "Conectá Google Calendar",
+                    en: "Connect Google Calendar",
+                    pt: "Conectar o Google Calendar"
+                  })}
+                </button>
+              ) : null}
+            </div>
           </div>
           {packageCheckoutError ? (
             <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
@@ -1409,7 +1430,6 @@ export function DashboardPage(props: {
                     className={`deal-card dashboard-deal-card sessions-package-card dashboard-package-card ${displayFeaturedPackageId === plan.id ? "featured" : ""}`}
                   >
                     <div className="sessions-package-card-topline">
-                      <span className="sessions-package-card-kicker">{packageRhythmLabel(plan.credits, (values) => t(props.language, values))}</span>
                       <span className="sessions-package-card-saving">
                         {pricing
                           ? replaceTemplate(
@@ -1427,7 +1447,7 @@ export function DashboardPage(props: {
                             })}
                       </span>
                     </div>
-                    <h3>{localizedPackageName(plan.id, plan.name, props.language)} X{plan.credits}</h3>
+                    <h3>{localizedPackageName(plan.id, plan.name, props.language)}</h3>
                     <p className="sessions-package-card-description">{localizedPackageDescription(plan.id, plan.description)}</p>
                     {pricing ? (
                       <>
@@ -1499,24 +1519,6 @@ export function DashboardPage(props: {
                       {pricingReady
                         ? t(props.language, { es: "Adquirir este paquete", en: "Get this package", pt: "Adquirir este pacote" })
                         : t(props.language, { es: "Elegir profesional", en: "Choose professional", pt: "Escolher profissional" })}
-                    </button>
-                    <button
-                      type="button"
-                      className="sessions-package-individual-link"
-                      disabled={!canIndividualCtaHome}
-                      onClick={() => {
-                        if (!pricingReady) {
-                          setAssignProModalOpen(true);
-                          return;
-                        }
-                        props.onNavigateToIndividualSessions();
-                      }}
-                    >
-                      {t(props.language, {
-                        es: "Comprar sesiones individuales",
-                        en: "Buy individual sessions",
-                        pt: "Comprar sessoes individuais"
-                      })}
                     </button>
                   </article>
                 </div>

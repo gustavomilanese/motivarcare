@@ -1,12 +1,10 @@
-import { useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   type AppLanguage,
   type DisplayFxRates,
   type LocalizedText,
   type SupportedCurrency,
-  formatDateWithLocale,
-  replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
@@ -18,42 +16,12 @@ import {
   DashboardHomeMusicSection
 } from "./DashboardHomeFeatureSections";
 import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
-import { formatSubscriptionPurchasePrice } from "../lib/formatSubscriptionPurchasePrice";
-import { professionalAccessibleName } from "../lib/professionalDisplayName";
-import { findProfessionalById } from "../lib/professionals";
+import { resolvePublicAssetUrl } from "../services/api";
 import type { Booking, PatientAppState, Professional } from "../types";
 import type { DashboardNextActionKind } from "../lib/resolveDashboardNextActionKind";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-function formatDateOnly(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      weekday: "short",
-      month: "short",
-      day: "numeric"
-    }
-  });
-}
-
-function formatDateTime(params: { isoDate: string; timezone: string; language: AppLanguage }): string {
-  return formatDateWithLocale({
-    value: params.isoDate,
-    language: params.language,
-    timeZone: params.timezone,
-    options: {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
-    }
-  });
 }
 
 type BenefitIconKind = "professional" | "buy" | "upcoming" | "packages" | "history" | "activity" | "diary" | "music" | "exercises";
@@ -119,21 +87,21 @@ function BenefitIconFallback(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <defs>
             <linearGradient id={`${gid}-a`} x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#ede9fe" />
-              <stop offset="1" stopColor="#c4b5fd" />
+              <stop stopColor="#dbeafe" />
+              <stop offset="1" stopColor="#93c5fd" />
             </linearGradient>
             <linearGradient id={`${gid}-b`} x1="18" y1="14" x2="46" y2="50" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#7c6aef" />
-              <stop offset="1" stopColor="#4c31d8" />
+              <stop stopColor="#3b82f6" />
+              <stop offset="1" stopColor="#1d4ed8" />
             </linearGradient>
           </defs>
           <circle cx="32" cy="32" r="28" fill={`url(#${gid}-a)`} />
           <rect x="16" y="18" width="32" height="30" rx="8" fill={`url(#${gid}-b)`} />
           <rect x="19" y="26" width="26" height="19" rx="4" fill="#fff" />
-          <path d="M23 14v8M41 14v8" stroke="#4c31d8" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="27" cy="35" r="2.4" fill="#c4b5fd" />
-          <circle cx="37" cy="35" r="2.4" fill="#c4b5fd" />
-          <circle cx="32" cy="41" r="3.4" fill="#5f44eb" />
+          <path d="M23 14v8M41 14v8" stroke="#1e40af" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="27" cy="35" r="2.4" fill="#93c5fd" />
+          <circle cx="37" cy="35" r="2.4" fill="#93c5fd" />
+          <circle cx="32" cy="41" r="3.4" fill="#1d4ed8" />
         </svg>
       );
     case "packages":
@@ -210,12 +178,12 @@ function BenefitIconFallback(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <defs>
             <linearGradient id={`${gid}-a`} x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#ede9fe" />
-              <stop offset="1" stopColor="#c4b5fd" />
+              <stop stopColor="#dcfce7" />
+              <stop offset="1" stopColor="#86efac" />
             </linearGradient>
             <linearGradient id={`${gid}-b`} x1="18" y1="16" x2="48" y2="50" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#7c6aef" />
-              <stop offset="1" stopColor="#4c31d8" />
+              <stop stopColor="#22c55e" />
+              <stop offset="1" stopColor="#15803d" />
             </linearGradient>
           </defs>
           <circle cx="32" cy="32" r="28" fill={`url(#${gid}-a)`} />
@@ -235,12 +203,12 @@ function BenefitIconFallback(props: { kind: BenefitIconKind }) {
         <svg {...common}>
           <defs>
             <linearGradient id={`${gid}-a`} x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#ede9fe" />
-              <stop offset="1" stopColor="#c4b5fd" />
+              <stop stopColor="#f3e8ff" />
+              <stop offset="1" stopColor="#e9d5ff" />
             </linearGradient>
             <linearGradient id={`${gid}-b`} x1="16" y1="18" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#7c6aef" />
-              <stop offset="1" stopColor="#4c31d8" />
+              <stop stopColor="#a855f7" />
+              <stop offset="1" stopColor="#7e22ce" />
             </linearGradient>
           </defs>
           <circle cx="32" cy="32" r="28" fill={`url(#${gid}-a)`} />
@@ -288,18 +256,40 @@ function BenefitCard(props: {
   tourAttr?: string;
   ctaTourAttr?: string;
   variant?: "default" | "buy";
+  tone?: "sessions" | "diary" | "exercises" | "music";
+  /** Foto real del profesional; si falta o falla, se usa el ícono. */
+  photoSrc?: string | null;
 }) {
   const variantClass = props.variant === "buy" ? " dashboard-ml-benefit-card--buy" : "";
+  const toneClass = props.tone ? ` dashboard-ml-benefit-card--tone-${props.tone}` : "";
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const photoSrc = props.photoSrc?.trim() ? props.photoSrc.trim() : null;
+  const showPhoto = Boolean(photoSrc) && !photoFailed;
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photoSrc]);
+
   return (
     <button
       type="button"
-      className={`dashboard-ml-benefit-card${variantClass}`}
+      className={`dashboard-ml-benefit-card${variantClass}${toneClass}`}
       data-tour={props.tourAttr}
       onClick={props.onClick}
     >
       <h3 className="dashboard-ml-benefit-title">{props.title}</h3>
       <div className="dashboard-ml-benefit-icon" aria-hidden="true">
-        <BenefitIcon kind={props.icon} />
+        {showPhoto ? (
+          <img
+            className="dashboard-ml-benefit-icon-img dashboard-ml-benefit-icon-img--photo"
+            src={photoSrc!}
+            alt=""
+            decoding="async"
+            onError={() => setPhotoFailed(true)}
+          />
+        ) : (
+          <BenefitIcon kind={props.icon} />
+        )}
       </div>
       <p className="dashboard-ml-benefit-body">{props.body}</p>
       <span className="dashboard-ml-benefit-cta" data-tour={props.ctaTourAttr}>
@@ -309,45 +299,22 @@ function BenefitCard(props: {
   );
 }
 
-function HistoryPreviewCard(props: {
-  language: AppLanguage;
+function HistoryNavCard(props: {
   icon: BenefitIconKind;
   title: string;
-  empty: string;
   cta: string;
-  onCta: () => void;
-  children?: ReactNode;
-  hasItems: boolean;
+  onClick: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <article className={`dashboard-ml-history-card${expanded ? " is-expanded" : " is-collapsed"}`}>
-      <button
-        type="button"
-        className="dashboard-ml-history-toggle"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((current) => !current)}
-      >
-        <span className="dashboard-ml-history-head">
-          <span className="dashboard-ml-history-icon" aria-hidden="true">
-            <BenefitIcon kind={props.icon} />
-          </span>
-          <span className="dashboard-ml-panel-title">{props.title}</span>
+    <button type="button" className="dashboard-ml-history-card dashboard-ml-history-card--nav" onClick={props.onClick}>
+      <span className="dashboard-ml-history-head">
+        <span className="dashboard-ml-history-icon" aria-hidden="true">
+          <BenefitIcon kind={props.icon} />
         </span>
-        <SessionsCollapsibleToggle expanded={expanded} language={props.language} />
-      </button>
-      {expanded ? (
-        <>
-          <div className="dashboard-ml-history-preview">
-            {props.hasItems ? props.children : <p className="dashboard-ml-history-empty">{props.empty}</p>}
-          </div>
-          <button type="button" className="dashboard-ml-history-link" onClick={props.onCta}>
-            {props.cta}
-          </button>
-        </>
-      ) : null}
-    </article>
+        <span className="dashboard-ml-panel-title">{props.title}</span>
+      </span>
+      <span className="dashboard-ml-history-nav-cta">{props.cta}</span>
+    </button>
   );
 }
 
@@ -450,31 +417,13 @@ export function DashboardNextActionHome(props: {
   onSelectHomeVariant: (variant: "next" | "classic") => void;
 }) {
   const navigate = useNavigate();
-  const pastBookings = useMemo(() => {
-    const now = Date.now();
-    return [...props.allBookings]
-      .filter((booking) => {
-        const status = (booking.status ?? "").toLowerCase();
-        if (status === "cancelled") {
-          return false;
-        }
-        return new Date(booking.startsAt).getTime() < now;
-      })
-      .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
-      .slice(0, 5);
-  }, [props.allBookings]);
-
-  const purchasesSorted = useMemo(
-    () =>
-      [...props.purchaseHistory]
-        .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
-        .slice(0, 5),
-    [props.purchaseHistory]
-  );
-
   const professionalCta = props.activeProfessional
     ? t(props.language, { es: "Abrir chat", en: "Open chat", pt: "Abrir chat" })
     : t(props.language, { es: "Elegir profesional", en: "Choose professional", pt: "Escolher profissional" });
+
+  const professionalPhotoSrcResolved = props.activeProfessional
+    ? resolvePublicAssetUrl(props.professionalPhotoMap[props.activeProfessional.id])
+    : null;
 
   const upcomingCta =
     props.actionKind === "next_session"
@@ -509,43 +458,21 @@ export function DashboardNextActionHome(props: {
     props.onNavigateToAssignProfessional();
   };
 
+  const [promoTone, setPromoTone] = useState<"care" | "access" | "match">("care");
+
   const bookSessionLabel = t(props.language, {
     es: "Reservar sesión",
     en: "Book a session",
     pt: "Reservar sessao"
   });
 
-  const pastPreview = pastBookings.slice(0, 3);
-  const purchasePreview = purchasesSorted.slice(0, 3);
-
-  const packagesSummary: ReactNode =
-    purchasePreview.length === 0 ? null : (
-      <ul className="dashboard-ml-history-list">
-        {purchasePreview.map((item) => (
-          <li key={item.id}>
-            <strong>{item.name}</strong>
-            <span>
-              {replaceTemplate(
-                t(props.language, {
-                  es: "{count} sesiones",
-                  en: "{count} sessions",
-                  pt: "{count} sessoes"
-                }),
-                { count: String(item.credits) }
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-    );
-
   return (
     <div className="dashboard-ml-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
       <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
 
       {/* Violeta solo hasta las cards de acceso; Sesiones ya va sobre el gris de página */}
-      <div className="dashboard-ml-brand-band">
-        <DashboardHomePromoCarousel language={props.language} />
+      <div className={`dashboard-ml-brand-band dashboard-ml-brand-band--${promoTone}`}>
+        <DashboardHomePromoCarousel language={props.language} onActiveToneChange={setPromoTone} />
 
         <div className="dashboard-ml-surface dashboard-ml-surface--brand">
           {props.showGoogleCalendarCta ? (
@@ -564,22 +491,29 @@ export function DashboardNextActionHome(props: {
             </div>
           ) : null}
 
-          <div className="dashboard-ml-credits-bar">
+          <div className="dashboard-ml-credits-bar" data-tour="patient-tour-credits">
             <p className="dashboard-ml-credits" aria-live="polite">
+              <span className="dashboard-ml-credits-kicker">
+                {t(props.language, {
+                  es: "Tu saldo",
+                  en: "Your balance",
+                  pt: "Seu saldo"
+                })}
+              </span>
               {props.availableSessions > 0 ? (
                 <>
                   <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
                   <span className="dashboard-ml-credits-label">
                     {props.availableSessions === 1
                       ? t(props.language, {
-                          es: "Sesión disponible",
-                          en: "Session available",
-                          pt: "Sessao disponivel"
+                          es: "sesión disponible",
+                          en: "session available",
+                          pt: "sessao disponivel"
                         })
                       : t(props.language, {
-                          es: "Sesiones disponibles",
-                          en: "Sessions available",
-                          pt: "Sessoes disponiveis"
+                          es: "sesiones disponibles",
+                          en: "sessions available",
+                          pt: "sessoes disponiveis"
                         })}
                   </span>
                 </>
@@ -609,6 +543,7 @@ export function DashboardNextActionHome(props: {
           <BenefitCard
             icon="professional"
             tourAttr="patient-tour-hero"
+            photoSrc={professionalPhotoSrcResolved}
             title={t(props.language, {
               es: "Tu profesional",
               en: "Your professional",
@@ -644,6 +579,7 @@ export function DashboardNextActionHome(props: {
           />
           <BenefitCard
             icon="upcoming"
+            tone="sessions"
             tourAttr="patient-tour-trial"
             ctaTourAttr="patient-tour-next-primary"
             title={t(props.language, {
@@ -661,6 +597,7 @@ export function DashboardNextActionHome(props: {
           />
           <BenefitCard
             icon="diary"
+            tone="diary"
             title={t(props.language, {
               es: "Diario",
               en: "Diary",
@@ -676,6 +613,7 @@ export function DashboardNextActionHome(props: {
           />
           <BenefitCard
             icon="exercises"
+            tone="exercises"
             title={t(props.language, {
               es: "Ejercicios",
               en: "Exercises",
@@ -691,6 +629,7 @@ export function DashboardNextActionHome(props: {
           />
           <BenefitCard
             icon="music"
+            tone="music"
             title={t(props.language, {
               es: "Música",
               en: "Music",
@@ -709,31 +648,46 @@ export function DashboardNextActionHome(props: {
 
       <div className="dashboard-ml-surface">
         <section className="dashboard-ml-sessions" data-tour="patient-tour-bookings" aria-labelledby="dashboard-ml-sessions-title">
-          <div className="dashboard-ml-sessions-head">
-            <h2 id="dashboard-ml-sessions-title">
-              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-            </h2>
-            <div className="dashboard-ml-sessions-subrow">
-              <p className="dashboard-ml-section-lead">
-                {t(props.language, {
-                  es: "Tus próximas reservas, listas para abrir.",
-                  en: "Your upcoming bookings, ready to open.",
-                  pt: "Suas proximas reservas, prontas para abrir."
-                })}
-              </p>
-              <div className="dashboard-ml-sessions-actions">
-                <button type="button" className="dashboard-ml-book-cta" onClick={runBookSession}>
-                  {bookSessionLabel}
-                </button>
-                <button type="button" className="dashboard-ml-section-link" onClick={() => props.onGoToReservations()}>
-                  {t(props.language, { es: "Ver todas", en: "View all", pt: "Ver todas" })}
-                </button>
+          <article className="dashboard-ml-sessions-banner">
+            <div className="dashboard-ml-sessions-banner-frame">
+              <div className="dashboard-ml-sessions-banner-copy">
+                <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
+                  {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+                </h2>
+                <p className="dashboard-ml-sessions-banner-body">
+                  {t(props.language, {
+                    es: "Tus próximas reservas, el calendario y el historial, listos para abrir cuando los necesites.",
+                    en: "Your upcoming bookings, calendar, and history—ready whenever you need them.",
+                    pt: "Suas proximas reservas, calendario e historico, prontos quando precisar."
+                  })}
+                </p>
+              </div>
+              <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
+                <img
+                  className="dashboard-ml-sessions-banner-photo"
+                  src="/home/banner-home-sessions.png?v=1"
+                  alt=""
+                  decoding="async"
+                />
               </div>
             </div>
-          </div>
+          </article>
 
-          <div className="dashboard-ml-sessions-grid">
-            <article className="dashboard-ml-panel dashboard-ml-panel--bookings">
+          <div className="dashboard-ml-sessions-pack">
+            <div className="dashboard-ml-sessions-pack-actions">
+              <button type="button" className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--primary" onClick={runBookSession}>
+                {bookSessionLabel}
+              </button>
+              <button
+                type="button"
+                className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--secondary"
+                onClick={() => props.onGoToReservations()}
+              >
+                {t(props.language, { es: "Ver todas", en: "View all", pt: "Ver todas" })}
+              </button>
+            </div>
+
+            <div className="dashboard-ml-sessions-bookings">
               {props.upcomingBookings.length === 0 ? (
                 <div className="dashboard-ml-empty">
                   <strong>
@@ -765,141 +719,65 @@ export function DashboardNextActionHome(props: {
                   />
                 </div>
               )}
-            </article>
+            </div>
+
+            <div
+              className="dashboard-ml-history-grid"
+              aria-label={t(props.language, {
+                es: "Detalle de actividad",
+                en: "Activity detail",
+                pt: "Detalhe da atividade"
+              })}
+            >
+              <CalendarPreviewCard
+                language={props.language}
+                bookings={props.upcomingBookings}
+                timezone={props.timezone}
+                onOpenBookingDetail={props.onOpenBookingDetail}
+                onCta={() => props.onGoToReservations()}
+              />
+
+              <HistoryNavCard
+                icon="packages"
+                title={t(props.language, {
+                  es: "Paquetes comprados",
+                  en: "Purchased packages",
+                  pt: "Pacotes comprados"
+                })}
+                cta={t(props.language, {
+                  es: "Ver paquetes",
+                  en: "View packages",
+                  pt: "Ver pacotes"
+                })}
+                onClick={() => navigate("/sessions?focus=packages")}
+              />
+
+              <HistoryNavCard
+                icon="history"
+                title={t(props.language, {
+                  es: "Historial de sesiones",
+                  en: "Session history",
+                  pt: "Historico de sessoes"
+                })}
+                cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
+                onClick={() => navigate("/sessions?focus=history")}
+              />
+
+              <HistoryNavCard
+                icon="activity"
+                title={t(props.language, {
+                  es: "Actividad de compras",
+                  en: "Purchase activity",
+                  pt: "Atividade de compras"
+                })}
+                cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
+                onClick={() => navigate("/sessions?focus=activity")}
+              />
+            </div>
           </div>
         </section>
 
-        <section
-          className="dashboard-ml-history-grid"
-          aria-label={t(props.language, { es: "Detalle de actividad", en: "Activity detail", pt: "Detalhe da atividade" })}
-        >
-          <CalendarPreviewCard
-            language={props.language}
-            bookings={props.upcomingBookings}
-            timezone={props.timezone}
-            onOpenBookingDetail={props.onOpenBookingDetail}
-            onCta={() => props.onGoToReservations()}
-          />
-
-          <HistoryPreviewCard
-            language={props.language}
-            icon="packages"
-            title={t(props.language, {
-              es: "Paquetes comprados",
-              en: "Purchased packages",
-              pt: "Pacotes comprados"
-            })}
-            empty={t(props.language, {
-              es: "Todavía no tenés paquetes comprados.",
-              en: "You don’t have purchased packages yet.",
-              pt: "Voce ainda nao tem pacotes comprados."
-            })}
-            cta={t(props.language, {
-              es: "Ver paquetes y comprar",
-              en: "View packages and buy",
-              pt: "Ver pacotes e comprar"
-            })}
-            onCta={() => props.onBuySessions()}
-            hasItems={purchasePreview.length > 0}
-          >
-            {packagesSummary}
-          </HistoryPreviewCard>
-
-          <HistoryPreviewCard
-            language={props.language}
-            icon="history"
-            title={t(props.language, {
-              es: "Historial de sesiones",
-              en: "Session history",
-              pt: "Historico de sessoes"
-            })}
-            empty={t(props.language, {
-              es: "Todavía no hay sesiones finalizadas.",
-              en: "No completed sessions yet.",
-              pt: "Ainda nao ha sessoes finalizadas."
-            })}
-            cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
-            onCta={() => props.onGoToReservations()}
-            hasItems={pastPreview.length > 0}
-          >
-            <ul className="dashboard-ml-history-list">
-              {pastPreview.map((booking) => {
-                const pro = findProfessionalById(booking.professionalId, props.professionals);
-                return (
-                  <li key={booking.id}>
-                    <button
-                      type="button"
-                      className="dashboard-ml-history-item"
-                      onClick={() => props.onOpenBookingDetail(booking.id)}
-                    >
-                      <strong>
-                        {formatDateTime({
-                          isoDate: booking.startsAt,
-                          timezone: props.timezone,
-                          language: props.language
-                        })}
-                      </strong>
-                      <span>
-                        {pro
-                          ? professionalAccessibleName(pro)
-                          : t(props.language, {
-                              es: "Tu profesional",
-                              en: "Your professional",
-                              pt: "Seu profissional"
-                            })}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </HistoryPreviewCard>
-
-          <HistoryPreviewCard
-            language={props.language}
-            icon="activity"
-            title={t(props.language, {
-              es: "Actividad de compras",
-              en: "Purchase activity",
-              pt: "Atividade de compras"
-            })}
-            empty={t(props.language, {
-              es: "Todavía no hay actividad de compras.",
-              en: "No purchase activity yet.",
-              pt: "Ainda nao ha atividade de compras."
-            })}
-            cta={t(props.language, { es: "Ver compras", en: "View purchases", pt: "Ver compras" })}
-            onCta={() => props.onBuySessions()}
-            hasItems={purchasePreview.length > 0}
-          >
-            <ul className="dashboard-ml-history-list">
-              {purchasePreview.map((item) => {
-                const amountLabel = formatSubscriptionPurchasePrice({
-                  priceCents: item.priceCents,
-                  language: props.language,
-                  displayCurrency: props.currency,
-                  purchaseCurrency: item.currency ?? null,
-                  fxRates: props.fxRates
-                });
-                return (
-                  <li key={`activity-${item.id}`}>
-                    <strong>{item.name}</strong>
-                    <span>
-                      {formatDateOnly({
-                        isoDate: item.purchasedAt,
-                        timezone: props.timezone,
-                        language: props.language
-                      })}
-                      {amountLabel ? ` · ${amountLabel}` : ""}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </HistoryPreviewCard>
-        </section>
-
-        <section className="dashboard-ml-diary" aria-labelledby="dashboard-ml-diary-title">
+        <section className="dashboard-ml-diary" data-tour="patient-tour-diary" aria-labelledby="dashboard-ml-diary-title">
           <article className="dashboard-ml-diary-banner">
             <div className="dashboard-ml-diary-banner-frame">
               <div className="dashboard-ml-diary-banner-copy">
@@ -924,22 +802,35 @@ export function DashboardNextActionHome(props: {
                     pt: "Registre como se sente, revise entradas anteriores e volte quando quiser."
                   })}
                 </p>
-                <button
-                  type="button"
-                  className="dashboard-ml-diary-banner-cta"
-                  onClick={() => navigate("/diario/nueva")}
-                >
-                  {t(props.language, {
-                    es: "Escribir ahora",
-                    en: "Write now",
-                    pt: "Escrever agora"
-                  })}
-                </button>
+                <div className="dashboard-ml-diary-banner-actions">
+                  <button
+                    type="button"
+                    className="dashboard-ml-diary-banner-cta"
+                    onClick={() => navigate("/diario/nueva")}
+                  >
+                    {t(props.language, {
+                      es: "Escribir ahora",
+                      en: "Write now",
+                      pt: "Escrever agora"
+                    })}
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-ml-diary-banner-link"
+                    onClick={() => navigate("/diario")}
+                  >
+                    {t(props.language, {
+                      es: "Abrir diario",
+                      en: "Open diary",
+                      pt: "Abrir diario"
+                    })}
+                  </button>
+                </div>
               </div>
               <div className="dashboard-ml-diary-banner-media" aria-hidden="true">
-                  <img
+                <img
                   className="dashboard-ml-diary-banner-photo"
-                  src="/home/banner-home-diary.png?v=1"
+                  src="/home/banner-home-diary.png?v=2"
                   alt=""
                   decoding="async"
                 />
@@ -947,73 +838,60 @@ export function DashboardNextActionHome(props: {
             </div>
           </article>
 
-          <div
-            className="dashboard-ml-diary-actions-row"
-            aria-label={t(props.language, {
-              es: "Acciones del diario",
-              en: "Diary actions",
-              pt: "Acoes do diario"
-            })}
-          >
-            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario/nueva")}>
-              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
-                <BenefitIcon kind="diary" />
-              </span>
-              <strong className="dashboard-ml-diary-action-title">
-                {t(props.language, {
+          <div className="dashboard-ml-diary-pack">
+            <div
+              className="dashboard-ml-diary-actions-row"
+              aria-label={t(props.language, {
+                es: "Acciones del diario",
+                en: "Diary actions",
+                pt: "Acoes do diario"
+              })}
+            >
+              <HistoryNavCard
+                icon="diary"
+                title={t(props.language, {
                   es: "Nueva entrada",
                   en: "New entry",
                   pt: "Nova entrada"
                 })}
-              </strong>
-              <span className="dashboard-ml-diary-action-cta">
-                {t(props.language, {
+                cta={t(props.language, {
                   es: "Escribir hoy",
                   en: "Write today",
                   pt: "Escrever hoje"
                 })}
-              </span>
-            </button>
+                onClick={() => navigate("/diario/nueva")}
+              />
 
-            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario/registros")}>
-              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
-                <BenefitIcon kind="history" />
-              </span>
-              <strong className="dashboard-ml-diary-action-title">
-                {t(props.language, {
+              <HistoryNavCard
+                icon="history"
+                title={t(props.language, {
                   es: "Ver registros",
                   en: "View records",
                   pt: "Ver registros"
                 })}
-              </strong>
-              <span className="dashboard-ml-diary-action-cta">
-                {t(props.language, {
+                cta={t(props.language, {
                   es: "Abrir historial",
                   en: "Open history",
                   pt: "Abrir historico"
                 })}
-              </span>
-            </button>
+                onClick={() => navigate("/diario/registros")}
+              />
 
-            <button type="button" className="dashboard-ml-diary-action-card" onClick={() => navigate("/diario")}>
-              <span className="dashboard-ml-diary-action-icon" aria-hidden="true">
-                <BenefitIcon kind="activity" />
-              </span>
-              <strong className="dashboard-ml-diary-action-title">
-                {t(props.language, {
+              <HistoryNavCard
+                icon="activity"
+                title={t(props.language, {
                   es: "Abrir diario",
                   en: "Open diary",
                   pt: "Abrir diario"
                 })}
-              </strong>
-              <span className="dashboard-ml-diary-action-cta">
-                {t(props.language, {
+                cta={t(props.language, {
                   es: "Ir al inicio",
                   en: "Go to home",
                   pt: "Ir ao inicio"
                 })}
-              </span>
-            </button>
+                onClick={() => navigate("/diario")}
+              />
+            </div>
           </div>
         </section>
 

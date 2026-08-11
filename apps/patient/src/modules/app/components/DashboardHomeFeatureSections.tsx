@@ -156,7 +156,7 @@ export function DashboardHomeExercisesSection(props: { language: AppLanguage }) 
   }, [exercises]);
 
   return (
-    <section className="dashboard-ml-feature-section" aria-labelledby="dashboard-ml-exercises-title">
+    <section className="dashboard-ml-feature-section" data-tour="patient-tour-exercises" aria-labelledby="dashboard-ml-exercises-title">
       <HomeFeatureBanner
         language={props.language}
         titleId="dashboard-ml-exercises-title"
@@ -172,7 +172,7 @@ export function DashboardHomeExercisesSection(props: { language: AppLanguage }) 
           pt: "Praticas breves de respiracao, postura e presenca para somar clareza entre sessoes."
         }}
         cta={{ es: "Ver ejercicios", en: "View exercises", pt: "Ver exercicios" }}
-        imageSrc="/home/banner-home-exercises.png?v=3"
+        imageSrc="/home/banner-home-exercises.png?v=4"
         tone="purple"
         onCta={() => navigate("/ejercicios")}
       />
@@ -269,7 +269,7 @@ export function DashboardHomeMusicSection(props: { language: AppLanguage }) {
   }, [categories, playlists, props.language]);
 
   return (
-    <section className="dashboard-ml-feature-section" aria-labelledby="dashboard-ml-music-title">
+    <section className="dashboard-ml-feature-section" data-tour="patient-tour-music" aria-labelledby="dashboard-ml-music-title">
       <HomeFeatureBanner
         language={props.language}
         titleId="dashboard-ml-music-title"
@@ -285,7 +285,7 @@ export function DashboardHomeMusicSection(props: { language: AppLanguage }) {
           pt: "Playlists por clima: lofi, chuva, meditacao, sono e mais, prontas quando precisar."
         }}
         cta={{ es: "Abrir música", en: "Open music", pt: "Abrir musica" }}
-        imageSrc="/home/banner-home-music.png?v=3"
+        imageSrc="/home/banner-home-music.png?v=4"
         tone="pistachio"
         onCta={() => navigate("/bienestar/musica")}
       />

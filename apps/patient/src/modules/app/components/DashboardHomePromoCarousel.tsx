@@ -48,7 +48,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "access-24h",
     tone: "access",
-    imageSrc: "/home/banner-access-24h.png?v=clock-24h-1",
+    imageSrc: "/home/banner-access-24h.png?v=clock-24h-white-2",
     kicker: {
       es: "Siempre disponible",
       en: "Always available",
@@ -105,11 +105,20 @@ const PROMO_BANNERS: PromoBanner[] = [
 const AUTO_MS = 6500;
 
 /** Carrusel promocional estilo marketplace (Mercado Libre) para Inicio next. */
-export function DashboardHomePromoCarousel(props: { language: AppLanguage }) {
+export function DashboardHomePromoCarousel(props: {
+  language: AppLanguage;
+  onActiveToneChange?: (tone: PromoBannerTone) => void;
+}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const total = PROMO_BANNERS.length;
   const active = PROMO_BANNERS[index] ?? PROMO_BANNERS[0];
+
+  useEffect(() => {
+    props.onActiveToneChange?.(active.tone);
+    // Solo reaccionar al tono activo; el callback del padre suele ser setState (estable).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tone-driven sync
+  }, [active.tone]);
 
   useEffect(() => {
     if (paused || total <= 1) {

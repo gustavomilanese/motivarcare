@@ -23,7 +23,7 @@ import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
-import { readPatientHomeVariant } from "../lib/patientHomeVariant";
+import { isPatientHomeMlShellPath, readPatientHomeVariant } from "../lib/patientHomeVariant";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
@@ -283,7 +283,7 @@ export function MainPortal(props: {
   }, []);
   const homeMlChrome =
     !isMobilePortal &&
-    location.pathname === "/" &&
+    isPatientHomeMlShellPath(location.pathname) &&
     readPatientHomeVariant() === "next" &&
     homeVariantEpoch >= 0;
   const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;

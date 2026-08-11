@@ -117,6 +117,16 @@ function IconMusic(props: { className?: string }) {
   );
 }
 
+function IconTourMaca(props: { className?: string }) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+      <path d="M16.5 4.5 18 3M7.5 4.5 6 3M19.5 10h2M2.5 10h2" />
+    </svg>
+  );
+}
+
 function IconMore(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -170,7 +180,7 @@ export function PortalNavigation(props: {
   onOpenPreferences: () => void;
   onLogout: () => void;
   hideSidebar?: boolean;
-  /** Inicio next desktop: chrome tipo marketplace (top bar, sin sidebar). */
+  /** Chrome tipo marketplace (rail + top bar) en Inicio next y secciones del menú. */
   homeMlChrome?: boolean;
   patientHeaderAvatarSrc: string | null;
   onPatientAvatarError: (event: SyntheticEvent<HTMLImageElement>) => void;
@@ -191,14 +201,14 @@ export function PortalNavigation(props: {
   const avatarInputId = useId();
   const location = useLocation();
   const navigate = useNavigate();
-  const diaryImmersive = location.pathname.startsWith("/diario");
-  const diaryHomeImmersive = location.pathname === "/diario";
+  const diaryImmersive = location.pathname.startsWith("/diario") && !props.homeMlChrome;
+  const diaryHomeImmersive = location.pathname === "/diario" && !props.homeMlChrome;
   const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
   const dashboardHomeImmersive = location.pathname === "/" && !props.homeMlChrome;
   const homeMlFloatingToolbar = Boolean(props.homeMlChrome) && location.pathname === "/";
-  const sessionsHomeImmersive = location.pathname === "/sessions";
-  const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica";
-  const chatImmersive = location.pathname === "/chat";
+  const sessionsHomeImmersive = location.pathname === "/sessions" && !props.homeMlChrome;
+  const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica" && !props.homeMlChrome;
+  const chatImmersive = location.pathname === "/chat" && !props.homeMlChrome;
   const immersivePortalHome =
     diaryImmersive ||
     dashboardHomeImmersive ||
@@ -214,6 +224,7 @@ export function PortalNavigation(props: {
   const [sessionsHeroToolbarMount, setSessionsHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
   const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
+  const [homeMlRailNavLocked, setHomeMlRailNavLocked] = useState(false);
 
   useLayoutEffect(() => {
     if (!diaryHomeImmersive) {
@@ -745,37 +756,43 @@ export function PortalNavigation(props: {
   function renderHomeMlChrome() {
     const railLinkClass = ({ isActive }: { isActive: boolean }) =>
       `portal-home-ml-rail-link${isActive ? " is-active" : ""}`;
+    const railName = props.sessionFullName?.trim() || "";
+    const railEmail = props.sessionEmail?.trim() || "";
+    const hasRailIdentity = Boolean(railName || railEmail);
+
+    function collapseHomeMlRailAfterNav() {
+      setHomeMlRailNavLocked(true);
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        active.blur();
+      }
+    }
 
     return (
       <>
         <aside
-          className="portal-home-ml-rail"
+          className={`portal-home-ml-rail${homeMlRailNavLocked ? " is-nav-locked" : ""}`}
           aria-label={t(props.language, { es: "Menú de la aplicación", en: "App menu", pt: "Menu do aplicativo" })}
+          onMouseLeave={() => {
+            setHomeMlRailNavLocked(false);
+            const active = document.activeElement;
+            if (active instanceof HTMLElement && active.closest(".portal-home-ml-rail")) {
+              active.blur();
+            }
+          }}
         >
           <div className="portal-home-ml-rail-edge" aria-hidden="true" />
-          <div className="portal-home-ml-rail-panel">
+          <div className="portal-home-ml-rail-panel" data-tour="patient-tour-sidebar">
             <nav className="portal-home-ml-rail-nav">
-              <NavLink className={railLinkClass} end to="/">
+              <NavLink className={railLinkClass} end to="/" onClick={collapseHomeMlRailAfterNav}>
                 <IconHome className="portal-home-ml-rail-icon" />
                 <span className="portal-home-ml-rail-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
               </NavLink>
-              <NavLink className={railLinkClass} to="/sessions">
+              <NavLink className={railLinkClass} to="/sessions" onClick={collapseHomeMlRailAfterNav}>
                 <IconSessions className="portal-home-ml-rail-icon" />
                 <span className="portal-home-ml-rail-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
               </NavLink>
-              <NavLink className={railLinkClass} to="/diario" end={false}>
-                <IconNotes className="portal-home-ml-rail-icon" />
-                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}</span>
-              </NavLink>
-              <NavLink className={railLinkClass} to="/ejercicios">
-                <IconExercises className="portal-home-ml-rail-icon" />
-                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}</span>
-              </NavLink>
-              <NavLink className={railLinkClass} to="/bienestar/musica">
-                <IconMusic className="portal-home-ml-rail-icon" />
-                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Música", en: "Music", pt: "Musica" })}</span>
-              </NavLink>
-              <NavLink className={railLinkClass} to="/chat">
+              <NavLink className={railLinkClass} to="/chat" onClick={collapseHomeMlRailAfterNav}>
                 <span className="portal-home-ml-rail-icon-wrap">
                   <IconChat className="portal-home-ml-rail-icon" />
                   {props.unreadMessagesCount > 0 ? (
@@ -788,7 +805,84 @@ export function PortalNavigation(props: {
                   {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
                 </span>
               </NavLink>
+              <NavLink className={railLinkClass} to="/diario" end={false} onClick={collapseHomeMlRailAfterNav}>
+                <IconNotes className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/ejercicios" onClick={collapseHomeMlRailAfterNav}>
+                <IconExercises className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}</span>
+              </NavLink>
+              <NavLink className={railLinkClass} to="/bienestar/musica" onClick={collapseHomeMlRailAfterNav}>
+                <IconMusic className="portal-home-ml-rail-icon" />
+                <span className="portal-home-ml-rail-label">{t(props.language, { es: "Música", en: "Music", pt: "Musica" })}</span>
+              </NavLink>
             </nav>
+            <div className="portal-home-ml-rail-foot-stack">
+              <button
+                type="button"
+                className="portal-home-ml-rail-tour"
+                onClick={() => {
+                  collapseHomeMlRailAfterNav();
+                  const goHome = location.pathname !== "/";
+                  if (goHome) {
+                    navigate("/");
+                  }
+                  window.setTimeout(
+                    () => requestPatientDashboardTour({ force: true }),
+                    goHome ? 420 : 60
+                  );
+                }}
+                aria-label={t(props.language, {
+                  es: "Tour MotivarCare con Maca",
+                  en: "MotivarCare tour with Maca",
+                  pt: "Tour MotivarCare com a Maca"
+                })}
+              >
+                <span className="portal-home-ml-rail-foot-icon-wrap" aria-hidden="true">
+                  <IconTourMaca className="portal-home-ml-rail-icon" />
+                </span>
+                <span className="portal-home-ml-rail-foot-copy portal-home-ml-rail-tour-copy">
+                  <span className="portal-home-ml-rail-foot-name">
+                    {t(props.language, {
+                      es: "Tour con Maca",
+                      en: "Tour with Maca",
+                      pt: "Tour com a Maca"
+                    })}
+                  </span>
+                  <span className="portal-home-ml-rail-foot-email">
+                    {t(props.language, {
+                      es: "Recorrido guiado del portal",
+                      en: "Guided walkthrough of the portal",
+                      pt: "Percurso guiado do portal"
+                    })}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="portal-home-ml-rail-foot"
+                onClick={() => {
+                  collapseHomeMlRailAfterNav();
+                  props.onOpenProfileTab("data");
+                }}
+                aria-label={
+                  hasRailIdentity
+                    ? [railName, railEmail].filter(Boolean).join(", ")
+                    : t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })
+                }
+              >
+                <span className="portal-home-ml-rail-foot-icon-wrap" aria-hidden="true">
+                  <IconAccount className="portal-home-ml-rail-icon" />
+                </span>
+                {hasRailIdentity ? (
+                  <span className="portal-home-ml-rail-foot-copy">
+                    {railName ? <span className="portal-home-ml-rail-foot-name">{railName}</span> : null}
+                    {railEmail ? <span className="portal-home-ml-rail-foot-email">{railEmail}</span> : null}
+                  </span>
+                ) : null}
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -811,15 +905,6 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/sessions">
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
             </NavLink>
-            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/diario" end={false}>
-              {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
-            </NavLink>
-            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/ejercicios">
-              {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}
-            </NavLink>
-            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/bienestar/musica">
-              {t(props.language, { es: "Música", en: "Music", pt: "Musica" })}
-            </NavLink>
             <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/chat">
               <span className="nav-link-with-badge">
                 {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
@@ -829,6 +914,15 @@ export function PortalNavigation(props: {
                   </span>
                 ) : null}
               </span>
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/diario" end={false}>
+              {t(props.language, { es: "Diario", en: "Diary", pt: "Diario" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/ejercicios">
+              {t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercicios" })}
+            </NavLink>
+            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/bienestar/musica">
+              {t(props.language, { es: "Música", en: "Music", pt: "Musica" })}
             </NavLink>
           </nav>
 
@@ -900,6 +994,16 @@ export function PortalNavigation(props: {
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
             </NavLink>
+            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
+              <span className="nav-link-with-badge">
+                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
+                {props.unreadMessagesCount > 0 ? (
+                  <span className="chat-badge-pill" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
+                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
+                  </span>
+                ) : null}
+              </span>
+            </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
               {t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" })}
             </NavLink>
@@ -913,16 +1017,6 @@ export function PortalNavigation(props: {
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/bienestar/musica">
               {t(props.language, { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" })}
-            </NavLink>
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
-              <span className="nav-link-with-badge">
-                {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-                {props.unreadMessagesCount > 0 ? (
-                  <span className="chat-badge-pill" aria-label={t(props.language, { es: "Mensajes nuevos", en: "New messages", pt: "Novas mensagens" })}>
-                    {props.unreadMessagesCount > 99 ? "99+" : props.unreadMessagesCount}
-                  </span>
-                ) : null}
-              </span>
             </NavLink>
           </nav>
 
@@ -943,9 +1037,9 @@ export function PortalNavigation(props: {
             >
               <span className="portal-sidebar-tour-label">
                 {t(props.language, {
-                  es: "Tour MotivarCare",
-                  en: "MotivarCare Tour",
-                  pt: "Tour MotivarCare"
+                  es: "Tour con Maca",
+                  en: "Tour with Maca",
+                  pt: "Tour com a Maca"
                 })}
               </span>
             </button>
