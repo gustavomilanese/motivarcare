@@ -19951,6 +19951,97 @@ button.sessions-balance {
     margin-top: 48px;
   }
 
+  /*
+   * Escala tipográfica mobile = Diario Emocional (referencia legible):
+   * título 0.95rem / subtítulo+meta 0.7rem / texto+botón 0.8rem
+   */
+  .patient-dashboard-home .dashboard-ml-home {
+    --ml-type-title: 0.95rem;
+    --ml-type-title-weight: 500;
+    --ml-type-text: 0.8rem;
+    --ml-type-subtitle: 0.7rem;
+    --ml-btn-min-h: 32px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title,
+  .patient-dashboard-home .dashboard-ml-diary-banner-title,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
+    font-size: var(--ml-type-title);
+    font-weight: var(--ml-type-title-weight);
+    line-height: 1.25;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-kicker,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-kicker {
+    font-size: var(--ml-type-subtitle);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    opacity: 0.92;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-banner-reserve,
+  .patient-dashboard-home .dashboard-ml-diary-banner-write,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action,
+  .patient-dashboard-home .dashboard-ml-book-cta {
+    min-height: var(--ml-btn-min-h);
+    padding: 0 12px;
+    font-size: var(--ml-type-text);
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card .dashboard-ml-panel-title,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
+    font-size: var(--ml-type-text);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #334155;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-nav-cta,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-cta {
+    font-size: var(--ml-type-subtitle);
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-date-line {
+    font-size: var(--ml-type-subtitle);
+    line-height: 1.25;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-name {
+    font-size: var(--ml-type-text);
+    line-height: 1.25;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
+    font-size: var(--ml-type-subtitle);
+    padding: 2px 7px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-toggle-label {
+    font-size: var(--ml-type-text);
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-preview-card strong {
+    font-size: var(--ml-type-text);
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-preview-card > span:last-child,
+  .patient-dashboard-home .dashboard-ml-feature-more,
+  .patient-dashboard-home .dashboard-ml-feature-empty {
+    font-size: var(--ml-type-subtitle);
+  }
+
+  .patient-dashboard-home .dashboard-ml-credits-label,
+  .patient-dashboard-home .dashboard-ml-credits-label--empty {
+    font-size: var(--ml-type-text);
+  }
+
   /* Cabeceras Ejercicios / Música compactas (mobile): kicker + título con ícono + CTA */
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-frame,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-frame {
@@ -19972,23 +20063,11 @@ button.sessions-balance {
     align-items: flex-end;
   }
 
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-kicker,
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-kicker {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    line-height: 1.2;
-    opacity: 0.9;
-  }
-
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
-    font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.25;
     letter-spacing: -0.01em;
     min-width: 0;
   }
@@ -20012,9 +20091,6 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 0.8rem;
     align-self: center;
   }
 
@@ -20042,9 +20118,6 @@ button.sessions-balance {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
-    font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.25;
     min-width: 0;
   }
 
@@ -20065,12 +20138,6 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title > span:last-child {
     min-width: 0;
-  }
-
-  .patient-dashboard-home .dashboard-ml-sessions-banner-reserve {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 0.8rem;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-body {
@@ -20105,9 +20172,6 @@ button.sessions-balance {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
-    font-size: 0.95rem;
-    font-weight: 500;
-    line-height: 1.25;
     min-width: 0;
   }
 
@@ -20128,12 +20192,6 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title > span:last-child {
     min-width: 0;
-  }
-
-  .patient-dashboard-home .dashboard-ml-diary-banner-write {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 0.8rem;
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
@@ -20225,21 +20283,6 @@ button.sessions-balance {
     height: 15px;
   }
 
-  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card .dashboard-ml-panel-title {
-    font-size: 0.82rem;
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-    color: #334155;
-  }
-
-  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-nav-cta {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #64748b;
-    text-decoration: none;
-  }
-
   /* Diario: opciones pegadas al título (bloque compacto) */
   .patient-dashboard-home .dashboard-ml-diary-pack {
     margin: 0;
@@ -20322,21 +20365,6 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-minimal-icon {
     width: 14px;
     height: 14px;
-  }
-
-  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
-    font-size: 0.8rem;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.01em;
-    color: #334155;
-  }
-
-  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-cta {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #64748b;
-    text-decoration: none;
   }
 
   /* Tablet portal: mismo patrón visual que phone (copy + arte) */
