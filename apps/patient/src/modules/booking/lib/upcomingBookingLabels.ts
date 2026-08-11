@@ -6,18 +6,40 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function upcomingBookingStatusPillLabel(
   language: AppLanguage,
-  isTrialBooking: boolean
+  isTrialBooking: boolean,
+  options?: { completed?: boolean }
 ): string {
+  if (options?.completed) {
+    return t(language, { es: "Realizada", en: "Completed", pt: "Realizada" });
+  }
   return isTrialBooking
     ? t(language, { es: "Prueba reservada", en: "Trial booked", pt: "Teste reservado" })
     : t(language, { es: "Reservada", en: "Booked", pt: "Reservada" });
 }
 
-export function upcomingBookingCardStatusLine(language: AppLanguage, isTrialBooking: boolean): string {
+export function upcomingBookingCardStatusLine(
+  language: AppLanguage,
+  isTrialBooking: boolean,
+  options?: { completed?: boolean }
+): string {
+  if (options?.completed) {
+    const done = t(language, { es: "Realizada", en: "Completed", pt: "Realizada" });
+    return isTrialBooking
+      ? `${done} · ${t(language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
+      : done;
+  }
   const statusBooked = t(language, { es: "Reservada", en: "Booked", pt: "Reservada" });
   return isTrialBooking
     ? `${statusBooked} · ${t(language, { es: "Sesión de prueba", en: "Trial session", pt: "Sessao de teste" })}`
     : statusBooked;
+}
+
+export function trialSessionBadgeLabel(language: AppLanguage): string {
+  return t(language, {
+    es: "Sesión de prueba",
+    en: "Trial session",
+    pt: "Sessao de teste"
+  });
 }
 
 export function rescheduleUnavailableTitle(language: AppLanguage): string {

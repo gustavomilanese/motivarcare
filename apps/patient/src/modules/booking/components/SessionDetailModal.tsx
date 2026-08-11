@@ -63,6 +63,7 @@ export function SessionDetailModal(props: {
   booking: Booking;
   timezone: string;
   language: AppLanguage;
+  patientName?: string | null;
   professional: {
     fullName: string;
     firstName?: string;
@@ -86,9 +87,11 @@ export function SessionDetailModal(props: {
   const [cancelReason, setCancelReason] = useState("");
   const noticeHours = resolvePatientChangeNoticeHours(props.noticeHours);
   const isTrialBooking = props.booking.bookingMode === "trial";
-  const canReschedule = canPatientRescheduleBooking(props.booking.startsAt, noticeHours);
-  const canCancel = canPatientCancelBooking(props.booking.startsAt, noticeHours);
-  const joinUrl = props.booking.joinUrl?.trim() ?? "";
+  const isCancelled = props.booking.status === "cancelled";
+  const isCompleted = !isCancelled && new Date(props.booking.endsAt).getTime() < Date.now();
+  const canReschedule = !isCompleted && !isCancelled && canPatientRescheduleBooking(props.booking.startsAt, noticeHours);
+  const canCancel = !isCompleted && !isCancelled && canPatientCancelBooking(props.booking.startsAt, noticeHours);
+  const joinUrl = isCompleted || isCancelled ? "" : (props.booking.joinUrl?.trim() ?? "");
   const isGoogleMeet = joinUrl.includes("meet.google.");
   /** Enlace provisional del API cuando no se pudo crear Meet (Daily demo / placeholder local). */
   const isLikelyNonMeetVideoLink =
@@ -99,6 +102,7 @@ export function SessionDetailModal(props: {
   const averageRating = props.professional.rating ?? null;
   const displayRating = resolveProfessionalDisplayRating(averageRating, reviewCount);
   const professionalName = professionalAccessibleName(props.professional);
+  const patientName = props.patientName?.trim() || "";
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -134,6 +138,44 @@ export function SessionDetailModal(props: {
     }
   };
 
+  const statusChipLabel = isCancelled
+    ? isTrialBooking
+      ? t(props.language, {
+          es: "Sesión de prueba cancelada",
+          en: "Trial session cancelled",
+          pt: "Sessao de teste cancelada"
+        })
+      : t(props.language, {
+          es: "Sesión cancelada",
+          en: "Session cancelled",
+          pt: "Sessao cancelada"
+        })
+    : isCompleted
+      ? isTrialBooking
+        ? t(props.language, {
+            es: "Sesión de prueba realizada",
+            en: "Trial session completed",
+            pt: "Sessao de teste realizada"
+          })
+        : t(props.language, {
+            es: "Sesión realizada",
+            en: "Session completed",
+            pt: "Sessao realizada"
+          })
+      : isTrialBooking
+        ? t(props.language, {
+            es: "Sesión de prueba reservada",
+            en: "Booked trial session",
+            pt: "Sessao de teste reservada"
+          })
+        : t(props.language, {
+            es: "Sesión reservada",
+            en: "Booked session",
+            pt: "Sessao reservada"
+          });
+
+  const isPastSummary = isCompleted || isCancelled;
+
   return (
     <div className="session-modal-backdrop" role="presentation" onClick={props.onClose}>
       <section
@@ -143,16 +185,20 @@ export function SessionDetailModal(props: {
           pt: "Detalhes da sessao"
         })}
         aria-modal="true"
-        className="session-modal session-detail-modal"
+        className={`session-modal session-detail-modal${
+          isCompleted ? " session-detail-modal--completed" : isCancelled ? " session-detail-modal--cancelled" : ""
+        }`}
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="session-modal-header session-detail-head">
           <div className="session-detail-head-copy">
-            <span className="chip">
-              {props.booking.bookingMode === "trial"
-                ? t(props.language, { es: "Sesión de prueba reservada", en: "Booked trial session", pt: "Sessao de teste reservada" })
-                : t(props.language, { es: "Sesión reservada", en: "Booked session", pt: "Sessao reservada" })}
+            <span
+              className={`chip${
+                isCompleted ? " chip--session-completed" : isCancelled ? " chip--session-cancelled" : ""
+              }`}
+            >
+              {statusChipLabel}
             </span>
             <p>{formatDateTime({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</p>
           </div>
@@ -210,7 +256,7 @@ export function SessionDetailModal(props: {
           </div>
         </section>
 
-        <div className="session-detail-meta-grid">
+        <div className={`session-detail-meta-grid${isPastSummary ? " session-detail-meta-grid--completed" : ""}`}>
           <p>
             <strong>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</strong>
             <span>{formatDateOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</span>
@@ -223,9 +269,19 @@ export function SessionDetailModal(props: {
             <strong>{t(props.language, { es: "Zona horaria", en: "Time zone", pt: "Fuso" })}</strong>
             <span>{props.timezone}</span>
           </p>
+          <p>
+            <strong>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</strong>
+            <span>{professionalName}</span>
+          </p>
+          {patientName ? (
+            <p>
+              <strong>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</strong>
+              <span>{patientName}</span>
+            </p>
+          ) : null}
         </div>
 
-        {(props.onReschedule || props.onCancel) && !confirmCancel ? (
+        {!isPastSummary && (props.onReschedule || props.onCancel) && !confirmCancel ? (
           <div className="session-detail-change-actions session-detail-change-actions--top">
             {props.onReschedule ? (
               <button
@@ -268,84 +324,117 @@ export function SessionDetailModal(props: {
           </div>
         ) : null}
 
-        <section className="session-detail-meet" aria-label={t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}>
-          {joinUrl ? (
-            <>
-              <div className="session-detail-meet-head">
-                <span className={`session-meet-badge ${isGoogleMeet ? "" : "session-meet-badge--brand"}`} aria-hidden="true">
-                  {isGoogleMeet ? "Meet" : "▶"}
-                </span>
-                <div>
-                  <h4 className="session-detail-meet-title">
-                    {isGoogleMeet
-                      ? t(props.language, { es: "Google Meet", en: "Google Meet", pt: "Google Meet" })
-                      : t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}
-                  </h4>
-                  <p className="session-detail-meet-lead">
-                    {isGoogleMeet
-                      ? t(props.language, {
-                          es: "El enlace se creó al reservar. Abrí Meet en el navegador o en la app.",
-                          en: "Your link was created when you booked. Open Meet in your browser or the app.",
-                          pt: "O link foi criado ao reservar. Abra o Meet no navegador ou no app."
-                        })
-                      : t(props.language, {
-                          es: "Usa este enlace para conectarte a la sesión en la hora acordada.",
-                          en: "Use this link to join your session at the scheduled time.",
-                          pt: "Use este link para entrar na sessao no horario combinado."
-                        })}
-                  </p>
-                  {isLikelyNonMeetVideoLink ? (
-                    <p className="session-detail-meet-fallback-hint">
-                      {t(props.language, {
-                        es: "Este enlace es un respaldo: no pudimos crear el evento de Google Meet. Si tenés dudas, escribinos por soporte.",
-                        en: "This link is a fallback—we couldn’t create the Google Meet event. If you have questions, contact support.",
-                        pt: "Este link e um respaldo: nao foi possivel criar o evento do Google Meet. Se tiver duvidas, fale com o suporte."
-                      })}
-                      {import.meta.env.DEV ? (
-                        <span className="session-detail-meet-dev-hint">
-                          {" "}
-                          {t(props.language, {
-                            es: "(Dev: revisá GOOGLE_CLIENT_ID/SECRET y tokens de calendario en el API.)",
-                            en: "(Dev: check GOOGLE_CLIENT_ID/SECRET and calendar tokens on the API.)",
-                            pt: "(Dev: confira GOOGLE_CLIENT_ID/SECRET e tokens de calendario no API.)"
+        {!isPastSummary ? (
+          <section className="session-detail-meet" aria-label={t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}>
+            {joinUrl ? (
+              <>
+                <div className="session-detail-meet-head">
+                  <span className={`session-meet-badge ${isGoogleMeet ? "" : "session-meet-badge--brand"}`} aria-hidden="true">
+                    {isGoogleMeet ? "Meet" : "▶"}
+                  </span>
+                  <div>
+                    <h4 className="session-detail-meet-title">
+                      {isGoogleMeet
+                        ? t(props.language, { es: "Google Meet", en: "Google Meet", pt: "Google Meet" })
+                        : t(props.language, { es: "Videollamada", en: "Video call", pt: "Videochamada" })}
+                    </h4>
+                    <p className="session-detail-meet-lead">
+                      {isGoogleMeet
+                        ? t(props.language, {
+                            es: "El enlace se creó al reservar. Abrí Meet en el navegador o en la app.",
+                            en: "Your link was created when you booked. Open Meet in your browser or the app.",
+                            pt: "O link foi criado ao reservar. Abra o Meet no navegador ou no app."
+                          })
+                        : t(props.language, {
+                            es: "Usa este enlace para conectarte a la sesión en la hora acordada.",
+                            en: "Use this link to join your session at the scheduled time.",
+                            pt: "Use este link para entrar na sessao no horario combinado."
                           })}
-                        </span>
-                      ) : null}
                     </p>
-                  ) : null}
+                    {isLikelyNonMeetVideoLink ? (
+                      <p className="session-detail-meet-fallback-hint">
+                        {t(props.language, {
+                          es: "Este enlace es un respaldo: no pudimos crear el evento de Google Meet. Si tenés dudas, escribinos por soporte.",
+                          en: "This link is a fallback—we couldn’t create the Google Meet event. If you have questions, contact support.",
+                          pt: "Este link e um respaldo: nao foi possivel criar o evento do Google Meet. Se tiver duvidas, fale com o suporte."
+                        })}
+                        {import.meta.env.DEV ? (
+                          <span className="session-detail-meet-dev-hint">
+                            {" "}
+                            {t(props.language, {
+                              es: "(Dev: revisá GOOGLE_CLIENT_ID/SECRET y tokens de calendario en el API.)",
+                              en: "(Dev: check GOOGLE_CLIENT_ID/SECRET and calendar tokens on the API.)",
+                              pt: "(Dev: confira GOOGLE_CLIENT_ID/SECRET e tokens de calendario no API.)"
+                            })}
+                          </span>
+                        ) : null}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <div className="session-detail-meet-actions">
-                <a
-                  className={`session-meet-primary ${isGoogleMeet ? "" : "session-meet-primary--brand"}`}
-                  href={joinUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {isGoogleMeet
-                    ? t(props.language, { es: "Abrir Google Meet", en: "Open Google Meet", pt: "Abrir Google Meet" })
-                    : t(props.language, { es: "Abrir videollamada", en: "Open video call", pt: "Abrir videochamada" })}
-                </a>
-                <button className="session-meet-secondary" type="button" onClick={() => void copyMeetLink()}>
-                  {copied
-                    ? t(props.language, { es: "Enlace copiado", en: "Link copied", pt: "Link copiado" })
-                    : t(props.language, { es: "Copiar enlace", en: "Copy link", pt: "Copiar link" })}
-                </button>
-              </div>
-            </>
-          ) : (
-            <p className="session-detail-meet-empty">
-              {t(props.language, {
-                es: "Todavía no hay enlace de videollamada para esta sesión. Si ya está reservada, actualiza la página en unos minutos o escribe por chat a tu profesional.",
-                en: "There is no video link for this session yet. If it is already booked, refresh in a few minutes or message your professional in chat.",
-                pt: "Ainda nao ha link de video para esta sessao. Se ja estiver reservada, atualize em alguns minutos ou fale no chat com seu profissional."
-              })}
+                <div className="session-detail-meet-actions">
+                  <a
+                    className={`session-meet-primary ${isGoogleMeet ? "" : "session-meet-primary--brand"}`}
+                    href={joinUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {isGoogleMeet
+                      ? t(props.language, { es: "Abrir Google Meet", en: "Open Google Meet", pt: "Abrir Google Meet" })
+                      : t(props.language, { es: "Abrir videollamada", en: "Open video call", pt: "Abrir videochamada" })}
+                  </a>
+                  <button className="session-meet-secondary" type="button" onClick={() => void copyMeetLink()}>
+                    {copied
+                      ? t(props.language, { es: "Enlace copiado", en: "Link copied", pt: "Link copiado" })
+                      : t(props.language, { es: "Copiar enlace", en: "Copy link", pt: "Copiar link" })}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="session-detail-meet-empty">
+                {t(props.language, {
+                  es: "Todavía no hay enlace de videollamada para esta sesión. Si ya está reservada, actualiza la página en unos minutos o escribe por chat a tu profesional.",
+                  en: "There is no video link for this session yet. If it is already booked, refresh in a few minutes or message your professional in chat.",
+                  pt: "Ainda nao ha link de video para esta sessao. Se ja estiver reservada, atualize em alguns minutos ou fale no chat com seu profissional."
+                })}
+              </p>
+            )}
+          </section>
+        ) : (
+          <section
+            className={`session-detail-completed-note${isCancelled ? " session-detail-completed-note--cancelled" : ""}`}
+            aria-live="polite"
+          >
+            <p>
+              {isCancelled
+                ? isTrialBooking
+                  ? t(props.language, {
+                      es: "Esta sesión de prueba fue cancelada. Acá tenés el resumen de la cita.",
+                      en: "This trial session was cancelled. Here’s a summary of the appointment.",
+                      pt: "Esta sessao de teste foi cancelada. Aqui esta o resumo do atendimento."
+                    })
+                  : t(props.language, {
+                      es: "Esta sesión fue cancelada. Acá tenés el resumen de la cita.",
+                      en: "This session was cancelled. Here’s a summary of the appointment.",
+                      pt: "Esta sessao foi cancelada. Aqui esta o resumo do atendimento."
+                    })
+                : isTrialBooking
+                  ? t(props.language, {
+                      es: "Esta sesión de prueba ya ha sido realizada oportunamente.",
+                      en: "This trial session was completed as scheduled.",
+                      pt: "Esta sessao de teste ja foi realizada oportunamente."
+                    })
+                  : t(props.language, {
+                      es: "Esta sesión ya ha sido realizada oportunamente.",
+                      en: "This session was completed as scheduled.",
+                      pt: "Esta sessao ja foi realizada oportunamente."
+                    })}
             </p>
-          )}
-        </section>
+          </section>
+        )}
 
         <section className="session-modal-footer session-detail-footer session-detail-footer-actions">
-          {props.onCancel && confirmCancel ? (
+          {!isPastSummary && props.onCancel && confirmCancel ? (
             <div className="session-detail-cancel-confirm">
               <p>
                 {isTrialBooking
@@ -403,19 +492,21 @@ export function SessionDetailModal(props: {
               </div>
             </div>
           ) : null}
-          <p className="session-detail-footer-hint">
-            {isTrialBooking
-              ? t(props.language, {
-                  es: `Podés reprogramar o cancelar la sesión de prueba con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
-                  en: `You can reschedule or cancel the trial session at least ${noticeHours} h in advance. Join 5 min early.`,
-                  pt: `Você pode reagendar ou cancelar a sessão de teste com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
-                })
-              : t(props.language, {
-                  es: `Para cambiar o cancelar, hacelo con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
-                  en: `To change or cancel, do it at least ${noticeHours} h in advance. Join 5 min early.`,
-                  pt: `Para mudar ou cancelar, faça com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
-                })}
-          </p>
+          {!isPastSummary ? (
+            <p className="session-detail-footer-hint">
+              {isTrialBooking
+                ? t(props.language, {
+                    es: `Podés reprogramar o cancelar la sesión de prueba con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
+                    en: `You can reschedule or cancel the trial session at least ${noticeHours} h in advance. Join 5 min early.`,
+                    pt: `Você pode reagendar ou cancelar a sessão de teste com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
+                  })
+                : t(props.language, {
+                    es: `Para cambiar o cancelar, hacelo con al menos ${noticeHours} h de anticipación. Conectate 5 min antes.`,
+                    en: `To change or cancel, do it at least ${noticeHours} h in advance. Join 5 min early.`,
+                    pt: `Para mudar ou cancelar, faça com pelo menos ${noticeHours} h de antecedência. Entre 5 min antes.`
+                  })}
+            </p>
+          ) : null}
         </section>
       </section>
     </div>

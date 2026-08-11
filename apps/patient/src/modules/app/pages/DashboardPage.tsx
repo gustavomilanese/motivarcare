@@ -55,15 +55,15 @@ import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangePro
 import { countAvailablePatientSessions } from "../lib/countAvailablePatientSessions";
 import {
   readPatientHomeVariant,
-  writePatientHomeVariant,
+  PATIENT_HOME_VARIANT_EVENT,
   type PatientHomeVariant
 } from "../lib/patientHomeVariant";
 import { resolveDashboardNextActionKind } from "../lib/resolveDashboardNextActionKind";
 import { fetchProfessionalAvailability } from "../../matching/services/availability";
 import { useMobilePortal } from "../hooks/useMobilePortal";
-import { DashboardHomeVariantToggle } from "../components/DashboardHomeVariantToggle";
 import { DashboardHomePurchaseModal } from "../components/DashboardHomePurchaseModal";
 import { DashboardHomeChatModal } from "../components/DashboardHomeChatModal";
+import { DashboardHomeProfessionalProfileModal } from "../components/DashboardHomeProfessionalProfileModal";
 import { DashboardNextActionHome } from "../components/DashboardNextActionHome";
 import type {
   Booking,
@@ -188,6 +188,11 @@ export function DashboardPage(props: {
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobilePortal = useMobilePortal();
   const [homeVariant, setHomeVariant] = useState<PatientHomeVariant>(() => readPatientHomeVariant());
+  useEffect(() => {
+    const sync = () => setHomeVariant(readPatientHomeVariant());
+    window.addEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
+    return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
+  }, []);
   const meetHintHandledRef = useRef(false);
   const [meetJoinHighlight, setMeetJoinHighlight] = useState(false);
   const [sessionRnLayout, setSessionRnLayout] = useState(() =>
@@ -240,6 +245,7 @@ export function DashboardPage(props: {
   const [homePurchaseModalOpen, setHomePurchaseModalOpen] = useState(false);
   const [noSessionsRedirectModalOpen, setNoSessionsRedirectModalOpen] = useState(false);
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
+  const [homeProfileModalOpen, setHomeProfileModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current =
@@ -248,6 +254,7 @@ export function DashboardPage(props: {
     homePurchaseModalOpen ||
     noSessionsRedirectModalOpen ||
     homeChatModalOpen ||
+    homeProfileModalOpen ||
     trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
   const [landingPatientHeroImage, setLandingPatientHeroImage] = useState<string | null>(null);
@@ -297,8 +304,11 @@ export function DashboardPage(props: {
   const activeTrialBooking = trialBookings
     .filter((booking) => new Date(booking.endsAt).getTime() >= now)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] ?? null;
+  const completedTrialBooking = trialBookings
+    .filter((booking) => new Date(booking.endsAt).getTime() < now)
+    .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())[0] ?? null;
   const hasTrialPlanned = trialBookings.some((booking) => new Date(booking.endsAt).getTime() >= now);
-  const hasCompletedTrial = trialBookings.some((booking) => new Date(booking.endsAt).getTime() < now);
+  const hasCompletedTrial = Boolean(completedTrialBooking);
   const canRebookPaidTrial = props.state.trialRebookAvailable && !hasTrialPlanned;
   const trialStatus: "pending" | "reserved" | "completed" | "rebook" = hasCompletedTrial
     ? "completed"
@@ -430,10 +440,11 @@ export function DashboardPage(props: {
     };
   }, [activeTrialBooking?.professionalId, props.authToken, props.language, trialModalOpen]);
 
-  const trialCardClickable = Boolean(activeTrialBooking);
+  const trialDetailBooking = activeTrialBooking ?? completedTrialBooking;
+  const trialCardClickable = Boolean(trialDetailBooking);
   const openTrialDetail = () => {
-    if (activeTrialBooking) {
-      props.onOpenBookingDetail(activeTrialBooking.id);
+    if (trialDetailBooking) {
+      props.onOpenBookingDetail(trialDetailBooking.id);
     }
   };
   const handleTrialCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -778,7 +789,7 @@ export function DashboardPage(props: {
         window.clearTimeout(endSpotlightTimer);
       }
     };
-  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, noSessionsRedirectModalOpen, homeChatModalOpen, trialModalOpen]);
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, noSessionsRedirectModalOpen, homeChatModalOpen, homeProfileModalOpen, trialModalOpen]);
 
   useEffect(() => {
     if (!showGoogleCalendarCta) {
@@ -794,16 +805,6 @@ export function DashboardPage(props: {
   }, [showGoogleCalendarCta]);
 
   const upcomingSpotlightRing = firstUpcomingSpotlight || meetJoinHighlight;
-
-  const selectHomeVariant = useCallback((variant: PatientHomeVariant) => {
-    writePatientHomeVariant(variant);
-    setHomeVariant(variant);
-    try {
-      window.dispatchEvent(new Event("mc-patient-home-variant"));
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const nextActionKind = resolveDashboardNextActionKind({
     hasAssignedProfessional,
@@ -841,12 +842,15 @@ export function DashboardPage(props: {
           activeProfessional={activeProfessional}
           professionalPhotoMap={props.professionalPhotoMap}
           canSelfChangeProfessional={canSelfChangeProfessional}
+          assignedProfessionalName={props.state.assignedProfessionalName?.trim() || null}
           showGoogleCalendarCta={showGoogleCalendarCta}
           googleCalendarCtaPulse={googleCalendarCtaPulse}
           onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
           onNavigateToAssignProfessional={props.onNavigateToAssignProfessional}
           onNavigateToRebookTrial={props.onNavigateToRebookTrial}
           onNavigateToBookTrial={props.onNavigateToBookTrial}
+          trialStatus={trialStatus}
+          completedTrialBooking={completedTrialBooking}
           onGoToBooking={props.onGoToBooking}
           onBuySessions={() => setHomePurchaseModalOpen(true)}
           onBookWithoutCredits={() => setNoSessionsRedirectModalOpen(true)}
@@ -856,26 +860,20 @@ export function DashboardPage(props: {
             props.onSetActiveChatProfessional(professionalId);
             setHomeChatModalOpen(true);
           }}
-          onGoToProfessional={props.onGoToProfessional}
+          onOpenProfessionalProfile={() => setHomeProfileModalOpen(true)}
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
           onGoToReservations={props.onGoToReservations}
           upcomingBookings={upcomingConfirmedBookings}
           allBookings={props.state.bookings}
           professionals={props.professionals}
           pricingProfessionalId={pricingProfessionalId}
-          purchaseHistory={props.state.subscription.purchaseHistory}
           isMobilePortal={isMobilePortal}
           firstMeetBookingId={firstMeetBookingId}
           joinTourPulse={meetJoinHighlight && !sessionRnLayout}
-          onSelectHomeVariant={selectHomeVariant}
+          upcomingSpotlightRing={upcomingSpotlightRing}
         />
       ) : (
       <div className="dashboard-legacy-home">
-      <DashboardHomeVariantToggle
-        language={props.language}
-        variant="classic"
-        onSelect={selectHomeVariant}
-      />
       <section className="dashboard-hero-immersive" data-tour="patient-tour-hero">
         <div className="dashboard-hero-banner-wrap">
           <div className={`dashboard-hero-banner${landingPatientHeroImage === null ? " dashboard-hero-banner--loading" : ""}`}>
@@ -957,9 +955,9 @@ export function DashboardPage(props: {
                 timezone: props.state.profile.timezone,
                 language: props.language
               })
-            : trialStatus === "completed" && activeTrialBooking
+            : trialStatus === "completed" && completedTrialBooking
               ? formatDateTime({
-                  isoDate: activeTrialBooking.startsAt,
+                  isoDate: completedTrialBooking.startsAt,
                   timezone: props.state.profile.timezone,
                   language: props.language
                 })
@@ -1100,13 +1098,13 @@ export function DashboardPage(props: {
                 en: `Active professional: ${professionalAccessibleName(activeProfessional)}. Open profile.`,
                 pt: `Profissional ativo: ${professionalAccessibleName(activeProfessional)}. Abrir ficha.`
               })}
-              onClick={() => props.onGoToProfessional(activeProfessional.id)}
+              onClick={() => setHomeProfileModalOpen(true)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter" && event.key !== " ") {
                   return;
                 }
                 event.preventDefault();
-                props.onGoToProfessional(activeProfessional.id);
+                setHomeProfileModalOpen(true);
               }}
             >
               <div className="active-professional-row">
@@ -1533,128 +1531,6 @@ export function DashboardPage(props: {
         </section>
       ) : null}
 
-      {trialModalOpen ? (
-        <div className="session-modal-backdrop" role="presentation" onClick={() => setTrialModalOpen(false)}>
-          <section
-            role="dialog"
-            aria-modal="true"
-            className="session-modal trial-plan-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="session-modal-header">
-              <h2>{t(props.language, { es: "Modificar sesión de prueba", en: "Edit trial session", pt: "Editar sessao de teste" })}</h2>
-            </header>
-
-            <div className="booking-inline-fields">
-              <label>
-                {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
-                <select
-                  value={activeTrialBooking?.professionalId ?? trialProfessionalId}
-                  disabled
-                  aria-readonly="true"
-                >
-                  {(activeTrialProfessional
-                    ? [activeTrialProfessional]
-                    : props.professionals.filter((item) => item.id === trialProfessionalId)
-                  ).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {professionalAccessibleName(item)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                {t(props.language, { es: "Slot disponible", en: "Available slot", pt: "Horario disponivel" })}
-                <select
-                  value={trialSlotId}
-                  onChange={(event) => {
-                    setTrialSaveError(null);
-                    setTrialSlotId(event.target.value);
-                  }}
-                  disabled={trialSaveBusy || liveTrialSlotsLoading}
-                >
-                  <option value="">
-                    {liveTrialSlotsLoading
-                      ? t(props.language, {
-                          es: "Cargando horarios…",
-                          en: "Loading times…",
-                          pt: "Carregando horarios…"
-                        })
-                      : availableTrialSlots.length === 0
-                      ? t(props.language, {
-                          es: "Sin slots esta semana",
-                          en: "No slots this week",
-                          pt: "Sem horarios esta semana"
-                        })
-                      : t(props.language, {
-                          es: "Selecciona un horario",
-                          en: "Select a time",
-                          pt: "Selecione um horario"
-                        })}
-                  </option>
-                  {availableTrialSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
-                      {formatDateOnly({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })} ·{" "}
-                      {formatDateTime({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="booking-confirm-row">
-              <p>
-                {t(props.language, {
-                  es: "Actualizarás la sesión de prueba ya reservada. El cambio se guarda en el servidor y también lo ve tu profesional.",
-                  en: "You will update your reserved trial session. The change is saved on the server and your professional will see it too.",
-                  pt: "Voce atualizara a sessao de teste ja reservada. A mudanca e salva no servidor e seu profissional tambem vera."
-                })}
-              </p>
-              {trialSaveError ? (
-                <p className="form-error" role="alert">
-                  {trialSaveError}
-                </p>
-              ) : null}
-              <div className="button-row">
-                <button
-                  className="primary"
-                  type="button"
-                  disabled={!selectedTrialSlot || !hasTrialPlanned || trialSaveBusy || liveTrialSlotsLoading || !activeTrialBooking}
-                  onClick={() => {
-                    if (!selectedTrialSlot || !activeTrialBooking) {
-                      return;
-                    }
-                    setTrialSaveBusy(true);
-                    setTrialSaveError(null);
-                    void Promise.resolve(
-                      props.onPlanTrialFromDashboard(activeTrialBooking.professionalId, selectedTrialSlot)
-                    ).then((result) => {
-                      setTrialSaveBusy(false);
-                      if (!result.ok) {
-                        setTrialSaveError(
-                          result.error
-                          ?? t(props.language, {
-                            es: "No pudimos guardar el cambio. Probá de nuevo.",
-                            en: "We couldn’t save the change. Please try again.",
-                            pt: "Nao foi possivel salvar a alteracao. Tente novamente."
-                          })
-                        );
-                        return;
-                      }
-                      setTrialModalOpen(false);
-                    });
-                  }}
-                >
-                  {trialSaveBusy
-                    ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
-                    : t(props.language, { es: "Guardar cambios", en: "Save changes", pt: "Salvar alteracoes" })}
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
       </div>
       )}
 
@@ -1848,6 +1724,129 @@ export function DashboardPage(props: {
         </div>
       </div>
 
+      {trialModalOpen ? (
+        <div className="session-modal-backdrop" role="presentation" onClick={() => setTrialModalOpen(false)}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            className="session-modal trial-plan-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="session-modal-header">
+              <h2>{t(props.language, { es: "Modificar sesión de prueba", en: "Edit trial session", pt: "Editar sessao de teste" })}</h2>
+            </header>
+
+            <div className="booking-inline-fields">
+              <label>
+                {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
+                <select
+                  value={activeTrialBooking?.professionalId ?? trialProfessionalId}
+                  disabled
+                  aria-readonly="true"
+                >
+                  {(activeTrialProfessional
+                    ? [activeTrialProfessional]
+                    : props.professionals.filter((item) => item.id === trialProfessionalId)
+                  ).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {professionalAccessibleName(item)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                {t(props.language, { es: "Slot disponible", en: "Available slot", pt: "Horario disponivel" })}
+                <select
+                  value={trialSlotId}
+                  onChange={(event) => {
+                    setTrialSaveError(null);
+                    setTrialSlotId(event.target.value);
+                  }}
+                  disabled={trialSaveBusy || liveTrialSlotsLoading}
+                >
+                  <option value="">
+                    {liveTrialSlotsLoading
+                      ? t(props.language, {
+                          es: "Cargando horarios…",
+                          en: "Loading times…",
+                          pt: "Carregando horarios…"
+                        })
+                      : availableTrialSlots.length === 0
+                      ? t(props.language, {
+                          es: "Sin slots esta semana",
+                          en: "No slots this week",
+                          pt: "Sem horarios esta semana"
+                        })
+                      : t(props.language, {
+                          es: "Selecciona un horario",
+                          en: "Select a time",
+                          pt: "Selecione um horario"
+                        })}
+                  </option>
+                  {availableTrialSlots.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {formatDateOnly({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })} ·{" "}
+                      {formatDateTime({ isoDate: slot.startsAt, timezone: props.state.profile.timezone, language: props.language })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="booking-confirm-row">
+              <p>
+                {t(props.language, {
+                  es: "Actualizarás la sesión de prueba ya reservada. El cambio se guarda en el servidor y también lo ve tu profesional.",
+                  en: "You will update your reserved trial session. The change is saved on the server and your professional will see it too.",
+                  pt: "Voce atualizara a sessao de teste ja reservada. A mudanca e salva no servidor e seu profissional tambem vera."
+                })}
+              </p>
+              {trialSaveError ? (
+                <p className="form-error" role="alert">
+                  {trialSaveError}
+                </p>
+              ) : null}
+              <div className="button-row">
+                <button
+                  className="primary"
+                  type="button"
+                  disabled={!selectedTrialSlot || !hasTrialPlanned || trialSaveBusy || liveTrialSlotsLoading || !activeTrialBooking}
+                  onClick={() => {
+                    if (!selectedTrialSlot || !activeTrialBooking) {
+                      return;
+                    }
+                    setTrialSaveBusy(true);
+                    setTrialSaveError(null);
+                    void Promise.resolve(
+                      props.onPlanTrialFromDashboard(activeTrialBooking.professionalId, selectedTrialSlot)
+                    ).then((result) => {
+                      setTrialSaveBusy(false);
+                      if (!result.ok) {
+                        setTrialSaveError(
+                          result.error
+                          ?? t(props.language, {
+                            es: "No pudimos guardar el cambio. Probá de nuevo.",
+                            en: "We couldn’t save the change. Please try again.",
+                            pt: "Nao foi possivel salvar a alteracao. Tente novamente."
+                          })
+                        );
+                        return;
+                      }
+                      setTrialModalOpen(false);
+                    });
+                  }}
+                >
+                  {trialSaveBusy
+                    ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                    : t(props.language, { es: "Guardar cambios", en: "Save changes", pt: "Salvar alteracoes" })}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       {assignProModalOpen ? (
         <div
           className="session-modal-backdrop"
@@ -1977,6 +1976,26 @@ export function DashboardPage(props: {
         />
       ) : null}
 
+      {homeProfileModalOpen && activeProfessional ? (
+        <DashboardHomeProfessionalProfileModal
+          language={props.language}
+          professional={activeProfessional}
+          photoSrc={props.professionalPhotoMap[activeProfessional.id]}
+          canSelfChangeProfessional={canSelfChangeProfessional}
+          onClose={() => setHomeProfileModalOpen(false)}
+          onChat={() => {
+            setHomeProfileModalOpen(false);
+            props.onSetActiveChatProfessional(activeProfessional.id);
+            setHomeChatModalOpen(true);
+          }}
+          onChangeProfessional={() => {
+            setHomeProfileModalOpen(false);
+            props.onNavigateToChangeProfessional();
+          }}
+          onImageFallback={props.onImageFallback}
+        />
+      ) : null}
+
       {acquireSessionsModalOpen ? (
         <AcquireSessionsChoiceModal
           language={props.language}
@@ -2002,6 +2021,7 @@ export function DashboardPage(props: {
           homePurchaseModalOpen ||
           noSessionsRedirectModalOpen ||
           homeChatModalOpen ||
+          homeProfileModalOpen ||
           trialModalOpen
         }
         bookingContext={dashboardTourBookingContext}

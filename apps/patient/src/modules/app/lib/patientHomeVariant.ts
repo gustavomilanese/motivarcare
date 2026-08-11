@@ -1,10 +1,13 @@
 export type PatientHomeVariant = "next" | "classic";
 
-export const PATIENT_HOME_VARIANT_STORAGE_KEY = "mc.patient.homeVariant";
+/** v2: corte a Inicio ML por defecto; la clásica queda solo como escape hatch. */
+export const PATIENT_HOME_VARIANT_STORAGE_KEY = "mc.patient.homeVariant.v2";
+
+export const PATIENT_HOME_VARIANT_EVENT = "mc-patient-home-variant";
 
 export function readPatientHomeVariant(): PatientHomeVariant {
   if (typeof window === "undefined") {
-    return "classic";
+    return "next";
   }
   try {
     const raw = window.localStorage.getItem(PATIENT_HOME_VARIANT_STORAGE_KEY);
@@ -14,12 +17,21 @@ export function readPatientHomeVariant(): PatientHomeVariant {
   } catch {
     // ignore
   }
-  return "classic";
+  return "next";
 }
 
 export function writePatientHomeVariant(variant: PatientHomeVariant): void {
   try {
     window.localStorage.setItem(PATIENT_HOME_VARIANT_STORAGE_KEY, variant);
+  } catch {
+    // ignore
+  }
+}
+
+export function setPatientHomeVariant(variant: PatientHomeVariant): void {
+  writePatientHomeVariant(variant);
+  try {
+    window.dispatchEvent(new Event(PATIENT_HOME_VARIANT_EVENT));
   } catch {
     // ignore
   }

@@ -18,10 +18,10 @@ import {
 } from "../lib/sessionDateFormat";
 import {
   joinPendingLabel,
-  joinSessionLabel,
   rescheduleAriaLabel,
   rescheduleTooltipLabel,
   rescheduleUnavailableTitle,
+  trialSessionBadgeLabel,
   upcomingBookingCardStatusLine,
   upcomingBookingStatusPillLabel,
   upcomingBookingsTableHeadLabels,
@@ -117,57 +117,6 @@ function ProfessionalNameLink(props: {
   );
 }
 
-function SessionJoinLink(props: {
-  joinUrl: string;
-  language: AppLanguage;
-  layout: UpcomingBookingLayout;
-  joinTourTarget?: boolean;
-  joinTourPulse?: boolean;
-}) {
-  if (!props.joinUrl) {
-    if (props.layout === "card") {
-      return <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p>;
-    }
-    return null;
-  }
-
-  if (props.layout === "card") {
-    return (
-      <a
-        className={`session-rn-join-btn${props.joinTourPulse ? " patient-join-meet--pulse" : ""}`}
-        data-tour={props.joinTourTarget ? "patient-join-first-meet" : undefined}
-        href={props.joinUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={stopActivation}
-      >
-        <svg className="session-rn-join-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 2.5v-9l-4 2.5z"
-          />
-        </svg>
-        {joinSessionLabel(props.language)}
-      </a>
-    );
-  }
-
-  return (
-    <a
-      className={`session-detail-button session-management-join-link${
-        props.joinTourPulse ? " patient-join-meet--pulse" : ""
-      }`}
-      data-tour={props.joinTourTarget ? "patient-join-first-meet" : undefined}
-      href={props.joinUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={stopActivation}
-    >
-      {joinSessionLabel(props.language)}
-    </a>
-  );
-}
-
 function SessionRescheduleButton(props: {
   language: AppLanguage;
   layout: UpcomingBookingLayout;
@@ -252,11 +201,14 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     fullName: fallbackProfessionalName
   };
   const isTrialBooking = props.booking.bookingMode === "trial";
-  const joinUrl = bookingJoinUrl(props.booking);
-  const canReschedule = canPatientRescheduleBooking(
-    props.booking.startsAt,
-    bookingProfessional?.cancellationHours
-  );
+  const isCompleted = new Date(props.booking.endsAt).getTime() < Date.now();
+  const joinUrl = isCompleted ? "" : bookingJoinUrl(props.booking);
+  const canReschedule =
+    !isCompleted
+    && canPatientRescheduleBooking(
+      props.booking.startsAt,
+      bookingProfessional?.cancellationHours
+    );
   const cardClassName = [
     "session-management-card",
     "session-management-card-clickable",
@@ -264,6 +216,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     props.layout === "card" && joinUrl ? "session-rn-card--joinable" : "",
     props.isEditing ? "editing" : "",
     isTrialBooking ? "session-rn-card--trial" : "",
+    isTrialBooking && isCompleted ? "session-rn-card--trial-completed" : "",
     props.isNextInList ? "session-rn-card--next" : "",
     props.joinTourPulse ? "patient-join-meet--pulse" : ""
   ]
@@ -271,7 +224,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     .join(" ");
 
   const activateCard = () => {
-    if (props.layout === "card" && joinUrl) {
+    if (joinUrl) {
       window.open(joinUrl, "_blank", "noopener,noreferrer");
       return;
     }
@@ -286,24 +239,42 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
   };
 
   const cardAriaLabel =
-    props.layout === "card" && joinUrl
-      ? textByLanguage(props.language, {
-          es: `Entrar a la sesión con ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
-            isoDate: props.booking.startsAt,
-            timezone: props.timezone,
-            language: props.language
-          })}`,
-          en: `Join session with ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
-            isoDate: props.booking.startsAt,
-            timezone: props.timezone,
-            language: props.language
-          })}`,
-          pt: `Entrar na sessão com ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
-            isoDate: props.booking.startsAt,
-            timezone: props.timezone,
-            language: props.language
-          })}`
-        })
+    props.layout === "card"
+      ? joinUrl
+        ? textByLanguage(props.language, {
+            es: `Entrar a la sesión con ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`,
+            en: `Join session with ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`,
+            pt: `Entrar na sessão com ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`
+          })
+        : textByLanguage(props.language, {
+            es: `Ver detalle de la sesión con ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`,
+            en: `View session details with ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`,
+            pt: `Ver detalhes da sessao com ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
+              isoDate: props.booking.startsAt,
+              timezone: props.timezone,
+              language: props.language
+            })}`
+          })
       : undefined;
 
   if (props.layout === "table") {
@@ -314,12 +285,22 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
         className={cardClassName}
         role="button"
         tabIndex={0}
-        onClick={props.onOpenDetail}
+        data-tour={
+          isTrialBooking
+            ? "patient-tour-trial"
+            : props.joinTourTarget && joinUrl
+              ? "patient-join-first-meet"
+              : undefined
+        }
+        onClick={activateCard}
         onKeyDown={handleKeyDown}
       >
         <div className="session-management-main">
           <div className="session-management-cell session-management-cell-date">
             <span className="session-management-cell-label">{headLabels.date}</span>
+            {isTrialBooking ? (
+              <span className="session-table-trial-badge">{trialSessionBadgeLabel(props.language)}</span>
+            ) : null}
             <strong>{formatSessionDateOnly({ isoDate: props.booking.startsAt, timezone: props.timezone, language: props.language })}</strong>
           </div>
           <div className="session-management-cell session-management-cell-time">
@@ -343,38 +324,30 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
           <div className="session-management-cell session-management-cell-status">
             <span className="session-management-cell-label">{headLabels.status}</span>
-            <span className={`session-status-pill confirmed${isTrialBooking ? " session-status-pill--trial" : ""}`}>
-              {upcomingBookingStatusPillLabel(props.language, isTrialBooking)}
+            <span
+              className={`session-status-pill confirmed${
+                isTrialBooking ? " session-status-pill--trial" : ""
+              }${isCompleted ? " session-status-pill--completed" : ""}`}
+            >
+              {upcomingBookingStatusPillLabel(props.language, isTrialBooking, { completed: isCompleted })}
             </span>
           </div>
         </div>
         <div className="session-management-actions-wrap">
           <span className="session-management-cell-label">{headLabels.actions}</span>
-          {isTrialBooking ? (
-            <div className="session-management-actions">
-              <SessionViewDetailButton
-                language={props.language}
-                layout="table"
-                onOpenDetail={props.onOpenDetail}
-              />
-            </div>
-          ) : (
-            <div className="session-management-actions">
-              <SessionJoinLink
-                joinUrl={joinUrl}
-                language={props.language}
-                layout="table"
-                joinTourTarget={props.joinTourTarget}
-                joinTourPulse={props.joinTourPulse}
-              />
-              <SessionRescheduleButton
-                language={props.language}
-                layout="table"
-                canReschedule={canReschedule}
-                onReschedule={props.onReschedule}
-              />
-            </div>
-          )}
+          <div className="session-management-actions">
+            <SessionViewDetailButton
+              language={props.language}
+              layout="table"
+              onOpenDetail={props.onOpenDetail}
+            />
+            <SessionRescheduleButton
+              language={props.language}
+              layout="table"
+              canReschedule={canReschedule}
+              onReschedule={props.onReschedule}
+            />
+          </div>
         </div>
       </article>
     );
@@ -402,6 +375,9 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
         <div className="session-rn-body">
           <div className="session-rn-body-header">
             <div className="session-rn-body-main">
+              {isTrialBooking ? (
+                <span className="session-rn-trial-badge">{trialSessionBadgeLabel(props.language)}</span>
+              ) : null}
               <span className="session-rn-date-line">
                 {formatSessionCardDateTimeLine({
                   isoDate: props.booking.startsAt,
@@ -419,7 +395,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
               />
               {bookingProfessional ? <ProfessionalRatingCompact professional={bookingProfessional} /> : null}
               <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
-                {upcomingBookingCardStatusLine(props.language, isTrialBooking)}
+                {upcomingBookingCardStatusLine(props.language, isTrialBooking, { completed: isCompleted })}
               </span>
             </div>
             <SessionRescheduleButton
@@ -431,9 +407,14 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
           </div>
         </div>
       </div>
-      {!joinUrl && props.layout === "card" ? (
-        <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p>
-      ) : null}
+      <div className="session-rn-footer">
+        {!joinUrl ? <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p> : null}
+        <SessionViewDetailButton
+          language={props.language}
+          layout="card"
+          onOpenDetail={props.onOpenDetail}
+        />
+      </div>
     </article>
   );
 }

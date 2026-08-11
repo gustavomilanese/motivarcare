@@ -23,7 +23,7 @@ import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
-import { isPatientHomeMlShellPath, readPatientHomeVariant } from "../lib/patientHomeVariant";
+import { isPatientHomeMlShellPath, readPatientHomeVariant, PATIENT_HOME_VARIANT_EVENT } from "../lib/patientHomeVariant";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
@@ -275,17 +275,17 @@ export function MainPortal(props: {
     shouldLockToTherapistSelection && location.pathname.startsWith("/onboarding/final/matching");
   const isBookTrialView = location.pathname === "/book/trial";
   const isMobilePortal = useMobilePortal();
-  const [homeVariantEpoch, setHomeVariantEpoch] = useState(0);
+  const [homeVariant, setHomeVariant] = useState(() => readPatientHomeVariant());
   useEffect(() => {
-    const bump = () => setHomeVariantEpoch((current) => current + 1);
-    window.addEventListener("mc-patient-home-variant", bump);
-    return () => window.removeEventListener("mc-patient-home-variant", bump);
+    const sync = () => setHomeVariant(readPatientHomeVariant());
+    window.addEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
+    return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
   }, []);
+  /** Clásica = chrome clásico 100% (sidebar + header). ML solo con variant next. */
   const homeMlChrome =
     !isMobilePortal &&
-    isPatientHomeMlShellPath(location.pathname) &&
-    readPatientHomeVariant() === "next" &&
-    homeVariantEpoch >= 0;
+    homeVariant === "next" &&
+    isPatientHomeMlShellPath(location.pathname);
   const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;
   const showSiteFooter = !isOnboardingMatchingView && !isBookTrialView;
   const needsInitialTherapistSelection =
@@ -442,6 +442,7 @@ export function MainPortal(props: {
 
   return (
     <div
+      key={`portal-${homeVariant}`}
       className={`portal-shell ${hideSidebar && !homeMlChrome ? "onboarding-match-focus" : "portal-shell--site-footer"}${homeMlChrome ? " portal-shell--home-ml" : ""}`}
     >
       <DiaryPortalToolbarMountProvider>
@@ -554,6 +555,12 @@ export function MainPortal(props: {
           booking={selectedBooking}
           timezone={props.sessionTimezone}
           language={props.state.language}
+          patientName={
+            props.state.session?.fullName?.trim()
+            || [props.state.session?.firstName, props.state.session?.lastName].filter(Boolean).join(" ").trim()
+            || props.state.session?.email
+            || null
+          }
           professional={{
             ...sessionDetailProfessional,
             photoUrl: props.professionalPhotoMap[selectedBooking.professionalId]

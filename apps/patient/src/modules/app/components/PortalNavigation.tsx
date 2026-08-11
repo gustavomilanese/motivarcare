@@ -19,6 +19,12 @@ import type { ProfileTab } from "../types";
 import { NotificationItemActionsMenu } from "./NotificationItemActionsMenu";
 import { requestPatientDashboardTour } from "./DashboardGuidedTour";
 import type { Market } from "@therapy/types";
+import {
+  PATIENT_HOME_VARIANT_EVENT,
+  readPatientHomeVariant,
+  setPatientHomeVariant,
+  type PatientHomeVariant
+} from "../lib/patientHomeVariant";
 
 /** Showcase «Profesionales» en sidebar y sheet mobile (reactivar cuando esté listo). */
 const PATIENT_PROFESSIONALS_NAV_ENABLED = false;
@@ -225,6 +231,12 @@ export function PortalNavigation(props: {
   const [wellbeingRelaxToolbarMount, setWellbeingRelaxToolbarMount] = useState<HTMLElement | null>(null);
   const [chatHeroToolbarMount, setChatHeroToolbarMount] = useState<HTMLElement | null>(null);
   const [homeMlRailNavLocked, setHomeMlRailNavLocked] = useState(false);
+  const [homeVariant, setHomeVariant] = useState<PatientHomeVariant>(() => readPatientHomeVariant());
+  useEffect(() => {
+    const sync = () => setHomeVariant(readPatientHomeVariant());
+    window.addEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
+    return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
+  }, []);
 
   useLayoutEffect(() => {
     if (!diaryHomeImmersive) {
@@ -256,8 +268,8 @@ export function PortalNavigation(props: {
       return undefined;
     }
     const bump = () => setDashboardHomeChromeEpoch((current) => current + 1);
-    window.addEventListener("mc-patient-home-variant", bump);
-    return () => window.removeEventListener("mc-patient-home-variant", bump);
+    window.addEventListener(PATIENT_HOME_VARIANT_EVENT, bump);
+    return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, bump);
   }, [dashboardHomeImmersive]);
 
   useLayoutEffect(() => {
@@ -511,6 +523,29 @@ export function PortalNavigation(props: {
             onNavigate={props.onCloseMenu}
             onOpenSupport={() => props.onOpenProfileTab("support")}
           />
+
+          <button
+            className="menu-item menu-item--sub menu-item--dev-home"
+            type="button"
+            onClick={() => {
+              const next = homeVariant === "next" ? "classic" : "next";
+              setPatientHomeVariant(next);
+              props.onCloseMenu();
+              navigate("/", { replace: true });
+            }}
+          >
+            {homeVariant === "next"
+              ? t(props.language, {
+                  es: "Inicio clásica",
+                  en: "Classic Home",
+                  pt: "Inicio classica"
+                })
+              : t(props.language, {
+                  es: "Inicio ML",
+                  en: "ML Home",
+                  pt: "Inicio ML"
+                })}
+          </button>
 
           <button className="menu-item menu-item--danger" type="button" onClick={props.onLogout}>
             {t(props.language, { es: "Cerrar sesión", en: "Sign out", pt: "Sair" })}

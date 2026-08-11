@@ -1871,28 +1871,32 @@ export function BookingPage(props: {
                 const statusLabel =
                   booking.status === "cancelled"
                     ? t(props.language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" })
-                    : t(props.language, { es: "Completada", en: "Completed", pt: "Concluida" });
+                    : t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" });
                 return (
                   <li key={booking.id}>
-                    <div>
-                      <strong>{formatDateTime({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
-                      <button
-                        type="button"
-                        className="professional-name-link session-history-professional-link"
-                        onClick={() => openProfessionalReviews(booking.professionalId)}
-                      >
-                        {professionalAccessibleName(
-                          bookingProfessional ?? {
-                            fullName: props.state.assignedProfessionalName ?? t(props.language, {
-                              es: "Profesional",
-                              en: "Professional",
-                              pt: "Profissional"
-                            })
-                          }
-                        )}
-                      </button>
-                    </div>
-                    <span className={`session-status-pill ${booking.status}`}>{statusLabel}</span>
+                    <button
+                      type="button"
+                      className="session-history-row-hit"
+                      onClick={() => props.onOpenBookingDetail(booking.id)}
+                    >
+                      <div>
+                        <strong>{formatDateTime({ isoDate: booking.startsAt, timezone: props.state.profile.timezone, language: props.language })}</strong>
+                        <span className="session-history-professional-name">
+                          {professionalAccessibleName(
+                            bookingProfessional ?? {
+                              fullName: props.state.assignedProfessionalName ?? t(props.language, {
+                                es: "Profesional",
+                                en: "Professional",
+                                pt: "Profissional"
+                              })
+                            }
+                          )}
+                        </span>
+                      </div>
+                      <span className={`session-status-pill ${booking.status === "cancelled" ? "cancelled" : "session-status-pill--completed"}`}>
+                        {statusLabel}
+                      </span>
+                    </button>
                   </li>
                 );
               })}
