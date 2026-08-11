@@ -19954,6 +19954,7 @@ button.sessions-balance {
   /*
    * Escala tipográfica mobile = Diario Emocional (referencia legible):
    * título 0.95rem / subtítulo+meta 0.7rem / texto+botón 0.8rem
+   * Banners: +10% relativo a esa escala.
    */
   .patient-dashboard-home .dashboard-ml-home {
     --ml-type-title: 0.95rem;
@@ -19961,20 +19962,24 @@ button.sessions-balance {
     --ml-type-text: 0.8rem;
     --ml-type-subtitle: 0.7rem;
     --ml-btn-min-h: 32px;
+    --ml-type-banner-title: 1.045rem;
+    --ml-type-banner-text: 0.88rem;
+    --ml-type-banner-subtitle: 0.77rem;
+    --ml-btn-banner-min-h: 35px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title,
   .patient-dashboard-home .dashboard-ml-diary-banner-title,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
-    font-size: var(--ml-type-title);
+    font-size: var(--ml-type-banner-title);
     font-weight: var(--ml-type-title-weight);
     line-height: 1.25;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-kicker,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-kicker {
-    font-size: var(--ml-type-subtitle);
+    font-size: var(--ml-type-banner-subtitle);
     font-weight: 700;
     letter-spacing: 0.08em;
     line-height: 1.2;
@@ -19984,7 +19989,12 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-sessions-banner-reserve,
   .patient-dashboard-home .dashboard-ml-diary-banner-write,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action {
+    min-height: var(--ml-btn-banner-min-h);
+    padding: 0 12px;
+    font-size: var(--ml-type-banner-text);
+  }
+
   .patient-dashboard-home .dashboard-ml-book-cta {
     min-height: var(--ml-btn-min-h);
     padding: 0 12px;
