@@ -19921,11 +19921,64 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-card {
-    flex: 0 0 min(68vw, 200px);
-    width: min(68vw, 200px);
-    max-width: 200px;
-    min-height: 210px;
+    flex: 0 0 min(42vw, 148px);
+    width: min(42vw, 148px);
+    max-width: 148px;
+    min-height: 0;
+    height: auto;
+    gap: 8px;
+    padding: 12px 10px 10px;
+    grid-template-rows: auto auto auto;
     scroll-snap-align: start;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-body {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-title {
+    padding-bottom: 6px;
+    font-size: var(--ml-type-text, 0.8rem);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-icon {
+    min-height: 0;
+    padding: 4px 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-icon-svg {
+    width: 44px;
+    height: 44px;
+    filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-icon-img {
+    width: min(52px, 70%);
+    max-height: 52px;
+    filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-cta,
+  .patient-dashboard-home .dashboard-ml-benefit-card .dashboard-ml-benefit-cta {
+    font-size: var(--ml-type-subtitle, 0.7rem);
+    font-weight: 600;
+  }
+
+  /* Professional card: un poco más ancha, misma altura compacta */
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional,
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional-empty {
+    flex-basis: min(48vw, 168px);
+    width: min(48vw, 168px);
+    max-width: 168px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-icon-img--photo,
+  .patient-dashboard-home .dashboard-ml-pro-main .dashboard-ml-benefit-icon-img--photo {
+    width: 52px;
+    max-height: 52px;
+    border-radius: 999px;
   }
 
   .patient-dashboard-home .dashboard-ml-credits-bar {
@@ -20574,14 +20627,6 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-surface--bridge {
     margin-top: -72px;
-  }
-
-  .patient-dashboard-home .dashboard-ml-benefit-card {
-    flex-basis: min(72vw, 188px);
-    width: min(72vw, 188px);
-    max-width: 188px;
-    min-height: 198px;
-    padding: 14px 10px 12px;
   }
 
   .patient-dashboard-home .dashboard-ml-credits-bar {
