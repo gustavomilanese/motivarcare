@@ -131,6 +131,14 @@
     cursor: pointer;
   }
 
+  .notifications-dropdown-backdrop:hover,
+  .notifications-dropdown-backdrop:focus,
+  .notifications-dropdown-backdrop:active {
+    background: rgba(15, 23, 42, 0.4);
+    border: none;
+    color: inherit;
+  }
+
   .notifications-dropdown.notifications-dropdown--mobile-sheet {
     position: fixed;
     top: auto;
@@ -269,6 +277,14 @@
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     cursor: pointer;
+  }
+
+  .menu-dropdown-backdrop:hover,
+  .menu-dropdown-backdrop:focus,
+  .menu-dropdown-backdrop:active {
+    background: rgba(15, 23, 42, 0.44);
+    border: none;
+    color: inherit;
   }
 
   .menu-dropdown.menu-dropdown--account-sheet {

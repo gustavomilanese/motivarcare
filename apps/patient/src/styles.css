@@ -1642,6 +1642,15 @@ button.danger:disabled:hover {
   animation: notifications-backdrop-in 0.2s ease;
 }
 
+/* El backdrop es <button>; sin esto, button:hover global (#f8fbff) blanquea toda la pantalla */
+.notifications-dropdown-backdrop:hover,
+.notifications-dropdown-backdrop:focus,
+.notifications-dropdown-backdrop:active {
+  background: rgba(15, 23, 42, 0.32);
+  border: none;
+  color: inherit;
+}
+
 @keyframes notifications-backdrop-in {
   from {
     opacity: 0;
@@ -2121,6 +2130,14 @@ button.danger:disabled:hover {
   padding: 0;
   background: rgba(15, 23, 42, 0.28);
   cursor: pointer;
+}
+
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:hover,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:focus,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--portaled:active {
+  background: rgba(15, 23, 42, 0.28);
+  border: none;
+  color: inherit;
 }
 
 .menu-panel-head {
@@ -12704,6 +12721,14 @@ button.sessions-balance {
     cursor: pointer;
   }
 
+  .menu-dropdown-backdrop:hover,
+  .menu-dropdown-backdrop:focus,
+  .menu-dropdown-backdrop:active {
+    background: rgba(15, 23, 42, 0.42);
+    border: none;
+    color: inherit;
+  }
+
   .menu-wrap .menu-dropdown {
     position: fixed;
     top: 0;
@@ -15846,6 +15871,14 @@ button.sessions-balance {
   z-index: 219;
   background: rgba(15, 23, 42, 0.38);
   animation: portal-home-ml-backdrop-in 200ms ease both;
+}
+
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:hover,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:focus,
+.menu-dropdown-backdrop.menu-dropdown-backdrop--home-ml:active {
+  background: rgba(15, 23, 42, 0.38);
+  border: none;
+  color: inherit;
 }
 
 @keyframes portal-home-ml-drawer-in {
