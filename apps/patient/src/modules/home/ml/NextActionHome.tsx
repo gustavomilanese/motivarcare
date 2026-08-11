@@ -11,15 +11,15 @@ import {
 } from "@therapy/i18n-config";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
-import { DashboardHomePromoCarousel } from "./DashboardHomePromoCarousel";
+import { DashboardHomePromoCarousel } from "./PromoCarousel";
 import {
   DashboardHomeExercisesSection,
   DashboardHomeMusicSection
-} from "./DashboardHomeFeatureSections";
-import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
-import { professionalAccessibleName, professionalFirstName } from "../lib/professionalDisplayName";
-import { resolvePublicAssetUrl } from "../services/api";
-import type { Booking, Professional } from "../types";
+} from "./FeatureSections";
+import { SessionsCollapsibleToggle } from "../../app/components/SessionsCollapsibleToggle";
+import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
+import { resolvePublicAssetUrl } from "../../app/services/api";
+import type { Booking, Professional } from "../../app/types";
 import type { DashboardNextActionKind } from "../lib/resolveDashboardNextActionKind";
 
 function t(language: AppLanguage, values: LocalizedText): string {

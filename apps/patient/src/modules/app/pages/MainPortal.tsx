@@ -23,7 +23,7 @@ import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
-import { isPatientHomeMlShellPath, readPatientHomeVariant, PATIENT_HOME_VARIANT_EVENT } from "../lib/patientHomeVariant";
+import { readPatientHomeVariant, PATIENT_HOME_VARIANT_EVENT, shouldUsePatientHomeMlChrome } from "../../home/lib/patientHomeVariant";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
 import { syncPatientNotificationPreferences } from "../services/syncNotificationPreferences";
@@ -282,10 +282,11 @@ export function MainPortal(props: {
     return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
   }, []);
   /** Clásica = chrome clásico 100% (sidebar + header). ML solo con variant next. */
-  const homeMlChrome =
-    !isMobilePortal &&
-    homeVariant === "next" &&
-    isPatientHomeMlShellPath(location.pathname);
+  const homeMlChrome = shouldUsePatientHomeMlChrome({
+    isMobilePortal,
+    homeVariant,
+    pathname: location.pathname
+  });
   const hideSidebar = isOnboardingMatchingView || isBookTrialView || homeMlChrome;
   const showSiteFooter = !isOnboardingMatchingView && !isBookTrialView;
   const needsInitialTherapistSelection =

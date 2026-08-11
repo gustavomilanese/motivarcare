@@ -1,7 +1,7 @@
 import { useEffect, type SyntheticEvent } from "react";
 import { textByLanguage, type AppLanguage, type LocalizedText } from "@therapy/i18n-config";
-import { ChatPage } from "../pages/ChatPage";
-import type { PatientAppState, Professional } from "../types";
+import { ChatPage } from "../../app/pages/ChatPage";
+import type { PatientAppState, Professional } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);

@@ -6,8 +6,8 @@ import {
   type LocalizedText,
   type SupportedCurrency
 } from "@therapy/i18n-config";
-import { CheckoutPackagesPanel } from "./booking/CheckoutPackagesPanel";
-import type { PackagePlan } from "../types";
+import { CheckoutPackagesPanel } from "../../app/components/booking/CheckoutPackagesPanel";
+import type { PackagePlan } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);

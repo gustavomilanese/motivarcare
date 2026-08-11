@@ -5,7 +5,7 @@ import { Navigate, Route, Routes, useSearchParams, type NavigateFunction } from 
 import type { SyntheticEvent } from "react";
 import { useCallback } from "react";
 import { canPatientSelfChangeProfessional } from "../lib/canPatientSelfChangeProfessional";
-import { DashboardPage } from "./DashboardPage";
+import { HomePage } from "../../home/pages/HomePage";
 import { BookingPage } from "./BookingPage";
 import { ChatPage } from "./ChatPage";
 import { MatchingPage } from "./MatchingPage";
@@ -265,7 +265,7 @@ export function PortalRoutes(props: {
           props.lockToTherapistSelection
             ? <Navigate replace to="/onboarding/final/matching" />
             : (
-                <DashboardPage
+                <HomePage
                   state={props.stateForDisplay}
                   authToken={props.state.authToken}
                   professionals={props.professionalDirectory}

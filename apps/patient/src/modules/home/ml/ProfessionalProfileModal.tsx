@@ -6,10 +6,10 @@ import {
   type LocalizedText
 } from "@therapy/i18n-config";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
-import { ProfessionalNameStack, professionalPhotoAlt } from "./ProfessionalNameStack";
-import { professionalAccessibleName } from "../lib/professionalDisplayName";
-import { professionalPhotoSrc } from "../services/api";
-import type { Professional } from "../types";
+import { ProfessionalNameStack, professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
+import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
+import { professionalPhotoSrc } from "../../app/services/api";
+import type { Professional } from "../../app/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);

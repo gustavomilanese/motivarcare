@@ -17,14 +17,14 @@ import { notificationKindVisual } from "../notifications/notificationKindVisual"
 import type { PortalNotificationItem } from "../notifications/portalNotificationTypes";
 import type { ProfileTab } from "../types";
 import { NotificationItemActionsMenu } from "./NotificationItemActionsMenu";
-import { requestPatientDashboardTour } from "./DashboardGuidedTour";
+import { requestPatientDashboardTour } from "../../home/components/GuidedTour";
 import type { Market } from "@therapy/types";
 import {
   PATIENT_HOME_VARIANT_EVENT,
   readPatientHomeVariant,
   setPatientHomeVariant,
   type PatientHomeVariant
-} from "../lib/patientHomeVariant";
+} from "../../home/lib/patientHomeVariant";
 
 /** Showcase «Profesionales» en sidebar y sheet mobile (reactivar cuando esté listo). */
 const PATIENT_PROFESSIONALS_NAV_ENABLED = false;
