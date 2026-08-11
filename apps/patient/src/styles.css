@@ -19962,10 +19962,10 @@ button.sessions-balance {
     --ml-type-text: 0.8rem;
     --ml-type-subtitle: 0.7rem;
     --ml-btn-min-h: 32px;
-    --ml-type-banner-title: 1.045rem;
-    --ml-type-banner-text: 0.88rem;
-    --ml-type-banner-subtitle: 0.77rem;
-    --ml-btn-banner-min-h: 35px;
+    --ml-type-banner-title: 1.254rem;
+    --ml-type-banner-text: 1.056rem;
+    --ml-type-banner-subtitle: 0.924rem;
+    --ml-btn-banner-min-h: 42px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title,
