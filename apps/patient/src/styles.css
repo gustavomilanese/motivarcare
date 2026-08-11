@@ -3529,6 +3529,192 @@ button.danger:disabled:hover {
   line-height: 1.5;
 }
 
+.no-sessions-available-backdrop.matching-flow-backdrop {
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+  z-index: 80;
+  align-items: center;
+  padding: max(16px, var(--safe-top)) 16px max(24px, var(--safe-bottom));
+}
+
+.no-sessions-available-modal.matching-flow-modal {
+  position: relative;
+  width: min(400px, 100%);
+  max-height: none;
+  padding: 28px 24px 22px;
+  gap: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% -30%, rgba(95, 68, 235, 0.16), transparent 52%),
+    radial-gradient(80% 50% at 100% 100%, rgba(52, 131, 250, 0.08), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #f8f7ff 100%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.05),
+    0 8px 20px rgba(15, 23, 42, 0.04),
+    0 32px 72px rgba(30, 27, 75, 0.18);
+  animation: no-sessions-available-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes no-sessions-available-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.no-sessions-available-close.matching-flow-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  background: rgba(255, 255, 255, 0.82);
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.no-sessions-available-close.matching-flow-close:hover {
+  background: rgba(241, 245, 249, 0.98);
+  color: #0f172a;
+}
+
+.no-sessions-available-visual {
+  display: grid;
+  place-items: center;
+  margin: 4px 0 18px;
+}
+
+.no-sessions-available-visual-ring {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 32px;
+  color: #5f44eb;
+  background:
+    linear-gradient(160deg, rgba(95, 68, 235, 0.14) 0%, rgba(52, 131, 250, 0.1) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.no-sessions-available-visual-svg {
+  width: 68px;
+  height: 68px;
+}
+
+.no-sessions-available-copy {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  margin-bottom: 22px;
+}
+
+.no-sessions-available-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5f44eb;
+}
+
+.no-sessions-available-title {
+  margin: 0;
+  max-width: 16ch;
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  font-size: clamp(1.3rem, 4.2vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.no-sessions-available-lead {
+  margin: 2px 0 0;
+  max-width: 30ch;
+  font-size: 14.5px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.no-sessions-available-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.no-sessions-available-primary {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #6b52f0 0%, #5f44eb 100%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 10px 24px rgba(95, 68, 235, 0.34);
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.no-sessions-available-primary:hover {
+  background: linear-gradient(180deg, #5f44eb 0%, #4c31d8 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 12px 28px rgba(76, 49, 216, 0.4);
+  transform: translateY(-1px);
+}
+
+.no-sessions-available-primary:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.no-sessions-available-secondary {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.no-sessions-available-secondary:hover {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.04);
+}
+
 .deal-price-suffix {
   margin-left: 4px;
   font-size: 13px;
@@ -15781,7 +15967,11 @@ button.sessions-balance {
   color: #1a1a1a;
 }
 
-.dashboard-ml-brand-band--access .dashboard-ml-promo-photo {
+.dashboard-ml-brand-band--access .dashboard-ml-promo-photo,
+.dashboard-ml-promo-slide--access .dashboard-ml-promo-photo {
+  /* ~10% más chica: evita que el reloj se corte contra la card de saldo */
+  max-width: 270px;
+  max-height: min(223px, 78%);
   /* Cutout blanco → azul (estilo sesiones) sobre amarillo ML */
   filter:
     brightness(0)
@@ -15843,7 +16033,7 @@ button.sessions-balance {
   height: clamp(240px, 32vh, 300px);
   min-height: 240px;
   background: transparent;
-  overflow: visible;
+  overflow: hidden;
   margin-bottom: 0;
   z-index: 1;
 }
@@ -15874,6 +16064,8 @@ button.sessions-balance {
   position: relative;
   flex: 0 0 100%;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 100%;
   min-height: inherit;
   overflow: hidden;
@@ -15888,6 +16080,20 @@ button.sessions-balance {
 .dashboard-ml-promo-slide--access,
 .dashboard-ml-promo-slide--match {
   background: transparent;
+}
+
+.dashboard-ml-promo-slide--match .dashboard-ml-promo-media {
+  background: transparent;
+  overflow: visible;
+}
+
+/* Sombra organica al silhouette (evita “recuadro” rectangular a lo lejos) */
+.dashboard-ml-promo-slide--match .dashboard-ml-promo-photo {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
 }
 
 .dashboard-ml-promo-orbs {
@@ -15914,31 +16120,34 @@ button.sessions-balance {
   min-width: 0;
 }
 
+/* Texto + arte: bloque centrado, gap fijo (sin % sobre fit-content que los superpone) */
 .dashboard-ml-promo-frame--media {
-  width: fit-content;
-  max-width: min(1180px, 100%);
-  margin-inline: auto;
-  grid-template-columns: auto minmax(200px, 380px);
-  justify-items: start;
-  justify-content: center;
+  display: flex;
+  flex-flow: row nowrap;
   align-items: center;
-  gap: clamp(18px, 2.8vw, 32px);
+  justify-content: center;
+  gap: clamp(18px, 2.2vw, 32px);
+  width: fit-content;
+  max-width: min(1100px, 100%);
+  margin-inline: auto;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .dashboard-ml-promo-media {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   min-width: 0;
-  max-width: 100%;
-  height: 100%;
-  overflow: hidden;
+  margin: 0;
+  overflow: visible;
 }
 
 .dashboard-ml-promo-photo {
   display: block;
-  width: 100%;
-  max-width: 384px;
-  max-height: min(276px, 88%);
+  width: auto;
+  max-width: 300px;
+  max-height: min(248px, 86%);
   height: auto;
   object-fit: contain;
   object-position: center;
@@ -15965,10 +16174,12 @@ button.sessions-balance {
 }
 
 .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+  flex: 0 1 30rem;
   justify-items: start;
   text-align: left;
-  width: max-content;
-  max-width: min(34rem, 100%);
+  width: auto;
+  max-width: 30rem;
+  min-width: 0;
 }
 
 .dashboard-ml-promo-kicker {
@@ -16058,29 +16269,22 @@ button.sessions-balance {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
 }
 
-/* Pegadas al ancho útil del banner (mismo 1200 que el frame), con 10px de margen */
+/* Flechas simétricas, cerca del contenido del banner */
 .dashboard-ml-promo-arrow--prev {
-  left: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
+  left: 16px;
 }
 
 .dashboard-ml-promo-arrow--next {
-  right: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
+  right: 16px;
 }
 
 @media (min-width: 1081px) {
-  /*
-    En home-ml el rail tapa ~58px a la izquierda: anclar ambas al mismo inset
-    del frame centrado, y solo empujar la prev si haría falta para no quedar bajo el menú.
-  */
   .portal-main--home-ml .dashboard-ml-promo-arrow--prev {
-    left: max(
-      calc(var(--portal-home-ml-rail-collapsed, 58px) + 8px),
-      calc((100% - min(1200px, 100%)) / 2 - 10px)
-    );
+    left: max(16px, calc(var(--portal-home-ml-rail-collapsed, 58px) + 12px));
   }
 
   .portal-main--home-ml .dashboard-ml-promo-arrow--next {
-    right: max(10px, calc((100% - min(1200px, 100%)) / 2 - 10px));
+    right: 16px;
   }
 }
 
@@ -17800,20 +18004,18 @@ button.sessions-balance {
   }
 
   .dashboard-ml-promo-frame--media {
-    width: fit-content;
+    gap: 14px;
     max-width: 100%;
-    grid-template-columns: minmax(0, min(22rem, 58%)) minmax(132px, 240px);
-    gap: 12px;
+  }
+
+  .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex-basis: 18rem;
+    max-width: 18rem;
   }
 
   .dashboard-ml-promo-photo {
-    max-width: 240px;
-    max-height: 192px;
-  }
-
-  .dashboard-ml-promo-copy {
-    width: min(920px, 100%);
-    max-width: none;
+    max-width: 200px;
+    max-height: 176px;
   }
 
   .dashboard-ml-promo-title {
@@ -17823,12 +18025,18 @@ button.sessions-balance {
 
 @media (max-width: 560px) {
   .dashboard-ml-promo-frame--media {
-    grid-template-columns: minmax(0, 1fr) minmax(115px, 168px);
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    flex-basis: 12rem;
+    max-width: min(14rem, 58%);
   }
 
   .dashboard-ml-promo-photo {
-    max-width: 168px;
-    max-height: 149px;
+    max-width: 140px;
+    max-height: 130px;
   }
 
   .dashboard-ml-promo-frame--media .dashboard-ml-promo-badge {
@@ -18157,16 +18365,13 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-frame--media {
-    width: fit-content;
+    gap: 8px;
     max-width: 100%;
-    grid-template-columns: minmax(0, 1fr) minmax(115px, 156px);
-    gap: 10px;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-photo {
-    max-height: 142px;
-    max-width: 156px;
-    width: 100%;
+    max-width: 140px;
+    max-height: 130px;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-copy {

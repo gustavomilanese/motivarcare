@@ -78,7 +78,7 @@ const PROMO_BANNERS: PromoBanner[] = [
   {
     id: "specialist-match",
     tone: "match",
-    imageSrc: "/home/banner-specialist-match.png?v=handshake-4",
+    imageSrc: "/home/banner-specialist-match.png?v=handshake-cutout-5",
     kicker: {
       es: "Matching inteligente",
       en: "Smart matching",

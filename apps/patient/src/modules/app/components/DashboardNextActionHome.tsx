@@ -400,6 +400,8 @@ export function DashboardNextActionHome(props: {
   onNavigateToBookTrial: () => void;
   onGoToBooking: (professionalId: string) => void;
   onBuySessions: () => void;
+  /** Reservar sin créditos: aviso y luego catálogo de paquetes. */
+  onBookWithoutCredits: () => void;
   onOpenBookingDetail: (bookingId: string) => void;
   onRescheduleBooking: (bookingId: string) => void;
   onGoToChat: (professionalId: string) => void;
@@ -448,7 +450,7 @@ export function DashboardNextActionHome(props: {
 
   const runBookSession = () => {
     if (props.availableSessions <= 0) {
-      props.onBuySessions();
+      props.onBookWithoutCredits();
       return;
     }
     if (props.pricingProfessionalId) {

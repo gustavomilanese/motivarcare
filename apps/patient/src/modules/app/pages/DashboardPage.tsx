@@ -26,6 +26,7 @@ import {
   PackageChooseProfessionalCta
 } from "../components/booking/PackageCatalogSectionExtras";
 import { AcquireSessionsChoiceModal } from "../components/AcquireSessionsChoiceModal";
+import { NoSessionsAvailableModal } from "../components/NoSessionsAvailableModal";
 import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
 import { DashboardGuidedTour, type DashboardTourBookingContext } from "../components/DashboardGuidedTour";
 import { ProfessionalNameStack, professionalPhotoAlt } from "../components/ProfessionalNameStack";
@@ -237,6 +238,7 @@ export function DashboardPage(props: {
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const [homePurchaseModalOpen, setHomePurchaseModalOpen] = useState(false);
+  const [noSessionsRedirectModalOpen, setNoSessionsRedirectModalOpen] = useState(false);
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
   const dashboardSpotlightBlockersRef = useRef(false);
@@ -244,6 +246,7 @@ export function DashboardPage(props: {
     assignProModalOpen ||
     acquireSessionsModalOpen ||
     homePurchaseModalOpen ||
+    noSessionsRedirectModalOpen ||
     homeChatModalOpen ||
     trialModalOpen;
   /** `null` = aún cargando hero desde API (evita mostrar un default distinto y luego reemplazar). */
@@ -645,7 +648,7 @@ export function DashboardPage(props: {
         props.onNavigateToIndividualSessions();
       },
       onShowNoCreditsAlert: () => {
-        /* dashboard no usa alerta de créditos; reservar desde home redirige a sesiones */
+        setNoSessionsRedirectModalOpen(true);
       },
       onOpenNewBookingPanel: () => {
         if (pricingProfessionalId) {
@@ -775,7 +778,7 @@ export function DashboardPage(props: {
         window.clearTimeout(endSpotlightTimer);
       }
     };
-  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, homeChatModalOpen, trialModalOpen]);
+  }, [props.state.session?.id, upcomingTourDependency, assignProModalOpen, acquireSessionsModalOpen, homePurchaseModalOpen, noSessionsRedirectModalOpen, homeChatModalOpen, trialModalOpen]);
 
   useEffect(() => {
     if (!showGoogleCalendarCta) {
@@ -846,6 +849,7 @@ export function DashboardPage(props: {
           onNavigateToBookTrial={props.onNavigateToBookTrial}
           onGoToBooking={props.onGoToBooking}
           onBuySessions={() => setHomePurchaseModalOpen(true)}
+          onBookWithoutCredits={() => setNoSessionsRedirectModalOpen(true)}
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
           onGoToChat={(professionalId) => {
@@ -1904,6 +1908,17 @@ export function DashboardPage(props: {
         </div>
       ) : null}
 
+      {noSessionsRedirectModalOpen ? (
+        <NoSessionsAvailableModal
+          language={props.language}
+          onClose={() => setNoSessionsRedirectModalOpen(false)}
+          onContinueToPackages={() => {
+            setNoSessionsRedirectModalOpen(false);
+            setHomePurchaseModalOpen(true);
+          }}
+        />
+      ) : null}
+
       {homePurchaseModalOpen ? (
         <DashboardHomePurchaseModal
           language={props.language}
@@ -1985,6 +2000,7 @@ export function DashboardPage(props: {
           assignProModalOpen ||
           acquireSessionsModalOpen ||
           homePurchaseModalOpen ||
+          noSessionsRedirectModalOpen ||
           homeChatModalOpen ||
           trialModalOpen
         }
