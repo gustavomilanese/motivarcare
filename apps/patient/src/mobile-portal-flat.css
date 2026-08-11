@@ -4,6 +4,11 @@
  * Web / desktop: sin efecto (todo dentro del media query).
  */
 @media (max-width: 1080px) {
+  /* Tipografía mobile ~10% más grande (escala rem / herencias) */
+  html {
+    font-size: 110%;
+  }
+
   :root {
     --mobile-canvas: #f4f4f5;
     --mobile-surface: #ffffff;
