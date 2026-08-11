@@ -20005,20 +20005,19 @@ button.sessions-balance {
   }
 
   /*
-   * Escala tipográfica mobile = Diario Emocional (referencia legible):
-   * título 0.95rem / subtítulo+meta 0.7rem / texto+botón 0.8rem
-   * Banners: +10% relativo a esa escala.
+   * Escala tipográfica mobile (con html 19.2px ≈ +20%):
+   * cuerpo 0.95/0.8/0.7rem · banners un escalón más grandes.
    */
   .patient-dashboard-home .dashboard-ml-home {
     --ml-type-title: 0.95rem;
     --ml-type-title-weight: 500;
     --ml-type-text: 0.8rem;
     --ml-type-subtitle: 0.7rem;
-    --ml-btn-min-h: 32px;
-    --ml-type-banner-title: 1.254rem;
-    --ml-type-banner-text: 1.056rem;
-    --ml-type-banner-subtitle: 0.924rem;
-    --ml-btn-banner-min-h: 42px;
+    --ml-btn-min-h: 36px;
+    --ml-type-banner-title: 1.2rem;
+    --ml-type-banner-text: 0.95rem;
+    --ml-type-banner-subtitle: 0.8rem;
+    --ml-btn-banner-min-h: 40px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title,

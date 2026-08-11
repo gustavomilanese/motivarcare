@@ -4,10 +4,10 @@
  * Web / desktop: sin efecto (todo dentro del media query).
  */
 @media (max-width: 1080px) {
-  /* Tipografía mobile ~10% más grande (escala rem / herencias).
-     Usamos px fijos: el % en html a veces deja layout “cortado” hasta un resize. */
+  /* Tipografía mobile ~20% más grande vs base 16px.
+     px fijos evitan layout “cortado” que a veces da font-size %. */
   html {
-    font-size: 17.6px;
+    font-size: 19.2px;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -107,6 +107,10 @@
   .portal-mobile-nav .mobile-nav-link.active .mobile-nav-label {
     color: var(--brand);
     font-weight: 600;
+  }
+
+  .portal-mobile-nav .mobile-nav-label {
+    font-size: 13px;
   }
 
   .portal-mobile-nav .mobile-nav-link.active .chat-badge-pill {
@@ -276,13 +280,40 @@
     box-shadow: 0 4px 14px rgba(95, 68, 235, 0.16);
   }
 
-  /* Home ML: iconos flat sobre el banner (sin chip blanco) */
+  /* Home ML: íconos de toolbar más grandes, flat sobre el banner */
   .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link,
-  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle {
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
     color: #fff;
+  }
+
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-bell-icon,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-heart-icon,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-bell-icon,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-heart-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle-icon,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link small,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link small {
+    font-size: 0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
   }
 
   .dashboard-ml-home.dashboard-ml-home--access .dashboard-ml-toolbar-mount .header-icon-link,
