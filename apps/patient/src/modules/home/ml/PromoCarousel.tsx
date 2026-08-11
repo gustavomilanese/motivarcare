@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -103,6 +103,7 @@ const PROMO_BANNERS: PromoBanner[] = [
 ];
 
 const AUTO_MS = 6500;
+const SWIPE_THRESHOLD_PX = 48;
 
 /** Carrusel promocional estilo marketplace (Mercado Libre) para Inicio next. */
 export function DashboardHomePromoCarousel(props: {
@@ -111,6 +112,7 @@ export function DashboardHomePromoCarousel(props: {
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const swipeStartX = useRef<number | null>(null);
   const total = PROMO_BANNERS.length;
   const active = PROMO_BANNERS[index] ?? PROMO_BANNERS[0];
 
@@ -133,6 +135,35 @@ export function DashboardHomePromoCarousel(props: {
   const goPrev = () => setIndex((current) => (current - 1 + total) % total);
   const goNext = () => setIndex((current) => (current + 1) % total);
 
+  const onSwipePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse") {
+      return;
+    }
+    swipeStartX.current = event.clientX;
+    setPaused(true);
+  };
+
+  const onSwipePointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" || swipeStartX.current == null) {
+      return;
+    }
+    const delta = event.clientX - swipeStartX.current;
+    swipeStartX.current = null;
+    if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+      if (delta < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    }
+    setPaused(false);
+  };
+
+  const onSwipePointerCancel = () => {
+    swipeStartX.current = null;
+    setPaused(false);
+  };
+
   return (
     <section
       className="dashboard-ml-promo"
@@ -150,6 +181,9 @@ export function DashboardHomePromoCarousel(props: {
           setPaused(false);
         }
       }}
+      onPointerDown={onSwipePointerDown}
+      onPointerUp={onSwipePointerUp}
+      onPointerCancel={onSwipePointerCancel}
     >
       <div className="dashboard-ml-promo-viewport">
         <div

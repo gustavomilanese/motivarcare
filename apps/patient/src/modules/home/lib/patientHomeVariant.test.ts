@@ -6,6 +6,7 @@ import {
   readPatientHomeVariant,
   resolveHomeView,
   setPatientHomeVariant,
+  shouldMountDashboardRnHome,
   shouldUsePatientHomeMlChrome,
   writePatientHomeVariant
 } from "./patientHomeVariant";
@@ -66,6 +67,11 @@ describe("patientHomeVariant", () => {
   it("defaults to next (ML) when nothing is stored", () => {
     expect(readPatientHomeVariant()).toBe("next");
     expect(resolveHomeView(readPatientHomeVariant())).toBe("ml");
+  });
+
+  it("mounts RN-web home only for classic", () => {
+    expect(shouldMountDashboardRnHome("ml")).toBe(false);
+    expect(shouldMountDashboardRnHome("classic")).toBe(true);
   });
 
   it("ignores invalid stored values and stays on next", () => {

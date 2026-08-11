@@ -22,6 +22,7 @@ type UpcomingBookingsListProps = {
   editingBookingId?: string | null;
   firstMeetBookingId?: string | null;
   joinTourPulse?: boolean;
+  compact?: boolean;
 };
 
 function listClassName(layout: UpcomingBookingLayout, surface: UpcomingBookingsSurface): string {
@@ -74,6 +75,7 @@ export function UpcomingBookingsList(props: UpcomingBookingsListProps) {
             isNextInList={props.layout === "card" && index === 0}
             joinTourTarget={joinTourTarget}
             joinTourPulse={joinTourTarget && props.joinTourPulse}
+            compact={props.compact}
           />
         );
       })}

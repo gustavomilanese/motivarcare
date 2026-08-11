@@ -41,6 +41,7 @@ import {
   readPatientHomeVariant,
   PATIENT_HOME_VARIANT_EVENT,
   resolveHomeView,
+  shouldMountDashboardRnHome,
   type PatientHomeVariant
 } from "../lib/patientHomeVariant";
 import { resolveDashboardNextActionKind } from "../lib/resolveDashboardNextActionKind";
@@ -821,7 +822,7 @@ export function HomePage(props: {
           pricingProfessionalId={pricingProfessionalId}
           isMobilePortal={isMobilePortal}
           firstMeetBookingId={firstMeetBookingId}
-          joinTourPulse={meetJoinHighlight && !sessionRnLayout}
+          joinTourPulse={meetJoinHighlight}
           upcomingSpotlightRing={upcomingSpotlightRing}
         />
       ) : (
@@ -888,6 +889,7 @@ export function HomePage(props: {
         />
       )}
 
+      {shouldMountDashboardRnHome(resolveHomeView(homeVariant)) ? (
       <div className="dashboard-rn-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
         <div className="dashboard-rn-scroll" data-tour="patient-tour-hero-rn">
           <h2 className="dashboard-home-intro-heading">{dashboardIntroTitle}</h2>
@@ -1077,6 +1079,7 @@ export function HomePage(props: {
           </section>
         </div>
       </div>
+      ) : null}
 
       {trialModalOpen ? (
         <div className="session-modal-backdrop" role="presentation" onClick={() => setTrialModalOpen(false)}>

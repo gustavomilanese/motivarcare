@@ -15,6 +15,7 @@ import {
   extractYoutubeVideoId,
   youtubeThumbnailUrl
 } from "../../wellbeing/utils/relaxationYoutube";
+import { ExercisesBannerGlyph, ExercisesBannerIcon, MusicBannerGlyph, MusicBannerIcon } from "./HomeBannerGlyphs";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -29,9 +30,13 @@ function HomeFeatureBanner(props: {
   title: LocalizedText;
   body: LocalizedText;
   cta: LocalizedText;
-  imageSrc: string;
+  glyph: ReactNode;
   onCta: () => void;
   tone?: "default" | "purple" | "pistachio";
+  isMobilePortal?: boolean;
+  compactTitle?: LocalizedText;
+  compactCta?: LocalizedText;
+  titleIcon?: ReactNode;
 }) {
   const toneClass =
     props.tone === "purple"
@@ -44,18 +49,45 @@ function HomeFeatureBanner(props: {
     <article className={`dashboard-ml-feature-banner${toneClass}`}>
       <div className="dashboard-ml-feature-banner-frame">
         <div className="dashboard-ml-feature-banner-copy">
-          <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
-          <h2 id={props.titleId} className="dashboard-ml-feature-banner-title">
-            {t(props.language, props.title)}
-          </h2>
-          <p className="dashboard-ml-feature-banner-body">{t(props.language, props.body)}</p>
-          <button type="button" className="dashboard-ml-feature-banner-cta" onClick={props.onCta}>
-            {t(props.language, props.cta)}
-          </button>
+          {props.isMobilePortal ? (
+            <div className="dashboard-ml-feature-banner-head">
+              <div className="dashboard-ml-feature-banner-title-stack">
+                <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
+                <h2 id={props.titleId} className="dashboard-ml-feature-banner-title">
+                  {props.titleIcon ? (
+                    <span className="dashboard-ml-feature-banner-title-icon" aria-hidden="true">
+                      {props.titleIcon}
+                    </span>
+                  ) : null}
+                  <span>{t(props.language, props.compactTitle ?? props.title)}</span>
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="dashboard-ml-feature-banner-action"
+                onClick={props.onCta}
+              >
+                {t(props.language, props.compactCta ?? props.cta)}
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
+              <h2 id={props.titleId} className="dashboard-ml-feature-banner-title">
+                {t(props.language, props.title)}
+              </h2>
+              <p className="dashboard-ml-feature-banner-body">{t(props.language, props.body)}</p>
+              <button type="button" className="dashboard-ml-feature-banner-cta" onClick={props.onCta}>
+                {t(props.language, props.cta)}
+              </button>
+            </>
+          )}
         </div>
-        <div className="dashboard-ml-feature-banner-media" aria-hidden="true">
-          <img className="dashboard-ml-feature-banner-photo" src={props.imageSrc} alt="" decoding="async" />
-        </div>
+        {!props.isMobilePortal ? (
+          <div className="dashboard-ml-feature-banner-media" aria-hidden="true">
+            {props.glyph}
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -126,7 +158,10 @@ function FeaturePreviewOpen(props: {
   );
 }
 
-export function DashboardHomeExercisesSection(props: { language: AppLanguage }) {
+export function DashboardHomeExercisesSection(props: {
+  language: AppLanguage;
+  isMobilePortal?: boolean;
+}) {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState<ExercisePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +207,11 @@ export function DashboardHomeExercisesSection(props: { language: AppLanguage }) 
           pt: "Praticas breves de respiracao, postura e presenca para somar clareza entre sessoes."
         }}
         cta={{ es: "Ver ejercicios", en: "View exercises", pt: "Ver exercicios" }}
-        imageSrc="/home/banner-home-exercises.png?v=4"
+        compactTitle={{ es: "Ejercicios", en: "Exercises", pt: "Exercicios" }}
+        compactCta={{ es: "Ver", en: "View", pt: "Ver" }}
+        titleIcon={<ExercisesBannerIcon />}
+        isMobilePortal={props.isMobilePortal}
+        glyph={<ExercisesBannerGlyph />}
         tone="purple"
         onCta={() => navigate("/ejercicios")}
       />
@@ -220,7 +259,10 @@ export function DashboardHomeExercisesSection(props: { language: AppLanguage }) 
   );
 }
 
-export function DashboardHomeMusicSection(props: { language: AppLanguage }) {
+export function DashboardHomeMusicSection(props: {
+  language: AppLanguage;
+  isMobilePortal?: boolean;
+}) {
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<RelaxationPlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,7 +327,11 @@ export function DashboardHomeMusicSection(props: { language: AppLanguage }) {
           pt: "Playlists por clima: lofi, chuva, meditacao, sono e mais, prontas quando precisar."
         }}
         cta={{ es: "Abrir música", en: "Open music", pt: "Abrir musica" }}
-        imageSrc="/home/banner-home-music.png?v=4"
+        compactTitle={{ es: "Música", en: "Music", pt: "Musica" }}
+        compactCta={{ es: "Abrir", en: "Open", pt: "Abrir" }}
+        titleIcon={<MusicBannerIcon />}
+        isMobilePortal={props.isMobilePortal}
+        glyph={<MusicBannerGlyph />}
         tone="pistachio"
         onCta={() => navigate("/bienestar/musica")}
       />

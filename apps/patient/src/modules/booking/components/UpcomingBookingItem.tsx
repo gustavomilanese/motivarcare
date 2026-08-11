@@ -45,6 +45,8 @@ type UpcomingBookingItemProps = {
   isNextInList?: boolean;
   joinTourTarget?: boolean;
   joinTourPulse?: boolean;
+  /** Home mobile: fecha + nombre; el resto en el detalle. */
+  compact?: boolean;
 };
 
 function stopActivation(event: MouseEvent | KeyboardEvent) {
@@ -214,6 +216,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     "session-management-card-clickable",
     props.layout === "card" ? "session-rn-card" : "",
     props.layout === "card" && joinUrl ? "session-rn-card--joinable" : "",
+    props.layout === "card" && props.compact ? "session-rn-card--compact" : "",
     props.isEditing ? "editing" : "",
     isTrialBooking ? "session-rn-card--trial" : "",
     isTrialBooking && isCompleted ? "session-rn-card--trial-completed" : "",
@@ -224,6 +227,10 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
     .join(" ");
 
   const activateCard = () => {
+    if (props.compact) {
+      props.onOpenDetail();
+      return;
+    }
     if (joinUrl) {
       window.open(joinUrl, "_blank", "noopener,noreferrer");
       return;
@@ -240,7 +247,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
 
   const cardAriaLabel =
     props.layout === "card"
-      ? joinUrl
+      ? joinUrl && !props.compact
         ? textByLanguage(props.language, {
             es: `Entrar a la sesión con ${professionalAccessibleName(nameSubject)}, ${formatSessionCardDateTimeLine({
               isoDate: props.booking.startsAt,
@@ -354,6 +361,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
   }
 
   const proPhoto = professionalPhotoSrc(props.professionalPhotoMap[props.booking.professionalId]);
+  const compact = Boolean(props.compact);
 
   return (
     <article
@@ -375,7 +383,7 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
         <div className="session-rn-body">
           <div className="session-rn-body-header">
             <div className="session-rn-body-main">
-              {isTrialBooking ? (
+              {!compact && isTrialBooking ? (
                 <span className="session-rn-trial-badge">{trialSessionBadgeLabel(props.language)}</span>
               ) : null}
               <span className="session-rn-date-line">
@@ -390,31 +398,39 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                 professional={nameSubject}
                 professionalId={props.booking.professionalId}
                 language={props.language}
-                onOpenProfessionalReviews={props.onOpenProfessionalReviews}
+                onOpenProfessionalReviews={compact ? undefined : props.onOpenProfessionalReviews}
                 singleLine
               />
-              {bookingProfessional ? <ProfessionalRatingCompact professional={bookingProfessional} /> : null}
-              <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
-                {upcomingBookingCardStatusLine(props.language, isTrialBooking, { completed: isCompleted })}
-              </span>
+              {!compact && bookingProfessional ? <ProfessionalRatingCompact professional={bookingProfessional} /> : null}
+              {!compact ? (
+                <span className={`session-rn-status${isTrialBooking ? " session-rn-status--trial" : ""}`}>
+                  {upcomingBookingCardStatusLine(props.language, isTrialBooking, { completed: isCompleted })}
+                </span>
+              ) : null}
             </div>
-            <SessionRescheduleButton
-              language={props.language}
-              layout="card"
-              canReschedule={canReschedule}
-              onReschedule={props.onReschedule}
-            />
+            {compact && isTrialBooking ? (
+              <span className="session-rn-trial-badge">{trialSessionBadgeLabel(props.language)}</span>
+            ) : !compact ? (
+              <SessionRescheduleButton
+                language={props.language}
+                layout="card"
+                canReschedule={canReschedule}
+                onReschedule={props.onReschedule}
+              />
+            ) : null}
           </div>
         </div>
       </div>
-      <div className="session-rn-footer">
-        {!joinUrl ? <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p> : null}
-        <SessionViewDetailButton
-          language={props.language}
-          layout="card"
-          onOpenDetail={props.onOpenDetail}
-        />
-      </div>
+      {!compact ? (
+        <div className="session-rn-footer">
+          {!joinUrl ? <p className="session-rn-join-pending">{joinPendingLabel(props.language)}</p> : null}
+          <SessionViewDetailButton
+            language={props.language}
+            layout="card"
+            onOpenDetail={props.onOpenDetail}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

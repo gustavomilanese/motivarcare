@@ -44,6 +44,11 @@ export function resolveHomeView(variant: PatientHomeVariant): PatientHomeView {
   return variant === "classic" ? "classic" : "ml";
 }
 
+/** Inicio RN-web (≤680px) solo con variant classic; ML muestra NextActionHome en todos los viewports. */
+export function shouldMountDashboardRnHome(view: PatientHomeView): boolean {
+  return view === "classic";
+}
+
 /** Rutas del portal que usan el mismo chrome que Inicio next (rail + top bar + footer). */
 export function isPatientHomeMlShellPath(pathname: string): boolean {
   if (pathname === "/") return true;

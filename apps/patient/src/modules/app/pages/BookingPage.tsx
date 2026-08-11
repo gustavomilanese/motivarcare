@@ -24,6 +24,7 @@ import {
 } from "../lib/patientPricingProfessional";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
+import { SessionsBannerGlyph } from "../../booking/components/SessionsBannerGlyph";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
 import {
   isDisplayOnlyBundlePlanId,
@@ -1532,12 +1533,7 @@ export function BookingPage(props: {
               </div>
             </div>
             <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
-              <img
-                className="dashboard-ml-sessions-banner-photo"
-                src="/home/banner-home-sessions.png?v=1"
-                alt=""
-                decoding="async"
-              />
+              <SessionsBannerGlyph />
             </div>
           </div>
           <div id="sessions-hero-toolbar-mount" className="sessions-hero-toolbar-mount sessions-page-ml-toolbar" />

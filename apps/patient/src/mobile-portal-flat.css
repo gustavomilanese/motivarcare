@@ -25,6 +25,15 @@
     max-width: 100%;
   }
 
+  .portal-shell:has(.portal-main--dashboard-home),
+  .portal-shell:has(.portal-main--diary-home),
+  .portal-shell:has(.portal-main--sessions-home),
+  .portal-shell:has(.portal-main--wellbeing-relax),
+  .portal-shell:has(.portal-main--home-ml),
+  .portal-shell:has(.portal-main--chat) {
+    padding-top: 0 !important;
+  }
+
   .portal-main,
   .portal-main:has(.sessions-booking-page),
   .portal-main:has(.patient-dashboard-home),
@@ -257,6 +266,20 @@
     background: rgba(255, 255, 255, 0.94);
     color: #5f44eb;
     box-shadow: 0 4px 14px rgba(95, 68, 235, 0.16);
+  }
+
+  /* Home ML: iconos flat sobre el banner (sin chip blanco) */
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #fff;
+  }
+
+  .dashboard-ml-home.dashboard-ml-home--access .dashboard-ml-toolbar-mount .header-icon-link,
+  .dashboard-ml-home.dashboard-ml-home--access .dashboard-ml-toolbar-mount .menu-toggle {
+    color: #1a1a1a;
   }
 
   /* Menú cuenta: panel lateral (portaled a body — por encima del tab bar) */

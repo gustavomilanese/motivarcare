@@ -9,13 +9,16 @@ import {
   replaceTemplate,
   textByLanguage
 } from "@therapy/i18n-config";
-import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
+import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
+import { SessionsBannerGlyph, SessionsBannerIcon } from "../../booking/components/SessionsBannerGlyph";
 import { DashboardHomePromoCarousel } from "./PromoCarousel";
 import {
   DashboardHomeExercisesSection,
   DashboardHomeMusicSection
 } from "./FeatureSections";
+import { DiaryBannerGlyph, DiaryBannerIcon } from "./HomeBannerGlyphs";
+import { DashboardHomeAllSessionsModal } from "./AllSessionsModal";
 import { SessionsCollapsibleToggle } from "../../app/components/SessionsCollapsibleToggle";
 import { professionalAccessibleName, professionalFirstName } from "../../app/lib/professionalDisplayName";
 import { resolvePublicAssetUrl } from "../../app/services/api";
@@ -668,6 +671,7 @@ export function DashboardNextActionHome(props: {
   upcomingSpotlightRing?: boolean;
 }) {
   const navigate = useNavigate();
+  const [allSessionsOpen, setAllSessionsOpen] = useState(false);
 
   const professionalPhotoSrcResolved = props.activeProfessional
     ? resolvePublicAssetUrl(props.professionalPhotoMap[props.activeProfessional.id])
@@ -780,7 +784,7 @@ export function DashboardNextActionHome(props: {
   })();
 
   return (
-    <div className="dashboard-ml-home" aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
+    <div className={`dashboard-ml-home dashboard-ml-home--${promoTone}`} aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
       <div id="dashboard-hero-toolbar-mount" className="dashboard-hero-toolbar-mount dashboard-ml-toolbar-mount" />
 
       {/* Violeta solo hasta las cards de acceso; Sesiones ya va sobre el gris de página */}
@@ -804,18 +808,31 @@ export function DashboardNextActionHome(props: {
             </div>
           ) : null}
 
-          <div className="dashboard-ml-credits-bar" data-tour="patient-tour-credits">
+          <div
+            className={`dashboard-ml-credits-bar${
+              props.availableSessions < 1 ? " dashboard-ml-credits-bar--empty" : ""
+            }${props.isMobilePortal ? " dashboard-ml-credits-bar--mobile" : ""}`}
+            data-tour="patient-tour-credits"
+          >
             <p className="dashboard-ml-credits" aria-live="polite">
-              <span className="dashboard-ml-credits-kicker">
-                {t(props.language, {
-                  es: "Tu saldo",
-                  en: "Your balance",
-                  pt: "Seu saldo"
-                })}
-              </span>
-              {props.availableSessions > 0 ? (
+              {!props.isMobilePortal ? (
+                <span className="dashboard-ml-credits-kicker">
+                  {t(props.language, {
+                    es: "Tu saldo",
+                    en: "Your balance",
+                    pt: "Seu saldo"
+                  })}
+                </span>
+              ) : null}
+              {props.availableSessions > 0 || props.isMobilePortal ? (
                 <>
-                  <span className="dashboard-ml-credits-num">{props.availableSessions}</span>
+                  <span
+                    className={`dashboard-ml-credits-num${
+                      props.availableSessions < 1 ? " dashboard-ml-credits-num--empty" : ""
+                    }`}
+                  >
+                    {props.availableSessions}
+                  </span>
                   <span className="dashboard-ml-credits-label">
                     {props.availableSessions === 1
                       ? t(props.language, {
@@ -840,8 +857,24 @@ export function DashboardNextActionHome(props: {
                 </span>
               )}
             </p>
-            <button type="button" className="dashboard-ml-book-cta" onClick={runBookSession}>
-              {bookSessionLabel}
+            <button
+              type="button"
+              className="dashboard-ml-book-cta"
+              onClick={() => {
+                if (props.availableSessions <= 0) {
+                  props.onBuySessions();
+                  return;
+                }
+                runBookSession();
+              }}
+            >
+              {props.availableSessions > 0
+                ? props.isMobilePortal
+                  ? t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })
+                  : bookSessionLabel
+                : props.isMobilePortal
+                  ? t(props.language, { es: "Comprar", en: "Buy", pt: "Comprar" })
+                  : bookSessionLabel}
             </button>
           </div>
         </div>
@@ -965,41 +998,64 @@ export function DashboardNextActionHome(props: {
           <article className="dashboard-ml-sessions-banner">
             <div className="dashboard-ml-sessions-banner-frame">
               <div className="dashboard-ml-sessions-banner-copy">
-                <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
-                  {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
-                </h2>
-                <p className="dashboard-ml-sessions-banner-body">
-                  {t(props.language, {
-                    es: "Tus próximas reservas, el calendario y el historial, listos para abrir cuando los necesites.",
-                    en: "Your upcoming bookings, calendar, and history—ready whenever you need them.",
-                    pt: "Suas proximas reservas, calendario e historico, prontos quando precisar."
-                  })}
-                </p>
+                {props.isMobilePortal ? (
+                  <div className="dashboard-ml-sessions-banner-head">
+                    <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
+                      <span className="dashboard-ml-sessions-banner-title-icon" aria-hidden="true">
+                        <SessionsBannerIcon />
+                      </span>
+                      <span>
+                        {t(props.language, {
+                          es: "Tus Próximas Sesiones",
+                          en: "Your Upcoming Sessions",
+                          pt: "Suas Proximas Sessoes"
+                        })}
+                      </span>
+                    </h2>
+                    <button
+                      type="button"
+                      className="dashboard-ml-sessions-banner-reserve"
+                      onClick={runBookSession}
+                    >
+                      {t(props.language, { es: "Reservar", en: "Book", pt: "Reservar" })}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
+                      {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+                    </h2>
+                    <p className="dashboard-ml-sessions-banner-body">
+                      {t(props.language, {
+                        es: "Tus próximas reservas, el calendario y el historial, listos para abrir cuando los necesites.",
+                        en: "Your upcoming bookings, calendar, and history—ready whenever you need them.",
+                        pt: "Suas proximas reservas, calendario e historico, prontos quando precisar."
+                      })}
+                    </p>
+                  </>
+                )}
               </div>
               <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
-                <img
-                  className="dashboard-ml-sessions-banner-photo"
-                  src="/home/banner-home-sessions.png?v=1"
-                  alt=""
-                  decoding="async"
-                />
+                <SessionsBannerGlyph />
               </div>
             </div>
           </article>
 
           <div className="dashboard-ml-sessions-pack">
-            <div className="dashboard-ml-sessions-pack-actions">
-              <button type="button" className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--primary" onClick={runBookSession}>
-                {bookSessionLabel}
-              </button>
-              <button
-                type="button"
-                className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--secondary"
-                onClick={() => props.onGoToReservations()}
-              >
-                {t(props.language, { es: "Ver todas", en: "View all", pt: "Ver todas" })}
-              </button>
-            </div>
+            {!props.isMobilePortal ? (
+              <div className="dashboard-ml-sessions-pack-actions">
+                <button type="button" className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--primary" onClick={runBookSession}>
+                  {bookSessionLabel}
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--secondary"
+                  onClick={() => setAllSessionsOpen(true)}
+                >
+                  {t(props.language, { es: "Ver todas", en: "View all", pt: "Ver todas" })}
+                </button>
+              </div>
+            ) : null}
 
             <div
               className={`dashboard-ml-sessions-bookings${
@@ -1047,7 +1103,11 @@ export function DashboardNextActionHome(props: {
                   </button>
                 </div>
               ) : (
-                <div className="dashboard-ml-bookings-list dashboard-upcoming-lists-root session-rn-root">
+                <div
+                  className={`dashboard-ml-bookings-list dashboard-upcoming-lists-root session-rn-root${
+                    props.isMobilePortal ? " dashboard-ml-bookings-list--cards" : ""
+                  }`}
+                >
                   <UpcomingBookingsList
                     bookings={sessionsTableBookings}
                     professionals={props.professionals}
@@ -1056,6 +1116,7 @@ export function DashboardNextActionHome(props: {
                     language={props.language}
                     layout={props.isMobilePortal ? "card" : "table"}
                     surface="dashboard"
+                    compact={props.isMobilePortal}
                     onImageFallback={props.onImageFallback}
                     onOpenBookingDetail={props.onOpenBookingDetail}
                     onReschedule={(booking) => props.onRescheduleBooking(booking.id)}
@@ -1076,13 +1137,15 @@ export function DashboardNextActionHome(props: {
             })}
           >
             <div className="dashboard-ml-history-grid">
-              <CalendarPreviewCard
-                language={props.language}
-                bookings={props.upcomingBookings}
-                timezone={props.timezone}
-                onOpenBookingDetail={props.onOpenBookingDetail}
-                onCta={() => props.onGoToReservations()}
-              />
+              {!props.isMobilePortal ? (
+                <CalendarPreviewCard
+                  language={props.language}
+                  bookings={props.upcomingBookings}
+                  timezone={props.timezone}
+                  onOpenBookingDetail={props.onOpenBookingDetail}
+                  onCta={() => props.onGoToReservations()}
+                />
+              ) : null}
 
               <HistoryNavCard
                 icon="packages"
@@ -1128,59 +1191,80 @@ export function DashboardNextActionHome(props: {
           <article className="dashboard-ml-diary-banner">
             <div className="dashboard-ml-diary-banner-frame">
               <div className="dashboard-ml-diary-banner-copy">
-                <p className="dashboard-ml-diary-banner-kicker">
-                  {t(props.language, {
-                    es: "Diario emocional",
-                    en: "Emotional diary",
-                    pt: "Diario emocional"
-                  })}
-                </p>
-                <h2 id="dashboard-ml-diary-title" className="dashboard-ml-diary-banner-title">
-                  {t(props.language, {
-                    es: "Acompañá tu proceso día a día",
-                    en: "Support your process day by day",
-                    pt: "Acompanhe seu processo dia a dia"
-                  })}
-                </h2>
-                <p className="dashboard-ml-diary-banner-body">
-                  {t(props.language, {
-                    es: "Registrá cómo te sentís, revisá entradas anteriores y volvé a ellas cuando quieras.",
-                    en: "Log how you feel, review past entries, and return whenever you need.",
-                    pt: "Registre como se sente, revise entradas anteriores e volte quando quiser."
-                  })}
-                </p>
-                <div className="dashboard-ml-diary-banner-actions">
-                  <button
-                    type="button"
-                    className="dashboard-ml-diary-banner-cta"
-                    onClick={() => navigate("/diario/nueva")}
-                  >
-                    {t(props.language, {
-                      es: "Escribir ahora",
-                      en: "Write now",
-                      pt: "Escrever agora"
-                    })}
-                  </button>
-                  <button
-                    type="button"
-                    className="dashboard-ml-diary-banner-link"
-                    onClick={() => navigate("/diario")}
-                  >
-                    {t(props.language, {
-                      es: "Abrir diario",
-                      en: "Open diary",
-                      pt: "Abrir diario"
-                    })}
-                  </button>
-                </div>
+                {props.isMobilePortal ? (
+                  <div className="dashboard-ml-diary-banner-head">
+                    <h2 id="dashboard-ml-diary-title" className="dashboard-ml-diary-banner-title">
+                      <span className="dashboard-ml-diary-banner-title-icon" aria-hidden="true">
+                        <DiaryBannerIcon />
+                      </span>
+                      <span>
+                        {t(props.language, {
+                          es: "Tu Diario Emocional",
+                          en: "Your Emotional Diary",
+                          pt: "Seu Diario Emocional"
+                        })}
+                      </span>
+                    </h2>
+                    <button
+                      type="button"
+                      className="dashboard-ml-diary-banner-write"
+                      onClick={() => navigate("/diario/nueva")}
+                    >
+                      {t(props.language, { es: "Escribir", en: "Write", pt: "Escrever" })}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="dashboard-ml-diary-banner-kicker">
+                      {t(props.language, {
+                        es: "Diario emocional",
+                        en: "Emotional diary",
+                        pt: "Diario emocional"
+                      })}
+                    </p>
+                    <h2 id="dashboard-ml-diary-title" className="dashboard-ml-diary-banner-title">
+                      {t(props.language, {
+                        es: "Acompañá tu proceso día a día",
+                        en: "Support your process day by day",
+                        pt: "Acompanhe seu processo dia a dia"
+                      })}
+                    </h2>
+                    <p className="dashboard-ml-diary-banner-body">
+                      {t(props.language, {
+                        es: "Registrá cómo te sentís, revisá entradas anteriores y volvé a ellas cuando quieras.",
+                        en: "Log how you feel, review past entries, and return whenever you need.",
+                        pt: "Registre como se sente, revise entradas anteriores e volte quando quiser."
+                      })}
+                    </p>
+                    <div className="dashboard-ml-diary-banner-actions">
+                      <button
+                        type="button"
+                        className="dashboard-ml-diary-banner-cta"
+                        onClick={() => navigate("/diario/nueva")}
+                      >
+                        {t(props.language, {
+                          es: "Escribir ahora",
+                          en: "Write now",
+                          pt: "Escrever agora"
+                        })}
+                      </button>
+                      <button
+                        type="button"
+                        className="dashboard-ml-diary-banner-link"
+                        onClick={() => navigate("/diario")}
+                      >
+                        {t(props.language, {
+                          es: "Abrir diario",
+                          en: "Open diary",
+                          pt: "Abrir diario"
+                        })}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="dashboard-ml-diary-banner-media" aria-hidden="true">
-                <img
-                  className="dashboard-ml-diary-banner-photo"
-                  src="/home/banner-home-diary.png?v=2"
-                  alt=""
-                  decoding="async"
-                />
+                <DiaryBannerGlyph />
               </div>
             </div>
           </article>
@@ -1242,9 +1326,23 @@ export function DashboardNextActionHome(props: {
           </div>
         </section>
 
-        <DashboardHomeExercisesSection language={props.language} />
-        <DashboardHomeMusicSection language={props.language} />
+        <DashboardHomeExercisesSection language={props.language} isMobilePortal={props.isMobilePortal} />
+        <DashboardHomeMusicSection language={props.language} isMobilePortal={props.isMobilePortal} />
       </div>
+
+      {allSessionsOpen ? (
+        <DashboardHomeAllSessionsModal
+          language={props.language}
+          timezone={props.timezone}
+          bookings={props.allBookings}
+          professionals={props.professionals}
+          professionalPhotoMap={props.professionalPhotoMap}
+          onImageFallback={props.onImageFallback}
+          onOpenBookingDetail={props.onOpenBookingDetail}
+          onRescheduleBooking={props.onRescheduleBooking}
+          onClose={() => setAllSessionsOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
