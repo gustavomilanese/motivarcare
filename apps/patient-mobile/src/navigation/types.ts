@@ -8,6 +8,9 @@ export type PatientTabParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { token?: string } | undefined;
+  VerifyEmailToken: { token?: string } | undefined;
 };
 
 export type PostIntakeParamList = {
@@ -18,4 +21,12 @@ export type PostIntakeParamList = {
 export type PatientRootStackParamList = {
   Tabs: undefined;
   ProfessionalMatching: undefined;
+  DiaryHome: undefined;
+  DiaryNew: { mood?: import("../wellbeing/types").EmotionalDiaryMood } | undefined;
+  DiaryRecords: undefined;
+  ExercisesList: undefined;
+  ExerciseDetail: { slug: string };
+  ExerciseRoutine: { slug: string };
+  RelaxationMusic: undefined;
+  HelpFaq: undefined;
 };

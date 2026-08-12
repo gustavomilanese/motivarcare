@@ -39,11 +39,15 @@ export type PatientProfilePayload = {
   residencyCountry?: string | null;
   timezone?: string;
   lastSeenTimezone?: string | null;
+  notificationsEmail?: boolean;
+  notificationsReminder?: boolean;
   status?: string;
   intakeRiskLevel?: string | null;
   intakeTriageDecision?: string | null;
   intakeRiskBlocked?: boolean;
   intakeCompletedAt?: string | null;
+  /** Crédito de prueba pagada disponible para reagendar (GET /profiles/me). */
+  trialRebookAvailable?: boolean;
   latestPackage?: {
     id: string;
     name: string;

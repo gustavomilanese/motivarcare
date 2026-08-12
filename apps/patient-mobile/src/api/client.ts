@@ -15,6 +15,25 @@ import type {
 } from "./types";
 import { apiBaseUrl as API_BASE } from "./apiBase";
 
+type UnauthorizedHandler = () => void;
+let unauthorizedHandler: UnauthorizedHandler | undefined;
+
+export function setApiUnauthorizedHandler(handler: UnauthorizedHandler | undefined): void {
+  unauthorizedHandler = handler;
+}
+
+function isUnauthorizedMessage(status: number, message: string): boolean {
+  if (status === 401) {
+    return true;
+  }
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("invalid or expired token")
+    || normalized.includes("missing bearer token")
+    || normalized.includes("unauthorized")
+  );
+}
+
 async function requestJson<T>(params: {
   path: string;
   token?: string | null;
@@ -39,6 +58,9 @@ async function requestJson<T>(params: {
       }
     } catch {
       // noop
+    }
+    if (params.token && isUnauthorizedMessage(response.status, message)) {
+      unauthorizedHandler?.();
     }
     throw new Error(message);
   }
@@ -84,6 +106,36 @@ export async function getAuthMe(token: string) {
   });
 }
 
+export async function forgotPassword(params: { email: string }) {
+  return requestJson<{ ok: boolean }>({
+    path: "/api/auth/forgot-password",
+    method: "POST",
+    body: { email: params.email.trim().toLowerCase(), role: "PATIENT" }
+  });
+}
+
+export async function resetPassword(params: { token: string; password: string }) {
+  return requestJson<{ ok: boolean }>({
+    path: "/api/auth/reset-password",
+    method: "POST",
+    body: { token: params.token, password: params.password }
+  });
+}
+
+export async function resendEmailVerification(token: string) {
+  return requestJson<{ message: string }>({
+    path: "/api/auth/email-verification/resend",
+    method: "POST",
+    token
+  });
+}
+
+export async function verifyEmailToken(token: string) {
+  return requestJson<LoginResponse & { message?: string }>({
+    path: `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+  });
+}
+
 export async function getProfileMe(token: string) {
   return requestJson<ProfileMeResponse>({
     path: "/api/profiles/me",
@@ -123,7 +175,10 @@ export async function requestPatientSafetyReferral(params: {
   residencyCountry?: string;
   language?: "es" | "en" | "pt";
 }) {
-  return requestJson<{ emailDelivered: boolean; resources: { countryName: string; resources: { label: string; contact: string }[] } | null }>({
+  return requestJson<{
+    emailDelivered: boolean;
+    resources: { countryName: string; resources: { label: string; contact: string }[] } | null;
+  }>({
     path: "/api/profiles/me/safety-referral",
     method: "POST",
     token: params.token,
@@ -159,6 +214,9 @@ export async function createBooking(params: {
   startsAt: string;
   endsAt: string;
   patientTimezone?: string;
+  holdId?: string;
+  preferTrialCredit?: boolean;
+  idempotencyKey?: string;
 }) {
   return requestJson<CreateBookingResponse>({
     path: "/api/bookings",
@@ -168,8 +226,169 @@ export async function createBooking(params: {
       professionalId: params.professionalId,
       startsAt: params.startsAt,
       endsAt: params.endsAt,
-      patientTimezone: params.patientTimezone
+      patientTimezone: params.patientTimezone,
+      ...(params.holdId ? { holdId: params.holdId } : {}),
+      ...(params.preferTrialCredit ? { preferTrialCredit: true } : {}),
+      ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {})
     }
+  });
+}
+
+export async function acquireBookingSlotHold(params: {
+  token: string;
+  professionalId: string;
+  startsAt: string;
+  endsAt: string;
+}) {
+  return requestJson<{ holdId: string; expiresAt: string; ttlSeconds: number }>({
+    path: "/api/bookings/slot-holds",
+    method: "POST",
+    token: params.token,
+    body: {
+      professionalId: params.professionalId,
+      startsAt: params.startsAt,
+      endsAt: params.endsAt
+    }
+  });
+}
+
+export async function releaseBookingSlotHold(params: { token: string; holdId: string }) {
+  return requestJson<void>({
+    path: `/api/bookings/slot-holds/${encodeURIComponent(params.holdId)}`,
+    method: "DELETE",
+    token: params.token
+  });
+}
+
+export async function createDlocalTrialCheckout(params: {
+  token: string;
+  professionalId: string;
+  startsAt: string;
+  endsAt: string;
+  holdId: string;
+  patientTimezone?: string;
+  idempotencyKey: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  return requestJson<{ checkoutUrl: string; paymentId?: string; orderId?: string }>({
+    path: "/api/payments/dlocal/checkout-trial",
+    method: "POST",
+    token: params.token,
+    body: {
+      professionalId: params.professionalId,
+      startsAt: params.startsAt,
+      endsAt: params.endsAt,
+      holdId: params.holdId,
+      patientTimezone: params.patientTimezone,
+      idempotencyKey: params.idempotencyKey,
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl
+    }
+  });
+}
+
+export async function getPublicFeatures() {
+  return requestJson<{ intakeChatEnabled?: boolean; treatmentChatEnabled?: boolean }>({
+    path: "/api/public/features"
+  });
+}
+
+export async function startOrResumeIntakeChat(token: string) {
+  return requestJson<{
+    session: {
+      sessionId: string;
+      status: string;
+      messages: Array<{ role: "assistant" | "user"; content: string; ts: string; quickReplies?: string[] }>;
+      extractedAnswers: Record<string, string>;
+      residencyCountry: string | null;
+      isResume: boolean;
+      readyToSubmit: boolean;
+      canSubmitEarly: boolean;
+      safetyFlagged: boolean;
+      safetyAlertMessage?: string;
+      quota: { turnsUsed: number; turnsRemaining: number; estimatedCostUsdCents: number };
+    };
+  }>({
+    path: "/api/intake-chat/sessions",
+    method: "POST",
+    token,
+    body: {}
+  });
+}
+
+export async function fetchActiveIntakeChatSession(token: string) {
+  try {
+    return await requestJson<{
+      session: {
+        sessionId: string;
+        status: string;
+        messages: Array<{ role: "assistant" | "user"; content: string; ts: string; quickReplies?: string[] }>;
+        extractedAnswers: Record<string, string>;
+        residencyCountry: string | null;
+        isResume: boolean;
+        readyToSubmit: boolean;
+        canSubmitEarly: boolean;
+        safetyFlagged: boolean;
+        safetyAlertMessage?: string;
+        quota: { turnsUsed: number; turnsRemaining: number; estimatedCostUsdCents: number };
+      };
+    }>({
+      path: "/api/intake-chat/sessions/active",
+      token
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/not\s*found|404|no hay sesi/i.test(message)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function sendIntakeChatMessage(params: {
+  token: string;
+  sessionId: string;
+  message: string;
+}) {
+  return requestJson<{
+    session: {
+      sessionId: string;
+      status: string;
+      messages: Array<{ role: "assistant" | "user"; content: string; ts: string; quickReplies?: string[] }>;
+      extractedAnswers: Record<string, string>;
+      residencyCountry: string | null;
+      isResume: boolean;
+      readyToSubmit: boolean;
+      canSubmitEarly: boolean;
+      safetyFlagged: boolean;
+      safetyAlertMessage?: string;
+      quota: { turnsUsed: number; turnsRemaining: number; estimatedCostUsdCents: number };
+      lastAssistantMessage: string;
+      safetyTriggeredThisTurn: boolean;
+    };
+  }>({
+    path: `/api/intake-chat/sessions/${encodeURIComponent(params.sessionId)}/messages`,
+    method: "POST",
+    token: params.token,
+    body: { message: params.message }
+  });
+}
+
+export async function submitIntakeChatSession(params: {
+  token: string;
+  sessionId: string;
+  mode?: "full" | "early";
+}) {
+  return requestJson<{
+    ok?: boolean;
+    riskBlocked?: boolean;
+    intake?: unknown;
+  }>({
+    path: `/api/intake-chat/sessions/${encodeURIComponent(params.sessionId)}/submit`,
+    method: "POST",
+    token: params.token,
+    body: { mode: params.mode ?? "full" }
   });
 }
 
@@ -208,7 +427,11 @@ export async function getBookingsMine(token: string) {
   });
 }
 
-export async function getSessionPackages(params: { token: string; professionalId?: string | null; market?: "AR" | "US" }) {
+export async function getSessionPackages(params: {
+  token: string;
+  professionalId?: string | null;
+  market?: "AR" | "US";
+}) {
   const query = new URLSearchParams({ channel: "patient", market: params.market ?? "AR" });
   if (params.professionalId) {
     query.set("professionalId", params.professionalId);
@@ -302,3 +525,260 @@ export async function markThreadAsRead(params: { token: string; threadId: string
     token: params.token
   });
 }
+
+export async function cancelMineBooking(params: { token: string; bookingId: string; reason: string }) {
+  return requestJson<{ refundedCredits: number; trialCreditReleased?: boolean }>({
+    path: `/api/bookings/${params.bookingId}/cancel`,
+    method: "POST",
+    token: params.token,
+    body: { reason: params.reason.trim() }
+  });
+}
+
+export async function createDlocalPackageCheckout(params: {
+  token: string;
+  packageId: string;
+  idempotencyKey: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  return requestJson<{ checkoutUrl: string; paymentId?: string; orderId?: string }>({
+    path: "/api/payments/dlocal/checkout",
+    method: "POST",
+    token: params.token,
+    body: {
+      packageId: params.packageId,
+      idempotencyKey: params.idempotencyKey,
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl
+    }
+  });
+}
+
+export async function syncDlocalPayment(params: {
+  token: string;
+  paymentId?: string | null;
+  orderId?: string | null;
+}) {
+  const paymentId = params.paymentId?.trim() || null;
+  const orderId = params.orderId?.trim() || null;
+  if (paymentId) {
+    return requestJson<{ ok: boolean; fulfilled: boolean; paymentStatus: string }>({
+      path: "/api/payments/dlocal/sync-payment",
+      method: "POST",
+      token: params.token,
+      body: { paymentId }
+    });
+  }
+  if (orderId) {
+    return requestJson<{ ok: boolean; fulfilled: boolean; paymentStatus: string }>({
+      path: "/api/payments/dlocal/sync-order",
+      method: "POST",
+      token: params.token,
+      body: { orderId }
+    });
+  }
+  return requestJson<{ ok: boolean; fulfilled: boolean; paymentStatus?: string | null }>({
+    path: "/api/payments/dlocal/sync-pending",
+    method: "POST",
+    token: params.token,
+    body: {}
+  });
+}
+
+export async function getPaymentCheckouts(token: string) {
+  return requestJson<{
+    checkouts: Array<{
+      id: string;
+      status: string;
+      kind?: string | null;
+      packageName?: string | null;
+      sessionCount?: number | null;
+      amountMajor?: number | null;
+      currency?: string | null;
+      createdAt: string;
+      paidAt?: string | null;
+    }>;
+  }>({
+    path: "/api/profiles/me/payment-checkouts",
+    token
+  });
+}
+
+export async function fetchWebContent(params?: { audience?: "patient" }) {
+  const query = params?.audience ? `?audience=${encodeURIComponent(params.audience)}` : "";
+  return requestJson<{
+    exercises?: import("../wellbeing/types").ExercisePost[];
+    exerciseRoutines?: import("../wellbeing/types").ExerciseRoutine[];
+    relaxationPlaylists?: import("../wellbeing/types").RelaxationPlaylistItem[];
+  }>({
+    path: `/api/public/web-content${query}`
+  });
+}
+
+export async function fetchDiarySettings(token: string) {
+  return requestJson<{ settings: import("../wellbeing/types").EmotionalDiarySettings }>({
+    path: "/api/emotional-diary/settings",
+    token
+  });
+}
+
+export async function patchDiarySettings(params: {
+  token: string;
+  shareWithPsychologistDefault: boolean;
+}) {
+  return requestJson<{ settings: import("../wellbeing/types").EmotionalDiarySettings }>({
+    path: "/api/emotional-diary/settings",
+    method: "PATCH",
+    token: params.token,
+    body: { shareWithPsychologistDefault: params.shareWithPsychologistDefault }
+  });
+}
+
+export async function fetchDiaryEntries(params: {
+  token: string;
+  status?: import("../wellbeing/types").EmotionalDiaryEntryStatus;
+}) {
+  const query = params.status ? `?status=${encodeURIComponent(params.status)}` : "";
+  return requestJson<{ entries: import("../wellbeing/types").EmotionalDiaryEntry[] }>({
+    path: `/api/emotional-diary/entries${query}`,
+    token: params.token
+  });
+}
+
+export async function createDiaryEntry(params: {
+  token: string;
+  input: import("../wellbeing/types").CreateDiaryEntryInput;
+}) {
+  return requestJson<{ entry: import("../wellbeing/types").EmotionalDiaryEntry }>({
+    path: "/api/emotional-diary/entries",
+    method: "POST",
+    token: params.token,
+    body: params.input
+  });
+}
+
+export async function fetchDiaryStats(token: string) {
+  return requestJson<{ stats: import("../wellbeing/types").EmotionalDiaryStats }>({
+    path: "/api/emotional-diary/stats",
+    token
+  });
+}
+
+export async function fetchDiarySessionSummary(token: string) {
+  return requestJson<import("../wellbeing/types").EmotionalDiarySessionSummary>({
+    path: "/api/emotional-diary/session-summary",
+    token
+  });
+}
+
+export type TreatmentChatDto = {
+  chatId: string;
+  status: "active" | "archived";
+  messages: Array<{
+    id: string;
+    role: "assistant" | "user";
+    content: string;
+    createdAt: string;
+    safetySeverity?: "none" | "low" | "high" | null;
+  }>;
+  safetyFlagged: boolean;
+  safetyAlertMessage?: string;
+  quota: {
+    dailyTurnsUsed: number;
+    dailyTurnsRemaining: number;
+    estimatedCostUsdCents: number;
+  };
+  professionalShareConsent: boolean;
+  session: {
+    maxMinutes: number;
+    minutesRemaining: number;
+    sessionActive: boolean;
+  };
+};
+
+export async function fetchTreatmentChatConversation(token: string) {
+  return requestJson<{ chat: TreatmentChatDto }>({
+    path: "/api/treatment-chat/conversation",
+    token
+  });
+}
+
+export async function sendTreatmentChatMessage(params: { token: string; message: string }) {
+  return requestJson<{
+    chat: TreatmentChatDto & {
+      lastAssistantMessage: string;
+      safetyTriggeredThisTurn: boolean;
+    };
+  }>({
+    path: "/api/treatment-chat/messages",
+    method: "POST",
+    token: params.token,
+    body: { message: params.message, stream: false }
+  });
+}
+
+export async function setTreatmentChatConsent(params: { token: string; consent: boolean }) {
+  return requestJson<{ consent: boolean; consentAt: string | null }>({
+    path: "/api/treatment-chat/consent",
+    method: "POST",
+    token: params.token,
+    body: { consent: params.consent }
+  });
+}
+
+export async function patchNotificationPreferences(params: {
+  token: string;
+  notificationsEmail?: boolean;
+  notificationsReminder?: boolean;
+}) {
+  return requestJson<{
+    role: string;
+    profile: { id: string; notificationsEmail: boolean; notificationsReminder: boolean };
+  }>({
+    path: "/api/profiles/me/notification-preferences",
+    method: "PATCH",
+    token: params.token,
+    body: {
+      ...(params.notificationsEmail !== undefined
+        ? { notificationsEmail: params.notificationsEmail }
+        : {}),
+      ...(params.notificationsReminder !== undefined
+        ? { notificationsReminder: params.notificationsReminder }
+        : {})
+    }
+  });
+}
+
+export async function requestProfessionalChange(params: {
+  token: string;
+  reason?: string;
+  language?: "es" | "en" | "pt";
+}) {
+  return requestJson<{ ok?: boolean; message?: string }>({
+    path: "/api/profiles/me/support-requests/professional-change",
+    method: "POST",
+    token: params.token,
+    body: {
+      ...(params.reason ? { reason: params.reason } : {}),
+      language: params.language ?? "es"
+    }
+  });
+}
+
+export async function registerPushToken(params: {
+  token: string;
+  expoPushToken: string;
+  platform: "ios" | "android" | "unknown";
+}) {
+  return requestJson<{ ok: boolean }>({
+    path: "/api/profiles/me/push-token",
+    method: "POST",
+    token: params.token,
+    body: {
+      expoPushToken: params.expoPushToken,
+      platform: params.platform
+    }
+  });
+}
+

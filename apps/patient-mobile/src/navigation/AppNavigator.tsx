@@ -7,20 +7,45 @@ import { useAuth } from "../auth/AuthContext";
 import { STORAGE_DEFER_PROFESSIONAL_SELECTION } from "../constants/storageKeys";
 import { BookingsRefreshProvider } from "../context/BookingsRefreshContext";
 import { PatientProfileProvider, usePatientProfile } from "../context/PatientProfileContext";
+import { DlocalCheckoutReturnHost } from "../payments/DlocalCheckoutReturnHost";
+import { TrialCheckoutReturnHost } from "../payments/TrialCheckoutReturnHost";
+import { MacaHost } from "../maca/MacaHost";
+import { PushNotificationsHost } from "../notifications/PushNotificationsHost";
+import { PatientPreferencesProvider } from "../context/PatientPreferencesContext";
 import type { AppThemeColors } from "../theme/colors";
 import { useThemeMode } from "../theme/ThemeContext";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
-import { IntakeWizardScreen } from "../screens/onboarding/IntakeWizardScreen";
+import { ForgotPasswordScreen } from "../screens/ForgotPasswordScreen";
+import { ResetPasswordScreen } from "../screens/ResetPasswordScreen";
+import { VerifyEmailRequiredScreen } from "../screens/VerifyEmailRequiredScreen";
+import { VerifyEmailTokenScreen } from "../screens/VerifyEmailTokenScreen";
+import { IntakeOnboardingGate } from "../screens/onboarding/IntakeOnboardingGate";
 import { RiskBlockedScreen } from "../screens/onboarding/RiskBlockedScreen";
 import { CalendarConnectScreen } from "../screens/onboarding/CalendarConnectScreen";
 import { MatchingScreen } from "../screens/onboarding/MatchingScreen";
+import { DiaryHomeScreen } from "../screens/wellbeing/DiaryHomeScreen";
+import { DiaryNewEntryScreen } from "../screens/wellbeing/DiaryNewEntryScreen";
+import { DiaryRecordsScreen } from "../screens/wellbeing/DiaryRecordsScreen";
+import { ExercisesListScreen } from "../screens/wellbeing/ExercisesListScreen";
+import { ExerciseDetailScreen } from "../screens/wellbeing/ExerciseDetailScreen";
+import { ExerciseRoutineScreen } from "../screens/wellbeing/ExerciseRoutineScreen";
+import { RelaxationMusicScreen } from "../screens/wellbeing/RelaxationMusicScreen";
+import { HelpFaqScreen } from "../screens/help/HelpFaqScreen";
 import { MainTabs } from "./MainTabs";
+import { authLinking } from "./linking";
 import type { AuthStackParamList, PatientRootStackParamList, PostIntakeParamList } from "./types";
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const PostIntakeStack = createNativeStackNavigator<PostIntakeParamList>();
 const PatientRootStack = createNativeStackNavigator<PatientRootStackParamList>();
+
+type EmailGateParamList = {
+  VerifyEmailRequired: undefined;
+  VerifyEmailToken: { token?: string } | undefined;
+};
+
+const EmailGateStack = createNativeStackNavigator<EmailGateParamList>();
 
 function buildNavigationTheme(dark: boolean, colors: AppThemeColors): Theme {
   return {
@@ -65,6 +90,14 @@ function PatientRootNavigator() {
     <PatientRootStack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Tabs">
       <PatientRootStack.Screen name="Tabs" component={MainTabs} />
       <PatientRootStack.Screen name="ProfessionalMatching" component={MatchingScreen} />
+      <PatientRootStack.Screen name="DiaryHome" component={DiaryHomeScreen} />
+      <PatientRootStack.Screen name="DiaryNew" component={DiaryNewEntryScreen} />
+      <PatientRootStack.Screen name="DiaryRecords" component={DiaryRecordsScreen} />
+      <PatientRootStack.Screen name="ExercisesList" component={ExercisesListScreen} />
+      <PatientRootStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+      <PatientRootStack.Screen name="ExerciseRoutine" component={ExerciseRoutineScreen} />
+      <PatientRootStack.Screen name="RelaxationMusic" component={RelaxationMusicScreen} />
+      <PatientRootStack.Screen name="HelpFaq" component={HelpFaqScreen} />
     </PatientRootStack.Navigator>
   );
 }
@@ -98,7 +131,7 @@ function AuthenticatedGate() {
   }
 
   if (!profile?.intakeCompletedAt) {
-    return <IntakeWizardScreen />;
+    return <IntakeOnboardingGate />;
   }
 
   if (profile.intakeRiskBlocked) {
@@ -123,12 +156,24 @@ function AuthNavigator() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <AuthStack.Screen name="VerifyEmailToken" component={VerifyEmailTokenScreen} />
     </AuthStack.Navigator>
   );
 }
 
+function EmailVerificationGateNavigator() {
+  return (
+    <EmailGateStack.Navigator screenOptions={{ headerShown: false }} initialRouteName="VerifyEmailRequired">
+      <EmailGateStack.Screen name="VerifyEmailRequired" component={VerifyEmailRequiredScreen} />
+      <EmailGateStack.Screen name="VerifyEmailToken" component={VerifyEmailTokenScreen} />
+    </EmailGateStack.Navigator>
+  );
+}
+
 export function AppNavigator() {
-  const { loading, token } = useAuth();
+  const { loading, token, needsEmailVerification } = useAuth();
   const { mode, colors } = useThemeMode();
 
   if (loading) {
@@ -136,16 +181,25 @@ export function AppNavigator() {
   }
 
   const navigationTheme = buildNavigationTheme(mode === "dark", colors);
+  const linking = !token || needsEmailVerification ? authLinking : undefined;
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={navigationTheme} linking={linking}>
       {!token ? (
         <AuthNavigator />
+      ) : needsEmailVerification ? (
+        <EmailVerificationGateNavigator />
       ) : (
         <PatientProfileProvider>
-          <BookingsRefreshProvider>
-            <AuthenticatedGate />
-          </BookingsRefreshProvider>
+          <PatientPreferencesProvider>
+            <BookingsRefreshProvider>
+              <AuthenticatedGate />
+              <DlocalCheckoutReturnHost />
+              <TrialCheckoutReturnHost />
+              <MacaHost />
+              <PushNotificationsHost />
+            </BookingsRefreshProvider>
+          </PatientPreferencesProvider>
         </PatientProfileProvider>
       )}
     </NavigationContainer>

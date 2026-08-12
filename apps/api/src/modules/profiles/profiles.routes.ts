@@ -1124,6 +1124,66 @@ profilesRouter.patch("/me/notification-preferences", requireAuth, async (req: Au
   return res.json({ role: "PATIENT" as const, profile: updated });
 });
 
+const pushTokenSchema = z.object({
+  expoPushToken: z.string().trim().min(8).max(512),
+  platform: z.enum(["ios", "android", "unknown"]).optional()
+});
+
+const PATIENT_EXPO_PUSH_TOKENS_KEY = "patient-expo-push-tokens";
+
+/**
+ * Registra el Expo push token del dispositivo del paciente.
+ * Se guarda en SystemConfig (mapa patientId → tokens) sin migración Prisma.
+ * El envío remoto de push puede cablearse después sobre esta lista.
+ */
+profilesRouter.post("/me/push-token", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = pushTokenSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can register push tokens" });
+  }
+
+  const patientId = actor.patientProfileId;
+  const expoPushToken = parsed.data.expoPushToken;
+  const platform = parsed.data.platform ?? "unknown";
+
+  const existing = await prisma.systemConfig.findUnique({ where: { key: PATIENT_EXPO_PUSH_TOKENS_KEY } });
+  let map: Record<
+    string,
+    Array<{ token: string; platform: string; updatedAt: string }>
+  > = {};
+  if (existing?.value) {
+    try {
+      map = JSON.parse(existing.value) as typeof map;
+    } catch {
+      map = {};
+    }
+  }
+
+  const list = Array.isArray(map[patientId]) ? map[patientId] : [];
+  const nextList = [
+    { token: expoPushToken, platform, updatedAt: new Date().toISOString() },
+    ...list.filter((row) => row.token !== expoPushToken)
+  ].slice(0, 8);
+  map[patientId] = nextList;
+
+  await prisma.systemConfig.upsert({
+    where: { key: PATIENT_EXPO_PUSH_TOKENS_KEY },
+    create: { key: PATIENT_EXPO_PUSH_TOKENS_KEY, value: JSON.stringify(map) },
+    update: { value: JSON.stringify(map) }
+  });
+
+  return res.json({ ok: true });
+});
+
 profilesRouter.patch("/me/active-professional", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
