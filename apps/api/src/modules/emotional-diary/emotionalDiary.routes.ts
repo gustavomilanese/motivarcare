@@ -38,7 +38,7 @@ function handleEmotionalDiaryError(res: Parameters<typeof sendApiError>[0]["res"
       return void sendApiError({ res, status: 404, code: "NOT_FOUND", message: error.message });
     }
     if (error.code === "NO_PROFESSIONAL" || error.code === "NO_ENTRIES" || error.code === "BAD_REQUEST") {
-      return void sendApiError({ res, status: 400, code: error.code, message: error.message });
+      return void sendApiError({ res, status: 400, code: "BAD_REQUEST", message: error.message });
     }
     return void sendApiError({ res, status: 403, code: "FORBIDDEN", message: error.message });
   }
