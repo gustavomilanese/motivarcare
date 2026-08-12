@@ -17,6 +17,7 @@ import {
 } from "../../wellbeing/utils/relaxationYoutube";
 import { ExercisesBannerGlyph, MusicBannerGlyph, MusicOpenIcon } from "./HomeBannerGlyphs";
 import { BenefitIcon } from "./BenefitIcons";
+import { navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -57,7 +58,12 @@ function HomeFeatureBanner(props: {
       <div className="dashboard-ml-feature-banner-frame">
         <div className="dashboard-ml-feature-banner-copy">
           {props.isMobilePortal ? (
-            <div className="dashboard-ml-feature-banner-head">
+            <button
+              type="button"
+              className="dashboard-ml-feature-banner-head dashboard-ml-section-banner-head--nav"
+              onClick={props.onCta}
+              aria-label={mobileCtaLabel}
+            >
               <div className="dashboard-ml-feature-banner-title-stack">
                 {!props.hideMobileKicker ? (
                   <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
@@ -72,16 +78,14 @@ function HomeFeatureBanner(props: {
                 </h2>
               </div>
               {!props.hideMobileCta ? (
-                <button
-                  type="button"
+                <span
                   className={`dashboard-ml-feature-banner-action${props.compactCtaIcon ? " dashboard-ml-feature-banner-action--icon" : ""}`}
-                  onClick={props.onCta}
-                  aria-label={props.compactCtaIcon ? mobileCtaLabel : undefined}
+                  aria-hidden="true"
                 >
                   {props.compactCtaIcon ? props.compactCtaIcon : mobileCtaLabel}
-                </button>
+                </span>
               ) : null}
-            </div>
+            </button>
           ) : (
             <>
               <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
@@ -226,7 +230,7 @@ export function DashboardHomeExercisesSection(props: {
         isMobilePortal={props.isMobilePortal}
         glyph={<ExercisesBannerGlyph />}
         tone="purple"
-        onCta={() => navigate("/ejercicios")}
+        onCta={() => navigateToSectionTop(navigate, "/ejercicios")}
       />
 
       <FeaturePreviewOpen
@@ -243,7 +247,7 @@ export function DashboardHomeExercisesSection(props: {
           en: "View all exercises",
           pt: "Ver todos os exercicios"
         }}
-        onMore={() => navigate("/ejercicios")}
+        onMore={() => navigateToSectionTop(navigate, "/ejercicios")}
         hasItems={firstRow.length > 0}
       >
         <div className="dashboard-ml-feature-preview-row">
@@ -351,7 +355,7 @@ export function DashboardHomeMusicSection(props: {
         isMobilePortal={props.isMobilePortal}
         glyph={<MusicBannerGlyph />}
         tone="pistachio"
-        onCta={() => navigate("/bienestar/musica")}
+        onCta={() => navigateToSectionTop(navigate, "/bienestar/musica")}
       />
 
       <FeaturePreviewOpen
@@ -368,7 +372,7 @@ export function DashboardHomeMusicSection(props: {
           en: "View all music",
           pt: "Ver toda a musica"
         }}
-        onMore={() => navigate("/bienestar/musica")}
+        onMore={() => navigateToSectionTop(navigate, "/bienestar/musica")}
         hasItems={firstRow.length > 0}
       >
         <div className="dashboard-ml-feature-preview-row">

@@ -6,7 +6,14 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getIdempotencyValue, setIdempotencyValue } from "../../lib/idempotencyStore.js";
 import type { Market } from "@prisma/client";
-import { createDlocalCheckoutForIndividualSessions, createDlocalCheckoutForPackage, createDlocalCheckoutForTrialSession, processDlocalGoOrderSync, processDlocalGoPaymentNotification } from "./dlocalGoCheckout.service.js";
+import {
+  createDlocalCheckoutForIndividualSessions,
+  createDlocalCheckoutForPackage,
+  createDlocalCheckoutForTrialSession,
+  processDlocalGoOrderSync,
+  processDlocalGoPaymentNotification,
+  syncPendingDlocalCheckoutsForPatient
+} from "./dlocalGoCheckout.service.js";
 import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSessionPurchase.js";
 import { assertPatientOwnsPaymentCheckout } from "./paymentCheckout.service.js";
 import { isDlocalGoConfigured, verifyDlocalGoNotificationSignature } from "../../lib/dlocalGoClient.js";
@@ -658,6 +665,36 @@ paymentsRouter.post("/dlocal/sync-order", requireAuth, async (req: Authenticated
     return respondDlocalSyncResult(res, result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not sync payment";
+    return res.status(400).json({ error: message });
+  }
+});
+
+paymentsRouter.post("/dlocal/sync-pending", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!isDlocalGoConfigured()) {
+    return res.status(501).json({ error: "dLocal Go not configured" });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can sync payments" });
+  }
+
+  try {
+    const result = await syncPendingDlocalCheckoutsForPatient(actor.patientProfileId);
+    return res.status(200).json({
+      ok: true,
+      fulfilled: result.fulfilled,
+      attempted: result.attempted,
+      paymentStatus: result.paymentStatus ?? null,
+      purchaseId: result.purchaseId ?? null,
+      checkoutId: result.checkoutId ?? null
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not sync pending payments";
     return res.status(400).json({ error: message });
   }
 });

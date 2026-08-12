@@ -215,6 +215,19 @@ export function HomePage(props: {
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
   const [homeProfileModalOpen, setHomeProfileModalOpen] = useState(false);
   const [assignProModalOpen, setAssignProModalOpen] = useState(false);
+  const openHomeChat = useCallback(
+    (professionalId: string) => {
+      const id = professionalId.trim();
+      if (!id) return;
+      if (isMobilePortal) {
+        props.onGoToChat(id);
+        return;
+      }
+      props.onSetActiveChatProfessional(id);
+      setHomeChatModalOpen(true);
+    },
+    [isMobilePortal, props.onGoToChat, props.onSetActiveChatProfessional]
+  );
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current =
     assignProModalOpen ||
@@ -803,21 +816,16 @@ export function HomePage(props: {
           onNavigateToRebookTrial={props.onNavigateToRebookTrial}
           onNavigateToBookTrial={props.onNavigateToBookTrial}
           trialStatus={trialStatus}
-          completedTrialBooking={completedTrialBooking}
           onGoToBooking={props.onGoToBooking}
           onBuySessions={() => setHomePurchaseModalOpen(true)}
           onBookWithoutCredits={() => setNoSessionsRedirectModalOpen(true)}
           onOpenBookingDetail={props.onOpenBookingDetail}
           onRescheduleBooking={props.onRescheduleBooking}
-          onGoToChat={(professionalId) => {
-            props.onSetActiveChatProfessional(professionalId);
-            setHomeChatModalOpen(true);
-          }}
+          onGoToChat={openHomeChat}
           onOpenProfessionalProfile={() => setHomeProfileModalOpen(true)}
           onNavigateToChangeProfessional={props.onNavigateToChangeProfessional}
           onGoToReservations={props.onGoToReservations}
           upcomingBookings={upcomingConfirmedBookings}
-          allBookings={props.state.bookings}
           professionals={props.professionals}
           pricingProfessionalId={pricingProfessionalId}
           isMobilePortal={isMobilePortal}
@@ -878,10 +886,7 @@ export function HomePage(props: {
           onOpenPatientGoogleCalendarConnect={props.onOpenPatientGoogleCalendarConnect}
           onOpenTrialModal={openTrialModal}
           onOpenProfileModal={() => setHomeProfileModalOpen(true)}
-          onOpenChat={(professionalId) => {
-            props.onSetActiveChatProfessional(professionalId);
-            setHomeChatModalOpen(true);
-          }}
+          onOpenChat={openHomeChat}
           onChooseProfessional={openChooseProfessional}
           onAcquireSessions={dispatchAcquireSessions}
           onStartPackagePurchase={handleStartPackagePurchase}
@@ -1342,8 +1347,7 @@ export function HomePage(props: {
           onClose={() => setHomeProfileModalOpen(false)}
           onChat={() => {
             setHomeProfileModalOpen(false);
-            props.onSetActiveChatProfessional(activeProfessional.id);
-            setHomeChatModalOpen(true);
+            openHomeChat(activeProfessional.id);
           }}
           onChangeProfessional={() => {
             setHomeProfileModalOpen(false);

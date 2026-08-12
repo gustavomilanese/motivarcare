@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercisesContent, type ExerciseCategory, type ExercisePost, type ExerciseRoutine } from "../services/exercisesApi";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import {
   ALL_CATEGORIES,
   categoryAccent,
@@ -19,6 +20,7 @@ export interface ExercisesListPageProps {
 type CategoryFilter = "all" | ExerciseCategory;
 
 export function ExercisesListPage(props: ExercisesListPageProps) {
+  useScrollSectionToTopOnMount();
   const [exercises, setExercises] = useState<ExercisePost[]>([]);
   const [routines, setRoutines] = useState<ExerciseRoutine[]>([]);
   const [loading, setLoading] = useState(true);

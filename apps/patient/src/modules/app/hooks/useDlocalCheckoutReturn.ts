@@ -99,6 +99,7 @@ export function useDlocalCheckoutReturn(options: {
   onSyncDlocalPayment?: (params: {
     paymentId?: string | null;
     orderId?: string | null;
+    allowPendingFallback?: boolean;
   }) => Promise<{ ok: boolean; fulfilled?: boolean; error?: string }>;
   onRefreshPortalFromApi?: () => void | Promise<void>;
   /**
@@ -166,20 +167,14 @@ export function useDlocalCheckoutReturn(options: {
           return;
         }
 
-        if (!paymentId && !orderId) {
-          setErrorMessage(
-            t(options.language, {
-              es: "No pudimos confirmar la compra automáticamente. Actualizá la página; si el pago ya se realizó y no ves sesiones, contactanos.",
-              en: "We couldn't confirm the purchase automatically. Refresh the page; if you already paid and sessions are missing, contact us.",
-              pt: "Nao foi possivel confirmar a compra automaticamente. Atualize a pagina; se o pagamento ja foi feito e as sessoes nao aparecem, fale conosco."
-            })
-          );
-          goHome();
-          return;
-        }
-
         if (options.onSyncDlocalPayment) {
-          const synced = await options.onSyncDlocalPayment({ paymentId, orderId });
+          // Con o sin IDs locales: allowPendingFallback recupera REDIRECTED del paciente
+          // (mobile sin sessionStorage). En prod solo corre en este return explícito.
+          const synced = await options.onSyncDlocalPayment({
+            paymentId,
+            orderId,
+            allowPendingFallback: true
+          });
           if (!synced.ok) {
             setErrorMessage(
               friendlyCheckoutPackageMessage(synced.error ?? "Could not confirm payment", options.language)
@@ -198,6 +193,16 @@ export function useDlocalCheckoutReturn(options: {
             goHome();
             return;
           }
+        } else if (!paymentId && !orderId) {
+          setErrorMessage(
+            t(options.language, {
+              es: "No pudimos confirmar la compra automáticamente. Actualizá la página; si el pago ya se realizó y no ves sesiones, contactanos.",
+              en: "We couldn't confirm the purchase automatically. Refresh the page; if you already paid and sessions are missing, contact us.",
+              pt: "Nao foi possivel confirmar a compra automaticamente. Atualize a pagina; se o pagamento ja foi feito e as sessoes nao aparecem, fale conosco."
+            })
+          );
+          goHome();
+          return;
         }
 
         options.onCheckoutFulfilled?.();
@@ -215,9 +220,8 @@ export function useDlocalCheckoutReturn(options: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasReturnParam]);
 
-  // Reanudación: hay un checkout pendiente en storage pero sin parámetro en la
-  // URL (p. ej. el paciente reabrió la app). Intentamos confirmar en segundo
-  // plano y, si ya está acreditado, mostramos el éxito.
+  // Reanudación: pending en storage (prod+local) o, solo en DEV, barrido de
+  // checkouts REDIRECTED (local no tiene webhook de dLocal).
   useEffect(() => {
     if (
       hasReturnParam
@@ -229,15 +233,19 @@ export function useDlocalCheckoutReturn(options: {
       return;
     }
     const pending = readPendingCheckoutDlocalReturn();
-    if (!pending?.paymentId?.trim() && !pending?.orderId?.trim()) {
+    const hasPendingRef = Boolean(pending?.paymentId?.trim() || pending?.orderId?.trim());
+    const isDev = import.meta.env.DEV;
+    if (!hasPendingRef && !isDev) {
       return;
     }
+
     resumeRef.current = true;
 
     void (async () => {
       const synced = await options.onSyncDlocalPayment!({
-        paymentId: pending.paymentId,
-        orderId: pending.orderId
+        paymentId: pending?.paymentId,
+        orderId: pending?.orderId,
+        allowPendingFallback: true
       });
       if (synced.ok && synced.fulfilled) {
         options.onCheckoutFulfilled?.();

@@ -6252,7 +6252,12 @@ button.danger:disabled:hover {
   display: grid;
   place-items: center;
   padding: max(16px, var(--safe-top)) 16px max(24px, var(--safe-bottom));
-  z-index: 30;
+  /* Por encima del header (100) y tab bar mobile (50); alinea con payment sheets */
+  z-index: 220;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .locale-controls {
@@ -6448,6 +6453,11 @@ button.danger:disabled:hover {
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.05),
     0 24px 56px rgba(30, 27, 75, 0.14);
+  max-height: min(90dvh, 920px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .session-booking-header {
@@ -6799,91 +6809,104 @@ button.danger:disabled:hover {
   background: linear-gradient(180deg, #fbf9ff 0%, #ffffff 100%);
 }
 
+
 .session-detail-modal {
-  width: min(860px, 100%);
-  border: 1px solid var(--portal-border);
-  border-radius: var(--portal-radius);
-  padding: 22px;
-  gap: 14px;
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(111, 89, 245, 0.1) 0%, rgba(111, 89, 245, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #f7f7ff 100%);
-  box-shadow: var(--portal-elev-lg);
+  width: min(400px, 100%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 16px 18px 18px;
+  gap: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.03),
+    0 24px 48px rgba(15, 23, 42, 0.14);
+  max-height: min(88dvh, 640px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .session-detail-head {
+  display: flex;
   align-items: center;
-  border-bottom: 1px solid #e5eaf4;
-  padding-bottom: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-.session-detail-head-copy p {
-  margin: 6px 0 0;
-  color: #5e6e87;
-  font-size: 13px;
-  font-weight: 600;
+.session-detail-status {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5f44eb;
+  background: rgba(95, 68, 235, 0.1);
+}
+
+.session-detail-status--done {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.session-detail-status--cancelled {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .session-detail-close {
-  width: 44px;
-  height: 44px;
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
-  border: 1px solid var(--portal-border);
-  border-radius: var(--portal-radius-sm);
-  background: #fff;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: #f1f5f9;
   color: #64748b;
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1;
   padding: 0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
+  cursor: pointer;
 }
 
 .session-detail-close:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: #e2e8f0;
+  border-color: transparent;
+  color: #334155;
 }
 
-.session-detail-summary {
-  border: 1px solid #e2e8f3;
-  border-radius: 14px;
-  background: #fff;
-  padding: 10px 12px;
-  display: flex;
+.session-detail-pro {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  gap: 10px;
+}
+
+.session-detail-pro img {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .session-detail-pro-copy {
   display: grid;
-  gap: 8px;
+  gap: 2px;
   min-width: 0;
-}
-
-.session-detail-pro-identity-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 10px;
-  row-gap: 4px;
-  min-width: 0;
-}
-
-.session-detail-pro-identity-row--static {
-  display: flex;
-}
-
-.session-detail-pro-name {
-  margin: 0;
-  font-size: clamp(17px, 2vw, 20px);
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-  color: #1a263d;
 }
 
 .session-detail-pro-reviews-trigger {
-  display: block;
+  display: grid;
+  gap: 4px;
   width: 100%;
   max-width: 100%;
   border: none;
@@ -6895,16 +6918,9 @@ button.danger:disabled:hover {
   border-radius: 8px;
 }
 
-.session-detail-pro-reviews-trigger:hover,
-.session-detail-pro-reviews-trigger:focus-visible {
-  background: transparent;
-}
-
 .session-detail-pro-reviews-trigger:hover .session-detail-pro-name,
 .session-detail-pro-reviews-trigger:focus-visible .session-detail-pro-name {
   color: var(--brand);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .session-detail-pro-reviews-trigger:focus-visible {
@@ -6912,11 +6928,20 @@ button.danger:disabled:hover {
   outline-offset: 2px;
 }
 
+.session-detail-pro-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
 .session-detail-pro-rating {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 5px;
+  gap: 4px;
 }
 
 .session-detail-pro-rating--static {
@@ -6924,120 +6949,324 @@ button.danger:disabled:hover {
 }
 
 .session-detail-pro-rating-value {
-  font-size: 0.8rem;
+  font-size: 12px;
   font-weight: 700;
-  color: #475569;
+  color: #64748b;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
 .session-detail-pro-title {
   margin: 0;
-  padding-top: 2px;
-  color: #5d6c85;
+  color: #64748b;
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
-.session-detail-pro {
+.session-detail-when {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 10px;
-  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-.session-detail-pro img {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 1px solid #d7dfef;
-}
-
-.session-detail-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.session-detail-meta-grid--completed {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.session-detail-meta-grid p {
+.session-detail-when-date {
   margin: 0;
-  border: 1px solid #e3e9f5;
-  border-radius: 12px;
-  background: #fff;
-  padding: 10px;
-  display: grid;
-  gap: 3px;
-}
-
-.session-detail-meta-grid p strong {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #5c6d88;
-}
-
-.session-detail-meta-grid p span {
-  font-size: 13px;
-  color: #1d2b42;
+  font-size: 15px;
   font-weight: 600;
+  line-height: 1.3;
+  color: #0f172a;
+  text-transform: capitalize;
+}
+
+.session-detail-when-time {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-detail-when-tz {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
   word-break: break-word;
 }
 
-.session-detail-completed-note {
+.session-detail-footnote {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
-.session-detail-completed-note p {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: #166534;
-  font-weight: 550;
-}
-
-.session-detail-completed-note--cancelled {
-  border-color: #fecaca;
-  background: #fef2f2;
-}
-
-.session-detail-completed-note--cancelled p {
-  color: #b91c1c;
-}
-
-.session-detail-modal--completed {
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
-
+.session-detail-modal--completed,
 .session-detail-modal--cancelled {
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(239, 68, 68, 0.06) 0%, rgba(239, 68, 68, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: #ffffff;
 }
 
-@media (max-width: 640px) {
-  .session-detail-meta-grid,
-  .session-detail-meta-grid--completed {
-    grid-template-columns: 1fr;
-  }
+.session-detail-modal--cancel {
+  gap: 14px;
 }
 
-.session-detail-footer {
-  border-radius: 16px;
-  padding: 12px;
+.session-detail-cancel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
 }
 
-.session-detail-footer .session-link {
+.session-detail-cancel-copy {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.session-detail-change-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.session-detail-action {
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.session-detail-action--primary {
+  border: 0;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  color: #fff;
+}
+
+.session-detail-action--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+  color: #fff;
+}
+
+.session-detail-action--primary:disabled,
+.session-detail-action--primary:disabled:hover,
+.session-detail-action--primary:disabled:focus-visible {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  color: #fff;
+}
+
+.session-detail-action--ghost {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+}
+
+.session-detail-action--ghost:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.session-detail-action--ghost:disabled,
+.session-detail-action--ghost:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #fff;
+  color: #4a5568;
+}
+
+.session-detail-action--danger-outline {
+  border: 1px solid rgba(180, 35, 24, 0.4);
+  background: #fff;
+  color: #b42318;
+}
+
+.session-detail-action--danger-outline:hover:not(:disabled) {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+
+.session-detail-action--danger-outline:disabled,
+.session-detail-action--danger-outline:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #fff;
+  border-color: rgba(180, 35, 24, 0.35);
+  color: #b42318;
+}
+
+.session-detail-action--danger {
+  border: 0;
+  background: #b42318;
+  color: #fff;
+}
+
+.session-detail-action--danger:hover:not(:disabled) {
+  background: #912018;
+  color: #fff;
+}
+
+.session-detail-action--danger:disabled,
+.session-detail-action--danger:disabled:hover,
+.session-detail-action--danger:disabled:focus-visible {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #b42318;
+  color: #fff;
+}
+
+.session-detail-cancel-confirm {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.session-detail-cancel-confirm p {
+  margin: 0;
+  color: #4a5568;
+  font-size: 13px;
+}
+
+.session-detail-cancel-reason {
+  display: grid;
+  gap: 6px;
+}
+
+.session-detail-cancel-reason span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.session-detail-cancel-reason textarea {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.session-detail-cancel-reason textarea:focus {
+  outline: 2px solid rgba(95, 68, 235, 0.25);
+  border-color: #7b5bff;
+}
+
+.session-detail-cancel-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.session-detail-meet {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.session-detail-meet-fallback-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.session-detail-meet-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.session-meet-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: #1a73e8;
+  box-shadow: 0 8px 20px rgba(26, 115, 232, 0.28);
+  border: none;
+  cursor: pointer;
+}
+
+.session-meet-primary:hover {
+  background: #1557b0;
+  color: #fff;
+}
+
+.session-meet-primary:active {
+  transform: translateY(1px);
+}
+
+.session-meet-primary--brand {
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 8px 20px rgba(95, 68, 235, 0.28);
+}
+
+.session-meet-primary--brand:hover {
+  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+}
+
+.session-meet-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.session-meet-secondary:hover {
+  border-color: rgba(95, 68, 235, 0.35);
+  color: #5f44eb;
+}
+
+.session-detail-meet-empty {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+  font-weight: 500;
+  text-align: center;
+}
+
+.session-link {
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 15px;
@@ -8032,7 +8261,7 @@ button.sessions-balance {
 
 @media (max-width: 720px) {
   .diary-home-page--ml .diary-page-ml {
-    padding: 10px 12px 0;
+    padding: 0;
   }
 
   .diary-home-page--ml .diary-page-ml-pack {
@@ -8053,7 +8282,7 @@ button.sessions-balance {
   background: transparent;
 }
 
-/* Sesiones page — layout Home ML (banner violeta + pack adjunto) */
+/* Sesiones page — layout Home ML (banner + pack). Card inset solo desktop. */
 .sessions-booking-page--ml {
   --dashboard-ml-page: #ebebeb;
   --dashboard-ml-brand: #5f44eb;
@@ -8061,98 +8290,115 @@ button.sessions-balance {
   padding-bottom: clamp(28px, 5vh, 48px);
 }
 
-.sessions-booking-page--ml .sessions-page-ml {
-  display: grid;
-  gap: 0;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 12px clamp(16px, 3vw, 28px) 0;
-  box-sizing: border-box;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-banner {
-  position: relative;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-toolbar.sessions-hero-toolbar-mount {
-  top: 12px;
-  right: 12px;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
-  gap: 14px;
-  padding: 16px;
-  margin: 0;
-  background: #fff;
-  border: 1px solid rgba(95, 68, 235, 0.12);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  box-shadow:
-    0 2px 4px rgba(15, 23, 42, 0.04),
-    0 12px 28px rgba(95, 68, 235, 0.14);
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack > .sessions-balance,
-.sessions-booking-page--ml .sessions-page-ml-pack > button.sessions-balance {
-  border-radius: 12px;
-  border: 1px solid rgba(95, 68, 235, 0.14);
-  border-bottom: 1px solid rgba(95, 68, 235, 0.14);
-  padding: 14px 16px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  background: linear-gradient(165deg, #fff 0%, #faf8ff 100%);
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack > .content-card,
-.sessions-booking-page--ml .sessions-page-ml-pack > section.content-card,
-.sessions-booking-page--ml .sessions-page-ml-pack > section {
-  margin: 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  background: #fff;
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-confirmed-panel.content-card {
-  background: #fff;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section,
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section,
-.sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section {
-  margin: 0 !important;
-  padding: 0;
-  border-radius: 12px;
-  border: 1px solid rgba(95, 68, 235, 0.14);
-  background:
-    linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
-  box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
-  overflow: hidden;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible .sessions-calendar-toggle {
-  padding: 14px 16px;
-}
-
-.sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-title {
-  font-size: 1rem;
-  font-weight: 750;
-  color: #1a1a1a;
-}
-
-@media (max-width: 720px) {
+@media (min-width: 1081px) {
   .sessions-booking-page--ml .sessions-page-ml {
-    padding: 10px 12px 0;
+    display: grid;
+    gap: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 12px clamp(16px, 3vw, 28px) 0;
+    box-sizing: border-box;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-banner {
+    position: relative;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-toolbar.sessions-hero-toolbar-mount {
+    top: 12px;
+    right: 12px;
   }
 
   .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
-    padding: 12px;
-    gap: 12px;
+    gap: 14px;
+    padding: 16px;
+    margin: 0;
+    background: #fff;
+    border: 1px solid rgba(95, 68, 235, 0.12);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.14);
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack > .sessions-balance,
+  .sessions-booking-page--ml .sessions-page-ml-pack > button.sessions-balance {
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.14);
+    border-bottom: 1px solid rgba(95, 68, 235, 0.14);
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: linear-gradient(165deg, #fff 0%, #faf8ff 100%);
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack > .content-card,
+  .sessions-booking-page--ml .sessions-page-ml-pack > section.content-card,
+  .sessions-booking-page--ml .sessions-page-ml-pack > section {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: #fff;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-confirmed-panel.content-card {
+    background: #fff;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section,
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section,
+  .sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section {
+    margin: 0 !important;
+    padding: 0;
+    border-radius: 12px;
+    border: 1px solid rgba(95, 68, 235, 0.14);
+    background:
+      linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
+    box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
+    overflow: hidden;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible .sessions-calendar-toggle {
+    padding: 14px 16px;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-title {
+    font-size: 1rem;
+    font-weight: 750;
+    color: #1a1a1a;
+  }
+}
+
+@media (max-width: 1080px) {
+  .sessions-booking-page--ml .sessions-page-ml {
+    display: grid;
+    gap: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-banner {
+    position: relative;
+  }
+
+  .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    background: #fff;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -8299,6 +8545,48 @@ button.sessions-balance {
 
 .sessions-booking-page .sessions-confirmed-list-root {
   min-width: 0;
+}
+
+.sessions-upcoming-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 4px;
+  padding: 0 4px;
+}
+
+.sessions-upcoming-pagination-btn {
+  appearance: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sessions-upcoming-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sessions-upcoming-pagination-btn:not(:disabled):hover,
+.sessions-upcoming-pagination-btn:not(:disabled):focus-visible {
+  border-color: rgba(95, 68, 235, 0.35);
+  color: #5f44eb;
+}
+
+.sessions-upcoming-pagination-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .sessions-booking-page .sessions-hero-icon {
@@ -9939,6 +10227,25 @@ button.sessions-balance {
   line-height: normal;
   letter-spacing: -0.02em;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sessions-secondary-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.35em;
+  height: 1.35em;
+  color: #2563eb;
+}
+
+.sessions-secondary-title-icon svg {
+  width: 100%;
+  height: 100%;
   display: block;
 }
 
@@ -12004,8 +12311,18 @@ button.sessions-balance {
     grid-row: 1;
   }
 
-  .portal-site-footer {
-    display: none;
+  .portal-shell.portal-shell--site-footer > .portal-site-footer {
+    grid-row: 2;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-top: 0;
+    padding: 28px var(--mobile-pad-x-end, 16px) calc(28px + var(--portal-tab-clear, 72px))
+      var(--mobile-pad-x, 16px);
+    background: var(--mobile-canvas, #f4f4f5);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
   }
 
   .portal-sidebar {
@@ -13619,16 +13936,14 @@ button.sessions-balance {
   }
 
   .session-detail-modal {
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .session-detail-pro h3 {
-    font-size: 20px;
-  }
-
-  .session-detail-meta-grid {
-    grid-template-columns: 1fr;
+    width: min(400px, calc(100vw - 24px));
+    max-width: min(400px, calc(100vw - 24px));
+    padding: 14px 16px 16px;
+    border-radius: 20px;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .wa-thread-item {
@@ -13672,7 +13987,11 @@ button.sessions-balance {
   .session-modal-backdrop {
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
+    /* Con contenido alto, alinear arriba para poder scrollear hasta el CTA */
+    place-items: start center;
   }
 
   .session-modal {
@@ -13689,6 +14008,8 @@ button.sessions-balance {
     min-width: 0;
     padding: 18px 16px 16px;
     gap: 16px;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
   }
 
   .session-booking-title {
@@ -14686,6 +15007,26 @@ button.sessions-balance {
     box-shadow: 0 -6px 28px rgba(15, 23, 42, 0.1);
   }
 
+  /* Reserva/reprogramar: por encima del tab bar y scrolleable en pantallas bajas */
+  .session-modal-backdrop {
+    place-items: start center;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .session-booking-modal {
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .session-detail-modal {
+    width: min(400px, calc(100vw - 24px));
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .portal-mobile-more-backdrop {
     display: block;
     position: fixed;
@@ -14818,11 +15159,15 @@ button.sessions-balance {
   .dashboard-hero-toolbar-mount,
   .sessions-booking-page .sessions-hero-toolbar-mount,
   .diary-home-page .sessions-hero-toolbar-mount,
-  .wellbeing-relax-toolbar-mount,
-  .chat-hero-toolbar-mount {
+  .wellbeing-relax-toolbar-mount {
     left: max(10px, env(safe-area-inset-left, 0px));
     right: max(10px, env(safe-area-inset-right, 0px));
     justify-content: stretch;
+  }
+
+  .chat-hero-toolbar-mount {
+    left: auto;
+    right: auto;
   }
 
   .patient-dashboard-home .dashboard-hero-toolbar-mount .header-actions,
@@ -15285,11 +15630,26 @@ button.sessions-balance {
   width: 100%;
   margin: 0;
   border-radius: 0;
-  background: #f1f5f9;
+  background: #f4f4f5;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   position: relative;
   /* Como el top bar: full-bleed por debajo del rail (z-index 70) */
   z-index: 1;
+}
+
+@media (max-width: 1080px) {
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer,
+  .portal-shell.portal-shell--site-footer > .portal-site-footer {
+    margin-top: 0;
+    background: #f4f4f5;
+  }
+
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    /* Un solo gris post-Música (el del surface); no sumar padding-top del pie */
+    padding-top: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
 }
 
 @media (min-width: 1081px) {
@@ -15503,17 +15863,18 @@ button.sessions-balance {
   .portal-main--home-ml .chat-page-root:not(.chat-page-root--embedded) {
     display: grid;
     grid-template-rows: 1fr;
-    justify-items: center;
+    justify-items: stretch;
     min-height: clamp(560px, calc(100vh - 140px), 860px);
-    padding: 16px clamp(16px, 3vw, 28px) 24px;
+    /* Offset del rail izquierdo para que no quede “aire” de más a la derecha */
+    padding: 16px clamp(16px, 3vw, 28px) 24px calc(var(--portal-home-ml-rail-collapsed, 58px) + clamp(16px, 3vw, 28px));
     box-sizing: border-box;
     background: transparent;
   }
 
   .portal-main--home-ml .chat-page-root:not(.chat-page-root--embedded) .chat-page-body {
     width: 100%;
-    max-width: 1200px;
-    justify-self: center;
+    max-width: none;
+    justify-self: stretch;
     min-height: 0;
     height: 100%;
     padding: 0;
@@ -15526,8 +15887,8 @@ button.sessions-balance {
 
   .portal-main--home-ml .wa-shell:not(.wa-shell--embedded) {
     width: 100%;
-    max-width: 1200px;
-    justify-self: center;
+    max-width: none;
+    justify-self: stretch;
     min-height: 0;
     height: 100%;
     border-radius: 12px;
@@ -16170,7 +16531,7 @@ button.sessions-balance {
   Patron Mercado Libre (violeta MotivarCare):
   - banda full-bleed con glow suave
   - hero contenido centrado: texto + arte
-  - cards montadas: el violeta llega a la mitad y se esfuma al gris
+  - cards montadas: el color se esfuma al gris de página (background-image, no ::after)
 */
 .dashboard-ml-brand-band {
   --dashboard-ml-band-fade: 180px;
@@ -16179,15 +16540,27 @@ button.sessions-balance {
   width: 100%;
   margin: 0;
   box-sizing: border-box;
-  /* Color plano: el esfumado lo hace ::after (evita bandas/líneas entre stops) */
-  background: #5f44eb;
-  padding-bottom: 120px;
+  /* Color base + velo al gris de página (evita corte al pie de las Accesos) */
+  background-color: #5f44eb;
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent calc(100% - var(--dashboard-ml-band-fade)),
+    var(--dashboard-ml-page) 100%
+  );
+  padding-bottom: 140px;
   overflow: visible;
   transition: background-color 420ms ease;
 }
 
 .dashboard-ml-brand-band--access {
-  background: #ffe600;
+  background-color: #ffe600;
+  background-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent calc(100% - var(--dashboard-ml-band-fade)),
+    var(--dashboard-ml-page) 100%
+  );
 }
 
 .dashboard-ml-brand-band::before {
@@ -16267,26 +16640,7 @@ button.sessions-balance {
 }
 
 .dashboard-ml-brand-band::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--dashboard-ml-band-fade);
-  z-index: 0;
-  pointer-events: none;
-  /* Un solo velo largo al gris de página, sin cortes visibles */
-  background: linear-gradient(
-    180deg,
-    rgba(235, 235, 235, 0) 0%,
-    rgba(235, 235, 235, 0.02) 12%,
-    rgba(235, 235, 235, 0.08) 28%,
-    rgba(235, 235, 235, 0.2) 44%,
-    rgba(235, 235, 235, 0.4) 60%,
-    rgba(235, 235, 235, 0.65) 76%,
-    rgba(235, 235, 235, 0.88) 90%,
-    var(--dashboard-ml-page) 100%
-  );
+  content: none;
 }
 
 .dashboard-ml-home .dashboard-ml-toolbar-mount.dashboard-hero-toolbar-mount {
@@ -16725,8 +17079,8 @@ button.sessions-balance {
   z-index: 3;
   padding-top: 0;
   padding-bottom: 4px;
-  /* Cards montadas: la mitad inferior queda sobre el fade del violeta */
-  margin-top: -120px;
+  /* Cards montadas sobre el fade (misma posición que antes) */
+  margin-top: -140px;
 }
 
 .dashboard-ml-surface:not(.dashboard-ml-surface--brand):not(.dashboard-ml-surface--bridge) {
@@ -17342,16 +17696,31 @@ button.sessions-balance {
     flex: 1 1 auto;
     min-width: 0;
     flex-wrap: nowrap;
-    align-items: baseline;
-    gap: 5px;
+    align-items: center;
+    gap: 8px;
   }
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #5f44eb;
     font-size: 0.8rem;
     font-weight: 750;
     letter-spacing: -0.02em;
-    line-height: 1.25;
-    color: #5f44eb;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num--empty {
+    background: #94a3b8;
+    color: #ffffff;
+    opacity: 1;
   }
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label {
@@ -17476,6 +17845,77 @@ button.sessions-balance {
   min-width: 0;
 }
 
+.dashboard-ml-section-banner-head--nav,
+.dashboard-ml-sessions-banner-head--nav {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 160ms ease;
+}
+
+.dashboard-ml-section-banner-head--nav:hover,
+.dashboard-ml-section-banner-head--nav:focus-visible,
+.dashboard-ml-section-banner-head--nav:active,
+.dashboard-ml-sessions-banner-head--nav:hover,
+.dashboard-ml-sessions-banner-head--nav:focus-visible,
+.dashboard-ml-sessions-banner-head--nav:active {
+  /* Anula button:hover global (#f8fbff) sobre el banner de color */
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.dashboard-ml-section-banner-head--nav:focus-visible,
+.dashboard-ml-sessions-banner-head--nav:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.dashboard-ml-section-banner-head--nav:active,
+.dashboard-ml-sessions-banner-head--nav:active {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(0.985);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-ml-section-banner-head--nav:hover .dashboard-ml-sessions-banner-title,
+.dashboard-ml-section-banner-head--nav:focus-visible .dashboard-ml-sessions-banner-title,
+.dashboard-ml-section-banner-head--nav:active .dashboard-ml-sessions-banner-title,
+.dashboard-ml-section-banner-head--nav:hover .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:focus-visible .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:active .dashboard-ml-diary-banner-title,
+.dashboard-ml-section-banner-head--nav:hover .dashboard-ml-feature-banner-title,
+.dashboard-ml-section-banner-head--nav:focus-visible .dashboard-ml-feature-banner-title,
+.dashboard-ml-section-banner-head--nav:active .dashboard-ml-feature-banner-title,
+.dashboard-ml-sessions-banner-head--nav:hover .dashboard-ml-sessions-banner-title,
+.dashboard-ml-sessions-banner-head--nav:focus-visible .dashboard-ml-sessions-banner-title,
+.dashboard-ml-sessions-banner-head--nav:active .dashboard-ml-sessions-banner-title {
+  color: #fff;
+  text-shadow: 0 1px 14px rgba(255, 255, 255, 0.22);
+}
+
 .dashboard-ml-sessions-banner-kicker {
   margin: 0;
   font-size: 0.78rem;
@@ -17493,6 +17933,24 @@ button.sessions-balance {
   font-weight: 800;
   color: #fff;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.dashboard-ml-sessions-banner-title-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 1.15em;
+  color: currentColor;
+}
+
+.dashboard-ml-sessions-banner-title-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .dashboard-ml-sessions-banner-reserve,
@@ -18068,6 +18526,8 @@ button.sessions-balance {
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-body-main {
+  flex: 1 1 0;
+  min-width: 0;
   gap: 1px;
 }
 
@@ -18086,8 +18546,14 @@ button.sessions-balance {
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-body-header {
-  align-items: flex-start;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-reschedule {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
@@ -19858,14 +20324,32 @@ button.sessions-balance {
   appearance: none;
   border: 1px solid var(--line);
   background: #fff;
-  border-radius: var(--portal-radius-sm);
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   min-height: 40px;
-  padding: 0 14px;
+  padding: 0;
   cursor: pointer;
-  font: inherit;
-  font-weight: 600;
   color: #1e293b;
   flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-home-pro-profile-close:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dashboard-home-pro-profile-close:focus-visible {
+  outline: 2px solid #5f44eb;
+  outline-offset: 2px;
+}
+
+.dashboard-home-pro-profile-close svg {
+  display: block;
 }
 
 .dashboard-home-pro-profile-body {
@@ -20108,24 +20592,42 @@ button.sessions-balance {
 /* Portal móvil (≤1080): Home ML en columna + bottom tabs */
 @media (max-width: 1080px) {
   .patient-dashboard-home .dashboard-ml-home {
-    padding-bottom: calc(20px + var(--portal-tab-clear, 72px));
+    /* El clear del tab bar lo aporta el site footer; sin padding blanco/gris extra */
+    padding-bottom: 0;
+    background: var(--mobile-canvas, #f4f4f5);
+    --dashboard-ml-page: var(--mobile-canvas, #f4f4f5);
   }
 
   .patient-dashboard-home .dashboard-ml-brand-band {
-    --dashboard-ml-band-fade: 120px;
-    padding-bottom: 88px;
+    --dashboard-ml-band-fade: 168px;
+    padding-bottom: 112px;
   }
 
   .patient-dashboard-home .dashboard-ml-surface {
+    --mobile-home-section-gap: 20px;
     padding-left: 16px;
     padding-right: 16px;
-    gap: 18px;
+    /* Un solo ritmo entre Sesiones / Diario / Ejercicios / Música */
+    gap: var(--mobile-home-section-gap);
+  }
+
+  .patient-dashboard-home .dashboard-ml-surface:not(.dashboard-ml-surface--brand):not(.dashboard-ml-surface--bridge) {
+    padding-top: var(--mobile-home-section-gap);
+    padding-bottom: var(--mobile-home-section-gap);
   }
 
   .patient-dashboard-home .dashboard-ml-surface--bridge {
-    margin-top: -88px;
+    margin-top: -112px;
     padding-left: 0;
     padding-right: 0;
+    /* Aire Accesos → Sesiones (mitad del 30 previo) */
+    padding-bottom: 15px;
+    overflow: visible;
+  }
+
+  /* Justo después de Accesos: el aire ya lo dio el bridge */
+  .patient-dashboard-home .dashboard-ml-surface--bridge + .dashboard-ml-surface {
+    padding-top: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-row {
@@ -20134,12 +20636,13 @@ button.sessions-balance {
     align-items: stretch;
     gap: 14px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: 16px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    padding: 4px 0 12px;
+    /* Padding vertical: sombra de cards no se corta */
+    padding: 4px 0 8px;
     scrollbar-width: none;
   }
 
@@ -20202,6 +20705,22 @@ button.sessions-balance {
     font-weight: 650;
   }
 
+  /* Tu profesional (mobile): Chat como texto CTA, no botón */
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta {
+    pointer-events: auto;
+    cursor: pointer;
+    justify-self: center;
+    text-align: center;
+    width: 100%;
+    color: #5f44eb;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta:hover,
+  .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-cta:focus-visible {
+    text-decoration: underline;
+    outline: none;
+  }
+
   .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-icon-img--photo,
   .patient-dashboard-home .dashboard-ml-pro-main .dashboard-ml-benefit-icon-img--photo {
     width: 60px;
@@ -20219,6 +20738,9 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
     font-size: 0.8rem;
   }
 
@@ -20244,16 +20766,11 @@ button.sessions-balance {
     padding: 0 14px;
   }
 
-  .patient-dashboard-home .dashboard-ml-sessions {
-    margin-top: 28px;
-  }
-
-  .patient-dashboard-home .dashboard-ml-diary {
-    margin-top: 26px;
-  }
-
+  /* Márgenes por sección → 0: el gap del surface es el único espaciado */
+  .patient-dashboard-home .dashboard-ml-sessions,
+  .patient-dashboard-home .dashboard-ml-diary,
   .patient-dashboard-home .dashboard-ml-feature-section {
-    margin-top: 52px;
+    margin-top: 0;
   }
 
   /*
@@ -20389,8 +20906,10 @@ button.sessions-balance {
     background: transparent;
   }
 
-  /* Sesiones Home: más ancho, con un poquito de aire al borde */
-  .patient-dashboard-home .dashboard-ml-sessions {
+  /* Secciones Home: mismo ancho casi full-bleed (Sesiones / Diario / Ejercicios / Música) */
+  .patient-dashboard-home .dashboard-ml-sessions,
+  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-feature-section {
     margin-left: -10px;
     margin-right: -10px;
     width: calc(100% + 20px);
@@ -20409,7 +20928,8 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-pack {
     border-radius: 0 0 6px 6px;
-    padding: 6px 6px 0;
+    /* Mismo aire abajo que el gap entre reservas (8px) */
+    padding: 6px 6px 8px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav {
@@ -20425,7 +20945,7 @@ button.sessions-balance {
 
   /* Lista sesiones Home: filas anchas, con un poquito de margen interno */
   .patient-dashboard-home .dashboard-ml-sessions-pack {
-    padding: 6px 6px 0;
+    padding: 6px 6px 8px;
     background: #fff;
   }
 
@@ -20680,6 +21200,13 @@ button.sessions-balance {
     font-size: 0.9rem;
     font-weight: 600;
     text-align: left;
+    background: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more:active {
+    background: transparent;
+    color: #15803d;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-more {
@@ -20744,15 +21271,13 @@ button.sessions-balance {
     flex-shrink: 0;
   }
 
-  /* Secciones Home: no pueden superar el ancho del surface (títulos+íconos) */
-  .patient-dashboard-home .dashboard-ml-sessions,
-  .patient-dashboard-home .dashboard-ml-diary,
-  .patient-dashboard-home .dashboard-ml-feature-section,
+  /* Secciones Home: hijos no pueden superar el ancho de la sección */
   .patient-dashboard-home .dashboard-ml-sessions-banner,
   .patient-dashboard-home .dashboard-ml-diary-banner,
   .patient-dashboard-home .dashboard-ml-feature-banner,
   .patient-dashboard-home .dashboard-ml-sessions-pack,
   .patient-dashboard-home .dashboard-ml-sessions-footer,
+  .patient-dashboard-home .dashboard-ml-diary-pack,
   .patient-dashboard-home .dashboard-ml-feature-panel {
     width: 100%;
     max-width: 100%;
@@ -21480,12 +22005,12 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-brand-band {
-    --dashboard-ml-band-fade: 96px;
-    padding-bottom: 72px;
+    --dashboard-ml-band-fade: 152px;
+    padding-bottom: 100px;
   }
 
   .patient-dashboard-home .dashboard-ml-surface--bridge {
-    margin-top: -72px;
+    margin-top: -100px;
   }
 
   .patient-dashboard-home .dashboard-ml-credits-bar {
@@ -26145,8 +26670,9 @@ button.sessions-balance {
   padding: 16px;
 }
 
-.wellbeing-relax-page--ml .wellbeing-relax-categories {
+.wellbeing-relax-page--ml .wellbeing-relax-filter {
   margin: 0;
+  max-width: none;
 }
 
 .wellbeing-relax-page--ml .wellbeing-relax-player {
@@ -26160,7 +26686,7 @@ button.sessions-balance {
 
 @media (max-width: 720px) {
   .wellbeing-relax-page-ml {
-    padding: 10px 12px 0;
+    padding: 0;
   }
 
   .wellbeing-relax-page-ml-pack {
@@ -26189,6 +26715,79 @@ button.sessions-balance {
   line-height: 1.5;
   color: #475569;
   max-width: 72ch;
+}
+
+.wellbeing-relax-filter {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.wellbeing-relax-filter-label {
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: #64748b;
+}
+
+.wellbeing-relax-filter-combo {
+  position: relative;
+  width: 100%;
+}
+
+.wellbeing-relax-filter-combo::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #64748b;
+  border-bottom: 2px solid #64748b;
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+.wellbeing-relax-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 44px 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 20px rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.wellbeing-relax-filter-select:hover {
+  border-color: rgba(95, 68, 235, 0.28);
+}
+
+.wellbeing-relax-filter-select:focus {
+  outline: none;
+  border-color: #5f44eb;
+  box-shadow:
+    0 0 0 4px rgba(95, 68, 235, 0.14),
+    0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.wellbeing-relax-filter-hint {
+  margin: -4px 0 16px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .wellbeing-relax-categories {
@@ -26829,14 +27428,38 @@ body.driver-active .driver-overlay {
   }
 
   .portal-site-footer-inner {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .portal-site-footer-block {
+    padding: 18px 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+  }
+
+  .portal-site-footer-block:first-child {
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .portal-site-footer-block:last-child {
+    padding-bottom: 4px;
+  }
+
+  .portal-site-footer-heading {
+    margin-bottom: 8px;
+  }
+
+  .portal-site-footer-copy {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
   }
 }
 
 @media (max-width: 560px) {
   .portal-site-footer-inner {
     grid-template-columns: 1fr;
-    gap: 22px;
   }
 }
 

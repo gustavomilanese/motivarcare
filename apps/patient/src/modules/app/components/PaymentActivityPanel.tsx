@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { SessionsCollapsibleToggle } from "./SessionsCollapsibleToggle";
+import { SessionsSecondarySectionIcon } from "./SessionsSecondarySectionIcons";
 import { apiRequest } from "../services/api";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -358,6 +359,7 @@ export function PaymentActivityPanel(props: {
         onClick={() => setIsPanelExpanded((current) => !current)}
       >
         <h2 className="sessions-secondary-title">
+          <SessionsSecondarySectionIcon kind="activity" />
           {t(props.language, {
             es: "Actividad de compras",
             en: "Purchase activity",

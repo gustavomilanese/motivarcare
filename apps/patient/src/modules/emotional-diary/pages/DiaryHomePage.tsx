@@ -6,6 +6,7 @@ import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
 import { DiaryHomeHero, DiaryShell } from "../components/DiaryChrome";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { t } from "../lib/labels";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
 import type { DiaryEntry, MoodLevel } from "../types";
@@ -25,6 +26,7 @@ function formatEntryDate(iso: string, language: AppLanguage): string {
 
 export function DiaryHomePage(props: DiaryHomePageProps) {
   const navigate = useNavigate();
+  useScrollSectionToTopOnMount();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

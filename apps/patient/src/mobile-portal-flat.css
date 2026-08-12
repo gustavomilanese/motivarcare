@@ -112,8 +112,10 @@
     box-sizing: border-box !important;
   }
 
-  /* Sesiones: casi full-bleed, con un margen chico (no pegado al borde) */
-  .patient-dashboard-home .dashboard-ml-sessions {
+  /* Secciones Home (Sesiones / Diario / Ejercicios / Música): mismo ancho casi full-bleed */
+  .patient-dashboard-home .dashboard-ml-sessions,
+  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-feature-section {
     width: calc(100% + 20px) !important;
     max-width: none !important;
     min-width: 0 !important;
@@ -123,7 +125,21 @@
   }
 
   .patient-dashboard-home .dashboard-ml-surface {
-    overflow-x: clip;
+    /*
+     * No clip acá: overflow-x:clip fuerza overflow-y:auto y corta
+     * las Accesos + el aire hacia “Tus próximas sesiones”.
+     */
+    overflow: visible;
+  }
+
+  .patient-dashboard-home .dashboard-ml-surface--bridge {
+    /* Aire Accesos → Sesiones (mitad del 30 previo) */
+    padding-bottom: 15px !important;
+    overflow: visible !important;
+  }
+
+  .patient-dashboard-home .dashboard-ml-surface--bridge + .dashboard-ml-surface {
+    padding-top: 0 !important;
   }
 
   /* Moods: scroll interno; no ensancha la sección Diario */
@@ -136,14 +152,38 @@
     overflow-x: auto !important;
   }
 
-  /* Accesos: scroll interno; nunca estira el documento */
+  .portal-shell.portal-shell--home-ml.portal-shell--site-footer > .portal-site-footer {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-top: 0 !important;
+    background: var(--mobile-canvas, #f4f4f5) !important;
+    border-top: 1px solid var(--mobile-divider, rgba(0, 0, 0, 0.08));
+    /*
+     * El aire post-Música lo da solo el padding-bottom del surface.
+     * Sin padding-top acá: evitaba un 2.º gris “pegado” al footer.
+     */
+    padding-top: 0 !important;
+  }
+
+  /* Home ML: mismo canvas hasta el footer (nada de #ebebeb / blanco intercalado) */
+  .portal-main .patient-dashboard-home .dashboard-ml-home {
+    background: var(--mobile-canvas, #f4f4f5) !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Accesos: scroll horizontal; overflow-y visible para no cortar sombras */
   .dashboard-ml-benefit-row,
   .patient-dashboard-home .dashboard-ml-benefit-row {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: visible !important;
   }
 
   .portal-shell:has(.portal-main--dashboard-home),
@@ -245,7 +285,8 @@
   .portal-main--diary-home > .portal-mobile-nav,
   .portal-main--dashboard-home > .portal-mobile-nav,
   .portal-main--sessions-home > .portal-mobile-nav,
-  .portal-main--wellbeing-relax > .portal-mobile-nav {
+  .portal-main--wellbeing-relax > .portal-mobile-nav,
+  .portal-main--chat > .portal-mobile-nav {
     display: flex !important;
     height: auto !important;
     overflow: visible !important;
@@ -382,22 +423,20 @@
     box-shadow: 0 2px 8px rgba(95, 68, 235, 0.12);
   }
 
-  .dashboard-hero-toolbar-mount .menu-toggle,
-  .sessions-hero-toolbar-mount .menu-toggle,
-  .diary-hero-toolbar-mount .menu-toggle,
-  .wellbeing-relax-toolbar-mount .menu-toggle,
-  .chat-hero-toolbar-mount .menu-toggle {
-    border-color: rgba(95, 68, 235, 0.28);
-    background: rgba(255, 255, 255, 0.94);
-    color: #5f44eb;
-    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.16);
-  }
-
-  /* Home ML: íconos de toolbar más grandes, flat sobre el banner */
+  /*
+   * Toolbar inmersivo sobre banner de color (Inicio / Sesiones / Diario / Bienestar):
+   * mismos íconos flat que Home — sin chips blancos.
+   */
   .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link,
   .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle,
   .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link,
-  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle {
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle,
+  .sessions-hero-toolbar-mount .header-icon-link,
+  .sessions-hero-toolbar-mount .menu-toggle,
+  .diary-hero-toolbar-mount .header-icon-link,
+  .diary-hero-toolbar-mount .menu-toggle,
+  .wellbeing-relax-toolbar-mount .header-icon-link,
+  .wellbeing-relax-toolbar-mount .menu-toggle {
     width: 48px !important;
     height: 48px !important;
     min-width: 48px !important;
@@ -405,25 +444,125 @@
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
-    color: #fff;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff !important;
+    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+  }
+
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:hover,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link:focus-visible,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link.active,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:hover,
+  .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle:focus-visible,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link:hover,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link:focus-visible,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link.active,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle:hover,
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle:focus-visible,
+  .sessions-hero-toolbar-mount .header-icon-link:hover,
+  .sessions-hero-toolbar-mount .header-icon-link:focus-visible,
+  .sessions-hero-toolbar-mount .header-icon-link.active,
+  .sessions-hero-toolbar-mount .menu-toggle:hover,
+  .sessions-hero-toolbar-mount .menu-toggle:focus-visible,
+  .diary-hero-toolbar-mount .header-icon-link:hover,
+  .diary-hero-toolbar-mount .header-icon-link:focus-visible,
+  .diary-hero-toolbar-mount .header-icon-link.active,
+  .diary-hero-toolbar-mount .menu-toggle:hover,
+  .diary-hero-toolbar-mount .menu-toggle:focus-visible,
+  .wellbeing-relax-toolbar-mount .header-icon-link:hover,
+  .wellbeing-relax-toolbar-mount .header-icon-link:focus-visible,
+  .wellbeing-relax-toolbar-mount .header-icon-link.active,
+  .wellbeing-relax-toolbar-mount .menu-toggle:hover,
+  .wellbeing-relax-toolbar-mount .menu-toggle:focus-visible {
+    background: transparent !important;
+    color: #fff !important;
+  }
+
+  /* Chat / subpáginas Diario: flat sin chip gris/blanco */
+  .diary-portal-toolbar-mount .header-icon-link,
+  .diary-portal-toolbar-mount .menu-toggle,
+  .chat-hero-toolbar-mount .header-icon-link,
+  .chat-hero-toolbar-mount .menu-toggle,
+  .chat-portal-toolbar-shell .header-icon-link,
+  .chat-portal-toolbar-shell .menu-toggle,
+  .portal-main--chat .header-icon-link,
+  .portal-main--chat .menu-toggle {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #1e293b !important;
+    filter: none !important;
+  }
+
+  .diary-portal-toolbar-mount .header-icon-link:hover,
+  .diary-portal-toolbar-mount .header-icon-link:focus-visible,
+  .diary-portal-toolbar-mount .header-icon-link.active,
+  .diary-portal-toolbar-mount .menu-toggle:hover,
+  .diary-portal-toolbar-mount .menu-toggle:focus-visible,
+  .chat-hero-toolbar-mount .header-icon-link:hover,
+  .chat-hero-toolbar-mount .header-icon-link:focus-visible,
+  .chat-hero-toolbar-mount .header-icon-link.active,
+  .chat-hero-toolbar-mount .menu-toggle:hover,
+  .chat-hero-toolbar-mount .menu-toggle:focus-visible,
+  .chat-portal-toolbar-shell .header-icon-link:hover,
+  .chat-portal-toolbar-shell .header-icon-link:focus-visible,
+  .chat-portal-toolbar-shell .header-icon-link.active,
+  .chat-portal-toolbar-shell .menu-toggle:hover,
+  .chat-portal-toolbar-shell .menu-toggle:focus-visible,
+  .portal-main--chat .header-icon-link:hover,
+  .portal-main--chat .header-icon-link:focus-visible,
+  .portal-main--chat .header-icon-link.active,
+  .portal-main--chat .menu-toggle:hover,
+  .portal-main--chat .menu-toggle:focus-visible {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #5f44eb !important;
   }
 
   .dashboard-ml-home .dashboard-ml-toolbar-mount .header-bell-icon,
   .dashboard-ml-home .dashboard-ml-toolbar-mount .header-heart-icon,
   .patient-dashboard-home .dashboard-hero-toolbar-mount .header-bell-icon,
-  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-heart-icon {
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-heart-icon,
+  .sessions-hero-toolbar-mount .header-bell-icon,
+  .sessions-hero-toolbar-mount .header-heart-icon,
+  .diary-hero-toolbar-mount .header-bell-icon,
+  .diary-hero-toolbar-mount .header-heart-icon,
+  .diary-portal-toolbar-mount .header-bell-icon,
+  .diary-portal-toolbar-mount .header-heart-icon,
+  .wellbeing-relax-toolbar-mount .header-bell-icon,
+  .wellbeing-relax-toolbar-mount .header-heart-icon,
+  .chat-hero-toolbar-mount .header-bell-icon,
+  .chat-hero-toolbar-mount .header-heart-icon {
     width: 26px;
     height: 26px;
   }
 
   .dashboard-ml-home .dashboard-ml-toolbar-mount .menu-toggle-icon,
-  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle-icon {
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .menu-toggle-icon,
+  .sessions-hero-toolbar-mount .menu-toggle-icon,
+  .diary-hero-toolbar-mount .menu-toggle-icon,
+  .diary-portal-toolbar-mount .menu-toggle-icon,
+  .wellbeing-relax-toolbar-mount .menu-toggle-icon,
+  .chat-hero-toolbar-mount .menu-toggle-icon {
     width: 28px;
     height: 28px;
   }
 
   .dashboard-ml-home .dashboard-ml-toolbar-mount .header-icon-link small,
-  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link small {
+  .patient-dashboard-home .dashboard-hero-toolbar-mount .header-icon-link small,
+  .sessions-hero-toolbar-mount .header-icon-link small,
+  .diary-hero-toolbar-mount .header-icon-link small,
+  .diary-portal-toolbar-mount .header-icon-link small,
+  .wellbeing-relax-toolbar-mount .header-icon-link small,
+  .chat-hero-toolbar-mount .header-icon-link small {
     font-size: 0.7rem;
     min-width: 1.15rem;
     height: 1.15rem;
@@ -431,7 +570,8 @@
 
   .dashboard-ml-home.dashboard-ml-home--access .dashboard-ml-toolbar-mount .header-icon-link,
   .dashboard-ml-home.dashboard-ml-home--access .dashboard-ml-toolbar-mount .menu-toggle {
-    color: #1a1a1a;
+    color: #1a1a1a !important;
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
   }
 
   /* Menú cuenta: panel lateral (portaled a body — por encima del tab bar) */
@@ -895,24 +1035,28 @@
   }
 
   .portal-main .sessions-booking-page .sessions-balance-figure {
-    width: auto;
-    min-width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
     flex-shrink: 0;
-    height: auto;
     padding: 0;
-    border-radius: 0;
-    background: transparent !important;
-    font-size: 17px;
+    border-radius: 50%;
+    background: var(--brand) !important;
+    font-size: 16px;
     font-weight: 700;
-    color: var(--brand);
+    line-height: 1;
+    color: #ffffff !important;
     box-shadow: none !important;
     text-align: center;
     font-variant-numeric: tabular-nums;
   }
 
   .portal-main .sessions-booking-page .sessions-balance--zero .sessions-balance-figure {
-    color: var(--mobile-text-secondary);
-    background: transparent !important;
+    background: #94a3b8 !important;
+    color: #ffffff !important;
   }
 
   .portal-main .sessions-booking-page .sessions-balance-copy {
@@ -941,9 +1085,13 @@
   .portal-main .sessions-booking-page .sessions-booking-body {
     gap: 0;
     margin: 0;
-    padding: 0 0 calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 0 !important;
     background: transparent;
     border-radius: 0 !important;
+  }
+
+  .portal-main .sessions-booking-page--ml .sessions-booking-body.sessions-page-ml-pack {
+    background: var(--mobile-surface) !important;
   }
 
   .portal-main .sessions-booking-page .sessions-confirmed-panel.content-card,
@@ -1078,6 +1226,13 @@
     color: var(--mobile-text-primary);
   }
 
+  .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-title-icon,
+  .portal-main .patient-dashboard-home .sessions-secondary-title-icon {
+    width: 1.28em;
+    height: 1.28em;
+    color: #2563eb;
+  }
+
   .portal-main .sessions-booking-page .sessions-booking-body .sessions-secondary-toggle-label,
   .portal-main .patient-dashboard-home .sessions-secondary-toggle-label {
     display: none;
@@ -1153,14 +1308,21 @@
     border-top: 1px solid var(--mobile-divider);
     padding: 12px var(--mobile-pad-x-end) 16px var(--mobile-pad-x);
     gap: 8px;
+    background: var(--mobile-canvas);
+  }
+
+  .portal-main .sessions-booking-page .sessions-history-section .sessions-collapsible-panel,
+  .portal-main .sessions-booking-page .payment-activity-panel .sessions-collapsible-panel {
+    background: var(--mobile-canvas) !important;
   }
 
   .portal-main .sessions-collapsible-panel .sessions-collapsible-list li,
   .portal-main .sessions-booking-page .sessions-booking-body .sessions-collapsible-panel .session-history-list li {
     padding: 12px 14px !important;
-    border: 1px solid var(--mobile-divider) !important;
-    border-radius: var(--portal-radius-sm) !important;
-    background: var(--mobile-surface) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
     min-height: 0;
   }
 
@@ -1168,25 +1330,57 @@
   .portal-main .sessions-booking-page .sessions-purchased-history .sessions-collapsible-panel .session-history-list li,
   .portal-main .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-panel .session-history-list li {
     padding: 12px 14px !important;
-    border: 1px solid rgba(139, 124, 248, 0.16) !important;
-    border-radius: var(--portal-radius-sm) !important;
-    background: rgba(255, 255, 255, 0.72) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
     min-height: 0;
   }
 
   .portal-main .sessions-purchased-history .sessions-collapsible-panel .sessions-collapsible-list li:hover,
   .portal-main .sessions-booking-page .sessions-purchased-history .sessions-collapsible-panel .session-history-list li:hover,
-  .portal-main .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-panel .session-history-list li:hover {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-color: rgba(139, 124, 248, 0.28) !important;
-    box-shadow: 0 4px 14px rgba(95, 68, 235, 0.08) !important;
+  .portal-main .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-panel .session-history-list li:hover,
+  .portal-main .sessions-booking-page .sessions-history-section .sessions-collapsible-panel .session-history-list li:hover {
+    background: #ffffff !important;
+    border-color: rgba(95, 68, 235, 0.2) !important;
+  }
+
+  .portal-main .sessions-booking-page .payment-activity-panel .sessions-collapsible-panel .payment-activity-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .portal-main .sessions-booking-page .payment-activity-panel .sessions-collapsible-panel .payment-activity-item {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    overflow: hidden;
+  }
+
+  .portal-main .sessions-booking-page .payment-activity-panel .sessions-collapsible-panel .payment-activity-item-trigger {
+    background: transparent !important;
+  }
+
+  .portal-main .sessions-booking-page .payment-activity-panel .sessions-collapsible-panel .payment-activity-item-trigger:hover {
+    background: rgba(95, 68, 235, 0.04) !important;
+  }
+
+  .portal-main .sessions-collapsible-panel .sessions-collapsible-empty {
+    background: #ffffff !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
   }
 
   .portal-main .sessions-collapsible-panel .sessions-collapsible-list li:last-child,
   .portal-main .sessions-booking-page .sessions-purchased-history .sessions-collapsible-panel .session-history-list li:last-child,
   .portal-main .patient-dashboard-home .sessions-purchased-history .sessions-collapsible-panel .session-history-list li:last-child,
   .portal-main .sessions-booking-page .sessions-booking-body .sessions-collapsible-panel .session-history-list li:last-child {
-    border-bottom: 1px solid var(--mobile-divider) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
   }
 
   .portal-main .sessions-collapsible-panel .session-purchase-row-meta {
@@ -2212,55 +2406,147 @@
     margin-top: 4px;
   }
 
-  /* —— Chat: WhatsApp mobile (pantalla completa) —— */
+  /* —— Chat: WhatsApp mobile (pantalla completa, edge-to-edge) —— */
+  .portal-shell:has(.portal-main--chat) {
+    height: 100dvh;
+    max-height: 100dvh;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
   .portal-main.portal-main--chat {
-    padding-bottom: var(--portal-tab-clear);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     gap: 0;
     background: #efeae2;
+    height: calc(100dvh - var(--portal-tab-clear, 72px));
+    max-height: calc(100dvh - var(--portal-tab-clear, 72px));
+    overflow: hidden;
+    box-sizing: border-box !important;
+  }
+
+  .portal-main.portal-main--chat .portal-home-ml-rail,
+  .portal-main.portal-main--chat .portal-home-ml-bar {
+    display: none !important;
   }
 
   .portal-main.portal-main--chat .portal-main-content {
-    padding: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     gap: 0;
-    min-height: calc(100dvh - var(--portal-tab-clear));
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box !important;
   }
 
-  .portal-main .chat-page-root {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    min-height: calc(100dvh - var(--portal-tab-clear));
-    height: calc(100dvh - var(--portal-tab-clear));
+  /* Sin footer de sitio: el pie es el composer + tab bar */
+  .portal-shell.portal-shell--site-footer:has(.chat-page-root:not(.chat-page-root--embedded)) > .portal-site-footer {
+    display: none !important;
+  }
+
+  .portal-main .chat-page-root:not(.chat-page-root--embedded) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100%;
+    max-height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: #efeae2;
+    box-sizing: border-box !important;
   }
 
   .portal-main .chat-page-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    box-sizing: border-box !important;
   }
 
   .portal-main .chat-portal-toolbar-shell {
-    padding: 8px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+    flex-shrink: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    /* Edge-to-edge: solo safe-area (sin pad-x / pad-x-end) */
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    padding-left: max(2px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(2px, env(safe-area-inset-right, 0px)) !important;
     background: #f0f2f5;
     border-bottom: 1px solid #d1d7db;
+    box-sizing: border-box !important;
   }
 
-  .portal-main .chat-page-root .wa-shell {
-    min-height: 0;
-    height: auto;
-    max-height: none;
+  .portal-main .chat-hero-toolbar-mount {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: flex-end;
+    box-sizing: border-box !important;
   }
 
+  .portal-main .chat-hero-toolbar-mount .header-actions,
+  .portal-main .chat-hero-toolbar-mount .header-actions-cluster,
+  .portal-main .chat-hero-toolbar-mount .menu-wrap {
+    gap: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .portal-main .chat-page-root .wa-shell,
   .portal-main .wa-shell {
     display: flex;
     flex-direction: column;
     grid-template-columns: unset !important;
-    width: 100%;
-    min-height: calc(100dvh - var(--portal-tab-clear));
-    height: calc(100dvh - var(--portal-tab-clear));
-    max-height: calc(100dvh - var(--portal-tab-clear));
+    flex: 1 1 auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: none;
     border-radius: 0;
     box-shadow: none;
     background: #efeae2;
     overflow: hidden;
+    box-sizing: border-box !important;
   }
 
   .portal-main .wa-sidebar {
@@ -2283,21 +2569,37 @@
   }
 
   .portal-main .wa-main {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     display: grid !important;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     background: #efeae2;
+    overflow: hidden;
+    box-sizing: border-box !important;
   }
 
   .portal-main .wa-main-header {
     display: flex !important;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     min-height: 56px;
-    padding: 8px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+    margin: 0 !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
     background: #f0f2f5;
     border-bottom: 1px solid #d1d7db;
+    box-sizing: border-box !important;
   }
 
   .portal-main .wa-mobile-back {
@@ -2323,7 +2625,7 @@
   .portal-main .wa-sidebar-header {
     background: #f0f2f5;
     border-bottom: 1px solid #d1d7db;
-    padding: 14px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+    padding: 14px max(8px, env(safe-area-inset-right, 0px)) 14px max(8px, env(safe-area-inset-left, 0px));
   }
 
   .portal-main .wa-sidebar-header h2 {
@@ -2337,7 +2639,7 @@
   }
 
   .portal-main .wa-thread-item {
-    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
+    padding: 12px max(8px, env(safe-area-inset-right, 0px)) 12px max(8px, env(safe-area-inset-left, 0px));
     border-bottom: 1px solid #e9edef;
     grid-template-columns: 48px 1fr auto;
     gap: 12px;
@@ -2353,9 +2655,21 @@
   }
 
   .portal-main .wa-messages {
-    padding: 8px var(--mobile-pad-x-end) 8px var(--mobile-pad-x);
+    min-height: 0;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    padding-left: max(6px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(6px, env(safe-area-inset-right, 0px)) !important;
     gap: 4px;
     background: transparent;
+    box-sizing: border-box !important;
   }
 
   .portal-main .wa-messages::before {
@@ -2390,40 +2704,63 @@
     text-align: center;
   }
 
+  /* Composer fijo al pie del chat (estilo WhatsApp), encima del tab bar */
   .portal-main .wa-composer {
-    padding: 8px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: flex-end;
+    gap: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding-top: 6px !important;
+    padding-bottom: 8px !important;
+    padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
     background: #f0f2f5;
     border-top: 1px solid #d1d7db;
-    gap: 8px;
-    align-items: center;
     position: relative;
-    z-index: 2;
+    z-index: 5;
+    box-sizing: border-box !important;
   }
 
   .portal-main .wa-composer textarea {
-    box-sizing: border-box;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     min-height: 44px;
     max-height: 120px;
     border: none;
     border-radius: 24px;
     background: #fff;
-    padding: 12px 16px;
-    font-size: 15px;
+    padding: 12px 14px;
+    font-size: 16px;
     line-height: 20px;
+    color: #111b21;
     box-shadow: none;
+    resize: none;
   }
 
   .portal-main .wa-composer textarea:focus {
     border: none;
     box-shadow: none;
+    outline: none;
   }
 
   .portal-main .wa-send {
     width: 44px;
     height: 44px;
     min-width: 44px;
+    max-width: 44px;
+    border-radius: 999px;
     background: #00a884;
-    align-self: center;
+    color: #fff;
+    align-self: flex-end;
+    margin: 0 !important;
+    justify-self: end;
   }
 
   .portal-main .wa-send:hover {
@@ -2432,6 +2769,35 @@
 
   .portal-main .wa-shell + .error-text {
     margin: 8px var(--mobile-pad-x);
+  }
+
+  /* Home ML + Chat mobile: mismo full-bleed WhatsApp (sin card inset) */
+  .portal-main--home-ml.portal-main--chat .chat-page-root:not(.chat-page-root--embedded),
+  .portal-main--home-ml:has(.chat-page-root) .chat-page-root:not(.chat-page-root--embedded) {
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    justify-items: stretch !important;
+    background: #efeae2 !important;
+  }
+
+  .portal-main--home-ml.portal-main--chat .chat-page-root:not(.chat-page-root--embedded) .chat-page-body,
+  .portal-main--home-ml:has(.chat-page-root) .chat-page-root:not(.chat-page-root--embedded) .chat-page-body {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .portal-main--home-ml.portal-main--chat .wa-shell:not(.wa-shell--embedded),
+  .portal-main--home-ml:has(.chat-page-root) .wa-shell:not(.wa-shell--embedded) {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
   }
 
   /* Perfil */
@@ -2467,7 +2833,75 @@
   }
 
   .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml {
-    padding: 10px 0 0;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml,
+  .portal-main--home-ml .wellbeing-relax-page--ml {
+    padding-inline: 0 !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner.dashboard-ml-feature-banner,
+  .portal-main .wellbeing-relax-page--ml .dashboard-ml-feature-banner.wellbeing-relax-page-ml-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-frame {
+    /* Mismo aire superior que Inicio / Sesiones / Diario */
+    padding: calc(52px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 28px var(--mobile-pad-x) !important;
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-media {
+    display: none !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-kicker {
+    display: none !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-body {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    max-width: none !important;
+    margin: 0 0 14px !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-actions,
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .dashboard-ml-feature-banner-cta,
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-banner .wellbeing-relax-page-ml-banner-link {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-toolbar-mount {
+    top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
   }
 
   .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-pack {
@@ -2475,7 +2909,7 @@
     padding-right: 0;
   }
 
-  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-pack > :not(.wellbeing-relax-player) {
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-page-ml-pack > :not(.wellbeing-relax-player):not(.wellbeing-relax-video-grid) {
     padding-left: var(--mobile-pad-x);
     padding-right: var(--mobile-pad-x-end);
     box-sizing: border-box;
@@ -2508,24 +2942,55 @@
     border-right: none;
   }
 
-  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-grid {
-    gap: 10px;
-    background: transparent;
+  /* Lista: misma columna full-bleed que el player (no multi-col ni gutters) */
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-grid,
+  .portal-main .wellbeing-relax-video-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+    background: #fff;
   }
 
-  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-card {
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 12px;
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-grid > li {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-card,
+  .portal-main .wellbeing-relax-video-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     background: #fff;
     padding: 0;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid var(--mobile-divider, rgba(0, 0, 0, 0.08));
     min-height: 0;
     overflow: hidden;
   }
 
-  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-thumb {
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-thumb,
+  .portal-main .wellbeing-relax-video-thumb {
     width: 100%;
+    max-width: 100%;
     aspect-ratio: 16 / 9;
+  }
+
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-copy {
+    padding: 10px var(--mobile-pad-x-end) 14px var(--mobile-pad-x);
+  }
+
+  .portal-main .wellbeing-relax-video-card--active {
+    background: rgba(95, 68, 235, 0.05);
+    box-shadow: inset 3px 0 0 var(--brand);
   }
 
   .portal-main .wellbeing-relax-player {
@@ -2542,33 +3007,21 @@
     padding-right: var(--mobile-pad-x-end);
   }
 
-  .portal-main .wellbeing-relax-video-grid {
-    gap: 0;
-    background: var(--mobile-surface);
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-filter {
+    margin: 0 0 12px;
+    max-width: none;
+    padding-top: 4px;
   }
 
-  .portal-main .wellbeing-relax-video-card {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: var(--mobile-surface);
-    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
-    border-bottom: 1px solid var(--mobile-divider);
-    min-height: var(--mobile-row-min);
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-filter-select {
+    min-height: 48px;
+    font-size: 16px;
+    border-radius: 12px;
   }
 
-  .portal-main .wellbeing-relax-video-card--active {
-    background: rgba(95, 68, 235, 0.05);
-    box-shadow: inset 3px 0 0 var(--brand);
-  }
-
-  .portal-main .wellbeing-relax-filter-active {
-    border: none;
-    border-radius: 0;
-    background: var(--mobile-surface);
-    margin: 0;
-    padding: 12px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
-    border-bottom: 1px solid var(--mobile-divider);
+  .portal-main .wellbeing-relax-page--ml .wellbeing-relax-filter-hint {
+    margin: 0 0 12px;
+    padding: 0;
   }
 
   /* ≤480px: tab bar density */
@@ -2750,9 +3203,426 @@
     margin-bottom: 0;
   }
 
-  .portal-main .diary-home-page--ml .diary-page-ml,
+  .portal-main .diary-home-page--ml .diary-page-ml {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .portal-main .diary-home-page--ml,
+  .portal-main--home-ml .diary-home-page--ml {
+    padding-inline: 0 !important;
+    /* Sin aire extra post-última sección: el clear del tab lo da portal-main / footer */
+    padding-bottom: 0 !important;
+    background: var(--mobile-canvas, #f4f4f5) !important;
+  }
+
+  .portal-main .diary-page--home,
+  .portal-main--home-ml .diary-page--home {
+    padding-bottom: 0 !important;
+  }
+
+  .portal-main .diary-home-page--ml .diary-page-ml-banner.dashboard-ml-diary-banner,
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-frame {
+    /* Mismo aire superior que Inicio / Sesiones */
+    padding: calc(52px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 28px var(--mobile-pad-x) !important;
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-media {
+    display: none !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-kicker {
+    display: none !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-body {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    max-width: none !important;
+    margin: 0 0 14px !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-cta,
+  .portal-main .diary-home-page--ml .dashboard-ml-diary-banner-link {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  .portal-main .diary-home-page--ml .diary-page-ml-toolbar.sessions-hero-toolbar-mount {
+    top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .portal-main .diary-home-page--ml .diary-page-ml-pack {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    /* Un poco de aire interno; el margen grande post-sección lo quitamos arriba */
+    padding-bottom: 8px !important;
+  }
+
+  /* Inicio → sección Diario: sin ícono en el título (mobile) */
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon {
+    display: none !important;
+  }
+
+  /* Sesiones tab: full-bleed (sin card inset de la versión vieja) */
+  .portal-main--sessions-home .sessions-booking-page--ml,
+  .portal-main .sessions-booking-page--ml.page-stack {
+    background: var(--mobile-surface) !important;
+    padding-inline: 0 !important;
+    /* Sin banda gris: el pie arranca con su border-top justo debajo del blanco */
+    padding-bottom: 0 !important;
+    gap: 0 !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml,
   .portal-main .sessions-booking-page--ml .sessions-page-ml {
-    padding: 10px var(--mobile-pad-x-end) 0 var(--mobile-pad-x);
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner.dashboard-ml-sessions-banner,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner.dashboard-ml-sessions-banner {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-frame,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-frame {
+    /* Mismo aire superior que el promo de Inicio (toolbar + título) */
+    padding: calc(52px + env(safe-area-inset-top, 0px)) var(--mobile-pad-x-end) 28px var(--mobile-pad-x) !important;
+    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-media,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-media {
+    display: none !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-kicker,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-kicker {
+    display: none !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4em !important;
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title-icon,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 1.15em;
+    height: 1.15em;
+    max-width: 1.15em;
+    max-height: 1.15em;
+    flex: 0 0 1.15em;
+    overflow: hidden;
+    color: currentColor;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title-icon svg,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-title-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-body,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-body {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    max-width: none !important;
+    margin: 0 0 14px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-actions,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-cta,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-cta,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-link,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-banner .dashboard-ml-sessions-banner-link {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-toolbar.sessions-hero-toolbar-mount,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-toolbar.sessions-hero-toolbar-mount {
+    top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    right: max(8px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body {
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > .sessions-balance,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > button.sessions-balance,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > .sessions-balance,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > button.sessions-balance {
+    margin: 0 !important;
+    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > .content-card,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > section.content-card,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > .content-card,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > section.content-card,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > section {
+    margin: 0 !important;
+    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Próximas reservas: casi full-bleed como la lista de Inicio */
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack > section.sessions-confirmed-panel,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack > section.sessions-confirmed-panel {
+    padding: 0 0 12px !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    background: #fff !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-confirmed-panel .sessions-panel-head,
+  .portal-main .sessions-booking-page--ml .sessions-confirmed-panel .sessions-panel-head {
+    padding: 16px var(--mobile-pad-x-end) 8px var(--mobile-pad-x) !important;
+    margin: 0 !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-confirmed-panel .sessions-credit-alert,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-confirmed-panel .sessions-empty-state,
+  .portal-main .sessions-booking-page--ml .sessions-confirmed-panel .sessions-credit-alert,
+  .portal-main .sessions-booking-page--ml .sessions-confirmed-panel .sessions-empty-state {
+    margin: 0 6px 10px !important;
+    padding: 14px 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-confirmed-list-root,
+  .portal-main .sessions-booking-page--ml .sessions-confirmed-list-root {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible.sessions-secondary-section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+    overflow: visible !important;
+  }
+
+  /* Aire entre última reserva y Paquetes comprados */
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section.sessions-purchased-history,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section.sessions-purchased-history {
+    margin-top: 14px !important;
+    border-top: 1px solid var(--mobile-divider) !important;
+  }
+
+  /* Aire entre Paquetes comprados y Historial */
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-purchased-history .sessions-collapsible-panel,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-purchased-history .sessions-collapsible-panel {
+    padding-bottom: 16px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-history-section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-history-section {
+    margin-top: 14px !important;
+    border-top: 1px solid var(--mobile-divider) !important;
+    padding-bottom: 4px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-history-section .sessions-collapsible-panel,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-history-section .sessions-collapsible-panel {
+    padding-bottom: 16px !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .payment-activity-panel.sessions-secondary-section {
+    margin-top: 14px !important;
+    border-top: 1px solid var(--mobile-divider) !important;
+    border-bottom: none !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
+  .portal-main .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle {
+    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-confirmed-list--cards,
+  .portal-main .sessions-booking-page--ml .sessions-confirmed-list--cards {
+    gap: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Próximas reservas (Sesiones): mismo ancho / aire que Inicio */
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 6px 6px 8px !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .sessions-confirmed-list--cards,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .sessions-confirmed-list--cards {
+    display: grid !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 0 !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .session-rn-card.session-management-card,
+  .portal-main .sessions-booking-page--ml .session-rn-card.session-management-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--mobile-divider) !important;
+    box-shadow: none !important;
+    background: var(--mobile-surface) !important;
+    padding: 16px var(--mobile-pad-x-end) 16px var(--mobile-pad-x) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card.session-management-card,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card.session-management-card,
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--compact.session-management-card,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--compact.session-management-card {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06) !important;
+    box-shadow:
+      0 2px 6px rgba(15, 23, 42, 0.06),
+      0 8px 18px rgba(15, 23, 42, 0.08) !important;
+    background: #ffffff !important;
+    padding: 14px 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--next.session-management-card,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--next.session-management-card {
+    border: 1px solid rgba(95, 68, 235, 0.16) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 12px rgba(95, 68, 235, 0.1) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--trial.session-management-card,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-list--home-like .session-rn-card--trial.session-management-card {
+    border: 1px solid rgba(95, 68, 235, 0.32) !important;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
+      linear-gradient(145deg, #ede9fe 0%, #ddd6fe 48%, #c7d2fe 100%) !important;
+    box-shadow: 0 10px 28px rgba(95, 68, 235, 0.14) !important;
+  }
+
+  .portal-main--sessions-home .sessions-booking-page--ml .sessions-upcoming-pagination,
+  .portal-main .sessions-booking-page--ml .sessions-upcoming-pagination {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 4px 6px 12px !important;
+    background: #fff !important;
   }
 
   /* —— Diario home: ancho viewport + bandas full-bleed —— */
@@ -2970,24 +3840,22 @@
       padding: 12px 14px !important;
     }
 
-    /* Chat */
-    .portal-main.portal-main--chat .portal-main-content {
-      min-height: calc(100dvh - var(--portal-tab-clear));
-    }
-
-    .portal-main .wa-shell {
-      min-height: calc(100dvh - var(--portal-tab-clear));
-      height: calc(100dvh - var(--portal-tab-clear));
-      max-height: calc(100dvh - var(--portal-tab-clear));
+    /* Chat: mantener composer tipo WhatsApp (no achicar el shell a 100dvh otra vez) */
+    .portal-main.portal-main--chat {
+      height: calc(100dvh - var(--portal-tab-clear, 50px));
+      max-height: calc(100dvh - var(--portal-tab-clear, 50px));
     }
 
     .portal-main .wa-main-header {
-      min-height: 44px;
-      padding: 4px var(--mobile-pad-x-end) 4px var(--mobile-pad-x);
+      min-height: 48px;
+      padding-top: 4px !important;
+      padding-bottom: 4px !important;
+      padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
     }
 
     .portal-main .wa-sidebar-header {
-      padding: 10px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
+      padding: 10px max(4px, env(safe-area-inset-right, 0px)) 10px max(4px, env(safe-area-inset-left, 0px));
     }
 
     .portal-main .wa-sidebar-header h2 {
@@ -2995,19 +3863,22 @@
     }
 
     .portal-main .wa-composer {
-      padding: 4px var(--mobile-pad-x-end) 6px var(--mobile-pad-x);
+      padding-top: 4px !important;
+      padding-bottom: 6px !important;
+      padding-left: max(4px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(4px, env(safe-area-inset-right, 0px)) !important;
     }
 
     .portal-main .wa-composer textarea {
-      min-height: 36px;
-      padding: 8px 12px;
-      font-size: 14px;
+      min-height: 40px;
+      padding: 10px 14px;
+      font-size: 16px;
     }
 
     .portal-main .wa-send {
-      width: 38px;
-      height: 38px;
-      min-width: 38px;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
     }
 
     .portal-main .diary-hero-banner {
@@ -3066,9 +3937,14 @@
       aspect-ratio: 16 / 9;
     }
 
+    .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-card,
     .portal-main .wellbeing-relax-video-card {
-      padding: 10px var(--mobile-pad-x-end) 10px var(--mobile-pad-x);
-      min-height: 44px;
+      padding: 0;
+      min-height: 0;
+    }
+
+    .portal-main .wellbeing-relax-page--ml .wellbeing-relax-video-copy {
+      padding: 8px var(--mobile-pad-x-end) 12px var(--mobile-pad-x);
     }
 
     .portal-main .content-card:not(.sessions-confirmed-panel),

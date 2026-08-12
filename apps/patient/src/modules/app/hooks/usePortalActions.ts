@@ -470,9 +470,44 @@ export function usePortalActions(params: {
     }
   };
 
+  const syncPendingDlocalCheckouts = async (): Promise<DlocalPaymentSyncResult> => {
+    const authToken = params.state.authToken;
+    if (!authToken) {
+      return { ok: false, error: "Unauthorized" };
+    }
+
+    try {
+      const result = await apiRequest<{
+        ok: boolean;
+        fulfilled: boolean;
+        paymentStatus?: string | null;
+        attempted?: number;
+      }>("/api/payments/dlocal/sync-pending", { method: "POST", body: "{}" }, authToken);
+      if (result.fulfilled) {
+        await refreshSubscriptionFromApi();
+      }
+      return {
+        ok: true,
+        fulfilled: Boolean(result.fulfilled),
+        paymentStatus: result.paymentStatus ?? undefined
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not sync pending payments"
+      };
+    }
+  };
+
   const syncDlocalPayment = async (syncParams: {
     paymentId?: string | null;
     orderId?: string | null;
+    /**
+     * Sin paymentId/orderId, intenta `/dlocal/sync-pending`.
+     * - Return `?payment=success` / resume con pending local: pasar `true`.
+     * - Default: solo en DEV (local sin webhook). En prod no barre checkouts en cada visita.
+     */
+    allowPendingFallback?: boolean;
   }): Promise<DlocalPaymentSyncResult> => {
     // Cuando el paciente vuelve de dLocal, el pago ya está aprobado del lado del proveedor,
     // así que el primer intento suele acreditar de inmediato (o el webhook ya lo hizo). Los
@@ -480,23 +515,44 @@ export function usePortalActions(params: {
     // acotados (~4,5s techo) para no dejar al paciente esperando >10s por el popup/créditos.
     const retryDelaysMs = [0, 700, 1200, 2500];
     let lastResult: DlocalPaymentSyncResult = { ok: false, error: "Could not sync payment" };
+    const hasExplicitRef = Boolean(syncParams.paymentId?.trim() || syncParams.orderId?.trim());
+    const allowPendingFallback =
+      syncParams.allowPendingFallback === true
+      || (syncParams.allowPendingFallback !== false && import.meta.env.DEV);
 
-    for (const delayMs of retryDelaysMs) {
-      if (delayMs > 0) {
-        await new Promise((resolve) => window.setTimeout(resolve, delayMs));
-      }
+    if (hasExplicitRef) {
+      for (const delayMs of retryDelaysMs) {
+        if (delayMs > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+        }
 
-      const result = await requestDlocalPaymentSyncOnce(syncParams);
-      lastResult = result;
-      if (!result.ok) {
-        return result;
-      }
-      if (result.fulfilled) {
-        await refreshSubscriptionFromApi();
-        return result;
+        const result = await requestDlocalPaymentSyncOnce(syncParams);
+        lastResult = result;
+        if (!result.ok) {
+          break;
+        }
+        if (result.fulfilled) {
+          await refreshSubscriptionFromApi();
+          return result;
+        }
       }
     }
 
+    // Recuperación: return sin IDs, DEV local sin webhook, o ref explícito que aún no cumplió.
+    const shouldTryPending = allowPendingFallback || hasExplicitRef;
+    if (shouldTryPending) {
+      const pendingResult = await syncPendingDlocalCheckouts();
+      if (pendingResult.ok && pendingResult.fulfilled) {
+        return pendingResult;
+      }
+      if (!hasExplicitRef) {
+        return pendingResult;
+      }
+    }
+
+    if (!hasExplicitRef) {
+      return { ok: false, error: "Missing payment reference" };
+    }
     return lastResult;
   };
 
@@ -989,6 +1045,7 @@ export function usePortalActions(params: {
   return {
     syncActiveProfessionalAssignment,
     addPackage,
+    syncPendingDlocalCheckouts,
     purchaseIndividualSessions,
     startTrialCheckout,
     syncTrialPayment,

@@ -82,8 +82,20 @@ export function DashboardHomeProfessionalProfileModal(props: {
               </h2>
               {pro.title ? <p className="dashboard-home-pro-profile-role">{pro.title}</p> : null}
             </div>
-            <button type="button" className="dashboard-home-pro-profile-close" onClick={props.onClose}>
-              {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+            <button
+              type="button"
+              className="dashboard-home-pro-profile-close"
+              onClick={props.onClose}
+              aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path
+                  d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
           </header>
 

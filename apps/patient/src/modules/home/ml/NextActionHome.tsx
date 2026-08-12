@@ -12,6 +12,7 @@ import {
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { SessionsBannerGlyph } from "../../booking/components/SessionsBannerGlyph";
+import { navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 import { DashboardHomePromoCarousel } from "./PromoCarousel";
 import {
   DashboardHomeExercisesSection,
@@ -19,7 +20,6 @@ import {
 } from "./FeatureSections";
 import { DiaryBannerGlyph, DiaryBannerIcon } from "./HomeBannerGlyphs";
 import { BenefitIcon, type BenefitIconKind } from "./BenefitIcons";
-import { DashboardHomeAllSessionsModal } from "./AllSessionsModal";
 import { DiaryMoodPicker } from "../../emotional-diary/components/DiaryMoodPicker";
 import type { MoodLevel } from "../../emotional-diary/types";
 import { SessionsCollapsibleToggle } from "../../app/components/SessionsCollapsibleToggle";
@@ -110,6 +110,7 @@ function ProfessionalBenefitCard(props: {
   photoSrc: string | null;
   assignedProfessionalName: string | null;
   canSelfChangeProfessional: boolean;
+  isMobilePortal?: boolean;
   trialPending: boolean;
   onOpenProfile: () => void;
   onChat: () => void;
@@ -236,38 +237,60 @@ function ProfessionalBenefitCard(props: {
         <span className="dashboard-ml-pro-name">{professionalFirstName(pro)}</span>
       </div>
 
-      <div
-        className={`dashboard-ml-pro-actions${
-          props.canSelfChangeProfessional ? "" : " dashboard-ml-pro-actions--solo"
-        }`}
-      >
-        <button
-          type="button"
-          className="dashboard-ml-pro-action dashboard-ml-pro-action--primary"
+      {props.isMobilePortal ? (
+        <span
+          className="dashboard-ml-benefit-cta"
+          role="link"
+          tabIndex={0}
           onClick={(event) => {
+            event.stopPropagation();
+            props.onChat();
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+              return;
+            }
+            event.preventDefault();
             event.stopPropagation();
             props.onChat();
           }}
         >
           {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
-        </button>
-        {props.canSelfChangeProfessional ? (
+        </span>
+      ) : (
+        <div
+          className={`dashboard-ml-pro-actions${
+            props.canSelfChangeProfessional ? "" : " dashboard-ml-pro-actions--solo"
+          }`}
+        >
           <button
             type="button"
-            className="dashboard-ml-pro-action dashboard-ml-pro-action--secondary"
+            className="dashboard-ml-pro-action dashboard-ml-pro-action--primary"
             onClick={(event) => {
               event.stopPropagation();
-              props.onChangeProfessional();
+              props.onChat();
             }}
           >
-            {t(props.language, {
-              es: "Cambiar",
-              en: "Change",
-              pt: "Trocar"
-            })}
+            {t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}
           </button>
-        ) : null}
-      </div>
+          {props.canSelfChangeProfessional ? (
+            <button
+              type="button"
+              className="dashboard-ml-pro-action dashboard-ml-pro-action--secondary"
+              onClick={(event) => {
+                event.stopPropagation();
+                props.onChangeProfessional();
+              }}
+            >
+              {t(props.language, {
+                es: "Cambiar",
+                en: "Change",
+                pt: "Trocar"
+              })}
+            </button>
+          ) : null}
+        </div>
+      )}
     </article>
   );
 }
@@ -443,7 +466,6 @@ export function DashboardNextActionHome(props: {
   onNavigateToRebookTrial: () => void;
   onNavigateToBookTrial: () => void;
   trialStatus: "pending" | "reserved" | "completed" | "rebook";
-  completedTrialBooking: Booking | null;
   onGoToBooking: (professionalId: string) => void;
   onBuySessions: () => void;
   /** Reservar sin créditos: aviso y luego catálogo de paquetes. */
@@ -455,7 +477,6 @@ export function DashboardNextActionHome(props: {
   onNavigateToChangeProfessional: () => void;
   onGoToReservations: () => void;
   upcomingBookings: Booking[];
-  allBookings: Booking[];
   professionals: Professional[];
   pricingProfessionalId: string;
   isMobilePortal: boolean;
@@ -464,26 +485,19 @@ export function DashboardNextActionHome(props: {
   upcomingSpotlightRing?: boolean;
 }) {
   const navigate = useNavigate();
-  const [allSessionsOpen, setAllSessionsOpen] = useState(false);
 
   const professionalPhotoSrcResolved = props.activeProfessional
     ? resolvePublicAssetUrl(props.professionalPhotoMap[props.activeProfessional.id])
     : null;
 
   const upcomingCta =
-    props.actionKind === "next_session"
-      ? t(props.language, { es: "Ver próxima sesión", en: "View next session", pt: "Ver proxima sessao" })
-      : props.actionKind === "trial_rebook"
-        ? t(props.language, { es: "Elegir nuevo horario", en: "Pick a new time", pt: "Escolher novo horario" })
-        : props.actionKind === "trial_pending"
-          ? t(props.language, { es: "Reservar prueba", en: "Book trial", pt: "Reservar teste" })
-          : t(props.language, { es: "Ir a Sesiones", en: "Go to Sessions", pt: "Ir para Sessoes" });
+    props.actionKind === "trial_rebook"
+      ? t(props.language, { es: "Elegir nuevo horario", en: "Pick a new time", pt: "Escolher novo horario" })
+      : props.actionKind === "trial_pending"
+        ? t(props.language, { es: "Reservar prueba", en: "Book trial", pt: "Reservar teste" })
+        : t(props.language, { es: "Ir a Sesiones", en: "Go to Sessions", pt: "Ir para Sessoes" });
 
   const runUpcomingCard = () => {
-    if (props.actionKind === "next_session" && props.nextBooking) {
-      props.onOpenBookingDetail(props.nextBooking.id);
-      return;
-    }
     if (props.actionKind === "trial_rebook") {
       props.onNavigateToRebookTrial();
       return;
@@ -492,6 +506,7 @@ export function DashboardNextActionHome(props: {
       props.onNavigateToBookTrial();
       return;
     }
+    /* Con reservas (o sin ellas): ir a Sesiones con el listado completo */
     props.onGoToReservations();
   };
 
@@ -564,17 +579,7 @@ export function DashboardNextActionHome(props: {
     props.onNavigateToBookTrial();
   };
 
-  const sessionsTableBookings = (() => {
-    const upcoming = props.upcomingBookings.slice(0, 4);
-    const completed = props.completedTrialBooking;
-    if (!completed) {
-      return upcoming;
-    }
-    if (upcoming.some((booking) => booking.id === completed.id)) {
-      return upcoming;
-    }
-    return [completed, ...upcoming].slice(0, 4);
-  })();
+  const sessionsTableBookings = props.upcomingBookings.slice(0, 4);
 
   return (
     <div className={`dashboard-ml-home dashboard-ml-home--${promoTone}`} aria-label={t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}>
@@ -717,6 +722,7 @@ export function DashboardNextActionHome(props: {
             photoSrc={professionalPhotoSrcResolved}
             assignedProfessionalName={props.assignedProfessionalName}
             canSelfChangeProfessional={props.canSelfChangeProfessional}
+            isMobilePortal={props.isMobilePortal}
             trialPending={props.trialStatus === "pending"}
             onOpenProfile={props.onOpenProfessionalProfile}
             onChat={() => {
@@ -781,7 +787,7 @@ export function DashboardNextActionHome(props: {
               pt: "Escreva como se sente e veja seus registros."
             })}
             cta={t(props.language, { es: "Abrir diario", en: "Open diary", pt: "Abrir diario" })}
-            onClick={() => navigate("/diario")}
+            onClick={() => navigateToSectionTop(navigate, "/diario")}
           />
           <BenefitCard
             icon="exercises"
@@ -797,7 +803,7 @@ export function DashboardNextActionHome(props: {
               pt: "Pratique exercicios e rotinas entre sessoes."
             })}
             cta={t(props.language, { es: "Ver ejercicios", en: "View exercises", pt: "Ver exercicios" })}
-            onClick={() => navigate("/ejercicios")}
+            onClick={() => navigateToSectionTop(navigate, "/ejercicios")}
           />
           <BenefitCard
             icon="music"
@@ -813,7 +819,7 @@ export function DashboardNextActionHome(props: {
               pt: "Ouça música relaxante para acompanhar seu processo."
             })}
             cta={t(props.language, { es: "Abrir música", en: "Open music", pt: "Abrir música" })}
-            onClick={() => navigate("/bienestar/musica")}
+            onClick={() => navigateToSectionTop(navigate, "/bienestar/musica")}
           />
         </section>
       </div>
@@ -824,7 +830,16 @@ export function DashboardNextActionHome(props: {
             <div className="dashboard-ml-sessions-banner-frame">
               <div className="dashboard-ml-sessions-banner-copy">
                 {props.isMobilePortal ? (
-                  <div className="dashboard-ml-sessions-banner-head">
+                  <button
+                    type="button"
+                    className="dashboard-ml-sessions-banner-head dashboard-ml-section-banner-head--nav"
+                    onClick={() => navigateToSectionTop(navigate, "/sessions")}
+                    aria-label={t(props.language, {
+                      es: "Ir a Sesiones",
+                      en: "Go to Sessions",
+                      pt: "Ir para Sessoes"
+                    })}
+                  >
                     <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
                       <span className="dashboard-ml-sessions-banner-title-icon" aria-hidden="true">
                         <BenefitIcon kind="upcoming" />
@@ -837,7 +852,7 @@ export function DashboardNextActionHome(props: {
                         })}
                       </span>
                     </h2>
-                  </div>
+                  </button>
                 ) : (
                   <>
                     <h2 id="dashboard-ml-sessions-title" className="dashboard-ml-sessions-banner-title">
@@ -868,7 +883,7 @@ export function DashboardNextActionHome(props: {
                 <button
                   type="button"
                   className="dashboard-ml-sessions-pack-btn dashboard-ml-sessions-pack-btn--secondary"
-                  onClick={() => setAllSessionsOpen(true)}
+                  onClick={props.onGoToReservations}
                 >
                   {t(props.language, { es: "Ver todas", en: "View all", pt: "Ver todas" })}
                 </button>
@@ -1010,7 +1025,16 @@ export function DashboardNextActionHome(props: {
             <div className="dashboard-ml-diary-banner-frame">
               <div className="dashboard-ml-diary-banner-copy">
                 {props.isMobilePortal ? (
-                  <div className="dashboard-ml-diary-banner-head">
+                  <button
+                    type="button"
+                    className="dashboard-ml-diary-banner-head dashboard-ml-section-banner-head--nav"
+                    onClick={() => navigateToSectionTop(navigate, "/diario")}
+                    aria-label={t(props.language, {
+                      es: "Ir a Diario",
+                      en: "Go to Diary",
+                      pt: "Ir para Diario"
+                    })}
+                  >
                     <h2 id="dashboard-ml-diary-title" className="dashboard-ml-diary-banner-title">
                       <span className="dashboard-ml-diary-banner-title-icon" aria-hidden="true">
                         <DiaryBannerIcon />
@@ -1023,7 +1047,7 @@ export function DashboardNextActionHome(props: {
                         })}
                       </span>
                     </h2>
-                  </div>
+                  </button>
                 ) : (
                   <>
                     <p className="dashboard-ml-diary-banner-kicker">
@@ -1166,19 +1190,6 @@ export function DashboardNextActionHome(props: {
         <DashboardHomeMusicSection language={props.language} isMobilePortal={props.isMobilePortal} />
       </div>
 
-      {allSessionsOpen ? (
-        <DashboardHomeAllSessionsModal
-          language={props.language}
-          timezone={props.timezone}
-          bookings={props.allBookings}
-          professionals={props.professionals}
-          professionalPhotoMap={props.professionalPhotoMap}
-          onImageFallback={props.onImageFallback}
-          onOpenBookingDetail={props.onOpenBookingDetail}
-          onRescheduleBooking={props.onRescheduleBooking}
-          onClose={() => setAllSessionsOpen(false)}
-        />
-      ) : null}
     </div>
   );
 }

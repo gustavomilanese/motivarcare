@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type SyntheticEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   type AppLanguage,
@@ -24,7 +24,8 @@ import {
 } from "../lib/patientPricingProfessional";
 import { SessionsCalendar } from "../../booking/components/SessionsCalendar";
 import { UpcomingBookingsList } from "../../booking/components/UpcomingBookingsList";
-import { SessionsBannerGlyph } from "../../booking/components/SessionsBannerGlyph";
+import { SessionsBannerGlyph, SessionsBannerIcon } from "../../booking/components/SessionsBannerGlyph";
+import { scrollPortalToTop } from "../lib/navigateSectionTop";
 import { useAcquireSessionsDispatch } from "../../booking/hooks/useAcquireSessionsDispatch";
 import {
   isDisplayOnlyBundlePlanId,
@@ -47,6 +48,7 @@ import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPan
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
 import { PaymentActivityPanel } from "../components/PaymentActivityPanel";
 import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
+import { SessionsSecondarySectionIcon } from "../components/SessionsSecondarySectionIcons";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
 import { acquireNewSessionsButtonLabel } from "../lib/acquireSessionsButtonLabel";
 import {
@@ -147,15 +149,24 @@ export function BookingPage(props: {
   const isMobilePortal = useMobilePortal();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Título / nav limpio a /sessions → tope. Si hay ?focus=…, los effects de focus manejan el scroll.
+  useLayoutEffect(() => {
+    if (searchParams.get("focus") || searchParams.get("flow") || searchParams.get("reschedule")) {
+      return;
+    }
+    scrollPortalToTop("auto");
+  }, []);
+
   const bookingReturnToRef = useRef<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [panelMode, setPanelMode] = useState<"new" | "reschedule" | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   /** Abierto desde Dashboard “Elegir nuevo horario” de prueba pagada. */
   const [trialRebookMode, setTrialRebookMode] = useState(false);
-  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  const [upcomingPage, setUpcomingPage] = useState(0);
   const [activityExpandSignal, setActivityExpandSignal] = useState(0);
   const [remoteSlots, setRemoteSlots] = useState<TimeSlot[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -207,7 +218,6 @@ export function BookingPage(props: {
   const packagesSectionRef = useRef<HTMLElement | null>(null);
   const historySectionRef = useRef<HTMLElement | null>(null);
   const checkoutSectionRef = useRef<HTMLElement | null>(null);
-  const calendarSectionRef = useRef<HTMLElement | null>(null);
   const isCheckoutFlow = searchParams.get("flow") === "checkout";
   const selectedCheckoutPlanId = searchParams.get("plan");
   const checkoutSource = searchParams.get("source");
@@ -227,6 +237,13 @@ export function BookingPage(props: {
 
   const upcomingConfirmedBookings = filterUpcomingPatientBookings(props.state.bookings, now);
   const upcomingBookingProfessionalIds = upcomingConfirmedBookings.map((booking) => booking.professionalId);
+  const UPCOMING_PAGE_SIZE = 10;
+  const upcomingTotalPages = Math.max(1, Math.ceil(upcomingConfirmedBookings.length / UPCOMING_PAGE_SIZE));
+  const upcomingPageSafe = Math.min(upcomingPage, upcomingTotalPages - 1);
+  const pagedUpcomingBookings = upcomingConfirmedBookings.slice(
+    upcomingPageSafe * UPCOMING_PAGE_SIZE,
+    upcomingPageSafe * UPCOMING_PAGE_SIZE + UPCOMING_PAGE_SIZE
+  );
   const hasPricingProfessional = portalHasPricingProfessional({
     assignedProfessionalId: props.state.assignedProfessionalId,
     selectedProfessionalId: props.state.selectedProfessionalId,
@@ -258,6 +275,10 @@ export function BookingPage(props: {
 
   const upcomingRegularBookings = upcomingConfirmedBookings
     .filter((booking) => booking.bookingMode !== "trial");
+
+  useEffect(() => {
+    setUpcomingPage((current) => Math.min(current, Math.max(0, upcomingTotalPages - 1)));
+  }, [upcomingTotalPages]);
 
   const historyRegularBookings = props.state.bookings
     .filter(
@@ -512,6 +533,13 @@ export function BookingPage(props: {
 
         const purchased = await props.onPurchasePackage(plan);
         if (purchased.checkoutUrl) {
+          savePendingCheckoutDlocalReturn({
+            kind: "package",
+            packageId: plan.id,
+            packageName: plan.name,
+            paymentId: purchased.paymentId,
+            orderId: purchased.orderId
+          });
           window.location.assign(purchased.checkoutUrl);
           return;
         }
@@ -850,15 +878,6 @@ export function BookingPage(props: {
     }
     focusCheckoutPackagesSection();
   }, [checkoutFocusTick, focusCheckoutPackagesSection, isCheckoutFlow, packagesLoading, selectedCheckoutPlanId]);
-
-  useEffect(() => {
-    if (!isCalendarExpanded || !isMobilePortal) {
-      return;
-    }
-    window.requestAnimationFrame(() => {
-      calendarSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-  }, [isCalendarExpanded, isMobilePortal]);
 
   useEffect(() => {
     if (
@@ -1498,30 +1517,20 @@ export function BookingPage(props: {
                 })}
               </p>
               <h1 id="sessions-page-title" className="dashboard-ml-sessions-banner-title">
-                {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+                <span className="dashboard-ml-sessions-banner-title-icon" aria-hidden="true">
+                  <SessionsBannerIcon />
+                </span>
+                <span>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
               </h1>
               <p className="dashboard-ml-sessions-banner-body">
                 {t(props.language, {
-                  es: "Gestioná tus reservas, el calendario y el historial desde un solo lugar.",
-                  en: "Manage your bookings, calendar, and history in one place.",
-                  pt: "Gerencie suas reservas, calendario e historico em um so lugar."
+                  es: "Gestiona tus reservas, compras e historial",
+                  en: "Manage your bookings, purchases, and history",
+                  pt: "Gerencie suas reservas, compras e historico"
                 })}
               </p>
-              <div className="dashboard-ml-sessions-banner-actions">
-                <button
-                  type="button"
-                  className="dashboard-ml-sessions-banner-cta"
-                  onClick={toggleNewBookingPanel}
-                >
-                  {panelMode === "new"
-                    ? t(props.language, { es: "Cerrar panel", en: "Close panel", pt: "Fechar painel" })
-                    : t(props.language, {
-                        es: "Reservar sesión",
-                        en: "Book a session",
-                        pt: "Reservar sessao"
-                      })}
-                </button>
-                {hasProfessionalsOnPortal ? (
+              {hasProfessionalsOnPortal ? (
+                <div className="dashboard-ml-sessions-banner-actions">
                   <button
                     type="button"
                     className="dashboard-ml-sessions-banner-link"
@@ -1529,8 +1538,8 @@ export function BookingPage(props: {
                   >
                     {acquireNewSessionsButtonLabel(props.language)}
                   </button>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
             <div className="dashboard-ml-sessions-banner-media" aria-hidden="true">
               <SessionsBannerGlyph />
@@ -1705,24 +1714,66 @@ export function BookingPage(props: {
           </div>
         ) : (
           <div className="sessions-confirmed-list-root" ref={reservationsFocusRef} tabIndex={-1}>
-            {isMobilePortal ? (
-              <div className="sessions-booking-mobile-only">
-                <UpcomingBookingsList
-                  bookings={upcomingConfirmedBookings}
-                  professionals={props.professionals}
-                  professionalPhotoMap={props.professionalPhotoMap}
-                  timezone={props.state.profile.timezone}
-                  language={props.language}
-                  layout="card"
-                  surface="booking"
-                  onImageFallback={props.onImageFallback}
-                  onOpenBookingDetail={props.onOpenBookingDetail}
-                  editingBookingId={panelMode === "reschedule" ? editingBookingId : null}
-                  onReschedule={(booking) => openReschedulePanelForBooking(booking)}
-                  onOpenProfessionalReviews={openProfessionalReviews}
-                />
+            <div
+              className={`dashboard-ml-bookings-list dashboard-upcoming-lists-root session-rn-root${
+                isMobilePortal ? " dashboard-ml-bookings-list--cards sessions-upcoming-list--home-like" : " sessions-booking-desktop-only"
+              }`}
+            >
+              <UpcomingBookingsList
+                bookings={pagedUpcomingBookings}
+                professionals={props.professionals}
+                professionalPhotoMap={props.professionalPhotoMap}
+                timezone={props.state.profile.timezone}
+                language={props.language}
+                layout={isMobilePortal ? "card" : "table"}
+                surface={isMobilePortal ? "dashboard" : "booking"}
+                compact={isMobilePortal}
+                onImageFallback={props.onImageFallback}
+                onOpenBookingDetail={props.onOpenBookingDetail}
+                editingBookingId={panelMode === "reschedule" ? editingBookingId : null}
+                onReschedule={(booking) => openReschedulePanelForBooking(booking)}
+                onOpenProfessionalReviews={openProfessionalReviews}
+              />
+            </div>
+            {upcomingConfirmedBookings.length > UPCOMING_PAGE_SIZE ? (
+              <div className="sessions-upcoming-pagination" role="navigation" aria-label={t(props.language, {
+                es: "Paginación de próximas reservas",
+                en: "Upcoming bookings pagination",
+                pt: "Paginacao de proximas reservas"
+              })}>
+                <button
+                  type="button"
+                  className="sessions-upcoming-pagination-btn"
+                  disabled={upcomingPageSafe <= 0}
+                  onClick={() => setUpcomingPage((current) => Math.max(0, current - 1))}
+                >
+                  {t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
+                </button>
+                <span className="sessions-upcoming-pagination-status">
+                  {replaceTemplate(
+                    t(props.language, {
+                      es: "{from}–{to} de {total}",
+                      en: "{from}–{to} of {total}",
+                      pt: "{from}–{to} de {total}"
+                    }),
+                    {
+                      from: String(upcomingPageSafe * UPCOMING_PAGE_SIZE + 1),
+                      to: String(Math.min((upcomingPageSafe + 1) * UPCOMING_PAGE_SIZE, upcomingConfirmedBookings.length)),
+                      total: String(upcomingConfirmedBookings.length)
+                    }
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="sessions-upcoming-pagination-btn"
+                  disabled={upcomingPageSafe >= upcomingTotalPages - 1}
+                  onClick={() => setUpcomingPage((current) => Math.min(upcomingTotalPages - 1, current + 1))}
+                >
+                  {t(props.language, { es: "Siguiente", en: "Next", pt: "Proximo" })}
+                </button>
               </div>
-            ) : (
+            ) : null}
+            {!isMobilePortal ? (
               <div className="sessions-booking-desktop-only sessions-confirmed-calendar">
                 <SessionsCalendar
                   bookings={upcomingConfirmedBookings}
@@ -1736,7 +1787,7 @@ export function BookingPage(props: {
                   hideTitle
                 />
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </section>
@@ -1795,7 +1846,10 @@ export function BookingPage(props: {
           aria-expanded={isPackagesExpanded}
           onClick={() => setIsPackagesExpanded((current) => !current)}
         >
-          <h2 className="sessions-secondary-title">{t(props.language, { es: "Paquetes comprados", en: "Purchased packages", pt: "Pacotes comprados" })}</h2>
+          <h2 className="sessions-secondary-title">
+            <SessionsSecondarySectionIcon kind="packages" />
+            {t(props.language, { es: "Paquetes comprados", en: "Purchased packages", pt: "Pacotes comprados" })}
+          </h2>
           <SessionsCollapsibleToggle expanded={isPackagesExpanded} language={props.language} />
         </button>
         {isPackagesExpanded ? (
@@ -1847,7 +1901,10 @@ export function BookingPage(props: {
           aria-expanded={isHistoryExpanded}
           onClick={() => setIsHistoryExpanded((current) => !current)}
         >
-          <h2 className="sessions-secondary-title">{t(props.language, { es: "Historial de sesiones", en: "Session history", pt: "Historico de sessoes" })}</h2>
+          <h2 className="sessions-secondary-title">
+            <SessionsSecondarySectionIcon kind="history" />
+            {t(props.language, { es: "Historial de sesiones", en: "Session history", pt: "Historico de sessoes" })}
+          </h2>
           <SessionsCollapsibleToggle expanded={isHistoryExpanded} language={props.language} />
         </button>
         {isHistoryExpanded ? (
@@ -1901,32 +1958,6 @@ export function BookingPage(props: {
           </div>
         ) : null}
       </section>
-
-      {isMobilePortal ? (
-        <section ref={calendarSectionRef} className="sessions-calendar-collapsible sessions-secondary-section sessions-booking-calendar-tail">
-          <button
-            type="button"
-            className="sessions-calendar-toggle"
-            aria-expanded={isCalendarExpanded}
-            onClick={() => setIsCalendarExpanded((current) => !current)}
-          >
-            <h2 className="sessions-secondary-title">{t(props.language, { es: "Calendario de sesiones", en: "Sessions calendar", pt: "Calendario de sessoes" })}</h2>
-            <SessionsCollapsibleToggle expanded={isCalendarExpanded} language={props.language} />
-          </button>
-          {isCalendarExpanded ? (
-            <div className="sessions-collapsible-panel sessions-collapsible-panel--calendar">
-            <SessionsCalendar
-              bookings={upcomingConfirmedBookings}
-              timezone={props.state.profile.timezone}
-              language={props.language}
-              onOpenBookingDetail={props.onOpenBookingDetail}
-              professionals={props.professionals}
-              hideTitle
-            />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
 
       <PaymentActivityPanel
         language={props.language}

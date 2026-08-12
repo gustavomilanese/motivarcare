@@ -415,14 +415,13 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
                   <span key={line}>{line}</span>
                 ))}
               </span>
-            ) : !compact ? (
-              <SessionRescheduleButton
-                language={props.language}
-                layout="card"
-                canReschedule={canReschedule}
-                onReschedule={props.onReschedule}
-              />
             ) : null}
+            <SessionRescheduleButton
+              language={props.language}
+              layout="card"
+              canReschedule={canReschedule}
+              onReschedule={props.onReschedule}
+            />
           </div>
         </div>
       </div>

@@ -41,6 +41,12 @@ function firstNameOnly(fullName: string | undefined): string {
   return trimmed.split(/\s+/)[0] ?? trimmed;
 }
 
+function scrollPortalToTop(behavior: ScrollBehavior = "smooth") {
+  window.scrollTo({ top: 0, left: 0, behavior });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
 function IconHome(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -214,7 +220,7 @@ export function PortalNavigation(props: {
   const homeMlFloatingToolbar = Boolean(props.homeMlChrome) && location.pathname === "/";
   const sessionsHomeImmersive = location.pathname === "/sessions" && !props.homeMlChrome;
   const wellbeingRelaxImmersive = location.pathname === "/bienestar/musica" && !props.homeMlChrome;
-  const chatImmersive = location.pathname === "/chat" && !props.homeMlChrome;
+  const chatImmersive = location.pathname === "/chat";
   const immersivePortalHome =
     diaryImmersive ||
     dashboardHomeImmersive ||
@@ -237,6 +243,40 @@ export function PortalNavigation(props: {
     window.addEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
     return () => window.removeEventListener(PATIENT_HOME_VARIANT_EVENT, sync);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      return;
+    }
+    scrollPortalToTop("auto");
+  }, [location.pathname]);
+
+  function goPathToTop(target: string, options?: { prefix?: boolean }) {
+    const pathname = location.pathname;
+    const onTarget = options?.prefix
+      ? pathname === target || pathname.startsWith(`${target}/`)
+      : pathname === target;
+    if (onTarget) {
+      scrollPortalToTop("smooth");
+      return;
+    }
+    requestAnimationFrame(() => {
+      scrollPortalToTop("auto");
+    });
+  }
+
+  function goHomeToTop() {
+    goPathToTop("/");
+  }
+
+  function goSessionsToTop() {
+    goPathToTop("/sessions");
+  }
+
+  function closeMobileMoreAndGoToTop(target: string, options?: { prefix?: boolean }) {
+    setMobileMoreOpen(false);
+    goPathToTop(target, options);
+  }
 
   useLayoutEffect(() => {
     if (!diaryHomeImmersive) {
@@ -819,11 +859,26 @@ export function PortalNavigation(props: {
           <div className="portal-home-ml-rail-edge" aria-hidden="true" />
           <div className="portal-home-ml-rail-panel" data-tour="patient-tour-sidebar">
             <nav className="portal-home-ml-rail-nav">
-              <NavLink className={railLinkClass} end to="/" onClick={collapseHomeMlRailAfterNav}>
+              <NavLink
+                className={railLinkClass}
+                end
+                to="/"
+                onClick={() => {
+                  goHomeToTop();
+                  collapseHomeMlRailAfterNav();
+                }}
+              >
                 <IconHome className="portal-home-ml-rail-icon" />
                 <span className="portal-home-ml-rail-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
               </NavLink>
-              <NavLink className={railLinkClass} to="/sessions" onClick={collapseHomeMlRailAfterNav}>
+              <NavLink
+                className={railLinkClass}
+                to="/sessions"
+                onClick={() => {
+                  goSessionsToTop();
+                  collapseHomeMlRailAfterNav();
+                }}
+              >
                 <IconSessions className="portal-home-ml-rail-icon" />
                 <span className="portal-home-ml-rail-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
               </NavLink>
@@ -922,7 +977,7 @@ export function PortalNavigation(props: {
         </aside>
 
         <header className="portal-home-ml-bar" data-tour="patient-tour-home-ml-chrome">
-          <NavLink to="/" className="portal-home-ml-brand" end>
+          <NavLink to="/" className="portal-home-ml-brand" end onClick={goHomeToTop}>
             <img
               className="portal-home-ml-brand-mark"
               src="/brand/motivarcare-mark.png"
@@ -934,10 +989,19 @@ export function PortalNavigation(props: {
           </NavLink>
 
           <nav className="portal-home-ml-nav" aria-label={t(props.language, { es: "Secciones", en: "Sections", pt: "Secoes" })}>
-            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} end to="/">
+            <NavLink
+              className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`}
+              end
+              to="/"
+              onClick={goHomeToTop}
+            >
               {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
             </NavLink>
-            <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/sessions">
+            <NavLink
+              className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`}
+              to="/sessions"
+              onClick={goSessionsToTop}
+            >
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
             </NavLink>
             <NavLink className={({ isActive }) => `portal-home-ml-link${isActive ? " is-active" : ""}`} to="/chat">
@@ -1023,10 +1087,19 @@ export function PortalNavigation(props: {
           </div>
 
           <nav className="portal-sidebar-nav" data-tour="patient-tour-sidebar">
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} end to="/">
+            <NavLink
+              className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+              end
+              to="/"
+              onClick={goHomeToTop}
+            >
               {t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}
             </NavLink>
-            <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/sessions">
+            <NavLink
+              className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+              to="/sessions"
+              onClick={goSessionsToTop}
+            >
               {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
             </NavLink>
             <NavLink className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`} to="/chat">
@@ -1179,20 +1252,36 @@ export function PortalNavigation(props: {
               </div>
               <nav className="portal-mobile-more-links" aria-label={t(props.language, { es: "Más secciones", en: "More sections", pt: "Mais seções" })}>
                 {PATIENT_PROFESSIONALS_NAV_ENABLED ? (
-                  <NavLink className="portal-mobile-more-link" to="/profesionales" onClick={() => setMobileMoreOpen(false)}>
+                  <NavLink
+                    className="portal-mobile-more-link"
+                    to="/profesionales"
+                    onClick={() => closeMobileMoreAndGoToTop("/profesionales")}
+                  >
                     <IconProfessionals className="portal-mobile-more-link-icon" />
                     <span>{t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}</span>
                   </NavLink>
                 ) : null}
-                <NavLink className="portal-mobile-more-link" to="/ejercicios" onClick={() => setMobileMoreOpen(false)}>
+                <NavLink
+                  className="portal-mobile-more-link"
+                  to="/ejercicios"
+                  onClick={() => closeMobileMoreAndGoToTop("/ejercicios")}
+                >
                   <IconExercises className="portal-mobile-more-link-icon" />
                   <span>{t(props.language, { es: "Ejercicios", en: "Exercises", pt: "Exercícios" })}</span>
                 </NavLink>
-                <NavLink className="portal-mobile-more-link" to="/bienestar/musica" onClick={() => setMobileMoreOpen(false)}>
+                <NavLink
+                  className="portal-mobile-more-link"
+                  to="/bienestar/musica"
+                  onClick={() => closeMobileMoreAndGoToTop("/bienestar/musica")}
+                >
                   <IconMusic className="portal-mobile-more-link-icon" />
                   <span>{t(props.language, { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" })}</span>
                 </NavLink>
-                <NavLink className="portal-mobile-more-link" to="/profile" onClick={() => setMobileMoreOpen(false)}>
+                <NavLink
+                  className="portal-mobile-more-link"
+                  to="/profile"
+                  onClick={() => closeMobileMoreAndGoToTop("/profile", { prefix: true })}
+                >
                   <IconAccount className="portal-mobile-more-link-icon" />
                   <span>{t(props.language, { es: "Mi cuenta", en: "My account", pt: "Minha conta" })}</span>
                 </NavLink>
@@ -1206,15 +1295,28 @@ export function PortalNavigation(props: {
                 pt: "Navegacao principal"
               })}
             >
-              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} end to="/">
+              <NavLink
+                className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
+                end
+                to="/"
+                onClick={goHomeToTop}
+              >
                 <IconHome className="mobile-nav-icon" />
                 <span className="mobile-nav-label">{t(props.language, { es: "Inicio", en: "Home", pt: "Inicio" })}</span>
               </NavLink>
-              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/sessions">
+              <NavLink
+                className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
+                to="/sessions"
+                onClick={goSessionsToTop}
+              >
                 <IconSessions className="mobile-nav-icon" />
                 <span className="mobile-nav-label">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</span>
               </NavLink>
-              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/chat">
+              <NavLink
+                className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
+                to="/chat"
+                onClick={() => goPathToTop("/chat")}
+              >
                 <span className="mobile-nav-link-inner">
                   <IconChat className="mobile-nav-icon" />
                   {props.unreadMessagesCount > 0 ? (
@@ -1225,7 +1327,12 @@ export function PortalNavigation(props: {
                 </span>
                 <span className="mobile-nav-label">{t(props.language, { es: "Chat", en: "Chat", pt: "Chat" })}</span>
               </NavLink>
-              <NavLink className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`} to="/diario" end={false}>
+              <NavLink
+                className={({ isActive }) => `mobile-nav-link ${isActive ? "active" : ""}`}
+                to="/diario"
+                end={false}
+                onClick={() => goPathToTop("/diario", { prefix: true })}
+              >
                 <IconNotes className="mobile-nav-icon" />
                 <span className="mobile-nav-label">{t(props.language, { es: "Diario", en: "Diary", pt: "Diário" })}</span>
               </NavLink>

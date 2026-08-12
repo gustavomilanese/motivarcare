@@ -713,6 +713,18 @@ export async function processDlocalGoPaymentNotification(paymentId: string): Pro
   const payment = await getDlocalGoPayment(paymentId);
   const paymentStatus = String(payment.status).trim().toUpperCase();
   if (!isDlocalGoPaymentPaid(payment.status)) {
+    // Observabilidad: en sandbox/local el webhook no llega; si el return del paciente
+    // consulta y sigue PENDING, dejamos rastro en payment_checkout_events.
+    const orderIdForLog = payment.order_id?.trim();
+    if (orderIdForLog) {
+      await recordDlocalCheckoutSync({
+        paymentId: payment.id,
+        orderId: orderIdForLog,
+        paymentStatus,
+        fulfilled: false,
+        actorRole: "WEBHOOK"
+      }).catch(() => undefined);
+    }
     return { fulfilled: false, paymentStatus };
   }
 
@@ -799,4 +811,70 @@ export async function processDlocalGoPaymentNotification(paymentId: string): Pro
     actorRole: "WEBHOOK"
   });
   return { fulfilled: true, paymentStatus, purchaseId, checkoutId };
+}
+
+const PENDING_SYNC_LOOKBACK_MS =
+  process.env.NODE_ENV === "production" ? 6 * 60 * 60 * 1000 : 48 * 60 * 60 * 1000;
+
+/**
+ * Recupera checkouts REDIRECTED/CREATED del paciente y consulta dLocal.
+ * Cubre el caso mobile/local donde el redirect de éxito no dispara sync-payment
+ * (pestaña distinta, sessionStorage vacío, usuario vuelve con el botón Atrás).
+ * Lookback corto en production (webhook cubre el happy path); más amplio en local/test.
+ */
+export async function syncPendingDlocalCheckoutsForPatient(patientId: string): Promise<{
+  fulfilled: boolean;
+  attempted: number;
+  paymentStatus?: string;
+  purchaseId?: string | null;
+  checkoutId?: string | null;
+}> {
+  const since = new Date(Date.now() - PENDING_SYNC_LOOKBACK_MS);
+  const pending = await prisma.paymentCheckout.findMany({
+    where: {
+      patientId,
+      provider: "DLOCAL",
+      status: { in: ["CREATED", "REDIRECTED", "PAID"] },
+      createdAt: { gte: since },
+      OR: [{ providerPaymentId: { not: null } }, { providerOrderId: { not: null } }]
+    },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: {
+      id: true,
+      providerPaymentId: true,
+      providerOrderId: true
+    }
+  });
+
+  let attempted = 0;
+  let lastStatus: string | undefined;
+
+  for (const checkout of pending) {
+    attempted += 1;
+    try {
+      const result = checkout.providerPaymentId
+        ? await processDlocalGoPaymentNotification(checkout.providerPaymentId)
+        : checkout.providerOrderId
+          ? await processDlocalGoOrderSync(checkout.providerOrderId)
+          : null;
+      if (!result) {
+        continue;
+      }
+      lastStatus = result.paymentStatus;
+      if (result.fulfilled) {
+        return {
+          fulfilled: true,
+          attempted,
+          paymentStatus: result.paymentStatus,
+          purchaseId: result.purchaseId ?? null,
+          checkoutId: result.checkoutId ?? checkout.id
+        };
+      }
+    } catch {
+      // Seguir con el siguiente checkout pendiente.
+    }
+  }
+
+  return { fulfilled: false, attempted, paymentStatus: lastStatus };
 }

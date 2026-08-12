@@ -13,6 +13,7 @@ import {
   youtubeWatchUrl
 } from "../utils/relaxationYoutube";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 
 export interface RelaxationMusicPageProps {
   language: AppLanguage;
@@ -67,6 +68,7 @@ function RelaxationVideoThumb({ videoId }: { videoId: string }) {
 
 export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
   const { language } = props;
+  useScrollSectionToTopOnMount();
   const [playlists, setPlaylists] = useState<RelaxationPlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryId, setCategoryId] = useState<string | "all">("all");
@@ -199,55 +201,41 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
             <MotivarCarePageLoader language={language} layout="block" />
           ) : (
             <>
-              <nav
-                className="wellbeing-relax-categories"
-                aria-label={t(language, { es: "Categorías", en: "Categories", pt: "Categorias" })}
-              >
-                <button
-                  type="button"
-                  className={`wellbeing-relax-category-pill ${categoryId === "all" ? "wellbeing-relax-category-pill--active" : ""} ${categoryId !== "all" ? "wellbeing-relax-category-pill--show-all" : ""}`}
-                  onClick={() => setCategoryId("all")}
-                >
-                  {categoryId !== "all"
-                    ? t(language, { es: "Ver todos", en: "Show all", pt: "Ver todos" })
-                    : t(language, { es: "Todos", en: "All", pt: "Todos" })}
-                  <span className="wellbeing-relax-category-count">{playlists.length}</span>
-                </button>
-                {categories.map((category) => {
-                  const isActive = categoryId === category.id;
-                  return (
-                    <button
-                      key={category.id}
-                      type="button"
-                      className={`wellbeing-relax-category-pill ${isActive ? "wellbeing-relax-category-pill--active" : ""}`}
-                      aria-pressed={isActive}
-                      onClick={() => setCategoryId(isActive ? "all" : category.id)}
-                    >
-                      {t(language, category.label)}
-                      <span className="wellbeing-relax-category-count">{category.items.length}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              <label className="wellbeing-relax-filter">
+                <span className="wellbeing-relax-filter-label">
+                  {t(language, { es: "Categoría", en: "Category", pt: "Categoria" })}
+                </span>
+                <div className="wellbeing-relax-filter-combo">
+                  <select
+                    className="wellbeing-relax-filter-select"
+                    value={categoryId}
+                    aria-label={t(language, { es: "Filtrar por categoría", en: "Filter by category", pt: "Filtrar por categoria" })}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setCategoryId(next === "all" ? "all" : next);
+                    }}
+                  >
+                    <option value="all">
+                      {t(language, { es: "Todas", en: "All", pt: "Todas" })} · {playlists.length}
+                    </option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {t(language, category.label)} · {category.items.length}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
 
               {activeCategory ? (
-                <div className="wellbeing-relax-filter-active" role="status">
-                  <p className="wellbeing-relax-filter-active-copy">
-                    {replaceRelaxationFilterSummary(
-                      language,
-                      textByLanguage(language, activeCategory.label),
-                      visibleItems.length,
-                      playlists.length
-                    )}
-                  </p>
-                  <button type="button" className="wellbeing-relax-filter-clear" onClick={() => setCategoryId("all")}>
-                    {t(language, {
-                      es: "Ver todos los videos",
-                      en: "Show all videos",
-                      pt: "Ver todos os vídeos"
-                    })}
-                  </button>
-                </div>
+                <p className="wellbeing-relax-filter-hint" role="status">
+                  {replaceRelaxationFilterSummary(
+                    language,
+                    textByLanguage(language, activeCategory.label),
+                    visibleItems.length,
+                    playlists.length
+                  )}
+                </p>
               ) : null}
 
               {selected ? (

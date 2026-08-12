@@ -12,30 +12,36 @@ import {
   dlocalPackageIdempotencyScope
 } from "./dlocalCheckoutIdempotency";
 
-function installSessionStorageMock(): void {
-  const store = new Map<string, string>();
-  vi.stubGlobal("sessionStorage", {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    clear: () => {
-      store.clear();
-    }
-  });
+function installWebStorageMock(): void {
+  const createStore = () => {
+    const store = new Map<string, string>();
+    return {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => {
+        store.clear();
+      }
+    };
+  };
+  vi.stubGlobal("sessionStorage", createStore());
+  vi.stubGlobal("localStorage", createStore());
 }
 
 describe("checkoutDlocalReturn", () => {
   beforeEach(() => {
-    installSessionStorageMock();
+    installWebStorageMock();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   afterEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   it("round-trips package pending state", () => {
@@ -66,6 +72,23 @@ describe("checkoutDlocalReturn", () => {
 
     expect(readPendingCheckoutDlocalReturn()?.kind).toBe("individual");
     expect(readPendingCheckoutDlocalReturn()?.sessionCount).toBe(3);
+  });
+
+  it("rehydrates from localStorage when sessionStorage is empty", () => {
+    savePendingCheckoutDlocalReturn({
+      kind: "package",
+      packageId: "pkg-4",
+      paymentId: "pay-local",
+      orderId: "ord-local"
+    });
+    sessionStorage.removeItem(CHECKOUT_DLOCAL_RETURN_STORAGE_KEY);
+
+    expect(readPendingCheckoutDlocalReturn()).toMatchObject({
+      kind: "package",
+      packageId: "pkg-4",
+      paymentId: "pay-local"
+    });
+    expect(sessionStorage.getItem(CHECKOUT_DLOCAL_RETURN_STORAGE_KEY)).toBeTruthy();
   });
 
   it("clearPendingCheckoutDlocalReturn removes storage key", () => {
@@ -106,13 +129,15 @@ describe("checkoutDlocalReturn", () => {
 
 describe("dlocalCheckoutIdempotency", () => {
   beforeEach(() => {
-    installSessionStorageMock();
+    installWebStorageMock();
     sessionStorage.clear();
+    localStorage.clear();
     vi.useFakeTimers();
   });
 
   afterEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
     vi.useRealTimers();
   });
 
