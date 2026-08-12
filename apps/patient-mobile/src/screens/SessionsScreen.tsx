@@ -4,21 +4,35 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getBookingsMine } from "../api/client";
+import { getBookingsMine, getPaymentCheckouts } from "../api/client";
 import type { BookingItem } from "../api/types";
 import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
 import { useBookingsRefresh } from "../context/BookingsRefreshContext";
+import { usePatientProfile } from "../context/PatientProfileContext";
 import type { AppThemeColors } from "../theme/colors";
 import { useThemeMode } from "../theme/ThemeContext";
 import type { PatientTabParamList } from "../navigation/types";
 import { BookSessionModal } from "../components/BookSessionModal";
+import { CancelSessionModal } from "../components/CancelSessionModal";
 import { RescheduleSessionModal } from "../components/RescheduleSessionModal";
 import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
 import { canPatientRescheduleBooking } from "../utils/patientReschedule";
+import { formatDateTime } from "../utils/date";
 
 type SessionsNav = BottomTabNavigationProp<PatientTabParamList>;
 const TAB_BAR_HEIGHT_ESTIMATE = 68;
+
+function isHistoryBooking(booking: BookingItem, nowMs = Date.now()): boolean {
+  const endsAt = Date.parse(booking.endsAt);
+  if (!Number.isFinite(endsAt)) {
+    return false;
+  }
+  if (booking.status === "cancelled" || booking.status === "completed" || booking.status === "no_show") {
+    return true;
+  }
+  return booking.status === "confirmed" && endsAt <= nowMs;
+}
 
 function buildSessionsStyles(c: AppThemeColors) {
   return StyleSheet.create({
@@ -90,11 +104,40 @@ function buildSessionsStyles(c: AppThemeColors) {
       borderWidth: 1.5,
       borderColor: c.primary
     },
+    secondaryBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      alignSelf: "stretch",
+      width: "100%",
+      minHeight: 44,
+      borderRadius: 14,
+      backgroundColor: c.primarySoft
+    },
+    dangerBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      alignSelf: "stretch",
+      width: "100%",
+      minHeight: 44,
+      borderRadius: 14,
+      backgroundColor: c.dangerSurface,
+      borderWidth: 1,
+      borderColor: c.dangerBorder
+    },
     primaryBtnPressed: {
       opacity: 0.65
     },
     primaryBtnText: {
       color: c.primary,
+      fontSize: 14,
+      fontWeight: "700"
+    },
+    dangerBtnText: {
+      color: c.danger,
       fontSize: 14,
       fontWeight: "700"
     },
@@ -112,6 +155,48 @@ function buildSessionsStyles(c: AppThemeColors) {
       color: c.danger,
       fontWeight: "700",
       textAlign: "center"
+    },
+    sectionToggle: {
+      marginTop: 18,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between"
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: c.text
+    },
+    historyRow: {
+      marginTop: 10,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: c.surfaceMuted,
+      gap: 4
+    },
+    historyTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: c.text
+    },
+    historyMeta: {
+      fontSize: 12,
+      color: c.textMuted
+    },
+    packageRow: {
+      marginTop: 10,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.ghostBorder,
+      backgroundColor: c.surface,
+      gap: 4
     }
   });
 }
@@ -122,13 +207,32 @@ export function SessionsScreen() {
   const styles = useMemo(() => buildSessionsStyles(colors), [colors]);
   const navigation = useNavigation<SessionsNav>();
   const { token } = useAuth();
+  const { profile, refresh: refreshProfile } = usePatientProfile();
   const { bookingsEpoch, touchBookings } = useBookingsRefresh();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [allBookings, setAllBookings] = useState<BookingItem[]>([]);
   const [bookSessionOpen, setBookSessionOpen] = useState(false);
   const [rescheduleBooking, setRescheduleBooking] = useState<BookingItem | null>(null);
+  const [cancelBooking, setCancelBooking] = useState<BookingItem | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [packagesOpen, setPackagesOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [paymentRows, setPaymentRows] = useState<
+    Array<{ id: string; status: string; packageName?: string | null; createdAt: string }>
+  >([]);
+
+  const upcoming = useMemo(() => filterUpcomingPatientBookings(allBookings), [allBookings]);
+  const history = useMemo(
+    () =>
+      [...allBookings]
+        .filter((booking) => isHistoryBooking(booking))
+        .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt))
+        .slice(0, 20),
+    [allBookings]
+  );
+  const packages = profile?.recentPackages ?? [];
 
   const load = useCallback(async () => {
     if (!token) {
@@ -137,9 +241,19 @@ export function SessionsScreen() {
 
     setError("");
     try {
-      const response = await getBookingsMine(token);
-      const live = filterUpcomingPatientBookings(response.bookings);
-      setBookings(live);
+      const [bookingsResponse, paymentsResponse] = await Promise.all([
+        getBookingsMine(token),
+        getPaymentCheckouts(token).catch(() => ({ checkouts: [] }))
+      ]);
+      setAllBookings(bookingsResponse.bookings);
+      setPaymentRows(
+        (paymentsResponse.checkouts ?? []).slice(0, 12).map((row) => ({
+          id: row.id,
+          status: row.status,
+          packageName: row.packageName,
+          createdAt: row.createdAt
+        }))
+      );
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "No se pudo cargar sesiones");
     } finally {
@@ -151,7 +265,7 @@ export function SessionsScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!token) {
-        setBookings([]);
+        setAllBookings([]);
         setLoading(false);
         return;
       }
@@ -169,7 +283,8 @@ export function SessionsScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     void load();
-  }, [load]);
+    void refreshProfile();
+  }, [load, refreshProfile]);
 
   const openMeet = useCallback(async (url: string | null | undefined) => {
     if (!url) {
@@ -215,45 +330,112 @@ export function SessionsScreen() {
         </Pressable>
       </View>
 
-      {bookings.length === 0 ? <Text style={styles.empty}>No hay sesiones próximas.</Text> : null}
+      {upcoming.length === 0 ? <Text style={styles.empty}>No hay sesiones próximas.</Text> : null}
 
-      {bookings.map((booking) => {
+      {upcoming.map((booking) => {
         const allowReschedule =
-          booking.status === "confirmed" &&
-          booking.bookingMode !== "trial" &&
-          Boolean(booking.professionalId) &&
-          canPatientRescheduleBooking(booking.startsAt);
+          booking.status === "confirmed"
+          && booking.bookingMode !== "trial"
+          && Boolean(booking.professionalId)
+          && canPatientRescheduleBooking(booking.startsAt);
+        const allowCancel = booking.status === "confirmed";
         return (
-        <View key={booking.id} style={styles.sessionWrapper}>
-          <UpcomingSessionCard
-            booking={booking}
-            onPress={
-              booking.joinUrl
-                ? () => {
-                    void openMeet(booking.joinUrl);
-                  }
-                : undefined
-            }
-            showRescheduleAction={allowReschedule}
-            onReschedulePress={allowReschedule ? () => setRescheduleBooking(booking) : undefined}
-          >
-            <View style={styles.actions}>
-              {booking.joinUrl ? (
-                <Pressable
-                  style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}
-                  onPress={() => void openMeet(booking.joinUrl)}
-                >
-                  <Ionicons name="videocam" size={18} color={colors.primary} />
-                  <Text style={styles.primaryBtnText}>Entrar a la sesión</Text>
-                </Pressable>
-              ) : (
-                <Text style={styles.pendingUrl}>El enlace se generará al confirmar la sesión.</Text>
-              )}
-            </View>
-          </UpcomingSessionCard>
-        </View>
+          <View key={booking.id} style={styles.sessionWrapper}>
+            <UpcomingSessionCard
+              booking={booking}
+              onPress={
+                booking.joinUrl
+                  ? () => {
+                      void openMeet(booking.joinUrl);
+                    }
+                  : undefined
+              }
+              showRescheduleAction={allowReschedule}
+              onReschedulePress={allowReschedule ? () => setRescheduleBooking(booking) : undefined}
+            >
+              <View style={styles.actions}>
+                {booking.joinUrl ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}
+                    onPress={() => void openMeet(booking.joinUrl)}
+                  >
+                    <Ionicons name="videocam" size={18} color={colors.primary} />
+                    <Text style={styles.primaryBtnText}>Entrar a la sesión</Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.pendingUrl}>El enlace se generará al confirmar la sesión.</Text>
+                )}
+                {allowCancel ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.dangerBtn, pressed && styles.primaryBtnPressed]}
+                    onPress={() => setCancelBooking(booking)}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
+                    <Text style={styles.dangerBtnText}>Cancelar</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </UpcomingSessionCard>
+          </View>
         );
       })}
+
+      <Pressable style={styles.sectionToggle} onPress={() => setPackagesOpen((v) => !v)}>
+        <Text style={styles.sectionTitle}>Paquetes comprados</Text>
+        <Ionicons name={packagesOpen ? "remove" : "add"} size={20} color={colors.primary} />
+      </Pressable>
+      {packagesOpen ? (
+        packages.length === 0 ? (
+          <Text style={styles.empty}>Todavía no tenés paquetes comprados.</Text>
+        ) : (
+          packages.map((item) => (
+            <View key={item.id} style={styles.packageRow}>
+              <Text style={styles.historyTitle}>{item.name}</Text>
+              <Text style={styles.historyMeta}>
+                {item.credits} sesiones · {formatDateTime(item.purchasedAt)}
+              </Text>
+            </View>
+          ))
+        )
+      ) : null}
+
+      <Pressable style={styles.sectionToggle} onPress={() => setHistoryOpen((v) => !v)}>
+        <Text style={styles.sectionTitle}>Historial de sesiones</Text>
+        <Ionicons name={historyOpen ? "remove" : "add"} size={20} color={colors.primary} />
+      </Pressable>
+      {historyOpen ? (
+        history.length === 0 ? (
+          <Text style={styles.empty}>Todavía no tenés historial.</Text>
+        ) : (
+          history.map((booking) => (
+            <View key={booking.id} style={styles.historyRow}>
+              <Text style={styles.historyTitle}>{booking.counterpartName ?? "Sesión"}</Text>
+              <Text style={styles.historyMeta}>
+                {formatDateTime(booking.startsAt)} · {booking.status}
+              </Text>
+            </View>
+          ))
+        )
+      ) : null}
+
+      <Pressable style={styles.sectionToggle} onPress={() => setActivityOpen((v) => !v)}>
+        <Text style={styles.sectionTitle}>Actividad de compras</Text>
+        <Ionicons name={activityOpen ? "remove" : "add"} size={20} color={colors.primary} />
+      </Pressable>
+      {activityOpen ? (
+        paymentRows.length === 0 ? (
+          <Text style={styles.empty}>Sin actividad de compras todavía.</Text>
+        ) : (
+          paymentRows.map((row) => (
+            <View key={row.id} style={styles.historyRow}>
+              <Text style={styles.historyTitle}>{row.packageName ?? "Compra"}</Text>
+              <Text style={styles.historyMeta}>
+                {row.status} · {formatDateTime(row.createdAt)}
+              </Text>
+            </View>
+          ))
+        )
+      ) : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -270,6 +452,16 @@ export function SessionsScreen() {
         onClose={() => setRescheduleBooking(null)}
         onRescheduled={() => {
           touchBookings();
+          void load();
+        }}
+      />
+      <CancelSessionModal
+        visible={cancelBooking !== null}
+        booking={cancelBooking}
+        onClose={() => setCancelBooking(null)}
+        onCancelled={() => {
+          touchBookings();
+          void refreshProfile();
           void load();
         }}
       />

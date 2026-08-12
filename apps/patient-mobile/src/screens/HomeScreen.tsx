@@ -21,7 +21,7 @@ import {
   resolvePatientPricingProfessionalId,
   type SessionPackagePlan
 } from "@therapy/patient-core";
-import { getBookingsMine, getMatchingProfessionals, getSessionPackages, purchasePackage } from "../api/client";
+import { getBookingsMine, getMatchingProfessionals, getSessionPackages } from "../api/client";
 import type { BookingItem, SessionPackage } from "../api/types";
 import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
@@ -40,6 +40,7 @@ import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
 import { NotificationsSheet } from "../components/NotificationsSheet";
 import { usePatientNotifications } from "../notifications/usePatientNotifications";
 import type { PortalNotificationItem } from "@therapy/patient-core";
+import { startPackageCheckout } from "../payments/dlocalCheckout";
 
 type HomeNav = BottomTabNavigationProp<PatientTabParamList>;
 
@@ -318,6 +319,91 @@ function buildHomeStyles(c: AppThemeColors, mode: ThemeMode) {
       fontWeight: "600",
       color: c.groupedSecondary,
       lineHeight: 20
+    },
+    proCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border
+    },
+    proCardText: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2
+    },
+    proCardLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: c.groupedSecondary
+    },
+    proCardName: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: c.groupedLabel
+    },
+    proChatBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 12,
+      backgroundColor: c.primarySoft
+    },
+    proChatBtnText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: c.primary
+    },
+    accessRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 12
+    },
+    accessCard: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 6,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border
+    },
+    accessCardText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: c.groupedLabel,
+      textAlign: "center"
+    },
+    wellbeingRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 12
+    },
+    wellbeingCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      alignItems: "center",
+      gap: 6
+    },
+    wellbeingCardText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: c.groupedLabel,
+      textAlign: "center"
     },
     mcareSectionHeaderRow: {
       flexDirection: "row",
@@ -707,6 +793,15 @@ export function HomeScreen() {
     p?.navigate?.("ProfessionalMatching");
   }, [navigation]);
 
+  const openWellbeing = useCallback(
+    (screen: "DiaryHome" | "ExercisesList" | "RelaxationMusic") => {
+      const parent = navigation.getParent();
+      const p = parent as { navigate?: (name: string) => void } | undefined;
+      p?.navigate?.(screen);
+    },
+    [navigation]
+  );
+
   const focusMcareSection = useCallback(() => {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({
@@ -761,9 +856,33 @@ export function HomeScreen() {
       }
       setMcarePurchasing(true);
       try {
-        const res = await purchasePackage({ token, packageId: pkg.id });
-        await refreshProfile();
-        setMcarePurchaseFlow({ kind: "success", credits: res.purchase.remainingCredits });
+        const res = await startPackageCheckout({
+          token,
+          pkg,
+          residencyCountry: profile?.residencyCountry
+        });
+        if (!res.ok) {
+          if (res.error === "Checkout cancelado") {
+            setMcarePurchaseFlow(null);
+            return;
+          }
+          setMcarePurchaseFlow({
+            kind: "error",
+            message: res.error ?? "Probá de nuevo en unos minutos."
+          });
+          return;
+        }
+        if (res.mode === "direct") {
+          await refreshProfile();
+          setMcarePurchaseFlow({
+            kind: "success",
+            credits: res.remainingCredits ?? pkg.credits
+          });
+          setSelectedPackageId(null);
+          return;
+        }
+        // dLocal: browser closed; return host will sync + show success.
+        setMcarePurchaseFlow(null);
         setSelectedPackageId(null);
       } catch (purchaseError) {
         setMcarePurchaseFlow({
@@ -774,7 +893,7 @@ export function HomeScreen() {
         setMcarePurchasing(false);
       }
     },
-    [refreshProfile, token]
+    [profile?.residencyCountry, refreshProfile, token]
   );
 
   const promptMcareCheckout = useCallback(
@@ -934,7 +1053,79 @@ export function HomeScreen() {
               Tocá aquí para ver profesionales sugeridos y elegir horario de tu sesión de prueba.
             </Text>
           </Pressable>
-        ) : null}
+        ) : (
+          <View style={styles.proCard}>
+            <PersonAvatar
+              uri={profile.activeProfessional.photoUrl ?? null}
+              name={profile.activeProfessional.fullName}
+              size={48}
+            />
+            <View style={styles.proCardText}>
+              <Text style={styles.proCardLabel}>Tu profesional</Text>
+              <Text style={styles.proCardName} numberOfLines={1}>
+                {profile.activeProfessional.fullName}
+              </Text>
+            </View>
+            <Pressable
+              style={styles.proChatBtn}
+              onPress={() => navigation.navigate("chat")}
+              accessibilityLabel="Abrir chat con tu profesional"
+            >
+              <Ionicons name="chatbubble-ellipses" size={18} color={colors.primary} />
+              <Text style={styles.proChatBtnText}>Chat</Text>
+            </Pressable>
+          </View>
+        )}
+
+        <View style={styles.accessRow}>
+          <Pressable
+            style={({ pressed }) => [styles.accessCard, pressed && { opacity: 0.9 }]}
+            onPress={() => setBookSessionOpen(true)}
+          >
+            <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+            <Text style={styles.accessCardText}>Reservar</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.accessCard, pressed && { opacity: 0.9 }]}
+            onPress={() => {
+              scrollRef.current?.scrollTo({ y: Math.max(0, mcareSectionY.current - 12), animated: true });
+            }}
+          >
+            <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+            <Text style={styles.accessCardText}>Comprar</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.accessCard, pressed && { opacity: 0.9 }]}
+            onPress={goToSessions}
+          >
+            <Ionicons name="time-outline" size={22} color={colors.primary} />
+            <Text style={styles.accessCardText}>Próximas</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.wellbeingRow}>
+          <Pressable
+            style={({ pressed }) => [styles.wellbeingCard, pressed && { opacity: 0.9 }]}
+            onPress={() => openWellbeing("DiaryHome")}
+          >
+            <Ionicons name="book-outline" size={22} color={colors.primary} />
+            <Text style={styles.wellbeingCardText}>Diario</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.wellbeingCard, pressed && { opacity: 0.9 }]}
+            onPress={() => openWellbeing("ExercisesList")}
+          >
+            <Ionicons name="leaf-outline" size={22} color={colors.primary} />
+            <Text style={styles.wellbeingCardText}>Ejercicios</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.wellbeingCard, pressed && { opacity: 0.9 }]}
+            onPress={() => openWellbeing("RelaxationMusic")}
+          >
+            <Ionicons name="musical-notes-outline" size={22} color={colors.primary} />
+            <Text style={styles.wellbeingCardText}>Música</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
