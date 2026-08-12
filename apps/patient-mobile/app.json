@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#5F44EB"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.motivarcare.patient",
@@ -28,7 +23,6 @@
       "package": "com.motivarcare.patient",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#5F44EB",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -57,6 +51,22 @@
     "plugins": [
       "expo-web-browser",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#5F44EB"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
@@ -66,10 +76,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://api.motivarcare.com",
-      "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
-      }
+      "apiUrl": "https://api.motivarcare.com"
     }
   }
 }

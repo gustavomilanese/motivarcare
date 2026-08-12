@@ -149,7 +149,12 @@ export function DiaryNewEntryScreen() {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={[styles.pad, { paddingTop: insets.top + 12 }]} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.pad, { paddingTop: insets.top + 12 }]}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         <Pressable
           style={styles.backRow}
           onPress={() => {

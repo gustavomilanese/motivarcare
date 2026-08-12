@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import type { ExercisePost } from "../services/exercisesApi";
-import { t } from "../lib/labels";
+import { categoryAccent, categoryLabel, durationLabel, t } from "../lib/labels";
 
-export function ExerciseInteractiveSteps(props: { exercise: ExercisePost; language: AppLanguage }) {
-  const { exercise, language } = props;
+export function ExerciseInteractiveSteps(props: {
+  exercise: ExercisePost;
+  language: AppLanguage;
+  suggestions?: ExercisePost[];
+}) {
+  const { exercise, language, suggestions = [] } = props;
   const [stepDone, setStepDone] = useState<boolean[]>(() => exercise.steps.map(() => false));
   const [pauseSec, setPauseSec] = useState<number | null>(null);
+  const celebrateRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setStepDone(exercise.steps.map(() => false));
@@ -33,6 +39,12 @@ export function ExerciseInteractiveSteps(props: { exercise: ExercisePost; langua
   const doneCount = stepDone.filter(Boolean).length;
   const total = exercise.steps.length;
   const pct = total > 0 ? Math.round((100 * doneCount) / total) : 0;
+  const completed = doneCount === total && total > 0;
+
+  useEffect(() => {
+    if (!completed) return;
+    celebrateRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [completed]);
 
   const startPause = (seconds: number) => {
     setPauseSec(seconds);
@@ -108,14 +120,71 @@ export function ExerciseInteractiveSteps(props: { exercise: ExercisePost; langua
         ))}
       </ol>
 
-      {doneCount === total && total > 0 ? (
-        <p className="exercise-interactive-celebrate" role="status">
-          {t(language, {
-            es: "¡Listo! Si querés, repetí el circuito o probá otro ejercicio del menú.",
-            en: "Nice work! Repeat the flow or try another exercise from the menu.",
-            pt: "Ótimo! Repita o fluxo ou experimente outro exercício do menu."
-          })}
-        </p>
+      {completed ? (
+        <div className="exercise-interactive-celebrate" role="status" ref={celebrateRef}>
+          <p className="exercise-interactive-celebrate-title">
+            {t(language, {
+              es: "¡Listo! Buen trabajo.",
+              en: "Nice work — you’re done.",
+              pt: "Pronto! Bom trabalho."
+            })}
+          </p>
+          {suggestions.length > 0 ? (
+            <>
+              <p className="exercise-interactive-celebrate-lead">
+                {t(language, {
+                  es: `Para seguir tu tratamiento, probá estos ejercicios de ${categoryLabel(language, exercise.category)}:`,
+                  en: `To keep going with your treatment, try these ${categoryLabel(language, exercise.category)} exercises:`,
+                  pt: `Para continuar seu tratamento, experimente estes exercícios de ${categoryLabel(language, exercise.category)}:`
+                })}
+              </p>
+              <ul className="exercise-complete-suggestions">
+                {suggestions.map((item) => {
+                  const itemAccent = categoryAccent(item.category);
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        to={`/ejercicios/${encodeURIComponent(item.slug)}`}
+                        className="exercise-complete-suggestion-card"
+                        style={
+                          {
+                            "--exercise-accent": itemAccent.accent,
+                            "--exercise-accent-soft": itemAccent.accentSoft
+                          } as React.CSSProperties
+                        }
+                      >
+                        <span className="exercise-complete-suggestion-emoji" aria-hidden="true">
+                          {item.emoji}
+                        </span>
+                        <span className="exercise-complete-suggestion-body">
+                          <strong>{item.title}</strong>
+                          <span>
+                            {durationLabel(language, item.durationMinutes)} · {item.summary}
+                          </span>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : (
+            <p className="exercise-interactive-celebrate-lead">
+              {t(language, {
+                es: "Si querés, repetí el circuito o explorá más ejercicios del menú.",
+                en: "You can repeat this flow or explore more exercises from the menu.",
+                pt: "Se quiser, repita o fluxo ou explore mais exercícios no menu."
+              })}
+            </p>
+          )}
+          <Link to="/" className="exercise-complete-home-link">
+            {t(language, {
+              es: "Volver a Inicio →",
+              en: "Back to Home →",
+              pt: "Voltar ao Início →"
+            })}
+          </Link>
+        </div>
       ) : null}
     </section>
   );

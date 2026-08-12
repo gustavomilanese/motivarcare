@@ -8244,19 +8244,30 @@ button.sessions-balance {
 }
 
 .diary-home-page--ml .diary-page-ml-pack > .diary-home-band--checkin {
-  background: linear-gradient(165deg, #fff 0%, #f5f0ff 55%, #eef2ff 100%);
+  background: transparent;
 }
 
 .diary-home-page--ml .diary-page-ml-pack > .diary-home-band--history,
 .diary-home-page--ml .diary-page-ml-pack > .diary-home-band--extras {
-  background: #fff;
+  background: transparent;
 }
 
 .diary-home-page--ml .diary-page-ml-pack .diary-hero-card {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
+  padding: 22px 20px;
+  border-radius: 16px;
+}
+
+.diary-home-page--ml .diary-page-ml-pack .diary-resource-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 @media (max-width: 720px) {
@@ -10618,12 +10629,14 @@ button.sessions-balance {
 .sessions-calendar-week-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: stretch;
   border-top: 1px solid #dadce0;
   background: #fff;
 }
 
 .sessions-calendar-week-col {
   min-height: 132px;
+  height: 100%;
   border-right: 1px solid #dadce0;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -10670,7 +10683,9 @@ button.sessions-balance {
   display: grid;
   gap: 6px;
   align-content: start;
+  align-self: stretch;
   padding: 6px 4px 8px;
+  min-height: 0;
 }
 
 .sessions-calendar-week-empty {
@@ -15956,7 +15971,64 @@ button.sessions-balance {
   padding: 16px 0 48px;
   box-sizing: border-box;
   background: transparent;
-  min-height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 1080px) {
+  .portal-main--home-ml .diary-page--records,
+  .portal-main--home-ml .diary-page--entry,
+  .portal-main .diary-page--records,
+  .portal-main .diary-page--entry {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 12px var(--mobile-pad-x-end, 20px) calc(var(--portal-tab-clear, 72px) + 28px)
+      var(--mobile-pad-x, 20px);
+  }
+
+  .portal-main--home-ml .diary-page--entry > *,
+  .portal-main .diary-page--entry > *,
+  .portal-main--home-ml .diary-page--records > *,
+  .portal-main .diary-page--records > * {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .diary-page--entry .diary-entry-layout,
+  .diary-page--entry .diary-entry-main,
+  .diary-page--entry .diary-card,
+  .diary-page--entry .diary-mood-scroll,
+  .diary-page--entry .diary-mood-scroll-inner,
+  .diary-page--entry .diary-need-grid,
+  .diary-page--entry .diary-chip-row,
+  .diary-page--entry .diary-entry-actions {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .diary-page--entry .diary-mood-scroll-inner {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+  }
+
+  .diary-page--entry .diary-textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .diary-page--entry .diary-field-title {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 }
 
 .portal-main--home-ml .diary-page--records .diary-portal-toolbar,
@@ -15968,9 +16040,26 @@ button.sessions-balance {
 .portal-main--home-ml .exercise-reader-page,
 .portal-main--home-ml .profile-layout,
 .portal-main--home-ml .professionals-showcase {
-  padding: 16px 0 48px;
+  padding-top: 16px;
+  padding-bottom: 48px;
+  padding-right: 0;
   box-sizing: border-box;
   background: transparent;
+}
+
+@media (min-width: 1081px) {
+  .portal-main--home-ml .exercise-routine-page,
+  .portal-main--home-ml .exercise-reader-page {
+    /* Espacio para el rail colapsado; el link “Volver…” no queda tapado */
+    padding-left: var(--portal-home-ml-rail-collapsed, 58px);
+  }
+}
+
+@media (max-width: 1080px) {
+  .portal-main--home-ml .exercise-routine-page,
+  .portal-main--home-ml .exercise-reader-page {
+    padding-left: 0;
+  }
 }
 
 /* Top bar MotivarCare (estructura tipo ML) — blanco + violeta */
@@ -18917,19 +19006,20 @@ button.sessions-balance {
     grid-column: 1 / -1;
   }
 
-  /* Calendario abierto: las 3 cards de abajo ocupan todo el ancho */
+  /* Calendario abierto: paquetes + historial usan todo el ancho */
   .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1100px) {
+  /* Calendario + paquetes + historial */
   .dashboard-ml-history-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .dashboard-ml-history-grid:has(.dashboard-ml-history-card--calendar.is-expanded) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -19377,6 +19467,32 @@ button.sessions-balance {
   box-shadow:
     0 2px 4px rgba(15, 23, 42, 0.04),
     0 12px 28px rgba(95, 68, 235, 0.14);
+}
+
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #1a1a1a;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card::before,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card::after {
+  display: none;
+}
+
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:hover,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:focus,
+.dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:active {
+  background: #fff;
+  border-color: rgba(37, 99, 235, 0.22);
+  color: #1a1a1a;
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
 }
 
 .dashboard-ml-diary-actions-row {
@@ -26584,12 +26700,107 @@ button.sessions-balance {
 
 .exercise-interactive-celebrate {
   margin: 14px 0 0;
-  padding: 12px 14px;
+  padding: 14px 14px 12px;
   border-radius: 12px;
   background: #ecfdf5;
   border: 1px solid #bbf7d0;
   color: #14532d;
   font-size: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.exercise-interactive-celebrate-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.exercise-interactive-celebrate-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #166534;
+}
+
+.exercise-complete-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-complete-suggestion-card {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 76px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--exercise-accent) 35%, #e2e8f0);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.exercise-complete-suggestion-card:hover {
+  border-color: var(--exercise-accent);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.exercise-complete-suggestion-emoji {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 20px;
+  background: var(--exercise-accent-soft);
+}
+
+.exercise-complete-suggestion-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  align-content: center;
+}
+
+.exercise-complete-suggestion-body strong {
+  font-size: 14px;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exercise-complete-suggestion-body span {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exercise-complete-home-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  text-decoration: none;
+}
+
+.exercise-complete-home-link:hover {
+  text-decoration: underline;
 }
 
 /* Bienestar: música relajante — iconos arriba a la derecha, misma línea que el título */

@@ -6,6 +6,13 @@ export function deviceTimeZone(): string {
   }
 }
 
+/** Reloj 24h (Latam): evita "1 p. m." / AM-PM en pantallas de sesión. */
+const TIME_24H: Intl.DateTimeFormatOptions = {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+};
+
 export function formatDate(isoDate: string, locale = "es-AR") {
   return new Intl.DateTimeFormat(locale, {
     weekday: "long",
@@ -16,8 +23,7 @@ export function formatDate(isoDate: string, locale = "es-AR") {
 
 export function formatTime(isoDate: string, locale = "es-AR", timezone?: string) {
   return new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "2-digit",
+    ...TIME_24H,
     ...(timezone ? { timeZone: timezone } : {})
   }).format(new Date(isoDate));
 }
@@ -27,8 +33,7 @@ export function formatDateTime(isoDate: string, locale = "es-AR", timezone?: str
     weekday: "short",
     day: "numeric",
     month: "short",
-    hour: "numeric",
-    minute: "2-digit",
+    ...TIME_24H,
     ...(timezone ? { timeZone: timezone } : {})
   }).format(new Date(isoDate));
 }

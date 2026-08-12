@@ -533,9 +533,6 @@ export function PortalNavigation(props: {
             <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("subscription")}>
               {t(props.language, { es: "Actividad de sesiones", en: "Session activity", pt: "Atividade de sessoes" })}
             </button>
-            <button className="menu-item menu-item--sub" type="button" onClick={() => props.onOpenProfileTab("cards")}>
-              {t(props.language, { es: "Tarjetas", en: "Cards", pt: "Cartoes" })}
-            </button>
           </section>
 
           <section

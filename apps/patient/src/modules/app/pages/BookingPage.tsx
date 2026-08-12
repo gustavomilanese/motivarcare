@@ -46,7 +46,6 @@ import type { PortalPurchaseResult } from "../hooks/usePortalActions";
 import { BookingActionModal } from "../components/booking/BookingActionModal";
 import { CheckoutPackagesPanel } from "../components/booking/CheckoutPackagesPanel";
 import { AssignProfessionalPromptModal } from "../components/AssignProfessionalPromptModal";
-import { PaymentActivityPanel } from "../components/PaymentActivityPanel";
 import { SessionsCollapsibleToggle } from "../components/SessionsCollapsibleToggle";
 import { SessionsSecondarySectionIcon } from "../components/SessionsSecondarySectionIcons";
 import { ProfessionalReviewsModal } from "../../reviews/components/ProfessionalReviewsModal";
@@ -87,8 +86,9 @@ function formatDateTime(params: { isoDate: string; timezone: string; language: A
       weekday: "short",
       month: "short",
       day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -112,8 +112,9 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
     language: params.language,
     timeZone: params.timezone,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -167,7 +168,6 @@ export function BookingPage(props: {
   const [isPackagesExpanded, setIsPackagesExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const [upcomingPage, setUpcomingPage] = useState(0);
-  const [activityExpandSignal, setActivityExpandSignal] = useState(0);
   const [remoteSlots, setRemoteSlots] = useState<TimeSlot[] | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [packagePlans, setPackagePlans] = useState<PackagePlan[]>([]);
@@ -745,16 +745,14 @@ export function BookingPage(props: {
       return;
     }
 
-    if (focus === "packages") {
+    if (focus === "packages" || focus === "activity") {
       setIsPackagesExpanded(true);
     } else if (focus === "history") {
       setIsHistoryExpanded(true);
-    } else {
-      setActivityExpandSignal((current) => current + 1);
     }
 
     window.setTimeout(() => {
-      if (focus === "packages") {
+      if (focus === "packages" || focus === "activity") {
         packagesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         packagesSectionRef.current?.focus({ preventScroll: true });
       } else if (focus === "history") {
@@ -975,6 +973,7 @@ export function BookingPage(props: {
       const targetProfessionalId = rescheduleTarget?.professionalId ?? snap.professionalId;
 
       setSlotsLoading(true);
+      setRemoteSlots(null);
 
       const from = new Date();
       const to = new Date();
@@ -1960,11 +1959,6 @@ export function BookingPage(props: {
         ) : null}
       </section>
 
-      <PaymentActivityPanel
-        language={props.language}
-        authToken={props.state.authToken}
-        expandSignal={activityExpandSignal}
-      />
       </div>
       </section>
 

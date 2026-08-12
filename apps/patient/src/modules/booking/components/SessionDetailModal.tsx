@@ -6,7 +6,8 @@ import {
   textByLanguage,
   resolvePatientChangeNoticeHours,
   canPatientCancelBooking,
-  canPatientRescheduleBooking
+  canPatientRescheduleBooking,
+  willPatientLoseCreditOnCancel
 } from "@therapy/i18n-config";
 import { professionalPhotoAlt } from "../../app/components/ProfessionalNameStack";
 import { professionalAccessibleName } from "../../app/lib/professionalDisplayName";
@@ -76,6 +77,7 @@ export function SessionDetailModal(props: {
   const isCompleted = !isCancelled && new Date(props.booking.endsAt).getTime() < Date.now();
   const canReschedule = !isCompleted && !isCancelled && canPatientRescheduleBooking(props.booking.startsAt, noticeHours);
   const canCancel = !isCompleted && !isCancelled && canPatientCancelBooking(props.booking.startsAt, noticeHours);
+  const losesCreditOnCancel = canCancel && willPatientLoseCreditOnCancel(props.booking.startsAt, noticeHours);
   const joinUrl = isCompleted || isCancelled ? "" : (props.booking.joinUrl?.trim() ?? "");
   const isGoogleMeet = joinUrl.includes("meet.google.");
   const isLikelyNonMeetVideoLink =
@@ -257,17 +259,29 @@ export function SessionDetailModal(props: {
               })}
             </h2>
             <p className="session-detail-cancel-copy">
-              {isTrialBooking
-                ? t(props.language, {
-                    es: `Con al menos ${noticeHours} h de anticipación no se devuelve el dinero, pero podés elegir otro horario sin pagar de nuevo.`,
-                    en: `At least ${noticeHours} h ahead: money isn’t refunded, but you can pick another time without paying again.`,
-                    pt: `Com pelo menos ${noticeHours} h de antecedência o dinheiro não volta, mas você pode escolher outro horário sem pagar de novo.`
-                  })
-                : t(props.language, {
-                    es: `Con al menos ${noticeHours} h de anticipación el crédito vuelve a tus sesiones disponibles (sin reembolso).`,
-                    en: `At least ${noticeHours} h ahead: the credit returns to your available sessions (no cash refund).`,
-                    pt: `Com pelo menos ${noticeHours} h de antecedência o crédito volta para suas sessões (sem reembolso).`
-                  })}
+              {losesCreditOnCancel
+                ? isTrialBooking
+                  ? t(props.language, {
+                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS la sesión de prueba. No se puede reprogramar ni recuperar.`,
+                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE the trial session. It cannot be rescheduled or recovered.`,
+                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE a sessão de teste. Não dá para reagendar nem recuperar.`
+                    })
+                  : t(props.language, {
+                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS el crédito de esta sesión. No vuelve a tu saldo.`,
+                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE this session credit. It will not return to your balance.`,
+                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE o crédito desta sessão. Não volta ao saldo.`
+                    })
+                : isTrialBooking
+                  ? t(props.language, {
+                      es: `Con al menos ${noticeHours} h de anticipación no se devuelve el dinero, pero podés elegir otro horario sin pagar de nuevo.`,
+                      en: `At least ${noticeHours} h ahead: money isn’t refunded, but you can pick another time without paying again.`,
+                      pt: `Com pelo menos ${noticeHours} h de antecedência o dinheiro não volta, mas você pode escolher outro horário sem pagar de novo.`
+                    })
+                  : t(props.language, {
+                      es: `Con al menos ${noticeHours} h de anticipación el crédito vuelve a tus sesiones disponibles (sin reembolso en dinero).`,
+                      en: `At least ${noticeHours} h ahead: the credit returns to your available sessions (no cash refund).`,
+                      pt: `Com pelo menos ${noticeHours} h de antecedência o crédito volta para suas sessões (sem reembolso).`
+                    })}
             </p>
             <label className="session-detail-cancel-reason">
               <span>
@@ -299,7 +313,13 @@ export function SessionDetailModal(props: {
               >
                 {props.cancelSubmitting
                   ? t(props.language, { es: "Cancelando…", en: "Cancelling…", pt: "Cancelando…" })
-                  : t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })}
+                  : losesCreditOnCancel
+                    ? t(props.language, {
+                        es: "Cancelar y perder el crédito",
+                        en: "Cancel and lose credit",
+                        pt: "Cancelar e perder o crédito"
+                      })
+                    : t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })}
               </button>
               <button
                 type="button"
@@ -393,15 +413,6 @@ export function SessionDetailModal(props: {
                     type="button"
                     className="session-detail-action session-detail-action--danger-outline"
                     disabled={!canCancel}
-                    title={
-                      canCancel
-                        ? undefined
-                        : t(props.language, {
-                            es: `Cancelá con al menos ${noticeHours} h de anticipación.`,
-                            en: `Cancel at least ${noticeHours} h in advance.`,
-                            pt: `Cancele com pelo menos ${noticeHours} h de antecedência.`
-                          })
-                    }
                     onClick={() => setConfirmCancel(true)}
                   >
                     {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
@@ -413,9 +424,9 @@ export function SessionDetailModal(props: {
             {!isPastSummary ? (
               <p className="session-detail-footnote">
                 {t(props.language, {
-                  es: `Conectate 5 min antes · cambios con ${noticeHours} h`,
-                  en: `Join 5 min early · changes need ${noticeHours} h`,
-                  pt: `Entre 5 min antes · mudanças com ${noticeHours} h`
+                  es: `Conectate 5 min antes · reprogramar con ${noticeHours} h · cancelar tarde pierde el crédito`,
+                  en: `Join 5 min early · reschedule needs ${noticeHours} h · late cancel loses credit`,
+                  pt: `Entre 5 min antes · reagendar com ${noticeHours} h · cancelar tarde perde o crédito`
                 })}
               </p>
             ) : null}

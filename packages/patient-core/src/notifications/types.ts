@@ -1,4 +1,4 @@
-export type PatientProfileTab = "data" | "cards" | "subscription" | "settings" | "support";
+export type PatientProfileTab = "data" | "subscription" | "settings" | "support";
 
 export type PortalNotificationKind =
   | "chat"

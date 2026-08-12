@@ -19,7 +19,7 @@ export type PostIntakeParamList = {
 };
 
 export type PatientRootStackParamList = {
-  Tabs: undefined;
+  Tabs: undefined | { screen?: keyof PatientTabParamList };
   ProfessionalMatching: undefined;
   DiaryHome: undefined;
   DiaryNew: { mood?: import("../wellbeing/types").EmotionalDiaryMood } | undefined;

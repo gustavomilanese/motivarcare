@@ -8,7 +8,8 @@ import {
   isPatientBookingLiveStatus,
   replaceTemplate,
   resolvePatientChangeNoticeHours,
-  textByLanguage
+  textByLanguage,
+  willPatientLoseCreditOnCancel
 } from "@therapy/i18n-config";
 import { pickNextPatientBooking } from "@therapy/patient-core";
 import { findProfessionalById } from "../../app/lib/professionals";
@@ -28,8 +29,9 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
     language: params.language,
     timeZone: params.timezone,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -121,8 +123,14 @@ function getCalendarDayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function getBookingDayKey(isoDate: string): string {
-  return isoDate.slice(0, 10);
+/** Día civil en la TZ del paciente (no el prefijo UTC del ISO). */
+function getBookingDayKey(isoDate: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(isoDate));
 }
 
 export function SessionsCalendar(props: {
@@ -148,7 +156,9 @@ export function SessionsCalendar(props: {
   });
   const [selectedDayKey, setSelectedDayKey] = useState(() => {
     const nextBooking = getNextBooking(props.bookings);
-    return nextBooking ? getBookingDayKey(nextBooking.startsAt) : getCalendarDayKey(new Date());
+    return nextBooking
+      ? getBookingDayKey(nextBooking.startsAt, props.timezone)
+      : getCalendarDayKey(new Date());
   });
 
   const calendarDays = useMemo(
@@ -158,7 +168,7 @@ export function SessionsCalendar(props: {
   const bookingsByDay = useMemo(() => {
     const map = new Map<string, Booking[]>();
     for (const booking of props.bookings) {
-      const key = getBookingDayKey(booking.startsAt);
+      const key = getBookingDayKey(booking.startsAt, props.timezone);
       const current = map.get(key) ?? [];
       current.push(booking);
       map.set(key, current);
@@ -170,7 +180,7 @@ export function SessionsCalendar(props: {
       );
     }
     return map;
-  }, [props.bookings]);
+  }, [props.bookings, props.timezone]);
 
   const dayNames = useMemo(
     () => [
@@ -254,7 +264,7 @@ export function SessionsCalendar(props: {
     });
 
     if (firstBookingInMonth) {
-      setSelectedDayKey(getBookingDayKey(firstBookingInMonth.startsAt));
+      setSelectedDayKey(getBookingDayKey(firstBookingInMonth.startsAt, props.timezone));
       return;
     }
 
@@ -264,7 +274,7 @@ export function SessionsCalendar(props: {
     }
 
     setSelectedDayKey(getCalendarDayKey(new Date(viewYear, viewMonth, 1)));
-  }, [selectedDate, sortedBookings, todayKey, variant, viewDate]);
+  }, [selectedDate, sortedBookings, todayKey, variant, viewDate, props.timezone]);
 
   return (
     <section className={`content-card booking-session-card booking-card-minimal sessions-calendar-card ${variant === "dashboard" ? "dashboard" : "week-google"}`}>
@@ -396,13 +406,14 @@ export function SessionsCalendar(props: {
                         const noticeHours = resolveBookingNoticeHours(booking);
                         const canReschedule = canPatientRescheduleBooking(booking.startsAt, noticeHours);
                         const canCancel = canPatientCancelBooking(booking.startsAt, noticeHours);
+                        const losesCreditOnCancel = willPatientLoseCreditOnCancel(booking.startsAt, noticeHours);
                         const cancelBusy = props.cancelBusyBookingId === booking.id;
                         const pendingCancel = pendingCancelEventId === booking.id;
                         const noticeHint = replaceTemplate(
                           t(props.language, {
-                            es: "Se puede cambiar hasta {hours} h antes.",
-                            en: "Can be changed up to {hours} h before.",
-                            pt: "Pode alterar ate {hours} h antes."
+                            es: "Se puede reprogramar hasta {hours} h antes.",
+                            en: "Can be rescheduled up to {hours} h before.",
+                            pt: "Pode reagendar ate {hours} h antes."
                           }),
                           { hours: String(noticeHours) }
                         );
@@ -470,17 +481,29 @@ export function SessionsCalendar(props: {
                                 {pendingCancel ? (
                                   <div className="sessions-calendar-popover-confirm">
                                     <p>
-                                      {isTrial
-                                        ? t(props.language, {
-                                            es: `¿Cancelar tu sesión de prueba? Con al menos ${noticeHours} h de anticipación no se devuelve el dinero, pero podés elegir otro horario sin pagar de nuevo.`,
-                                            en: `Cancel your trial session? With at least ${noticeHours} h notice, money is not refunded but you can pick another time without paying again.`,
-                                            pt: `Cancelar sua sessão de teste? Com pelo menos ${noticeHours} h de antecedência o dinheiro não é devolvido, mas você pode escolher outro horário sem pagar de novo.`
-                                          })
-                                        : t(props.language, {
-                                            es: `¿Cancelar esta sesión? Con al menos ${noticeHours} h de anticipación no se devuelve el dinero; el crédito vuelve a tus sesiones disponibles.`,
-                                            en: `Cancel this session? With at least ${noticeHours} h notice, money is not refunded — the credit returns to your available sessions.`,
-                                            pt: `Cancelar esta sessão? Com pelo menos ${noticeHours} h de antecedência o dinheiro não é devolvido — o crédito volta para suas sessões disponíveis.`
-                                          })}
+                                      {losesCreditOnCancel
+                                        ? isTrial
+                                          ? t(props.language, {
+                                              es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS la sesión de prueba. No se puede reprogramar ni recuperar.`,
+                                              en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE the trial session. It cannot be rescheduled or recovered.`,
+                                              pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE a sessão de teste. Não dá para reagendar nem recuperar.`
+                                            })
+                                          : t(props.language, {
+                                              es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS el crédito de esta sesión. No vuelve a tu saldo.`,
+                                              en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE this session credit. It will not return to your balance.`,
+                                              pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE o crédito desta sessão. Não volta ao saldo.`
+                                            })
+                                        : isTrial
+                                          ? t(props.language, {
+                                              es: `¿Cancelar tu sesión de prueba? Con al menos ${noticeHours} h de anticipación no se devuelve el dinero, pero podés elegir otro horario sin pagar de nuevo.`,
+                                              en: `Cancel your trial session? With at least ${noticeHours} h notice, money is not refunded but you can pick another time without paying again.`,
+                                              pt: `Cancelar sua sessão de teste? Com pelo menos ${noticeHours} h de antecedência o dinheiro não é devolvido, mas você pode escolher outro horário sem pagar de novo.`
+                                            })
+                                          : t(props.language, {
+                                              es: `¿Cancelar esta sesión? Con al menos ${noticeHours} h de anticipación el crédito vuelve a tus sesiones disponibles (sin reembolso en dinero).`,
+                                              en: `Cancel this session? With at least ${noticeHours} h notice, the credit returns to your available sessions (no cash refund).`,
+                                              pt: `Cancelar esta sessão? Com pelo menos ${noticeHours} h de antecedência o crédito volta para suas sessões disponíveis (sem reembolso).`
+                                            })}
                                     </p>
                                     <label className="session-detail-cancel-reason">
                                       <span>
@@ -526,7 +549,13 @@ export function SessionsCalendar(props: {
                                       >
                                         {cancelBusy
                                           ? t(props.language, { es: "Cancelando…", en: "Cancelling…", pt: "Cancelando…" })
-                                          : t(props.language, { es: "Sí, cancelar", en: "Yes, cancel", pt: "Sim, cancelar" })}
+                                          : losesCreditOnCancel
+                                            ? t(props.language, {
+                                                es: "Sí, cancelar y perder el crédito",
+                                                en: "Yes, cancel and lose credit",
+                                                pt: "Sim, cancelar e perder o crédito"
+                                              })
+                                            : t(props.language, { es: "Sí, cancelar", en: "Yes, cancel", pt: "Sim, cancelar" })}
                                       </button>
                                     </div>
                                   </div>
@@ -569,7 +598,7 @@ export function SessionsCalendar(props: {
                                         </button>
                                       ) : null}
                                     </div>
-                                    {!canReschedule || !canCancel ? (
+                                    {!canReschedule ? (
                                       <p className="sessions-calendar-popover-hint">{noticeHint}</p>
                                     ) : null}
                                   </>

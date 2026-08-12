@@ -30,7 +30,9 @@ function buildSessionCardStyles(c: AppThemeColors, mode: ThemeMode) {
       shadowOpacity: mode === "dark" ? 0.4 : 0.1,
       shadowRadius: 18,
       shadowOffset: { width: 0, height: 6 },
-      elevation: 5
+      elevation: 5,
+      alignSelf: "stretch",
+      width: "100%"
     },
     sessionCardTopRow: {
       flexDirection: "row",
@@ -215,5 +217,5 @@ function formatTimeOnly(iso: string) {
   if (Number.isNaN(d.getTime())) {
     return "";
   }
-  return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }

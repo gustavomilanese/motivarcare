@@ -19,6 +19,7 @@ import {
   acquireBookingSlotHold,
   createBooking,
   getMatchingProfessionals,
+  getProfessionalAvailabilitySlots,
   releaseBookingSlotHold,
   setActiveProfessional
 } from "../../api/client";
@@ -236,6 +237,9 @@ export function MatchingScreen() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<MatchingProfessional | null>(null);
   const [slotModal, setSlotModal] = useState<MatchingProfessional | null>(null);
+  const [liveSlots, setLiveSlots] = useState<MatchingSlot[]>([]);
+  const [liveNoticeHours, setLiveNoticeHours] = useState(0);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [summary, setSummary] = useState<SummaryState | null>(null);
   const holdIdRef = useRef<string | null>(null);
 
@@ -281,8 +285,45 @@ export function MatchingScreen() {
   const closeSlotModal = useCallback(() => {
     setSlotModal(null);
     setSummary(null);
+    setLiveSlots([]);
+    setLiveNoticeHours(0);
+    setSlotsLoading(false);
     void releaseCurrentHold();
   }, [releaseCurrentHold]);
+
+  useEffect(() => {
+    if (!slotModal || !token) {
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    setLiveSlots([]);
+    void getProfessionalAvailabilitySlots({ token, professionalId: slotModal.id })
+      .then((res) => {
+        if (cancelled) {
+          return;
+        }
+        setLiveSlots(res.slots ?? []);
+        setLiveNoticeHours(Number(res.minimumBookingNoticeHours) || 0);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          // Fallback al snapshot de matching si el endpoint de availability falla.
+          setLiveSlots(slotModal.slots ?? []);
+          setLiveNoticeHours(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSlotsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slotModal, token]);
+
+  const modalSlots = upcomingAvailabilitySlots(liveSlots, { minimumBookingNoticeHours: liveNoticeHours });
 
   const pickSlot = useCallback(
     async (professional: MatchingProfessional, slot: MatchingSlot) => {
@@ -536,7 +577,9 @@ export function MatchingScreen() {
               <>
                 <Text style={styles.modalTitle}>Elegí horario</Text>
                 <Text style={styles.modalSub}>{slotModal?.fullName}</Text>
-                {slotModal && upcomingAvailabilitySlots(slotModal.slots ?? []).length === 0 ? (
+                {slotsLoading ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />
+                ) : modalSlots.length === 0 ? (
                   <Text style={styles.emptySlots}>
                     Todavía no hay turnos publicados para este profesional. Elegí otro o volvé más tarde.
                   </Text>
@@ -549,7 +592,7 @@ export function MatchingScreen() {
                     nestedScrollEnabled
                   >
                     {slotModal
-                      ? upcomingAvailabilitySlots(slotModal.slots ?? []).map((slot) => (
+                      ? modalSlots.map((slot) => (
                           <PrimaryButton
                             key={slot.id}
                             label={formatDateTime(slot.startsAt)}

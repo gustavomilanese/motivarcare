@@ -1,6 +1,7 @@
 import { type ReactNode, useLayoutEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
+import { navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 import { useDiaryPortalToolbarMountTarget } from "../context/DiaryPortalToolbarMount";
 import { t } from "../lib/labels";
 
@@ -21,6 +22,7 @@ const DIARY_SECTIONS = [
 ] as const;
 
 export function DiarySubNav(props: { language: AppLanguage }) {
+  const navigate = useNavigate();
   return (
     <nav className="diary-subnav" aria-label={t(props.language, { es: "Secciones del diario", en: "Diary sections", pt: "Seções do diário" })}>
       {DIARY_SECTIONS.map((item) => (
@@ -29,6 +31,10 @@ export function DiarySubNav(props: { language: AppLanguage }) {
           to={item.to}
           end={item.end}
           className={({ isActive }) => `diary-subnav-link${isActive ? " diary-subnav-link--active" : ""}`}
+          onClick={(event) => {
+            event.preventDefault();
+            navigateToSectionTop(navigate, item.to);
+          }}
         >
           {t(props.language, item.label)}
         </NavLink>
@@ -187,7 +193,7 @@ export function DiaryHomeHero(props: {
             <button
               type="button"
               className="dashboard-ml-diary-banner-cta"
-              onClick={() => navigate("/diario/nueva")}
+              onClick={() => navigateToSectionTop(navigate, "/diario/nueva")}
             >
               {t(props.language, {
                 es: "Escribir ahora",
@@ -198,7 +204,7 @@ export function DiaryHomeHero(props: {
             <button
               type="button"
               className="dashboard-ml-diary-banner-link"
-              onClick={() => navigate("/diario/registros")}
+              onClick={() => navigateToSectionTop(navigate, "/diario/registros")}
             >
               {t(props.language, {
                 es: "Ver registros",

@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   heroGlow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: -6,
     left: -10,
     right: -10,

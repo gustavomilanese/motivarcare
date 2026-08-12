@@ -69,3 +69,19 @@ export const ALL_CATEGORIES: ExerciseCategory[] = [
   "relajacion",
   "mindfulness"
 ];
+
+/** Hasta `limit` ejercicios publicados de la misma categoría, excluyendo el actual. */
+export function pickRelatedByCategory<T extends { id: string; category: ExerciseCategory; status?: string }>(
+  all: T[],
+  current: Pick<T, "id" | "category">,
+  limit = 3
+): T[] {
+  return all
+    .filter(
+      (item) =>
+        item.id !== current.id &&
+        item.category === current.category &&
+        (item.status === undefined || item.status === "published")
+    )
+    .slice(0, limit);
+}

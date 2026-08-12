@@ -499,11 +499,14 @@
   box-sizing: border-box;
 }
 
-.diary-home-page {
+.diary-page-top-anchor {
+  position: relative;
+  height: 0;
   width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .diary-home-stack {
@@ -525,8 +528,9 @@
 }
 
 .diary-home-band--checkin {
-  background: linear-gradient(145deg, #ebe4ff 0%, #f5f0ff 42%, #eef2ff 100%);
-  border-bottom: 1px solid rgba(129, 108, 235, 0.15);
+  background: transparent;
+  border-bottom: none;
+  padding-bottom: 8px;
 }
 
 .diary-home-band--history {
@@ -645,7 +649,7 @@
 }
 
 .diary-home-band--extras {
-  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  background: transparent;
   padding-bottom: 28px;
 }
 
@@ -684,19 +688,21 @@
   height: 100%;
   padding: 16px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   background: #fff;
   box-shadow:
-    0 8px 22px rgba(95, 68, 235, 0.09),
-    0 2px 6px rgba(15, 23, 42, 0.05);
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .diary-resource-card:hover {
-  border-color: rgba(139, 124, 248, 0.4);
-  box-shadow: 0 12px 28px rgba(95, 68, 235, 0.14);
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(15, 23, 42, 0.12);
   transform: translateY(-1px);
 }
 
@@ -759,8 +765,10 @@
   padding: 22px 20px;
   border-radius: calc(var(--portal-radius) + 4px);
   background: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 12px 32px rgba(95, 68, 235, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
   overflow: hidden;
   max-width: 100%;
   min-width: 0;
@@ -886,11 +894,13 @@
 }
 
 .diary-card {
-  background: var(--portal-surface-solid);
-  border: 1px solid var(--portal-border);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: var(--portal-radius);
   padding: 18px 20px;
-  box-shadow: var(--portal-elev);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .diary-card-head {
@@ -1410,6 +1420,8 @@
 .diary-page--entry .diary-page-title {
   font-size: clamp(1.1rem, 2.2vw, 1.45rem);
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .diary-page--entry .diary-page-subtitle {
@@ -1417,7 +1429,8 @@
   max-width: none;
   font-size: clamp(0.78rem, 1.45vw, 0.9rem);
   line-height: 1.4;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 
@@ -1682,10 +1695,11 @@
 
 .diary-page--records .diary-stat-card,
 .diary-page--records .diary-card {
-  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow:
-    0 8px 24px rgba(95, 68, 235, 0.1),
-    0 2px 8px rgba(15, 23, 42, 0.06);
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .diary-page--records .diary-card--insights {
@@ -1701,11 +1715,13 @@
   display: grid;
   gap: 2px;
   align-content: start;
-  background: var(--portal-surface-solid);
-  border: 1px solid var(--portal-border);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: var(--portal-radius-sm);
   padding: 14px 16px;
-  box-shadow: var(--portal-elev);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .diary-stat-label {
@@ -2225,11 +2241,11 @@
 .diary-card--session {
   padding: 0;
   overflow: hidden;
-  background: linear-gradient(145deg, #ebe4ff 0%, #f5f0ff 42%, #eef2ff 100%);
-  border: 1px solid rgba(129, 108, 235, 0.22);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow:
-    0 10px 28px rgba(95, 68, 235, 0.14),
-    0 2px 8px rgba(15, 23, 42, 0.06);
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .diary-card--session > * {

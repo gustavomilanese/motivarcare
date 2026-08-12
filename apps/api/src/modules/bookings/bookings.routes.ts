@@ -1448,14 +1448,9 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
 
   const isTrialBooking = booking.consumedPurchaseId === null || booking.consumedCredits === 0;
 
+  let patientChangeNoticeHours = FREE_CANCELLATION_HOURS;
   if (canCancelAsPatient) {
-    const patientChangeNoticeHours = await loadProfessionalChangeNoticeHours(booking.professionalId);
-    if (!hasMinimumBookingNotice(booking.startsAt, patientChangeNoticeHours)) {
-      return res.status(409).json({
-        error: `Bookings must be cancelled at least ${patientChangeNoticeHours} hours before session start.`,
-        minimumBookingNoticeHours: patientChangeNoticeHours
-      });
-    }
+    patientChangeNoticeHours = await loadProfessionalChangeNoticeHours(booking.professionalId);
     const reason = parsed.data.reason?.trim() ?? "";
     if (reason.length < 3) {
       return res.status(400).json({ error: "Cancellation reason is required (at least 3 characters)." });
@@ -1466,12 +1461,22 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
 
   const cancelledAt = parsed.data.cancelledAt ? new Date(parsed.data.cancelledAt) : new Date();
   const hoursBeforeSession = (booking.startsAt.getTime() - cancelledAt.getTime()) / (1000 * 60 * 60);
-  /** Reintegrar créditos del paquete consumido si la sesión aún no empezó. */
+  const cancelledBeforeStart = cancelledAt.getTime() < booking.startsAt.getTime();
+  /**
+   * Paciente: crédito / trial se reintegran solo con ≥ noticeHours (default 24h).
+   * Menos de 24h: puede cancelar pero pierde el crédito.
+   * Profesional: si cancela antes del inicio, se reintegra.
+   */
+  const withinFreeCancellationWindow = hasMinimumBookingNotice(booking.startsAt, patientChangeNoticeHours);
   const shouldRefundCredits =
     booking.consumedCredits > 0
     && Boolean(booking.consumedPurchaseId)
-    && cancelledAt.getTime() < booking.startsAt.getTime();
-  const shouldReleaseTrialCredit = isTrialBooking && cancelledAt.getTime() < booking.startsAt.getTime();
+    && cancelledBeforeStart
+    && (canCancelAsProfessional || withinFreeCancellationWindow);
+  const shouldReleaseTrialCredit =
+    isTrialBooking
+    && cancelledBeforeStart
+    && (canCancelAsProfessional || withinFreeCancellationWindow);
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedBooking = await tx.booking.update({

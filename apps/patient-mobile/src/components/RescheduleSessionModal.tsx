@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getMatchingProfessionals, rescheduleMineBooking } from "../api/client";
-import type { BookingItem, MatchingProfessional, MatchingSlot } from "../api/types";
+import { getProfessionalAvailabilitySlots, rescheduleMineBooking } from "../api/client";
+import type { BookingItem, MatchingSlot } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { useBookingsRefresh } from "../context/BookingsRefreshContext";
 import { PrimaryButton } from "./ui/PrimaryButton";
@@ -97,7 +97,9 @@ export function RescheduleSessionModal(props: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [professional, setProfessional] = useState<MatchingProfessional | null>(null);
+  const [rawSlots, setRawSlots] = useState<MatchingSlot[]>([]);
+  const [noticeHours, setNoticeHours] = useState(0);
+  const [slotsReady, setSlotsReady] = useState(false);
 
   const professionalId = booking?.professionalId ?? null;
 
@@ -107,17 +109,16 @@ export function RescheduleSessionModal(props: Props) {
     }
     setLoading(true);
     setError("");
-    setProfessional(null);
+    setRawSlots([]);
+    setSlotsReady(false);
     try {
-      const res = await getMatchingProfessionals(token);
-      const pro = res.professionals.find((p) => p.id === professionalId);
-      if (!pro) {
-        setError("No encontramos los horarios de tu profesional. Probá de nuevo más tarde.");
-      } else {
-        setProfessional(pro);
-      }
+      const res = await getProfessionalAvailabilitySlots({ token, professionalId });
+      setRawSlots(res.slots ?? []);
+      setNoticeHours(Number(res.minimumBookingNoticeHours) || 0);
+      setSlotsReady(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos cargar horarios.");
+      setSlotsReady(false);
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,9 @@ export function RescheduleSessionModal(props: Props) {
   useEffect(() => {
     if (!visible || !booking || !token || !professionalId) {
       setError("");
-      setProfessional(null);
+      setRawSlots([]);
+      setNoticeHours(0);
+      setSlotsReady(false);
       setLoading(false);
       return;
     }
@@ -134,21 +137,20 @@ export function RescheduleSessionModal(props: Props) {
     void (async () => {
       setLoading(true);
       setError("");
-      setProfessional(null);
+      setRawSlots([]);
+      setSlotsReady(false);
       try {
-        const res = await getMatchingProfessionals(token);
+        const res = await getProfessionalAvailabilitySlots({ token, professionalId });
         if (cancelled) {
           return;
         }
-        const pro = res.professionals.find((p) => p.id === professionalId);
-        if (!pro) {
-          setError("No encontramos los horarios de tu profesional. Probá de nuevo más tarde.");
-        } else {
-          setProfessional(pro);
-        }
+        setRawSlots(res.slots ?? []);
+        setNoticeHours(Number(res.minimumBookingNoticeHours) || 0);
+        setSlotsReady(true);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "No pudimos cargar horarios.");
+          setSlotsReady(false);
         }
       } finally {
         if (!cancelled) {
@@ -187,8 +189,8 @@ export function RescheduleSessionModal(props: Props) {
     }
   };
 
-  const slots = professional ? upcomingAvailabilitySlots(professional.slots ?? []) : [];
-  const noSlots = Boolean(professional && slots.length === 0);
+  const slots = upcomingAvailabilitySlots(rawSlots, { minimumBookingNoticeHours: noticeHours });
+  const noSlots = slotsReady && slots.length === 0;
 
   const renderBody = () => {
     if (!booking || !professionalId) {
@@ -201,7 +203,7 @@ export function RescheduleSessionModal(props: Props) {
         </View>
       );
     }
-    if (error && !professional) {
+    if (error && !slotsReady) {
       return (
         <>
           <Text style={styles.error}>{error}</Text>
@@ -251,7 +253,7 @@ export function RescheduleSessionModal(props: Props) {
               Actual: {formatDateTime(booking.startsAt)} · {booking.counterpartName ?? "Profesional"}
             </Text>
           ) : null}
-          {error && professional ? <Text style={styles.error}>{error}</Text> : null}
+          {error && slotsReady ? <Text style={styles.error}>{error}</Text> : null}
           {renderBody()}
           <PrimaryButton label="Cerrar" variant="ghost" onPress={onClose} disabled={submitting} />
         </View>

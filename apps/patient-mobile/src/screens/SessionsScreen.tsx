@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { getBookingsMine, getPaymentCheckouts } from "../api/client";
+import { getBookingsMine } from "../api/client";
 import type { BookingItem } from "../api/types";
 import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
@@ -17,7 +17,7 @@ import { BookSessionModal } from "../components/BookSessionModal";
 import { CancelSessionModal } from "../components/CancelSessionModal";
 import { RescheduleSessionModal } from "../components/RescheduleSessionModal";
 import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
-import { canPatientRescheduleBooking } from "../utils/patientReschedule";
+import { canPatientCancelBooking, canPatientRescheduleBooking } from "../utils/patientReschedule";
 import { formatDateTime } from "../utils/date";
 
 type SessionsNav = BottomTabNavigationProp<PatientTabParamList>;
@@ -84,7 +84,9 @@ function buildSessionsStyles(c: AppThemeColors) {
     },
     sessionWrapper: {
       marginTop: 12,
-      marginBottom: 12
+      marginBottom: 12,
+      alignSelf: "stretch",
+      width: "100%"
     },
     actions: {
       alignSelf: "stretch",
@@ -218,10 +220,6 @@ export function SessionsScreen() {
   const [cancelBooking, setCancelBooking] = useState<BookingItem | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [packagesOpen, setPackagesOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
-  const [paymentRows, setPaymentRows] = useState<
-    Array<{ id: string; status: string; packageName?: string | null; createdAt: string }>
-  >([]);
 
   const upcoming = useMemo(() => filterUpcomingPatientBookings(allBookings), [allBookings]);
   const history = useMemo(
@@ -241,19 +239,8 @@ export function SessionsScreen() {
 
     setError("");
     try {
-      const [bookingsResponse, paymentsResponse] = await Promise.all([
-        getBookingsMine(token),
-        getPaymentCheckouts(token).catch(() => ({ checkouts: [] }))
-      ]);
+      const bookingsResponse = await getBookingsMine(token);
       setAllBookings(bookingsResponse.bookings);
-      setPaymentRows(
-        (paymentsResponse.checkouts ?? []).slice(0, 12).map((row) => ({
-          id: row.id,
-          status: row.status,
-          packageName: row.packageName,
-          createdAt: row.createdAt
-        }))
-      );
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "No se pudo cargar sesiones");
     } finally {
@@ -338,7 +325,9 @@ export function SessionsScreen() {
           && booking.bookingMode !== "trial"
           && Boolean(booking.professionalId)
           && canPatientRescheduleBooking(booking.startsAt);
-        const allowCancel = booking.status === "confirmed";
+        const allowCancel =
+          (booking.status === "confirmed" || booking.status === "requested")
+          && canPatientCancelBooking(booking.startsAt);
         return (
           <View key={booking.id} style={styles.sessionWrapper}>
             <UpcomingSessionCard
@@ -412,25 +401,6 @@ export function SessionsScreen() {
               <Text style={styles.historyTitle}>{booking.counterpartName ?? "Sesión"}</Text>
               <Text style={styles.historyMeta}>
                 {formatDateTime(booking.startsAt)} · {booking.status}
-              </Text>
-            </View>
-          ))
-        )
-      ) : null}
-
-      <Pressable style={styles.sectionToggle} onPress={() => setActivityOpen((v) => !v)}>
-        <Text style={styles.sectionTitle}>Actividad de compras</Text>
-        <Ionicons name={activityOpen ? "remove" : "add"} size={20} color={colors.primary} />
-      </Pressable>
-      {activityOpen ? (
-        paymentRows.length === 0 ? (
-          <Text style={styles.empty}>Sin actividad de compras todavía.</Text>
-        ) : (
-          paymentRows.map((row) => (
-            <View key={row.id} style={styles.historyRow}>
-              <Text style={styles.historyTitle}>{row.packageName ?? "Compra"}</Text>
-              <Text style={styles.historyMeta}>
-                {row.status} · {formatDateTime(row.createdAt)}
               </Text>
             </View>
           ))

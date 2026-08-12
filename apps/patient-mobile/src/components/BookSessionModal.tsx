@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { createBooking, getMatchingProfessionals, setActiveProfessional } from "../api/client";
-import type { MatchingProfessional, MatchingSlot } from "../api/types";
+import { createBooking, getProfessionalAvailabilitySlots, setActiveProfessional } from "../api/client";
+import type { MatchingSlot } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { useBookingsRefresh } from "../context/BookingsRefreshContext";
 import { usePatientProfile } from "../context/PatientProfileContext";
@@ -102,11 +102,14 @@ export function BookSessionModal(props: BookSessionModalProps) {
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState("");
-  const [professional, setProfessional] = useState<MatchingProfessional | null>(null);
+  const [rawSlots, setRawSlots] = useState<MatchingSlot[]>([]);
+  const [noticeHours, setNoticeHours] = useState(0);
+  const [slotsReady, setSlotsReady] = useState(false);
 
   const credits = profile?.latestPackage?.remainingCredits ?? 0;
   const hasCredits = credits > 0;
   const activeId = profile?.activeProfessional?.id;
+  const professionalName = profile?.activeProfessional?.fullName ?? null;
 
   const reload = useCallback(async () => {
     if (!token || !activeId) {
@@ -114,19 +117,16 @@ export function BookSessionModal(props: BookSessionModalProps) {
     }
     setLoading(true);
     setError("");
-    setProfessional(null);
+    setRawSlots([]);
+    setSlotsReady(false);
     try {
-      const res = await getMatchingProfessionals(token);
-      const pro = res.professionals.find((p) => p.id === activeId);
-      if (!pro) {
-        setError(
-          "No encontramos a tu profesional en la lista por ahora. Tocá Reintentar o probá de nuevo en unos minutos."
-        );
-      } else {
-        setProfessional(pro);
-      }
+      const res = await getProfessionalAvailabilitySlots({ token, professionalId: activeId });
+      setRawSlots(res.slots ?? []);
+      setNoticeHours(Number(res.minimumBookingNoticeHours) || 0);
+      setSlotsReady(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos cargar los horarios. Revisá tu conexión.");
+      setSlotsReady(false);
     } finally {
       setLoading(false);
     }
@@ -135,40 +135,37 @@ export function BookSessionModal(props: BookSessionModalProps) {
   useEffect(() => {
     if (!visible) {
       setError("");
-      setProfessional(null);
+      setRawSlots([]);
+      setNoticeHours(0);
+      setSlotsReady(false);
       setLoading(false);
       return;
     }
     setError("");
-    if (!hasCredits || !activeId) {
-      setProfessional(null);
+    if (!hasCredits || !activeId || !token) {
+      setRawSlots([]);
+      setSlotsReady(false);
       setLoading(false);
       return;
     }
     let cancelled = false;
     void (async () => {
-      if (!token || !activeId) {
-        return;
-      }
       setLoading(true);
       setError("");
-      setProfessional(null);
+      setRawSlots([]);
+      setSlotsReady(false);
       try {
-        const res = await getMatchingProfessionals(token);
+        const res = await getProfessionalAvailabilitySlots({ token, professionalId: activeId });
         if (cancelled) {
           return;
         }
-        const pro = res.professionals.find((p) => p.id === activeId);
-        if (!pro) {
-          setError(
-            "No encontramos a tu profesional en la lista por ahora. Tocá Reintentar o probá de nuevo en unos minutos."
-          );
-        } else {
-          setProfessional(pro);
-        }
+        setRawSlots(res.slots ?? []);
+        setNoticeHours(Number(res.minimumBookingNoticeHours) || 0);
+        setSlotsReady(true);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "No pudimos cargar los horarios. Revisá tu conexión.");
+          setSlotsReady(false);
         }
       } finally {
         if (!cancelled) {
@@ -181,23 +178,23 @@ export function BookSessionModal(props: BookSessionModalProps) {
     };
   }, [visible, hasCredits, activeId, token]);
 
-  const slots = professional ? upcomingAvailabilitySlots(professional.slots ?? []) : [];
-  const noSlots = Boolean(professional && slots.length === 0);
+  const slots = upcomingAvailabilitySlots(rawSlots, { minimumBookingNoticeHours: noticeHours });
+  const noSlots = slotsReady && slots.length === 0;
 
   const pickSlot = async (slot: MatchingSlot) => {
-    if (!token || !professional) {
+    if (!token || !activeId) {
       return;
     }
     setBooking(true);
     setError("");
     try {
-      await setActiveProfessional({ token, professionalId: professional.id });
+      await setActiveProfessional({ token, professionalId: activeId });
       const startsAt =
         typeof slot.startsAt === "string" ? slot.startsAt : new Date(slot.startsAt).toISOString();
       const endsAt = typeof slot.endsAt === "string" ? slot.endsAt : new Date(slot.endsAt).toISOString();
       await createBooking({
         token,
-        professionalId: professional.id,
+        professionalId: activeId,
         startsAt,
         endsAt,
         patientTimezone: deviceTimeZone()
@@ -245,7 +242,7 @@ export function BookSessionModal(props: BookSessionModalProps) {
         </View>
       );
     }
-    if (error && !professional) {
+    if (error && !slotsReady) {
       return (
         <>
           <Text style={styles.error}>{error}</Text>
@@ -276,18 +273,18 @@ export function BookSessionModal(props: BookSessionModalProps) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-        {slots.map((slot) => (
-          <PrimaryButton
-            key={slot.id}
-            label={formatDateTime(slot.startsAt)}
-            variant="ghost"
-            disabled={booking}
-            onPress={() => void pickSlot(slot)}
-            style={styles.slotPick}
-            labelStyle={styles.slotPickLabel}
-          />
-        ))}
-      </ScrollView>
+          {slots.map((slot) => (
+            <PrimaryButton
+              key={slot.id}
+              label={formatDateTime(slot.startsAt)}
+              variant="ghost"
+              disabled={booking}
+              onPress={() => void pickSlot(slot)}
+              style={styles.slotPick}
+              labelStyle={styles.slotPickLabel}
+            />
+          ))}
+        </ScrollView>
       </>
     );
   };
@@ -297,11 +294,11 @@ export function BookSessionModal(props: BookSessionModalProps) {
       <View style={styles.modalBackdrop}>
         <View style={[styles.modalCard, { paddingBottom: 20 + insets.bottom }]}>
           <Text style={styles.modalTitle}>Agendar sesión</Text>
-          {professional ? <Text style={styles.modalSub}>Con {professional.fullName}</Text> : null}
-          {!professional && hasCredits && activeId && !loading && !error ? (
+          {professionalName ? <Text style={styles.modalSub}>Con {professionalName}</Text> : null}
+          {!professionalName && hasCredits && activeId && !loading && !error ? (
             <Text style={styles.modalSub}>Cargando horarios…</Text>
           ) : null}
-          {error && professional ? <Text style={styles.error}>{error}</Text> : null}
+          {error && slotsReady ? <Text style={styles.error}>{error}</Text> : null}
           {renderBody()}
           <PrimaryButton label="Volver" variant="ghost" onPress={onClose} />
         </View>

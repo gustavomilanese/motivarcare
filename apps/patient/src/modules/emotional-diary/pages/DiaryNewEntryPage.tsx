@@ -4,6 +4,7 @@ import { type AppLanguage } from "@therapy/i18n-config";
 import { EMOTIONAL_DIARY_WHAT_HAPPENED_MAX_LENGTH } from "@therapy/types";
 import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell, useDiaryLeaveConfirm } from "../components/DiaryChrome";
 import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
+import { useScrollSectionToTopOnMount, navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 import { t } from "../lib/labels";
 import { FEELING_CHIPS, MOOD_OPTIONS, NEED_OPTIONS } from "../lib/moods";
 import { createDiaryEntry, fetchDiarySettings } from "../services/emotionalDiaryApi";
@@ -27,6 +28,7 @@ type DiaryEntryVisibility = "private" | "for_psychologist";
 export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  useScrollSectionToTopOnMount();
   const [mood, setMood] = useState<MoodLevel>(() => parseMood(searchParams.get("mood")));
   const [whatHappened, setWhatHappened] = useState("");
   const [feelings, setFeelings] = useState<string[]>([]);
@@ -94,7 +96,7 @@ export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
         },
         props.authToken
       );
-      navigate(status === "draft" ? "/diario" : "/diario/registros");
+      navigateToSectionTop(navigate, status === "draft" ? "/diario" : "/diario/registros");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "No pudimos guardar la entrada");
       setSaving(false);
@@ -103,6 +105,7 @@ export function DiaryNewEntryPage(props: DiaryNewEntryPageProps) {
 
   return (
     <DiaryShell language={props.language} className="diary-page--entry">
+      <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
       <DiaryPortalToolbar language={props.language} isDirty={isDirty} showLeaveActions />
       <DiarySectionIntro
         language={props.language}

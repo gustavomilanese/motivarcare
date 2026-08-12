@@ -4,7 +4,7 @@ import type { Market } from "@therapy/types";
 export type RiskLevel = "low" | "medium" | "high";
 export type PackageId = string;
 export type SenderRole = "patient" | "professional";
-export type ProfileTab = "data" | "cards" | "subscription" | "settings" | "support";
+export type ProfileTab = "data" | "subscription" | "settings" | "support";
 export type PackagePurchaseSource = "checkout_button";
 
 export interface SessionUser {

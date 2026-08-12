@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import { fetchPublishedExercises, type ExercisePost } from "../services/exercisesApi";
-import { categoryAccent, categoryLabel, difficultyLabel, durationLabel, t } from "../lib/labels";
+import {
+  categoryAccent,
+  categoryLabel,
+  difficultyLabel,
+  durationLabel,
+  pickRelatedByCategory,
+  t
+} from "../lib/labels";
 import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
@@ -50,7 +57,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
 
   const related = useMemo(() => {
     if (!exercise) return [];
-    return all.filter((item) => item.id !== exercise.id && item.category === exercise.category).slice(0, 3);
+    return pickRelatedByCategory(all, exercise, 3);
   }, [all, exercise]);
 
   if (loading) {
@@ -125,7 +132,11 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
           <div className="exercise-reader-main">
             <p className="exercise-reader-description">{exercise.description}</p>
 
-            <ExerciseInteractiveSteps exercise={exercise} language={props.language} />
+            <ExerciseInteractiveSteps
+              exercise={exercise}
+              language={props.language}
+              suggestions={related}
+            />
           </div>
 
           <aside className="exercise-reader-side" aria-label={t(props.language, { es: "Información adicional", en: "Additional info", pt: "Informação adicional" })}>
@@ -164,39 +175,6 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
           </aside>
         </div>
       </article>
-
-      {related.length > 0 ? (
-        <aside className="exercise-reader-related" aria-labelledby="related-title">
-          <h3 id="related-title">
-            {t(props.language, { es: "También te puede servir", en: "You may also like", pt: "Você também pode gostar" })}
-          </h3>
-          <ul className="exercise-reader-related-list">
-            {related.map((item) => {
-              const itemAccent = categoryAccent(item.category);
-              return (
-                <li key={item.id}>
-                  <Link
-                    to={`/ejercicios/${encodeURIComponent(item.slug)}`}
-                    className="exercise-card exercise-card-compact"
-                    style={
-                      {
-                        "--exercise-accent": itemAccent.accent,
-                        "--exercise-accent-soft": itemAccent.accentSoft
-                      } as React.CSSProperties
-                    }
-                  >
-                    <div className="exercise-card-emoji" aria-hidden="true">{item.emoji}</div>
-                    <div className="exercise-card-body">
-                      <h3>{item.title}</h3>
-                      <p className="exercise-card-summary">{item.summary}</p>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
-      ) : null}
     </section>
   );
 }

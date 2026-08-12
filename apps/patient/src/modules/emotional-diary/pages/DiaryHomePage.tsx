@@ -6,7 +6,7 @@ import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryMoodPicker } from "../components/DiaryMoodPicker";
 import { DiaryHomeHero, DiaryShell } from "../components/DiaryChrome";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
-import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
+import { useScrollSectionToTopOnMount, navigateToSectionTop } from "../../app/lib/navigateSectionTop";
 import { t } from "../lib/labels";
 import { fetchDiaryEntries, migrateLocalDiaryIfNeeded } from "../services/emotionalDiaryApi";
 import type { DiaryEntry, MoodLevel } from "../types";
@@ -94,7 +94,7 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
   );
 
   function handleMoodQuickPick(mood: MoodLevel) {
-    navigate(`/diario/nueva?mood=${mood}`);
+    navigateToSectionTop(navigate, `/diario/nueva?mood=${mood}`);
   }
 
   const heroTitle = t(props.language, { es: "Diario emocional", en: "Emotional diary", pt: "Diário emocional" });
@@ -163,10 +163,24 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
                 />
               </article>
               <div className="diary-checkin-actions">
-                <Link className="diary-btn diary-btn--primary diary-btn--wide" to="/diario/nueva">
+                <Link
+                  className="diary-btn diary-btn--primary diary-btn--wide"
+                  to="/diario/nueva"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateToSectionTop(navigate, "/diario/nueva");
+                  }}
+                >
                   {t(props.language, { es: "Nueva entrada", en: "New entry", pt: "Nova entrada" })}
                 </Link>
-                <Link className="diary-soft-link" to="/diario/registros">
+                <Link
+                  className="diary-soft-link"
+                  to="/diario/registros"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateToSectionTop(navigate, "/diario/registros");
+                  }}
+                >
                   {t(props.language, {
                     es: "Ver historial y estadísticas →",
                     en: "View history and stats →",
@@ -185,7 +199,14 @@ export function DiaryHomePage(props: DiaryHomePageProps) {
                   {t(props.language, { es: "Últimas entradas", en: "Recent entries", pt: "Últimas entradas" })}
                 </h3>
                 {recent.length > 0 ? (
-                  <Link className="diary-recent-link" to="/diario/registros">
+                  <Link
+                    className="diary-recent-link"
+                    to="/diario/registros"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigateToSectionTop(navigate, "/diario/registros");
+                    }}
+                  >
                     {t(props.language, { es: "Ver todas", en: "See all", pt: "Ver todas" })}
                   </Link>
                 ) : null}

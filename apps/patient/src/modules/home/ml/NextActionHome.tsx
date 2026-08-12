@@ -996,17 +996,6 @@ export function DashboardNextActionHome(props: {
                 cta={t(props.language, { es: "Ver historial", en: "View history", pt: "Ver historico" })}
                 onClick={() => navigate("/sessions?focus=history")}
               />
-
-              <HistoryNavCard
-                icon="activity"
-                title={t(props.language, {
-                  es: "Actividad de compras",
-                  en: "Purchase activity",
-                  pt: "Atividade de compras"
-                })}
-                cta={t(props.language, { es: "Ver actividad", en: "View activity", pt: "Ver atividade" })}
-                onClick={() => navigate("/sessions?focus=activity")}
-              />
             </div>
           </div>
         </section>
@@ -1066,7 +1055,7 @@ export function DashboardNextActionHome(props: {
                       <button
                         type="button"
                         className="dashboard-ml-diary-banner-cta"
-                        onClick={() => navigate("/diario/nueva")}
+                        onClick={() => navigateToSectionTop(navigate, "/diario/nueva")}
                       >
                         {t(props.language, {
                           es: "Escribir ahora",
@@ -1109,7 +1098,7 @@ export function DashboardNextActionHome(props: {
                 </p>
                 <DiaryMoodPicker
                   language={props.language}
-                  onSelect={(mood: MoodLevel) => navigate(`/diario/nueva?mood=${mood}`)}
+                  onSelect={(mood: MoodLevel) => navigateToSectionTop(navigate, `/diario/nueva?mood=${mood}`)}
                   ariaLabel={t(props.language, {
                     es: "Elegí cómo te sentís",
                     en: "Choose how you feel",
@@ -1140,7 +1129,7 @@ export function DashboardNextActionHome(props: {
                     en: "Write today",
                     pt: "Escrever hoje"
                   })}
-                  onClick={() => navigate("/diario/nueva")}
+                  onClick={() => navigateToSectionTop(navigate, "/diario/nueva")}
                 />
               ) : null}
 
@@ -1156,7 +1145,7 @@ export function DashboardNextActionHome(props: {
                   en: "Open history",
                   pt: "Abrir historico"
                 })}
-                onClick={() => navigate("/diario/registros")}
+                onClick={() => navigateToSectionTop(navigate, "/diario/registros")}
               />
 
               <HistoryNavCard

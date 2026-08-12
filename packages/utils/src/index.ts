@@ -301,6 +301,7 @@ export {
   canPatientCancelBooking,
   bookingJoinUrl,
   canPatientRescheduleBooking,
+  willPatientLoseCreditOnCancel,
   isPatientBookingLiveStatus,
   isPatientBookingUpcoming
 } from "./patientReschedule.js";

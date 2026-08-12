@@ -27,7 +27,7 @@ export function fetchSharedPatientAvailabilitySlots(params: {
   const toIso = params.to.toISOString();
   const pending = apiRequest<AvailabilitySlotsApiResponse>(
     `/api/availability/${params.professionalId}/slots?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
-    {},
+    { cache: "no-store" },
     params.token
   ).finally(() => {
     inFlightByTokenAndProfessional.delete(key);

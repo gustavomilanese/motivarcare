@@ -6,6 +6,7 @@ import { DiaryEntriesTimeline } from "../components/DiaryEntriesTimeline";
 import { DiaryEntryDetailModal } from "../components/DiaryEntryDetailModal";
 import { DiaryPortalToolbar, DiarySectionIntro, DiaryShell } from "../components/DiaryChrome";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
 import { buildWeeklyMoodLineSegments, buildWeeklyMoodSeries, moodLabelForStats } from "../lib/analytics";
 import { t } from "../lib/labels";
 import { moodMeta, MOOD_OPTIONS } from "../lib/moods";
@@ -47,6 +48,7 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
   const [summaryText, setSummaryText] = useState<string | null>(null);
   const [chartWeeks, setChartWeeks] = useState<ChartPeriodWeeks>(4);
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
+  useScrollSectionToTopOnMount(true, loading ? "loading" : "ready");
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +118,7 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
   if (loading) {
     return (
       <DiaryShell language={props.language} className="diary-page--records">
+        <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
         <DiaryPortalToolbar language={props.language} showLeaveActions />
         <DiarySectionIntro
           language={props.language}
@@ -128,6 +131,7 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
 
   return (
     <DiaryShell language={props.language} className="diary-page--records">
+      <div data-section-top-anchor className="diary-page-top-anchor" aria-hidden="true" />
       <DiaryPortalToolbar language={props.language} showLeaveActions />
       <DiarySectionIntro
         language={props.language}

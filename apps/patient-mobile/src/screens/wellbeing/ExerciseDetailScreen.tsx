@@ -18,6 +18,17 @@ import { useThemeMode } from "../../theme/ThemeContext";
 import { categoryAccent, categoryLabel, difficultyLabel } from "../../wellbeing/labels";
 import type { ExercisePost } from "../../wellbeing/types";
 
+function pickRelatedByCategory(all: ExercisePost[], current: ExercisePost, limit = 3): ExercisePost[] {
+  return all
+    .filter(
+      (item) =>
+        item.id !== current.id &&
+        item.category === current.category &&
+        (item.status === undefined || item.status === "published")
+    )
+    .slice(0, limit);
+}
+
 export function ExerciseDetailScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useThemeMode();
@@ -28,6 +39,7 @@ export function ExerciseDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [exercise, setExercise] = useState<ExercisePost | null>(null);
+  const [allExercises, setAllExercises] = useState<ExercisePost[]>([]);
   const [stepDone, setStepDone] = useState<boolean[]>([]);
   const [pauseSec, setPauseSec] = useState<number | null>(null);
 
@@ -36,7 +48,11 @@ export function ExerciseDetailScreen() {
     setError("");
     try {
       const content = await fetchWebContent();
-      const found = (content.exercises ?? []).find((item) => item.slug === slug) ?? null;
+      const published = (content.exercises ?? []).filter(
+        (item) => item.status === undefined || item.status === "published"
+      );
+      const found = published.find((item) => item.slug === slug) ?? null;
+      setAllExercises(published);
       setExercise(found);
       setStepDone(found ? found.steps.map(() => false) : []);
     } catch (loadError) {
@@ -55,6 +71,11 @@ export function ExerciseDetailScreen() {
     const id = setTimeout(() => setPauseSec((s) => (s !== null && s > 0 ? s - 1 : null)), 1000);
     return () => clearTimeout(id);
   }, [pauseSec]);
+
+  const suggestions = useMemo(() => {
+    if (!exercise) return [];
+    return pickRelatedByCategory(allExercises, exercise, 3);
+  }, [allExercises, exercise]);
 
   const styles = useMemo(
     () =>
@@ -81,6 +102,40 @@ export function ExerciseDetailScreen() {
         stepText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
         timerRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
         tip: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+        celebrate: {
+          marginTop: 4,
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: "#ecfdf5",
+          borderWidth: 1,
+          borderColor: "#bbf7d0",
+          gap: 10
+        },
+        celebrateTitle: { fontSize: 15, fontWeight: "800", color: "#14532d" },
+        celebrateLead: { fontSize: 13, lineHeight: 18, color: "#166534" },
+        suggestionCard: {
+          flexDirection: "row",
+          gap: 10,
+          alignItems: "center",
+          minHeight: 76,
+          padding: 12,
+          borderRadius: 12,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border
+        },
+        suggestionEmoji: {
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          alignItems: "center",
+          justifyContent: "center"
+        },
+        suggestionEmojiText: { fontSize: 20 },
+        suggestionBody: { flex: 1, gap: 2, justifyContent: "center" },
+        suggestionTitle: { fontSize: 14, fontWeight: "800", color: colors.text },
+        suggestionMeta: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+        homeLink: { fontSize: 13, fontWeight: "800", color: "#166534", marginTop: 2 },
         error: { color: colors.danger, fontWeight: "700" },
         loader: { flex: 1, alignItems: "center", justifyContent: "center" }
       }),
@@ -109,6 +164,7 @@ export function ExerciseDetailScreen() {
 
   const accent = categoryAccent(exercise.category);
   const doneCount = stepDone.filter(Boolean).length;
+  const completed = doneCount === exercise.steps.length && exercise.steps.length > 0;
 
   return (
     <ScrollView
@@ -161,6 +217,52 @@ export function ExerciseDetailScreen() {
           <Text style={styles.stepText}>{step}</Text>
         </Pressable>
       ))}
+
+      {completed ? (
+        <View style={styles.celebrate}>
+          <Text style={styles.celebrateTitle}>¡Listo! Buen trabajo.</Text>
+          {suggestions.length > 0 ? (
+            <>
+              <Text style={styles.celebrateLead}>
+                Para seguir tu tratamiento, probá estos ejercicios de {categoryLabel(exercise.category)}:
+              </Text>
+              {suggestions.map((item) => {
+                const itemAccent = categoryAccent(item.category);
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.suggestionCard}
+                    onPress={() => navigation.replace("ExerciseDetail", { slug: item.slug })}
+                  >
+                    <View style={[styles.suggestionEmoji, { backgroundColor: itemAccent.accentSoft }]}>
+                      <Text style={styles.suggestionEmojiText}>{item.emoji}</Text>
+                    </View>
+                    <View style={styles.suggestionBody}>
+                      <Text style={styles.suggestionTitle} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.suggestionMeta} numberOfLines={2}>
+                        {item.durationMinutes} min · {item.summary}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  </Pressable>
+                );
+              })}
+            </>
+          ) : (
+            <Text style={styles.celebrateLead}>
+              Si querés, repetí el circuito o explorá más ejercicios del menú.
+            </Text>
+          )}
+          <Pressable
+            onPress={() => navigation.navigate("Tabs", { screen: "home" })}
+            hitSlop={8}
+          >
+            <Text style={styles.homeLink}>Volver a Inicio →</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {exercise.tips.length > 0 ? (
         <>

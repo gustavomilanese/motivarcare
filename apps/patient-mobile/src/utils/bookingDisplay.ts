@@ -29,7 +29,7 @@ export function formatDayTwoDigits(iso: string): string {
   return String(d.getDate()).padStart(2, "0");
 }
 
-/** Ej. "Viernes, 10:00 p. m. – 10:50 p. m." */
+/** Ej. "Viernes, 22:00 – 22:50" (24h, Latam). */
 export function formatWeekdayTimeRangeEs(startsAt: string, endsAt: string): string {
   const sd = new Date(startsAt);
   const ed = new Date(endsAt);
@@ -38,8 +38,8 @@ export function formatWeekdayTimeRangeEs(startsAt: string, endsAt: string): stri
   }
   const weekday = sd.toLocaleDateString("es-AR", { weekday: "long" });
   const cap = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  const t1 = sd.toLocaleTimeString("es-AR", { hour: "numeric", minute: "2-digit" });
-  const t2 = ed.toLocaleTimeString("es-AR", { hour: "numeric", minute: "2-digit" });
+  const t1 = sd.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const t2 = ed.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
   return `${cap}, ${t1} – ${t2}`;
 }
 

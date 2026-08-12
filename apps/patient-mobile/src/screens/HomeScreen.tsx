@@ -279,14 +279,18 @@ function buildHomeStyles(c: AppThemeColors, mode: ThemeMode) {
     },
     sessionCards: {
       flexDirection: "column",
-      gap: 12
+      gap: 12,
+      alignSelf: "stretch",
+      width: "100%"
     },
     emptyCard: {
       backgroundColor: c.surface,
       borderRadius: 14,
       padding: 14,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border
+      borderColor: c.border,
+      alignSelf: "stretch",
+      width: "100%"
     },
     emptyTitle: {
       fontSize: 15,
@@ -1170,7 +1174,7 @@ export function HomeScreen() {
               colors={[...gradients.mcarePastel]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
+              style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
             <View style={styles.mcarePurchaseContent} pointerEvents="box-none">

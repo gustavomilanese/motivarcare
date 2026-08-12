@@ -6,6 +6,7 @@ import type {
   GoogleCalendarStatusResponse,
   LoginResponse,
   MatchingResponse,
+  MatchingSlot,
   ProfileMeResponse,
   PurchasePackageResponse,
   RegisterResponse,
@@ -193,6 +194,28 @@ export async function getMatchingProfessionals(token: string) {
   return requestJson<MatchingResponse>({
     path: "/api/profiles/me/matching?language=es",
     token
+  });
+}
+
+/** Disponibilidad live del profesional (no el snapshot embebido en matching). */
+export async function getProfessionalAvailabilitySlots(params: {
+  token: string;
+  professionalId: string;
+  from?: Date;
+  to?: Date;
+}) {
+  const from = params.from ?? new Date();
+  const to = params.to ?? new Date(from.getTime());
+  if (!params.to) {
+    to.setDate(to.getDate() + 45);
+  }
+  return requestJson<{
+    professionalId: string;
+    minimumBookingNoticeHours?: number;
+    slots: MatchingSlot[];
+  }>({
+    path: `/api/availability/${encodeURIComponent(params.professionalId)}/slots?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`,
+    token: params.token
   });
 }
 
