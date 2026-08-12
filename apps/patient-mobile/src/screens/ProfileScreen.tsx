@@ -18,17 +18,29 @@ import {
   disconnectGoogleCalendar,
   getGoogleCalendarStatus,
   getProfileMe,
+  patchNotificationPreferences,
+  requestProfessionalChange,
   startGoogleCalendarConnect,
   syncTimezone
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { usePatientPreferences, type AppCurrency, type AppLanguage } from "../context/PatientPreferencesContext";
 import { usePatientProfile } from "../context/PatientProfileContext";
 import { PersonAvatar } from "../components/PersonAvatar";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { useThemeMode } from "../theme/ThemeContext";
 import { formatDate } from "../utils/date";
+import { useNavigation } from "@react-navigation/native";
 
 const TAB_BAR_BOTTOM_PAD = 90;
+
+const LANGUAGE_OPTIONS: { value: AppLanguage; label: string }[] = [
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+  { value: "pt", label: "Português" }
+];
+
+const CURRENCY_OPTIONS: AppCurrency[] = ["USD", "ARS", "EUR", "BRL", "MXN", "CLP", "COP", "UYU"];
 
 function deviceTimeZone(): string {
   try {
@@ -40,14 +52,20 @@ function deviceTimeZone(): string {
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const tabNavigation = useNavigation();
   const { token, user, signOut } = useAuth();
   const { profile: patientProfile, refresh: refreshProfileContext } = usePatientProfile();
+  const { language, currency, setLanguage, setCurrency } = usePatientPreferences();
   const { mode, setMode, colors: c } = useThemeMode();
   const [loading, setLoading] = useState(true);
   const [calendarBusy, setCalendarBusy] = useState(false);
+  const [prefsBusy, setPrefsBusy] = useState(false);
+  const [supportBusy, setSupportBusy] = useState(false);
   const [error, setError] = useState("");
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [notificationsEmail, setNotificationsEmail] = useState(true);
+  const [notificationsReminder, setNotificationsReminder] = useState(true);
   const [profileDetails, setProfileDetails] = useState({
     timezone: null as string | null,
     latestPackage: null as string | null,
@@ -93,6 +111,8 @@ export function ProfileScreen() {
         creditsRemaining: profileResponse.profile?.latestPackage?.remainingCredits ?? null,
         recentPackages: profileResponse.profile?.recentPackages ?? []
       });
+      setNotificationsEmail(profileResponse.profile?.notificationsEmail ?? true);
+      setNotificationsReminder(profileResponse.profile?.notificationsReminder ?? true);
       setCalendarConnected(calendarStatus.connected);
       setCalendarEmail(calendarStatus.connection?.providerEmail ?? null);
       await syncTimezone({ token, timezone: deviceTimeZone(), persistPreference: false });
@@ -314,6 +334,173 @@ export function ProfileScreen() {
             onValueChange={(value) => setMode(value ? "dark" : "light")}
             thumbColor={mode === "dark" ? c.primary : "#FFFFFF"}
             trackColor={{ false: c.border, true: c.primarySoft }}
+          />
+        </View>
+
+        <View style={[styles.historyHairline, { backgroundColor: divider }]} />
+        <View style={styles.prefRow}>
+          <View style={[styles.rowIconWrap, { backgroundColor: c.primarySoft }]}>
+            <Ionicons name="mail-outline" size={18} color={c.primary} />
+          </View>
+          <View style={styles.prefText}>
+            <Text style={[styles.rowValue, { color: c.text }]}>Emails</Text>
+            <Text style={[styles.prefHint, { color: c.textMuted }]}>Avisos por correo</Text>
+          </View>
+          <Switch
+            value={notificationsEmail}
+            disabled={prefsBusy}
+            onValueChange={(value) => {
+              setNotificationsEmail(value);
+              if (!token) return;
+              setPrefsBusy(true);
+              void patchNotificationPreferences({ token, notificationsEmail: value })
+                .then(() => void refreshProfileContext())
+                .catch((err) => {
+                  setNotificationsEmail(!value);
+                  Alert.alert("Error", err instanceof Error ? err.message : "No se pudo guardar");
+                })
+                .finally(() => setPrefsBusy(false));
+            }}
+            thumbColor={notificationsEmail ? c.primary : "#FFFFFF"}
+            trackColor={{ false: c.border, true: c.primarySoft }}
+          />
+        </View>
+
+        <View style={[styles.historyHairline, { backgroundColor: divider }]} />
+        <View style={styles.prefRow}>
+          <View style={[styles.rowIconWrap, { backgroundColor: c.primarySoft }]}>
+            <Ionicons name="notifications-outline" size={18} color={c.primary} />
+          </View>
+          <View style={styles.prefText}>
+            <Text style={[styles.rowValue, { color: c.text }]}>Recordatorios</Text>
+            <Text style={[styles.prefHint, { color: c.textMuted }]}>Recordatorios de sesión</Text>
+          </View>
+          <Switch
+            value={notificationsReminder}
+            disabled={prefsBusy}
+            onValueChange={(value) => {
+              setNotificationsReminder(value);
+              if (!token) return;
+              setPrefsBusy(true);
+              void patchNotificationPreferences({ token, notificationsReminder: value })
+                .then(() => void refreshProfileContext())
+                .catch((err) => {
+                  setNotificationsReminder(!value);
+                  Alert.alert("Error", err instanceof Error ? err.message : "No se pudo guardar");
+                })
+                .finally(() => setPrefsBusy(false));
+            }}
+            thumbColor={notificationsReminder ? c.primary : "#FFFFFF"}
+            trackColor={{ false: c.border, true: c.primarySoft }}
+          />
+        </View>
+
+        <View style={[styles.historyHairline, { backgroundColor: divider }]} />
+        <View style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 8 }}>
+          <Text style={[styles.rowValue, { color: c.text }]}>Idioma de la app</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                onPress={() => setLanguage(opt.value)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: language === opt.value ? c.primary : c.border,
+                  backgroundColor: language === opt.value ? c.primarySoft : "transparent"
+                }}
+              >
+                <Text style={{ fontWeight: "700", color: c.text, fontSize: 13 }}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.rowValue, { color: c.text, marginTop: 6 }]}>Moneda de visualización</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {CURRENCY_OPTIONS.map((code) => (
+              <Pressable
+                key={code}
+                onPress={() => setCurrency(code)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: currency === code ? c.primary : c.border,
+                  backgroundColor: currency === code ? c.primarySoft : "transparent"
+                }}
+              >
+                <Text style={{ fontWeight: "700", color: c.text, fontSize: 13 }}>{code}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.prefHint, { color: c.textMuted }]}>
+            Idioma y moneda se guardan en este dispositivo (como en el portal web).
+          </Text>
+        </View>
+      </View>
+
+      <Text style={[styles.sectionHeading, { color: c.textSubtle }]}>Ayuda y soporte</Text>
+      <View
+        style={[
+          styles.group,
+          { backgroundColor: c.surface, borderColor: c.border, shadowColor: mode === "dark" ? "#000" : "#0F172A" }
+        ]}
+      >
+        <Pressable
+          style={styles.prefRow}
+          onPress={() => {
+            const parent = tabNavigation.getParent();
+            (parent as { navigate?: (name: string) => void } | undefined)?.navigate?.("HelpFaq");
+          }}
+        >
+          <View style={[styles.rowIconWrap, { backgroundColor: c.primarySoft }]}>
+            <Ionicons name="help-circle-outline" size={18} color={c.primary} />
+          </View>
+          <View style={styles.prefText}>
+            <Text style={[styles.rowValue, { color: c.text }]}>Preguntas frecuentes</Text>
+            <Text style={[styles.prefHint, { color: c.textMuted }]}>Sesiones, pagos, Maca y más</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
+        </Pressable>
+        <View style={[styles.historyHairline, { backgroundColor: divider }]} />
+        <View style={{ padding: 14, gap: 10 }}>
+          <Text style={[styles.rowValue, { color: c.text }]}>Cambio de profesional</Text>
+          <Text style={[styles.prefHint, { color: c.textMuted }]}>
+            Te contactamos por email para gestionar el cambio de forma manual.
+          </Text>
+          <PrimaryButton
+            label="Solicitar cambio de profesional"
+            variant="ghost"
+            loading={supportBusy}
+            onPress={() => {
+              if (!token) return;
+              Alert.alert(
+                "¿Solicitar cambio?",
+                "Vamos a avisar al equipo de MotivarCare. ¿Confirmás?",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Confirmar",
+                    onPress: () => {
+                      setSupportBusy(true);
+                      void requestProfessionalChange({ token, language })
+                        .then(() => {
+                          Alert.alert("Listo", "Recibimos tu solicitud. Te contactamos por email.");
+                        })
+                        .catch((err) => {
+                          Alert.alert(
+                            "Error",
+                            err instanceof Error ? err.message : "No se pudo enviar la solicitud"
+                          );
+                        })
+                        .finally(() => setSupportBusy(false));
+                    }
+                  }
+                ]
+              );
+            }}
           />
         </View>
       </View>
