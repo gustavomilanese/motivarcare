@@ -1,0 +1,82 @@
+---
+description: Full native Expo patient app (path B) — parity with web mobile portal
+globs: apps/patient-mobile/**/*
+alwaysApply: false
+---
+
+# Patient mobile (Expo) — paridad completa
+
+## Objetivo
+
+Construir **`apps/patient-mobile`** (Expo / React Native) como app nativa **bien hecha** con **paridad funcional completa** del portal paciente web en viewport mobile (`apps/patient`, layout ≤1080).
+
+No usar Capacitor/WebView como producto final. No inventar flujos: espejar el web.
+
+## Fuente de verdad
+
+| Qué | Dónde |
+|-----|--------|
+| UI / UX mobile de referencia | `apps/patient` (home ML, sesiones, chat, diario, ejercicios, música, cuenta, intake, matching, Maca, pagos) |
+| Dominio compartido | `packages/patient-core`, `packages/types`, `packages/i18n-config` |
+| API | mismos endpoints que usa `apps/patient` |
+| App nativa | `apps/patient-mobile` |
+
+## Reglas de implementación
+
+1. **Misma API y mismos estados** que el web (créditos, bookings, checkout dLocal return, onboarding).
+2. **UI nativa** (RN components). Puede verse alineada al web mobile, no copiar HTML/CSS literal.
+3. **i18n ES/EN/PT** como el portal.
+4. **Deep links** para retorno dLocal, calendar OAuth, verify-email, reset password.
+5. PRs / commits **por ola** (abajo). No mezclar olas en un solo cambio enorme.
+6. No push a `origin` salvo pedido explícito del usuario.
+7. No romper lo que ya funciona en mobile (auth, tabs, sesiones) al agregar módulos.
+
+## Olas (todo entra; orden de entrega)
+
+### Ola 0 — Cimientos
+- Expo config (scheme, bundle ids), env API, deep linking base
+- Auth parity: login, register, forgot/reset password, verify email
+- Session persistence, logout, unauthorized handling
+
+### Ola 1 — Core clínico
+- Home (saldo, accesos, próximas, CTAs)
+- Sesiones (lista, detalle, reservar, cancelar, reagendar, historial, paquetes, actividad de compras)
+- Checkout dLocal + return deep link + acreditación sin “refresh mental”
+- Chat con profesional (threads, unread, envío)
+
+### Ola 2 — Onboarding completo
+- Intake wizard / chat intake si aplica
+- Risk blocked
+- Matching + asignación profesional
+- Google Calendar connect
+- Trial / first booking flows
+
+### Ola 3 — Bienestar
+- Diario emocional
+- Ejercicios (lista, detalle, rutinas)
+- Música relajante (player in-app, **sin** “Abrir en YouTube”)
+
+### Ola 4 — Maca + cuenta
+- Maca (treatment chat) con mismos caps/eligibilidad que API
+- Perfil, preferencias idioma/moneda, notificaciones
+- FAQ / ayuda si está en web
+
+### Ola 5 — Store-ready
+- Push notifications
+- Iconos/splash, safe areas, offline/error states
+- TestFlight + Play internal
+- Checklist QA vs web mobile pantalla por pantalla
+
+## Definition of Done (por feature)
+
+- [ ] Mismo flujo feliz que web mobile
+- [ ] Errores / empty states coherentes
+- [ ] Deep link / return donde el web usa redirect
+- [ ] No regresión en tabs existentes
+- [ ] Probado en iOS o Android simulator (indicar cuál)
+
+## Anti-patrones
+
+- Reimplementar lógica de negocio en mobile si ya vive en `patient-core` / API
+- Dejar “Abrir en YouTube” u otros escapes que saquen al usuario sin necesidad
+- Scope creep de admin/landing/professional apps

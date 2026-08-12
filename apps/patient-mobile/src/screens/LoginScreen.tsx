@@ -191,6 +191,16 @@ export function LoginScreen() {
           <Pressable
             onPress={() => {
               Keyboard.dismiss();
+              navigation.navigate("ForgotPassword");
+            }}
+            style={styles.linkWrap}
+          >
+            <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
               navigation.navigate("Register");
             }}
             style={styles.linkWrap}
