@@ -70,18 +70,19 @@ export const ALL_CATEGORIES: ExerciseCategory[] = [
   "mindfulness"
 ];
 
-/** Hasta `limit` ejercicios publicados de la misma categoría, excluyendo el actual. */
+/** Hasta `limit` ejercicios publicados de la misma categoría; si faltan, completa con otros. */
 export function pickRelatedByCategory<T extends { id: string; category: ExerciseCategory; status?: string }>(
   all: T[],
   current: Pick<T, "id" | "category">,
   limit = 3
 ): T[] {
-  return all
-    .filter(
-      (item) =>
-        item.id !== current.id &&
-        item.category === current.category &&
-        (item.status === undefined || item.status === "published")
-    )
-    .slice(0, limit);
+  const isPublished = (item: T) => item.status === undefined || item.status === "published";
+  const others = all.filter((item) => item.id !== current.id && isPublished(item));
+  const sameCategory = others.filter((item) => item.category === current.category);
+  if (sameCategory.length >= limit) {
+    return sameCategory.slice(0, limit);
+  }
+  const sameIds = new Set(sameCategory.map((item) => item.id));
+  const fillers = others.filter((item) => !sameIds.has(item.id));
+  return [...sameCategory, ...fillers].slice(0, limit);
 }

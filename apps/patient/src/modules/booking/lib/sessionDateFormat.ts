@@ -21,8 +21,9 @@ export function formatSessionTimeOnly(params: SessionDateParams): string {
     language: params.language,
     timeZone: params.timezone,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }

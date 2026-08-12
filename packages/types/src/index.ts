@@ -78,6 +78,7 @@ export {
 } from "./emergencyResources.js";
 
 export {
+  DIARY_SESSION_REPORT_CHAT_PREFIX,
   EMOTIONAL_DIARY_WHAT_HAPPENED_MAX_LENGTH
 } from "./emotionalDiary.js";
 export type {
@@ -87,7 +88,10 @@ export type {
   EmotionalDiaryMood,
   EmotionalDiaryMoodTrendPoint,
   EmotionalDiaryPatientListItem,
+  EmotionalDiarySentReportItem,
+  EmotionalDiarySessionReportSendResult,
   EmotionalDiarySessionSummary,
+  EmotionalDiarySessionSummaryBlock,
   EmotionalDiarySettings,
   EmotionalDiaryStats
 } from "./emotionalDiary.js";

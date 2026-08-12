@@ -114,7 +114,7 @@ export function ProfessionalFirstClientsStep(props: { language: AppLanguage; onB
                     <span className="pro-clients-notification-mark" />
                     <div>
                       <strong>Ana Santiago Martin</strong>
-                      <p>{t(props.language, { es: "Reservó sesión: 3 jul, 15:00", en: "Session booked: Jul 3, 3:00 PM", pt: "Sessao reservada: 3 jul, 15:00" })}</p>
+                      <p>{t(props.language, { es: "Reservó sesión: 3 jul, 15:00", en: "Session booked: Jul 3, 15:00", pt: "Sessao reservada: 3 jul, 15:00" })}</p>
                     </div>
                     <em>{t(props.language, { es: "hace 2 min", en: "2 min ago", pt: "ha 2 min" })}</em>
                   </article>
@@ -123,7 +123,7 @@ export function ProfessionalFirstClientsStep(props: { language: AppLanguage; onB
                     <span className="pro-clients-notification-mark" />
                     <div>
                       <strong>Nahuel Herrera Santos</strong>
-                      <p>{t(props.language, { es: "Reservó sesión: 2 jul, 11:00", en: "Session booked: Jul 2, 11:00 AM", pt: "Sessao reservada: 2 jul, 11:00" })}</p>
+                      <p>{t(props.language, { es: "Reservó sesión: 2 jul, 11:00", en: "Session booked: Jul 2, 11:00", pt: "Sessao reservada: 2 jul, 11:00" })}</p>
                     </div>
                     <em>{t(props.language, { es: "hace 3 min", en: "3 min ago", pt: "ha 3 min" })}</em>
                   </article>

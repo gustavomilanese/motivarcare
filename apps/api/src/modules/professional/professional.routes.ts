@@ -24,6 +24,7 @@ import {
   EmotionalDiaryError,
   getSessionSummaryForProfessional,
   listPatientsWithSharedEntries,
+  listSentSessionReportsForProfessional,
   listSharedEntriesForProfessional
 } from "../emotional-diary/emotionalDiary.service.js";
 
@@ -1552,6 +1553,29 @@ professionalRouter.get("/emotional-diary/patients", async (req: AuthenticatedReq
     return res.json({ items });
   } catch (err) {
     console.error("[professional/emotional-diary/patients] unexpected", err);
+    return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
+  }
+});
+
+/**
+ * GET /api/professional/emotional-diary/reports
+ *
+ * Informes de diario que los pacientes enviaron explícitamente (vía chat).
+ */
+professionalRouter.get("/emotional-diary/reports", async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can access emotional diary reports" });
+  }
+
+  try {
+    const items = await listSentSessionReportsForProfessional(actor.professionalProfileId);
+    return res.json({ items });
+  } catch (err) {
+    console.error("[professional/emotional-diary/reports] unexpected", err);
     return res.status(500).json({ error: "INTERNAL_ERROR", message: "Error inesperado" });
   }
 });

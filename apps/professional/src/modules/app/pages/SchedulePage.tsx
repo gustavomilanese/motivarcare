@@ -145,13 +145,11 @@ function cloneTemplate(template: Array<Set<string>>) {
   return template.map((daySet) => new Set(daySet));
 }
 
-function formatTimeWithAmPm(timeLabel: string) {
+function formatTimeLabel24h(timeLabel: string) {
   const [rawHour, rawMinute] = timeLabel.split(":").map(Number);
   const hour = Number.isFinite(rawHour) ? rawHour : 0;
   const minute = Number.isFinite(rawMinute) ? rawMinute : 0;
-  const period = hour >= 12 ? "PM" : "AM";
-  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-  return `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function toDayIndex(day: number) {
@@ -1423,7 +1421,7 @@ export function SchedulePage(props: {
                 onClick={() => toggleHour(timeLabel)}
                 aria-pressed={selected}
               >
-                {formatTimeWithAmPm(timeLabel)}
+                {formatTimeLabel24h(timeLabel)}
               </button>
             );
           })}

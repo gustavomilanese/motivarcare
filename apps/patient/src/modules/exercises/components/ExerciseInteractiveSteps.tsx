@@ -2,14 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { type AppLanguage } from "@therapy/i18n-config";
 import type { ExercisePost } from "../services/exercisesApi";
-import { categoryAccent, categoryLabel, durationLabel, t } from "../lib/labels";
+import { t } from "../lib/labels";
 
 export function ExerciseInteractiveSteps(props: {
   exercise: ExercisePost;
   language: AppLanguage;
-  suggestions?: ExercisePost[];
 }) {
-  const { exercise, language, suggestions = [] } = props;
+  const { exercise, language } = props;
   const [stepDone, setStepDone] = useState<boolean[]>(() => exercise.steps.map(() => false));
   const [pauseSec, setPauseSec] = useState<number | null>(null);
   const celebrateRef = useRef<HTMLDivElement | null>(null);
@@ -129,54 +128,13 @@ export function ExerciseInteractiveSteps(props: {
               pt: "Pronto! Bom trabalho."
             })}
           </p>
-          {suggestions.length > 0 ? (
-            <>
-              <p className="exercise-interactive-celebrate-lead">
-                {t(language, {
-                  es: `Para seguir tu tratamiento, probá estos ejercicios de ${categoryLabel(language, exercise.category)}:`,
-                  en: `To keep going with your treatment, try these ${categoryLabel(language, exercise.category)} exercises:`,
-                  pt: `Para continuar seu tratamento, experimente estes exercícios de ${categoryLabel(language, exercise.category)}:`
-                })}
-              </p>
-              <ul className="exercise-complete-suggestions">
-                {suggestions.map((item) => {
-                  const itemAccent = categoryAccent(item.category);
-                  return (
-                    <li key={item.id}>
-                      <Link
-                        to={`/ejercicios/${encodeURIComponent(item.slug)}`}
-                        className="exercise-complete-suggestion-card"
-                        style={
-                          {
-                            "--exercise-accent": itemAccent.accent,
-                            "--exercise-accent-soft": itemAccent.accentSoft
-                          } as React.CSSProperties
-                        }
-                      >
-                        <span className="exercise-complete-suggestion-emoji" aria-hidden="true">
-                          {item.emoji}
-                        </span>
-                        <span className="exercise-complete-suggestion-body">
-                          <strong>{item.title}</strong>
-                          <span>
-                            {durationLabel(language, item.durationMinutes)} · {item.summary}
-                          </span>
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          ) : (
-            <p className="exercise-interactive-celebrate-lead">
-              {t(language, {
-                es: "Si querés, repetí el circuito o explorá más ejercicios del menú.",
-                en: "You can repeat this flow or explore more exercises from the menu.",
-                pt: "Se quiser, repita o fluxo ou explore mais exercícios no menu."
-              })}
-            </p>
-          )}
+          <p className="exercise-interactive-celebrate-lead">
+            {t(language, {
+              es: "Abajo tenés sugerencias para seguir tu tratamiento, o volvé al inicio para ver tus sesiones.",
+              en: "Below you’ll find suggestions to keep going, or head home to see your sessions.",
+              pt: "Abaixo há sugestões para continuar o tratamento, ou volte ao início para ver suas sessões."
+            })}
+          </p>
           <Link to="/" className="exercise-complete-home-link">
             {t(language, {
               es: "Volver a Inicio →",

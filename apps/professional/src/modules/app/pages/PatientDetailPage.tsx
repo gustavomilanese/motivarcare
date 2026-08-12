@@ -45,6 +45,7 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
   const { patientId } = useParams<{ patientId: string }>();
   const [searchParams] = useSearchParams();
   const highlightBookingId = searchParams.get("bookingId")?.trim() || "";
+  const highlightDiaryReport = searchParams.get("diaryReport") === "1";
   const navigate = useNavigate();
   const [data, setData] = useState<PatientDetailResponse | null>(null);
   const [error, setError] = useState("");
@@ -120,7 +121,7 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
     <div className="pro-grid-stack pro-patient-detail-page">
       <header className="pro-patient-detail-header">
         <button type="button" className="pro-link-back" onClick={() => navigate("/pacientes")}>
-          ← {t(props.language, { es: "Clientes", en: "Clients", pt: "Clientes" })}
+          ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
         </button>
         <div className="pro-patient-detail-hero">
           <PatientAvatarImage
@@ -232,7 +233,12 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
         </ul>
       </section>
 
-      <PatientEmotionalDiaryPanel patientId={patientId} token={props.token} language={props.language} />
+      <PatientEmotionalDiaryPanel
+        patientId={patientId}
+        token={props.token}
+        language={props.language}
+        highlightReport={highlightDiaryReport}
+      />
 
       <section className="pro-card pro-patient-payments-preview">
         <h2>{t(props.language, { es: "Últimos cobros", en: "Recent payouts", pt: "Ultimos cobros" })}</h2>

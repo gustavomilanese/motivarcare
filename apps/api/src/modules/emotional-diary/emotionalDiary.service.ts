@@ -8,15 +8,19 @@ import type {
   EmotionalDiaryInsight,
   EmotionalDiaryMood,
   EmotionalDiaryMoodTrendPoint,
+  EmotionalDiarySentReportItem,
+  EmotionalDiarySessionReportSendResult,
   EmotionalDiarySessionSummary,
+  EmotionalDiarySessionSummaryBlock,
   EmotionalDiarySettings,
   EmotionalDiaryStats
 } from "@therapy/types";
+import { DIARY_SESSION_REPORT_CHAT_PREFIX } from "@therapy/types";
 import { prisma } from "../../lib/prisma.js";
 
 export class EmotionalDiaryError extends Error {
   constructor(
-    public readonly code: "NOT_FOUND" | "FORBIDDEN",
+    public readonly code: "NOT_FOUND" | "FORBIDDEN" | "NO_PROFESSIONAL" | "NO_ENTRIES" | "BAD_REQUEST",
     message: string
   ) {
     super(message);
@@ -410,48 +414,96 @@ function sharedEntriesWhere(patientId: string) {
   };
 }
 
-export function buildSessionSummaryMarkdown(entries: EmotionalDiaryEntry[]): string {
+const NEED_LABEL_ES: Record<string, string> = {
+  rest: "Descansar",
+  talk: "Hablarlo",
+  breathe: "Respirar",
+  boundaries: "Poner límites",
+  organize: "Ordenar ideas"
+};
+
+const PATIENT_ACTIVE_ASSIGNMENTS_KEY = "patient-active-assignments";
+
+function formatNeedLabel(needId: string): string {
+  return NEED_LABEL_ES[needId] ?? needId;
+}
+
+function formatEntryDateLong(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+export function buildSessionSummary(entries: EmotionalDiaryEntry[]): EmotionalDiarySessionSummary {
+  const generatedAt = new Date().toISOString();
   if (entries.length === 0) {
-    return "No hay entradas compartidas para la próxima sesión.";
+    const empty =
+      "Todavía no hay entradas compartidas para armar el informe de la próxima sesión.";
+    return {
+      headline: empty,
+      entryCount: 0,
+      generatedAt,
+      blocks: [],
+      summary: empty
+    };
   }
+
+  const blocks: EmotionalDiarySessionSummaryBlock[] = entries.map((entry) => ({
+    entryId: entry.id,
+    title: entry.title,
+    publishedAt: entry.publishedAt ?? entry.createdAt,
+    mood: entry.mood,
+    moodLabelEs: MOOD_LABEL_ES[entry.mood],
+    whatHappened: entry.whatHappened.trim(),
+    feelings: entry.feelings,
+    recurringThought: entry.recurringThought.trim(),
+    needsNow: entry.needsNow
+  }));
+
+  const countLabel =
+    entries.length === 1 ? "1 entrada compartida" : `${entries.length} entradas compartidas`;
+  const headline = `Informe para tu próxima sesión · ${countLabel}`;
 
   const lines: string[] = [
-    "# Resumen del diario emocional",
+    headline,
     "",
-    `Entradas compartidas: ${entries.length}`,
-    ""
+    "Notas compartidas para la sesión:"
   ];
 
-  for (const entry of entries) {
-    const dateLabel = new Date(entry.publishedAt ?? entry.createdAt).toLocaleDateString("es-AR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-    lines.push(`## ${entry.title} (${dateLabel})`);
-    lines.push(`**Estado de ánimo:** ${MOOD_LABEL_ES[entry.mood]}`);
-    if (entry.whatHappened.trim()) {
-      lines.push("");
-      lines.push("**Qué pasó:**");
-      lines.push(entry.whatHappened.trim());
-    }
-    if (entry.feelings.length > 0) {
-      lines.push("");
-      lines.push(`**Sentimientos:** ${entry.feelings.join(", ")}`);
-    }
-    if (entry.recurringThought.trim()) {
-      lines.push("");
-      lines.push(`**Pensamiento recurrente:** ${entry.recurringThought.trim()}`);
-    }
-    if (entry.needsNow.length > 0) {
-      lines.push("");
-      lines.push(`**Necesidades ahora:** ${entry.needsNow.join(", ")}`);
-    }
+  for (const block of blocks) {
     lines.push("");
+    lines.push(`• ${block.title}`);
+    lines.push(`  Fecha: ${formatEntryDateLong(block.publishedAt)}`);
+    lines.push(`  Cómo se sentía: ${block.moodLabelEs}`);
+    if (block.whatHappened) {
+      lines.push(`  Qué pasó: ${block.whatHappened}`);
+    }
+    if (block.feelings.length > 0) {
+      lines.push(`  Sentimientos: ${block.feelings.join(", ")}`);
+    }
+    if (block.recurringThought) {
+      lines.push(`  Pensamiento que volvía: ${block.recurringThought}`);
+    }
+    if (block.needsNow.length > 0) {
+      lines.push(`  Qué necesitaba: ${block.needsNow.map(formatNeedLabel).join(", ")}`);
+    }
   }
 
-  return lines.join("\n").trim();
+  return {
+    headline,
+    entryCount: entries.length,
+    generatedAt,
+    blocks,
+    summary: lines.join("\n").trim()
+  };
+}
+
+/** @deprecated Preferí `buildSessionSummary`; se mantiene para tests legacy. */
+export function buildSessionSummaryMarkdown(entries: EmotionalDiaryEntry[]): string {
+  return buildSessionSummary(entries).summary;
 }
 
 export async function getSessionSummary(patientId: string): Promise<EmotionalDiarySessionSummary> {
@@ -460,11 +512,152 @@ export async function getSessionSummary(patientId: string): Promise<EmotionalDia
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }]
   });
   const entries = rows.map(entryToDto);
+  return buildSessionSummary(entries);
+}
+
+async function resolveActiveProfessionalId(patientId: string): Promise<string | null> {
+  const assignmentConfig = await prisma.systemConfig.findUnique({
+    where: { key: PATIENT_ACTIVE_ASSIGNMENTS_KEY }
+  });
+  const raw = assignmentConfig?.value;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const value = (raw as Record<string, unknown>)[patientId];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  const latestBooking = await prisma.booking.findFirst({
+    where: {
+      patientId,
+      status: { not: "CANCELLED" }
+    },
+    orderBy: { startsAt: "desc" },
+    select: { professionalId: true }
+  });
+  return latestBooking?.professionalId ?? null;
+}
+
+function buildChatNoticeBody(entryCount: number): string {
+  const countPart =
+    entryCount === 1 ? "1 entrada compartida" : `${entryCount} entradas compartidas`;
+  return [
+    DIARY_SESSION_REPORT_CHAT_PREFIX,
+    `Te envié el informe de mi diario emocional (${countPart}) para que lo mires antes de la sesión.`,
+    "Podés abrirlo en mi ficha → Diario emocional."
+  ].join(" ");
+}
+
+export async function sendSessionSummaryToProfessional(
+  patientId: string,
+  patientUserId: string
+): Promise<EmotionalDiarySessionReportSendResult> {
+  const summary = await getSessionSummary(patientId);
+  if (summary.entryCount === 0) {
+    throw new EmotionalDiaryError(
+      "NO_ENTRIES",
+      "No hay entradas compartidas para enviar. Publicá al menos una y marcá que querés compartirla."
+    );
+  }
+
+  const professionalId = await resolveActiveProfessionalId(patientId);
+  if (!professionalId) {
+    throw new EmotionalDiaryError(
+      "NO_PROFESSIONAL",
+      "Todavía no tenés un psicólogo/a asignado para enviarle el informe."
+    );
+  }
+
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: professionalId },
+    select: {
+      id: true,
+      user: { select: { fullName: true } }
+    }
+  });
+  if (!professional) {
+    throw new EmotionalDiaryError("NO_PROFESSIONAL", "No encontramos a tu psicólogo/a activo.");
+  }
+
+  const existingThread = await prisma.chatThread.findFirst({
+    where: { patientId, professionalId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true }
+  });
+  const thread =
+    existingThread ??
+    (await prisma.chatThread.create({
+      data: { patientId, professionalId },
+      select: { id: true }
+    }));
+
+  const message = await prisma.chatMessage.create({
+    data: {
+      threadId: thread.id,
+      senderUserId: patientUserId,
+      body: buildChatNoticeBody(summary.entryCount)
+    },
+    select: { createdAt: true }
+  });
+
   return {
-    summary: buildSessionSummaryMarkdown(entries),
-    entryCount: entries.length,
-    generatedAt: new Date().toISOString()
+    sentAt: message.createdAt.toISOString(),
+    professionalId: professional.id,
+    professionalName: professional.user.fullName,
+    entryCount: summary.entryCount,
+    summary
   };
+}
+
+export async function listSentSessionReportsForProfessional(
+  professionalId: string
+): Promise<EmotionalDiarySentReportItem[]> {
+  const messages = await prisma.chatMessage.findMany({
+    where: {
+      body: { startsWith: DIARY_SESSION_REPORT_CHAT_PREFIX },
+      thread: { professionalId }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 80,
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      readAt: true,
+      sender: { select: { role: true } },
+      thread: {
+        select: {
+          patientId: true,
+          patient: {
+            select: {
+              user: { select: { fullName: true, avatarUrl: true } }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const latestByPatient = new Map<string, EmotionalDiarySentReportItem>();
+  for (const message of messages) {
+    if (message.sender.role !== "PATIENT") continue;
+    const patientId = message.thread.patientId;
+    if (latestByPatient.has(patientId)) continue;
+
+    const countMatch = message.body.match(/\((\d+)\s+entrada/i);
+    const entryCount = countMatch ? Number(countMatch[1]) : 0;
+    latestByPatient.set(patientId, {
+      patientId,
+      patientName: message.thread.patient.user.fullName,
+      patientAvatarUrl: message.thread.patient.user.avatarUrl ?? null,
+      entryCount: Number.isFinite(entryCount) ? entryCount : 0,
+      sentAt: message.createdAt.toISOString(),
+      unread: message.readAt == null,
+      messageId: message.id
+    });
+  }
+
+  return [...latestByPatient.values()].sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
 
 export async function assertProfessionalPatientRelation(
@@ -555,6 +748,7 @@ export const __internals = {
   computeConsecutiveDays,
   computeMoodTrend,
   computeInsights,
+  buildSessionSummary,
   buildSessionSummaryMarkdown,
   MOOD_SCORE
 };

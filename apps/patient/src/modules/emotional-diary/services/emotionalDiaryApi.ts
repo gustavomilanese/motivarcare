@@ -1,5 +1,6 @@
 import type {
   EmotionalDiaryEntry,
+  EmotionalDiarySessionReportSendResult,
   EmotionalDiarySessionSummary,
   EmotionalDiarySettings,
   EmotionalDiaryStats
@@ -11,6 +12,7 @@ export type {
   EmotionalDiaryEntry,
   EmotionalDiaryEntryStatus,
   EmotionalDiaryMood,
+  EmotionalDiarySessionReportSendResult,
   EmotionalDiarySessionSummary,
   EmotionalDiarySettings,
   EmotionalDiaryStats
@@ -148,4 +150,12 @@ export async function fetchDiaryStats(token: string): Promise<EmotionalDiaryStat
 
 export async function fetchDiarySessionSummary(token: string): Promise<EmotionalDiarySessionSummary> {
   return apiRequest<EmotionalDiarySessionSummary>("/api/emotional-diary/session-summary", { method: "GET" }, token);
+}
+
+export async function sendDiarySessionSummary(token: string): Promise<EmotionalDiarySessionReportSendResult> {
+  return apiRequest<EmotionalDiarySessionReportSendResult>(
+    "/api/emotional-diary/session-summary/send",
+    { method: "POST", body: "{}" },
+    token
+  );
 }

@@ -123,7 +123,7 @@ export function ProPortalHeaderActions(props: {
                       className={`pro-notification-item ${item.unread ? "unread" : ""}`}
                       onClick={() => {
                         props.onCloseNotifications();
-                        navigate(`/chat?patientId=${encodeURIComponent(item.patientId)}`);
+                        navigate(item.href ?? `/chat?patientId=${encodeURIComponent(item.patientId)}`);
                       }}
                     >
                       <span>{item.title}</span>

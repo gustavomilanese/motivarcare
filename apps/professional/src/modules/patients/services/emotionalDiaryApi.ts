@@ -1,8 +1,16 @@
-import type { EmotionalDiaryEntry, EmotionalDiarySessionSummary } from "@therapy/types";
+import type {
+  EmotionalDiaryEntry,
+  EmotionalDiarySentReportItem,
+  EmotionalDiarySessionSummary
+} from "@therapy/types";
 import { apiRequest } from "../../app/services/api";
 
 interface EntriesEnvelope {
   entries: EmotionalDiaryEntry[];
+}
+
+interface ReportsEnvelope {
+  items: EmotionalDiarySentReportItem[];
 }
 
 export async function fetchPatientEmotionalDiaryEntries(
@@ -24,4 +32,9 @@ export async function fetchPatientEmotionalDiarySummary(
     `/api/professional/patients/${encodeURIComponent(patientId)}/emotional-diary/summary`,
     token
   );
+}
+
+export async function fetchEmotionalDiarySentReports(token: string): Promise<EmotionalDiarySentReportItem[]> {
+  const result = await apiRequest<ReportsEnvelope>("/api/professional/emotional-diary/reports", token);
+  return result.items;
 }

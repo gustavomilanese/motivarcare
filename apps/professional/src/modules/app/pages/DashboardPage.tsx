@@ -25,7 +25,9 @@ import {
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
+import { fetchEmotionalDiarySentReports } from "../../patients/services/emotionalDiaryApi";
 import type { AuthUser, AvailabilitySlot, DashboardResponse } from "../types";
+import type { EmotionalDiarySentReportItem } from "@therapy/types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -38,8 +40,9 @@ function formatDateTime(value: string, language: AppLanguage): string {
     options: {
       month: "short",
       day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -49,8 +52,9 @@ function formatTime(value: string, language: AppLanguage): string {
     value,
     language,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -93,6 +97,7 @@ export function DashboardPage(props: {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [upcomingReservations, setUpcomingReservations] = useState<UpcomingReservationItem[]>([]);
   const [pendingExecutionSessions, setPendingExecutionSessions] = useState<UpcomingReservationItem[]>([]);
+  const [diaryReports, setDiaryReports] = useState<EmotionalDiarySentReportItem[]>([]);
   const [error, setError] = useState("");
   const [bookingActionInProgressId, setBookingActionInProgressId] = useState<string | null>(null);
   const [bookingActionError, setBookingActionError] = useState("");
@@ -132,14 +137,19 @@ export function DashboardPage(props: {
 
     const load = async () => {
       try {
-        const response = await apiRequest<DashboardResponse>(`/api/professional/dashboard${dashboardQuery}`, props.token);
+        const [response, reports] = await Promise.all([
+          apiRequest<DashboardResponse>(`/api/professional/dashboard${dashboardQuery}`, props.token),
+          fetchEmotionalDiarySentReports(props.token).catch(() => [] as EmotionalDiarySentReportItem[])
+        ]);
         if (active) {
           setData(response);
+          setDiaryReports(reports);
           setUpcomingReservations(
-            (response.upcomingSessions ?? []).slice(0, 8).map((session) => ({
+            (response.upcomingSessions ?? []).map((session) => ({
               id: session.id,
               startsAt: session.startsAt,
               endsAt: session.endsAt,
+              patientId: session.patientId,
               patientName: session.patientName,
               patientEmail: session.patientEmail,
               patientAvatarUrl: session.patientAvatarUrl ?? null,
@@ -152,6 +162,7 @@ export function DashboardPage(props: {
               id: session.id,
               startsAt: session.startsAt,
               endsAt: session.endsAt,
+              patientId: session.patientId,
               patientName: session.patientName,
               patientEmail: session.patientEmail,
               patientAvatarUrl: session.patientAvatarUrl ?? null,
@@ -416,19 +427,29 @@ export function DashboardPage(props: {
     setBookingActionError("");
     setBookingActionInProgressId(booking.id);
     try {
-      const response = await apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token);
-      const nowDate = new Date();
-      const options = (response.slots ?? []).filter((slot) => {
+      const [slotsResponse, bookingsResponse] = await Promise.all([
+        apiRequest<{ slots: AvailabilitySlot[] }>("/api/availability/me/slots", props.token),
+        apiRequest<{ bookings: Array<{ id: string; startsAt: string; endsAt: string; status: string }> }>(
+          "/api/bookings/mine",
+          props.token
+        )
+      ]);
+      const nowMs = Date.now();
+      const activeBookings = (bookingsResponse.bookings ?? []).filter((item) => {
+        const status = item.status.toLowerCase();
+        return status === "confirmed" || status === "requested";
+      });
+      // Sin tope de 24 h para el profesional: puede mover a cualquier hueco libre futuro.
+      const options = (slotsResponse.slots ?? []).filter((slot) => {
         if (slot.isBlocked) {
           return false;
         }
-        if (new Date(slot.startsAt).getTime() < nowDate.getTime()) {
+        if (new Date(slot.startsAt).getTime() < nowMs) {
           return false;
         }
-        return !upcomingReservations.some(
+        return !activeBookings.some(
           (existingBooking) =>
             existingBooking.id !== booking.id
-            && (existingBooking.status === "confirmed" || existingBooking.status === "requested")
             && rangesOverlap(slot.startsAt, slot.endsAt, existingBooking.startsAt, existingBooking.endsAt)
         );
       });
@@ -632,12 +653,72 @@ export function DashboardPage(props: {
     pt: "Quantidade de pacientes com status ativo. Toque para ver a lista completa."
   });
 
+  const diaryReportByPatientId = useMemo(() => {
+    const map = new Map<string, EmotionalDiarySentReportItem>();
+    for (const report of diaryReports) {
+      if (!map.has(report.patientId)) {
+        map.set(report.patientId, report);
+      }
+    }
+    return map;
+  }, [diaryReports]);
+
+  const recentDiaryReports = useMemo(() => diaryReports.slice(0, 5), [diaryReports]);
+
   return (
     <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
       {profileSavedNotice ? (
         <p className="pro-success pro-dashboard-flash" role="status">
           {profileSavedNotice}
         </p>
+      ) : null}
+      {recentDiaryReports.length > 0 ? (
+        <section className="pro-card pro-dashboard-diary-reports" aria-labelledby="pro-dashboard-diary-reports-title">
+          <header className="pro-dashboard-diary-reports-head">
+            <h2 id="pro-dashboard-diary-reports-title">
+              {t(props.language, {
+                es: "Informes del diario",
+                en: "Diary reports",
+                pt: "Relatórios do diário"
+              })}
+            </h2>
+            <p className="pro-muted">
+              {t(props.language, {
+                es: "Pacientes que te enviaron el informe antes de la sesión.",
+                en: "Patients who sent you their diary report before the session.",
+                pt: "Pacientes que enviaram o relatório do diário antes da sessão."
+              })}
+            </p>
+          </header>
+          <ul className="pro-dashboard-diary-reports-list">
+            {recentDiaryReports.map((report) => (
+              <li key={report.patientId}>
+                <NavLink
+                  to={`/pacientes/${encodeURIComponent(report.patientId)}?diaryReport=1`}
+                  className={`pro-dashboard-diary-report-item${report.unread ? " is-unread" : ""}`}
+                >
+                  <div>
+                    <strong>{report.patientName}</strong>
+                    <span>
+                      {report.entryCount > 0
+                        ? t(props.language, {
+                            es: `${report.entryCount} entrada${report.entryCount === 1 ? "" : "s"}`,
+                            en: `${report.entryCount} entr${report.entryCount === 1 ? "y" : "ies"}`,
+                            pt: `${report.entryCount} entrada${report.entryCount === 1 ? "" : "s"}`
+                          })
+                        : t(props.language, { es: "Informe enviado", en: "Report sent", pt: "Relatório enviado" })}
+                    </span>
+                  </div>
+                  <em className="pro-diary-report-badge">
+                    {report.unread
+                      ? t(props.language, { es: "Nuevo", en: "New", pt: "Novo" })
+                      : t(props.language, { es: "Informe", en: "Report", pt: "Relatório" })}
+                  </em>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
       <div className="pro-dashboard-overview" data-tour="pro-tour-hero">
         <div
@@ -740,6 +821,7 @@ export function DashboardPage(props: {
               onRequestCancel={openCancelModal}
               highlightJoinPulseBookingId={highlightJoinPulseBookingId}
               joinTourTargetBookingId={firstMeetBookingId}
+              diaryReportByPatientId={diaryReportByPatientId}
             />
           </div>
         ) : (
@@ -819,6 +901,13 @@ export function DashboardPage(props: {
               <h3>{t(props.language, { es: "Reagendar reserva", en: "Reschedule booking", pt: "Reagendar reserva" })}</h3>
               <button type="button" onClick={() => setIsRescheduleModalOpen(false)} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>×</button>
             </header>
+            <p className="pro-reschedule-modal-lead">
+              {t(props.language, {
+                es: "Podés mover la sesión a cualquier horario libre de tu agenda, incluso si faltan menos de 24 horas. El paciente recibe el aviso del cambio.",
+                en: "You can move the session to any free slot on your schedule, even within 24 hours. The patient is notified of the change.",
+                pt: "Voce pode mover a sessao para qualquer horario livre da sua agenda, mesmo com menos de 24 horas. O paciente recebe o aviso da mudanca."
+              })}
+            </p>
             <label>
               <span>{t(props.language, { es: "Nuevo horario", en: "New time", pt: "Novo horario" })}</span>
               <select value={selectedRescheduleSlotKey} onChange={(event) => setSelectedRescheduleSlotKey(event.target.value)}>
@@ -863,6 +952,13 @@ export function DashboardPage(props: {
               <h3>{t(props.language, { es: "Cancelar reserva", en: "Cancel booking", pt: "Cancelar reserva" })}</h3>
               <button type="button" onClick={() => setIsCancelModalOpen(false)} aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}>×</button>
             </header>
+            <p className="pro-reschedule-modal-lead">
+              {t(props.language, {
+                es: "Podés cancelar en cualquier momento. Si la sesión aún no empezó, el crédito vuelve al paciente.",
+                en: "You can cancel anytime. If the session has not started, the credit is returned to the patient.",
+                pt: "Voce pode cancelar a qualquer momento. Se a sessao ainda nao comecou, o credito volta ao paciente."
+              })}
+            </p>
             <label>
               <span>{t(props.language, { es: "Motivo para el paciente (opcional)", en: "Reason for the patient (optional)", pt: "Motivo para o paciente (opcional)" })}</span>
               <textarea

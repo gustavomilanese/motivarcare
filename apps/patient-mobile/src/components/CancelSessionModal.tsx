@@ -152,8 +152,8 @@ export function CancelSessionModal(props: Props) {
               <Text style={styles.warnTitle}>Vas a perder esta sesión</Text>
               <Text style={styles.warnBody}>
                 {isTrial
-                  ? "Faltan menos de 24 horas. Si cancelás ahora, perdés la sesión de prueba: no se puede reprogramar ni recuperar."
-                  : "Faltan menos de 24 horas. Si cancelás ahora, perdés el crédito de esta sesión y no se vuelve a tu saldo."}
+                  ? "Faltan menos de 24 horas. Si cancelás ahora, perdés la sesión de prueba: no se puede reprogramar ni recuperar. Si necesitás coordinar algo, escribile por el chat interno a tu terapeuta para que quede constancia en el sistema."
+                  : "Faltan menos de 24 horas. Si cancelás ahora, perdés el crédito de esta sesión y no se vuelve a tu saldo. Si necesitás coordinar algo, escribile por el chat interno a tu terapeuta para que quede constancia en el sistema."}
               </Text>
             </View>
           ) : (

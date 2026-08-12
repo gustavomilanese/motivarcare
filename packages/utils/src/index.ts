@@ -281,8 +281,18 @@ export function formatDateWithLocale(params: {
   timeZone?: string;
   options: Intl.DateTimeFormatOptions;
 }): string {
+  const options = { ...params.options };
+  const formatsTime =
+    options.hour !== undefined ||
+    options.minute !== undefined ||
+    options.second !== undefined ||
+    options.timeStyle !== undefined;
+  // Reloj operativo MotivarCare: siempre 00:00–23:59 (salvo override explícito).
+  if (formatsTime && options.hour12 === undefined) {
+    options.hour12 = false;
+  }
   return new Intl.DateTimeFormat(localeFromLanguage(params.language), {
-    ...params.options,
+    ...options,
     ...(params.timeZone ? { timeZone: params.timeZone } : {})
   }).format(new Date(params.value));
 }

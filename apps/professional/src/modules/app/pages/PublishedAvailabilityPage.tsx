@@ -28,8 +28,9 @@ function formatTime(value: string, language: AppLanguage): string {
     value,
     language,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }

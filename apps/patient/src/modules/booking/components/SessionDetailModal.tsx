@@ -39,8 +39,9 @@ function formatTimeOnly(params: { isoDate: string; timezone: string; language: A
     language: params.language,
     timeZone: params.timezone,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -262,14 +263,14 @@ export function SessionDetailModal(props: {
               {losesCreditOnCancel
                 ? isTrialBooking
                   ? t(props.language, {
-                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS la sesión de prueba. No se puede reprogramar ni recuperar.`,
-                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE the trial session. It cannot be rescheduled or recovered.`,
-                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE a sessão de teste. Não dá para reagendar nem recuperar.`
+                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS la sesión de prueba. No se puede reprogramar ni recuperar. Si necesitás coordinar algo, escribile por el chat interno a tu terapeuta para que quede constancia en el sistema.`,
+                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE the trial session. It cannot be rescheduled or recovered. If you need to coordinate, message your therapist in the in-app chat so there is a record in the system.`,
+                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE a sessão de teste. Não dá para reagendar nem recuperar. Se precisar combinar algo, escreva no chat interno para seu terapeuta para ficar registrado no sistema.`
                     })
                   : t(props.language, {
-                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS el crédito de esta sesión. No vuelve a tu saldo.`,
-                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE this session credit. It will not return to your balance.`,
-                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE o crédito desta sessão. Não volta ao saldo.`
+                      es: `ATENCIÓN: faltan menos de ${noticeHours} h. Si cancelás ahora, PERDÉS el crédito de esta sesión. No vuelve a tu saldo. Si necesitás coordinar algo, escribile por el chat interno a tu terapeuta para que quede constancia en el sistema.`,
+                      en: `WARNING: less than ${noticeHours} h left. Cancelling now means you LOSE this session credit. It will not return to your balance. If you need to coordinate, message your therapist in the in-app chat so there is a record in the system.`,
+                      pt: `ATENÇÃO: faltam menos de ${noticeHours} h. Se cancelar agora, VOCÊ PERDE o crédito desta sessão. Não volta ao saldo. Se precisar combinar algo, escreva no chat interno para seu terapeuta para ficar registrado no sistema.`
                     })
                 : isTrialBooking
                   ? t(props.language, {

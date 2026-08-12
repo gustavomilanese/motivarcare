@@ -17,6 +17,7 @@ import {
   getStats,
   listEntries,
   patchEntry,
+  sendSessionSummaryToProfessional,
   updateSettings
 } from "./emotionalDiary.service.js";
 
@@ -35,6 +36,9 @@ function handleEmotionalDiaryError(res: Parameters<typeof sendApiError>[0]["res"
   if (error instanceof EmotionalDiaryError) {
     if (error.code === "NOT_FOUND") {
       return void sendApiError({ res, status: 404, code: "NOT_FOUND", message: error.message });
+    }
+    if (error.code === "NO_PROFESSIONAL" || error.code === "NO_ENTRIES" || error.code === "BAD_REQUEST") {
+      return void sendApiError({ res, status: 400, code: error.code, message: error.message });
     }
     return void sendApiError({ res, status: 403, code: "FORBIDDEN", message: error.message });
   }
@@ -185,6 +189,19 @@ emotionalDiaryRouter.get("/session-summary", requireAuth, async (req: Authentica
   }
   try {
     const result = await getSessionSummary(patientId);
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleEmotionalDiaryError(res, error);
+  }
+});
+
+emotionalDiaryRouter.post("/session-summary/send", requireAuth, async (req: AuthenticatedRequest, res) => {
+  const patientId = await resolvePatientId(req);
+  if (!patientId || !req.auth?.userId) {
+    return sendApiError({ res, status: 403, code: "FORBIDDEN", message: "Solo pacientes pueden acceder al diario" });
+  }
+  try {
+    const result = await sendSessionSummaryToProfessional(patientId, req.auth.userId);
     return res.status(200).json(result);
   } catch (error) {
     return handleEmotionalDiaryError(res, error);

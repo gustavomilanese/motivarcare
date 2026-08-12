@@ -41,13 +41,13 @@ describe("emotional-diary service internals", () => {
   describe("buildSessionSummaryMarkdown", () => {
     it("incluye título y mood de entradas compartidas", () => {
       const md = buildSessionSummaryMarkdown([buildEntry({ title: "Día intenso" })]);
-      expect(md).toContain("# Resumen del diario emocional");
+      expect(md).toContain("Informe para tu próxima sesión");
       expect(md).toContain("Día intenso");
       expect(md).toContain("Regular");
     });
 
     it("devuelve mensaje vacío si no hay entradas", () => {
-      expect(buildSessionSummaryMarkdown([])).toContain("No hay entradas compartidas");
+      expect(buildSessionSummaryMarkdown([])).toContain("Todavía no hay entradas compartidas");
     });
   });
 

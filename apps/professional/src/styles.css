@@ -6653,6 +6653,64 @@ select.pro-dashboard-revenue-control {
   cursor: pointer;
 }
 
+.agenda-action-btn {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid #d8deeb;
+  background: #ffffff;
+  color: #4a5974;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.agenda-action-btn:hover:not(:disabled) {
+  background: #f4f7fc;
+  border-color: #cfd7e6;
+}
+
+.agenda-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.agenda-action-btn--danger {
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.agenda-action-btn--danger .session-action-icon {
+  color: #dc2626;
+}
+
+.agenda-action-btn--danger:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #ef4444;
+}
+
+.agenda-action-btn-label {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .agenda-action-btn-label {
+    display: none;
+  }
+
+  .agenda-action-btn {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+}
+
 .agenda-row-actions .icon-only:hover:not(:disabled) {
   background: #f4f7fc;
   border-color: #cfd7e6;
@@ -6759,6 +6817,13 @@ select.pro-dashboard-revenue-control {
   margin: 0;
   font-size: 24px;
   letter-spacing: -0.02em;
+}
+
+.pro-reschedule-modal-lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .pro-reschedule-modal header button {
@@ -15528,12 +15593,28 @@ button:disabled {
 
 .pro-link-back {
   border: none;
-  background: none;
+  background: transparent;
   color: #0b57d0;
   font-weight: 700;
   cursor: pointer;
   padding: 0 0 12px;
   font-size: 14px;
+  width: fit-content;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pro-link-back:hover,
+.pro-link-back:focus-visible {
+  color: #083891;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pro-link-back:focus-visible {
+  outline: 2px solid color-mix(in srgb, #0b57d0 45%, transparent);
+  outline-offset: 3px;
 }
 
 .pro-patient-detail-page .pro-patient-detail-header {
@@ -17480,5 +17561,494 @@ body.pro-tour-zone-done .driver-active-element {
 
   .preferences-options-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Informe del diario emocional */
+.pro-diary-report-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  color: #5b21b6;
+  background: rgba(95, 68, 235, 0.12);
+  border: 1px solid rgba(95, 68, 235, 0.22);
+}
+
+.pro-diary-report-badge.is-unread {
+  color: #166534;
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.pro-dashboard-diary-reports {
+  display: grid;
+  gap: 12px;
+}
+
+.pro-dashboard-diary-reports-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.pro-dashboard-diary-reports-head p {
+  margin: 4px 0 0;
+}
+
+.pro-dashboard-diary-reports-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pro-dashboard-diary-report-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.pro-dashboard-diary-report-item.is-unread {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.pro-dashboard-diary-report-item strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.pro-dashboard-diary-report-item span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Diario emocional — ficha del paciente */
+.pro-patient-emotional-diary-card {
+  display: grid;
+  gap: 16px;
+}
+
+.pro-patient-emotional-diary-header {
+  display: grid;
+  gap: 8px;
+}
+
+.pro-patient-emotional-diary-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pro-patient-emotional-diary-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pro-patient-emotional-diary-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c6bcf;
+}
+
+.pro-patient-emotional-diary-card h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.pro-patient-emotional-diary-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pro-patient-emotional-diary-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.pro-patient-emotional-diary-lead {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #64748b !important;
+}
+
+.pro-patient-emotional-diary-card--report {
+  border-color: rgba(95, 68, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(95, 68, 235, 0.08);
+}
+
+.pro-patient-diary-empty {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.pro-patient-diary-empty strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.pro-patient-diary-empty p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.pro-patient-diary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.pro-patient-diary-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--diary-mood-tone, #94a3b8) 22%, #e2e8f0);
+  background: linear-gradient(165deg, #ffffff 0%, color-mix(in srgb, var(--diary-mood-soft, #f8fafc) 70%, #ffffff) 100%);
+}
+
+.pro-patient-diary-item-mood {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: var(--diary-mood-soft, #f1f5f9);
+  border: 1px solid color-mix(in srgb, var(--diary-mood-tone, #94a3b8) 18%, transparent);
+}
+
+.pro-patient-diary-item-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pro-patient-diary-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pro-patient-diary-item-title {
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.pro-patient-diary-item-date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.pro-patient-diary-preview {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #334155 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pro-patient-diary-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pro-patient-diary-mood-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--diary-mood-tone, #475569);
+  background: var(--diary-mood-soft, #f1f5f9);
+  border: 1px solid color-mix(in srgb, var(--diary-mood-tone, #94a3b8) 22%, transparent);
+}
+
+.pro-patient-diary-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.pro-patient-diary-chip--need {
+  color: #5b21b6;
+  background: rgba(95, 68, 235, 0.08);
+  border-color: rgba(95, 68, 235, 0.18);
+}
+
+.pro-patient-diary-more {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.pro-patient-diary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.pro-patient-diary-actions-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pro-patient-diary-actions-copy strong {
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.pro-patient-diary-actions-copy p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #64748b !important;
+}
+
+.pro-patient-diary-actions-btn {
+  flex-shrink: 0;
+}
+
+.pro-diary-session-report {
+  margin-top: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
+  display: grid;
+  gap: 14px;
+}
+
+.pro-diary-session-report-head {
+  display: grid;
+  gap: 4px;
+}
+
+.pro-diary-session-report-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.pro-diary-session-report-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c6bcf;
+}
+
+.pro-diary-session-report-lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b !important;
+  max-width: 56ch;
+}
+
+.pro-diary-session-report-blocks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.pro-diary-session-report-block {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--diary-mood-tone, #94a3b8) 20%, #e2e8f0);
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.pro-diary-session-report-block-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.pro-diary-session-report-index {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--diary-mood-tone, #5f44eb);
+  background: var(--diary-mood-soft, rgba(95, 68, 235, 0.12));
+}
+
+.pro-diary-session-report-block-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pro-diary-session-report-block-heading strong {
+  font-size: 0.98rem;
+  color: #0f172a;
+}
+
+.pro-diary-session-report-block-heading time {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.pro-diary-session-report-mood-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--diary-mood-tone, #475569);
+  background: var(--diary-mood-soft, #f1f5f9);
+  border: 1px solid color-mix(in srgb, var(--diary-mood-tone, #94a3b8) 20%, transparent);
+  white-space: nowrap;
+}
+
+.pro-diary-session-report-field {
+  display: grid;
+  gap: 4px;
+}
+
+.pro-diary-session-report-field > span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-diary-session-report-field > p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #1e293b !important;
+  white-space: pre-wrap;
+}
+
+.pro-diary-session-report-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pro-diary-session-report-chips span {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 640px) {
+  .pro-patient-diary-item {
+    grid-template-columns: 40px 1fr;
+    padding: 12px;
+  }
+
+  .pro-patient-diary-item-mood {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+
+  .pro-diary-session-report-block-top {
+    grid-template-columns: auto 1fr;
+  }
+
+  .pro-diary-session-report-mood-pill {
+    grid-column: 2;
+    width: fit-content;
+  }
+
+  .pro-patient-diary-actions {
+    align-items: stretch;
+  }
+
+  .pro-patient-diary-actions-btn {
+    width: 100%;
   }
 }

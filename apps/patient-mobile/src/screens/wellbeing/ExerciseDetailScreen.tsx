@@ -18,15 +18,17 @@ import { useThemeMode } from "../../theme/ThemeContext";
 import { categoryAccent, categoryLabel, difficultyLabel } from "../../wellbeing/labels";
 import type { ExercisePost } from "../../wellbeing/types";
 
+/** Misma categoría primero; si faltan, completa con otros publicados. */
 function pickRelatedByCategory(all: ExercisePost[], current: ExercisePost, limit = 3): ExercisePost[] {
-  return all
-    .filter(
-      (item) =>
-        item.id !== current.id &&
-        item.category === current.category &&
-        (item.status === undefined || item.status === "published")
-    )
-    .slice(0, limit);
+  const isPublished = (item: ExercisePost) => item.status === undefined || item.status === "published";
+  const others = all.filter((item) => item.id !== current.id && isPublished(item));
+  const sameCategory = others.filter((item) => item.category === current.category);
+  if (sameCategory.length >= limit) {
+    return sameCategory.slice(0, limit);
+  }
+  const sameIds = new Set(sameCategory.map((item) => item.id));
+  const fillers = others.filter((item) => !sameIds.has(item.id));
+  return [...sameCategory, ...fillers].slice(0, limit);
 }
 
 export function ExerciseDetailScreen() {
@@ -72,7 +74,7 @@ export function ExerciseDetailScreen() {
     return () => clearTimeout(id);
   }, [pauseSec]);
 
-  const suggestions = useMemo(() => {
+  const related = useMemo(() => {
     if (!exercise) return [];
     return pickRelatedByCategory(allExercises, exercise, 3);
   }, [allExercises, exercise]);
@@ -113,29 +115,47 @@ export function ExerciseDetailScreen() {
         },
         celebrateTitle: { fontSize: 15, fontWeight: "800", color: "#14532d" },
         celebrateLead: { fontSize: 13, lineHeight: 18, color: "#166534" },
-        suggestionCard: {
-          flexDirection: "row",
-          gap: 10,
-          alignItems: "center",
-          minHeight: 76,
-          padding: 12,
-          borderRadius: 12,
+        homeLink: { fontSize: 13, fontWeight: "800", color: "#166534", marginTop: 2 },
+        relatedBlock: {
+          marginTop: 8,
+          padding: 14,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: colors.border,
           backgroundColor: colors.surface,
+          gap: 10
+        },
+        relatedEyebrow: {
+          fontSize: 11,
+          fontWeight: "800",
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+          color: colors.textMuted
+        },
+        relatedTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+        relatedLead: { fontSize: 13, lineHeight: 18, color: colors.textMuted },
+        relatedCard: {
+          gap: 8,
+          minHeight: 148,
+          padding: 14,
+          borderRadius: 14,
+          backgroundColor: colors.background,
           borderWidth: 1,
           borderColor: colors.border
         },
-        suggestionEmoji: {
-          width: 40,
-          height: 40,
+        relatedTop: { flexDirection: "row", gap: 10, alignItems: "center" },
+        relatedEmoji: {
+          width: 44,
+          height: 44,
           borderRadius: 12,
           alignItems: "center",
           justifyContent: "center"
         },
-        suggestionEmojiText: { fontSize: 20 },
-        suggestionBody: { flex: 1, gap: 2, justifyContent: "center" },
-        suggestionTitle: { fontSize: 14, fontWeight: "800", color: colors.text },
-        suggestionMeta: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
-        homeLink: { fontSize: 13, fontWeight: "800", color: "#166534", marginTop: 2 },
+        relatedEmojiText: { fontSize: 22 },
+        relatedCardTitle: { flex: 1, fontSize: 15, fontWeight: "800", color: colors.text },
+        relatedMeta: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
+        relatedSummary: { fontSize: 13, lineHeight: 18, color: colors.textMuted },
+        relatedCta: { fontSize: 13, fontWeight: "800", color: colors.primary, marginTop: 2 },
         error: { color: colors.danger, fontWeight: "700" },
         loader: { flex: 1, alignItems: "center", justifyContent: "center" }
       }),
@@ -185,7 +205,9 @@ export function ExerciseDetailScreen() {
       </Text>
       <Text style={styles.body}>{exercise.description || exercise.summary}</Text>
 
-      <Text style={styles.sectionTitle}>Cómo hacerlo ({doneCount}/{exercise.steps.length})</Text>
+      <Text style={styles.sectionTitle}>
+        Cómo hacerlo ({doneCount}/{exercise.steps.length})
+      </Text>
       <View style={styles.timerRow}>
         <PrimaryButton label="30 s" variant="ghost" onPress={() => setPauseSec(30)} />
         <PrimaryButton label="60 s" variant="ghost" onPress={() => setPauseSec(60)} />
@@ -221,44 +243,10 @@ export function ExerciseDetailScreen() {
       {completed ? (
         <View style={styles.celebrate}>
           <Text style={styles.celebrateTitle}>¡Listo! Buen trabajo.</Text>
-          {suggestions.length > 0 ? (
-            <>
-              <Text style={styles.celebrateLead}>
-                Para seguir tu tratamiento, probá estos ejercicios de {categoryLabel(exercise.category)}:
-              </Text>
-              {suggestions.map((item) => {
-                const itemAccent = categoryAccent(item.category);
-                return (
-                  <Pressable
-                    key={item.id}
-                    style={styles.suggestionCard}
-                    onPress={() => navigation.replace("ExerciseDetail", { slug: item.slug })}
-                  >
-                    <View style={[styles.suggestionEmoji, { backgroundColor: itemAccent.accentSoft }]}>
-                      <Text style={styles.suggestionEmojiText}>{item.emoji}</Text>
-                    </View>
-                    <View style={styles.suggestionBody}>
-                      <Text style={styles.suggestionTitle} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text style={styles.suggestionMeta} numberOfLines={2}>
-                        {item.durationMinutes} min · {item.summary}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                  </Pressable>
-                );
-              })}
-            </>
-          ) : (
-            <Text style={styles.celebrateLead}>
-              Si querés, repetí el circuito o explorá más ejercicios del menú.
-            </Text>
-          )}
-          <Pressable
-            onPress={() => navigation.navigate("Tabs", { screen: "home" })}
-            hitSlop={8}
-          >
+          <Text style={styles.celebrateLead}>
+            Abajo tenés sugerencias para seguir tu tratamiento, o volvé al inicio.
+          </Text>
+          <Pressable onPress={() => navigation.navigate("Tabs", { screen: "home" })} hitSlop={8}>
             <Text style={styles.homeLink}>Volver a Inicio →</Text>
           </Pressable>
         </View>
@@ -280,6 +268,43 @@ export function ExerciseDetailScreen() {
           <Text style={styles.sectionTitle}>Precauciones</Text>
           <Text style={styles.tip}>{exercise.contraindications}</Text>
         </>
+      ) : null}
+
+      {related.length > 0 ? (
+        <View style={styles.relatedBlock}>
+          <Text style={styles.relatedEyebrow}>También te puede servir</Text>
+          <Text style={styles.relatedTitle}>Más ejercicios de {categoryLabel(exercise.category)}</Text>
+          <Text style={styles.relatedLead}>
+            Seguí tu tratamiento con estas sugerencias de la misma categoría.
+          </Text>
+          {related.map((item) => {
+            const itemAccent = categoryAccent(item.category);
+            return (
+              <Pressable
+                key={item.id}
+                style={styles.relatedCard}
+                onPress={() => navigation.replace("ExerciseDetail", { slug: item.slug })}
+              >
+                <View style={styles.relatedTop}>
+                  <View style={[styles.relatedEmoji, { backgroundColor: itemAccent.accentSoft }]}>
+                    <Text style={styles.relatedEmojiText}>{item.emoji}</Text>
+                  </View>
+                  <Text style={styles.relatedCardTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </View>
+                <Text style={styles.relatedMeta}>
+                  {categoryLabel(item.category)} · {item.durationMinutes} min ·{" "}
+                  {difficultyLabel(item.difficulty)}
+                </Text>
+                <Text style={styles.relatedSummary} numberOfLines={3}>
+                  {item.summary}
+                </Text>
+                <Text style={styles.relatedCta}>Ver ejercicio →</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       ) : null}
     </ScrollView>
   );

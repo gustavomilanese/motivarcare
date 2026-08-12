@@ -26546,6 +26546,151 @@ button.sessions-balance {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
+/* Productos relacionados (siempre visibles, estilo portal de compra) */
+.exercise-related-section {
+  margin-top: 28px;
+  padding: 22px 20px 20px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
+  display: grid;
+  gap: 16px;
+}
+
+.exercise-related-header {
+  display: grid;
+  gap: 6px;
+}
+
+.exercise-related-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.exercise-related-header h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.exercise-related-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #64748b;
+  max-width: 52ch;
+}
+
+.exercise-related-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.exercise-related-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: 8px;
+  min-height: 220px;
+  height: 100%;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--exercise-accent, #64748b) 28%, #e2e8f0);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.exercise-related-card:hover {
+  border-color: var(--exercise-accent, #64748b);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.exercise-related-card-emoji {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 24px;
+  background: var(--exercise-accent-soft, #f1f5f9);
+}
+
+.exercise-related-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.exercise-related-card-pills span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.exercise-related-card-title {
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exercise-related-card-summary {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exercise-related-card-cta {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exercise-accent, #0f766e);
+}
+
+@media (max-width: 900px) {
+  .exercise-related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .exercise-related-section {
+    padding: 18px 14px 14px;
+  }
+
+  .exercise-related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-related-card {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 520px) {
   .exercise-reader-header {
     grid-template-columns: 68px 1fr;

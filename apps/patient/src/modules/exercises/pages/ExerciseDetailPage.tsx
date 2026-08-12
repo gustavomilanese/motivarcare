@@ -11,6 +11,7 @@ import {
   t
 } from "../lib/labels";
 import { ExerciseInteractiveSteps } from "../components/ExerciseInteractiveSteps";
+import { ExerciseRelatedSection } from "../components/ExerciseRelatedSection";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 
 export interface ExerciseDetailPageProps {
@@ -132,11 +133,7 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
           <div className="exercise-reader-main">
             <p className="exercise-reader-description">{exercise.description}</p>
 
-            <ExerciseInteractiveSteps
-              exercise={exercise}
-              language={props.language}
-              suggestions={related}
-            />
+            <ExerciseInteractiveSteps exercise={exercise} language={props.language} />
           </div>
 
           <aside className="exercise-reader-side" aria-label={t(props.language, { es: "Información adicional", en: "Additional info", pt: "Informação adicional" })}>
@@ -175,6 +172,8 @@ export function ExerciseDetailPage(props: ExerciseDetailPageProps) {
           </aside>
         </div>
       </article>
+
+      <ExerciseRelatedSection language={props.language} category={exercise.category} items={related} />
     </section>
   );
 }

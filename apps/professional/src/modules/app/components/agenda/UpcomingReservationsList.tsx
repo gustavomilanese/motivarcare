@@ -24,8 +24,9 @@ function formatTime(value: string, language: AppLanguage): string {
     value,
     language,
     options: {
-      hour: "numeric",
-      minute: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
     }
   });
 }
@@ -51,6 +52,7 @@ export type UpcomingReservationItem = {
   id: string;
   startsAt: string;
   endsAt: string;
+  patientId?: string;
   patientName: string;
   patientEmail: string;
   patientAvatarUrl?: string | null;
@@ -71,6 +73,8 @@ export function UpcomingReservationsList(props: {
   highlightJoinPulseBookingId?: string | null;
   /** Primera reserva con Meet: target del tour guiado Maca. */
   joinTourTargetBookingId?: string | null;
+  /** Informes de diario enviados por paciente (para etiqueta en agenda). */
+  diaryReportByPatientId?: Map<string, { unread: boolean }>;
 }) {
   const loading = Boolean(props.loading);
   const error = props.error ?? "";
@@ -86,14 +90,14 @@ export function UpcomingReservationsList(props: {
     pt: "Sem link do Meet. Conecte o Google Calendar em Ajustes para gerar automaticamente."
   });
   const rescheduleTooltip = t(props.language, {
-    es: "Reagendar esta sesión con el paciente.",
-    en: "Reschedule this session with the patient.",
-    pt: "Reagendar esta sessao com o paciente."
+    es: "Reagendar esta sesión (sin límite de 24 h). Elegís el nuevo horario y se notifica al paciente.",
+    en: "Reschedule this session (no 24h limit). Pick a new time and the patient is notified.",
+    pt: "Reagendar esta sessao (sem limite de 24 h). Escolha o novo horario e o paciente e notificado."
   });
   const cancelTooltip = t(props.language, {
-    es: "Cancelar esta reserva.",
-    en: "Cancel this booking.",
-    pt: "Cancelar esta reserva."
+    es: "Cancelar esta reserva (sin límite de 24 h). El crédito vuelve al paciente si aún no empezó.",
+    en: "Cancel this booking (no 24h limit). The credit returns to the patient if it has not started.",
+    pt: "Cancelar esta reserva (sem limite de 24 h). O credito volta ao paciente se ainda nao comecou."
   });
 
   if (loading) {
@@ -157,6 +161,19 @@ export function UpcomingReservationsList(props: {
                   <div className="agenda-upcoming-patient-text">
                     <strong>{booking.patientName || "-"}</strong>
                     <small>{booking.patientEmail || ""}</small>
+                    {booking.patientId && props.diaryReportByPatientId?.has(booking.patientId) ? (
+                      <span
+                        className={`pro-diary-report-badge${
+                          props.diaryReportByPatientId.get(booking.patientId)?.unread ? " is-unread" : ""
+                        }`}
+                      >
+                        {t(props.language, {
+                          es: "Informe diario",
+                          en: "Diary report",
+                          pt: "Relatório do diário"
+                        })}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -185,28 +202,34 @@ export function UpcomingReservationsList(props: {
                       {t(props.language, { es: "Sin link", en: "No link", pt: "Sem link" })}
                     </span>
                   )}
-                  {props.onRequestReschedule && (booking.status === "confirmed" || booking.status === "requested") ? (
+                  {props.onRequestReschedule && (booking.status.toLowerCase() === "confirmed" || booking.status.toLowerCase() === "requested") ? (
                     <button
                       type="button"
-                      className="icon-only"
+                      className="agenda-action-btn"
                       aria-label={t(props.language, { es: "Reagendar", en: "Reschedule", pt: "Reagendar" })}
                       title={rescheduleTooltip}
                       onClick={() => props.onRequestReschedule?.(booking)}
                       disabled={props.busyBookingId === booking.id}
                     >
                       <span className="session-action-icon reschedule" aria-hidden="true" />
+                      <span className="agenda-action-btn-label">
+                        {t(props.language, { es: "Reagendar", en: "Reschedule", pt: "Reagendar" })}
+                      </span>
                     </button>
                   ) : null}
-                  {props.onRequestCancel && (booking.status === "confirmed" || booking.status === "requested") ? (
+                  {props.onRequestCancel && (booking.status.toLowerCase() === "confirmed" || booking.status.toLowerCase() === "requested") ? (
                     <button
                       type="button"
-                      className="danger icon-only"
+                      className="agenda-action-btn agenda-action-btn--danger"
                       aria-label={t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
                       title={cancelTooltip}
                       onClick={() => props.onRequestCancel?.(booking)}
                       disabled={props.busyBookingId === booking.id}
                     >
                       <span className="session-action-icon cancel" aria-hidden="true" />
+                      <span className="agenda-action-btn-label">
+                        {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                      </span>
                     </button>
                   ) : null}
                 </div>

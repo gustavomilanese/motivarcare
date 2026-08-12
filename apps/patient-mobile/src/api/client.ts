@@ -695,6 +695,15 @@ export async function fetchDiarySessionSummary(token: string) {
   });
 }
 
+export async function sendDiarySessionSummary(token: string) {
+  return requestJson<import("@therapy/types").EmotionalDiarySessionReportSendResult>({
+    path: "/api/emotional-diary/session-summary/send",
+    method: "POST",
+    token,
+    body: {}
+  });
+}
+
 export type TreatmentChatDto = {
   chatId: string;
   status: "active" | "archived";

@@ -14,9 +14,12 @@ import {
   fetchDiaryEntries,
   fetchDiarySessionSummary,
   fetchDiaryStats,
-  migrateLocalDiaryIfNeeded
+  migrateLocalDiaryIfNeeded,
+  sendDiarySessionSummary
 } from "../services/emotionalDiaryApi";
 import type { DiaryEntry } from "../types";
+import type { EmotionalDiarySessionSummary } from "@therapy/types";
+import { DiarySessionReportView } from "../components/DiarySessionReportView";
 
 export interface DiaryRecordsPageProps {
   language: AppLanguage;
@@ -45,7 +48,9 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryText, setSummaryText] = useState<string | null>(null);
+  const [sendLoading, setSendLoading] = useState(false);
+  const [summary, setSummary] = useState<EmotionalDiarySessionSummary | null>(null);
+  const [sentNotice, setSentNotice] = useState<string | null>(null);
   const [chartWeeks, setChartWeeks] = useState<ChartPeriodWeeks>(4);
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
   useScrollSectionToTopOnMount(true, loading ? "loading" : "ready");
@@ -105,13 +110,35 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
   async function handleBuildSummary() {
     setSummaryLoading(true);
     setError("");
+    setSentNotice(null);
     try {
       const result = await fetchDiarySessionSummary(props.authToken);
-      setSummaryText(result.summary);
+      setSummary(result);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "No pudimos armar el resumen");
     } finally {
       setSummaryLoading(false);
+    }
+  }
+
+  async function handleSendSummary() {
+    setSendLoading(true);
+    setError("");
+    setSentNotice(null);
+    try {
+      const result = await sendDiarySessionSummary(props.authToken);
+      setSummary(result.summary);
+      setSentNotice(
+        t(props.language, {
+          es: `Listo: enviamos el informe a ${result.professionalName}.`,
+          en: `Done: we sent the report to ${result.professionalName}.`,
+          pt: `Pronto: enviamos o relatório para ${result.professionalName}.`
+        })
+      );
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No pudimos enviar el informe");
+    } finally {
+      setSendLoading(false);
     }
   }
 
@@ -326,24 +353,43 @@ export function DiaryRecordsPage(props: DiaryRecordsPageProps) {
           </h3>
           <p className="diary-session-lead">
             {t(props.language, {
-              es: "Armá un resumen con las entradas que compartiste. Tu psicólogo/a lo puede leer antes del encuentro.",
-              en: "Build a summary from the entries you shared. Your therapist can read it before the appointment.",
-              pt: "Monte um resumo com as entradas que você compartilhou. Seu psicólogo pode ler antes do encontro."
+              es: "Armá el informe con las entradas que compartiste, revisalo y envialo a tu psicólogo/a. Así queda claro que lo recibió.",
+              en: "Build the report from the entries you shared, review it, and send it to your therapist so it’s clear they received it.",
+              pt: "Monte o relatório com as entradas que compartilhou, revise e envie ao seu psicólogo. Assim fica claro que ele recebeu."
             })}
           </p>
-          <button
-            type="button"
-            className="diary-btn diary-btn--primary diary-btn--wide diary-session-cta"
-            disabled={summaryLoading}
-            onClick={() => void handleBuildSummary()}
-          >
-            {summaryLoading
-              ? t(props.language, { es: "Generando resumen…", en: "Generating summary…", pt: "Gerando resumo…" })
-              : t(props.language, { es: "Armar resumen para mi psicólogo/a", en: "Build summary for my therapist", pt: "Montar resumo para meu psicólogo" })}
-          </button>
-          {summaryText ? (
-            <pre className="diary-summary-preview diary-summary-preview--session">{summaryText}</pre>
-          ) : null}
+          <div className="diary-session-actions">
+            <button
+              type="button"
+              className="diary-btn diary-btn--ghost diary-btn--wide diary-session-cta"
+              disabled={summaryLoading || sendLoading}
+              onClick={() => void handleBuildSummary()}
+            >
+              {summaryLoading
+                ? t(props.language, { es: "Armando informe…", en: "Building report…", pt: "Montando relatório…" })
+                : t(props.language, {
+                    es: "Vista previa del informe",
+                    en: "Preview report",
+                    pt: "Pré-visualizar relatório"
+                  })}
+            </button>
+            <button
+              type="button"
+              className="diary-btn diary-btn--primary diary-btn--wide diary-session-cta"
+              disabled={sendLoading || summaryLoading}
+              onClick={() => void handleSendSummary()}
+            >
+              {sendLoading
+                ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
+                : t(props.language, {
+                    es: "Enviar al psicólogo/a",
+                    en: "Send to my therapist",
+                    pt: "Enviar ao psicólogo"
+                  })}
+            </button>
+          </div>
+          {sentNotice ? <p className="diary-session-sent" role="status">{sentNotice}</p> : null}
+          {summary ? <DiarySessionReportView language={props.language} summary={summary} /> : null}
           <Link className="diary-session-link" to="/sessions">
             {t(props.language, { es: "Ver turnos y sesiones →", en: "View appointments and sessions →", pt: "Ver consultas e sessões →" })}
           </Link>
