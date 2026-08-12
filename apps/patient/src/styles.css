@@ -8364,6 +8364,11 @@ button.sessions-balance {
     overflow: hidden;
   }
 
+  /* Aire entre Paquetes / Historial / Actividad (web; el margin:0 de arriba los pegaba) */
+  .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body > .sessions-secondary-section + .sessions-secondary-section {
+    margin-top: 12px !important;
+  }
+
   .sessions-booking-page--ml .sessions-page-ml-pack .sessions-secondary-section .sessions-calendar-toggle,
   .sessions-booking-page--ml .sessions-page-ml-pack .sessions-calendar-collapsible .sessions-calendar-toggle {
     padding: 14px 16px;
@@ -8687,6 +8692,18 @@ button.sessions-balance {
   gap: 12px;
 }
 
+.sessions-booking-page .sessions-calendar-standalone-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
+.sessions-booking-page .sessions-calendar-standalone-wrap .sessions-calendar-card {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
 .sessions-booking-page .sessions-confirmed-panel .sessions-panel-head h2 {
   font-size: 1.125rem;
   font-weight: 700;
@@ -8836,13 +8853,21 @@ button.sessions-balance {
 .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-secondary-section,
 .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .sessions-calendar-collapsible.sessions-secondary-section,
 .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body .payment-activity-panel.sessions-secondary-section {
-  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
   padding: 0;
   border-radius: 12px;
   border: 1px solid rgba(95, 68, 235, 0.14);
   background: linear-gradient(165deg, #fff 0%, #faf8ff 55%, #f3efff 100%);
   box-shadow: 0 2px 10px rgba(95, 68, 235, 0.06);
   overflow: hidden;
+}
+
+@media (min-width: 1081px) {
+  .sessions-booking-page--ml .sessions-page-ml-pack.sessions-booking-body > .sessions-secondary-section + .sessions-secondary-section {
+    margin-top: 12px !important;
+  }
 }
 
 .sessions-booking-page .sessions-booking-body .sessions-secondary-title {

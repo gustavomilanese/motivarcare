@@ -1774,24 +1774,24 @@ export function BookingPage(props: {
                 </button>
               </div>
             ) : null}
-            {!isMobilePortal ? (
-              <div className="sessions-booking-desktop-only sessions-confirmed-calendar">
-                <SessionsCalendar
-                  bookings={upcomingConfirmedBookings}
-                  timezone={props.state.profile.timezone}
-                  language={props.language}
-                  onOpenBookingDetail={props.onOpenBookingDetail}
-                  onRescheduleBooking={(booking) => openReschedulePanelForBooking(booking)}
-                  onCancelBooking={props.onCancelBooking ? handleCancelBookingFromCalendar : undefined}
-                  cancelBusyBookingId={calendarCancelBookingId}
-                  professionals={props.professionals}
-                  hideTitle
-                />
-              </div>
-            ) : null}
           </div>
         )}
       </section>
+
+      {!isMobilePortal && upcomingConfirmedBookings.length > 0 ? (
+        <div className="sessions-calendar-standalone-wrap sessions-booking-desktop-only">
+          <SessionsCalendar
+            bookings={upcomingConfirmedBookings}
+            timezone={props.state.profile.timezone}
+            language={props.language}
+            onOpenBookingDetail={props.onOpenBookingDetail}
+            onRescheduleBooking={(booking) => openReschedulePanelForBooking(booking)}
+            onCancelBooking={props.onCancelBooking ? handleCancelBookingFromCalendar : undefined}
+            cancelBusyBookingId={calendarCancelBookingId}
+            professionals={props.professionals}
+          />
+        </div>
+      ) : null}
 
       {showPackageSection && isCheckoutFlow ? (
         <section
