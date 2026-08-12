@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,7 +15,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { createBooking, getMatchingProfessionals, setActiveProfessional } from "../../api/client";
+import {
+  acquireBookingSlotHold,
+  createBooking,
+  getMatchingProfessionals,
+  releaseBookingSlotHold,
+  setActiveProfessional
+} from "../../api/client";
 import { STORAGE_DEFER_PROFESSIONAL_SELECTION } from "../../constants/storageKeys";
 import type { MatchingProfessional, MatchingSlot } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -23,13 +29,21 @@ import { useBookingsRefresh } from "../../context/BookingsRefreshContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
 import { PersonAvatar } from "../../components/PersonAvatar";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
+import { patientUsesDlocalCheckout } from "../../payments/dlocalCheckout";
+import { startTrialCheckout } from "../../payments/trialCheckout";
 import type { AppThemeColors } from "../../theme/colors";
 import { useThemeMode } from "../../theme/ThemeContext";
 import { upcomingAvailabilitySlots } from "../../utils/availabilitySlots";
 import { deviceTimeZone, formatDateTime } from "../../utils/date";
 
-/** Área scrolleable de turnos en el modal (~mitad de pantalla, adaptable). */
-const SLOT_MODAL_SCROLL_MAX = Math.round(Dimensions.get("window").height * 0.52);
+const SLOT_MODAL_SCROLL_MAX = Math.round(Dimensions.get("window").height * 0.42);
+
+function formatSessionPriceUsd(price: number | null | undefined): string | null {
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    return null;
+  }
+  return `USD ${price.toFixed(price % 1 === 0 ? 0 : 2)}`;
+}
 
 function buildMatchingStyles(colors: AppThemeColors) {
   return StyleSheet.create({
@@ -94,6 +108,12 @@ function buildMatchingStyles(colors: AppThemeColors) {
       color: colors.textMuted,
       fontWeight: "600"
     },
+    price: {
+      marginTop: 4,
+      fontSize: 13,
+      fontWeight: "800",
+      color: colors.primaryDark
+    },
     scoreRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -137,7 +157,7 @@ function buildMatchingStyles(colors: AppThemeColors) {
       borderTopRightRadius: 24,
       padding: 20,
       gap: 12,
-      maxHeight: "88%"
+      maxHeight: "92%"
     },
     modalTitle: {
       fontSize: 20,
@@ -148,6 +168,25 @@ function buildMatchingStyles(colors: AppThemeColors) {
       fontSize: 15,
       color: colors.textMuted,
       fontWeight: "600"
+    },
+    summaryBox: {
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      gap: 6,
+      backgroundColor: colors.background
+    },
+    summaryLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase"
+    },
+    summaryValue: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: colors.text
     },
     slotScroll: {
       maxHeight: SLOT_MODAL_SCROLL_MAX
@@ -177,13 +216,19 @@ function buildMatchingStyles(colors: AppThemeColors) {
   });
 }
 
+type SummaryState = {
+  professional: MatchingProfessional;
+  slot: MatchingSlot;
+  holdId: string;
+};
+
 export function MatchingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, gradients } = useThemeMode();
   const styles = useMemo(() => buildMatchingStyles(colors), [colors]);
   const { token } = useAuth();
-  const { refresh } = usePatientProfile();
+  const { profile, refresh } = usePatientProfile();
   const { touchBookings } = useBookingsRefresh();
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
@@ -191,6 +236,21 @@ export function MatchingScreen() {
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<MatchingProfessional | null>(null);
   const [slotModal, setSlotModal] = useState<MatchingProfessional | null>(null);
+  const [summary, setSummary] = useState<SummaryState | null>(null);
+  const holdIdRef = useRef<string | null>(null);
+
+  const releaseCurrentHold = useCallback(async () => {
+    const holdId = holdIdRef.current;
+    if (!token || !holdId) {
+      return;
+    }
+    holdIdRef.current = null;
+    try {
+      await releaseBookingSlotHold({ token, holdId });
+    } catch {
+      // ignore release failures
+    }
+  }, [token]);
 
   const load = useCallback(async () => {
     if (!token) {
@@ -212,6 +272,18 @@ export function MatchingScreen() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    return () => {
+      void releaseCurrentHold();
+    };
+  }, [releaseCurrentHold]);
+
+  const closeSlotModal = useCallback(() => {
+    setSlotModal(null);
+    setSummary(null);
+    void releaseCurrentHold();
+  }, [releaseCurrentHold]);
+
   const pickSlot = useCallback(
     async (professional: MatchingProfessional, slot: MatchingSlot) => {
       if (!token) {
@@ -220,29 +292,97 @@ export function MatchingScreen() {
       setBooking(true);
       setError("");
       try {
-        await setActiveProfessional({ token, professionalId: professional.id });
+        await releaseCurrentHold();
         const startsAt =
           typeof slot.startsAt === "string" ? slot.startsAt : new Date(slot.startsAt).toISOString();
         const endsAt = typeof slot.endsAt === "string" ? slot.endsAt : new Date(slot.endsAt).toISOString();
-        await createBooking({
+        const hold = await acquireBookingSlotHold({
           token,
           professionalId: professional.id,
           startsAt,
-          endsAt,
-          patientTimezone: deviceTimeZone()
+          endsAt
         });
-        await AsyncStorage.removeItem(STORAGE_DEFER_PROFESSIONAL_SELECTION);
-        setSlotModal(null);
-        await refresh();
-        touchBookings();
-      } catch (bookingError) {
-        setError(bookingError instanceof Error ? bookingError.message : "No pudimos reservar. Intentá de nuevo.");
+        holdIdRef.current = hold.holdId;
+        setSummary({
+          professional,
+          slot: { ...slot, startsAt, endsAt },
+          holdId: hold.holdId
+        });
+      } catch (holdError) {
+        setError(
+          holdError instanceof Error
+            ? holdError.message
+            : "No pudimos reservar temporalmente el horario. Probá otro."
+        );
       } finally {
         setBooking(false);
       }
     },
-    [refresh, token, touchBookings]
+    [token, releaseCurrentHold]
   );
+
+  const confirmSummary = useCallback(async () => {
+    if (!token || !summary) {
+      return;
+    }
+    setBooking(true);
+    setError("");
+    try {
+      await setActiveProfessional({ token, professionalId: summary.professional.id });
+
+      if (profile?.trialRebookAvailable) {
+        await createBooking({
+          token,
+          professionalId: summary.professional.id,
+          startsAt: summary.slot.startsAt,
+          endsAt: summary.slot.endsAt,
+          holdId: summary.holdId,
+          preferTrialCredit: true,
+          patientTimezone: deviceTimeZone(),
+          idempotencyKey: `booking-${summary.professional.id}-${summary.slot.startsAt}-${summary.slot.endsAt}`
+        });
+        holdIdRef.current = null;
+        await AsyncStorage.removeItem(STORAGE_DEFER_PROFESSIONAL_SELECTION);
+        setSlotModal(null);
+        setSummary(null);
+        await refresh();
+        touchBookings();
+        return;
+      }
+
+      const result = await startTrialCheckout({
+        token,
+        professionalId: summary.professional.id,
+        slot: summary.slot,
+        holdId: summary.holdId,
+        residencyCountry: profile?.residencyCountry
+      });
+
+      if (!result.ok) {
+        setError(result.error ?? "No pudimos iniciar el pago de la sesión de prueba.");
+        return;
+      }
+
+      if (result.mode === "direct") {
+        holdIdRef.current = null;
+        await AsyncStorage.removeItem(STORAGE_DEFER_PROFESSIONAL_SELECTION);
+        setSlotModal(null);
+        setSummary(null);
+        await refresh();
+        touchBookings();
+        return;
+      }
+
+      // dLocal: return host confirma pago + booking. Cerrar modal; hold se extiende en checkout.
+      holdIdRef.current = null;
+      setSlotModal(null);
+      setSummary(null);
+    } catch (bookingError) {
+      setError(bookingError instanceof Error ? bookingError.message : "No pudimos reservar. Intentá de nuevo.");
+    } finally {
+      setBooking(false);
+    }
+  }, [token, summary, profile?.trialRebookAvailable, profile?.residencyCountry, refresh, touchBookings]);
 
   const onDeferChoiceLater = useCallback(async () => {
     if (!token) {
@@ -250,6 +390,7 @@ export function MatchingScreen() {
     }
     setError("");
     try {
+      await releaseCurrentHold();
       await setActiveProfessional({ token, professionalId: null });
       await AsyncStorage.setItem(STORAGE_DEFER_PROFESSIONAL_SELECTION, "true");
       await refresh();
@@ -261,7 +402,14 @@ export function MatchingScreen() {
     } catch (deferError) {
       setError(deferError instanceof Error ? deferError.message : "No pudimos guardar tu elección. Intentá de nuevo.");
     }
-  }, [navigation, refresh, token]);
+  }, [navigation, refresh, token, releaseCurrentHold]);
+
+  const usesDlocal = patientUsesDlocalCheckout(profile?.residencyCountry);
+  const trialCtaLabel = profile?.trialRebookAvailable
+    ? "Confirmar sesión de prueba"
+    : usesDlocal
+      ? "Pagar sesión de prueba"
+      : "Reservar sesión de prueba";
 
   const deferFooter = useMemo(
     () => (
@@ -276,10 +424,12 @@ export function MatchingScreen() {
   const renderItem = useCallback(
     ({ item }: { item: MatchingProfessional }) => {
       const active = selected?.id === item.id;
+      const priceLabel = formatSessionPriceUsd(item.sessionPriceUsd);
       return (
         <Pressable
           onPress={() => {
             setSelected(item);
+            setSummary(null);
             setSlotModal(item);
           }}
           style={[styles.card, active && styles.cardActive]}
@@ -295,6 +445,7 @@ export function MatchingScreen() {
             <View style={styles.cardBody}>
               <Text style={styles.name}>{item.fullName}</Text>
               <Text style={styles.title}>{item.title}</Text>
+              {priceLabel ? <Text style={styles.price}>Desde {priceLabel} / sesión</Text> : null}
               <View style={styles.scoreRow}>
                 <Ionicons name="sparkles" size={14} color={colors.primary} />
                 <Text style={styles.score}>{Math.round(item.matchScore)}% compatibilidad</Text>
@@ -324,7 +475,7 @@ export function MatchingScreen() {
       <LinearGradient colors={[...gradients.hero]} style={styles.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <Text style={styles.heroTitle}>Elegí tu profesional</Text>
         <Text style={styles.heroLead}>
-          Orden según tu encuesta. Tocá una tarjeta para ver horarios publicados por ese profesional.
+          Orden según tu encuesta. Tocá una tarjeta, elegí horario y confirmá tu sesión de prueba.
         </Text>
       </LinearGradient>
 
@@ -345,46 +496,77 @@ export function MatchingScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Modal visible={Boolean(slotModal)} animationType="slide" transparent>
+      <Modal visible={Boolean(slotModal)} animationType="slide" transparent onRequestClose={closeSlotModal}>
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 14) + 16 }]}>
-            <Text style={styles.modalTitle}>Elegí horario</Text>
-            <Text style={styles.modalSub}>{slotModal?.fullName}</Text>
-            {slotModal && upcomingAvailabilitySlots(slotModal.slots ?? []).length === 0 ? (
-              <Text style={styles.emptySlots}>
-                Todavía no hay turnos publicados para este profesional. Elegí otro o volvé más tarde.
-              </Text>
+            {summary ? (
+              <>
+                <Text style={styles.modalTitle}>Confirmá tu sesión de prueba</Text>
+                <Text style={styles.modalSub}>{summary.professional.fullName}</Text>
+                <View style={styles.summaryBox}>
+                  <Text style={styles.summaryLabel}>Horario</Text>
+                  <Text style={styles.summaryValue}>{formatDateTime(summary.slot.startsAt)}</Text>
+                  {formatSessionPriceUsd(summary.professional.sessionPriceUsd) ? (
+                    <>
+                      <Text style={[styles.summaryLabel, { marginTop: 8 }]}>Sesión regular</Text>
+                      <Text style={styles.summaryValue}>
+                        Desde {formatSessionPriceUsd(summary.professional.sessionPriceUsd)}
+                      </Text>
+                    </>
+                  ) : null}
+                  <Text style={[styles.modalSub, { marginTop: 8 }]}>
+                    {profile?.trialRebookAvailable
+                      ? "Usamos tu crédito de sesión de prueba ya pagado."
+                      : usesDlocal
+                        ? "Vas a pagar la sesión de prueba en dLocal y después confirmamos el turno."
+                        : "Reservamos tu sesión de prueba sin cobro en línea para tu país."}
+                  </Text>
+                </View>
+                <PrimaryButton label={trialCtaLabel} loading={booking} onPress={() => void confirmSummary()} />
+                <PrimaryButton
+                  label="Elegir otro horario"
+                  variant="ghost"
+                  onPress={() => {
+                    setSummary(null);
+                    void releaseCurrentHold();
+                  }}
+                />
+              </>
             ) : (
-              <ScrollView
-                style={styles.slotScroll}
-                contentContainerStyle={styles.slotScrollContent}
-                showsVerticalScrollIndicator
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-              >
-                {slotModal
-                  ? upcomingAvailabilitySlots(slotModal.slots ?? []).map((slot) => (
-                      <PrimaryButton
-                        key={slot.id}
-                        label={formatDateTime(slot.startsAt)}
-                        variant="ghost"
-                        loading={booking}
-                        onPress={() => {
-                          void pickSlot(slotModal, slot);
-                        }}
-                        style={styles.slotPick}
-                      />
-                    ))
-                  : null}
-              </ScrollView>
+              <>
+                <Text style={styles.modalTitle}>Elegí horario</Text>
+                <Text style={styles.modalSub}>{slotModal?.fullName}</Text>
+                {slotModal && upcomingAvailabilitySlots(slotModal.slots ?? []).length === 0 ? (
+                  <Text style={styles.emptySlots}>
+                    Todavía no hay turnos publicados para este profesional. Elegí otro o volvé más tarde.
+                  </Text>
+                ) : (
+                  <ScrollView
+                    style={styles.slotScroll}
+                    contentContainerStyle={styles.slotScrollContent}
+                    showsVerticalScrollIndicator
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled
+                  >
+                    {slotModal
+                      ? upcomingAvailabilitySlots(slotModal.slots ?? []).map((slot) => (
+                          <PrimaryButton
+                            key={slot.id}
+                            label={formatDateTime(slot.startsAt)}
+                            variant="ghost"
+                            loading={booking}
+                            onPress={() => {
+                              void pickSlot(slotModal, slot);
+                            }}
+                            style={styles.slotPick}
+                          />
+                        ))
+                      : null}
+                  </ScrollView>
+                )}
+                <PrimaryButton label="Cerrar" variant="ghost" onPress={closeSlotModal} />
+              </>
             )}
-            <PrimaryButton
-              label="Cerrar"
-              variant="danger"
-              onPress={() => {
-                setSlotModal(null);
-              }}
-            />
           </View>
         </View>
       </Modal>

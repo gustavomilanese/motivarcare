@@ -94,7 +94,8 @@ export function RiskBlockedScreen() {
           </>
         )}
         <Text style={styles.body}>
-          Si necesitás ayuda inmediata, contactá estos servicios. Podés cerrar sesión y volver cuando te sientas en condiciones.
+          Si necesitás ayuda inmediata, contactá estos servicios. Te enviamos un correo con recursos de tu país. Podés
+          cerrar sesión y volver cuando te sientas en condiciones.
         </Text>
 
         <PrimaryButton

@@ -311,14 +311,16 @@ function buildIntakeStyles(colors: AppThemeColors) {
   });
 }
 
-export function IntakeWizardScreen() {
+export function IntakeWizardScreen(props?: { onSwitchToChat?: () => void }) {
   const insets = useSafeAreaInsets();
   const { colors, gradients } = useThemeMode();
   const styles = useMemo(() => buildIntakeStyles(colors), [colors]);
   const { token, signOut } = useAuth();
-  const { refresh } = usePatientProfile();
+  const { profile, refresh } = usePatientProfile();
+  const presetCountry = (profile?.residencyCountry ?? "").trim().toUpperCase();
+  const skipCountryStep = /^[A-Z]{2}$/.test(presetCountry);
   const [screenIndex, setScreenIndex] = useState(0);
-  const [residencyCountry, setResidencyCountry] = useState("");
+  const [residencyCountry, setResidencyCountry] = useState(skipCountryStep ? presetCountry : "");
   const [answers, setAnswers] = useState<Record<string, string>>({
     [PATIENT_INTAKE_COUPLES_THERAPY_FOCUS_ANSWER_ID]: ""
   });
@@ -358,7 +360,10 @@ export function IntakeWizardScreen() {
     [answers]
   );
   const questionIds = useMemo(() => intakeQuestions.map((item) => item.id), []);
-  const wizardSteps = useMemo(() => buildMobileIntakeWizardSteps({ questionIds }), [questionIds]);
+  const wizardSteps = useMemo(
+    () => buildMobileIntakeWizardSteps({ questionIds, skipCountryStep }),
+    [questionIds, skipCountryStep]
+  );
   const totalScreens = wizardSteps.length;
   const currentWizardStep = wizardSteps[screenIndex] ?? null;
   const question =
@@ -367,6 +372,7 @@ export function IntakeWizardScreen() {
       : null;
   const progress = useMemo(() => ((screenIndex + 1) / totalScreens) * 100, [screenIndex, totalScreens]);
   const isMainReasonCouplesView = question?.id === "mainReason" && mainReasonCategory === "couples";
+  const isCouplesFocusStep = isMainReasonCouplesView;
   const heroGradient = isMainReasonCouplesView
     ? (["#DB2777", "#A855F7", "#7C3AED"] as const)
     : gradients.hero;
@@ -646,6 +652,13 @@ export function IntakeWizardScreen() {
                 Toda la información que nos brindes es confidencial y solo se utilizará para alimentar nuestro motor de
                 búsqueda especialmente diseñado para lograr el mejor matcheo entre profesionales y pacientes.
               </Text>
+              {props?.onSwitchToChat ? (
+                <PrimaryButton
+                  label="Prefiero hacerlo por chat"
+                  variant="ghost"
+                  onPress={props.onSwitchToChat}
+                />
+              ) : null}
             </View>
           ) : currentWizardStep?.kind === "country" ? (
             <>

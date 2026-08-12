@@ -224,8 +224,13 @@ export type MobileIntakeWizardStep =
 
 export function buildMobileIntakeWizardSteps(params: {
   questionIds: readonly string[];
+  /** Si ya hay país de residencia (registro), omitimos el paso country. */
+  skipCountryStep?: boolean;
 }): MobileIntakeWizardStep[] {
-  const steps: MobileIntakeWizardStep[] = [{ kind: "intro" }, { kind: "country" }];
+  const steps: MobileIntakeWizardStep[] = [{ kind: "intro" }];
+  if (!params.skipCountryStep) {
+    steps.push({ kind: "country" });
+  }
   for (const questionId of params.questionIds) {
     steps.push({ kind: "question", questionId });
   }
