@@ -93,9 +93,9 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
       {
         label: { es: "Música relajante", en: "Relaxing music", pt: "Música relaxante" },
         body: {
-          es: "Biblioteca por categorías con reproductor integrado y enlace a YouTube.",
-          en: "Library by category with built-in player and YouTube link.",
-          pt: "Biblioteca por categorias com player integrado e link para YouTube."
+          es: "Biblioteca por categorías con reproductor integrado.",
+          en: "Library by category with built-in player.",
+          pt: "Biblioteca por categorias com player integrado."
         }
       },
       {
@@ -295,9 +295,9 @@ export const PATIENT_MANUAL_SECTIONS: HelpManualSection[] = [
     ],
     paragraphs: [
       {
-        es: "Música relajante: filtrá por categoría (lofi, piano, naturaleza…), elegí un video y reproducilo en el portal. Si no carga, «Abrir en YouTube» siempre funciona.",
-        en: "Relaxing music: filter by category (lofi, piano, nature…), pick a video and play in the portal. If it doesn't load, «Open in YouTube» always works.",
-        pt: "Música relaxante: filtre por categoria (lofi, piano, natureza…), escolha um vídeo e reproduza no portal. Se não carregar, «Abrir no YouTube» sempre funciona."
+        es: "Música relajante: filtrá por categoría (lofi, piano, naturaleza…), elegí un video y reproducilo en el portal.",
+        en: "Relaxing music: filter by category (lofi, piano, nature…), pick a video and play in the portal.",
+        pt: "Música relaxante: filtre por categoria (lofi, piano, natureza…), escolha um vídeo e reproduza no portal."
       },
       {
         es: "Ejercicios: lista de prácticas con duración estimada. Abrí cada una y seguí los pasos en pantalla; podés repetirlas cuando lo necesites.",

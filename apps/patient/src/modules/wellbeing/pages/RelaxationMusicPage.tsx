@@ -9,8 +9,7 @@ import {
 import { normalizeRelaxationEmbedSrc } from "../utils/normalizeRelaxationEmbedSrc";
 import {
   extractYoutubeVideoId,
-  youtubeThumbnailUrl,
-  youtubeWatchUrl
+  youtubeThumbnailUrl
 } from "../utils/relaxationYoutube";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
 import { useScrollSectionToTopOnMount } from "../../app/lib/navigateSectionTop";
@@ -38,13 +37,6 @@ function replaceRelaxationFilterSummary(
     en: `Showing ${visibleCount} ${videoWord} in «${categoryLabel}» (${totalCount} videos in the library).`,
     pt: `Mostrando ${visibleCount} ${videoWord} de «${categoryLabel}» (${totalCount} vídeos na biblioteca).`
   });
-}
-
-function resolveOpenUrl(item: RelaxationPlaylistItem): string {
-  if (item.openUrl?.trim()) return item.openUrl.trim();
-  const videoId = extractYoutubeVideoId(item.embedSrc, "");
-  if (videoId) return youtubeWatchUrl(videoId);
-  return item.embedSrc;
 }
 
 function RelaxationVideoThumb({ videoId }: { videoId: string }) {
@@ -119,10 +111,6 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
   function handleSelect(item: RelaxationPlaylistItem) {
     setSelectedId(item.id);
     document.getElementById("wellbeing-relax-player")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function handleOpenExternal(item: RelaxationPlaylistItem) {
-    window.open(resolveOpenUrl(item), "_blank", "noopener,noreferrer");
   }
 
   function scrollToLibrary() {
@@ -247,17 +235,6 @@ export function RelaxationMusicPage(props: RelaxationMusicPageProps) {
                       </p>
                       <p className="wellbeing-relax-player-blurb">{t(language, selected.blurb)}</p>
                     </div>
-                    <button
-                      type="button"
-                      className="diary-btn diary-btn--primary wellbeing-relax-open-yt"
-                      onClick={() => handleOpenExternal(selected)}
-                    >
-                      {t(language, {
-                        es: "Abrir en YouTube",
-                        en: "Open in YouTube",
-                        pt: "Abrir no YouTube"
-                      })}
-                    </button>
                   </div>
                   <div className="wellbeing-relax-embed-wrap">
                     {selected.embedType === "youtube" ? (

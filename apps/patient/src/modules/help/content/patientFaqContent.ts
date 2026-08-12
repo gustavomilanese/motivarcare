@@ -163,9 +163,9 @@ export const PATIENT_FAQ_SECTIONS: HelpFaqSection[] = [
       {
         question: { es: "¿La música relajante reemplaza la terapia?", en: "Does relaxing music replace therapy?", pt: "A música relaxante substitui a terapia?" },
         answer: {
-          es: "No. Es un recurso complementario con videos por categoría (lofi, piano, naturaleza, etc.). Si el reproductor no carga en el portal, usá «Abrir en YouTube».",
-          en: "No. It is a complementary resource with videos by category (lofi, piano, nature, etc.). If the player does not load in the portal, use «Open in YouTube».",
-          pt: "Não. É um recurso complementar com vídeos por categoria (lofi, piano, natureza, etc.). Se o player não carregar no portal, use «Abrir no YouTube»."
+          es: "No. Es un recurso complementario con videos por categoría (lofi, piano, naturaleza, etc.) que se reproducen dentro del portal.",
+          en: "No. It is a complementary resource with videos by category (lofi, piano, nature, etc.) that play inside the portal.",
+          pt: "Não. É um recurso complementar com vídeos por categoria (lofi, piano, natureza, etc.) que tocam dentro do portal."
         }
       },
       {
