@@ -1160,9 +1160,14 @@ profilesRouter.post("/me/push-token", requireAuth, async (req: AuthenticatedRequ
     string,
     Array<{ token: string; platform: string; updatedAt: string }>
   > = {};
-  if (existing?.value) {
+  if (existing?.value != null) {
     try {
-      map = JSON.parse(existing.value) as typeof map;
+      const raw = existing.value;
+      if (typeof raw === "string") {
+        map = JSON.parse(raw) as typeof map;
+      } else if (typeof raw === "object" && !Array.isArray(raw)) {
+        map = raw as typeof map;
+      }
     } catch {
       map = {};
     }
@@ -1177,8 +1182,8 @@ profilesRouter.post("/me/push-token", requireAuth, async (req: AuthenticatedRequ
 
   await prisma.systemConfig.upsert({
     where: { key: PATIENT_EXPO_PUSH_TOKENS_KEY },
-    create: { key: PATIENT_EXPO_PUSH_TOKENS_KEY, value: JSON.stringify(map) },
-    update: { value: JSON.stringify(map) }
+    create: { key: PATIENT_EXPO_PUSH_TOKENS_KEY, value: map },
+    update: { value: map }
   });
 
   return res.json({ ok: true });
