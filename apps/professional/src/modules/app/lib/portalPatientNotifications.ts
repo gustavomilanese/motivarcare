@@ -40,8 +40,9 @@ function parseNotificationContent(
 ): { title: string; body: string; detail: string; isDiaryReport?: boolean } {
   const text = rawBody.replace(/\s+/g, " ").trim();
 
-  if (text.startsWith(DIARY_SESSION_REPORT_CHAT_PREFIX)) {
-    const rest = text.slice(DIARY_SESSION_REPORT_CHAT_PREFIX.length).trim();
+  if (text.startsWith(DIARY_SESSION_REPORT_CHAT_PREFIX ?? "[Informe del diario]")) {
+    const prefix = DIARY_SESSION_REPORT_CHAT_PREFIX ?? "[Informe del diario]";
+    const rest = text.slice(prefix.length).trim();
     return {
       title: t(language, {
         es: "Informe del diario emocional",

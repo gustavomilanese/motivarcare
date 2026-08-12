@@ -36,5 +36,5 @@ export async function fetchPatientEmotionalDiarySummary(
 
 export async function fetchEmotionalDiarySentReports(token: string): Promise<EmotionalDiarySentReportItem[]> {
   const result = await apiRequest<ReportsEnvelope>("/api/professional/emotional-diary/reports", token);
-  return result.items;
+  return Array.isArray(result.items) ? result.items : [];
 }

@@ -143,7 +143,7 @@ export function DashboardPage(props: {
         ]);
         if (active) {
           setData(response);
-          setDiaryReports(reports);
+          setDiaryReports(Array.isArray(reports) ? reports : []);
           setUpcomingReservations(
             (response.upcomingSessions ?? []).map((session) => ({
               id: session.id,
@@ -373,6 +373,18 @@ export function DashboardPage(props: {
   );
 
   const pageTitle = t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
+
+  const diaryReportByPatientId = useMemo(() => {
+    const map = new Map<string, EmotionalDiarySentReportItem>();
+    for (const report of diaryReports) {
+      if (!map.has(report.patientId)) {
+        map.set(report.patientId, report);
+      }
+    }
+    return map;
+  }, [diaryReports]);
+
+  const recentDiaryReports = useMemo(() => diaryReports.slice(0, 5), [diaryReports]);
 
   useProPortalChrome({
     title: pageTitle,
@@ -652,18 +664,6 @@ export function DashboardPage(props: {
     en: "Number of patients with active status in your practice. Tap to open the full list.",
     pt: "Quantidade de pacientes com status ativo. Toque para ver a lista completa."
   });
-
-  const diaryReportByPatientId = useMemo(() => {
-    const map = new Map<string, EmotionalDiarySentReportItem>();
-    for (const report of diaryReports) {
-      if (!map.has(report.patientId)) {
-        map.set(report.patientId, report);
-      }
-    }
-    return map;
-  }, [diaryReports]);
-
-  const recentDiaryReports = useMemo(() => diaryReports.slice(0, 5), [diaryReports]);
 
   return (
     <div className="pro-grid-stack pro-dashboard-stack pro-dashboard-home">
