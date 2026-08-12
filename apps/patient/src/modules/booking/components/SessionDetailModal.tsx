@@ -196,7 +196,7 @@ export function SessionDetailModal(props: {
           >
             <span className="session-detail-pro-name">{professionalName}</span>
             <span className="session-detail-pro-rating">
-              <ProfessionalReviewStarsRow averageRating={averageRating} reviewCount={reviewCount} size="sm" />
+              <ProfessionalReviewStarsRow averageRating={averageRating} reviewCount={reviewCount} size="md" />
               <span className="session-detail-pro-rating-value">{displayRating.toFixed(1)}</span>
             </span>
           </button>
@@ -204,7 +204,7 @@ export function SessionDetailModal(props: {
           <>
             <span className="session-detail-pro-name">{professionalName}</span>
             <span className="session-detail-pro-rating session-detail-pro-rating--static">
-              <ProfessionalReviewStarsRow averageRating={averageRating} reviewCount={reviewCount} size="sm" />
+              <ProfessionalReviewStarsRow averageRating={averageRating} reviewCount={reviewCount} size="md" />
               <span className="session-detail-pro-rating-value">{displayRating.toFixed(1)}</span>
             </span>
           </>
