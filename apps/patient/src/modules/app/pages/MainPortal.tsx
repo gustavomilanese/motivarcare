@@ -23,6 +23,8 @@ import { MotivarCarePageLoader } from "../components/MotivarCarePageLoader";
 import { PaymentSuccessModal } from "../../matching/components/PaymentSuccessModal";
 import { PortalRoutes } from "./PortalRoutes";
 import { findProfessionalById } from "../lib/professionals";
+import { armCheckoutCreditProtection } from "../lib/checkoutCreditProtection";
+import { readPendingCheckoutDlocalReturn } from "../lib/checkoutDlocalReturn";
 import { readPatientHomeVariant, PATIENT_HOME_VARIANT_EVENT, shouldUsePatientHomeMlChrome } from "../../home/lib/patientHomeVariant";
 import { useMobilePortal } from "../hooks/useMobilePortal";
 import { portalNotificationStore } from "../notifications/portalNotificationStorage";
@@ -95,7 +97,9 @@ export function MainPortal(props: {
   fxRates?: DisplayFxRates;
   onStateChange: (updater: (current: PatientAppState) => PatientAppState) => void;
   onLogout: () => void;
-  onRefreshPortalFromApi?: () => void;
+  onRefreshPortalFromApi?: () => void | Promise<void>;
+  /** Invalida un portal-sync en vuelo al volver de dLocal (antes del fulfill). */
+  onInvalidatePortalSync?: () => void;
   /** Postergó el modal de Calendar: mostrar CTA en dashboard para volver al flujo OAuth. */
   showPatientGoogleCalendarReconnectCta?: boolean;
   onOpenPatientGoogleCalendarConnect?: () => void;
@@ -342,6 +346,7 @@ export function MainPortal(props: {
     startTrialCheckout,
     syncTrialPayment,
     syncDlocalPayment,
+    refreshSubscriptionFromApi,
     confirmBooking,
     rescheduleBooking,
     cancelBooking,
@@ -372,9 +377,50 @@ export function MainPortal(props: {
   } = useDlocalCheckoutReturn({
     language: props.state.language,
     onSyncDlocalPayment: syncDlocalPayment,
-    onRefreshPortalFromApi: props.onRefreshPortalFromApi,
+    onInvalidatePortalSync: props.onInvalidatePortalSync,
+    onRefreshPortalFromApi: async () => {
+      await Promise.resolve(props.onRefreshPortalFromApi?.());
+      // Tras el batch del portal, re-leer wallet por si el sync en paralelo
+      // llegó antes del fulfill y la protección conservó un valor temporal.
+      await refreshSubscriptionFromApi({
+        minCredits: 1,
+        pollAttempts: 4,
+        pollDelayMs: 500
+      });
+    },
     onCheckoutFulfilled: () => {
-      props.onStateChange((current) => ({ ...current, onboardingFinalCompleted: true }));
+      const pending = readPendingCheckoutDlocalReturn();
+      const creditedSessions =
+        typeof pending?.sessionCount === "number" && pending.sessionCount > 0
+          ? pending.sessionCount
+          : 0;
+      if (creditedSessions > 0) {
+        armCheckoutCreditProtection();
+      }
+      props.onStateChange((current) => {
+        const next = { ...current, onboardingFinalCompleted: true };
+        if (creditedSessions < 1) {
+          return next;
+        }
+        const remaining = Number(current.subscription.creditsRemaining) || 0;
+        // Solo fallback optimista si el wallet sigue en 0 (API aún no reflejó / race).
+        if (remaining > 0) {
+          return next;
+        }
+        return {
+          ...next,
+          subscription: {
+            ...current.subscription,
+            packageName:
+              pending?.packageName?.trim()
+              || current.subscription.packageName
+              || `${creditedSessions} sesiones`,
+            creditsTotal: Math.max(Number(current.subscription.creditsTotal) || 0, creditedSessions),
+            creditsRemaining: creditedSessions,
+            purchasedAt: current.subscription.purchasedAt || new Date().toISOString()
+          }
+        };
+      });
     }
   });
 

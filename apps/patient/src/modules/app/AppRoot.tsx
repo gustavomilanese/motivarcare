@@ -62,6 +62,7 @@ import { MotivarCarePageLoader } from "./components/MotivarCarePageLoader";
 import { useDisplayFxRates } from "./hooks/useDisplayFxRates";
 import { API_BASE, STORAGE_KEY, apiRequest, resolvePublicAssetUrl, setPatientApiUnauthorizedHandler } from "./services/api";
 import { fetchPatientPortalSyncBatchShared } from "./lib/fetchPatientPortalSyncBatchShared";
+import { isCheckoutCreditProtectionActive } from "./lib/checkoutCreditProtection";
 import { fetchProfessionalDirectory } from "../matching/services/professionals";
 import type {
   Booking,
@@ -386,9 +387,18 @@ function mergeSubscriptionFromApi(
   recentPackages: SubscriptionState["purchaseHistory"] | undefined
 ): SubscriptionState {
   const purchaseHistory = mergePurchaseHistory(current.purchaseHistory, recentPackages);
+  const currentRemaining = normalizeCredits(current.creditsRemaining);
+  const protectCheckoutCredits = isCheckoutCreditProtectionActive();
 
   if (!latestPackage) {
-    /** Server sin paquete = sin créditos. No conservar wallet stale de localStorage. */
+    /**
+     * Server sin paquete = sin créditos — excepto en la ventana post-dLocal:
+     * un sync en vuelo puede leer /profiles/me antes del fulfill y pisar a 0
+     * el wallet que acabamos de refrescar.
+     */
+    if (protectCheckoutCredits && currentRemaining > 0) {
+      return { ...current, purchaseHistory };
+    }
     return {
       packageId: "",
       packageName: "",
@@ -400,12 +410,14 @@ function mergeSubscriptionFromApi(
   }
 
   const remoteRemaining = normalizeCredits(latestPackage.remainingCredits);
+  const creditsRemaining =
+    protectCheckoutCredits ? Math.max(remoteRemaining, currentRemaining) : remoteRemaining;
 
   return {
     packageId: latestPackage.id,
     packageName: latestPackage.name,
-    creditsTotal: latestPackage.totalCredits,
-    creditsRemaining: remoteRemaining,
+    creditsTotal: Math.max(normalizeCredits(latestPackage.totalCredits), creditsRemaining),
+    creditsRemaining,
     purchasedAt: latestPackage.purchasedAt,
     purchaseHistory
   };
@@ -732,6 +744,11 @@ export function App() {
   const requestPortalResync = useCallback((): Promise<void> => {
     portalSyncEpochRef.current += 1;
     return Promise.resolve(schedulePortalSyncRef.current(true));
+  }, []);
+
+  /** Descarta un portal-sync en vuelo (p. ej. al volver de dLocal) sin disparar otro batch todavía. */
+  const invalidatePortalSync = useCallback(() => {
+    portalSyncEpochRef.current += 1;
   }, []);
 
   const openPatientGoogleCalendarFromDashboard = useCallback(() => {
@@ -2266,6 +2283,7 @@ export function App() {
         fxRates={fxRates}
         onStateChange={updateState}
         onRefreshPortalFromApi={requestPortalResync}
+        onInvalidatePortalSync={invalidatePortalSync}
         showPatientGoogleCalendarReconnectCta={showPatientGoogleCalendarReconnectCta}
         onOpenPatientGoogleCalendarConnect={openPatientGoogleCalendarFromDashboard}
         onLogout={() => {

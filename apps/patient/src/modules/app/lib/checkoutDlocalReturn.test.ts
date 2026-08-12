@@ -44,6 +44,26 @@ describe("checkoutDlocalReturn", () => {
     localStorage.clear();
   });
 
+  it("round-trips package pending state with sessionCount", () => {
+    savePendingCheckoutDlocalReturn({
+      kind: "package",
+      packageId: "pkg-8",
+      packageName: "Continuidad",
+      sessionCount: 8,
+      paymentId: "pay-1",
+      orderId: "ord-1"
+    });
+
+    expect(readPendingCheckoutDlocalReturn()).toEqual({
+      kind: "package",
+      packageId: "pkg-8",
+      packageName: "Continuidad",
+      sessionCount: 8,
+      paymentId: "pay-1",
+      orderId: "ord-1"
+    });
+  });
+
   it("round-trips package pending state", () => {
     savePendingCheckoutDlocalReturn({
       kind: "package",

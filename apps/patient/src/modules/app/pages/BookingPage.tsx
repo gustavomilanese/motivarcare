@@ -537,6 +537,7 @@ export function BookingPage(props: {
             kind: "package",
             packageId: plan.id,
             packageName: plan.name,
+            sessionCount: plan.credits,
             paymentId: purchased.paymentId,
             orderId: purchased.orderId
           });

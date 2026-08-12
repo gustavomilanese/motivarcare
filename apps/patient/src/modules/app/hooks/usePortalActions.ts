@@ -10,6 +10,7 @@ import {
   dlocalIndividualIdempotencyScope,
   dlocalPackageIdempotencyScope
 } from "../lib/dlocalCheckoutIdempotency";
+import { armCheckoutCreditProtection } from "../lib/checkoutCreditProtection";
 import { patientUsesDlocalCheckout } from "../lib/patientDlocalCheckout";
 import { resolvePortalPricingProfessionalId } from "../lib/patientPricingProfessional";
 import { findProfessionalById, findSlotIdForBooking } from "../lib/professionals";
@@ -376,52 +377,86 @@ export function usePortalActions(params: {
     }
   };
 
-  const refreshSubscriptionFromApi = async (): Promise<void> => {
+  const refreshSubscriptionFromApi = async (opts?: {
+    /** Si se setea, reintenta hasta ver al menos estos créditos (post-compra dLocal). */
+    minCredits?: number;
+    pollAttempts?: number;
+    pollDelayMs?: number;
+  }): Promise<{ creditsRemaining: number }> => {
     const authToken = params.state.authToken;
     if (!authToken) {
-      return;
+      return { creditsRemaining: 0 };
     }
 
-    try {
-      const response = await apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, authToken);
-      const latestPackage = response.profile?.latestPackage;
-      const recentPackages = response.profile?.recentPackages;
-      const purchaseHistory = recentPackages?.length
-        ? [...recentPackages]
-            .map((item) => ({
-              id: item.id,
-              name: item.name,
-              credits: item.credits,
-              purchasedAt: item.purchasedAt,
-              priceCents: item.priceCents ?? null,
-              currency: item.currency ?? null
-            }))
-            .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
-        : null;
+    const attempts = Math.max(1, opts?.pollAttempts ?? 1);
+    const pollDelayMs = opts?.pollDelayMs ?? 700;
+    const minCredits = opts?.minCredits;
+    let creditsRemaining = 0;
 
-      params.onStateChange((current) => ({
-        ...current,
-        subscription: latestPackage
-          ? {
-              packageId: latestPackage.id,
-              packageName: latestPackage.name,
-              creditsTotal: latestPackage.totalCredits,
-              creditsRemaining: latestPackage.remainingCredits,
-              purchasedAt: latestPackage.purchasedAt,
-              purchaseHistory: purchaseHistory ?? current.subscription.purchaseHistory
-            }
-          : {
-              ...current.subscription,
-              ...(purchaseHistory ? { purchaseHistory } : {})
-            },
-        trialRebookAvailable:
-          typeof response.profile?.trialRebookAvailable === "boolean"
-            ? response.profile.trialRebookAvailable
-            : current.trialRebookAvailable
-      }));
-    } catch (error) {
-      console.error("Could not refresh subscription from API", error);
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (attempt > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, pollDelayMs));
+      }
+
+      try {
+        const response = await apiRequest<ProfileMeApiResponse>("/api/profiles/me", {}, authToken);
+        const latestPackage = response.profile?.latestPackage;
+        const recentPackages = response.profile?.recentPackages;
+        const purchaseHistory = recentPackages?.length
+          ? [...recentPackages]
+              .map((item) => ({
+                id: item.id,
+                name: item.name,
+                credits: item.credits,
+                purchasedAt: item.purchasedAt,
+                priceCents: item.priceCents ?? null,
+                currency: item.currency ?? null
+              }))
+              .sort((a, b) => new Date(b.purchasedAt).getTime() - new Date(a.purchasedAt).getTime())
+          : null;
+
+        creditsRemaining = latestPackage
+          ? Number(latestPackage.remainingCredits) || 0
+          : 0;
+
+        if (latestPackage && creditsRemaining > 0) {
+          armCheckoutCreditProtection();
+        }
+
+        params.onStateChange((current) => ({
+          ...current,
+          subscription: latestPackage
+            ? {
+                packageId: latestPackage.id,
+                packageName: latestPackage.name,
+                creditsTotal: latestPackage.totalCredits,
+                creditsRemaining: latestPackage.remainingCredits,
+                purchasedAt: latestPackage.purchasedAt,
+                purchaseHistory: purchaseHistory ?? current.subscription.purchaseHistory
+              }
+            : {
+                ...current.subscription,
+                ...(purchaseHistory ? { purchaseHistory } : {})
+              },
+          trialRebookAvailable:
+            typeof response.profile?.trialRebookAvailable === "boolean"
+              ? response.profile.trialRebookAvailable
+              : current.trialRebookAvailable
+        }));
+
+        if (minCredits == null) {
+          break;
+        }
+        if (creditsRemaining >= minCredits) {
+          break;
+        }
+      } catch (error) {
+        console.error("Could not refresh subscription from API", error);
+        break;
+      }
     }
+
+    return { creditsRemaining };
   };
 
   const requestDlocalPaymentSyncOnce = async (syncParams: {
@@ -484,7 +519,12 @@ export function usePortalActions(params: {
         attempted?: number;
       }>("/api/payments/dlocal/sync-pending", { method: "POST", body: "{}" }, authToken);
       if (result.fulfilled) {
-        await refreshSubscriptionFromApi();
+        armCheckoutCreditProtection();
+        await refreshSubscriptionFromApi({
+          minCredits: 1,
+          pollAttempts: 6,
+          pollDelayMs: 600
+        });
       }
       return {
         ok: true,
@@ -532,7 +572,12 @@ export function usePortalActions(params: {
           break;
         }
         if (result.fulfilled) {
-          await refreshSubscriptionFromApi();
+          armCheckoutCreditProtection();
+          await refreshSubscriptionFromApi({
+            minCredits: 1,
+            pollAttempts: 6,
+            pollDelayMs: 600
+          });
           return result;
         }
       }
@@ -1050,6 +1095,7 @@ export function usePortalActions(params: {
     startTrialCheckout,
     syncTrialPayment,
     syncDlocalPayment,
+    refreshSubscriptionFromApi,
     confirmBooking,
     rescheduleBooking,
     cancelBooking,

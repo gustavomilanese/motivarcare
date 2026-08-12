@@ -44,20 +44,31 @@ function buildSuccessSummary(
     const packageLabel =
       pending.packageName?.trim()
       || t(language, { es: "tu paquete", en: "your package", pt: "seu pacote" });
+    const countDetail =
+      pending.sessionCount && pending.sessionCount > 0
+        ? replaceTemplate(
+            t(language, {
+              es: "Acreditamos {package} ({count} sesiones) en tu cuenta. Ya podés reservar turno.",
+              en: "We credited {package} ({count} sessions) to your account. You can book now.",
+              pt: "Creditamos {package} ({count} sessoes) na sua conta. Ja pode reservar."
+            }),
+            { package: packageLabel, count: String(pending.sessionCount) }
+          )
+        : replaceTemplate(
+            t(language, {
+              es: "Acreditamos {package} en tu cuenta. Ya podés reservar turno.",
+              en: "We credited {package} to your account. You can book now.",
+              pt: "Creditamos {package} na sua conta. Ja pode reservar."
+            }),
+            { package: packageLabel }
+          );
     return {
       title: t(language, {
         es: "¡Compra confirmada!",
         en: "Purchase confirmed!",
         pt: "Compra confirmada!"
       }),
-      detail: replaceTemplate(
-        t(language, {
-          es: "Acreditamos {package} en tu cuenta. Ya podés reservar turno.",
-          en: "We credited {package} to your account. You can book now.",
-          pt: "Creditamos {package} na sua conta. Ja pode reservar."
-        }),
-        { package: packageLabel }
-      )
+      detail: countDetail
     };
   }
 
@@ -102,6 +113,8 @@ export function useDlocalCheckoutReturn(options: {
     allowPendingFallback?: boolean;
   }) => Promise<{ ok: boolean; fulfilled?: boolean; error?: string }>;
   onRefreshPortalFromApi?: () => void | Promise<void>;
+  /** Descarta syncs en vuelo que puedan leer /profiles/me pre-fulfill. */
+  onInvalidatePortalSync?: () => void;
   /**
    * Se dispara cuando una compra se confirmó (fulfilled). Permite al portal
    * marcar el onboarding como completado localmente y evitar que el guard
@@ -142,6 +155,9 @@ export function useDlocalCheckoutReturn(options: {
     checkoutHandlingRef.current = true;
     setProcessing(true);
     setErrorMessage(null);
+    // Cualquier portal-sync iniciado al hidratar (antes del fulfill) no debe
+    // aplicar un wallet vacío encima de la compra que estamos por acreditar.
+    options.onInvalidatePortalSync?.();
 
     const pending = readPendingCheckoutDlocalReturn();
     const paymentId =
@@ -169,7 +185,7 @@ export function useDlocalCheckoutReturn(options: {
 
         if (options.onSyncDlocalPayment) {
           // Con o sin IDs locales: allowPendingFallback recupera REDIRECTED del paciente
-          // (mobile sin sessionStorage). En prod solo corre en este return explícito.
+          // (mobile sin sessionStorage). En prod: solo en este return explícito.
           const synced = await options.onSyncDlocalPayment({
             paymentId,
             orderId,
@@ -240,6 +256,7 @@ export function useDlocalCheckoutReturn(options: {
     }
 
     resumeRef.current = true;
+    options.onInvalidatePortalSync?.();
 
     void (async () => {
       const synced = await options.onSyncDlocalPayment!({

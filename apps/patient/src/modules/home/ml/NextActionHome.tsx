@@ -613,15 +613,6 @@ export function DashboardNextActionHome(props: {
             data-tour="patient-tour-credits"
           >
             <p className="dashboard-ml-credits" aria-live="polite">
-              {!props.isMobilePortal ? (
-                <span className="dashboard-ml-credits-kicker">
-                  {t(props.language, {
-                    es: "Tu saldo",
-                    en: "Your balance",
-                    pt: "Seu saldo"
-                  })}
-                </span>
-              ) : null}
               {props.availableSessions > 0 || props.isMobilePortal ? (
                 <>
                   <span

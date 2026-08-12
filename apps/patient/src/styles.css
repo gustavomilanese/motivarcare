@@ -19669,6 +19669,17 @@ button.sessions-balance {
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
+/* Home web: cards de ejercicios con ícono + textos centrados */
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card {
+  justify-items: center;
+  text-align: center;
+}
+
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card strong,
+.dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card > span:nth-child(3) {
+  text-align: center;
+}
+
 .dashboard-ml-feature-preview-card:hover {
   transform: translateY(-2px);
   background: #fff;
