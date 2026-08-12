@@ -42,6 +42,17 @@ export function trialSessionBadgeLabel(language: AppLanguage): string {
   });
 }
 
+/** Compact mobile badge: two lines so it doesn’t truncate. */
+export function trialSessionBadgeLines(language: AppLanguage): [string, string] {
+  if (language === "en") {
+    return ["Trial", "session"];
+  }
+  if (language === "pt") {
+    return ["Sessao", "de teste"];
+  }
+  return ["Sesión", "prueba"];
+}
+
 export function rescheduleUnavailableTitle(language: AppLanguage): string {
   return t(language, {
     es: "Disponible hasta 24 horas antes de la sesión.",

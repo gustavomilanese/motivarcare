@@ -70,21 +70,26 @@ export function DashboardHomePurchaseModal(props: {
             </p>
             <h2 id="dashboard-home-purchase-title" className="dashboard-home-purchase-title">
               {t(props.language, {
-                es: "Elegí cómo seguir",
-                en: "Choose how to continue",
-                pt: "Escolha como continuar"
+                es: "Elegí tu terapia",
+                en: "Choose your therapy",
+                pt: "Escolha sua terapia"
               })}
             </h2>
             <p className="dashboard-home-purchase-lead">
               {t(props.language, {
-                es: "Paquete o sesión suelta, al precio de tu profesional — sin salir de Inicio.",
-                en: "Package or single session at your professional’s rate — without leaving Home.",
-                pt: "Pacote ou sessao avulsa pelo preco do seu profissional — sem sair do Inicio."
+                es: "Paquete o sesión",
+                en: "Package or session",
+                pt: "Pacote ou sessao"
               })}
             </p>
           </div>
-          <button type="button" className="dashboard-home-purchase-close" onClick={props.onClose}>
-            {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          <button
+            type="button"
+            className="dashboard-home-purchase-close"
+            onClick={props.onClose}
+            aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+          >
+            ×
           </button>
         </header>
 

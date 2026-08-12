@@ -11918,7 +11918,9 @@ button.sessions-balance {
     }
 
     .wellbeing-relax-embed-wrap {
-      max-height: min(42dvh, 260px);
+      max-height: none;
+      width: 100%;
+      aspect-ratio: 16 / 9;
     }
 
     .wellbeing-relax-footnote {
@@ -13742,6 +13744,7 @@ button.sessions-balance {
     flex: 1 0 auto;
     align-self: stretch;
     width: 100%;
+    max-width: 100%;
     min-height: 100dvh;
     min-height: 100svh;
     min-height: -webkit-fill-available;
@@ -13753,6 +13756,7 @@ button.sessions-balance {
     /* Sin tonos rosa/melocotón del desktop: gris-azulado suave, alineado al card/form. */
     background: linear-gradient(180deg, #f1f5f9 0%, #eef2ff 48%, #f8fafc 100%);
     background-color: #f1f5f9;
+    overflow-x: clip;
   }
 
   /**
@@ -13787,14 +13791,16 @@ button.sessions-balance {
     padding: calc(12px * 1.21) max(16px, env(safe-area-inset-left, 0px)) calc(2px * 1.1)
       max(16px, env(safe-area-inset-right, 0px));
     box-sizing: border-box;
-    /* 5% del ancho del bloque (~pantalla) hacia la izquierda */
-    transform: translateX(-5%);
+    /* Sin translateX: empujaba el scrollWidth y obligaba a pan horizontal en mobile */
+    overflow: hidden;
   }
 
   .auth-brand-mark.auth-brand-mark--above-hero .auth-brand-lockup {
     margin-left: 0;
     max-height: clamp(43px, 11.7vw, 58px);
     object-position: center center;
+    /* Nudge óptico sin ensanchar el documento */
+    transform: translateX(-4px);
   }
 
   .auth-brand-mark.auth-brand-mark--center .auth-brand-lockup {
@@ -16155,7 +16161,9 @@ button.sessions-balance {
   gap: 0;
   background: var(--dashboard-ml-page);
   position: relative;
-  overflow-x: clip;
+  /* visible en Y: el bridge Accesos se monta con margin negativo.
+     No usar overflow-x:clip acá — en CSS eso convierte overflow-y a auto y corta el +. */
+  overflow: visible;
 }
 
 /*
@@ -16243,7 +16251,7 @@ button.sessions-balance {
 .dashboard-ml-brand-band--access .dashboard-ml-promo-photo,
 .dashboard-ml-promo-slide--access .dashboard-ml-promo-photo {
   /* ~10% más chica: evita que el reloj se corte contra la card de saldo */
-  max-width: 270px;
+  max-width: min(270px, 42vw);
   max-height: min(223px, 78%);
   /* Cutout blanco → azul (estilo sesiones) sobre amarillo ML */
   filter:
@@ -16367,6 +16375,10 @@ button.sessions-balance {
   will-change: transform;
 }
 
+.dashboard-ml-promo-track--no-anim {
+  transition: none;
+}
+
 .dashboard-ml-promo-slide {
   position: relative;
   flex: 0 0 100%;
@@ -16434,7 +16446,7 @@ button.sessions-balance {
   align-items: center;
   justify-content: center;
   gap: clamp(18px, 2.2vw, 32px);
-  width: fit-content;
+  width: 100%;
   max-width: min(1100px, 100%);
   margin-inline: auto;
   box-sizing: border-box;
@@ -16447,7 +16459,7 @@ button.sessions-balance {
   place-items: center;
   min-width: 0;
   margin: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .dashboard-ml-promo-photo {
@@ -16463,6 +16475,23 @@ button.sessions-balance {
   user-select: none;
 }
 
+/* Line-art mobile (care/match); desktop usa las ilustraciones PNG */
+.dashboard-ml-promo-glyph {
+  display: none;
+  width: min(32vw, 118px);
+  height: min(32vw, 118px);
+  color: #fff;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.22));
+  pointer-events: none;
+  user-select: none;
+}
+
+.dashboard-ml-promo-glyph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .dashboard-ml-promo-copy {
   position: relative;
   z-index: 2;
@@ -16472,7 +16501,7 @@ button.sessions-balance {
   justify-items: center;
   text-align: center;
   width: min(720px, 100%);
-  max-width: 40rem;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   color: #fff;
@@ -16481,11 +16510,12 @@ button.sessions-balance {
 }
 
 .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
-  flex: 0 1 30rem;
+  flex: 1 1 0;
+  flex-basis: 0;
   justify-items: start;
   text-align: left;
   width: auto;
-  max-width: 30rem;
+  max-width: 58%;
   min-width: 0;
 }
 
@@ -16506,6 +16536,17 @@ button.sessions-balance {
   font-weight: 800;
   text-wrap: balance;
   color: #fff;
+}
+
+.dashboard-ml-promo-title--lines {
+  display: grid;
+  gap: 0.02em;
+  text-wrap: unset;
+}
+
+.dashboard-ml-promo-title-line {
+  display: block;
+  white-space: nowrap;
 }
 
 .dashboard-ml-promo-body {
@@ -16588,6 +16629,26 @@ button.sessions-balance {
 
   .dashboard-ml-promo-dots {
     bottom: 12px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-kicker {
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-frame--media .dashboard-ml-promo-title,
+  .patient-dashboard-home .dashboard-ml-promo-title {
+    font-size: clamp(1.55rem, 7.2vw, 2.05rem);
+    line-height: 1.05;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-body {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-badge {
+    font-size: 0.95rem;
   }
 }
 
@@ -16758,6 +16819,19 @@ button.sessions-balance {
   color: #fff;
 }
 
+.dashboard-ml-benefit-card--book {
+  --dashboard-ml-book: #2563eb;
+  --dashboard-ml-book-deep: #1d4ed8;
+  --dashboard-ml-book-bg: linear-gradient(165deg, #3b82f6 0%, #2563eb 48%, #1d4ed8 100%);
+  background: var(--dashboard-ml-book-bg);
+  border: 1px solid rgba(29, 78, 216, 0.35);
+  box-shadow:
+    0 4px 10px rgba(29, 78, 216, 0.22),
+    0 14px 32px rgba(37, 99, 235, 0.36),
+    0 24px 44px rgba(37, 99, 235, 0.18);
+  color: #fff;
+}
+
 /* Evita el button:hover global (#f8fbff) que blanqueaba toda la card */
 .dashboard-ml-benefit-card--buy:hover,
 .dashboard-ml-benefit-card--buy:focus,
@@ -16770,7 +16844,23 @@ button.sessions-balance {
     0 28px 52px rgba(37, 99, 235, 0.22);
 }
 
+.dashboard-ml-benefit-card--book:hover,
+.dashboard-ml-benefit-card--book:focus,
+.dashboard-ml-benefit-card--book:active {
+  background: var(--dashboard-ml-book-bg);
+  color: #fff;
+  box-shadow:
+    0 6px 14px rgba(29, 78, 216, 0.26),
+    0 18px 40px rgba(37, 99, 235, 0.4),
+    0 28px 52px rgba(37, 99, 235, 0.22);
+}
+
 .dashboard-ml-benefit-card--buy .dashboard-ml-benefit-title {
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.28);
+}
+
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-title {
   color: #fff;
   border-bottom-color: rgba(255, 255, 255, 0.28);
 }
@@ -16779,21 +16869,29 @@ button.sessions-balance {
   color: #fff;
 }
 
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-icon {
+  color: #fff;
+}
+
 .dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-accent {
   fill: #bfdbfe;
 }
 
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta {
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-cta {
   color: #fff;
   font-weight: 700;
 }
 
 .dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-cta,
-.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-title {
+.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-title,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-title {
   color: #fff;
 }
 
-.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-cta {
+.dashboard-ml-benefit-card--buy:hover .dashboard-ml-benefit-cta,
+.dashboard-ml-benefit-card--book:hover .dashboard-ml-benefit-cta {
   text-decoration: underline;
 }
 
@@ -16858,7 +16956,8 @@ button.sessions-balance {
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
 }
 
-.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-svg {
+.dashboard-ml-benefit-card--buy .dashboard-ml-benefit-icon-svg,
+.dashboard-ml-benefit-card--book .dashboard-ml-benefit-icon-svg {
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.28));
 }
 
@@ -17230,28 +17329,35 @@ button.sessions-balance {
 }
 
 @media (max-width: 640px) {
+  /* Card créditos mobile: −20% vs tamaño previo */
   .dashboard-ml-credits-bar--mobile {
     flex-wrap: nowrap;
     gap: 8px;
-    margin: 4px 0;
-    padding: 7px 8px 7px 12px;
-    border-radius: 12px;
+    margin: 5px 0;
+    padding: 8px 8px 8px 11px;
+    border-radius: 11px;
   }
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-credits {
     flex: 1 1 auto;
     min-width: 0;
     flex-wrap: nowrap;
-    gap: 6px;
+    align-items: baseline;
+    gap: 5px;
   }
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
-    font-size: 1.15rem;
+    font-size: 0.8rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
     color: #5f44eb;
   }
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
+    font-weight: 650;
+    line-height: 1.25;
     color: #334155;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -17260,9 +17366,19 @@ button.sessions-balance {
 
   .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta {
     margin-left: 0;
-    min-height: 34px;
-    padding: 0 12px;
-    font-size: 0.84rem;
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 0.76rem;
+  }
+
+  .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta--plus {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    font-size: 1.24rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
   }
 
   .dashboard-ml-credits-bar--mobile.dashboard-ml-credits-bar--empty .dashboard-ml-book-cta {
@@ -17722,11 +17838,6 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-sessions-banner-frame {
     padding: 9px 14px;
   }
-
-  .patient-dashboard-home .dashboard-ml-sessions-banner-title {
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
 }
 
 @media (max-width: 720px) {
@@ -17940,7 +18051,7 @@ button.sessions-balance {
 .dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
   gap: 0;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow:
     0 1px 3px rgba(15, 23, 42, 0.05),
     0 4px 12px rgba(15, 23, 42, 0.06);
@@ -17962,7 +18073,11 @@ button.sessions-balance {
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-date-line {
   font-size: 11px;
-  line-height: 1.25;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-name {
@@ -17971,19 +18086,35 @@ button.sessions-balance {
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-body-header {
-  align-items: center;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
-  font-size: 10px;
-  padding: 1px 6px;
+  font-size: 8px;
+  padding: 0;
   margin: 0;
   flex-shrink: 0;
-  align-self: center;
-  max-width: 42%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  align-self: flex-start;
+  max-width: 4.6em;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: center;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge--stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
 }
 
 .dashboard-ml-bookings-list .session-rn-card--trial.session-management-card {
@@ -18365,6 +18496,10 @@ button.sessions-balance {
   color: #5f44eb;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.dashboard-ml-history-nav-chevron {
+  display: none;
 }
 
 .dashboard-ml-history-card.is-expanded {
@@ -19099,6 +19234,10 @@ button.sessions-balance {
   line-height: 1;
 }
 
+.dashboard-ml-feature-preview-chevron {
+  display: none;
+}
+
 .dashboard-ml-feature-preview-card--media {
   grid-template-rows: auto auto auto;
 }
@@ -19181,17 +19320,21 @@ button.sessions-balance {
 
   .dashboard-ml-promo-frame--media {
     gap: 14px;
+    width: 100%;
     max-width: 100%;
   }
 
+  /* No usar rem acá: escala con html (21px) y ensancha el portal en mobile */
   .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
-    flex-basis: 18rem;
-    max-width: 18rem;
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: 58%;
   }
 
   .dashboard-ml-promo-photo {
-    max-width: 200px;
-    max-height: 176px;
+    max-width: min(34vw, 160px);
+    max-height: 148px;
   }
 
   .dashboard-ml-promo-title {
@@ -19202,17 +19345,20 @@ button.sessions-balance {
 @media (max-width: 560px) {
   .dashboard-ml-promo-frame--media {
     gap: 10px;
+    width: 100%;
     max-width: 100%;
   }
 
   .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
-    flex-basis: 12rem;
-    max-width: min(14rem, 58%);
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: 58%;
   }
 
   .dashboard-ml-promo-photo {
-    max-width: 140px;
-    max-height: 130px;
+    max-width: min(32vw, 120px);
+    max-height: 118px;
   }
 
   .dashboard-ml-promo-frame--media .dashboard-ml-promo-badge {
@@ -19366,6 +19512,7 @@ button.sessions-balance {
   padding: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  background: #ffffff;
   box-shadow: 0 28px 64px rgba(15, 23, 42, 0.22);
 }
 
@@ -19375,8 +19522,8 @@ button.sessions-balance {
   justify-content: space-between;
   gap: 16px;
   padding: 22px 24px 16px;
-  border-bottom: 1px solid var(--portal-border);
-  background: linear-gradient(180deg, rgba(95, 68, 235, 0.06), transparent);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
 }
 
 .dashboard-home-purchase-kicker {
@@ -19403,20 +19550,92 @@ button.sessions-balance {
 
 .dashboard-home-purchase-close {
   appearance: none;
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: var(--portal-radius-sm);
+  flex: none;
+  width: 40px;
+  height: 40px;
   min-height: 40px;
-  padding: 0 14px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 1.75rem;
+  line-height: 1;
   cursor: pointer;
-  font: inherit;
-  font-weight: 600;
-  color: #1e293b;
-  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.dashboard-home-purchase-close:hover {
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .dashboard-home-purchase-body {
   padding: 8px 20px 24px;
+  background: #ffffff;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-home-purchase-backdrop.matching-flow-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .dashboard-home-purchase-modal.matching-flow-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(96vh, 100%);
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+    background: #ffffff;
+  }
+
+  .dashboard-home-purchase-head {
+    padding: 16px 14px 12px;
+    gap: 12px;
+    background: #ffffff;
+  }
+
+  .dashboard-home-purchase-body {
+    padding: 6px 12px calc(18px + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+  }
+
+  .dashboard-home-purchase-modal .sessions-package-options-grid,
+  .dashboard-home-purchase-modal .deal-grid.sessions-package-options-grid,
+  .dashboard-home-purchase-modal .checkout-packages-panel-root--mobile .sessions-package-options-grid,
+  .dashboard-home-purchase-modal .checkout-packages-panel-root--mobile .deal-grid.sessions-package-options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 10px 0 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dashboard-home-purchase-modal .checkout-package-column {
+    width: 100%;
+    max-width: none;
+  }
+
+  .dashboard-home-purchase-modal .deal-card-shell,
+  .dashboard-home-purchase-modal .checkout-package-column .deal-card-shell {
+    width: 100%;
+  }
+
+  .dashboard-home-purchase-modal .dashboard-deal-card.sessions-package-card,
+  .dashboard-home-purchase-modal .deal-card.sessions-package-card {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    min-height: 0;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 2px 6px rgba(15, 23, 42, 0.06),
+      0 10px 24px rgba(15, 23, 42, 0.1),
+      0 18px 36px rgba(95, 68, 235, 0.08);
+  }
 }
 
 .checkout-packages-panel-root--embedded .checkout-packages-head {
@@ -19438,8 +19657,17 @@ button.sessions-balance {
   margin: 0 0 12px;
 }
 
+.checkout-packages-individual-bottom {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 4px;
+  padding-top: 4px;
+}
+
 .checkout-packages-individual-top-link,
-.portal-main .checkout-packages-individual-top-link {
+.checkout-packages-individual-bottom-link,
+.portal-main .checkout-packages-individual-top-link,
+.portal-main .checkout-packages-individual-bottom-link {
   appearance: none;
   width: auto;
   min-height: 40px;
@@ -19459,7 +19687,9 @@ button.sessions-balance {
 }
 
 .checkout-packages-individual-top-link:hover:not(:disabled),
-.portal-main .checkout-packages-individual-top-link:hover:not(:disabled) {
+.checkout-packages-individual-bottom-link:hover:not(:disabled),
+.portal-main .checkout-packages-individual-top-link:hover:not(:disabled),
+.portal-main .checkout-packages-individual-bottom-link:hover:not(:disabled) {
   background: #1e1b4b;
   border-color: #1e1b4b;
   color: #fff;
@@ -19468,19 +19698,24 @@ button.sessions-balance {
 }
 
 .checkout-packages-individual-top-link:disabled,
-.portal-main .checkout-packages-individual-top-link:disabled {
+.checkout-packages-individual-bottom-link:disabled,
+.portal-main .checkout-packages-individual-top-link:disabled,
+.portal-main .checkout-packages-individual-bottom-link:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 @media (max-width: 720px) {
-  .checkout-packages-individual-top {
+  .checkout-packages-individual-top,
+  .checkout-packages-individual-bottom {
     justify-content: stretch;
   }
 
   .checkout-packages-individual-top-link,
-  .portal-main .checkout-packages-individual-top-link {
+  .checkout-packages-individual-bottom-link,
+  .portal-main .checkout-packages-individual-top-link,
+  .portal-main .checkout-packages-individual-bottom-link {
     width: 100%;
     white-space: normal;
     text-align: center;
@@ -19884,7 +20119,7 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-surface {
     padding-left: 16px;
     padding-right: 16px;
-    gap: 14px;
+    gap: 18px;
   }
 
   .patient-dashboard-home .dashboard-ml-surface--bridge {
@@ -19897,14 +20132,14 @@ button.sessions-balance {
     display: flex;
     flex-wrap: nowrap;
     align-items: stretch;
-    gap: 12px;
+    gap: 14px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: 16px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    padding: 2px 0 10px;
+    padding: 4px 0 12px;
     scrollbar-width: none;
   }
 
@@ -19920,14 +20155,15 @@ button.sessions-balance {
     margin-right: 16px;
   }
 
+  /* Todas las Accesos: mismo tamaño compacto (antes de ensanchar a 58vw) */
   .patient-dashboard-home .dashboard-ml-benefit-card {
     flex: 0 0 min(42vw, 148px);
     width: min(42vw, 148px);
     max-width: 148px;
     min-height: 0;
     height: auto;
-    gap: 8px;
-    padding: 12px 10px 10px;
+    gap: 10px;
+    padding: 14px 12px 12px;
     grid-template-rows: auto auto auto;
     scroll-snap-align: start;
   }
@@ -19938,46 +20174,38 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-benefit-title {
     padding-bottom: 6px;
-    font-size: var(--ml-type-text, 0.8rem);
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 650;
     line-height: 1.2;
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-icon {
     min-height: 0;
-    padding: 4px 0;
+    padding: 6px 0;
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-icon-svg {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-icon-img {
-    width: min(52px, 70%);
-    max-height: 52px;
+    width: min(60px, 72%);
+    max-height: 60px;
     filter: drop-shadow(0 4px 10px rgba(95, 68, 235, 0.16));
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-cta,
   .patient-dashboard-home .dashboard-ml-benefit-card .dashboard-ml-benefit-cta {
-    font-size: var(--ml-type-subtitle, 0.7rem);
-    font-weight: 600;
-  }
-
-  /* Professional card: un poco más ancha, misma altura compacta */
-  .patient-dashboard-home .dashboard-ml-benefit-card--professional,
-  .patient-dashboard-home .dashboard-ml-benefit-card--professional-empty {
-    flex-basis: min(48vw, 168px);
-    width: min(48vw, 168px);
-    max-width: 168px;
+    font-size: var(--ml-type-subtitle, 0.88rem);
+    font-weight: 650;
   }
 
   .patient-dashboard-home .dashboard-ml-benefit-card--professional .dashboard-ml-benefit-icon-img--photo,
   .patient-dashboard-home .dashboard-ml-pro-main .dashboard-ml-benefit-icon-img--photo {
-    width: 52px;
-    max-height: 52px;
+    width: 60px;
+    max-height: 60px;
     border-radius: 999px;
   }
 
@@ -19985,47 +20213,73 @@ button.sessions-balance {
     width: 100%;
     box-sizing: border-box;
     min-height: 0;
-    padding: 7px 8px 7px 12px;
+    padding: 8px 8px 8px 11px;
     gap: 8px;
     flex-wrap: nowrap;
   }
 
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-num {
+    font-size: 0.8rem;
+  }
+
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label,
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-credits-label--empty {
+    font-size: 0.76rem;
+  }
+
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta {
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 0.76rem;
+  }
+
+  .patient-dashboard-home .dashboard-ml-credits-bar--mobile .dashboard-ml-book-cta--plus {
+    width: 32px;
+    min-width: 32px;
+    font-size: 1.24rem;
+  }
+
   .patient-dashboard-home .dashboard-ml-book-cta {
-    min-height: 34px;
-    padding: 0 12px;
+    min-height: 40px;
+    padding: 0 14px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions {
-    margin-top: 24px;
+    margin-top: 28px;
   }
 
-  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-diary {
+    margin-top: 26px;
+  }
+
   .patient-dashboard-home .dashboard-ml-feature-section {
-    margin-top: 48px;
+    margin-top: 52px;
   }
 
   /*
-   * Escala tipográfica mobile (con html 19.2px ≈ +20%):
-   * cuerpo 0.95/0.8/0.7rem · banners un escalón más grandes.
+   * Escala tipográfica mobile (html 19.2px ≈ +20%).
+   * Títulos de sección en 1rem (no banner-title) para no inflar Sesiones/Diario/etc.
    */
   .patient-dashboard-home .dashboard-ml-home {
-    --ml-type-title: 0.95rem;
-    --ml-type-title-weight: 500;
-    --ml-type-text: 0.8rem;
-    --ml-type-subtitle: 0.7rem;
-    --ml-btn-min-h: 36px;
-    --ml-type-banner-title: 1.2rem;
-    --ml-type-banner-text: 0.95rem;
-    --ml-type-banner-subtitle: 0.8rem;
+    --ml-type-title: 1.05rem;
+    --ml-type-title-weight: 600;
+    --ml-type-text: 0.95rem;
+    --ml-type-subtitle: 0.82rem;
+    --ml-btn-min-h: 40px;
+    --ml-type-banner-title: 1.25rem;
+    --ml-type-banner-text: 1rem;
+    --ml-type-banner-subtitle: 0.85rem;
     --ml-btn-banner-min-h: 40px;
+    --ml-section-title: 1rem;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title,
   .patient-dashboard-home .dashboard-ml-diary-banner-title,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
-    font-size: var(--ml-type-banner-title);
-    font-weight: var(--ml-type-title-weight);
+    font-size: var(--ml-section-title);
+    font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.25;
   }
 
@@ -20047,6 +20301,48 @@ button.sessions-balance {
     font-size: var(--ml-type-banner-text);
   }
 
+  .patient-dashboard-home .dashboard-ml-diary-banner-write--icon {
+    width: var(--ml-btn-banner-min-h);
+    min-width: var(--ml-btn-banner-min-h);
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-banner-write--icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action--icon {
+    width: var(--ml-btn-banner-min-h);
+    min-width: var(--ml-btn-banner-min-h);
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action--icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action--icon {
+    width: var(--ml-btn-banner-min-h);
+    min-width: var(--ml-btn-banner-min-h);
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action--icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    display: block;
+  }
+
   .patient-dashboard-home .dashboard-ml-book-cta {
     min-height: var(--ml-btn-min-h);
     padding: 0 12px;
@@ -20055,7 +20351,7 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card .dashboard-ml-panel-title,
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
-    font-size: var(--ml-type-text);
+    font-size: 0.9rem;
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.01em;
@@ -20071,18 +20367,104 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-date-line {
-    font-size: var(--ml-type-subtitle);
-    line-height: 1.25;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-name {
-    font-size: var(--ml-type-text);
+    font-size: 0.76rem;
+    font-weight: 650;
     line-height: 1.25;
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-trial-badge {
-    font-size: var(--ml-type-subtitle);
-    padding: 2px 7px;
+    font-size: 0.52rem;
+    padding: 0;
+    letter-spacing: 0.02em;
+    border: none;
+    background: transparent;
+  }
+
+  /* Sesiones Home: más ancho, con un poquito de aire al borde */
+  .patient-dashboard-home .dashboard-ml-sessions {
+    margin-left: -10px;
+    margin-right: -10px;
+    width: calc(100% + 20px);
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-banner {
+    border-radius: 6px 6px 0 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-banner-frame {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-pack {
+    border-radius: 0 0 6px 6px;
+    padding: 6px 6px 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 6px;
+  }
+
+  /* Lista sesiones Home: filas anchas, con un poquito de margen interno */
+  .patient-dashboard-home .dashboard-ml-sessions-pack {
+    padding: 6px 6px 0;
+    background: #fff;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list,
+  .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards {
+    gap: 8px;
+    background: #fff;
+    width: 100%;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list--cards .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card,
+  .patient-dashboard-home .dashboard-ml-bookings-list .sessions-confirmed-list--cards > .session-rn-card + .session-rn-card {
+    margin-top: 0 !important;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card.session-management-card,
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact.session-management-card {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    padding: 14px 12px;
+    border-radius: 6px;
+    box-shadow:
+      0 2px 6px rgba(15, 23, 42, 0.06),
+      0 8px 18px rgba(15, 23, 42, 0.08) !important;
+    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .patient-dashboard-home .dashboard-ml-bookings-list .session-rn-card--compact .session-rn-avatar {
+    width: 48px;
+    height: 48px;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-toggle-label {
@@ -20107,9 +20489,211 @@ button.sessions-balance {
   /* Cabeceras Ejercicios / Música compactas (mobile): kicker + título con ícono + CTA */
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-frame,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-frame {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     padding: 15px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner {
+    border-radius: 6px 6px 0 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-panel {
+    border-radius: 0 0 6px 6px;
+    padding: 0;
+    gap: 0;
+    box-shadow: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-toggle {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-row {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow: visible;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:last-of-type {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:focus,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card:active {
+    transform: none;
+    background: rgba(95, 68, 235, 0.04);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-emoji {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(95, 68, 235, 0.08);
+    font-size: 1.1rem;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card strong {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.2;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-card > span:nth-child(3) {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-preview-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 1.45rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  /* Música Home: thumbs a todo el ancho disponible */
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner {
+    border-radius: 6px 6px 0 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-panel {
+    border-radius: 0 0 6px 6px;
+    padding: 0;
+    gap: 0;
+    box-shadow: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-toggle {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-row {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow: visible;
+    width: 100%;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 12px 0 14px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:last-of-type {
+    border-bottom: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:hover,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:focus,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media:active {
+    transform: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-media {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-media-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media strong {
+    padding: 0 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.25;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-preview-card--media > span:last-child {
+    padding: 0 14px;
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-more {
+    margin: 0;
+    padding: 12px 14px 14px;
+    color: #16a34a;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-more {
+    width: 100%;
+    margin: 0;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-top: none;
+    background: transparent;
+    color: #5f44eb;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-copy,
@@ -20122,53 +20706,58 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-head,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-head {
     gap: 10px;
-    align-items: flex-end;
+    align-items: center;
     min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-stack,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-stack {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-    letter-spacing: -0.01em;
+    flex: 1 1 0;
     min-width: 0;
     max-width: 100%;
   }
 
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    letter-spacing: -0.01em;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title > span:last-child,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title > span:last-child {
+    flex: 1 1 0;
     min-width: 0;
     white-space: normal;
-    overflow-wrap: break-word;
-  }
-
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon,
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 1em;
-    height: 1em;
-    flex-shrink: 0;
-    color: inherit;
-  }
-
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon svg,
-  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon svg {
-    width: 1em;
-    height: 1em;
-    display: block;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-action,
   .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-action {
     align-self: center;
+    flex-shrink: 0;
+  }
+
+  /* Secciones Home: no pueden superar el ancho del surface (títulos+íconos) */
+  .patient-dashboard-home .dashboard-ml-sessions,
+  .patient-dashboard-home .dashboard-ml-diary,
+  .patient-dashboard-home .dashboard-ml-feature-section,
+  .patient-dashboard-home .dashboard-ml-sessions-banner,
+  .patient-dashboard-home .dashboard-ml-diary-banner,
+  .patient-dashboard-home .dashboard-ml-feature-banner,
+  .patient-dashboard-home .dashboard-ml-sessions-pack,
+  .patient-dashboard-home .dashboard-ml-sessions-footer,
+  .patient-dashboard-home .dashboard-ml-feature-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   /* Cabecera Sesiones compacta en portal móvil: sin ilustración */
@@ -20177,49 +20766,88 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-frame {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     padding: 15px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-copy {
     gap: 0;
     justify-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-head {
     gap: 10px;
     align-items: center;
+    width: 100%;
     min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.4em;
-    flex: 1 1 auto;
+    gap: 0.35em;
+    flex: 1 1 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
   }
 
-  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon {
+  /*
+   * Íconos en títulos de sección: NUNCA el tamaño Accesos (52px).
+   * Eso inflaba min-content y hacía desbordar todas las secciones.
+   */
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon,
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon {
     display: inline-grid;
     place-items: center;
-    width: 1em;
-    height: 1em;
-    flex-shrink: 0;
+    width: 1.15em;
+    height: 1.15em;
+    max-width: 1.15em;
+    max-height: 1.15em;
+    flex: 0 0 1.15em;
+    overflow: hidden;
     color: inherit;
   }
 
-  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon svg {
-    width: 1em;
-    height: 1em;
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon svg,
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon svg,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon svg,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon svg,
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon .dashboard-ml-benefit-icon-svg,
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon .dashboard-ml-benefit-icon-svg,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-svg,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-svg,
+  .patient-dashboard-home .dashboard-ml-sessions-banner-title-icon .dashboard-ml-benefit-icon-img,
+  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon .dashboard-ml-benefit-icon-img,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-exercises"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-img,
+  .patient-dashboard-home .dashboard-ml-feature-section[data-tour="patient-tour-music"] .dashboard-ml-feature-banner-title-icon .dashboard-ml-benefit-icon-img {
+    width: 1.15em !important;
+    height: 1.15em !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
     display: block;
+    object-fit: contain;
+    filter: none !important;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-title > span:last-child {
+    flex: 1 1 0;
     min-width: 0;
     white-space: normal;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-banner-body {
@@ -20228,7 +20856,7 @@ button.sessions-balance {
 
   /* Cabecera Diario: mismo patrón compacto que Sesiones */
   .patient-dashboard-home .dashboard-ml-diary-banner {
-    border-radius: 12px 12px 0 0;
+    border-radius: 6px 6px 0 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-media {
@@ -20236,49 +20864,56 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-frame {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     padding: 15px 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-copy {
     gap: 0;
     justify-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-head {
     gap: 10px;
     align-items: center;
+    width: 100%;
     min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.4em;
-    flex: 1 1 auto;
+    gap: 0.35em;
+    flex: 1 1 0;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
-  }
-
-  .patient-dashboard-home .dashboard-ml-diary-banner-title-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 1em;
-    height: 1em;
-    flex-shrink: 0;
-    color: inherit;
+    box-sizing: border-box;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title-icon svg {
-    width: 1em;
-    height: 1em;
+    width: 1.15em !important;
+    height: 1.15em !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
     display: block;
+    color: inherit;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-banner-title > span:last-child {
+    flex: 1 1 0;
     min-width: 0;
     white-space: normal;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .patient-dashboard-home .dashboard-ml-bookings-list.session-rn-root {
@@ -20286,13 +20921,17 @@ button.sessions-balance {
     min-width: 0;
   }
 
-  /* Paquetes / historial / actividad: cards secundarias, scroll horizontal */
+  /* Paquetes / historial / actividad: filas planas (opción A) */
+  .patient-dashboard-home .dashboard-ml-sessions-banner {
+    border-radius: 6px 6px 0 0;
+  }
+
   .patient-dashboard-home .dashboard-ml-sessions-pack {
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 6px 6px;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer {
-    margin: 12px -16px 0;
+    margin: 12px 0 0;
     padding: 0;
     border: none;
     border-radius: 0;
@@ -20302,156 +20941,317 @@ button.sessions-balance {
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-grid {
     display: flex;
+    flex-direction: column;
     flex-wrap: nowrap;
     align-items: stretch;
-    gap: 10px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 16px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    padding: 2px 0 8px;
-    scrollbar-width: none;
+    gap: 0;
+    overflow: visible;
+    padding: 0;
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
 
-  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-grid::-webkit-scrollbar {
-    display: none;
-  }
-
-  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-grid > :first-child {
-    margin-left: 16px;
-  }
-
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-grid > :first-child,
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-grid > :last-child {
-    margin-right: 16px;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav {
-    flex: 0 0 min(46vw, 152px);
-    width: min(46vw, 152px);
-    max-width: 152px;
-    min-height: 0;
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 56px;
     height: auto;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-    scroll-snap-align: start;
-    align-content: space-between;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: transparent;
+    box-shadow: none;
+    align-content: center;
+    transform: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:last-child {
+    border-bottom: none;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:hover,
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:focus,
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:active {
     transform: none;
-    border-color: rgba(37, 99, 235, 0.2);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    border-color: transparent;
+    border-bottom-color: rgba(15, 23, 42, 0.08);
+    background: rgba(37, 99, 235, 0.04);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:last-child:hover,
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:last-child:focus,
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card--nav:last-child:active {
+    border-bottom-color: transparent;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-icon,
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-icon--minimal {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
   }
 
   .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-minimal-icon {
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
   }
 
-  /* Diario: opciones pegadas al título (bloque compacto) */
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-card .dashboard-ml-panel-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-nav-cta {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-sessions-footer .dashboard-ml-history-nav-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    color: #94a3b8;
+    font-size: 1.45rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  /* Diario mobile: bloque invertido (fondo color + contenido claro) */
+  .patient-dashboard-home .dashboard-ml-diary {
+    border-radius: 6px;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+      linear-gradient(165deg, #7c6aef 0%, #5f44eb 48%, #4c31d8 100%);
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 12px 28px rgba(95, 68, 235, 0.22);
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-banner {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-banner::before,
+  .patient-dashboard-home .dashboard-ml-diary-banner::after {
+    opacity: 0.55;
+  }
+
+  /* Diario: mismas filas planas que Paquetes / Historial / Actividad — invertidas */
   .patient-dashboard-home .dashboard-ml-diary-pack {
     margin: 0;
-    padding: 8px 0 10px;
+    padding: 0;
     border: none;
-    border-radius: 0 0 12px 12px;
-    background: #fff;
-    box-shadow:
-      0 2px 4px rgba(15, 23, 42, 0.03),
-      0 8px 18px rgba(95, 68, 235, 0.08);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood {
+    padding: 4px 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll-inner {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn {
+    flex: 0 0 3.6rem;
+    width: 3.6rem;
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn:hover,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn:focus,
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--scroll .diary-mood-btn--active {
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn-emoji {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn-label {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-btn--active .diary-mood-btn-label {
+    color: #fff;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood-prompt {
+    margin: 0 0 4px;
+    padding: 0 4px;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-scroll {
+    margin: 0;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-mood .diary-mood-row--compact {
+    margin-top: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row {
     display: flex;
+    flex-direction: column;
     flex-wrap: nowrap;
     align-items: stretch;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 12px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    gap: 0;
+    overflow: visible;
     padding: 0;
-    scrollbar-width: none;
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row::-webkit-scrollbar {
     display: none;
   }
 
-  .patient-dashboard-home .dashboard-ml-diary-actions-row > :first-child {
-    margin-left: 12px;
-  }
-
+  .patient-dashboard-home .dashboard-ml-diary-actions-row > :first-child,
   .patient-dashboard-home .dashboard-ml-diary-actions-row > :last-child {
-    margin-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav {
-    flex: 0 0 min(42vw, 140px);
-    width: min(42vw, 140px);
-    max-width: 140px;
-    min-height: 0;
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-height: 56px;
     height: auto;
-    gap: 8px;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    background: #f8fafc;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    background: transparent;
     box-shadow: none;
-    scroll-snap-align: start;
-    align-content: space-between;
+    align-content: center;
+    transform: none;
+    scroll-snap-align: none;
+    color: #fff;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child {
+    border-bottom: none;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:hover,
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:focus,
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:active {
     transform: none;
-    border-color: rgba(95, 68, 235, 0.22);
+    border-color: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
     box-shadow: none;
-    background: #fff;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:hover,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:focus,
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card--nav:last-child:active {
+    border-bottom-color: transparent;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-card .dashboard-ml-panel-title {
+    color: #fff;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-icon,
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-icon--minimal {
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    background: rgba(95, 68, 235, 0.1);
-    color: #5f44eb;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
   }
 
   .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-minimal-icon {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-cta {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-diary-actions-row .dashboard-ml-history-nav-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1.45rem;
+    font-weight: 400;
+    line-height: 1;
   }
 
   /* Tablet portal: mismo patrón visual que phone (copy + arte) */
@@ -20463,12 +21263,29 @@ button.sessions-balance {
   /* Zona segura: hamburguesa + notificaciones (arriba derecha) */
   .patient-dashboard-home .dashboard-ml-home .dashboard-ml-toolbar-mount.dashboard-hero-toolbar-mount {
     top: max(10px, env(safe-area-inset-top, 0px));
-    right: max(10px, env(safe-area-inset-right, 0px));
-    z-index: 60;
+    right: max(8px, env(safe-area-inset-right, 0px));
+    left: auto;
+    width: auto;
+    max-width: calc(100% - 16px);
+    z-index: 80;
+  }
+
+  /* brand-band debe seguir overflow:visible — ahí viven saldo/+ y el puente Accesos */
+  .patient-dashboard-home .dashboard-ml-brand-band {
+    overflow: visible;
+    max-width: 100%;
+  }
+
+  .patient-dashboard-home .dashboard-ml-benefit-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-slide {
     padding: calc(52px + env(safe-area-inset-top, 0px)) 20px 28px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-frame--media {
@@ -20480,9 +21297,11 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
-    flex: 1 1 auto;
-    max-width: min(22rem, 54%);
-    flex-basis: auto;
+    flex: 1 1 0;
+    flex-basis: 0;
+    min-width: 0;
+    max-width: none;
+    width: auto;
     align-self: center;
   }
 
@@ -20491,11 +21310,35 @@ button.sessions-balance {
     /* Reserva esquina superior derecha para iconos del toolbar */
     padding-top: 8px;
     margin-right: 4px;
+    max-width: 42%;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-photo {
-    max-width: min(30vw, 168px);
-    max-height: 148px;
+    max-width: min(30vw, 140px);
+    max-height: 132px;
+  }
+
+  /* Match / Care: en mobile, PNG colorido off → line-art on */
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-photo,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-photo {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-media,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-media {
+    display: grid;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-glyph,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-glyph {
+    display: block;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-slide--match.dashboard-ml-promo-slide--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care.dashboard-ml-promo-slide--media .dashboard-ml-promo-copy,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-frame--media .dashboard-ml-promo-copy {
+    max-width: none;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-title {
@@ -20503,10 +21346,8 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-body {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    display: block;
+    overflow: visible;
     font-size: 0.9rem;
   }
 
@@ -20571,10 +21412,8 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-body {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    display: block;
+    overflow: visible;
     font-size: 0.8rem;
     line-height: 1.3;
     max-width: 100%;
@@ -20582,7 +21421,7 @@ button.sessions-balance {
   }
 
   .patient-dashboard-home .dashboard-ml-promo-body--lines {
-    display: -webkit-box;
+    display: block;
     width: auto;
     max-width: 100%;
   }
@@ -20605,6 +21444,27 @@ button.sessions-balance {
   .patient-dashboard-home .dashboard-ml-promo-photo {
     max-width: min(32vw, 124px);
     max-height: 118px;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-glyph {
+    width: min(30vw, 108px);
+    height: min(30vw, 108px);
+  }
+
+  /* PNG coloridos off en mobile; line-art on (care/match) */
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-photo,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-photo {
+    display: none;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-media,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-media {
+    display: grid;
+  }
+
+  .patient-dashboard-home .dashboard-ml-promo-slide--match .dashboard-ml-promo-glyph,
+  .patient-dashboard-home .dashboard-ml-promo-slide--care .dashboard-ml-promo-glyph {
+    display: block;
   }
 
   .patient-dashboard-home .dashboard-ml-promo-slide:not(.dashboard-ml-promo-slide--access) .dashboard-ml-promo-photo {

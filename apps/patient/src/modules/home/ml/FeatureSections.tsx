@@ -15,7 +15,8 @@ import {
   extractYoutubeVideoId,
   youtubeThumbnailUrl
 } from "../../wellbeing/utils/relaxationYoutube";
-import { ExercisesBannerGlyph, ExercisesBannerIcon, MusicBannerGlyph, MusicBannerIcon } from "./HomeBannerGlyphs";
+import { ExercisesBannerGlyph, MusicBannerGlyph, MusicOpenIcon } from "./HomeBannerGlyphs";
+import { BenefitIcon } from "./BenefitIcons";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -36,7 +37,12 @@ function HomeFeatureBanner(props: {
   isMobilePortal?: boolean;
   compactTitle?: LocalizedText;
   compactCta?: LocalizedText;
+  /** Si está, el CTA mobile es solo ícono (con aria-label del compactCta/cta). */
+  compactCtaIcon?: ReactNode;
   titleIcon?: ReactNode;
+  hideMobileKicker?: boolean;
+  /** Mobile: solo título (como Sesiones / Diario), sin botón a la derecha. */
+  hideMobileCta?: boolean;
 }) {
   const toneClass =
     props.tone === "purple"
@@ -44,6 +50,7 @@ function HomeFeatureBanner(props: {
       : props.tone === "pistachio"
         ? " dashboard-ml-feature-banner--pistachio"
         : "";
+  const mobileCtaLabel = t(props.language, props.compactCta ?? props.cta);
 
   return (
     <article className={`dashboard-ml-feature-banner${toneClass}`}>
@@ -52,7 +59,9 @@ function HomeFeatureBanner(props: {
           {props.isMobilePortal ? (
             <div className="dashboard-ml-feature-banner-head">
               <div className="dashboard-ml-feature-banner-title-stack">
-                <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
+                {!props.hideMobileKicker ? (
+                  <p className="dashboard-ml-feature-banner-kicker">{t(props.language, props.kicker)}</p>
+                ) : null}
                 <h2 id={props.titleId} className="dashboard-ml-feature-banner-title">
                   {props.titleIcon ? (
                     <span className="dashboard-ml-feature-banner-title-icon" aria-hidden="true">
@@ -62,13 +71,16 @@ function HomeFeatureBanner(props: {
                   <span>{t(props.language, props.compactTitle ?? props.title)}</span>
                 </h2>
               </div>
-              <button
-                type="button"
-                className="dashboard-ml-feature-banner-action"
-                onClick={props.onCta}
-              >
-                {t(props.language, props.compactCta ?? props.cta)}
-              </button>
+              {!props.hideMobileCta ? (
+                <button
+                  type="button"
+                  className={`dashboard-ml-feature-banner-action${props.compactCtaIcon ? " dashboard-ml-feature-banner-action--icon" : ""}`}
+                  onClick={props.onCta}
+                  aria-label={props.compactCtaIcon ? mobileCtaLabel : undefined}
+                >
+                  {props.compactCtaIcon ? props.compactCtaIcon : mobileCtaLabel}
+                </button>
+              ) : null}
             </div>
           ) : (
             <>
@@ -207,9 +219,10 @@ export function DashboardHomeExercisesSection(props: {
           pt: "Praticas breves de respiracao, postura e presenca para somar clareza entre sessoes."
         }}
         cta={{ es: "Ver ejercicios", en: "View exercises", pt: "Ver exercicios" }}
-        compactTitle={{ es: "Ejercicios", en: "Exercises", pt: "Exercicios" }}
-        compactCta={{ es: "Ver", en: "View", pt: "Ver" }}
-        titleIcon={<ExercisesBannerIcon />}
+        compactTitle={{ es: "Tus ejercicios", en: "Your exercises", pt: "Seus exercicios" }}
+        titleIcon={<BenefitIcon kind="exercises" />}
+        hideMobileKicker
+        hideMobileCta
         isMobilePortal={props.isMobilePortal}
         glyph={<ExercisesBannerGlyph />}
         tone="purple"
@@ -250,6 +263,9 @@ export function DashboardHomeExercisesSection(props: {
                 {exercise.durationMinutes > 0
                   ? ` · ${durationLabel(props.language, exercise.durationMinutes)}`
                   : ""}
+              </span>
+              <span className="dashboard-ml-feature-preview-chevron" aria-hidden="true">
+                ›
               </span>
             </button>
           ))}
@@ -328,8 +344,10 @@ export function DashboardHomeMusicSection(props: {
         }}
         cta={{ es: "Abrir música", en: "Open music", pt: "Abrir musica" }}
         compactTitle={{ es: "Música", en: "Music", pt: "Musica" }}
-        compactCta={{ es: "Abrir", en: "Open", pt: "Abrir" }}
-        titleIcon={<MusicBannerIcon />}
+        compactCta={{ es: "Abrir música", en: "Open music", pt: "Abrir musica" }}
+        compactCtaIcon={<MusicOpenIcon />}
+        titleIcon={<BenefitIcon kind="music" />}
+        hideMobileKicker
         isMobilePortal={props.isMobilePortal}
         glyph={<MusicBannerGlyph />}
         tone="pistachio"

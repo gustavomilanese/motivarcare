@@ -60,7 +60,7 @@ export function CheckoutPackagesPanel(props: {
   const individualCta = canIndividualCta ? (
     <button
       type="button"
-      className="checkout-packages-individual-top-link"
+      className="checkout-packages-individual-bottom-link"
       disabled={!canIndividualCta}
       onClick={() => props.onIndividualPurchase()}
     >
@@ -77,9 +77,9 @@ export function CheckoutPackagesPanel(props: {
           <p>
             {props.pricingReady
               ? t(props.language, {
-                  es: "Elegí el paquete que mejor se adapte a tu proceso, o comprá sesiones sueltas arriba a la derecha.",
-                  en: "Choose the package that fits your process, or buy individual sessions from the top right.",
-                  pt: "Escolha o pacote que melhor se adapta ao seu processo, ou compre sessoes avulsas no canto superior direito."
+                  es: "Elegí el paquete que mejor se adapte a tu proceso, o comprá sesiones sueltas al final.",
+                  en: "Choose the package that fits your process, or buy individual sessions at the bottom.",
+                  pt: "Escolha o pacote que melhor se adapta ao seu processo, ou compre sessoes avulsas no final."
                 })
               : t(props.language, {
                   es: "Formatos de 4, 8 y 12 sesiones. Elegí un profesional para ver precios según su tarifa.",
@@ -92,7 +92,6 @@ export function CheckoutPackagesPanel(props: {
           ) : null}
         </div>
         <div className="checkout-packages-head-actions">
-          {individualCta}
           <button type="button" className="checkout-packages-close" onClick={props.onClose}>
             {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
           </button>
@@ -105,7 +104,6 @@ export function CheckoutPackagesPanel(props: {
             <PackageChooseProfessionalCta language={props.language} onClick={props.onRequireProfessional} />
           </div>
         ) : null}
-        {individualCta ? <div className="checkout-packages-individual-top">{individualCta}</div> : null}
       </>
     )}
 
@@ -127,9 +125,9 @@ export function CheckoutPackagesPanel(props: {
           <div className="checkout-individual-only-wrap">
             <p className="checkout-packages-bundles-note">
               {t(props.language, {
-                es: "No hay paquetes multi-sesión. Podés comprar solo sesiones sueltas con el botón de arriba.",
-                en: "No multi-session bundles. Buy individual sessions with the button above.",
-                pt: "Sem pacotes multi-sessao. Compre sessoes avulsas no botao acima."
+                es: "No hay paquetes multi-sesión. Podés comprar solo sesiones sueltas con el botón de abajo.",
+                en: "No multi-session bundles. Buy individual sessions with the button below.",
+                pt: "Sem pacotes multi-sessao. Compre sessoes avulsas no botao abaixo."
               })}
             </p>
           </div>
@@ -291,6 +289,8 @@ export function CheckoutPackagesPanel(props: {
           })}
         </div>
       )}
+
+      {individualCta ? <div className="checkout-packages-individual-bottom">{individualCta}</div> : null}
     </div>
   );
 }

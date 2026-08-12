@@ -22,6 +22,7 @@ import {
   rescheduleTooltipLabel,
   rescheduleUnavailableTitle,
   trialSessionBadgeLabel,
+  trialSessionBadgeLines,
   upcomingBookingCardStatusLine,
   upcomingBookingStatusPillLabel,
   upcomingBookingsTableHeadLabels,
@@ -409,7 +410,11 @@ export function UpcomingBookingItem(props: UpcomingBookingItemProps) {
               ) : null}
             </div>
             {compact && isTrialBooking ? (
-              <span className="session-rn-trial-badge">{trialSessionBadgeLabel(props.language)}</span>
+              <span className="session-rn-trial-badge session-rn-trial-badge--stack">
+                {trialSessionBadgeLines(props.language).map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </span>
             ) : !compact ? (
               <SessionRescheduleButton
                 language={props.language}

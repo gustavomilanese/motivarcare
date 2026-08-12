@@ -34,17 +34,19 @@ export type ResolveWebAppApiBaseParams = {
 
 /**
  * Evita que un `.env` con URL de producción rompa el `npm run dev` en localhost:
- * en modo dev y origen loopback, se usa el API local salvo override explícito.
+ * en modo dev se usa el API local (proxy same-origin o loopback), salvo override explícito.
+ * Con `preferRelativeSameOriginInDev`, también cubre acceso desde el teléfono por LAN (`vite --host`).
  */
 export function resolveWebAppApiBase(params: ResolveWebAppApiBaseParams): string {
   const fromVite = trimApiBase(params.viteApiUrl);
   const injected = trimApiBase(params.injectedApiBase);
   const browserLocal = isLoopbackHost(params.browserHostname);
 
+  if (params.isDev && params.preferRelativeSameOriginInDev && !params.forceRemoteApi) {
+    return "";
+  }
+
   if (params.isDev && browserLocal && !params.forceRemoteApi) {
-    if (params.preferRelativeSameOriginInDev) {
-      return "";
-    }
     if (fromVite && apiUrlIsLoopback(fromVite)) {
       return fromVite;
     }

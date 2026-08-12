@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type TransitionEvent } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { PromoCareLineIcon, PromoMatchLineIcon } from "./HomeBannerGlyphs";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -11,8 +12,12 @@ type PromoBanner = {
   id: string;
   tone: PromoBannerTone;
   imageSrc?: string;
+  /** Ícono line-art para mobile (care/match); el reloj 24h sigue siendo PNG. */
+  lineIcon?: ReactNode;
   kicker: LocalizedText;
   title: LocalizedText;
+  /** Líneas fijas del título (p. ej. mantener “en tu necesidad” junta). */
+  titleLines?: Record<AppLanguage, string[]>;
   body: LocalizedText;
   /** Si está, el cuerpo se muestra en líneas fijas (evita viudas / wraps raros). */
   bodyLines?: Record<AppLanguage, string[]>;
@@ -24,6 +29,7 @@ const PROMO_BANNERS: PromoBanner[] = [
     id: "therapy-value",
     tone: "care",
     imageSrc: "/home/banner-therapy-value.png?v=therapy-flat-1",
+    lineIcon: <PromoCareLineIcon />,
     kicker: {
       es: "Habla con expertos",
       en: "Talk to experts",
@@ -79,6 +85,7 @@ const PROMO_BANNERS: PromoBanner[] = [
     id: "specialist-match",
     tone: "match",
     imageSrc: "/home/banner-specialist-match.png?v=handshake-cutout-5",
+    lineIcon: <PromoMatchLineIcon />,
     kicker: {
       es: "Matching inteligente",
       en: "Smart matching",
@@ -88,6 +95,11 @@ const PROMO_BANNERS: PromoBanner[] = [
       es: "Especialistas en tu necesidad",
       en: "Specialists for your needs",
       pt: "Especialistas na sua necessidade"
+    },
+    titleLines: {
+      es: ["Especialistas", "en tu necesidad"],
+      en: ["Specialists", "for your needs"],
+      pt: ["Especialistas", "na sua necessidade"]
     },
     body: {
       es: "Hacé matching con psicólogos alineados a tu motivo de consulta.",
@@ -105,16 +117,38 @@ const PROMO_BANNERS: PromoBanner[] = [
 const AUTO_MS = 6500;
 const SWIPE_THRESHOLD_PX = 48;
 
+/** Clones en extremos para loop infinito sin “vuelta” al pasar del último al primero. */
+function buildLoopSlides(banners: PromoBanner[]): PromoBanner[] {
+  if (banners.length <= 1) {
+    return banners;
+  }
+  const first = banners[0]!;
+  const last = banners[banners.length - 1]!;
+  return [
+    { ...last, id: `${last.id}__clone-end` },
+    ...banners,
+    { ...first, id: `${first.id}__clone-start` }
+  ];
+}
+
 /** Carrusel promocional estilo marketplace (Mercado Libre) para Inicio next. */
 export function DashboardHomePromoCarousel(props: {
   language: AppLanguage;
   onActiveToneChange?: (tone: PromoBannerTone) => void;
 }) {
-  const [index, setIndex] = useState(0);
+  const total = PROMO_BANNERS.length;
+  const loopSlides = buildLoopSlides(PROMO_BANNERS);
+  /** En loop, el índice 1 es el primer slide real. */
+  const realStart = total > 1 ? 1 : 0;
+  const [trackIndex, setTrackIndex] = useState(realStart);
+  const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
   const swipeStartX = useRef<number | null>(null);
-  const total = PROMO_BANNERS.length;
-  const active = PROMO_BANNERS[index] ?? PROMO_BANNERS[0];
+  const jumpingRef = useRef(false);
+
+  const logicalIndex =
+    total <= 1 ? 0 : ((trackIndex - realStart) % total + total) % total;
+  const active = PROMO_BANNERS[logicalIndex] ?? PROMO_BANNERS[0]!;
 
   useEffect(() => {
     props.onActiveToneChange?.(active.tone);
@@ -127,13 +161,66 @@ export function DashboardHomePromoCarousel(props: {
       return undefined;
     }
     const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % total);
+      setAnimate(true);
+      setTrackIndex((current) => current + 1);
     }, AUTO_MS);
     return () => window.clearInterval(timer);
   }, [paused, total]);
 
-  const goPrev = () => setIndex((current) => (current - 1 + total) % total);
-  const goNext = () => setIndex((current) => (current + 1) % total);
+  const goPrev = () => {
+    if (total <= 1 || jumpingRef.current) {
+      return;
+    }
+    setAnimate(true);
+    setTrackIndex((current) => current - 1);
+  };
+
+  const goNext = () => {
+    if (total <= 1 || jumpingRef.current) {
+      return;
+    }
+    setAnimate(true);
+    setTrackIndex((current) => current + 1);
+  };
+
+  const goToLogical = (bannerIndex: number) => {
+    if (total <= 1 || jumpingRef.current) {
+      return;
+    }
+    setAnimate(true);
+    setTrackIndex(realStart + bannerIndex);
+  };
+
+  const onTrackTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
+    if (event.propertyName !== "transform" || total <= 1) {
+      return;
+    }
+    // Clon del final → saltar al primer real (sin animación)
+    if (trackIndex >= realStart + total) {
+      jumpingRef.current = true;
+      setAnimate(false);
+      setTrackIndex(realStart);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          jumpingRef.current = false;
+          setAnimate(true);
+        });
+      });
+      return;
+    }
+    // Clon del inicio → saltar al último real
+    if (trackIndex <= 0) {
+      jumpingRef.current = true;
+      setAnimate(false);
+      setTrackIndex(realStart + total - 1);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          jumpingRef.current = false;
+          setAnimate(true);
+        });
+      });
+    }
+  };
 
   const onSwipePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType === "mouse") {
@@ -187,12 +274,13 @@ export function DashboardHomePromoCarousel(props: {
     >
       <div className="dashboard-ml-promo-viewport">
         <div
-          className="dashboard-ml-promo-track"
-          style={{ transform: `translate3d(-${index * 100}%, 0, 0)` }}
+          className={`dashboard-ml-promo-track${animate ? "" : " dashboard-ml-promo-track--no-anim"}`}
+          style={{ transform: `translate3d(-${trackIndex * 100}%, 0, 0)` }}
+          onTransitionEnd={onTrackTransitionEnd}
         >
-          {PROMO_BANNERS.map((banner, bannerIndex) => {
-            const isActive = bannerIndex === index;
-            const hasMedia = Boolean(banner.imageSrc);
+          {loopSlides.map((banner, bannerIndex) => {
+            const isActive = bannerIndex === trackIndex;
+            const hasMedia = Boolean(banner.imageSrc || banner.lineIcon);
             return (
               <article
                 key={banner.id}
@@ -204,7 +292,17 @@ export function DashboardHomePromoCarousel(props: {
                 <div className={`dashboard-ml-promo-frame${hasMedia ? " dashboard-ml-promo-frame--media" : ""}`}>
                   <div className="dashboard-ml-promo-copy">
                     <p className="dashboard-ml-promo-kicker">{t(props.language, banner.kicker)}</p>
-                    <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                    {banner.titleLines ? (
+                      <h2 className="dashboard-ml-promo-title dashboard-ml-promo-title--lines">
+                        {banner.titleLines[props.language].map((line, lineIndex) => (
+                          <span key={`${banner.id}-title-${lineIndex}`} className="dashboard-ml-promo-title-line">
+                            {line}
+                          </span>
+                        ))}
+                      </h2>
+                    ) : (
+                      <h2 className="dashboard-ml-promo-title">{t(props.language, banner.title)}</h2>
+                    )}
                     {banner.bodyLines ? (
                       <p className="dashboard-ml-promo-body dashboard-ml-promo-body--lines">
                         {banner.bodyLines[props.language].map((line, lineIndex) => (
@@ -221,14 +319,19 @@ export function DashboardHomePromoCarousel(props: {
                     )}
                     <span className="dashboard-ml-promo-badge">{t(props.language, banner.badge)}</span>
                   </div>
-                  {banner.imageSrc ? (
+                  {banner.imageSrc || banner.lineIcon ? (
                     <div className="dashboard-ml-promo-media" aria-hidden="true">
-                      <img
-                        className="dashboard-ml-promo-photo"
-                        src={banner.imageSrc}
-                        alt=""
-                        decoding="async"
-                      />
+                      {banner.imageSrc ? (
+                        <img
+                          className="dashboard-ml-promo-photo"
+                          src={banner.imageSrc}
+                          alt=""
+                          decoding="async"
+                        />
+                      ) : null}
+                      {banner.lineIcon ? (
+                        <div className="dashboard-ml-promo-glyph">{banner.lineIcon}</div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -261,14 +364,14 @@ export function DashboardHomePromoCarousel(props: {
             key={banner.id}
             type="button"
             role="tab"
-            aria-selected={bannerIndex === index}
-            className={`dashboard-ml-promo-dot${bannerIndex === index ? " is-active" : ""}`}
+            aria-selected={bannerIndex === logicalIndex}
+            className={`dashboard-ml-promo-dot${bannerIndex === logicalIndex ? " is-active" : ""}`}
             aria-label={t(props.language, {
               es: `Ir al banner ${bannerIndex + 1}`,
               en: `Go to banner ${bannerIndex + 1}`,
               pt: `Ir ao banner ${bannerIndex + 1}`
             })}
-            onClick={() => setIndex(bannerIndex)}
+            onClick={() => goToLogical(bannerIndex)}
           />
         ))}
       </div>
