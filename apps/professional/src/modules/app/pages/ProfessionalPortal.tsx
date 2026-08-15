@@ -14,7 +14,6 @@ import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav"
 import { useProfessionalListingVisibility } from "../hooks/useProfessionalListingVisibility";
 import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
 import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
-import { AdminPage } from "./AdminPage";
 import { AvailabilityMonthPage } from "./AvailabilityMonthPage";
 import { ChatPage } from "./ChatPage";
 import { DashboardPage } from "./DashboardPage";
@@ -361,7 +360,7 @@ export function ProfessionalPortal(props: {
               }
             />
             <Route path="/ingresos" element={<IncomePage token={props.token} language={props.language} user={props.user} />} />
-            <Route path="/admin" element={<AdminPage token={props.token} language={props.language} />} />
+            <Route path="/admin" element={<Navigate to="/perfil#pro-profile-bank" replace />} />
             <Route
               path="/perfil"
               element={<ProfilePage token={props.token} user={props.user} language={props.language} onUserChange={props.onUserChange} />}

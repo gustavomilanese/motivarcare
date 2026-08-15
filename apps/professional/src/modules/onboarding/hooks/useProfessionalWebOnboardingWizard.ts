@@ -1051,6 +1051,31 @@ export function useProfessionalWebOnboardingWizard(input: {
       console.error("finishWebOnboarding: missing webOnboardingSession");
       return;
     }
+    const payoutReady = isPayoutFormComplete(
+      form.payoutProvider,
+      {
+        legalName: form.payoutLegalName,
+        taxId: form.taxId,
+        accountHolderName: form.payoutAccountHolderName,
+        bankTransferType: form.payoutBankTransferType,
+        bankAccountValue: form.payoutBankAccountValue,
+        bankName: form.payoutBankName,
+        payoutTermsAccepted: form.payoutTermsAccepted,
+        payoutCountry: form.payoutCountry,
+        beneficiaryFirstName: form.payoutBeneficiaryFirstName,
+        beneficiaryLastName: form.payoutBeneficiaryLastName,
+        documentType: form.payoutDocumentType,
+        bankCode: form.payoutBankCode,
+        bankBranch: form.payoutBankBranch,
+        accountType: form.payoutAccountType
+      } satisfies PayoutFormFields,
+      Boolean(form.stripeDocPreview.trim())
+    );
+    if (!payoutReady) {
+      setShowCompletionCelebration(false);
+      setStep(labels.length - 1);
+      return;
+    }
     const yearsExperience = yearsExperienceApproxFromExperienceBand(form.experienceBand);
     const resolvedFullName =
       joinWebOnboardingFullName(form.firstName, form.lastName) || webOnboardingSession.user.fullName;

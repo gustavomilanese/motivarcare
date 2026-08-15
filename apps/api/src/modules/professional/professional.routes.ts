@@ -1256,8 +1256,8 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
         packageDiscountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null,
         packagePriceCents,
         packageSessionNumber: record.purchaseId
-          ? record.booking.packageSessionOrdinal
-            ?? packageSessionIndexByBookingId.get(record.bookingId)
+          ? packageSessionIndexByBookingId.get(record.bookingId)
+            ?? record.booking.packageSessionOrdinal
             ?? null
           : null,
         fxArsPerUsdUsed:

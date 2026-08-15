@@ -13,7 +13,6 @@ import { RevenueMonthPicker } from "../components/RevenueMonthPicker";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
-import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import { PendingExecutionSessionsList, type SessionListFilter } from "../components/agenda/PendingExecutionSessionsList";
 import {
@@ -118,9 +117,11 @@ export function DashboardPage(props: {
   /** Solo la card «Dinero ejecutado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
   const [sessionsHubTab, setSessionsHubTab] = useState<"upcoming" | "settle">("upcoming");
-  const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("reserved");
+  const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("all");
   const [sessionListMonth, setSessionListMonth] = useState(() => ymLocal(new Date()));
   const [bulkConfirmAction, setBulkConfirmAction] = useState<null | "complete" | "uncomplete">(null);
+  const [bulkTargetBookings, setBulkTargetBookings] = useState<UpcomingReservationItem[]>([]);
+  const [selectionEpoch, setSelectionEpoch] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -285,21 +286,6 @@ export function DashboardPage(props: {
     .map((b) => `${b.id}:${typeof b.joinUrl === "string" ? b.joinUrl.trim().length : 0}`)
     .join("|");
 
-  const reservedToSettle = useMemo(
-    () =>
-      pendingExecutionSessions.filter((session) => {
-        const status = session.status.toLowerCase();
-        return status !== "completed" && status !== "cancelled" && status !== "no_show";
-      }),
-    [pendingExecutionSessions]
-  );
-  const executedReversible = useMemo(
-    () =>
-      pendingExecutionSessions.filter(
-        (session) => session.status.toLowerCase() === "completed" && session.canUncomplete !== false
-      ),
-    [pendingExecutionSessions]
-  );
   const bulkBusy = bookingActionInProgressId === "__bulk__";
 
   useEffect(() => {
@@ -697,7 +683,7 @@ export function DashboardPage(props: {
   };
 
   const submitBulkComplete = async () => {
-    const bookingIds = reservedToSettle.map((session) => session.id);
+    const bookingIds = bulkTargetBookings.map((session) => session.id);
     if (bookingIds.length === 0) {
       setBulkConfirmAction(null);
       return;
@@ -719,6 +705,8 @@ export function DashboardPage(props: {
         response.failed ?? []
       );
       setBulkConfirmAction(null);
+      setBulkTargetBookings([]);
+      setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setBookingActionError(professionalSurfaceMessage("dashboard-complete-batch", props.language, raw));
@@ -728,7 +716,7 @@ export function DashboardPage(props: {
   };
 
   const submitBulkUncomplete = async () => {
-    const bookingIds = executedReversible.map((session) => session.id);
+    const bookingIds = bulkTargetBookings.map((session) => session.id);
     if (bookingIds.length === 0) {
       setBulkConfirmAction(null);
       return;
@@ -773,6 +761,8 @@ export function DashboardPage(props: {
         );
       }
       setBulkConfirmAction(null);
+      setBulkTargetBookings([]);
+      setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setBookingActionError(professionalSurfaceMessage("dashboard-uncomplete-batch", props.language, raw));
@@ -976,34 +966,6 @@ export function DashboardPage(props: {
                 })}
               </p>
               <div className="agenda-session-panel-filters">
-                {sessionListFilter !== "liquidated" && sessionListFilter !== "executed" && reservedToSettle.length > 0 ? (
-                  <button
-                    type="button"
-                    className="agenda-session-bulk-btn"
-                    disabled={Boolean(bookingActionInProgressId)}
-                    onClick={() => setBulkConfirmAction("complete")}
-                  >
-                    {t(props.language, {
-                      es: `Marcar ${reservedToSettle.length} como ejecutadas`,
-                      en: `Mark ${reservedToSettle.length} as executed`,
-                      pt: `Marcar ${reservedToSettle.length} como executadas`
-                    })}
-                  </button>
-                ) : null}
-                {sessionListFilter === "executed" && executedReversible.length > 1 ? (
-                  <button
-                    type="button"
-                    className="agenda-session-bulk-btn agenda-session-bulk-btn--ghost"
-                    disabled={Boolean(bookingActionInProgressId)}
-                    onClick={() => setBulkConfirmAction("uncomplete")}
-                  >
-                    {t(props.language, {
-                      es: `Volver ${executedReversible.length} a reservadas`,
-                      en: `Revert ${executedReversible.length} to reserved`,
-                      pt: `Voltar ${executedReversible.length} para reservadas`
-                    })}
-                  </button>
-                ) : null}
                 <RevenueMonthPicker
                   language={props.language}
                   value={sessionListMonth}
@@ -1036,8 +998,17 @@ export function DashboardPage(props: {
               sessions={pendingExecutionSessions}
               busyBookingId={bulkBusy ? "__bulk__" : bookingActionInProgressId}
               filter={sessionListFilter}
+              selectionEpoch={selectionEpoch}
               onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
               onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
+              onRequestBulkComplete={(bookings) => {
+                setBulkTargetBookings(bookings);
+                setBulkConfirmAction("complete");
+              }}
+              onRequestBulkUncomplete={(bookings) => {
+                setBulkTargetBookings(bookings);
+                setBulkConfirmAction("uncomplete");
+              }}
             />
           </div>
         )}
@@ -1051,11 +1022,31 @@ export function DashboardPage(props: {
         />
       ) : null}
 
-      <ProfessionalReviewsInvitePanel
-        language={props.language}
-        professionalId={props.user.professionalProfileId}
-        variant="dashboard"
-      />
+      <section className="pro-card pro-dashboard-availability-shortcut" aria-labelledby="pro-dashboard-availability-title">
+        <div className="pro-dashboard-availability-shortcut-copy">
+          <h2 id="pro-dashboard-availability-title">
+            {t(props.language, {
+              es: "Publicá tu disponibilidad",
+              en: "Publish your availability",
+              pt: "Publique sua disponibilidade"
+            })}
+          </h2>
+          <p>
+            {t(props.language, {
+              es: "Armá tu plantilla semanal en Agenda para que los pacientes puedan reservar turnos.",
+              en: "Set your weekly template in Agenda so patients can book slots.",
+              pt: "Monte seu modelo semanal em Agenda para os pacientes reservarem horarios."
+            })}
+          </p>
+        </div>
+        <NavLink to="/horarios" className="pro-dashboard-availability-shortcut-cta">
+          {t(props.language, {
+            es: "Ir a Mi Agenda",
+            en: "Go to My agenda",
+            pt: "Ir para Minha agenda"
+          })}
+        </NavLink>
+      </section>
 
       {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
 
@@ -1147,7 +1138,16 @@ export function DashboardPage(props: {
       ) : null}
 
       {bulkConfirmAction ? (
-        <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => !bulkBusy && setBulkConfirmAction(null)}>
+        <div
+          className="pro-reschedule-modal-backdrop"
+          role="presentation"
+          onClick={() => {
+            if (!bulkBusy) {
+              setBulkConfirmAction(null);
+              setBulkTargetBookings([]);
+            }
+          }}
+        >
           <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <header>
               <h3>
@@ -1165,7 +1165,10 @@ export function DashboardPage(props: {
               </h3>
               <button
                 type="button"
-                onClick={() => setBulkConfirmAction(null)}
+                onClick={() => {
+                  setBulkConfirmAction(null);
+                  setBulkTargetBookings([]);
+                }}
                 disabled={bulkBusy}
                 aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
               >
@@ -1175,18 +1178,25 @@ export function DashboardPage(props: {
             <p className="pro-reschedule-modal-lead">
               {bulkConfirmAction === "complete"
                 ? t(props.language, {
-                    es: `Vas a marcar ${reservedToSettle.length} sesiones del mes como ejecutadas. Entran a la próxima liquidación; el dinero lo envía Admin por dLocal.`,
-                    en: `You will mark ${reservedToSettle.length} sessions this month as executed. They join the next payout; Admin sends the dLocal transfer.`,
-                    pt: `Voce vai marcar ${reservedToSettle.length} sessoes do mes como executadas. Entram na proxima liquidacao; o Admin envia o pagamento dLocal.`
+                    es: `Vas a marcar ${bulkTargetBookings.length} sesiones como ejecutadas. Entran a la próxima liquidación; el dinero lo envía Admin por dLocal.`,
+                    en: `You will mark ${bulkTargetBookings.length} sessions as executed. They join the next payout; Admin sends the dLocal transfer.`,
+                    pt: `Voce vai marcar ${bulkTargetBookings.length} sessoes como executadas. Entram na proxima liquidacao; o Admin envia o pagamento dLocal.`
                   })
                 : t(props.language, {
-                    es: `Vas a volver ${executedReversible.length} sesiones ejecutadas a reservadas. Solo las que todavía no entraron a una liquidación.`,
-                    en: `You will revert ${executedReversible.length} executed sessions to reserved. Only those not yet in a payout.`,
-                    pt: `Voce vai voltar ${executedReversible.length} sessoes executadas para reservadas. So as que ainda nao entraram numa liquidacao.`
+                    es: `Vas a volver ${bulkTargetBookings.length} sesiones ejecutadas a reservadas. Solo las que todavía no entraron a una liquidación.`,
+                    en: `You will revert ${bulkTargetBookings.length} executed sessions to reserved. Only those not yet in a payout.`,
+                    pt: `Voce vai voltar ${bulkTargetBookings.length} sessoes executadas para reservadas. So as que ainda nao entraram numa liquidacao.`
                   })}
             </p>
             <div className="pro-reschedule-modal-actions">
-              <button type="button" disabled={bulkBusy} onClick={() => setBulkConfirmAction(null)}>
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={() => {
+                  setBulkConfirmAction(null);
+                  setBulkTargetBookings([]);
+                }}
+              >
                 {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
               </button>
               <button

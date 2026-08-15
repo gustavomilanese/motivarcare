@@ -1,7 +1,7 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PortalSection } from "../types";
 
-export type PortalNavGroup = "patients" | "business";
+export type PortalNavGroup = "patients";
 
 export type PortalNavItemDef = {
   to: PortalSection;
@@ -15,11 +15,6 @@ export const PORTAL_NAV_GROUP_LABELS: Record<PortalNavGroup, LocalizedText> = {
     es: "Tus Pacientes",
     en: "Your patients",
     pt: "Seus pacientes"
-  },
-  business: {
-    es: "Ingresos y preferencias",
-    en: "Earnings & preferences",
-    pt: "Receitas e preferencias"
   }
 };
 
@@ -32,17 +27,7 @@ export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
     group: "patients"
   },
   { to: "/chat", label: { es: "Chat", en: "Chat", pt: "Chat" }, group: "patients" },
-  {
-    to: "/reportes",
-    label: { es: "Reportes", en: "Reports", pt: "Relatórios" },
-    group: "patients"
-  },
-  { to: "/ingresos", label: { es: "Ingresos", en: "Earnings", pt: "Receitas" }, group: "business" },
-  {
-    to: "/agenda/ajustes",
-    label: { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" },
-    group: "business"
-  }
+  { to: "/ingresos", label: { es: "Ingresos", en: "Earnings", pt: "Receitas" } }
 ];
 
 export type ResolvedPortalNavLink = {

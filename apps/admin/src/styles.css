@@ -7114,14 +7114,45 @@ button.primary.finance-hero-search {
 
 .admin-unpaid-professionals-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.admin-unpaid-professionals-head-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  min-width: 0;
+  flex: 1;
 }
 
 .admin-unpaid-professionals-head .dashboard-page-heading {
   flex: 1;
   min-width: 0;
+  margin: 0;
+}
+
+.admin-unpaid-professionals-head-total {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+}
+
+.admin-unpaid-professionals-head-total strong {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1e3a8a;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-professionals-head-total span {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .admin-unpaid-excel-btn {
@@ -7153,17 +7184,32 @@ button.primary.finance-hero-search {
 .admin-unpaid-month-range {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
 
-.admin-unpaid-month-range .dashboard-month-field {
-  justify-content: flex-start;
+.admin-unpaid-filter-label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
 }
 
-.admin-unpaid-month-range .dashboard-month-input {
+.admin-unpaid-filter-label .dashboard-month-input {
   min-width: 9.5rem;
   width: auto;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid #d6deeb;
+  padding: 0 12px;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #0f172a;
 }
 
 .admin-unpaid-month-range-sep {
@@ -7234,21 +7280,74 @@ button.primary.finance-hero-search {
 }
 
 .admin-unpaid-professionals-toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(180px, 1.2fr) minmax(160px, 0.7fr);
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 8px;
 }
 
-.admin-unpaid-professionals-toolbar > input,
-.admin-unpaid-professionals-toolbar > select {
-  width: 100%;
+.admin-unpaid-professionals-toolbar > input {
+  flex: 1 1 180px;
+  max-width: 280px;
   min-height: 40px;
   border-radius: 10px;
   border: 1px solid #d6deeb;
   padding: 0 12px;
   font: inherit;
   background: #fff;
+}
+
+.admin-unpaid-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #d6deeb;
+  background: #fff;
+  font: inherit;
+  font-weight: 650;
+  color: #334155;
+  cursor: pointer;
+}
+
+.admin-unpaid-filters-toggle:hover,
+.admin-unpaid-filters-toggle:focus-visible {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  outline: none;
+}
+
+.admin-unpaid-filters-toggle.is-active {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.admin-unpaid-filters-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #5f44eb;
+}
+
+.admin-unpaid-professionals-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admin-unpaid-active-period {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .admin-unpaid-professionals-table-wrap {
@@ -7262,25 +7361,19 @@ button.primary.finance-hero-search {
 }
 
 .admin-unpaid-col-pro {
-  width: 26%;
+  width: auto;
 }
 
 .admin-unpaid-col-sessions {
-  width: 9%;
-}
-
-.admin-unpaid-col-unit,
-.admin-unpaid-col-gross,
-.admin-unpaid-col-fee {
-  width: 12%;
+  width: 18%;
 }
 
 .admin-unpaid-col-net {
-  width: 13%;
+  width: 22%;
 }
 
 .admin-unpaid-col-actions {
-  width: 16%;
+  width: 7.5rem;
 }
 
 .admin-unpaid-professionals-table th,
@@ -7302,6 +7395,28 @@ button.primary.finance-hero-search {
 .admin-unpaid-professionals-table td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.admin-unpaid-sort {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-unpaid-sort.is-active {
+  color: #1e3a8a;
+}
+
+.admin-unpaid-professionals-table th.num .admin-unpaid-sort {
+  width: 100%;
+  text-align: right;
 }
 
 .admin-unpaid-professionals-table td.num {
@@ -7390,11 +7505,53 @@ button.primary.finance-hero-search {
   color: #fff;
 }
 
-.admin-unpaid-icon-btn--pay:hover,
-.admin-unpaid-icon-btn--pay:focus-visible {
-  background: #4f37d4;
-  border-color: #4f37d4;
+.admin-unpaid-pay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #4f37d4;
+  background: #5f44eb;
   color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-unpaid-pay-btn:hover,
+.admin-unpaid-pay-btn:focus-visible {
+  background: #4f37d4;
+  outline: none;
+}
+
+.admin-unpaid-row-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 4px 2px;
+}
+
+.admin-unpaid-row-metrics span {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.admin-unpaid-row-metrics strong {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-unpaid-professionals-table button.primary,
@@ -7494,8 +7651,12 @@ button.primary.finance-hero-search {
 }
 
 @media (max-width: 900px) {
-  .admin-unpaid-professionals-toolbar {
-    grid-template-columns: 1fr;
+  .admin-unpaid-professionals-toolbar > input {
+    max-width: none;
+  }
+
+  .admin-unpaid-professionals-head-total {
+    text-align: left;
   }
 }
 

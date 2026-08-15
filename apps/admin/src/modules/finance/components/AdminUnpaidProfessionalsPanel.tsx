@@ -12,7 +12,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
-type SortKey = "name_az" | "sessions_desc" | "gross_desc" | "fee_desc" | "net_desc";
+type SortKey = "name_az" | "sessions_desc" | "net_desc";
 
 function averageSessionCents(row: AdminUnpaidProfessional): number {
   if (row.sessionsCount <= 0) {
@@ -61,6 +61,17 @@ function expandMonthKeysInRange(from: string, to: string): string[] {
   return keys;
 }
 
+function formatMonthKeyLabel(key: string, language: AppLanguage): string {
+  if (!/^\d{4}-\d{2}$/.test(key)) return key;
+  const [year, month] = key.split("-").map(Number);
+  return formatDateWithLocale({
+    value: new Date(Date.UTC(year, month - 1, 1)).toISOString(),
+    language,
+    timeZone: "UTC",
+    options: { month: "short", year: "numeric" }
+  });
+}
+
 export function AdminUnpaidProfessionalsPanel(props: {
   token: string;
   language: AppLanguage;
@@ -79,6 +90,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("net_desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
   const [expandedLoading, setExpandedLoading] = useState(false);
@@ -122,10 +134,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
           return left.professionalName.localeCompare(right.professionalName, undefined, { sensitivity: "base" });
         case "sessions_desc":
           return right.sessionsCount - left.sessionsCount || right.professionalNetCents - left.professionalNetCents;
-        case "gross_desc":
-          return right.grossCents - left.grossCents;
-        case "fee_desc":
-          return right.platformFeeCents - left.platformFeeCents;
         case "net_desc":
         default:
           return right.professionalNetCents - left.professionalNetCents;
@@ -138,12 +146,10 @@ export function AdminUnpaidProfessionalsPanel(props: {
     return filteredSorted.reduce(
       (acc, row) => {
         acc.sessionsCount += row.sessionsCount;
-        acc.grossCents += row.grossCents;
-        acc.platformFeeCents += row.platformFeeCents;
         acc.professionalNetCents += row.professionalNetCents;
         return acc;
       },
-      { sessionsCount: 0, grossCents: 0, platformFeeCents: 0, professionalNetCents: 0 }
+      { sessionsCount: 0, professionalNetCents: 0 }
     );
   }, [filteredSorted]);
 
@@ -204,13 +210,27 @@ export function AdminUnpaidProfessionalsPanel(props: {
     <>
       <section className={`admin-unpaid-professionals${props.compact ? " admin-unpaid-professionals--compact" : ""}`}>
         <header className="admin-unpaid-professionals-head">
-          <h2 className="dashboard-page-heading">
-            {t(props.language, {
-              es: "Pendiente de pagar a profesionales",
-              en: "Pending professional payouts",
-              pt: "Pendente de pagar a profissionais"
-            })}
-          </h2>
+          <div className="admin-unpaid-professionals-head-copy">
+            <h2 className="dashboard-page-heading">
+              {t(props.language, {
+                es: "Pendiente de pagar a profesionales",
+                en: "Pending professional payouts",
+                pt: "Pendente de pagar a profissionais"
+              })}
+            </h2>
+            {!loading && filteredSorted.length > 0 ? (
+              <p className="admin-unpaid-professionals-head-total">
+                <strong>{formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}</strong>
+                <span>
+                  {t(props.language, {
+                    es: `${filteredSorted.length === 1 ? "1 profesional" : `${filteredSorted.length} profesionales`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "sesión" : "sesiones"}`,
+                    en: `${filteredSorted.length === 1 ? "1 professional" : `${filteredSorted.length} professionals`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "session" : "sessions"}`,
+                    pt: `${filteredSorted.length === 1 ? "1 profissional" : `${filteredSorted.length} profissionais`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "sessão" : "sessões"}`
+                  })}
+                </span>
+              </p>
+            ) : null}
+          </div>
           <button
             type="button"
             className="admin-unpaid-excel-btn"
@@ -233,36 +253,62 @@ export function AdminUnpaidProfessionalsPanel(props: {
         </header>
 
         <div className="admin-unpaid-professionals-toolbar">
-          <div className="admin-unpaid-month-range" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Período" })}>
-            <div className="dashboard-month-field">
-              <input
-                className="dashboard-month-input"
-                type="month"
-                value={monthFrom}
-                max={monthTo || maxMonth}
-                onChange={(event) => setMonthFrom(event.target.value)}
-                aria-label={t(props.language, { es: "Desde mes", en: "From month", pt: "Desde mês" })}
-              />
+          <input
+            type="search"
+            value={search}
+            placeholder={t(props.language, {
+              es: "Buscar profesional…",
+              en: "Search professional…",
+              pt: "Buscar profissional…"
+            })}
+            aria-label={t(props.language, {
+              es: "Buscar profesional",
+              en: "Search professional",
+              pt: "Buscar profissional"
+            })}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <button
+            type="button"
+            className={`admin-unpaid-filters-toggle${filtersOpen || hasMonthFilter ? " is-active" : ""}`}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
+            {hasMonthFilter ? <span className="admin-unpaid-filters-dot" aria-hidden /> : null}
+          </button>
+        </div>
+
+        {filtersOpen ? (
+          <div className="admin-unpaid-professionals-filters">
+            <div className="admin-unpaid-month-range" role="group" aria-label={t(props.language, { es: "Periodo", en: "Period", pt: "Período" })}>
+              <label className="admin-unpaid-filter-label">
+                {t(props.language, { es: "Desde", en: "From", pt: "Desde" })}
+                <input
+                  className="dashboard-month-input"
+                  type="month"
+                  value={monthFrom}
+                  max={monthTo || maxMonth}
+                  onChange={(event) => setMonthFrom(event.target.value)}
+                />
+              </label>
+              <label className="admin-unpaid-filter-label">
+                {t(props.language, { es: "Hasta", en: "To", pt: "Até" })}
+                <input
+                  className="dashboard-month-input"
+                  type="month"
+                  value={monthTo}
+                  min={monthFrom || undefined}
+                  max={maxMonth}
+                  onChange={(event) => setMonthTo(event.target.value)}
+                />
+              </label>
+              {hasMonthFilter ? (
+                <button type="button" className="secondary admin-unpaid-month-clear" onClick={clearMonthFilter}>
+                  {t(props.language, { es: "Todos los meses", en: "All months", pt: "Todos os meses" })}
+                </button>
+              ) : null}
             </div>
-            <span className="admin-unpaid-month-range-sep" aria-hidden>
-              –
-            </span>
-            <div className="dashboard-month-field">
-              <input
-                className="dashboard-month-input"
-                type="month"
-                value={monthTo}
-                min={monthFrom || undefined}
-                max={maxMonth}
-                onChange={(event) => setMonthTo(event.target.value)}
-                aria-label={t(props.language, { es: "Hasta mes", en: "To month", pt: "Até mês" })}
-              />
-            </div>
-            {hasMonthFilter ? (
-              <button type="button" className="secondary admin-unpaid-month-clear" onClick={clearMonthFilter}>
-                {t(props.language, { es: "Todos", en: "All", pt: "Todos" })}
-              </button>
-            ) : null}
             {props.onCreateLiquidacion ? (
               <button
                 type="button"
@@ -285,41 +331,15 @@ export function AdminUnpaidProfessionalsPanel(props: {
               </button>
             ) : null}
           </div>
-          <input
-            type="search"
-            value={search}
-            placeholder={t(props.language, {
-              es: "Buscar profesional…",
-              en: "Search professional…",
-              pt: "Buscar profissional…"
+        ) : hasMonthFilter ? (
+          <p className="admin-unpaid-active-period">
+            {t(props.language, {
+              es: `Periodo: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`,
+              en: `Period: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`,
+              pt: `Período: ${formatMonthKeyLabel(monthFrom || monthTo, props.language)}${monthFrom && monthTo && monthFrom !== monthTo ? ` – ${formatMonthKeyLabel(monthTo, props.language)}` : ""}`
             })}
-            aria-label={t(props.language, {
-              es: "Buscar profesional",
-              en: "Search professional",
-              pt: "Buscar profissional"
-            })}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select
-            value={sortKey}
-            aria-label={t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
-          >
-            <option value="net_desc">
-              {t(props.language, { es: "Neto · mayor", en: "Net · highest", pt: "Líquido · maior" })}
-            </option>
-            <option value="gross_desc">
-              {t(props.language, { es: "Ejecutado · mayor", en: "Gross · highest", pt: "Executado · maior" })}
-            </option>
-            <option value="fee_desc">
-              {t(props.language, { es: "Comisión · mayor", en: "Fee · highest", pt: "Comissão · maior" })}
-            </option>
-            <option value="sessions_desc">
-              {t(props.language, { es: "Sesiones · más", en: "Sessions · most", pt: "Sessões · mais" })}
-            </option>
-            <option value="name_az">{t(props.language, { es: "Nombre A–Z", en: "Name A–Z", pt: "Nome A–Z" })}</option>
-          </select>
-        </div>
+          </p>
+        ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}
         {loading ? (
@@ -338,23 +358,39 @@ export function AdminUnpaidProfessionalsPanel(props: {
               <colgroup>
                 <col className="admin-unpaid-col-pro" />
                 <col className="admin-unpaid-col-sessions" />
-                <col className="admin-unpaid-col-unit" />
-                <col className="admin-unpaid-col-gross" />
-                <col className="admin-unpaid-col-fee" />
                 <col className="admin-unpaid-col-net" />
                 <col className="admin-unpaid-col-actions" />
               </colgroup>
               <thead>
                 <tr>
-                  <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
-                  <th className="num">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</th>
-                  <th className="num">
-                    {t(props.language, { es: "Valor / sesión", en: "Value / session", pt: "Valor / sessão" })}
+                  <th>
+                    <button
+                      type="button"
+                      className={`admin-unpaid-sort${sortKey === "name_az" ? " is-active" : ""}`}
+                      onClick={() => setSortKey("name_az")}
+                    >
+                      {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
+                    </button>
                   </th>
-                  <th className="num">{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</th>
-                  <th className="num">{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}</th>
-                  <th className="num">{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}</th>
-                  <th className="admin-unpaid-actions-col">{t(props.language, { es: "Acciones", en: "Actions", pt: "Ações" })}</th>
+                  <th className="num">
+                    <button
+                      type="button"
+                      className={`admin-unpaid-sort${sortKey === "sessions_desc" ? " is-active" : ""}`}
+                      onClick={() => setSortKey("sessions_desc")}
+                    >
+                      {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
+                    </button>
+                  </th>
+                  <th className="num">
+                    <button
+                      type="button"
+                      className={`admin-unpaid-sort${sortKey === "net_desc" ? " is-active" : ""}`}
+                      onClick={() => setSortKey("net_desc")}
+                    >
+                      {t(props.language, { es: "A pagar", en: "To pay", pt: "A pagar" })}
+                    </button>
+                  </th>
+                  <th className="admin-unpaid-actions-col" />
                 </tr>
               </thead>
               <tbody>
@@ -377,57 +413,40 @@ export function AdminUnpaidProfessionalsPanel(props: {
                           </button>
                         </td>
                         <td className="num">{row.sessionsCount}</td>
-                        <td className="num">{formatAdminFinanceUsd(unit, props.language)}</td>
-                        <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
-                        <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
                         <td className="num admin-unpaid-net">
                           {formatAdminFinanceUsd(row.professionalNetCents, props.language)}
                         </td>
                         <td className="admin-unpaid-actions">
                           <button
                             type="button"
-                            className="admin-unpaid-icon-btn"
-                            onClick={() => void toggleExpand(row)}
-                            aria-expanded={expanded}
-                            aria-label={
-                              expanded
-                                ? t(props.language, { es: "Ocultar sesiones", en: "Hide sessions", pt: "Ocultar sessões" })
-                                : t(props.language, { es: "Ver sesiones", en: "Show sessions", pt: "Ver sessões" })
-                            }
-                            title={
-                              expanded
-                                ? t(props.language, { es: "Ocultar sesiones", en: "Hide sessions", pt: "Ocultar sessões" })
-                                : t(props.language, { es: "Ver sesiones", en: "Show sessions", pt: "Ver sessões" })
-                            }
-                          >
-                            <span aria-hidden>{expanded ? "−" : "+"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-unpaid-icon-btn admin-unpaid-icon-btn--pay"
+                            className="admin-unpaid-pay-btn"
                             onClick={() => setReviewTarget(row)}
-                            aria-label={t(props.language, {
-                              es: "Revisar y pagar",
-                              en: "Review & pay",
-                              pt: "Revisar e pagar"
-                            })}
-                            title={t(props.language, {
-                              es: "Revisar y pagar",
-                              en: "Review & pay",
-                              pt: "Revisar e pagar"
-                            })}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="2" y="5" width="20" height="14" rx="2" />
-                              <path d="M2 10h20" />
-                              <path d="M6 15h2" />
-                            </svg>
+                            {t(props.language, {
+                              es: "Pagar",
+                              en: "Pay",
+                              pt: "Pagar"
+                            })}
                           </button>
                         </td>
                       </tr>
                       {expanded ? (
                         <tr className="admin-unpaid-detail-row">
-                          <td colSpan={7}>
+                          <td colSpan={4}>
+                            <div className="admin-unpaid-row-metrics">
+                              <span>
+                                {t(props.language, { es: "Valor / sesión", en: "Value / session", pt: "Valor / sessão" })}
+                                <strong>{formatAdminFinanceUsd(unit, props.language)}</strong>
+                              </span>
+                              <span>
+                                {t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}
+                                <strong>{formatAdminFinanceUsd(row.grossCents, props.language)}</strong>
+                              </span>
+                              <span>
+                                {t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}
+                                <strong>{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</strong>
+                              </span>
+                            </div>
                             {expandedLoading ? (
                               <p className="admin-unpaid-detail-loading">
                                 {t(props.language, {
@@ -540,30 +559,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
                   );
                 })}
               </tbody>
-              <tfoot>
-                <tr className="admin-unpaid-totals-row">
-                  <td>
-                    <strong>
-                      {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
-                    </strong>
-                    <span className="admin-unpaid-totals-count">
-                      {" "}
-                      · {filteredSorted.length}{" "}
-                      {t(props.language, {
-                        es: filteredSorted.length === 1 ? "profesional" : "profesionales",
-                        en: filteredSorted.length === 1 ? "professional" : "professionals",
-                        pt: filteredSorted.length === 1 ? "profissional" : "profissionais"
-                      })}
-                    </span>
-                  </td>
-                  <td className="num">{listTotals.sessionsCount}</td>
-                  <td className="num">—</td>
-                  <td className="num">{formatAdminFinanceUsd(listTotals.grossCents, props.language)}</td>
-                  <td className="num">{formatAdminFinanceUsd(listTotals.platformFeeCents, props.language)}</td>
-                  <td className="num admin-unpaid-net">{formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}</td>
-                  <td className="admin-unpaid-actions-col" aria-hidden="true" />
-                </tr>
-              </tfoot>
             </table>
           </div>
         )}

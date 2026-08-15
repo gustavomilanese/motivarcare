@@ -20,7 +20,9 @@ interface TreatmentReportsPageProps {
 }
 
 /**
- * Pestaña "Reportes" del profesional (PR-T4).
+ * Página "Reportes" del profesional (PR-T4). Acceso desde el menú `...` del header,
+ * no desde el nav principal — el producto de reportes aún no está definido
+ * (`docs/backlog-reportes-profesional.md`).
  *
  * UX:
  * 1. Carga la lista de pacientes con consent activo.

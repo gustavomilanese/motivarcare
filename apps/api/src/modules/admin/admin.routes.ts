@@ -1718,8 +1718,8 @@ adminRouter.get("/bookings", async (req, res) => {
         || purchase?.sessionPackage.name?.trim()
         || null;
       const packageSessionNumber = isPackageCredit
-        ? booking.packageSessionOrdinal
-          ?? packageSessionIndexByBookingId.get(booking.id)
+        ? packageSessionIndexByBookingId.get(booking.id)
+          ?? booking.packageSessionOrdinal
           ?? null
         : null;
 
@@ -2698,8 +2698,8 @@ adminRouter.get("/patients/:patientId/management", async (req, res) => {
             ?? null,
           packageDiscountPercent: purchase?.packageDiscountPercentSnapshot ?? null,
           packageSessionNumber: isPackageCredit
-            ? booking.packageSessionOrdinal
-              ?? managementSessionIndex.get(booking.id)
+            ? managementSessionIndex.get(booking.id)
+              ?? booking.packageSessionOrdinal
               ?? null
             : null,
           cancellationReason: booking.cancellationReason,

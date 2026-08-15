@@ -102,6 +102,8 @@ export function ExecutedSessionsList(props: {
   const [searchDraft, setSearchDraft] = useState(props.search);
   const [exporting, setExporting] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const extraFiltersActive = props.pricingFilter !== "all" || props.sortKey !== "date_desc";
 
   useEffect(() => {
     setSearchDraft(props.search);
@@ -186,50 +188,73 @@ export function ExecutedSessionsList(props: {
         }}
         onConfirm={(range) => void handleExportConfirm(range)}
       />
-      <div className="pro-executed-sessions-toolbar">
-        <input
-          type="search"
-          className="pro-dashboard-revenue-control pro-executed-sessions-control--search"
-          value={searchDraft}
-          placeholder={t(props.language, {
-            es: "Buscar paciente o paquete…",
-            en: "Search patient or package…",
-            pt: "Buscar paciente ou pacote…"
-          })}
-          aria-label={t(props.language, { es: "Buscar paciente o paquete", en: "Search patient or package", pt: "Buscar paciente ou pacote" })}
-          onChange={(event) => setSearchDraft(event.target.value)}
-        />
-        <select
-          className="pro-dashboard-revenue-control pro-executed-sessions-control--filter"
-          value={props.pricingFilter}
-          aria-label={t(props.language, { es: "Tipo de sesión", en: "Session type", pt: "Tipo de sessao" })}
-          onChange={(event) => props.onPricingFilterChange(event.target.value as MovementsPricingFilter)}
-        >
-          <option value="all">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
-          <option value="package">{t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}</option>
-          <option value="list">{t(props.language, { es: "Individual", en: "Single", pt: "Avulsa" })}</option>
-        </select>
-        <select
-          className="pro-dashboard-revenue-control pro-executed-sessions-control--sort"
-          value={props.sortKey}
-          aria-label={t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}
-          onChange={(event) => props.onSortKeyChange(event.target.value as MovementsSortKey)}
-        >
-          <option value="date_desc">{t(props.language, { es: "Fecha · reciente", en: "Date · newest", pt: "Data · recente" })}</option>
-          <option value="date_asc">{t(props.language, { es: "Fecha · antigua", en: "Date · oldest", pt: "Data · antiga" })}</option>
-          <option value="gross_desc">{t(props.language, { es: "Ejecutado · mayor", en: "Executed · highest", pt: "Executado · maior" })}</option>
-          <option value="gross_asc">{t(props.language, { es: "Ejecutado · menor", en: "Executed · lowest", pt: "Executado · menor" })}</option>
-        </select>
-        <button
-          type="button"
-          className="pro-dashboard-revenue-control pro-executed-sessions-export"
-          disabled={exporting}
-          onClick={() => setExportModalOpen(true)}
-        >
-          {exporting
-            ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
-            : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
-        </button>
+      <div className="pro-executed-sessions-controls">
+        <div className="pro-executed-sessions-toolbar">
+          <input
+            type="search"
+            className="pro-dashboard-revenue-control pro-executed-sessions-control--search"
+            value={searchDraft}
+            placeholder={t(props.language, {
+              es: "Buscar paciente…",
+              en: "Search patient…",
+              pt: "Buscar paciente…"
+            })}
+            aria-label={t(props.language, { es: "Buscar paciente", en: "Search patient", pt: "Buscar paciente" })}
+            onChange={(event) => setSearchDraft(event.target.value)}
+          />
+          <button
+            type="button"
+            className={`pro-dashboard-revenue-control pro-executed-sessions-filters-toggle${
+              filtersOpen || extraFiltersActive ? " is-active" : ""
+            }`}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
+            {extraFiltersActive ? <span className="pro-executed-sessions-filters-dot" aria-hidden /> : null}
+          </button>
+          <button
+            type="button"
+            className="pro-dashboard-revenue-control pro-executed-sessions-export"
+            disabled={exporting}
+            onClick={() => setExportModalOpen(true)}
+          >
+            {exporting
+              ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
+              : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+          </button>
+        </div>
+        {filtersOpen ? (
+          <div className="pro-executed-sessions-filters-panel">
+            <label className="pro-executed-sessions-filter-field">
+              <span>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</span>
+              <select
+                className="pro-dashboard-revenue-control pro-executed-sessions-control--filter"
+                value={props.pricingFilter}
+                aria-label={t(props.language, { es: "Tipo de sesión", en: "Session type", pt: "Tipo de sessao" })}
+                onChange={(event) => props.onPricingFilterChange(event.target.value as MovementsPricingFilter)}
+              >
+                <option value="all">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
+                <option value="package">{t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}</option>
+                <option value="list">{t(props.language, { es: "Individual", en: "Single", pt: "Avulsa" })}</option>
+              </select>
+            </label>
+            <label className="pro-executed-sessions-filter-field">
+              <span>{t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}</span>
+              <select
+                className="pro-dashboard-revenue-control pro-executed-sessions-control--sort"
+                value={props.sortKey}
+                aria-label={t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}
+                onChange={(event) => props.onSortKeyChange(event.target.value as MovementsSortKey)}
+              >
+                <option value="date_desc">{t(props.language, { es: "Más reciente", en: "Newest first", pt: "Mais recente" })}</option>
+                <option value="date_asc">{t(props.language, { es: "Más antigua", en: "Oldest first", pt: "Mais antiga" })}</option>
+                <option value="gross_desc">{t(props.language, { es: "Mayor ejecutado", en: "Highest executed", pt: "Maior executado" })}</option>
+                <option value="gross_asc">{t(props.language, { es: "Menor ejecutado", en: "Lowest executed", pt: "Menor executado" })}</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
       </div>
 
       {props.loading ? (

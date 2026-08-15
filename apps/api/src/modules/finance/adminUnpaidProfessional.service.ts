@@ -405,8 +405,8 @@ export async function getUnpaidProfessionalDetail(
       ?? record.package?.credits
       ?? null;
     const packageSessionNumber = record.purchaseId
-      ? record.booking.packageSessionOrdinal
-        ?? packageSessionIndexByBookingId.get(record.bookingId)
+      ? packageSessionIndexByBookingId.get(record.bookingId)
+        ?? record.booking.packageSessionOrdinal
         ?? null
       : null;
     const sourceKind = record.isTrial ? ("trial" as const) : ("package" as const);

@@ -90,6 +90,32 @@ export function ProHeaderIconMore(props: ProHeaderIconProps) {
   );
 }
 
+export function ProHeaderIconReports(props: ProHeaderIconProps) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M14 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M9 13h6M9 17h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ProHeaderIconAgendaSettings(props: ProHeaderIconProps) {
+  return (
+    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.5 7.5H14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4.5 16.5H10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="17" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="13" cy="16.5" r="2.5" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export function ProHeaderIconLocale(props: ProHeaderIconProps) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -190,8 +190,8 @@ export async function getAdminPlatformExecutedEarnings(query: Record<string, unk
         record.purchase?.packageCreditsSnapshot ?? record.package?.credits ?? null;
       const fromPackage = Boolean(record.packageId);
       const packageSessionNumber = record.purchaseId
-        ? record.booking.packageSessionOrdinal
-          ?? packageSessionIndexByBookingId.get(record.bookingId)
+        ? packageSessionIndexByBookingId.get(record.bookingId)
+          ?? record.booking.packageSessionOrdinal
           ?? null
         : null;
       return {

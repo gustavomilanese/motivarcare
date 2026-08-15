@@ -16,6 +16,8 @@ import {
 import { ProfessionalFocusAreasPicker } from "../../onboarding/components/ProfessionalFocusAreasPicker";
 import { ProfessionalGuidanceBanner } from "../../onboarding/components/ProfessionalGuidanceBanner";
 import { ProPageLoader } from "../components/ProPageLoader";
+import { ProfileCollapsibleSection } from "../components/ProfileCollapsibleSection";
+import { ProfessionalBankDetailsSection } from "../components/ProfessionalBankDetailsSection";
 import { ProfessionalPublicProfilePreviewCard } from "../components/ProfessionalPublicProfilePreviewCard";
 import { ProfessionalReviewsInvitePanel } from "../components/ProfessionalReviewsInvitePanel";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
@@ -43,6 +45,16 @@ function clampInt(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)));
 }
 
+type ProfileStudioSection =
+  | "identity"
+  | "bank"
+  | "education"
+  | "focus"
+  | "presentation"
+  | "pricing"
+  | "media"
+  | "advanced";
+
 function profileCompletionScore(profile: ProfessionalProfile): { done: number; total: number } {
   const checks = [
     Boolean(profile.firstName?.trim() && profile.lastName?.trim()),
@@ -66,6 +78,19 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   const [isReadingVideo, setIsReadingVideo] = useState(false);
   const [readingDiplomaIndex, setReadingDiplomaIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [openSections, setOpenSections] = useState<Partial<Record<ProfileStudioSection, boolean>>>({
+    identity: true
+  });
+  const [bankEditing, setBankEditing] = useState(false);
+
+  const isSectionOpen = (id: ProfileStudioSection) => Boolean(openSections[id]);
+  const toggleSection = (id: ProfileStudioSection) => {
+    setOpenSections((current) => ({ ...current, [id]: !current[id] }));
+  };
+  const openBankForEdit = () => {
+    setOpenSections((current) => ({ ...current, bank: true }));
+    setBankEditing(true);
+  };
 
   const { sessionPriceLocalLabel } = useProfessionalLocalSessionPriceDisplay({
     residencyCountry: profile?.residencyCountry,
@@ -126,6 +151,16 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
   useEffect(() => {
     void loadProfile();
   }, [props.token]);
+
+  useEffect(() => {
+    if (!profile || window.location.hash !== "#pro-profile-bank") {
+      return;
+    }
+    setOpenSections((current) => ({ ...current, bank: true }));
+    requestAnimationFrame(() => {
+      document.getElementById("pro-profile-bank")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [profile]);
 
   const birthCountryOptions = useMemo(() => {
     const current = profile?.birthCountry?.trim();
@@ -410,20 +445,18 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
             </aside>
 
             <div className="pro-profile-studio__main">
-              <section className="pro-profile-block" id="pro-profile-identity">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">01</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Identidad profesional", en: "Professional identity", pt: "Identidade profissional" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Datos básicos que los pacientes ven al conocerte.",
-                        en: "Core details patients see when they discover you.",
-                        pt: "Dados basicos que os pacientes veem ao conhecer voce."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-identity"
+                step="01"
+                title={t(props.language, { es: "Identidad profesional", en: "Professional identity", pt: "Identidade profissional" })}
+                description={t(props.language, {
+                  es: "Datos básicos que los pacientes ven al conocerte.",
+                  en: "Core details patients see when they discover you.",
+                  pt: "Dados basicos que os pacientes veem ao conhecer voce."
+                })}
+                open={isSectionOpen("identity")}
+                onToggle={() => toggleSection("identity")}
+              >
                 <div className="pro-profile-fields">
                   <label className="pro-profile-field">
                     <span>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</span>
@@ -537,22 +570,52 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     />
                   </label>
                 </div>
-              </section>
+              </ProfileCollapsibleSection>
 
-              <section className="pro-profile-block" id="pro-profile-education">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">02</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Formación y títulos", en: "Education and credentials", pt: "Formacao e titulos" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Tus diplomas respaldan la confianza del paciente y la validación del equipo.",
-                        en: "Your degrees build patient trust and support our review process.",
-                        pt: "Seus diplomas sustentam a confianca do paciente e nossa revisao."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-bank"
+                step="02"
+                title={t(props.language, { es: "Datos bancarios", en: "Bank details", pt: "Dados bancarios" })}
+                description={t(props.language, {
+                  es: "Para recibir el pago de tus sesiones ejecutadas.",
+                  en: "Used to pay you for completed sessions.",
+                  pt: "Para receber o pagamento das sessoes realizadas."
+                })}
+                open={isSectionOpen("bank")}
+                onToggle={() => {
+                  if (isSectionOpen("bank")) {
+                    setBankEditing(false);
+                  }
+                  toggleSection("bank");
+                }}
+                headerActions={
+                  bankEditing ? null : (
+                    <button type="button" className="pro-secondary pro-profile-bank-edit-btn" onClick={openBankForEdit}>
+                      {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                    </button>
+                  )
+                }
+              >
+                <ProfessionalBankDetailsSection
+                  token={props.token}
+                  language={props.language}
+                  editing={bankEditing}
+                  onEditingChange={setBankEditing}
+                />
+              </ProfileCollapsibleSection>
+
+              <ProfileCollapsibleSection
+                id="pro-profile-education"
+                step="03"
+                title={t(props.language, { es: "Formación y títulos", en: "Education and credentials", pt: "Formacao e titulos" })}
+                description={t(props.language, {
+                  es: "Tus diplomas respaldan la confianza del paciente y la validación del equipo.",
+                  en: "Your degrees build patient trust and support our review process.",
+                  pt: "Seus diplomas sustentam a confianca do paciente e nossa revisao."
+                })}
+                open={isSectionOpen("education")}
+                onToggle={() => toggleSection("education")}
+              >
                 <div className="pro-profile-education-list">
                   {(profile.diplomas ?? []).map((diploma, index) => (
                     <article className="pro-profile-education-card" key={diploma.id ?? `diploma-${index}`}>
@@ -732,22 +795,20 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     + {t(props.language, { es: "Agregar título", en: "Add degree", pt: "Adicionar titulo" })}
                   </button>
                 </div>
-              </section>
+              </ProfileCollapsibleSection>
 
-              <section className="pro-profile-block" id="pro-profile-focus">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">03</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Ámbitos de atención", en: "Focus areas", pt: "Areas de atuacao" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Elegí los motivos con los que mejor encajás en el matching.",
-                        en: "Choose the reasons you match best with in our directory.",
-                        pt: "Escolha os motivos com os quais voce combina melhor no matching."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-focus"
+                step="04"
+                title={t(props.language, { es: "Ámbitos de atención", en: "Focus areas", pt: "Areas de atuacao" })}
+                description={t(props.language, {
+                  es: "Elegí los motivos con los que mejor encajás en el matching.",
+                  en: "Choose the reasons you match best with in our directory.",
+                  pt: "Escolha os motivos com os quais voce combina melhor no matching."
+                })}
+                open={isSectionOpen("focus")}
+                onToggle={() => toggleSection("focus")}
+              >
                 {(profile.focusAreas ?? []).length > 0 ? (
                   <ProfessionalGuidanceBanner language={props.language} text={PROFESSIONAL_FOCUS_AREAS_AI_NOTICE} />
                 ) : null}
@@ -756,22 +817,20 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                   selected={profile.focusAreas ?? []}
                   onToggle={toggleProfileFocusArea}
                 />
-              </section>
+              </ProfileCollapsibleSection>
 
-              <section className="pro-profile-block" id="pro-profile-presentation">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">04</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Presentación pública", en: "Public presentation", pt: "Apresentacao publica" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Contá quién sos y cómo trabajás. Esto aparece en tu ficha pública.",
-                        en: "Share who you are and how you work. This appears on your public profile.",
-                        pt: "Conte quem voce e e como trabalha. Isso aparece na sua ficha publica."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-presentation"
+                step="05"
+                title={t(props.language, { es: "Presentación pública", en: "Public presentation", pt: "Apresentacao publica" })}
+                description={t(props.language, {
+                  es: "Contá quién sos y cómo trabajás. Esto aparece en tu ficha pública.",
+                  en: "Share who you are and how you work. This appears on your public profile.",
+                  pt: "Conte quem voce e e como trabalha. Isso aparece na sua ficha publica."
+                })}
+                open={isSectionOpen("presentation")}
+                onToggle={() => toggleSection("presentation")}
+              >
                 <div className="pro-profile-fields pro-profile-fields--stack">
                   <label className="pro-profile-field pro-profile-field--wide">
                     <span>{t(props.language, { es: "Descripción corta", en: "Short description", pt: "Descricao curta" })}</span>
@@ -812,22 +871,20 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     />
                   </label>
                 </div>
-              </section>
+              </ProfileCollapsibleSection>
 
-              <section className="pro-profile-block" id="pro-profile-pricing">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">05</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Tarifas", en: "Pricing", pt: "Tarifas" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Precio de referencia por sesión y descuentos por paquetes.",
-                        en: "Reference session price and package discounts.",
-                        pt: "Preco de referencia por sessao e descontos por pacotes."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-pricing"
+                step="06"
+                title={t(props.language, { es: "Tarifas", en: "Pricing", pt: "Tarifas" })}
+                description={t(props.language, {
+                  es: "Precio de referencia por sesión y descuentos por paquetes.",
+                  en: "Reference session price and package discounts.",
+                  pt: "Preco de referencia por sessao e descontos por pacotes."
+                })}
+                open={isSectionOpen("pricing")}
+                onToggle={() => toggleSection("pricing")}
+              >
                 <div className="pro-profile-pricing-highlight">
                   <label className="pro-profile-field">
                     <span>{t(props.language, { es: "Precio por sesión (USD)", en: "Price per session (USD)", pt: "Preco por sessao (USD)" })}</span>
@@ -900,22 +957,20 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     </div>
                   </label>
                 </div>
-              </section>
+              </ProfileCollapsibleSection>
 
-              <section className="pro-profile-block" id="pro-profile-media">
-                <header className="pro-profile-block__head">
-                  <span className="pro-profile-block__step">06</span>
-                  <div>
-                    <h2>{t(props.language, { es: "Foto y video", en: "Photo and video", pt: "Foto e video" })}</h2>
-                    <p>
-                      {t(props.language, {
-                        es: "Una imagen clara y un video breve aumentan la confianza del paciente.",
-                        en: "A clear photo and short video build patient trust.",
-                        pt: "Uma foto clara e um video curto aumentam a confianca do paciente."
-                      })}
-                    </p>
-                  </div>
-                </header>
+              <ProfileCollapsibleSection
+                id="pro-profile-media"
+                step="07"
+                title={t(props.language, { es: "Foto y video", en: "Photo and video", pt: "Foto e video" })}
+                description={t(props.language, {
+                  es: "Una imagen clara y un video breve aumentan la confianza del paciente.",
+                  en: "A clear photo and short video build patient trust.",
+                  pt: "Uma foto clara e um video curto aumentam a confianca do paciente."
+                })}
+                open={isSectionOpen("media")}
+                onToggle={() => toggleSection("media")}
+              >
                 <div className="pro-profile-media-grid">
                   <div className="pro-profile-media-card">
                     <div className="pro-profile-media-preview">
@@ -994,12 +1049,13 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     </div>
                   </div>
                 </div>
-              </section>
+              </ProfileCollapsibleSection>
 
-              <details className="pro-profile-block pro-profile-block--advanced">
-                <summary>
-                  {t(props.language, { es: "Preferencias avanzadas", en: "Advanced preferences", pt: "Preferencias avancadas" })}
-                </summary>
+              <ProfileCollapsibleSection
+                title={t(props.language, { es: "Preferencias avanzadas", en: "Advanced preferences", pt: "Preferencias avancadas" })}
+                open={isSectionOpen("advanced")}
+                onToggle={() => toggleSection("advanced")}
+              >
                 <div className="pro-profile-fields pro-profile-fields--stack">
                   <label className="pro-profile-field pro-profile-field--wide">
                     <span>{t(props.language, { es: "Zona horaria", en: "Time zone", pt: "Fuso horario" })}</span>
@@ -1039,7 +1095,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                     </p>
                   ) : null}
                 </div>
-              </details>
+              </ProfileCollapsibleSection>
             </div>
           </div>
 

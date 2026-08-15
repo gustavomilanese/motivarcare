@@ -31,48 +31,97 @@ export async function allocateNextPackageSessionOrdinal(
   const purchase = await tx.patientPackagePurchase.findUnique({
     where: { id: purchaseId },
     select: {
-      remainingCredits: true,
-      packageCreditsSnapshot: true,
-      totalCredits: true
+      packageCreditsSnapshot: true
     }
   });
   if (!purchase) {
     throw new Error("PURCHASE_NOT_FOUND");
   }
 
-  if (
-    purchase.packageCreditsSnapshot != null
-    && purchase.packageCreditsSnapshot > 0
-    && purchase.remainingCredits <= purchase.packageCreditsSnapshot
-  ) {
-    return {
-      ordinal: packageSessionOrdinalFromRemaining({
-        remainingCreditsBeforeConsume: purchase.remainingCredits,
-        packageCreditsSnapshot: purchase.packageCreditsSnapshot,
-        totalCredits: purchase.totalCredits
-      }),
-      packageCredits: purchase.packageCreditsSnapshot
-    };
-  }
-
-  const priorActive = await tx.booking.count({
+  const siblings = await tx.booking.findMany({
     where: {
       consumedPurchaseId: purchaseId,
       consumedCredits: { gt: 0 },
       status: { not: "CANCELLED" }
-    }
+    },
+    select: { packageSessionOrdinal: true }
   });
+  const used = siblings
+    .map((booking) => booking.packageSessionOrdinal)
+    .filter((value): value is number => value != null && value > 0);
+  const uniqueUsed = new Set(used);
+  const nextFromCount = siblings.length + 1;
+  const nextFromStored = used.length > 0 ? Math.max(...used) + 1 : 1;
+  const ordinal =
+    uniqueUsed.size === used.length ? Math.max(nextFromCount, nextFromStored) : nextFromCount;
 
   return {
-    ordinal: priorActive + 1,
+    ordinal,
     packageCredits: purchase.packageCreditsSnapshot
   };
 }
 
+type PackageSessionIndexBooking = {
+  id: string;
+  packageSessionOrdinal: number | null;
+  startsAt: Date;
+  createdAt?: Date;
+  status: string;
+  completedAt: Date | null;
+};
+
+function compareBookingsByStart(left: PackageSessionIndexBooking, right: PackageSessionIndexBooking): number {
+  const byStart = left.startsAt.getTime() - right.startsAt.getTime();
+  if (byStart !== 0) return byStart;
+  return (left.createdAt?.getTime() ?? 0) - (right.createdAt?.getTime() ?? 0);
+}
+
+/**
+ * Numera 1..n las reservas de una compra. Si los ordinales persistidos están
+ * completos y no se repiten, se respetan; si hay duplicados (p. ej. todo en 1),
+ * se resecuencia por fecha.
+ */
+export function resolvePackageSessionIndexForPurchase(
+  bookings: PackageSessionIndexBooking[]
+): Map<string, number> {
+  const indexByBookingId = new Map<string, number>();
+  const active = bookings
+    .filter((booking) => booking.status !== "CANCELLED")
+    .sort(compareBookingsByStart);
+
+  const stored = active
+    .map((booking) => booking.packageSessionOrdinal)
+    .filter((value): value is number => value != null && value > 0);
+  const storedUsable = stored.length === active.length && new Set(stored).size === stored.length;
+
+  if (storedUsable) {
+    for (const booking of active) {
+      indexByBookingId.set(booking.id, booking.packageSessionOrdinal as number);
+    }
+  } else {
+    active.forEach((booking, index) => {
+      indexByBookingId.set(booking.id, index + 1);
+    });
+  }
+
+  for (const booking of bookings) {
+    if (indexByBookingId.has(booking.id)) continue;
+    if (booking.status === "COMPLETED" || booking.completedAt) {
+      const peers = [...active, booking].sort(compareBookingsByStart);
+      const pos = peers.findIndex((item) => item.id === booking.id);
+      if (pos >= 0) {
+        indexByBookingId.set(booking.id, pos + 1);
+      }
+    }
+  }
+
+  return indexByBookingId;
+}
+
 /**
  * Índice 1-based por bookingId dentro de cada purchaseId.
- * Preferencia: packageSessionOrdinal persistido; si falta, orden por startsAt
- * entre reservas con crédito de esa compra (no canceladas).
+ * Preferencia: packageSessionOrdinal persistido si es único; si falta o hay
+ * duplicados, orden por startsAt entre reservas con crédito de esa compra.
  */
 export async function buildPackageSessionIndexByBookingId(
   purchaseIds: string[]
@@ -93,6 +142,7 @@ export async function buildPackageSessionIndexByBookingId(
       consumedPurchaseId: true,
       packageSessionOrdinal: true,
       startsAt: true,
+      createdAt: true,
       status: true,
       completedAt: true
     },
@@ -108,36 +158,8 @@ export async function buildPackageSessionIndexByBookingId(
   }
 
   for (const list of byPurchase.values()) {
-    const withStored = list.filter(
-      (b) => b.packageSessionOrdinal != null && b.packageSessionOrdinal > 0
-    );
-    for (const booking of withStored) {
-      indexByBookingId.set(booking.id, booking.packageSessionOrdinal as number);
-    }
-
-    const needFallback = list.filter(
-      (b) =>
-        (b.packageSessionOrdinal == null || b.packageSessionOrdinal <= 0)
-        && b.status !== "CANCELLED"
-    );
-    needFallback.forEach((booking, index) => {
-      if (!indexByBookingId.has(booking.id)) {
-        indexByBookingId.set(booking.id, index + 1);
-      }
-    });
-
-    // Completadas canceladas raras: si no tienen ordinal, ubicarlas por startsAt entre todas.
-    for (const booking of list) {
-      if (indexByBookingId.has(booking.id)) continue;
-      if (booking.status === "COMPLETED" || booking.completedAt) {
-        const peers = list
-          .filter((b) => b.status !== "CANCELLED" || b.id === booking.id)
-          .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-        const pos = peers.findIndex((b) => b.id === booking.id);
-        if (pos >= 0) {
-          indexByBookingId.set(booking.id, pos + 1);
-        }
-      }
+    for (const [bookingId, ordinal] of resolvePackageSessionIndexForPurchase(list)) {
+      indexByBookingId.set(bookingId, ordinal);
     }
   }
 

@@ -241,10 +241,6 @@ export function ProfessionalAuthFlow(props: {
     if (isPayoutFormComplete(mobilePayoutProvider, payoutForm, true)) {
       return buildPayoutAdminFromFormFields(mobilePayoutProvider, payoutForm);
     }
-    const taxIdTrimmed = payoutForm.taxId.trim() || registerTaxId.trim();
-    if (taxIdTrimmed.length >= 6) {
-      return { taxId: taxIdTrimmed, payoutStatus: "draft" as const };
-    }
     return undefined;
   };
 
@@ -252,16 +248,17 @@ export function ProfessionalAuthFlow(props: {
     if (!mobilePreAuthSession) {
       return;
     }
+    const payoutAdmin = buildMobilePayoutAdmin();
+    if (!payoutAdmin) {
+      setAuthEntryMode("register-stripe");
+      return;
+    }
     const displayName =
       joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim() || mobilePreAuthSession.user.fullName;
-    const payoutAdmin = buildMobilePayoutAdmin();
-    const nameMeta =
-      displayName.trim().length >= 2 || payoutAdmin
-        ? {
-            ...(displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : {}),
-            ...(payoutAdmin ? { payoutAdmin } : {})
-          }
-        : undefined;
+    const nameMeta = {
+      ...(displayName.trim().length >= 2 ? { displayFullName: displayName.trim() } : {}),
+      payoutAdmin
+    };
     props.onPrepareOnboardingSync(buildMobileDraft(), nameMeta);
     props.onAuthSuccess({
       token: mobilePreAuthSession.token,
@@ -469,6 +466,10 @@ export function ProfessionalAuthFlow(props: {
           setAuthEntryMode("welcome");
         }}
         onFinish={(payload, meta) => {
+          const payoutAdmin = buildPayoutAdminFromWebPayload(payload);
+          if (!payoutAdmin) {
+            return;
+          }
           clearPendingWebOnboardingAuth();
           clearResumeWebOnboardingStep();
           resume?.onResumeConsumed();
@@ -480,7 +481,7 @@ export function ProfessionalAuthFlow(props: {
           });
           props.onPrepareOnboardingSync(buildPatchDraftFromWebPayload(payload), {
             displayFullName: payload.fullName.trim(),
-            payoutAdmin: buildPayoutAdminFromWebPayload(payload)
+            payoutAdmin
           });
           setRegisterBackMode("register-web");
           const displayName = payload.fullName.trim() || meta.user.fullName;
@@ -928,15 +929,14 @@ export function ProfessionalAuthFlow(props: {
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
             const payoutAdmin = buildMobilePayoutAdmin();
-            props.onPrepareOnboardingSync(
-              buildMobileDraft(),
-              mobileName.length >= 2 || payoutAdmin
-                ? {
-                    ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(payoutAdmin ? { payoutAdmin } : {})
-                  }
-                : undefined
-            );
+            if (!payoutAdmin) {
+              setAuthEntryMode("register-stripe");
+              return;
+            }
+            props.onPrepareOnboardingSync(buildMobileDraft(), {
+              ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
+              payoutAdmin
+            });
             setAuthEntryMode("register");
           }
         }}
@@ -965,15 +965,14 @@ export function ProfessionalAuthFlow(props: {
           } else {
             const mobileName = joinFirstLastToFullName(personalData.firstName, personalData.lastName).trim();
             const payoutAdmin = buildMobilePayoutAdmin();
-            props.onPrepareOnboardingSync(
-              buildMobileDraft(),
-              mobileName.length >= 2 || payoutAdmin
-                ? {
-                    ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
-                    ...(payoutAdmin ? { payoutAdmin } : {})
-                  }
-                : undefined
-            );
+            if (!payoutAdmin) {
+              setAuthEntryMode("register-stripe");
+              return;
+            }
+            props.onPrepareOnboardingSync(buildMobileDraft(), {
+              ...(mobileName.length >= 2 ? { displayFullName: mobileName } : {}),
+              payoutAdmin
+            });
             setAuthEntryMode("register");
           }
         }}

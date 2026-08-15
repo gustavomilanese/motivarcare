@@ -3,10 +3,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PatientMessageNotificationItem } from "../lib/portalPatientNotifications";
 import {
+  ProHeaderIconAgendaSettings,
   ProHeaderIconBell,
   ProHeaderIconLocale,
   ProHeaderIconLogOut,
   ProHeaderIconMore,
+  ProHeaderIconReports,
   ProHeaderIconSettings,
   ProHeaderIconUser
 } from "./ProHeaderIcons";
@@ -187,6 +189,25 @@ export function ProPortalHeaderActions(props: {
           </button>
           {accountMenuOpen ? (
             <div id={menuId} className="pro-header-account-dropdown" role="menu">
+              <NavLink
+                to="/reportes"
+                role="menuitem"
+                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                onClick={() => setAccountMenuOpen(false)}
+              >
+                <ProHeaderIconReports className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                {t(props.language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
+              </NavLink>
+              <NavLink
+                to="/agenda/ajustes"
+                role="menuitem"
+                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                onClick={() => setAccountMenuOpen(false)}
+              >
+                <ProHeaderIconAgendaSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                {t(props.language, { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" })}
+              </NavLink>
+              <div className="menu-sep" role="separator" />
               <NavLink
                 to="/perfil"
                 role="menuitem"

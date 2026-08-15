@@ -384,6 +384,18 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
       <section className="pro-card income-details-card" id={EXECUTED_SESSIONS_SECTION_ID} data-tour="pro-tour-income-sessions">
         <div className="pro-income-movements-heading">
           <h2>{t(props.language, { es: "Sesiones ejecutadas", en: "Completed sessions", pt: "Sessoes executadas" })}</h2>
+          <DashboardRevenuePeriodControl
+            language={props.language}
+            preset={revenuePreset}
+            day={revenueDay}
+            month={revenueMonth}
+            year={revenueYear}
+            groupLabel={periodGroupLabel}
+            onPresetChange={setRevenuePreset}
+            onDayChange={setRevenueDay}
+            onMonthChange={setRevenueMonth}
+            onYearChange={setRevenueYear}
+          />
         </div>
         {!data ? null : (
           <ExecutedSessionsList

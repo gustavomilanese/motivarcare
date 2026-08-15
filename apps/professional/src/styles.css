@@ -4731,13 +4731,13 @@ ul {
   margin: 4px 8px;
 }
 
+.pro-header-actions--dashboard-toolbar .pro-header-account-menu {
+  display: block;
+}
+
 @media (min-width: 900px) {
   .pro-header-actions--dashboard-toolbar .pro-header-direct-action {
     display: none;
-  }
-
-  .pro-header-actions--dashboard-toolbar .pro-header-account-menu {
-    display: block;
   }
 }
 
@@ -6253,6 +6253,11 @@ select.pro-dashboard-revenue-control {
   padding: 11px 0;
 }
 
+.agenda-session-table--settle .agenda-session-table-head,
+.agenda-session-table--settle .agenda-session-table-row {
+  grid-template-columns: 32px minmax(110px, 0.9fr) minmax(140px, 1.05fr) minmax(0, 1.6fr) minmax(148px, 0.95fr);
+}
+
 .agenda-session-table--upcoming .agenda-session-table-head,
 .agenda-session-table--upcoming .agenda-session-table-row {
   grid-template-columns: minmax(96px, 0.8fr) minmax(118px, 0.9fr) minmax(0, 1.55fr) minmax(96px, 0.7fr) minmax(252px, 1.35fr);
@@ -6273,6 +6278,96 @@ select.pro-dashboard-revenue-control {
 
 .agenda-session-table-row {
   border-bottom: 1px solid #f3f0fb;
+}
+
+.agenda-session-table-row.is-selected {
+  background: #f6f3ff;
+  border-radius: 10px;
+}
+
+.agenda-session-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-height: 32px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.agenda-session-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #5f44eb;
+  cursor: pointer;
+}
+
+.agenda-session-check--empty {
+  width: 16px;
+  height: 16px;
+}
+
+.agenda-session-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 8px 10px;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  background: #f7f5ff;
+}
+
+.agenda-session-select-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f44eb;
+  margin-right: 4px;
+}
+
+.agenda-session-select-clear {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+
+.agenda-session-select-clear:hover:not(:disabled) {
+  color: #334155;
+}
+
+.agenda-session-select-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.agenda-session-select-hint-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5f44eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agenda-session-select-hint-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.agenda-session-select-master {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
 }
 
 .agenda-session-table-row:last-child {
@@ -6437,6 +6532,13 @@ select.pro-dashboard-revenue-control {
     align-items: center;
   }
 
+  .agenda-session-table--settle .agenda-session-table-row {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check patient status"
+      "check date time";
+  }
+
   .agenda-session-table--upcoming .agenda-session-table-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -6464,6 +6566,12 @@ select.pro-dashboard-revenue-control {
 
   .agenda-session-cell--patient {
     grid-area: patient;
+  }
+
+  .agenda-session-cell--check {
+    grid-area: check;
+    align-self: start;
+    padding-top: 2px;
   }
 
   .agenda-session-cell--status {
@@ -6495,6 +6603,10 @@ select.pro-dashboard-revenue-control {
   .agenda-session-status-select {
     max-width: none;
   }
+
+  .agenda-session-select-master {
+    display: flex;
+  }
 }
 
 /* Si la tabla se achica por el sidebar (aunque el viewport sea “desktop”), pasar a tarjetas. */
@@ -6513,6 +6625,13 @@ select.pro-dashboard-revenue-control {
     gap: 8px 10px;
     padding: 16px 0;
     align-items: center;
+  }
+
+  .agenda-session-table--settle .agenda-session-table-row {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check patient status"
+      "check date time";
   }
 
   .agenda-session-table--upcoming .agenda-session-table-row {
@@ -6544,6 +6663,12 @@ select.pro-dashboard-revenue-control {
     grid-area: patient;
   }
 
+  .agenda-session-cell--check {
+    grid-area: check;
+    align-self: start;
+    padding-top: 2px;
+  }
+
   .agenda-session-cell--status {
     grid-area: status;
   }
@@ -6572,6 +6697,10 @@ select.pro-dashboard-revenue-control {
 
   .agenda-session-status-select {
     max-width: none;
+  }
+
+  .agenda-session-select-master {
+    display: flex;
   }
 }
 
@@ -8349,14 +8478,53 @@ select.pro-dashboard-revenue-control {
   white-space: nowrap;
 }
 
-.pro-dashboard-reviews-invite {
-  display: grid;
-  gap: 10px;
+.pro-dashboard-availability-shortcut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
 }
 
-.pro-dashboard-reviews-invite .pro-profile-studio__reviews-invite-copy {
-  max-width: none;
-  width: 100%;
+.pro-dashboard-availability-shortcut-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.pro-dashboard-availability-shortcut-copy h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1e293b;
+}
+
+.pro-dashboard-availability-shortcut-copy p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.pro-dashboard-availability-shortcut-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: #5f44eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pro-dashboard-availability-shortcut-cta:hover {
+  background: #4c35c7;
 }
 
 @media (max-width: 720px) {
@@ -8995,12 +9163,14 @@ select.pro-dashboard-revenue-control {
 
 .pro-profile-studio__layout {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  grid-template-areas: "main aside";
   gap: 20px;
   align-items: start;
 }
 
 .pro-profile-studio__aside {
+  grid-area: aside;
   display: grid;
   gap: 14px;
   position: sticky;
@@ -9104,6 +9274,7 @@ select.pro-dashboard-revenue-control {
 }
 
 .pro-profile-studio__main {
+  grid-area: main;
   display: grid;
   gap: 16px;
   min-width: 0;
@@ -9115,6 +9286,10 @@ select.pro-dashboard-revenue-control {
   border: 1px solid #e2e8f0;
   background: #ffffff;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.04);
+}
+
+.pro-profile-block.is-collapsed {
+  padding-bottom: 16px;
 }
 
 .pro-profile-block--advanced {
@@ -9139,11 +9314,54 @@ select.pro-dashboard-revenue-control {
   padding: 0 22px 20px;
 }
 
+.pro-profile-block__head-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .pro-profile-block__head {
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.pro-profile-block:not(.is-collapsed) .pro-profile-block__head {
   margin-bottom: 18px;
+}
+
+.pro-profile-block__head-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pro-profile-block__head-actions {
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.pro-profile-block__chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 8px;
+  background: no-repeat center / 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  transition: transform 0.16s ease;
+}
+
+.pro-profile-block__chevron.is-open {
+  transform: rotate(180deg);
 }
 
 .pro-profile-block__step {
@@ -9158,6 +9376,10 @@ select.pro-dashboard-revenue-control {
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
+}
+
+.pro-profile-block.is-collapsed .pro-profile-block__head p {
+  display: none;
 }
 
 .pro-profile-block__head h2 {
@@ -9188,6 +9410,54 @@ select.pro-dashboard-revenue-control {
 
 .pro-profile-fields--stack {
   grid-template-columns: 1fr;
+}
+
+.pro-profile-bank-edit-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.pro-profile-bank-status {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.pro-profile-bank-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.pro-profile-bank-dl div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pro-profile-bank-dl dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-profile-bank-dl dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.pro-profile-bank-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .pro-profile-field {
@@ -9550,6 +9820,7 @@ select.pro-dashboard-revenue-control {
 @media (max-width: 1024px) {
   .pro-profile-studio__layout {
     grid-template-columns: 1fr;
+    grid-template-areas: "main" "aside";
   }
 
   .pro-profile-studio__aside {
@@ -9568,7 +9839,8 @@ select.pro-dashboard-revenue-control {
     grid-template-columns: 1fr;
   }
 
-  .pro-profile-fields {
+  .pro-profile-fields,
+  .pro-profile-bank-dl {
     grid-template-columns: 1fr;
   }
 
@@ -16088,9 +16360,23 @@ button:disabled {
   color: #0f172a;
 }
 
+.pro-income-movements-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 3;
+}
+
 .pro-income-movements-heading h2 {
-  margin: 0 0 2px;
+  margin: 0;
   font-size: 1rem;
+}
+
+.pro-income-movements-heading .pro-dashboard-period-control {
+  flex: 0 0 auto;
 }
 
 .pro-income-movement-meta {
@@ -16160,12 +16446,17 @@ button:disabled {
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
 }
 
+.pro-executed-sessions-controls {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .pro-executed-sessions-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .pro-executed-sessions-control--search {
@@ -16173,12 +16464,55 @@ button:disabled {
   min-width: min(100%, 180px);
 }
 
-.pro-executed-sessions-control--filter {
-  min-width: 7.5rem;
+.pro-executed-sessions-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
+.pro-executed-sessions-filters-toggle.is-active {
+  border-color: rgba(107, 92, 240, 0.35);
+  background: #f6f4ff;
+  color: #4338ca;
+}
+
+.pro-executed-sessions-filters-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6b5cf0;
+}
+
+.pro-executed-sessions-filters-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: end;
+  padding: 10px 12px;
+  border: 1px solid #e8ecf4;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.pro-executed-sessions-filter-field {
+  display: grid;
+  gap: 4px;
+  min-width: 9rem;
+}
+
+.pro-executed-sessions-filter-field span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-executed-sessions-control--filter,
 .pro-executed-sessions-control--sort {
-  min-width: 10.5rem;
+  min-width: 9.5rem;
 }
 
 .pro-executed-sessions-count {
@@ -16644,11 +16978,17 @@ button:disabled {
   }
 
   .pro-executed-sessions-control--search,
+  .pro-executed-sessions-filters-toggle,
   .pro-executed-sessions-control--filter,
   .pro-executed-sessions-control--sort,
   .pro-executed-sessions-export {
     width: 100%;
     min-width: 0;
+  }
+
+  .pro-executed-sessions-filters-panel,
+  .pro-executed-sessions-filter-field {
+    width: 100%;
   }
 }
 
@@ -16939,7 +17279,7 @@ button:disabled {
 
 .pro-dashboard-home > .pro-card.agenda-upcoming-panel,
 .pro-dashboard-home > .pro-card.pro-practice-health,
-.pro-dashboard-home > .pro-card.pro-dashboard-reviews-invite {
+.pro-dashboard-home > .pro-card.pro-dashboard-availability-shortcut {
   padding: 14px 16px;
   gap: 8px;
 }
