@@ -589,11 +589,9 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                   toggleSection("bank");
                 }}
                 headerActions={
-                  bankEditing ? null : (
-                    <button type="button" className="pro-secondary pro-profile-bank-edit-btn" onClick={openBankForEdit}>
-                      {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
-                    </button>
-                  )
+                  <button type="button" className="pro-secondary pro-profile-bank-edit-btn" onClick={openBankForEdit}>
+                    {t(props.language, { es: "Editar", en: "Edit", pt: "Editar" })}
+                  </button>
                 }
               >
                 <ProfessionalBankDetailsSection

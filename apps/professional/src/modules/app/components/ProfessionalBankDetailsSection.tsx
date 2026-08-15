@@ -56,6 +56,43 @@ function displayValue(value: string | null | undefined): string {
   return trimmed.length > 0 ? trimmed : "—";
 }
 
+function mergeAdmin(data: AdminData): AdminData {
+  return {
+    ...EMPTY_ADMIN,
+    ...data,
+    acceptedDocuments: data.acceptedDocuments ?? EMPTY_ADMIN.acceptedDocuments
+  };
+}
+
+function patchBankAccount(
+  current: AdminData,
+  patch: {
+    transferType?: ProfessionalPayoutBankTransferType;
+    accountValue?: string;
+    accountHolderName?: string;
+    bankName?: string | null;
+  }
+): AdminData {
+  return {
+    ...current,
+    payoutAccount: patch.accountValue ?? current.payoutBankAccount?.accountValue ?? current.payoutAccount ?? "",
+    payoutBankAccount: {
+      transferType: patch.transferType ?? current.payoutBankAccount?.transferType ?? "cbu",
+      accountValue: patch.accountValue ?? current.payoutBankAccount?.accountValue ?? "",
+      accountHolderName: patch.accountHolderName ?? current.payoutBankAccount?.accountHolderName ?? "",
+      bankName: patch.bankName !== undefined ? patch.bankName : current.payoutBankAccount?.bankName ?? null,
+      payoutCountry: current.payoutBankAccount?.payoutCountry,
+      beneficiaryFirstName: current.payoutBankAccount?.beneficiaryFirstName,
+      beneficiaryLastName: current.payoutBankAccount?.beneficiaryLastName,
+      documentType: current.payoutBankAccount?.documentType,
+      document: current.payoutBankAccount?.document,
+      bankCode: current.payoutBankAccount?.bankCode,
+      bankBranch: current.payoutBankAccount?.bankBranch,
+      accountType: current.payoutBankAccount?.accountType
+    }
+  };
+}
+
 export function ProfessionalBankDetailsSection(props: {
   token: string;
   language: AppLanguage;
@@ -63,6 +100,7 @@ export function ProfessionalBankDetailsSection(props: {
   onEditingChange: (editing: boolean) => void;
 }) {
   const [form, setForm] = useState<AdminData>(EMPTY_ADMIN);
+  const [draft, setDraft] = useState<AdminData | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -75,11 +113,7 @@ export function ProfessionalBankDetailsSection(props: {
         if (!active) {
           return;
         }
-        setForm({
-          ...EMPTY_ADMIN,
-          ...response.data,
-          acceptedDocuments: response.data.acceptedDocuments ?? EMPTY_ADMIN.acceptedDocuments
-        });
+        setForm(mergeAdmin(response.data));
         setError("");
         setLoaded(true);
       })
@@ -96,42 +130,60 @@ export function ProfessionalBankDetailsSection(props: {
     };
   }, [props.language, props.token]);
 
+  useEffect(() => {
+    if (!props.editing) {
+      setDraft(null);
+      return;
+    }
+    setDraft((current) => current ?? form);
+    setError("");
+  }, [props.editing, form]);
+
+  useEffect(() => {
+    if (!props.editing) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !saving) {
+        props.onEditingChange(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [props.editing, props.onEditingChange, saving]);
+
   const bank = form.payoutBankAccount;
   const accountValue = bank?.accountValue ?? form.payoutAccount ?? "";
+  const draftBank = draft?.payoutBankAccount;
+  const draftAccountValue = draftBank?.accountValue ?? draft?.payoutAccount ?? "";
 
-  const patchBank = (patch: {
-    transferType?: ProfessionalPayoutBankTransferType;
-    accountValue?: string;
-    accountHolderName?: string;
-    bankName?: string | null;
-  }) => {
-    setForm((current) => ({
-      ...current,
-      payoutAccount: patch.accountValue ?? current.payoutBankAccount?.accountValue ?? current.payoutAccount ?? "",
-      payoutBankAccount: {
-        transferType: patch.transferType ?? current.payoutBankAccount?.transferType ?? "cbu",
-        accountValue: patch.accountValue ?? current.payoutBankAccount?.accountValue ?? "",
-        accountHolderName: patch.accountHolderName ?? current.payoutBankAccount?.accountHolderName ?? "",
-        bankName: patch.bankName !== undefined ? patch.bankName : current.payoutBankAccount?.bankName ?? null,
-        payoutCountry: current.payoutBankAccount?.payoutCountry,
-        beneficiaryFirstName: current.payoutBankAccount?.beneficiaryFirstName,
-        beneficiaryLastName: current.payoutBankAccount?.beneficiaryLastName,
-        documentType: current.payoutBankAccount?.documentType,
-        document: current.payoutBankAccount?.document,
-        bankCode: current.payoutBankAccount?.bankCode,
-        bankBranch: current.payoutBankAccount?.bankBranch,
-        accountType: current.payoutBankAccount?.accountType
-      }
-    }));
+  const closeEditor = () => {
+    if (saving) {
+      return;
+    }
+    setError("");
+    props.onEditingChange(false);
   };
 
   const handleSave = async () => {
+    if (!draft) {
+      return;
+    }
     setSaving(true);
     try {
-      await apiRequest<{ message: string }>("/api/professional/admin", props.token, {
+      const response = await apiRequest<{ message: string; data?: AdminData }>("/api/professional/admin", props.token, {
         method: "PUT",
-        body: JSON.stringify(form)
+        body: JSON.stringify(draft)
       });
+      setForm(response.data ? mergeAdmin(response.data) : draft);
       setMessage(
         t(props.language, {
           es: "Datos bancarios guardados.",
@@ -154,82 +206,6 @@ export function ProfessionalBankDetailsSection(props: {
       <p className="pro-profile-bank-status">
         {t(props.language, { es: "Cargando datos bancarios…", en: "Loading bank details…", pt: "Carregando dados bancarios…" })}
       </p>
-    );
-  }
-
-  if (props.editing) {
-    return (
-      <div className="pro-profile-bank-editor">
-        <div className="pro-profile-fields">
-          <label className="pro-profile-field">
-            <span>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</span>
-            <input
-              value={form.legalName ?? ""}
-              onChange={(event) => setForm((current) => ({ ...current, legalName: event.target.value }))}
-            />
-          </label>
-          <label className="pro-profile-field">
-            <span>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</span>
-            <input
-              value={form.taxId ?? ""}
-              onChange={(event) => setForm((current) => ({ ...current, taxId: event.target.value }))}
-            />
-          </label>
-          <label className="pro-profile-field">
-            <span>{t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}</span>
-            <input
-              value={bank?.accountHolderName ?? ""}
-              onChange={(event) => patchBank({ accountHolderName: event.target.value })}
-            />
-          </label>
-          <label className="pro-profile-field">
-            <span>{t(props.language, { es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}</span>
-            <select
-              value={bank?.transferType ?? "cbu"}
-              onChange={(event) =>
-                patchBank({ transferType: event.target.value as ProfessionalPayoutBankTransferType })
-              }
-            >
-              <option value="cbu">CBU</option>
-              <option value="cvu">CVU</option>
-              <option value="alias">Alias</option>
-              <option value="iban">IBAN</option>
-              <option value="ach">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</option>
-            </select>
-          </label>
-          <label className="pro-profile-field pro-profile-field--wide">
-            <span>{t(props.language, { es: "CBU / CVU / Alias / IBAN", en: "Account identifier", pt: "Identificador da conta" })}</span>
-            <input value={accountValue} onChange={(event) => patchBank({ accountValue: event.target.value })} />
-          </label>
-          <label className="pro-profile-field pro-profile-field--wide">
-            <span>{t(props.language, { es: "Banco (opcional)", en: "Bank (optional)", pt: "Banco (opcional)" })}</span>
-            <input
-              value={bank?.bankName ?? ""}
-              onChange={(event) => patchBank({ bankName: event.target.value || null })}
-            />
-          </label>
-        </div>
-        <div className="pro-profile-bank-editor-actions">
-          <button
-            type="button"
-            className="pro-secondary"
-            disabled={saving}
-            onClick={() => {
-              props.onEditingChange(false);
-              setMessage("");
-            }}
-          >
-            {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-          </button>
-          <button className="pro-primary" type="button" disabled={saving} onClick={() => void handleSave()}>
-            {saving
-              ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
-              : t(props.language, { es: "Guardar datos bancarios", en: "Save bank details", pt: "Salvar dados bancarios" })}
-          </button>
-        </div>
-        {error ? <p className="pro-error">{error}</p> : null}
-        {message ? <p className="pro-success">{message}</p> : null}
-      </div>
     );
   }
 
@@ -271,8 +247,120 @@ export function ProfessionalBankDetailsSection(props: {
           </div>
         ) : null}
       </dl>
-      {error ? <p className="pro-error">{error}</p> : null}
+      {error && !props.editing ? <p className="pro-error">{error}</p> : null}
       {message ? <p className="pro-success">{message}</p> : null}
+
+      {props.editing && draft ? (
+        <div
+          className="pro-profile-bank-modal-backdrop"
+          role="presentation"
+          onClick={closeEditor}
+        >
+          <section
+            className="pro-profile-bank-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pro-profile-bank-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header>
+              <h3 id="pro-profile-bank-modal-title">
+                {t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
+              </h3>
+              <button
+                type="button"
+                aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+                disabled={saving}
+                onClick={closeEditor}
+              >
+                ×
+              </button>
+            </header>
+            <p className="pro-profile-bank-modal-lead">
+              {t(props.language, {
+                es: "Estos datos se usan para transferirte el neto de tus sesiones ejecutadas.",
+                en: "We use these details to transfer your net earnings from completed sessions.",
+                pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
+              })}
+            </p>
+            <div className="pro-profile-fields">
+              <label className="pro-profile-field">
+                <span>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</span>
+                <input
+                  value={draft.legalName ?? ""}
+                  onChange={(event) => setDraft((current) => (current ? { ...current, legalName: event.target.value } : current))}
+                />
+              </label>
+              <label className="pro-profile-field">
+                <span>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</span>
+                <input
+                  value={draft.taxId ?? ""}
+                  onChange={(event) => setDraft((current) => (current ? { ...current, taxId: event.target.value } : current))}
+                />
+              </label>
+              <label className="pro-profile-field">
+                <span>{t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}</span>
+                <input
+                  value={draftBank?.accountHolderName ?? ""}
+                  onChange={(event) =>
+                    setDraft((current) => (current ? patchBankAccount(current, { accountHolderName: event.target.value }) : current))
+                  }
+                />
+              </label>
+              <label className="pro-profile-field">
+                <span>{t(props.language, { es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}</span>
+                <select
+                  value={draftBank?.transferType ?? "cbu"}
+                  onChange={(event) =>
+                    setDraft((current) =>
+                      current
+                        ? patchBankAccount(current, {
+                            transferType: event.target.value as ProfessionalPayoutBankTransferType
+                          })
+                        : current
+                    )
+                  }
+                >
+                  <option value="cbu">CBU</option>
+                  <option value="cvu">CVU</option>
+                  <option value="alias">Alias</option>
+                  <option value="iban">IBAN</option>
+                  <option value="ach">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</option>
+                </select>
+              </label>
+              <label className="pro-profile-field pro-profile-field--wide">
+                <span>{t(props.language, { es: "CBU / CVU / Alias / IBAN", en: "Account identifier", pt: "Identificador da conta" })}</span>
+                <input
+                  value={draftAccountValue}
+                  onChange={(event) =>
+                    setDraft((current) => (current ? patchBankAccount(current, { accountValue: event.target.value }) : current))
+                  }
+                />
+              </label>
+              <label className="pro-profile-field pro-profile-field--wide">
+                <span>{t(props.language, { es: "Banco (opcional)", en: "Bank (optional)", pt: "Banco (opcional)" })}</span>
+                <input
+                  value={draftBank?.bankName ?? ""}
+                  onChange={(event) =>
+                    setDraft((current) => (current ? patchBankAccount(current, { bankName: event.target.value || null }) : current))
+                  }
+                />
+              </label>
+            </div>
+            {error ? <p className="pro-error">{error}</p> : null}
+            <div className="pro-profile-bank-modal-actions">
+              <button type="button" className="pro-secondary" disabled={saving} onClick={closeEditor}>
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+              <button className="pro-primary" type="button" disabled={saving} onClick={() => void handleSave()}>
+                {saving
+                  ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
+                  : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
