@@ -105,3 +105,19 @@ export function buildProfessionalStatsQuery(
   const { from, to } = resolveRevenueDateBounds(preset, dayStr, monthStr, yearStr);
   return `?statsFrom=${encodeURIComponent(from.toISOString())}&statsTo=${encodeURIComponent(to.toISOString())}`;
 }
+
+function parseYmLocalBounds(monthStr: string): { from: Date; to: Date } {
+  const [y, m] = monthStr.split("-").map(Number);
+  const year = Number.isFinite(y) ? y : new Date().getFullYear();
+  const monthIndex = Number.isFinite(m) && m >= 1 && m <= 12 ? m - 1 : new Date().getMonth();
+  return {
+    from: new Date(year, monthIndex, 1, 0, 0, 0, 0),
+    to: new Date(year, monthIndex + 1, 0, 23, 59, 59, 999)
+  };
+}
+
+/** Query extra para el tab «sesiones a liquidar»: mes civil del profesional, no el TZ del server. */
+export function buildSessionsMonthQuery(monthStr: string): string {
+  const { from, to } = parseYmLocalBounds(monthStr);
+  return `sessionsMonth=${encodeURIComponent(monthStr)}&sessionsFrom=${encodeURIComponent(from.toISOString())}&sessionsTo=${encodeURIComponent(to.toISOString())}`;
+}

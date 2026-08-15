@@ -140,11 +140,11 @@ export function UpcomingReservationsList(props: {
             Boolean(props.joinTourTargetBookingId && props.joinTourTargetBookingId === booking.id && joinTrim);
           return (
             <article className="agenda-session-table-row" key={booking.id}>
-              <div className="agenda-session-cell">
+              <div className="agenda-session-cell agenda-session-cell--date">
                 <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</span>
                 <strong>{formatDateHeading(booking.startsAt, props.language)}</strong>
               </div>
-              <div className="agenda-session-cell">
+              <div className="agenda-session-cell agenda-session-cell--time">
                 <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}</span>
                 <span>
                   {formatTime(booking.startsAt, props.language)} – {formatTime(booking.endsAt, props.language)}
@@ -177,7 +177,7 @@ export function UpcomingReservationsList(props: {
                   </div>
                 </div>
               </div>
-              <div className="agenda-session-cell">
+              <div className="agenda-session-cell agenda-session-cell--status">
                 <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
                 <span className={`agenda-status agenda-status-${booking.status.toLowerCase()}`}>
                   {formatBookingStatus(booking.status, props.language)}
@@ -220,16 +220,13 @@ export function UpcomingReservationsList(props: {
                   {props.onRequestCancel && (booking.status.toLowerCase() === "confirmed" || booking.status.toLowerCase() === "requested") ? (
                     <button
                       type="button"
-                      className="agenda-action-btn agenda-action-btn--danger"
+                      className="agenda-action-btn agenda-action-btn--danger icon-only"
                       aria-label={t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
                       title={cancelTooltip}
                       onClick={() => props.onRequestCancel?.(booking)}
                       disabled={props.busyBookingId === booking.id}
                     >
                       <span className="session-action-icon cancel" aria-hidden="true" />
-                      <span className="agenda-action-btn-label">
-                        {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-                      </span>
                     </button>
                   ) : null}
                 </div>

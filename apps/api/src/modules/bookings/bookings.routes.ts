@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import { getActorContext } from "../../lib/actor.js";
@@ -10,6 +10,14 @@ import { allocateNextPackageSessionOrdinal } from "../../lib/packageSessionAttri
 import { prisma } from "../../lib/prisma.js";
 import { refundBookingCreditsToConsumedPurchase } from "../../lib/refundBookingCredits.js";
 import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
+import {
+  CompleteBookingError,
+  COMPLETE_BOOKING_BATCH_MAX,
+  completeProfessionalBooking,
+  completeProfessionalBookingsBatch,
+  uncompleteProfessionalBooking,
+  uncompleteProfessionalBookingsBatch
+} from "./completeBooking.service.js";
 import { notifyPatientOnProfessionalBookingChange } from "../notifications/bookingLifecycleNotifications.js";
 import { sendPatientEmailForBooking } from "../notifications/patientEmailService.js";
 import { sendProfessionalInAppBookingCancellation } from "../notifications/professionalInAppNotifications.js";
@@ -79,6 +87,9 @@ const cancelBookingSchema = z.object({
 });
 const completeBookingSchema = z.object({
   completedAt: z.string().datetime().optional()
+});
+const completeBookingBatchSchema = z.object({
+  bookingIds: z.array(z.string().trim().min(1).max(80)).min(1).max(COMPLETE_BOOKING_BATCH_MAX)
 });
 
 const FREE_CANCELLATION_HOURS = 24;
@@ -1552,6 +1563,88 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
   });
 });
 
+function serializeCompletedBooking(booking: {
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+  status: string;
+  completedAt: Date | null;
+}) {
+  return {
+    id: booking.id,
+    startsAt: booking.startsAt,
+    endsAt: booking.endsAt,
+    status: normalizeStatus(booking.status),
+    completedAt: booking.completedAt
+  };
+}
+
+function completeBookingErrorResponse(res: Response, error: unknown) {
+  if (error instanceof CompleteBookingError) {
+    return res.status(error.httpStatus).json({ error: error.message });
+  }
+  const message = error instanceof Error ? error.message : "Could not update booking";
+  return res.status(500).json({ error: message });
+}
+
+bookingsRouter.post("/batch/complete", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = completeBookingBatchSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid completion payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can mark sessions as completed" });
+  }
+
+  const result = await completeProfessionalBookingsBatch({
+    bookingIds: parsed.data.bookingIds,
+    professionalProfileId: actor.professionalProfileId
+  });
+
+  return res.json({
+    message: "Batch complete finished",
+    completedCount: result.completed.length,
+    failedCount: result.failed.length,
+    completed: result.completed.map(serializeCompletedBooking),
+    failed: result.failed
+  });
+});
+
+bookingsRouter.post("/batch/uncomplete", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = completeBookingBatchSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid completion payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can undo session completion" });
+  }
+
+  const result = await uncompleteProfessionalBookingsBatch({
+    bookingIds: parsed.data.bookingIds,
+    professionalProfileId: actor.professionalProfileId
+  });
+
+  return res.json({
+    message: "Batch uncomplete finished",
+    revertedCount: result.reverted.length,
+    failedCount: result.failed.length,
+    reverted: result.reverted.map(serializeCompletedBooking),
+    failed: result.failed
+  });
+});
+
 bookingsRouter.post("/:bookingId/complete", requireAuth, async (req: AuthenticatedRequest, res) => {
   if (!req.auth) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -1567,67 +1660,19 @@ bookingsRouter.post("/:bookingId/complete", requireAuth, async (req: Authenticat
     return res.status(403).json({ error: "Only professionals can mark sessions as completed" });
   }
 
-  const booking = await prisma.booking.findUnique({ where: { id: req.params.bookingId } });
-  if (!booking) {
-    return res.status(404).json({ error: "Booking not found" });
-  }
-
-  if (booking.professionalId !== actor.professionalProfileId) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.NO_SHOW) {
-    return res.status(409).json({ error: "Booking cannot be completed in its current state" });
-  }
-
-  if (booking.status === BOOKING_STATUS.COMPLETED) {
-    return res.status(409).json({ error: "Booking already completed" });
-  }
-
-  const now = new Date();
-  if (booking.startsAt.getTime() > now.getTime()) {
-    return res.status(409).json({ error: "Booking has not started yet" });
-  }
-
-  const completedAt = parsed.data.completedAt ? new Date(parsed.data.completedAt) : now;
-  const previousStatus = booking.status;
-  const previousCompletedAt = booking.completedAt;
-
-  const updated = await prisma.booking.update({
-    where: { id: booking.id },
-    data: {
-      status: BOOKING_STATUS.COMPLETED,
-      completedAt
-    }
-  });
-
   try {
-    await upsertFinanceRecordForBooking(updated.id);
-  } catch (financeError) {
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: previousStatus,
-        completedAt: previousCompletedAt
-      }
+    const updated = await completeProfessionalBooking({
+      bookingId: req.params.bookingId,
+      professionalProfileId: actor.professionalProfileId,
+      completedAt: parsed.data.completedAt ? new Date(parsed.data.completedAt) : undefined
     });
-    const message =
-      financeError instanceof Error
-        ? financeError.message
-        : "Could not create finance record for completed session";
-    return res.status(409).json({ error: message });
+    return res.json({
+      message: "Booking marked as completed",
+      booking: serializeCompletedBooking(updated)
+    });
+  } catch (error) {
+    return completeBookingErrorResponse(res, error);
   }
-
-  return res.json({
-    message: "Booking marked as completed",
-    booking: {
-      id: updated.id,
-      startsAt: updated.startsAt,
-      endsAt: updated.endsAt,
-      status: normalizeStatus(updated.status),
-      completedAt: updated.completedAt
-    }
-  });
 });
 
 bookingsRouter.post("/:bookingId/uncomplete", requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -1640,63 +1685,16 @@ bookingsRouter.post("/:bookingId/uncomplete", requireAuth, async (req: Authentic
     return res.status(403).json({ error: "Only professionals can undo session completion" });
   }
 
-  const booking = await prisma.booking.findUnique({
-    where: { id: req.params.bookingId },
-    include: {
-      financeRecord: { select: { payoutLineId: true } }
-    }
-  });
-  if (!booking) {
-    return res.status(404).json({ error: "Booking not found" });
-  }
-
-  if (booking.professionalId !== actor.professionalProfileId) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  if (booking.status !== BOOKING_STATUS.COMPLETED) {
-    return res.status(409).json({ error: "Only completed sessions can be reverted" });
-  }
-
-  if (booking.financeRecord?.payoutLineId) {
-    return res.status(409).json({
-      error: "This session is already in a payout. Contact Admin to adjust it."
-    });
-  }
-
-  const updated = await prisma.booking.update({
-    where: { id: booking.id },
-    data: {
-      status: BOOKING_STATUS.CONFIRMED,
-      completedAt: null
-    }
-  });
-
   try {
-    await upsertFinanceRecordForBooking(updated.id);
-  } catch (financeError) {
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: BOOKING_STATUS.COMPLETED,
-        completedAt: booking.completedAt
-      }
+    const updated = await uncompleteProfessionalBooking({
+      bookingId: req.params.bookingId,
+      professionalProfileId: actor.professionalProfileId
     });
-    const message =
-      financeError instanceof Error
-        ? financeError.message
-        : "Could not reverse finance record for this session";
-    return res.status(409).json({ error: message });
+    return res.json({
+      message: "Booking completion undone",
+      booking: serializeCompletedBooking(updated)
+    });
+  } catch (error) {
+    return completeBookingErrorResponse(res, error);
   }
-
-  return res.json({
-    message: "Booking completion undone",
-    booking: {
-      id: updated.id,
-      startsAt: updated.startsAt,
-      endsAt: updated.endsAt,
-      status: normalizeStatus(updated.status),
-      completedAt: updated.completedAt
-    }
-  });
 });

@@ -18,6 +18,7 @@ import { type UpcomingReservationItem, UpcomingReservationsList } from "../compo
 import { PendingExecutionSessionsList, type SessionListFilter } from "../components/agenda/PendingExecutionSessionsList";
 import {
   buildProfessionalStatsQuery,
+  buildSessionsMonthQuery,
   type RevenuePreset,
   ymLocal,
   ymdLocal
@@ -119,6 +120,7 @@ export function DashboardPage(props: {
   const [sessionsHubTab, setSessionsHubTab] = useState<"upcoming" | "settle">("upcoming");
   const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("reserved");
   const [sessionListMonth, setSessionListMonth] = useState(() => ymLocal(new Date()));
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<null | "complete" | "uncomplete">(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -130,7 +132,7 @@ export function DashboardPage(props: {
   dashboardSpotlightBlockersRef.current = isRescheduleModalOpen || isCancelModalOpen;
 
   const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
-  const dashboardQuery = `${revenueQuery}&sessionsMonth=${encodeURIComponent(sessionListMonth)}`;
+  const dashboardQuery = `${revenueQuery}&${buildSessionsMonthQuery(sessionListMonth)}`;
 
   useEffect(() => {
     let active = true;
@@ -282,6 +284,23 @@ export function DashboardPage(props: {
   const upcomingTourDependency = upcomingReservations
     .map((b) => `${b.id}:${typeof b.joinUrl === "string" ? b.joinUrl.trim().length : 0}`)
     .join("|");
+
+  const reservedToSettle = useMemo(
+    () =>
+      pendingExecutionSessions.filter((session) => {
+        const status = session.status.toLowerCase();
+        return status !== "completed" && status !== "cancelled" && status !== "no_show";
+      }),
+    [pendingExecutionSessions]
+  );
+  const executedReversible = useMemo(
+    () =>
+      pendingExecutionSessions.filter(
+        (session) => session.status.toLowerCase() === "completed" && session.canUncomplete !== false
+      ),
+    [pendingExecutionSessions]
+  );
+  const bulkBusy = bookingActionInProgressId === "__bulk__";
 
   useEffect(() => {
     meetHintHandledRef.current = false;
@@ -644,6 +663,124 @@ export function DashboardPage(props: {
     }
   };
 
+  const applyBulkCompleteResult = (
+    completedIds: string[],
+    failed: Array<{ bookingId: string; error: string }>
+  ) => {
+    if (completedIds.length > 0) {
+      const completedSet = new Set(completedIds);
+      setPendingExecutionSessions((current) =>
+        current
+          .map((item) =>
+            completedSet.has(item.id) ? { ...item, status: "completed", canUncomplete: true } : item
+          )
+          .sort((a, b) => {
+            const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
+            const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
+            if (aDone !== bDone) {
+              return aDone - bDone;
+            }
+            return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+          })
+      );
+      setDashboardReloadKey((value) => value + 1);
+    }
+    if (failed.length > 0) {
+      setBookingActionError(
+        professionalSurfaceMessage(
+          "dashboard-complete-batch",
+          props.language,
+          `${failed.length} session(s) could not be updated`
+        )
+      );
+    }
+  };
+
+  const submitBulkComplete = async () => {
+    const bookingIds = reservedToSettle.map((session) => session.id);
+    if (bookingIds.length === 0) {
+      setBulkConfirmAction(null);
+      return;
+    }
+    setBookingActionError("");
+    setBookingActionInProgressId("__bulk__");
+    try {
+      const response = await apiRequest<{
+        completedCount: number;
+        failedCount: number;
+        completed: Array<{ id: string }>;
+        failed: Array<{ bookingId: string; error: string }>;
+      }>("/api/bookings/batch/complete", props.token, {
+        method: "POST",
+        body: JSON.stringify({ bookingIds })
+      });
+      applyBulkCompleteResult(
+        (response.completed ?? []).map((item) => item.id),
+        response.failed ?? []
+      );
+      setBulkConfirmAction(null);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-complete-batch", props.language, raw));
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const submitBulkUncomplete = async () => {
+    const bookingIds = executedReversible.map((session) => session.id);
+    if (bookingIds.length === 0) {
+      setBulkConfirmAction(null);
+      return;
+    }
+    setBookingActionError("");
+    setBookingActionInProgressId("__bulk__");
+    try {
+      const response = await apiRequest<{
+        revertedCount: number;
+        failedCount: number;
+        reverted: Array<{ id: string }>;
+        failed: Array<{ bookingId: string; error: string }>;
+      }>("/api/bookings/batch/uncomplete", props.token, {
+        method: "POST",
+        body: JSON.stringify({ bookingIds })
+      });
+      const revertedIds = new Set((response.reverted ?? []).map((item) => item.id));
+      if (revertedIds.size > 0) {
+        setPendingExecutionSessions((current) =>
+          current
+            .map((item) =>
+              revertedIds.has(item.id) ? { ...item, status: "confirmed", canUncomplete: undefined } : item
+            )
+            .sort((a, b) => {
+              const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
+              const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
+              if (aDone !== bDone) {
+                return aDone - bDone;
+              }
+              return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+            })
+        );
+        setDashboardReloadKey((value) => value + 1);
+      }
+      if ((response.failed ?? []).length > 0) {
+        setBookingActionError(
+          professionalSurfaceMessage(
+            "dashboard-uncomplete-batch",
+            props.language,
+            `${response.failed.length} session(s) could not be updated`
+          )
+        );
+      }
+      setBulkConfirmAction(null);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(professionalSurfaceMessage("dashboard-uncomplete-batch", props.language, raw));
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
   const executedMoneyTooltip = t(props.language, {
     es: "Total de Ingreso bruto de sesiones ya realizadas, en el periodo definido en los filtros.",
     en: "Total gross revenue from sessions already completed, in the period set by the filters above.",
@@ -833,12 +970,40 @@ export function DashboardPage(props: {
             <div className="agenda-upcoming-head agenda-session-panel-head pro-dashboard-sessions-hub-toolbar">
               <p className="agenda-session-lead">
                 {t(props.language, {
-                  es: "Marcá como ejecutadas las sesiones del mes elegido para la próxima liquidación.",
-                  en: "Mark the selected month’s sessions as executed for the next payout.",
-                  pt: "Marque como executadas as sessoes do mes escolhido para a proxima liquidacao."
+                  es: "Marcá como ejecutadas las sesiones del mes. Entran a la próxima liquidación; el cobro por dLocal lo hace Admin.",
+                  en: "Mark the month’s sessions as executed. They join the next payout; Admin sends the dLocal transfer.",
+                  pt: "Marque as sessoes do mes como executadas. Entram na proxima liquidacao; o Admin envia o pagamento dLocal."
                 })}
               </p>
               <div className="agenda-session-panel-filters">
+                {sessionListFilter !== "liquidated" && sessionListFilter !== "executed" && reservedToSettle.length > 0 ? (
+                  <button
+                    type="button"
+                    className="agenda-session-bulk-btn"
+                    disabled={Boolean(bookingActionInProgressId)}
+                    onClick={() => setBulkConfirmAction("complete")}
+                  >
+                    {t(props.language, {
+                      es: `Marcar ${reservedToSettle.length} como ejecutadas`,
+                      en: `Mark ${reservedToSettle.length} as executed`,
+                      pt: `Marcar ${reservedToSettle.length} como executadas`
+                    })}
+                  </button>
+                ) : null}
+                {sessionListFilter === "executed" && executedReversible.length > 1 ? (
+                  <button
+                    type="button"
+                    className="agenda-session-bulk-btn agenda-session-bulk-btn--ghost"
+                    disabled={Boolean(bookingActionInProgressId)}
+                    onClick={() => setBulkConfirmAction("uncomplete")}
+                  >
+                    {t(props.language, {
+                      es: `Volver ${executedReversible.length} a reservadas`,
+                      en: `Revert ${executedReversible.length} to reserved`,
+                      pt: `Voltar ${executedReversible.length} para reservadas`
+                    })}
+                  </button>
+                ) : null}
                 <RevenueMonthPicker
                   language={props.language}
                   value={sessionListMonth}
@@ -869,7 +1034,7 @@ export function DashboardPage(props: {
             <PendingExecutionSessionsList
               language={props.language}
               sessions={pendingExecutionSessions}
-              busyBookingId={bookingActionInProgressId}
+              busyBookingId={bulkBusy ? "__bulk__" : bookingActionInProgressId}
               filter={sessionListFilter}
               onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
               onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
@@ -975,6 +1140,66 @@ export function DashboardPage(props: {
                 {bookingActionInProgressId === cancelTargetBooking?.id
                   ? t(props.language, { es: "Cancelando...", en: "Cancelling...", pt: "Cancelando..." })
                   : t(props.language, { es: "Confirmar cancelación", en: "Confirm cancellation", pt: "Confirmar cancelamento" })}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {bulkConfirmAction ? (
+        <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => !bulkBusy && setBulkConfirmAction(null)}>
+          <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <h3>
+                {bulkConfirmAction === "complete"
+                  ? t(props.language, {
+                      es: "Marcar sesiones como ejecutadas",
+                      en: "Mark sessions as executed",
+                      pt: "Marcar sessoes como executadas"
+                    })
+                  : t(props.language, {
+                      es: "Volver sesiones a reservadas",
+                      en: "Revert sessions to reserved",
+                      pt: "Voltar sessoes para reservadas"
+                    })}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBulkConfirmAction(null)}
+                disabled={bulkBusy}
+                aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+              >
+                ×
+              </button>
+            </header>
+            <p className="pro-reschedule-modal-lead">
+              {bulkConfirmAction === "complete"
+                ? t(props.language, {
+                    es: `Vas a marcar ${reservedToSettle.length} sesiones del mes como ejecutadas. Entran a la próxima liquidación; el dinero lo envía Admin por dLocal.`,
+                    en: `You will mark ${reservedToSettle.length} sessions this month as executed. They join the next payout; Admin sends the dLocal transfer.`,
+                    pt: `Voce vai marcar ${reservedToSettle.length} sessoes do mes como executadas. Entram na proxima liquidacao; o Admin envia o pagamento dLocal.`
+                  })
+                : t(props.language, {
+                    es: `Vas a volver ${executedReversible.length} sesiones ejecutadas a reservadas. Solo las que todavía no entraron a una liquidación.`,
+                    en: `You will revert ${executedReversible.length} executed sessions to reserved. Only those not yet in a payout.`,
+                    pt: `Voce vai voltar ${executedReversible.length} sessoes executadas para reservadas. So as que ainda nao entraram numa liquidacao.`
+                  })}
+            </p>
+            <div className="pro-reschedule-modal-actions">
+              <button type="button" disabled={bulkBusy} onClick={() => setBulkConfirmAction(null)}>
+                {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+              </button>
+              <button
+                type="button"
+                className="primary"
+                disabled={bulkBusy}
+                onClick={() => void (bulkConfirmAction === "complete" ? submitBulkComplete() : submitBulkUncomplete())}
+              >
+                {bulkBusy
+                  ? t(props.language, { es: "Actualizando...", en: "Updating...", pt: "Atualizando..." })
+                  : bulkConfirmAction === "complete"
+                    ? t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })
+                    : t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })}
               </button>
             </div>
           </section>

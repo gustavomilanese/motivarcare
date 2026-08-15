@@ -6074,6 +6074,38 @@ select.pro-dashboard-revenue-control {
   justify-content: flex-end;
 }
 
+.agenda-session-bulk-btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #c4b5fd;
+  background: #5f44eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.agenda-session-bulk-btn:hover:not(:disabled) {
+  background: #4c35c7;
+}
+
+.agenda-session-bulk-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.agenda-session-bulk-btn--ghost {
+  background: #ffffff;
+  color: #5f44eb;
+  border-color: #ddd6fe;
+}
+
+.agenda-session-bulk-btn--ghost:hover:not(:disabled) {
+  background: #f7f4ff;
+}
+
 .agenda-session-lead {
   margin: 0;
   color: #64748b;
@@ -6209,6 +6241,7 @@ select.pro-dashboard-revenue-control {
 .agenda-session-table {
   display: grid;
   gap: 0;
+  container-type: inline-size;
 }
 
 .agenda-session-table-head,
@@ -6222,7 +6255,7 @@ select.pro-dashboard-revenue-control {
 
 .agenda-session-table--upcoming .agenda-session-table-head,
 .agenda-session-table--upcoming .agenda-session-table-row {
-  grid-template-columns: minmax(110px, 0.95fr) minmax(140px, 1.05fr) minmax(180px, 1.45fr) minmax(110px, 0.8fr) minmax(180px, 1.15fr);
+  grid-template-columns: minmax(96px, 0.8fr) minmax(118px, 0.9fr) minmax(0, 1.55fr) minmax(96px, 0.7fr) minmax(252px, 1.35fr);
 }
 
 .agenda-session-table-head {
@@ -6394,9 +6427,147 @@ select.pro-dashboard-revenue-control {
 
   .agenda-session-table-row,
   .agenda-session-table--upcoming .agenda-session-table-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 14px 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "patient patient"
+      "date time"
+      "status status";
+    gap: 8px 10px;
+    padding: 16px 0;
+    align-items: center;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-table-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "patient status"
+      "date time"
+      "actions actions";
+  }
+
+  .agenda-session-cell--date {
+    grid-area: date;
+  }
+
+  .agenda-session-cell--time {
+    grid-area: time;
+    display: flex;
+    align-items: baseline;
+  }
+
+  .agenda-session-cell--date + .agenda-session-cell--time::before {
+    content: "·";
+    margin-right: 8px;
+    color: #94a3b8;
+    font-weight: 700;
+  }
+
+  .agenda-session-cell--patient {
+    grid-area: patient;
+  }
+
+  .agenda-session-cell--status {
+    grid-area: status;
+  }
+
+  .agenda-session-cell--actions {
+    grid-area: actions;
+  }
+
+  .agenda-session-table .agenda-upcoming-cell-label {
+    display: none;
+  }
+
+  .agenda-session-cell--actions .agenda-row-actions {
+    flex-wrap: wrap;
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .agenda-row-actions .icon-only,
+  .agenda-action-btn.icon-only {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .agenda-session-status-select {
+    max-width: none;
+  }
+}
+
+/* Si la tabla se achica por el sidebar (aunque el viewport sea “desktop”), pasar a tarjetas. */
+@container (max-width: 800px) {
+  .agenda-session-table-head {
+    display: none;
+  }
+
+  .agenda-session-table-row,
+  .agenda-session-table--upcoming .agenda-session-table-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "patient patient"
+      "date time"
+      "status status";
+    gap: 8px 10px;
+    padding: 16px 0;
+    align-items: center;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-table-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "patient status"
+      "date time"
+      "actions actions";
+  }
+
+  .agenda-session-cell--date {
+    grid-area: date;
+  }
+
+  .agenda-session-cell--time {
+    grid-area: time;
+    display: flex;
+    align-items: baseline;
+  }
+
+  .agenda-session-cell--date + .agenda-session-cell--time::before {
+    content: "·";
+    margin-right: 8px;
+    color: #94a3b8;
+    font-weight: 700;
+  }
+
+  .agenda-session-cell--patient {
+    grid-area: patient;
+  }
+
+  .agenda-session-cell--status {
+    grid-area: status;
+  }
+
+  .agenda-session-cell--actions {
+    grid-area: actions;
+  }
+
+  .agenda-upcoming-cell-label {
+    display: none;
+  }
+
+  .agenda-session-cell--actions .agenda-row-actions {
+    flex-wrap: wrap;
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .agenda-row-actions .icon-only,
+  .agenda-action-btn.icon-only {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
   }
 
   .agenda-session-status-select {
@@ -6605,6 +6776,13 @@ select.pro-dashboard-revenue-control {
   min-width: 0;
 }
 
+.agenda-upcoming-patient-text strong,
+.agenda-upcoming-patient-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .agenda-patient-avatar {
   width: 40px;
   height: 40px;
@@ -6631,7 +6809,7 @@ select.pro-dashboard-revenue-control {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .agenda-row-actions button {
@@ -6695,6 +6873,13 @@ select.pro-dashboard-revenue-control {
   border-color: #ef4444;
 }
 
+.agenda-action-btn.icon-only {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
 .agenda-action-btn-label {
   white-space: nowrap;
 }
@@ -6705,8 +6890,9 @@ select.pro-dashboard-revenue-control {
   }
 
   .agenda-action-btn {
-    width: 34px;
-    min-width: 34px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
     padding: 0;
   }
 }
@@ -7412,6 +7598,7 @@ select.pro-dashboard-revenue-control {
   text-decoration: none;
   box-shadow: none;
   cursor: pointer;
+  white-space: nowrap;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 

@@ -78,6 +78,15 @@ function parseSessionsMonthBounds(
   query: Record<string, unknown>,
   now: Date
 ): { monthStart: Date; monthEnd: Date } {
+  const fromStr = firstQueryString(query.sessionsFrom);
+  const toStr = firstQueryString(query.sessionsTo);
+  if (fromStr && toStr) {
+    const from = new Date(fromStr);
+    const to = new Date(toStr);
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime()) && from.getTime() <= to.getTime()) {
+      return { monthStart: from, monthEnd: to };
+    }
+  }
   const raw = firstQueryString(query.sessionsMonth);
   const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
   const year = match ? Number(match[1]) : now.getFullYear();
@@ -357,7 +366,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         videoSession: true
       },
       orderBy: { startsAt: "asc" },
-      take: 24
+      take: 100
     }),
     prisma.booking.findMany({
       where: {
@@ -386,7 +395,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         financeRecord: { select: { payoutLineId: true } }
       },
       orderBy: { startsAt: "desc" },
-      take: 200
+      take: 250
     }),
     prisma.booking.count({
       where: {

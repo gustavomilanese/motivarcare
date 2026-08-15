@@ -47,7 +47,7 @@ function isExecutedPendingSession(session: UpcomingReservationItem): boolean {
   return isCompletedBooking(session) && session.canUncomplete !== false;
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export type SessionListFilter = "all" | "reserved" | "executed" | "liquidated";
 
@@ -141,20 +141,20 @@ export function PendingExecutionSessionsList(props: {
             <div className="agenda-session-table-body">
               {pageSessions.map((booking) => {
                 const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
-                const busy = props.busyBookingId === booking.id;
+                const busy = props.busyBookingId === booking.id || props.busyBookingId === "__bulk__";
                 const liquidated = isLiquidatedSession(booking);
                 const executed = isExecutedPendingSession(booking);
                 const statusValue = executed || liquidated ? "executed" : "reserved";
 
                 return (
                   <article className="agenda-session-table-row" key={booking.id}>
-                    <div className="agenda-session-cell">
+                    <div className="agenda-session-cell agenda-session-cell--date">
                       <span className="agenda-upcoming-cell-label">
                         {t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}
                       </span>
                       <strong>{formatDateHeading(booking.startsAt, props.language)}</strong>
                     </div>
-                    <div className="agenda-session-cell">
+                    <div className="agenda-session-cell agenda-session-cell--time">
                       <span className="agenda-upcoming-cell-label">
                         {t(props.language, { es: "Hora", en: "Time", pt: "Hora" })}
                       </span>
