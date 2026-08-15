@@ -4,6 +4,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom"
 import { type AppLanguage, type LocalizedText, type SupportedCurrency, textByLanguage } from "@therapy/i18n-config";
 import { FinancesPage } from "../../finance";
 import { links } from "../constants";
+import { AdminNavIcon } from "../components/AdminNavIcon";
 import { ModulePlaceholderPage } from "../components/ModulePlaceholderPage";
 import { AdminDashboardPage } from "./AdminDashboardPage";
 import { InfoPage } from "./InfoPage";
@@ -29,9 +30,18 @@ export function AdminPortal(props: {
   onCurrencyChange: (currency: SupportedCurrency) => void;
 }) {
   const location = useLocation();
+  const [railNavLocked, setRailNavLocked] = useState(false);
   const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
   const [pendingProfRegistrationCount, setPendingProfRegistrationCount] = useState(0);
   const lastProfPendingRef = useRef<number | null>(null);
+
+  const collapseRailAfterNav = () => {
+    setRailNavLocked(true);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) {
+      active.blur();
+    }
+  };
 
   const loadSidebarAlertCounts = useCallback(async () => {
     try {
@@ -130,59 +140,101 @@ export function AdminPortal(props: {
       return t(props.language, { es: "Configuracion", en: "Settings", pt: "Configuracoes" });
     }
     if (to === "/ai") {
-      return t(props.language, {
-        es: "Auditoría IA · Próximamente",
-        en: "AI audit · Coming soon",
-        pt: "Auditoria IA · Em breve"
-      });
+      return t(props.language, { es: "Auditoría IA", en: "AI audit", pt: "Auditoria IA" });
     }
     return t(props.language, { es: "Auditoria IA", en: "AI audit", pt: "Auditoria IA" });
   };
 
+  const railBadge = (count: number) => {
+    if (count <= 0) {
+      return null;
+    }
+    return <span className="admin-sidebar-rail-badge">{count > 99 ? "99+" : count}</span>;
+  };
+
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <img
-            className="admin-brand-mark-img"
-            src="/brand/motivarcare-mark.png"
-            alt="MotivarCare"
-            width={396}
-            height={352}
-          />
-          <span className="admin-brand-sub">
-            {t(props.language, { es: "Portal Admin", en: "Admin portal", pt: "Portal admin" })}
-          </span>
-        </div>
+      <aside
+        className={`admin-sidebar${railNavLocked ? " is-nav-locked" : ""}`}
+        aria-label={t(props.language, {
+          es: "Menú de la aplicación",
+          en: "App menu",
+          pt: "Menu do aplicativo"
+        })}
+        onMouseLeave={() => {
+          setRailNavLocked(false);
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && active.closest(".admin-sidebar")) {
+            active.blur();
+          }
+        }}
+      >
+        <div className="admin-sidebar-edge" aria-hidden="true" />
+        <div className="admin-sidebar-panel">
+          <div className="admin-sidebar-brand">
+            <span className="admin-sidebar-brand-mark-wrap">
+              <img
+                className="admin-brand-mark-img"
+                src="/brand/motivarcare-mark.png"
+                alt="MotivarCare"
+                width={396}
+                height={352}
+              />
+            </span>
+            <span className="admin-sidebar-rail-label">
+              {t(props.language, { es: "Portal Admin", en: "Admin portal", pt: "Portal admin" })}
+            </span>
+          </div>
 
-        <nav className="admin-sidebar-nav">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => (isActive ? "admin-link active" : "admin-link")}
-              end={link.to === "/"}
+          <nav className="admin-sidebar-nav">
+            {links.map((link) => {
+              const badgeCount =
+                link.to === "/patients"
+                  ? pendingRiskTriageCount
+                  : link.to === "/" || link.to === "/professionals"
+                    ? pendingProfRegistrationCount
+                    : 0;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={collapseRailAfterNav}
+                  className={({ isActive }) => `admin-sidebar-rail-link${isActive ? " is-active" : ""}`}
+                  end={link.to === "/"}
+                >
+                  {badgeCount > 0 ? (
+                    <span className="admin-sidebar-rail-icon-wrap">
+                      <AdminNavIcon section={link.to} className="admin-sidebar-rail-icon" />
+                      {railBadge(badgeCount)}
+                    </span>
+                  ) : (
+                    <AdminNavIcon section={link.to} className="admin-sidebar-rail-icon" />
+                  )}
+                  <span className="admin-sidebar-rail-label">{labelForLink(link.to)}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          <div className="admin-sidebar-foot-stack">
+            <button
+              type="button"
+              className="admin-sidebar-rail-foot"
+              onClick={() => {
+                collapseRailAfterNav();
+                props.onLogout();
+              }}
             >
-              <span className="admin-link-content">
-                <span>{labelForLink(link.to)}</span>
-                {link.to === "/patients" && pendingRiskTriageCount > 0 ? (
-                  <small className="admin-link-badge">{pendingRiskTriageCount}</small>
-                ) : null}
-                {link.to === "/" && pendingProfRegistrationCount > 0 ? (
-                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
-                ) : null}
-                {link.to === "/professionals" && pendingProfRegistrationCount > 0 ? (
-                  <small className="admin-link-badge">{pendingProfRegistrationCount}</small>
-                ) : null}
+              <span className="admin-sidebar-rail-foot-icon-wrap" aria-hidden="true">
+                <AdminNavIcon section="logout" className="admin-sidebar-rail-icon" />
               </span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="sidebar-controls">
-          <button className="danger" type="button" onClick={props.onLogout}>
-            {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
-          </button>
+              <span className="admin-sidebar-rail-foot-copy">
+                <span className="admin-sidebar-rail-foot-name">
+                  {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
+                </span>
+              </span>
+            </button>
+          </div>
         </div>
       </aside>
 
