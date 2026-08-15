@@ -4,6 +4,7 @@ import type { ProfessionalPayoutBankTransferType } from "@therapy/types";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminData } from "../types";
+import { ProfileEditModal } from "./ProfileEditModal";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -139,27 +140,6 @@ export function ProfessionalBankDetailsSection(props: {
     setError("");
   }, [props.editing, form]);
 
-  useEffect(() => {
-    if (!props.editing) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !saving) {
-        props.onEditingChange(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [props.editing, props.onEditingChange, saving]);
-
   const bank = form.payoutBankAccount;
   const accountValue = bank?.accountValue ?? form.payoutAccount ?? "";
   const draftBank = draft?.payoutBankAccount;
@@ -251,38 +231,19 @@ export function ProfessionalBankDetailsSection(props: {
       {message ? <p className="pro-success">{message}</p> : null}
 
       {props.editing && draft ? (
-        <div
-          className="pro-profile-bank-modal-backdrop"
-          role="presentation"
-          onClick={closeEditor}
+        <ProfileEditModal
+          language={props.language}
+          title={t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
+          lead={t(props.language, {
+            es: "Estos datos se usan para transferirte el neto de tus sesiones ejecutadas.",
+            en: "We use these details to transfer your net earnings from completed sessions.",
+            pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
+          })}
+          saving={saving}
+          error={error}
+          onClose={closeEditor}
+          onSave={() => void handleSave()}
         >
-          <section
-            className="pro-profile-bank-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="pro-profile-bank-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header>
-              <h3 id="pro-profile-bank-modal-title">
-                {t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
-              </h3>
-              <button
-                type="button"
-                aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
-                disabled={saving}
-                onClick={closeEditor}
-              >
-                ×
-              </button>
-            </header>
-            <p className="pro-profile-bank-modal-lead">
-              {t(props.language, {
-                es: "Estos datos se usan para transferirte el neto de tus sesiones ejecutadas.",
-                en: "We use these details to transfer your net earnings from completed sessions.",
-                pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
-              })}
-            </p>
             <div className="pro-profile-fields">
               <label className="pro-profile-field">
                 <span>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</span>
@@ -347,19 +308,7 @@ export function ProfessionalBankDetailsSection(props: {
                 />
               </label>
             </div>
-            {error ? <p className="pro-error">{error}</p> : null}
-            <div className="pro-profile-bank-modal-actions">
-              <button type="button" className="pro-secondary" disabled={saving} onClick={closeEditor}>
-                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
-              </button>
-              <button className="pro-primary" type="button" disabled={saving} onClick={() => void handleSave()}>
-                {saving
-                  ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
-                  : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
-              </button>
-            </div>
-          </section>
-        </div>
+        </ProfileEditModal>
       ) : null}
     </div>
   );

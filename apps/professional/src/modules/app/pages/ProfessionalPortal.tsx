@@ -8,9 +8,9 @@ import {
   PortalPreferencesModal,
   PROFESSIONAL_LANGUAGE_CHOICES
 } from "../components/PortalPreferencesModal";
-import { ProHeaderIconLocale } from "../components/ProHeaderIcons";
+import { ProHeaderIconLocale, ProHeaderIconUser } from "../components/ProHeaderIcons";
 import { ProfessionalListingVisibilityControl } from "../components/ProfessionalListingVisibilityControl";
-import { PORTAL_NAV_GROUP_LABELS, getPortalNavLinks } from "../config/portalNav";
+import { getPortalNavLinks } from "../config/portalNav";
 import { useProfessionalListingVisibility } from "../hooks/useProfessionalListingVisibility";
 import { usePortalChatThreads } from "../hooks/usePortalChatThreads";
 import { buildPatientMessageNotificationItems } from "../lib/portalPatientNotifications";
@@ -83,6 +83,7 @@ export function ProfessionalPortal(props: {
   const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [railNavLocked, setRailNavLocked] = useState(false);
   const links = useMemo(() => getPortalNavLinks(props.language), [props.language]);
   const { threads, unreadMessagesCount, reloadThreads } = usePortalChatThreads(props.token);
   const languageSummary =
@@ -154,7 +155,16 @@ export function ProfessionalPortal(props: {
   const notificationsUnreadCount = notificationItems.filter((item) => item.unread).length;
   const listingVisibility = useProfessionalListingVisibility(props.token);
 
+  const collapseRailAfterNav = () => {
+    setRailNavLocked(true);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) {
+      active.blur();
+    }
+  };
+
   const handlePortalNavClick = (target: PortalSection) => (event: MouseEvent<HTMLAnchorElement>) => {
+    collapseRailAfterNav();
     if (target === "/horarios" && window.location.pathname === "/horarios") {
       event.preventDefault();
       window.dispatchEvent(new CustomEvent("professional:schedule-reset"));
@@ -210,73 +220,98 @@ export function ProfessionalPortal(props: {
   return (
     <div className="pro-shell">
       <ProfessionalPortalGuidedTour language={props.language} sessionUserId={props.user.id} token={props.token} />
-      <aside className="pro-sidebar" data-tour="pro-tour-sidebar">
-        <div className="pro-brand">
-          <img
-            className="pro-brand-mark-img"
-            src="/brand/motivarcare-mark.png"
-            alt="MotivarCare"
-            width={396}
-            height={352}
-          />
-          <span className="pro-brand-sub">
-            {t(props.language, { es: "Portal Profesional", en: "Professional portal", pt: "Portal profissional" })}
-          </span>
-        </div>
+      <aside
+        className={`pro-sidebar${railNavLocked ? " is-nav-locked" : ""}`}
+        aria-label={t(props.language, {
+          es: "Menú de la aplicación",
+          en: "App menu",
+          pt: "Menu do aplicativo"
+        })}
+        onMouseLeave={() => {
+          setRailNavLocked(false);
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && active.closest(".pro-sidebar")) {
+            active.blur();
+          }
+        }}
+      >
+        <div className="pro-sidebar-edge" aria-hidden="true" />
+        <div className="pro-sidebar-panel" data-tour="pro-tour-sidebar">
+          <div className="pro-sidebar-brand">
+            <span className="pro-sidebar-brand-mark-wrap">
+              <img
+                className="pro-brand-mark-img"
+                src="/brand/motivarcare-mark.png"
+                alt="MotivarCare"
+                width={396}
+                height={352}
+              />
+            </span>
+            <span className="pro-sidebar-rail-label">
+              {t(props.language, { es: "Portal Profesional", en: "Professional portal", pt: "Portal profissional" })}
+            </span>
+          </div>
 
-        <nav className="pro-sidebar-nav">
-          {links.flatMap((link, index) => {
-            const prevGroup = index > 0 ? links[index - 1]?.group : undefined;
-            const showGroupLabel = Boolean(link.group && link.group !== prevGroup);
-            const navLink = (
+          <nav className="pro-sidebar-nav">
+            {links.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 onClick={handlePortalNavClick(link.to)}
-                className={({ isActive }) => (isActive ? "pro-link active" : "pro-link")}
+                className={({ isActive }) => `pro-sidebar-rail-link${isActive ? " is-active" : ""}`}
                 end={link.to === "/"}
                 data-tour-nav={portalNavTourKey(link.to)}
               >
                 {link.to === "/chat" ? (
-                  <span className="pro-nav-link-with-badge">
-                    {link.label}
+                  <span className="pro-sidebar-rail-icon-wrap">
+                    <ProMobileNavIcon section={link.to} className="pro-sidebar-rail-icon" />
                     {unreadMessagesCount > 0 ? (
-                      <span className="pro-chat-badge-pill" aria-label={newMessagesLabel}>
+                      <span className="pro-sidebar-rail-badge" aria-label={newMessagesLabel}>
                         {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
                       </span>
                     ) : null}
                   </span>
                 ) : (
-                  link.label
+                  <ProMobileNavIcon section={link.to} className="pro-sidebar-rail-icon" />
                 )}
+                <span className="pro-sidebar-rail-label">{link.label}</span>
               </NavLink>
-            );
+            ))}
+          </nav>
 
-            if (!showGroupLabel || !link.group) {
-              return [navLink];
-            }
-
-            return [
-              <span key={`sidebar-group-${link.group}-${index}`} className="pro-sidebar-nav-group-label">
-                {t(props.language, PORTAL_NAV_GROUP_LABELS[link.group])}
-              </span>,
-              navLink
-            ];
-          })}
-        </nav>
-
-        <div className="pro-sidebar-foot">
-          <button type="button" className="pro-sidebar-prefs-btn" onClick={openPreferences}>
-            <ProHeaderIconLocale className="pro-sidebar-prefs-icon" />
-            <span className="pro-sidebar-prefs-copy">
-              <strong>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</strong>
-              <small>
-                {languageSummary} · {currencySummary}
-              </small>
-            </span>
-          </button>
-          <strong className="pro-sidebar-foot-name">{props.user.fullName}</strong>
-          <p className="pro-sidebar-foot-email">{props.user.email}</p>
+          <div className="pro-sidebar-foot-stack">
+            <button
+              type="button"
+              className="pro-sidebar-rail-foot"
+              onClick={() => {
+                collapseRailAfterNav();
+                openPreferences();
+              }}
+            >
+              <span className="pro-sidebar-rail-foot-icon-wrap" aria-hidden="true">
+                <ProHeaderIconLocale className="pro-sidebar-rail-icon" />
+              </span>
+              <span className="pro-sidebar-rail-foot-copy">
+                <span className="pro-sidebar-rail-foot-name">
+                  {t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}
+                </span>
+                <span className="pro-sidebar-rail-foot-email">
+                  {languageSummary} · {currencySummary}
+                </span>
+              </span>
+            </button>
+            <div className="pro-sidebar-rail-foot pro-sidebar-rail-foot--identity">
+              <span className="pro-sidebar-rail-foot-icon-wrap" aria-hidden="true">
+                <ProHeaderIconUser className="pro-sidebar-rail-icon" />
+              </span>
+              <span className="pro-sidebar-rail-foot-copy">
+                {props.user.fullName ? (
+                  <span className="pro-sidebar-rail-foot-name">{props.user.fullName}</span>
+                ) : null}
+                {props.user.email ? <span className="pro-sidebar-rail-foot-email">{props.user.email}</span> : null}
+              </span>
+            </div>
+          </div>
         </div>
       </aside>
 

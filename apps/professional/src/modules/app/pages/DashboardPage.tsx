@@ -1014,39 +1014,41 @@ export function DashboardPage(props: {
         )}
       </section>
 
-      {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
-        <ProfessionalPracticeHealth
-          language={props.language}
-          variant={data.practiceHealth.variant}
-          items={data.practiceHealth.items}
-        />
-      ) : null}
+      <div className="pro-dashboard-secondary">
+        {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
+          <ProfessionalPracticeHealth
+            language={props.language}
+            variant={data.practiceHealth.variant}
+            items={data.practiceHealth.items}
+          />
+        ) : null}
 
-      <section className="pro-card pro-dashboard-availability-shortcut" aria-labelledby="pro-dashboard-availability-title">
-        <div className="pro-dashboard-availability-shortcut-copy">
-          <h2 id="pro-dashboard-availability-title">
+        <section className="pro-card pro-dashboard-availability-shortcut" aria-labelledby="pro-dashboard-availability-title">
+          <div className="pro-dashboard-availability-shortcut-copy">
+            <h2 id="pro-dashboard-availability-title">
+              {t(props.language, {
+                es: "Publicá tu disponibilidad",
+                en: "Publish your availability",
+                pt: "Publique sua disponibilidade"
+              })}
+            </h2>
+            <p>
+              {t(props.language, {
+                es: "Armá tu plantilla semanal en Agenda para que los pacientes puedan reservar turnos.",
+                en: "Set your weekly template in Agenda so patients can book slots.",
+                pt: "Monte seu modelo semanal em Agenda para os pacientes reservarem horarios."
+              })}
+            </p>
+          </div>
+          <NavLink to="/horarios" className="pro-dashboard-availability-shortcut-cta">
             {t(props.language, {
-              es: "Publicá tu disponibilidad",
-              en: "Publish your availability",
-              pt: "Publique sua disponibilidade"
+              es: "Ir a Mi Agenda",
+              en: "Go to My agenda",
+              pt: "Ir para Minha agenda"
             })}
-          </h2>
-          <p>
-            {t(props.language, {
-              es: "Armá tu plantilla semanal en Agenda para que los pacientes puedan reservar turnos.",
-              en: "Set your weekly template in Agenda so patients can book slots.",
-              pt: "Monte seu modelo semanal em Agenda para os pacientes reservarem horarios."
-            })}
-          </p>
-        </div>
-        <NavLink to="/horarios" className="pro-dashboard-availability-shortcut-cta">
-          {t(props.language, {
-            es: "Ir a Mi Agenda",
-            en: "Go to My agenda",
-            pt: "Ir para Minha agenda"
-          })}
-        </NavLink>
-      </section>
+          </NavLink>
+        </section>
+      </div>
 
       {bookingActionError ? <p className="pro-error">{bookingActionError}</p> : null}
 

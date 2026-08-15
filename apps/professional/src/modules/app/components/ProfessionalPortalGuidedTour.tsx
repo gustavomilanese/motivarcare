@@ -150,6 +150,14 @@ function navSelector(navKey: string): string {
   return `[data-tour-nav="${navKey}"]`;
 }
 
+function setProSidebarTourExpanded(expanded: boolean): void {
+  const rail = document.querySelector(".pro-sidebar");
+  if (!(rail instanceof HTMLElement)) {
+    return;
+  }
+  rail.classList.toggle("is-tour-expanded", expanded);
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -742,6 +750,11 @@ function tourDriverConfig(
       if (def) {
         applySectionTheme(def.section);
       }
+      const highlightsRail =
+        Boolean(def?.navKey) ||
+        Boolean(def?.selectors?.some((selector) => selector.includes("pro-tour-sidebar"))) ||
+        Boolean(_element instanceof Element && _element.closest(".pro-sidebar"));
+      setProSidebarTourExpanded(highlightsRail);
     },
     onNextClick: (_element, _step, opts) => {
       const driverObj = opts.driver;
@@ -761,6 +774,7 @@ function tourDriverConfig(
       });
     },
     onDestroyed: () => {
+      setProSidebarTourExpanded(false);
       document.body.classList.remove(
         "pro-tour-zone-welcome",
         "pro-tour-zone-dashboard",

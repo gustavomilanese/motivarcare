@@ -43,38 +43,6 @@ function StatCard(props: {
   );
 }
 
-function BarCompare(props: {
-  title: string;
-  subtitle: string;
-  rows: Array<{ key: string; label: string; value: number; display: string; color: string }>;
-}) {
-  const max = Math.max(...props.rows.map((r) => r.value), 1);
-  return (
-    <article className="card dashboard-compare-card">
-      <header className="dashboard-compare-head">
-        <h3>{props.title}</h3>
-        <small>{props.subtitle}</small>
-      </header>
-      <div className="dashboard-compare-body">
-        {props.rows.map((row) => (
-          <div key={row.key} className="dashboard-compare-row">
-            <div className="dashboard-compare-row-top">
-              <span>{row.label}</span>
-              <strong>{row.display}</strong>
-            </div>
-            <div className="dashboard-bar-track dashboard-compare-track">
-              <div
-                className="dashboard-bar-fill"
-                style={{ width: `${Math.max(6, Math.round((row.value / max) * 100))}%`, background: row.color }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
-
 export function FinanceMonthOverviewSection(props: {
   language: AppLanguage;
   viewingPastMonth: boolean;
@@ -101,40 +69,6 @@ export function FinanceMonthOverviewSection(props: {
   const grossPkgAndTrial = grossPkg + trialGross;
   const feePkgAndTrial = (k?.packagePlatformFeeFromPurchasesMonthCents ?? 0) + trialFee;
   const proNetPkgAndTrial = (k?.packageProfessionalNetFromPurchasesMonthCents ?? 0) + trialNet;
-  const grossSess = k?.grossSessionsMonthCents ?? 0;
-  const pkgFee = k?.packagePlatformFeeFromPurchasesMonthCents ?? 0;
-  const pkgProNet = k?.packageProfessionalNetFromPurchasesMonthCents ?? 0;
-  const feeSess = k?.platformFeeMonthCents ?? 0;
-
-  const loadBars = k
-    ? [
-        {
-          key: "patients",
-          label: t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" }),
-          value: k.activePatients,
-          tone: "var(--brand)" as const
-        },
-        {
-          key: "pros",
-          label: t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" }),
-          value: Math.max(1, k.activeProfessionals),
-          tone: "var(--brand-2)" as const
-        },
-        {
-          key: "sessions",
-          label: t(props.language, { es: "Sesiones confirmadas (mes)", en: "Confirmed sessions (month)", pt: "Sessoes confirmadas (mes)" }),
-          value: k.scheduledSessions,
-          tone: "#9d8cf6" as const
-        },
-        {
-          key: "purchases",
-          label: t(props.language, { es: "Compras del mes (#)", en: "Purchases (mo. #)", pt: "Compras (n)" }),
-          value: Math.max(1, k.packagePurchasesMonthCount ?? 0),
-          tone: "#c9c0fd" as const
-        }
-      ]
-    : [];
-  const maxLoad = Math.max(...loadBars.map((item) => item.value), 1);
 
   return (
     <div className="finance-month-overview">
@@ -150,9 +84,9 @@ export function FinanceMonthOverviewSection(props: {
           {props.viewingPastMonth ? (
             <p className="dashboard-section-asof finance-month-asof">
               {t(props.language, {
-                es: "Pacientes y profesionales: estado actual. Sesiones confirmadas, pruebas y paquetes: mes elegido (UTC).",
-                en: "Patients and pros: current state. Confirmed sessions, trials and packages: selected month (UTC).",
-                pt: "Pacientes e pros: estado atual. Sessoes, provas e pacotes: mes UTC escolhido."
+                es: "Pacientes y profesionales: estado actual. Ingresos: mes elegido (UTC).",
+                en: "Patients and pros: current state. Revenue: selected month (UTC).",
+                pt: "Pacientes e pros: estado atual. Receita: mes escolhido (UTC)."
               })}
             </p>
           ) : null}
@@ -160,52 +94,21 @@ export function FinanceMonthOverviewSection(props: {
           {props.scopedToEntity ? (
             <p className="dashboard-section-asof finance-month-asof finance-month-scope-hint">
               {t(props.language, {
-                es: "Resumen del mes acotado al profesional o paciente elegido en la lupa (confirmadas del mes; resto de métricas alineadas a esa selección).",
-                en: "Month summary is narrowed to the professional or patient from the search filter (confirmed sessions this month; other metrics match that scope).",
-                pt: "Resumo do mes limitado ao profissional ou paciente da busca (confirmadas no mes)."
+                es: "Resumen acotado al profesional o paciente elegido en la lupa.",
+                en: "Summary narrowed to the professional or patient from the search filter.",
+                pt: "Resumo limitado ao profissional ou paciente da busca."
               })}
             </p>
           ) : null}
-
-          <section
-            className="dashboard-section dashboard-section--raised dashboard-section--tone-op finance-dash-section"
-            aria-labelledby="fin-dash-op"
-          >
-            <h2 id="fin-dash-op" className="dashboard-section-title">
-              {t(props.language, { es: "Operación", en: "Operations", pt: "Operacao" })}
-            </h2>
-            <div className="dashboard-stat-grid dashboard-stat-grid--2">
-              <StatCard
-                label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
-                value={String(k.activePatients)}
-                to="/patients?status=active"
-                detail={t(props.language, {
-                  es: "Ver pacientes activos",
-                  en: "View active patients",
-                  pt: "Ver pacientes ativos"
-                })}
-              />
-              <StatCard
-                label={t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
-                value={String(k.activeProfessionals)}
-                to="/professionals?visible=true"
-                detail={t(props.language, {
-                  es: "Ver listado de profesionales",
-                  en: "View professionals list",
-                  pt: "Ver lista de profissionais"
-                })}
-              />
-            </div>
-          </section>
 
           <section className="dashboard-section dashboard-section--highlight dashboard-section--tone-pkg finance-dash-section" aria-labelledby="fin-dash-pkg">
             <h2
               id="fin-dash-pkg"
               className="dashboard-section-title"
               title={t(props.language, {
-                es: "Cobros del mes en USD: paquetes comprados + sesiones de prueba. Las sesiones con crédito de paquete se ven en pendientes / comparativas.",
-                en: "Month collections in USD: package purchases + trial sessions. Package-credit sessions appear under unpaid / comparisons.",
-                pt: "Cobranças do mês em USD: pacotes + sessões de teste. Sessões com crédito do pacote ficam em pendentes / comparativos."
+                es: "Cobros del mes en USD: paquetes comprados + sesiones de prueba.",
+                en: "Month collections in USD: package purchases + trial sessions.",
+                pt: "Cobranças do mês em USD: pacotes + sessões de teste."
               })}
             >
               {t(props.language, {
@@ -255,9 +158,40 @@ export function FinanceMonthOverviewSection(props: {
             </div>
           </section>
 
+          <section
+            className="dashboard-section dashboard-section--raised dashboard-section--tone-op finance-dash-section"
+            aria-labelledby="fin-dash-op"
+          >
+            <h2 id="fin-dash-op" className="dashboard-section-title">
+              {t(props.language, { es: "Pacientes y profesionales", en: "Patients and professionals", pt: "Pacientes e profissionais" })}
+            </h2>
+            <div className="dashboard-stat-grid dashboard-stat-grid--2">
+              <StatCard
+                label={t(props.language, { es: "Pacientes activos", en: "Active patients", pt: "Pacientes ativos" })}
+                value={String(k.activePatients)}
+                to="/patients?status=active"
+                detail={t(props.language, {
+                  es: "Ver pacientes activos",
+                  en: "View active patients",
+                  pt: "Ver pacientes ativos"
+                })}
+              />
+              <StatCard
+                label={t(props.language, { es: "Profesionales", en: "Professionals", pt: "Profissionais" })}
+                value={String(k.activeProfessionals)}
+                to="/professionals?visible=true"
+                detail={t(props.language, {
+                  es: "Ver listado de profesionales",
+                  en: "View professionals list",
+                  pt: "Ver lista de profissionais"
+                })}
+              />
+            </div>
+          </section>
+
           {props.afterRevenue ? (
             <section
-              className="dashboard-section dashboard-section--raised dashboard-section--tone-sess finance-dash-section"
+              className="dashboard-section finance-dash-section"
               aria-label={t(props.language, {
                 es: "Pendiente de pagar a profesionales",
                 en: "Pending professional payouts",
@@ -267,151 +201,6 @@ export function FinanceMonthOverviewSection(props: {
               {props.afterRevenue}
             </section>
           ) : null}
-
-          <details className="dashboard-section dashboard-section--raised dashboard-section--tone-viz dashboard-details finance-dash-section">
-            <summary className="dashboard-details-summary">
-              <span className="dashboard-collapsible-heading">
-                <h2 id="fin-dash-viz" className="dashboard-section-title">
-                  {t(props.language, { es: "Comparativas del mes", en: "Month comparisons", pt: "Comparativas do mes" })}
-                </h2>
-              </span>
-              <span className="dashboard-details-chevron" aria-hidden />
-            </summary>
-            <div className="dashboard-details-body">
-            <div className="dashboard-chart-grid">
-              <BarCompare
-                title={t(props.language, {
-                  es: "Bruto: paquetes, pruebas y sesiones hechas",
-                  en: "Gross: packages, trials, completed sessions",
-                  pt: "Bruto: pacotes, provas e sessoes"
-                })}
-                subtitle={t(props.language, {
-                  es: "Misma escala relativa dentro del mes",
-                  en: "Same relative scale for the month",
-                  pt: "Escala relativa no mes"
-                })}
-                rows={[
-                  {
-                    key: "pkg",
-                    label: t(props.language, { es: "Ventas paquetes", en: "Package sales", pt: "Vendas pacotes" }),
-                    value: grossPkg,
-                    display: formatMoneyCents(grossPkg, props.language),
-                    color: "var(--brand)"
-                  },
-                  {
-                    key: "trial",
-                    label: t(props.language, { es: "Sesiones de prueba", en: "Trial sessions", pt: "Sessoes de teste" }),
-                    value: trialGross,
-                    display: formatMoneyCents(trialGross, props.language),
-                    color: "#7c6ae8"
-                  },
-                  {
-                    key: "sess",
-                    label: t(props.language, { es: "Sesiones completadas", en: "Completed sessions", pt: "Sessoes concluidas" }),
-                    value: grossSess,
-                    display: formatMoneyCents(grossSess, props.language),
-                    color: "#c9c0fd"
-                  }
-                ]}
-              />
-              <BarCompare
-                title={t(props.language, {
-                  es: "Comisión: paquete, prueba y sesión",
-                  en: "Fee: package, trial, session",
-                  pt: "Comissao: pacote, prova e sessao"
-                })}
-                subtitle={t(props.language, {
-                  es: "Plataforma: paquetes, % trial y sesiones contabilizadas",
-                  en: "Platform: packages, trial % and counted sessions",
-                  pt: "Plataforma: pacotes, trial e sessoes"
-                })}
-                rows={[
-                  {
-                    key: "pf",
-                    label: t(props.language, { es: "Por compra de paquete", en: "From package purchase", pt: "Na compra do pacote" }),
-                    value: pkgFee,
-                    display: formatMoneyCents(pkgFee, props.language),
-                    color: "var(--brand)"
-                  },
-                  {
-                    key: "tf",
-                    label: t(props.language, { es: "Por sesión de prueba", en: "From trial session", pt: "Por sessao de teste" }),
-                    value: trialFee,
-                    display: formatMoneyCents(trialFee, props.language),
-                    color: "#7c6ae8"
-                  },
-                  {
-                    key: "sf",
-                    label: t(props.language, { es: "Por sesión completada", en: "From completed session", pt: "Por sessao feita" }),
-                    value: feeSess,
-                    display: formatMoneyCents(feeSess, props.language),
-                    color: "#c9c0fd"
-                  }
-                ]}
-              />
-            </div>
-            </div>
-          </details>
-
-          <details className="dashboard-section dashboard-section--raised dashboard-section--tone-load dashboard-details finance-dash-section">
-            <summary className="dashboard-details-summary">
-              <span className="dashboard-collapsible-heading">
-                <h2 id="fin-dash-load" className="dashboard-section-title">
-                  {t(props.language, { es: "Carga relativa", en: "Relative load", pt: "Carga relativa" })}
-                </h2>
-              </span>
-              <span className="dashboard-details-chevron" aria-hidden />
-            </summary>
-            <div className="dashboard-details-body">
-            <article className="card dashboard-chart-card">
-              <div className="dashboard-bar-chart">
-                {loadBars.map((item) => (
-                  <div key={item.key} className="dashboard-bar-row">
-                    <span>{item.label}</span>
-                    <div className="dashboard-bar-track">
-                      <div
-                        className="dashboard-bar-fill"
-                        style={{ width: `${Math.max(10, Math.round((item.value / maxLoad) * 100))}%`, background: item.tone }}
-                      />
-                    </div>
-                    <strong>{item.value}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
-            </div>
-          </details>
-
-          <details className="dashboard-section dashboard-section--raised dashboard-section--tone-sess dashboard-details finance-dash-section">
-            <summary className="dashboard-details-summary">
-              <span className="dashboard-collapsible-heading">
-                <h2 className="dashboard-section-title">
-                  {t(props.language, { es: "Por sesiones completadas (mes)", en: "From completed sessions (month)", pt: "Por sessoes concluidas (mes)" })}
-                </h2>
-              </span>
-              <span className="dashboard-details-chevron" aria-hidden />
-            </summary>
-            <div className="dashboard-details-body">
-              <div className="dashboard-stat-grid dashboard-stat-grid--4">
-                <StatCard
-                  label={t(props.language, { es: "Sesiones contabilizadas", en: "Sessions counted", pt: "Sessoes" })}
-                  value={String(k.completedSessionsMonthCount ?? 0)}
-                />
-                <StatCard
-                  label={t(props.language, { es: "Bruto (sesiones)", en: "Gross (sessions)", pt: "Bruto (sessoes)" })}
-                  value={formatMoneyCents(grossSess, props.language)}
-                />
-                <StatCard
-                  label={t(props.language, { es: "Comisión (sesiones)", en: "Fee (sessions)", pt: "Comissao (sessoes)" })}
-                  value={formatMoneyCents(feeSess, props.language)}
-                />
-                <StatCard
-                  label={t(props.language, { es: "Neto prof. (sesiones)", en: "Pro net (sessions)", pt: "Liquido pro (sessoes)" })}
-                  value={formatMoneyCents(k.professionalNetMonthCents ?? 0, props.language)}
-                />
-              </div>
-            </div>
-          </details>
         </>
       ) : null}
     </div>

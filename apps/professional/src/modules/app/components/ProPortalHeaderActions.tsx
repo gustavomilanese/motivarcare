@@ -190,25 +190,6 @@ export function ProPortalHeaderActions(props: {
           {accountMenuOpen ? (
             <div id={menuId} className="pro-header-account-dropdown" role="menu">
               <NavLink
-                to="/reportes"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
-                onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconReports className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
-              </NavLink>
-              <NavLink
-                to="/agenda/ajustes"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
-                onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconAgendaSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" })}
-              </NavLink>
-              <div className="menu-sep" role="separator" />
-              <NavLink
                 to="/perfil"
                 role="menuitem"
                 className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
@@ -240,6 +221,25 @@ export function ProPortalHeaderActions(props: {
                   </small>
                 </span>
               </button>
+              <div className="menu-sep" role="separator" />
+              <NavLink
+                to="/agenda/ajustes"
+                role="menuitem"
+                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                onClick={() => setAccountMenuOpen(false)}
+              >
+                <ProHeaderIconAgendaSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                {t(props.language, { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" })}
+              </NavLink>
+              <NavLink
+                to="/reportes"
+                role="menuitem"
+                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                onClick={() => setAccountMenuOpen(false)}
+              >
+                <ProHeaderIconReports className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                {t(props.language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
+              </NavLink>
               <div className="menu-sep" role="separator" />
               <button
                 type="button"

@@ -1,19 +1,19 @@
 import type { PortalSection } from "../types";
 
-const iconProps = {
-  className: "pro-mobile-nav-icon",
-  width: 22,
-  height: 22,
-  viewBox: "0 0 24 24",
-  fill: "none" as const,
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true as const
-};
+export function ProMobileNavIcon(props: { section: PortalSection; className?: string }) {
+  const iconProps = {
+    className: props.className ?? "pro-mobile-nav-icon",
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none" as const,
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true as const
+  };
 
-export function ProMobileNavIcon(props: { section: PortalSection }) {
   switch (props.section) {
     case "/":
       return (

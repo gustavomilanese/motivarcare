@@ -91,7 +91,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("net_desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
   const [expandedLoading, setExpandedLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -118,9 +118,49 @@ export function AdminUnpaidProfessionalsPanel(props: {
   }, [load]);
 
   useEffect(() => {
-    setExpandedDetails({});
-    setExpandedId(null);
-  }, [monthsKey]);
+    if (loading) {
+      return;
+    }
+    const ids = rows.map((row) => row.professionalId);
+    setExpandedIds(new Set(ids));
+    if (ids.length === 0) {
+      setExpandedDetails({});
+      return;
+    }
+
+    let cancelled = false;
+    setExpandedLoading(true);
+    setError("");
+    void Promise.all(
+      rows.map((row) => fetchUnpaidProfessionalDetail(props.token, row.professionalId, selectedMonths))
+    )
+      .then((details) => {
+        if (cancelled) {
+          return;
+        }
+        const next: Record<string, UnpaidProfessionalDetailResponse> = {};
+        details.forEach((detail, index) => {
+          next[rows[index].professionalId] = detail;
+        });
+        setExpandedDetails(next);
+      })
+      .catch((requestError) => {
+        if (cancelled) {
+          return;
+        }
+        const raw = requestError instanceof Error ? requestError.message : "";
+        setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setExpandedLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, rows, monthsKey, props.language, props.token, selectedMonths]);
 
   const filteredSorted = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -162,11 +202,16 @@ export function AdminUnpaidProfessionalsPanel(props: {
   };
 
   const toggleExpand = async (row: AdminUnpaidProfessional) => {
-    if (expandedId === row.professionalId) {
-      setExpandedId(null);
+    const isOpen = expandedIds.has(row.professionalId);
+    if (isOpen) {
+      setExpandedIds((current) => {
+        const next = new Set(current);
+        next.delete(row.professionalId);
+        return next;
+      });
       return;
     }
-    setExpandedId(row.professionalId);
+    setExpandedIds((current) => new Set(current).add(row.professionalId));
     if (expandedDetails[row.professionalId]) {
       return;
     }
@@ -178,7 +223,11 @@ export function AdminUnpaidProfessionalsPanel(props: {
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
-      setExpandedId(null);
+      setExpandedIds((current) => {
+        const next = new Set(current);
+        next.delete(row.professionalId);
+        return next;
+      });
     } finally {
       setExpandedLoading(false);
     }
@@ -231,25 +280,36 @@ export function AdminUnpaidProfessionalsPanel(props: {
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="admin-unpaid-excel-btn"
-            disabled={exporting || filteredSorted.length === 0}
-            onClick={() => void exportExcel()}
-            aria-label={
-              exporting
-                ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
-                : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })
-            }
-            title={t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-              <rect x="3" y="2" width="14" height="18" rx="2" fill="#217346" />
-              <path d="M6 7h8M6 11h8M6 15h5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="17.5" cy="17.5" r="5.5" fill="#16a34a" stroke="#fff" strokeWidth="1.5" />
-              <path d="M17.5 14.5v5M15.5 17.5l2 2 2-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          </button>
+          <div className="admin-unpaid-professionals-head-actions">
+            <button
+              type="button"
+              className={`admin-unpaid-filters-toggle${filtersOpen || hasMonthFilter ? " is-active" : ""}`}
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
+              {hasMonthFilter ? <span className="admin-unpaid-filters-dot" aria-hidden /> : null}
+            </button>
+            <button
+              type="button"
+              className="admin-unpaid-excel-btn"
+              disabled={exporting || filteredSorted.length === 0}
+              onClick={() => void exportExcel()}
+              aria-label={
+                exporting
+                  ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
+                  : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })
+              }
+              title={t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+                <rect x="3" y="2" width="14" height="18" rx="2" fill="#217346" />
+                <path d="M6 7h8M6 11h8M6 15h5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="17.5" cy="17.5" r="5.5" fill="#16a34a" stroke="#fff" strokeWidth="1.5" />
+                <path d="M17.5 14.5v5M15.5 17.5l2 2 2-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </button>
+          </div>
         </header>
 
         <div className="admin-unpaid-professionals-toolbar">
@@ -268,15 +328,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
             })}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <button
-            type="button"
-            className={`admin-unpaid-filters-toggle${filtersOpen || hasMonthFilter ? " is-active" : ""}`}
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
-            {hasMonthFilter ? <span className="admin-unpaid-filters-dot" aria-hidden /> : null}
-          </button>
         </div>
 
         {filtersOpen ? (
@@ -395,28 +446,39 @@ export function AdminUnpaidProfessionalsPanel(props: {
               </thead>
               <tbody>
                 {filteredSorted.map((row) => {
-                  const expanded = expandedId === row.professionalId;
+                  const expanded = expandedIds.has(row.professionalId);
                   const expandedDetail = expandedDetails[row.professionalId] ?? null;
                   const unit = averageSessionCents(row);
+                  const rowLoading = expanded && !expandedDetail && expandedLoading;
                   return (
                     <Fragment key={row.professionalId}>
-                      <tr className={expanded ? "is-expanded" : undefined}>
+                      <tr
+                        className={`admin-unpaid-pro-row${expanded ? " is-expanded" : ""}`}
+                        tabIndex={0}
+                        aria-expanded={expanded}
+                        onClick={() => void toggleExpand(row)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            void toggleExpand(row);
+                          }
+                        }}
+                      >
                         <td>
-                          <button
-                            type="button"
-                            className="admin-unpaid-pro-name"
-                            onClick={() => void toggleExpand(row)}
-                            aria-expanded={expanded}
-                          >
+                          <span className="admin-unpaid-pro-name">
                             <span aria-hidden>{expanded ? "▾" : "▸"}</span>
                             {row.professionalName}
-                          </button>
+                          </span>
                         </td>
                         <td className="num">{row.sessionsCount}</td>
                         <td className="num admin-unpaid-net">
                           {formatAdminFinanceUsd(row.professionalNetCents, props.language)}
                         </td>
-                        <td className="admin-unpaid-actions">
+                        <td
+                          className="admin-unpaid-actions"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
                           <button
                             type="button"
                             className="admin-unpaid-pay-btn"
@@ -447,7 +509,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                 <strong>{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</strong>
                               </span>
                             </div>
-                            {expandedLoading ? (
+                            {rowLoading ? (
                               <p className="admin-unpaid-detail-loading">
                                 {t(props.language, {
                                   es: "Cargando sesiones…",

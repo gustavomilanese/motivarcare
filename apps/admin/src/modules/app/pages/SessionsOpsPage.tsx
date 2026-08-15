@@ -1,5 +1,5 @@
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AdminBookingSessionActions } from "../components/sessions/AdminBookingSessionActions";
 import { AdminSessionScheduleField } from "../components/sessions/AdminSessionScheduleField";
@@ -25,9 +25,16 @@ function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
 
+const PAGE_SIZE = 20;
+
 function formatSessionWhen(language: AppLanguage, startsAt: string, endsAt: string): string {
   const opts = { month: "short" as const, day: "numeric" as const, hour: "numeric" as const, minute: "2-digit" as const };
   return `${formatDateWithLocale({ value: startsAt, language, options: opts })} → ${formatDateWithLocale({ value: endsAt, language, options: opts })}`;
+}
+
+function formatSessionTimeRange(language: AppLanguage, startsAt: string, endsAt: string): string {
+  const opts = { hour: "numeric" as const, minute: "2-digit" as const };
+  return `${formatDateWithLocale({ value: startsAt, language, options: opts })}–${formatDateWithLocale({ value: endsAt, language, options: opts })}`;
 }
 
 function formatDayHeading(language: AppLanguage, dayKey: string): string {
@@ -129,6 +136,8 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
   const [patientFilterLabel, setPatientFilterLabel] = useState("");
   const [drafts, setDrafts] = useState<Record<string, AdminBookingDraft>>({});
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const syncQuery = (patch: Record<string, string | null>) => {
     setSearchParams((current) => {
@@ -222,21 +231,35 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
 
   const sortedBookings = useMemo(() => sortBookings(bookings, sortMode), [bookings, sortMode]);
 
-  const dayGroups = useMemo(() => {
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, patientFilterId, professionalFilterId, dateFrom, dateTo, sortMode]);
+
+  const pageModel = useMemo(() => {
+    const totalCount = sortedBookings.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const pageStart = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE;
+    const pageBookings = sortedBookings.slice(pageStart, pageStart + PAGE_SIZE);
+    const groupedByDate = sortMode === "starts_desc" || sortMode === "starts_asc";
     const groups: Array<{ dayKey: string; items: AdminBookingOps[] }> = [];
-    const indexByDay = new Map<string, number>();
-    for (const booking of sortedBookings) {
-      const dayKey = localDayKeyFromIso(booking.startsAt);
-      const existing = indexByDay.get(dayKey);
-      if (existing == null) {
-        indexByDay.set(dayKey, groups.length);
-        groups.push({ dayKey, items: [booking] });
-      } else {
-        groups[existing].items.push(booking);
+    if (!groupedByDate) {
+      groups.push({ dayKey: "", items: pageBookings });
+    } else {
+      const indexByDay = new Map<string, number>();
+      for (const booking of pageBookings) {
+        const dayKey = localDayKeyFromIso(booking.startsAt);
+        const existing = indexByDay.get(dayKey);
+        if (existing == null) {
+          indexByDay.set(dayKey, groups.length);
+          groups.push({ dayKey, items: [booking] });
+        } else {
+          groups[existing].items.push(booking);
+        }
       }
     }
-    return groups;
-  }, [sortedBookings]);
+    return { totalCount, totalPages, currentPage, pageStart, pageBookings, groups, groupedByDate };
+  }, [sortedBookings, page, sortMode]);
 
   const resolvePatientFilter = async () => {
     const query = patientSearchInput.trim();
@@ -418,134 +441,215 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
     patientFilterId,
     professionalFilterId,
     dateFrom,
-    dateTo
+    dateTo,
+    sortMode !== "starts_desc" ? sortMode : ""
   ].filter(Boolean).length;
+  const professionalFilterLabel =
+    professionals.find((pro) => pro.id === professionalFilterId)?.fullName ?? professionalFilterId;
+  const rangeLabel =
+    pageModel.totalCount === 0
+      ? "0"
+      : `${pageModel.pageStart + 1}–${Math.min(pageModel.pageStart + PAGE_SIZE, pageModel.totalCount)}`;
 
   return (
-    <div className="ops-page finance-page sessions-ops-premium">
-      <section className="card stack finance-kpi-card finance-page-hero sessions-ops-hero">
-        <header className="sessions-ops-hero-header">
-          <div>
-            <p className="sessions-ops-kicker">
-              {t(props.language, { es: "Operaciones", en: "Operations", pt: "Operacoes" })}
-            </p>
-            <h2>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</h2>
-            <p className="settings-section-lead">
-              {t(props.language, {
-                es: "Filtrá, ordená y corregí agendas. Para QA: expandí una sesión → atajo «Hace ~2 h».",
-                en: "Filter, sort, and correct schedules. For QA: expand a session → “~2 h ago” shortcut.",
-                pt: "Filtre, ordene e corrija agendas. Para QA: abra uma sessao → atalho «Há ~2 h»."
-              })}
-            </p>
-          </div>
-          <div className="sessions-ops-hero-stats">
-            <div>
-              <span>{t(props.language, { es: "En vista", en: "In view", pt: "Na vista" })}</span>
-              <strong>{sortedBookings.length}</strong>
-            </div>
-            <div>
-              <span>{t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}</span>
-              <strong>{activeFilterCount}</strong>
-            </div>
-          </div>
+    <div className="ops-page sessions-ops">
+      <section className="card stack sessions-ops-panel">
+        <header className="patient-section-head">
+          <h2>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</h2>
         </header>
 
-        <div className="sessions-ops-filters">
-          <label className="sessions-ops-filter-field sessions-ops-filter-field--grow">
-            <span>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</span>
-            <div className="sessions-ops-inline-search">
+        <div className="ops-filter-toolbar">
+          <div className="ops-filter-toolbar__search">
+            <input
+              type="search"
+              className="patient-search-input"
+              value={patientSearchInput}
+              placeholder={t(props.language, {
+                es: "Buscar paciente por email, nombre o ID",
+                en: "Search patient by email, name, or ID",
+                pt: "Buscar paciente por email, nome ou ID"
+              })}
+              onChange={(event) => setPatientSearchInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void resolvePatientFilter();
+                }
+              }}
+            />
+            <button type="button" className="primary" onClick={() => void resolvePatientFilter()}>
+              {t(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
+            </button>
+          </div>
+
+          <div className="ops-filter-toolbar__filters">
+            {statusFilter ? (
+              <span className="ops-filter-chip">
+                <span className="ops-filter-chip__label">
+                  {t(props.language, { es: "Estado", en: "Status", pt: "Estado" })}
+                </span>
+                <strong>{bookingStatusLabel(props.language, statusFilter)}</strong>
+                <button
+                  type="button"
+                  className="ops-filter-chip__remove"
+                  onClick={() => {
+                    setStatusFilter("");
+                    syncQuery({ status: null });
+                  }}
+                  aria-label={t(props.language, { es: "Quitar estado", en: "Clear status", pt: "Limpar estado" })}
+                >
+                  ×
+                </button>
+              </span>
+            ) : null}
+            {professionalFilterId ? (
+              <span className="ops-filter-chip">
+                <span className="ops-filter-chip__label">
+                  {t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}
+                </span>
+                <strong>{professionalFilterLabel}</strong>
+                <button
+                  type="button"
+                  className="ops-filter-chip__remove"
+                  onClick={() => {
+                    setProfessionalFilterId("");
+                    syncQuery({ professionalId: null });
+                  }}
+                  aria-label={t(props.language, { es: "Quitar profesional", en: "Clear professional", pt: "Limpar profissional" })}
+                >
+                  ×
+                </button>
+              </span>
+            ) : null}
+            {dateFrom || dateTo ? (
+              <span className="ops-filter-chip">
+                <span className="ops-filter-chip__label">
+                  {t(props.language, { es: "Fechas", en: "Dates", pt: "Datas" })}
+                </span>
+                <strong>{[dateFrom || "…", dateTo || "…"].join(" → ")}</strong>
+                <button
+                  type="button"
+                  className="ops-filter-chip__remove"
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                    syncQuery({ dateFrom: null, dateTo: null });
+                  }}
+                  aria-label={t(props.language, { es: "Quitar fechas", en: "Clear dates", pt: "Limpar datas" })}
+                >
+                  ×
+                </button>
+              </span>
+            ) : null}
+            <button
+              type="button"
+              className={`ops-filter-add__btn${filtersOpen || activeFilterCount > 0 ? " is-active" : ""}`}
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              {t(props.language, { es: "Filtros", en: "Filters", pt: "Filtros" })}
+              {activeFilterCount > 0 ? <span className="sessions-ops-filter-count">{activeFilterCount}</span> : null}
+            </button>
+            {activeFilterCount > 0 ? (
+              <button type="button" className="sessions-ops-linkish" onClick={clearAllFilters}>
+                {t(props.language, { es: "Limpiar", en: "Clear", pt: "Limpar" })}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {filtersOpen ? (
+          <div className="sessions-ops-filters">
+            <label className="sessions-ops-filter-field">
+              <span>{t(props.language, { es: "Estado", en: "Status", pt: "Estado" })}</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  const value = event.target.value as "" | AdminBookingOps["status"];
+                  setStatusFilter(value);
+                  syncQuery({ status: value || null });
+                }}
+              >
+                <option value="">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
+                {BOOKING_STATUS_VALUES.map((st) => (
+                  <option key={st} value={st}>
+                    {bookingStatusLabel(props.language, st)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="sessions-ops-filter-field">
+              <span>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
+              <select
+                value={professionalFilterId}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setProfessionalFilterId(value);
+                  syncQuery({ professionalId: value || null });
+                }}
+              >
+                <option value="">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
+                {professionals.map((pro) => (
+                  <option key={pro.id} value={pro.id}>
+                    {pro.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="sessions-ops-filter-field">
+              <span>{t(props.language, { es: "Desde", en: "From", pt: "De" })}</span>
               <input
-                type="search"
-                value={patientSearchInput}
-                placeholder="email, nombre o ID"
-                onChange={(event) => setPatientSearchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void resolvePatientFilter();
-                  }
+                type="date"
+                value={dateFrom}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setDateFrom(value);
+                  syncQuery({ dateFrom: value || null });
                 }}
               />
-              <button type="button" className="primary" onClick={() => void resolvePatientFilter()}>
-                {t(props.language, { es: "Buscar", en: "Search", pt: "Buscar" })}
-              </button>
-            </div>
-          </label>
-
-          <label className="sessions-ops-filter-field">
-            <span>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</span>
-            <select
-              value={professionalFilterId}
-              onChange={(event) => {
-                const value = event.target.value;
-                setProfessionalFilterId(value);
-                syncQuery({ professionalId: value || null });
-              }}
-            >
-              <option value="">{t(props.language, { es: "Todos", en: "All", pt: "Todos" })}</option>
-              {professionals.map((pro) => (
-                <option key={pro.id} value={pro.id}>
-                  {pro.fullName}
+            </label>
+            <label className="sessions-ops-filter-field">
+              <span>{t(props.language, { es: "Hasta", en: "To", pt: "Ate" })}</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setDateTo(value);
+                  syncQuery({ dateTo: value || null });
+                }}
+              />
+            </label>
+            <label className="sessions-ops-filter-field">
+              <span>{t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}</span>
+              <select
+                value={sortMode}
+                onChange={(event) => {
+                  const value = event.target.value as SortMode;
+                  setSortMode(value);
+                  syncQuery({ sort: value === "starts_desc" ? null : value });
+                }}
+              >
+                <option value="starts_desc">
+                  {t(props.language, { es: "Fecha · más reciente", en: "Date · newest", pt: "Data · mais recente" })}
                 </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="sessions-ops-filter-field">
-            <span>{t(props.language, { es: "Desde", en: "From", pt: "De" })}</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => {
-                const value = event.target.value;
-                setDateFrom(value);
-                syncQuery({ dateFrom: value || null });
-              }}
-            />
-          </label>
-
-          <label className="sessions-ops-filter-field">
-            <span>{t(props.language, { es: "Hasta", en: "To", pt: "Ate" })}</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(event) => {
-                const value = event.target.value;
-                setDateTo(value);
-                syncQuery({ dateTo: value || null });
-              }}
-            />
-          </label>
-
-          <label className="sessions-ops-filter-field">
-            <span>{t(props.language, { es: "Orden", en: "Sort", pt: "Ordem" })}</span>
-            <select
-              value={sortMode}
-              onChange={(event) => {
-                const value = event.target.value as SortMode;
-                setSortMode(value);
-                syncQuery({ sort: value === "starts_desc" ? null : value });
-              }}
-            >
-              <option value="starts_desc">
-                {t(props.language, { es: "Fecha · más reciente", en: "Date · newest", pt: "Data · mais recente" })}
-              </option>
-              <option value="starts_asc">
-                {t(props.language, { es: "Fecha · más antigua", en: "Date · oldest", pt: "Data · mais antiga" })}
-              </option>
-              <option value="professional_az">
-                {t(props.language, { es: "Profesional A–Z", en: "Professional A–Z", pt: "Profissional A–Z" })}
-              </option>
-              <option value="patient_az">
-                {t(props.language, { es: "Paciente A–Z", en: "Patient A–Z", pt: "Paciente A–Z" })}
-              </option>
-            </select>
-          </label>
-        </div>
+                <option value="starts_asc">
+                  {t(props.language, { es: "Fecha · más antigua", en: "Date · oldest", pt: "Data · mais antiga" })}
+                </option>
+                <option value="professional_az">
+                  {t(props.language, { es: "Profesional A–Z", en: "Professional A–Z", pt: "Profissional A–Z" })}
+                </option>
+                <option value="patient_az">
+                  {t(props.language, { es: "Paciente A–Z", en: "Patient A–Z", pt: "Paciente A–Z" })}
+                </option>
+              </select>
+            </label>
+          </div>
+        ) : null}
 
         {patientFilterId ? (
           <p className="sessions-ops-active-filter">
-            {t(props.language, { es: "Filtrando paciente:", en: "Filtering patient:", pt: "Filtrando paciente:" })}{" "}
+            {t(props.language, { es: "Paciente:", en: "Patient:", pt: "Paciente:" })}{" "}
             <strong>{patientFilterLabel || patientFilterId}</strong>
             {" · "}
             <Link to={`/patients?patientId=${encodeURIComponent(patientFilterId)}`}>
@@ -567,119 +671,89 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
           </p>
         ) : null}
 
-        <div
-          className="ops-status-filter ops-status-filter--hero toolbar--wrap"
-          role="group"
-          aria-label={t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por estado" })}
-        >
-          <button
-            type="button"
-            className={statusFilter === "" ? "is-active" : undefined}
-            onClick={() => {
-              setStatusFilter("");
-              syncQuery({ status: null });
-            }}
-          >
-            {t(props.language, { es: "Todos", en: "All", pt: "Todos" })}
-          </button>
-          {BOOKING_STATUS_VALUES.map((st) => (
-            <button
-              key={st}
-              type="button"
-              className={statusFilter === st ? "is-active" : undefined}
-              onClick={() => {
-                setStatusFilter(st);
-                syncQuery({ status: st });
-              }}
-            >
-              {bookingStatusLabel(props.language, st)}
-            </button>
-          ))}
-          {activeFilterCount > 0 ? (
-            <button type="button" className="sessions-ops-clear-filters" onClick={clearAllFilters}>
-              {t(props.language, { es: "Limpiar filtros", en: "Clear filters", pt: "Limpar filtros" })}
-            </button>
-          ) : null}
-        </div>
-
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="success-text">{success}</p> : null}
         {loading ? <p>{t(props.language, { es: "Cargando...", en: "Loading...", pt: "Carregando..." })}</p> : null}
-      </section>
 
-      <div className="stack-lg sessions-ops-list">
         {bookings.length === 0 && !loading ? (
-          <section className="card stack">
-            <p>
-              {t(props.language, {
-                es: "No hay sesiones con estos filtros.",
-                en: "No sessions match these filters.",
-                pt: "Nenhuma sessao com estes filtros."
-              })}
-            </p>
-          </section>
+          <p className="patient-list-empty">
+            {t(props.language, {
+              es: "No hay sesiones con estos filtros.",
+              en: "No sessions match these filters.",
+              pt: "Nenhuma sessao com estes filtros."
+            })}
+          </p>
         ) : null}
 
-        {dayGroups.map((group) => (
-          <section key={group.dayKey} className="sessions-ops-day-group">
-            <header className="sessions-ops-day-heading">
-              <h3>{formatDayHeading(props.language, group.dayKey)}</h3>
-              <span>
-                {group.items.length}{" "}
-                {t(props.language, {
-                  es: group.items.length === 1 ? "sesión" : "sesiones",
-                  en: group.items.length === 1 ? "session" : "sessions",
-                  pt: group.items.length === 1 ? "sessao" : "sessoes"
-                })}
-              </span>
-            </header>
-
-            {group.items.map((booking) => {
+        {pageModel.totalCount > 0 ? (
+          <>
+            <div className="sessions-ops-mail">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="sessions-ops-mail-col-when">
+                      {t(props.language, { es: "Cuándo", en: "When", pt: "Quando" })}
+                    </th>
+                    <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
+                    <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
+                    <th>{t(props.language, { es: "Estado", en: "Status", pt: "Estado" })}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageModel.groups.map((group) => (
+                    <Fragment key={group.dayKey || "flat"}>
+                      {group.dayKey ? (
+                        <tr className="sessions-ops-mail-day">
+                          <td colSpan={4}>{formatDayHeading(props.language, group.dayKey)}</td>
+                        </tr>
+                      ) : null}
+                      {group.items.map((booking) => {
               const draft = drafts[booking.id];
               if (!draft) return null;
               const expanded = expandedBookingId === booking.id;
               const trial = isAdminTrialBooking(booking);
               return (
-                <article
-                  key={booking.id}
-                  className={`card stack ops-panel ops-session-card${expanded ? " ops-session-card--open" : ""}`}
-                >
-                  <button
-                    type="button"
-                    className="ops-session-summary"
+                <Fragment key={booking.id}>
+                  <tr
+                    className={`sessions-ops-mail-row${expanded ? " is-open" : ""}`}
                     aria-expanded={expanded}
                     onClick={() => setExpandedBookingId((current) => (current === booking.id ? null : booking.id))}
                   >
-                    <span className="ops-session-summary-main">
-                      <span className="ops-session-summary-names">
-                        {booking.patientName} ↔ {booking.professionalName}
-                      </span>
-                      <span className={`ops-session-pill ${bookingStatusPillClass(draft.status)}`}>
-                        {bookingStatusLabel(props.language, draft.status)}
-                      </span>
-                      {trial ? <span className="ops-session-pill ops-session-pill--requested">Trial</span> : null}
-                      {!trial
-                      && booking.packageSessionNumber
-                      && booking.packageCredits
-                      && booking.packageSessionNumber > 0
-                      && booking.packageCredits > 0 ? (
-                        <span className="ops-session-pill ops-session-pill--confirmed" title={booking.packageName ?? undefined}>
-                          {booking.packageSessionNumber}/{booking.packageCredits}
-                          {booking.packageDiscountPercent != null && booking.packageDiscountPercent > 0
-                            ? ` (−${booking.packageDiscountPercent}%)`
-                            : ""}
+                    <td className="sessions-ops-mail-when">
+                      {pageModel.groupedByDate
+                        ? formatSessionTimeRange(props.language, booking.startsAt, booking.endsAt)
+                        : formatSessionWhen(props.language, booking.startsAt, booking.endsAt)}
+                    </td>
+                    <td>
+                      <span className="sessions-ops-mail-name">{booking.patientName}</span>
+                    </td>
+                    <td>
+                      <span className="sessions-ops-mail-name sessions-ops-mail-name--soft">{booking.professionalName}</span>
+                    </td>
+                    <td>
+                      <span className="sessions-ops-mail-status">
+                        <span className={`ops-session-pill ${bookingStatusPillClass(draft.status)}`}>
+                          {bookingStatusLabel(props.language, draft.status)}
                         </span>
-                      ) : null}
-                    </span>
-                    <span className="ops-session-summary-meta">
-                      {formatSessionWhen(props.language, booking.startsAt, booking.endsAt)}
-                    </span>
-                    <span className="ops-session-chevron" aria-hidden>
-                      {expanded ? "▾" : "▸"}
-                    </span>
-                  </button>
-
+                        {trial ? <span className="ops-session-pill ops-session-pill--requested">Trial</span> : null}
+                        {!trial
+                        && booking.packageSessionNumber
+                        && booking.packageCredits
+                        && booking.packageSessionNumber > 0
+                        && booking.packageCredits > 0 ? (
+                          <span className="ops-session-pill ops-session-pill--confirmed" title={booking.packageName ?? undefined}>
+                            {booking.packageSessionNumber}/{booking.packageCredits}
+                            {booking.packageDiscountPercent != null && booking.packageDiscountPercent > 0
+                              ? ` (−${booking.packageDiscountPercent}%)`
+                              : ""}
+                          </span>
+                        ) : null}
+                      </span>
+                    </td>
+                  </tr>
                   {expanded ? (
+                    <tr className="sessions-ops-mail-detail">
+                      <td colSpan={4} onClick={(event) => event.stopPropagation()}>
                     <div className="ops-session-editor">
                       <p className="ops-session-id">
                         ID: <code>{booking.id}</code>
@@ -797,13 +871,48 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
                         onReactivate={() => reactivateBooking(booking)}
                       />
                     </div>
+                      </td>
+                    </tr>
                   ) : null}
-                </article>
+                </Fragment>
               );
-            })}
-          </section>
-        ))}
-      </div>
+                      })}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="patient-pagination">
+              <span>
+                {rangeLabel}{" "}
+                {t(props.language, { es: "de", en: "of", pt: "de" })} {pageModel.totalCount}
+              </span>
+              <button
+                type="button"
+                className="secondary"
+                disabled={pageModel.currentPage <= 1}
+                onClick={() => {
+                  setExpandedBookingId(null);
+                  setPage((current) => Math.max(1, current - 1));
+                }}
+              >
+                {t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={pageModel.currentPage >= pageModel.totalPages}
+                onClick={() => {
+                  setExpandedBookingId(null);
+                  setPage((current) => Math.min(pageModel.totalPages, current + 1));
+                }}
+              >
+                {t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+              </button>
+            </div>
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }
