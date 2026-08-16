@@ -34,6 +34,7 @@ import {
   validatePayoutBankAccountForProvider,
   validateTaxIdForProvider
 } from "../../lib/professionalPayoutProfileSchema.js";
+import { payoutBankFingerprint, resolveSelfServePayoutStatus } from "../../lib/selfServePayoutStatus.js";
 
 const adminPayloadSchema = professionalPayoutAdminPayloadSchema;
 
@@ -1380,10 +1381,26 @@ professionalRouter.put("/admin", async (req: AuthenticatedRequest, res) => {
     }
   }
 
+  const { payoutStatus: _ignoredClientPayoutStatus, ...payoutFields } = parsed.data;
+  const submittedPayoutDetails = Boolean(
+    payoutFields.payoutBankAccount || (typeof payoutFields.taxId === "string" && payoutFields.taxId.trim())
+  );
+  const payoutDetailsChanged =
+    (typeof payoutFields.taxId === "string" && payoutFields.taxId !== String(existingValue.taxId ?? ""))
+    || (payoutFields.payoutBankAccount
+      ? payoutBankFingerprint(payoutFields.payoutBankAccount) !== payoutBankFingerprint(existingValue.payoutBankAccount)
+      : false)
+    || (typeof payoutFields.legalName === "string" && payoutFields.legalName !== String(existingValue.legalName ?? ""));
+
   const nextValue = {
     ...defaultProfessionalPayoutAdminData(),
     ...existingValue,
-    ...parsed.data,
+    ...payoutFields,
+    payoutStatus: resolveSelfServePayoutStatus({
+      existingStatus: existingValue.payoutStatus,
+      submittedPayoutDetails,
+      payoutDetailsChanged
+    }),
     legalAcceptedAt: parsed.data.legalAcceptedAt ?? (existingValue.legalAcceptedAt as string | null | undefined) ?? null,
     updatedByUserId: actor.userId,
     updatedAt: new Date().toISOString()

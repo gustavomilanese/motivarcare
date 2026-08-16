@@ -116,7 +116,7 @@ function parseYmLocalBounds(monthStr: string): { from: Date; to: Date } {
   };
 }
 
-/** Query extra para el tab «sesiones a liquidar»: mes civil del profesional, no el TZ del server. */
+/** Query extra para el tab «marcar realizadas»: mes civil del profesional, no el TZ del server. */
 export function buildSessionsMonthQuery(monthStr: string): string {
   const { from, to } = parseYmLocalBounds(monthStr);
   return `sessionsMonth=${encodeURIComponent(monthStr)}&sessionsFrom=${encodeURIComponent(from.toISOString())}&sessionsTo=${encodeURIComponent(to.toISOString())}`;

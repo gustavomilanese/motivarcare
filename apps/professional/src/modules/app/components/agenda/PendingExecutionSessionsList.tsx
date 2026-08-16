@@ -185,9 +185,9 @@ export function PendingExecutionSessionsList(props: {
                 })
               : props.filter === "executed"
                 ? t(props.language, {
-                    es: "No hay sesiones ejecutadas pendientes de liquidar",
+                    es: "No hay sesiones ejecutadas pendientes de pago",
                     en: "No executed sessions pending payout",
-                    pt: "Nao ha sessoes executadas pendentes de liquidar"
+                    pt: "Nao ha sessoes executadas pendentes de pagamento"
                   })
                 : props.filter === "liquidated"
                   ? t(props.language, {

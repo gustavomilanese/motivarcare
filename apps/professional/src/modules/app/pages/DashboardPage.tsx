@@ -847,6 +847,126 @@ export function DashboardPage(props: {
           </ul>
         </section>
       ) : null}
+      <section
+        className={`pro-card agenda-upcoming-panel agenda-session-panel pro-dashboard-sessions-hub${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
+        id="sesiones-agendadas"
+        ref={upcomingSectionRef}
+        tabIndex={-1}
+        data-tour="pro-tour-bookings"
+      >
+        <nav
+          className="pro-schedule-hub-tabs pro-dashboard-sessions-hub-tabs"
+          aria-label={t(props.language, {
+            es: "Sesiones del dashboard",
+            en: "Dashboard sessions",
+            pt: "Sessoes do dashboard"
+          })}
+        >
+          <div className="pro-schedule-hub-tabs-track" role="presentation">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sessionsHubTab === "upcoming"}
+              className={`pro-schedule-hub-tab${sessionsHubTab === "upcoming" ? " active" : ""}`}
+              onClick={() => setSessionsHubTab("upcoming")}
+            >
+              {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" })}
+              {upcomingReservations.length > 0 ? (
+                <span className="pro-dashboard-sessions-hub-count">{upcomingReservations.length}</span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={sessionsHubTab === "settle"}
+              className={`pro-schedule-hub-tab${sessionsHubTab === "settle" ? " active" : ""}`}
+              onClick={() => setSessionsHubTab("settle")}
+            >
+              {t(props.language, {
+                es: "Marcar realizadas",
+                en: "Mark as done",
+                pt: "Marcar realizadas"
+              })}
+            </button>
+          </div>
+        </nav>
+
+        {sessionsHubTab === "upcoming" ? (
+          <div id="sesiones-agendadas-body" role="tabpanel" data-tour="pro-tour-upcoming-panel">
+            <UpcomingReservationsList
+              language={props.language}
+              reservations={upcomingReservations}
+              busyBookingId={bookingActionInProgressId}
+              onRequestReschedule={openRescheduleModal}
+              onRequestCancel={openCancelModal}
+              highlightJoinPulseBookingId={highlightJoinPulseBookingId}
+              joinTourTargetBookingId={firstMeetBookingId}
+              diaryReportByPatientId={diaryReportByPatientId}
+            />
+          </div>
+        ) : (
+          <div
+            id="sesiones-por-ejecutar"
+            role="tabpanel"
+            data-tour="pro-tour-pending-execution"
+          >
+            <div className="agenda-upcoming-head agenda-session-panel-head pro-dashboard-sessions-hub-toolbar">
+              <p className="agenda-session-lead">
+                {t(props.language, {
+                  es: "Marcá las sesiones que ya hiciste. Entran al próximo pago; el cobro lo hace Admin.",
+                  en: "Mark the sessions you’ve already done. They join the next payout; Admin sends the transfer.",
+                  pt: "Marque as sessoes que ja fez. Entram no proximo pagamento; o Admin envia a transferencia."
+                })}
+              </p>
+              <div className="agenda-session-panel-filters">
+                <RevenueMonthPicker
+                  language={props.language}
+                  value={sessionListMonth}
+                  compact
+                  ariaLabel={t(props.language, {
+                    es: "Mes de sesiones a marcar",
+                    en: "Month for sessions to mark",
+                    pt: "Mes das sessoes a marcar"
+                  })}
+                  onChange={setSessionListMonth}
+                />
+                <label className="agenda-session-filter">
+                  <span className="sr-only">
+                    {t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por status" })}
+                  </span>
+                  <select
+                    value={sessionListFilter}
+                    onChange={(event) => setSessionListFilter(event.target.value as SessionListFilter)}
+                  >
+                    <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
+                    <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
+                    <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
+                    <option value="liquidated">{t(props.language, { es: "Liquidadas", en: "Settled", pt: "Liquidadas" })}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <PendingExecutionSessionsList
+              language={props.language}
+              sessions={pendingExecutionSessions}
+              busyBookingId={bulkBusy ? "__bulk__" : bookingActionInProgressId}
+              filter={sessionListFilter}
+              selectionEpoch={selectionEpoch}
+              onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
+              onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
+              onRequestBulkComplete={(bookings) => {
+                setBulkTargetBookings(bookings);
+                setBulkConfirmAction("complete");
+              }}
+              onRequestBulkUncomplete={(bookings) => {
+                setBulkTargetBookings(bookings);
+                setBulkConfirmAction("uncomplete");
+              }}
+            />
+          </div>
+        )}
+      </section>
+
       <div className="pro-dashboard-overview" data-tour="pro-tour-hero">
         <div
           className="pro-dashboard-kpi-row"
@@ -894,126 +1014,6 @@ export function DashboardPage(props: {
         </div>
       </div>
 
-      <section
-        className={`pro-card agenda-upcoming-panel agenda-session-panel pro-dashboard-sessions-hub${upcomingSpotlightRing ? " pro-dashboard-upcoming-spotlight" : ""}`}
-        id="sesiones-agendadas"
-        ref={upcomingSectionRef}
-        tabIndex={-1}
-        data-tour="pro-tour-bookings"
-      >
-        <nav
-          className="pro-schedule-hub-tabs pro-dashboard-sessions-hub-tabs"
-          aria-label={t(props.language, {
-            es: "Sesiones del dashboard",
-            en: "Dashboard sessions",
-            pt: "Sessoes do dashboard"
-          })}
-        >
-          <div className="pro-schedule-hub-tabs-track" role="presentation">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sessionsHubTab === "upcoming"}
-              className={`pro-schedule-hub-tab${sessionsHubTab === "upcoming" ? " active" : ""}`}
-              onClick={() => setSessionsHubTab("upcoming")}
-            >
-              {t(props.language, { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" })}
-              {upcomingReservations.length > 0 ? (
-                <span className="pro-dashboard-sessions-hub-count">{upcomingReservations.length}</span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sessionsHubTab === "settle"}
-              className={`pro-schedule-hub-tab${sessionsHubTab === "settle" ? " active" : ""}`}
-              onClick={() => setSessionsHubTab("settle")}
-            >
-              {t(props.language, {
-                es: "Sesiones a liquidar",
-                en: "Sessions to settle",
-                pt: "Sessoes a liquidar"
-              })}
-            </button>
-          </div>
-        </nav>
-
-        {sessionsHubTab === "upcoming" ? (
-          <div id="sesiones-agendadas-body" role="tabpanel" data-tour="pro-tour-upcoming-panel">
-            <UpcomingReservationsList
-              language={props.language}
-              reservations={upcomingReservations}
-              busyBookingId={bookingActionInProgressId}
-              onRequestReschedule={openRescheduleModal}
-              onRequestCancel={openCancelModal}
-              highlightJoinPulseBookingId={highlightJoinPulseBookingId}
-              joinTourTargetBookingId={firstMeetBookingId}
-              diaryReportByPatientId={diaryReportByPatientId}
-            />
-          </div>
-        ) : (
-          <div
-            id="sesiones-por-ejecutar"
-            role="tabpanel"
-            data-tour="pro-tour-pending-execution"
-          >
-            <div className="agenda-upcoming-head agenda-session-panel-head pro-dashboard-sessions-hub-toolbar">
-              <p className="agenda-session-lead">
-                {t(props.language, {
-                  es: "Marcá como ejecutadas las sesiones del mes. Entran a la próxima liquidación; el cobro por dLocal lo hace Admin.",
-                  en: "Mark the month’s sessions as executed. They join the next payout; Admin sends the dLocal transfer.",
-                  pt: "Marque as sessoes do mes como executadas. Entram na proxima liquidacao; o Admin envia o pagamento dLocal."
-                })}
-              </p>
-              <div className="agenda-session-panel-filters">
-                <RevenueMonthPicker
-                  language={props.language}
-                  value={sessionListMonth}
-                  compact
-                  ariaLabel={t(props.language, {
-                    es: "Mes de sesiones a liquidar",
-                    en: "Month for sessions to settle",
-                    pt: "Mes das sessoes a liquidar"
-                  })}
-                  onChange={setSessionListMonth}
-                />
-                <label className="agenda-session-filter">
-                  <span className="sr-only">
-                    {t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por status" })}
-                  </span>
-                  <select
-                    value={sessionListFilter}
-                    onChange={(event) => setSessionListFilter(event.target.value as SessionListFilter)}
-                  >
-                    <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
-                    <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
-                    <option value="executed">{t(props.language, { es: "Ejecutadas", en: "Executed", pt: "Executadas" })}</option>
-                    <option value="liquidated">{t(props.language, { es: "Liquidadas", en: "Settled", pt: "Liquidadas" })}</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-            <PendingExecutionSessionsList
-              language={props.language}
-              sessions={pendingExecutionSessions}
-              busyBookingId={bulkBusy ? "__bulk__" : bookingActionInProgressId}
-              filter={sessionListFilter}
-              selectionEpoch={selectionEpoch}
-              onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
-              onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
-              onRequestBulkComplete={(bookings) => {
-                setBulkTargetBookings(bookings);
-                setBulkConfirmAction("complete");
-              }}
-              onRequestBulkUncomplete={(bookings) => {
-                setBulkTargetBookings(bookings);
-                setBulkConfirmAction("uncomplete");
-              }}
-            />
-          </div>
-        )}
-      </section>
-
       <div className="pro-dashboard-secondary">
         {data.practiceHealth && data.practiceHealth.items.length > 0 ? (
           <ProfessionalPracticeHealth
@@ -1034,17 +1034,17 @@ export function DashboardPage(props: {
             </h2>
             <p>
               {t(props.language, {
-                es: "Armá tu plantilla semanal en Agenda para que los pacientes puedan reservar turnos.",
-                en: "Set your weekly template in Agenda so patients can book slots.",
-                pt: "Monte seu modelo semanal em Agenda para os pacientes reservarem horarios."
+                es: "Armá tu plantilla semanal en Horarios para que los pacientes puedan reservar turnos.",
+                en: "Set your weekly template in Availability so patients can book slots.",
+                pt: "Monte seu modelo semanal em Horários para os pacientes reservarem horarios."
               })}
             </p>
           </div>
           <NavLink to="/horarios" className="pro-dashboard-availability-shortcut-cta">
             {t(props.language, {
-              es: "Ir a Mi Agenda",
-              en: "Go to My agenda",
-              pt: "Ir para Minha agenda"
+              es: "Ir a Horarios",
+              en: "Go to Availability",
+              pt: "Ir para Horários"
             })}
           </NavLink>
         </section>

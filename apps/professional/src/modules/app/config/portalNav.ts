@@ -20,7 +20,7 @@ export const PORTAL_NAV_GROUP_LABELS: Record<PortalNavGroup, LocalizedText> = {
 
 export const PORTAL_NAV_ITEMS: PortalNavItemDef[] = [
   { to: "/", label: { es: "Dashboard", en: "Dashboard", pt: "Dashboard" } },
-  { to: "/horarios", label: { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" } },
+  { to: "/horarios", label: { es: "Horarios", en: "Availability", pt: "Horários" } },
   {
     to: "/pacientes",
     label: { es: "Pacientes", en: "Patients", pt: "Pacientes" },

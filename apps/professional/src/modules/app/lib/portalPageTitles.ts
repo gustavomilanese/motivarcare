@@ -2,8 +2,8 @@ import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i
 
 const PAGE_TITLES: Record<string, LocalizedText> = {
   "/": { es: "Dashboard", en: "Dashboard", pt: "Dashboard" },
-  "/horarios": { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" },
-  "/horarios/disponibilidad": { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" },
+  "/horarios": { es: "Horarios", en: "Availability", pt: "Horários" },
+  "/horarios/disponibilidad": { es: "Horarios", en: "Availability", pt: "Horários" },
   "/agenda/ajustes": { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" },
   "/pacientes": { es: "Pacientes", en: "Patients", pt: "Pacientes" },
   "/reportes": { es: "Reportes", en: "Reports", pt: "Relatórios" },

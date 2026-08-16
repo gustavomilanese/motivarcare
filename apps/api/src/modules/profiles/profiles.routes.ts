@@ -31,6 +31,7 @@ import { rankProfessionalMatch, parseIntakeAnswers, type MatchingLanguage } from
 import { focusAreasDisplayLabel, normalizeFocusAreas } from "./focusAreas.js";
 import { evaluateIntakeRiskLevel, isSafetyRiskPositiveAnswer } from "./intake.shared.js";
 import { maybeSendProfessionalRegistrationPendingEmail } from "../notifications/professionalRegistrationApprovalEmail.js";
+import { isPublicListingVerified } from "../../lib/publicListingVerified.js";
 import { sendPatientSafetyReferralEmail } from "../notifications/patientSafetyReferralEmail.js";
 import { sendProfessionalChangeRequestEmail } from "../notifications/patientSupportEmail.js";
 import {
@@ -165,8 +166,6 @@ const updatePublicProfileSchema = z.object({
   videoUrl: mediaSourceSchema.nullable().optional(),
   videoCoverUrl: mediaSourceSchema.nullable().optional(),
   stripeDocUrl: mediaSourceSchema.nullable().optional(),
-  stripeVerified: z.boolean().optional(),
-  stripeVerificationStarted: z.boolean().optional(),
   cancellationHours: z.number().int().min(0).max(168).optional(),
   timezone: z.string().trim().min(3).max(120).optional(),
   diplomas: z.array(
@@ -594,7 +593,7 @@ async function materializeDirectoryProfessionals(professionals: ProfessionalProf
     couplesSessionPriceUsd: professional.couplesSessionPriceUsd,
     photoUrl: professional.photoUrl,
     videoUrl: professional.videoUrl,
-    stripeVerified: professional.stripeVerified,
+    stripeVerified: isPublicListingVerified({ registrationApproval: professional.registrationApproval }),
     cancellationHours: professional.cancellationHours,
     compatibility: compatibilityScore(professional.id),
     sessionDurationMinutes: displayOverrides[professional.id]?.sessionDurationMinutes ?? 50,
@@ -977,7 +976,7 @@ profilesRouter.get("/me", requireAuth, async (req: AuthenticatedRequest, res) =>
             videoUrl: professional.videoUrl,
             videoCoverUrl: professional.videoCoverUrl,
             stripeDocUrl: professional.stripeDocUrl,
-            stripeVerified: professional.stripeVerified,
+            stripeVerified: isPublicListingVerified({ registrationApproval: professional.registrationApproval }),
             stripeVerificationStarted: professional.stripeVerificationStarted,
             cancellationHours: professional.cancellationHours,
             timezone: professional.timezone,
@@ -2005,6 +2004,7 @@ profilesRouter.patch("/professional/:professionalId/public-profile", requireAuth
       where: { id: professionalId },
       data: {
         ...restProfile,
+        ...(parsed.data.stripeDocUrl ? { stripeVerificationStarted: true } : {}),
         ...(sessionPriceArsResolved !== undefined ? { sessionPriceArs: sessionPriceArsResolved } : {}),
         ...marketSync,
         ...graduationPatch,

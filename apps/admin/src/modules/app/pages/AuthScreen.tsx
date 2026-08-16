@@ -12,10 +12,8 @@ export function AuthScreen(props: {
   language: AppLanguage;
   onAuthSuccess: (token: string, user: AuthUser) => void;
 }) {
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [fullName, setFullName] = useState("MotivarCare Admin");
-  const [email, setEmail] = useState("admin@motivarte.com");
-  const [password, setPassword] = useState("SecurePass123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,24 +23,12 @@ export function AuthScreen(props: {
     setLoading(true);
 
     try {
-      const path = mode === "register" ? "/api/auth/register" : "/api/auth/login";
-
-      const payload =
-        mode === "register"
-          ? {
-              email: email.trim().toLowerCase(),
-              password,
-              fullName: fullName.trim(),
-              role: "ADMIN" as const
-            }
-          : {
-              email: email.trim().toLowerCase(),
-              password
-            };
-
-      const response = await apiRequest<AuthApiResponse>(path, {
+      const response = await apiRequest<AuthApiResponse>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password
+        })
       });
 
       if (response.user.role !== "ADMIN") {
@@ -98,15 +84,6 @@ export function AuthScreen(props: {
           })}
         </p>
 
-        <div className="auth-mode-switch">
-          <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>
-            {t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
-          </button>
-          <button className={mode === "register" ? "active" : ""} type="button" onClick={() => setMode("register")}>
-            {t(props.language, { es: "Crear admin", en: "Create admin", pt: "Criar admin" })}
-          </button>
-        </div>
-
         <div className="admin-auth-divider" aria-hidden="true">
           <span />
           <span>{t(props.language, { es: "Credenciales", en: "Credentials", pt: "Credenciais" })}</span>
@@ -114,13 +91,6 @@ export function AuthScreen(props: {
         </div>
 
         <form className="stack" onSubmit={handleSubmit}>
-          {mode === "register" ? (
-            <label>
-              {t(props.language, { es: "Nombre completo", en: "Full name", pt: "Nome completo" })}
-              <input name="name" autoComplete="name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
-            </label>
-          ) : null}
-
           <label>
             Email
             <input type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
@@ -131,7 +101,7 @@ export function AuthScreen(props: {
             <input
               type="password"
               name="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
@@ -145,9 +115,7 @@ export function AuthScreen(props: {
           <button className="primary admin-auth-submit" type="submit" disabled={loading}>
             {loading
               ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
-              : mode === "login"
-                ? t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })
-                : t(props.language, { es: "Crear admin", en: "Create admin", pt: "Criar admin" })}
+              : t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
           </button>
         </form>
       </section>

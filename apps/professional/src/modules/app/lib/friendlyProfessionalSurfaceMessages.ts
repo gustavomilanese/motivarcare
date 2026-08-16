@@ -198,9 +198,9 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     pt: "Nao foi possivel desvincular o calendario. Tente em instantes."
   },
   "schedule-slots-load": {
-    es: "No cargaron los bloques de agenda. Actualizá la página o volvé al menú Agenda y entrá otra vez.",
-    en: "Schedule blocks didn’t load. Refresh or open Agenda again from the menu.",
-    pt: "Os blocos da agenda nao carregaram. Atualize ou abra a Agenda de novo."
+    es: "No cargaron los bloques de horarios. Actualizá la página o volvé al menú Horarios y entrá otra vez.",
+    en: "Schedule blocks didn’t load. Refresh or open Availability again from the menu.",
+    pt: "Os blocos de horários nao carregaram. Atualize ou abra Horários de novo."
   },
   "schedule-minimum-notice": {
     es: "No guardamos el aviso mínimo de reserva. Revisá el número de horas (entero razonable) y guardá de nuevo.",

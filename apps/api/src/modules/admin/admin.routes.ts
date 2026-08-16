@@ -20,6 +20,7 @@ import {
   validateProfessionalSessionListUsd
 } from "../../lib/professionalSessionListPrice.js";
 import { marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
+import { stripeVerifiedForRegistrationApproval } from "../../lib/publicListingVerified.js";
 import {
   listPaymentCheckoutsForPatient,
   logPaymentCheckoutEvent,
@@ -2094,7 +2095,12 @@ adminRouter.patch("/professionals/:professionalId", async (req, res) => {
       where: { id: existing.id },
       data: {
         ...(parsed.data.visible !== undefined ? { visible: parsed.data.visible } : {}),
-        ...(parsed.data.registrationApproval !== undefined ? { registrationApproval: parsed.data.registrationApproval } : {}),
+        ...(parsed.data.registrationApproval !== undefined
+          ? {
+              registrationApproval: parsed.data.registrationApproval,
+              stripeVerified: stripeVerifiedForRegistrationApproval(parsed.data.registrationApproval)
+            }
+          : {}),
         ...(parsed.data.professionalTitle !== undefined ? { professionalTitle: parsed.data.professionalTitle } : {}),
         ...(parsed.data.specialization !== undefined ? { specialization: parsed.data.specialization } : {}),
         ...(parsed.data.focusPrimary !== undefined ? { focusPrimary: parsed.data.focusPrimary } : {}),

@@ -7,9 +7,9 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 export function ScheduleHubPage(props: { language: AppLanguage }) {
   const aria = t(props.language, {
-    es: "Mi Agenda: horarios de trabajo y disponibilidad configurada",
-    en: "My agenda: work hours and configured availability",
-    pt: "Minha agenda: horarios de trabalho e disponibilidade configurada"
+    es: "Horarios: plantilla de trabajo y disponibilidad publicada",
+    en: "Availability: work hours and published slots",
+    pt: "Horários: modelo de trabalho e disponibilidade publicada"
   });
   return (
     <div className="pro-schedule-hub">

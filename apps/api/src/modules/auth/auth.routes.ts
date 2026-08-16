@@ -18,6 +18,7 @@ import {
   isEmailVerificationRequiredForRole,
   isEmailVerificationSupportedRole
 } from "./emailVerification.js";
+import { isBlockedPublicRegisterRole, requestedRegisterRole } from "./publicRegisterPolicy.js";
 import { createPasswordResetToken, sendPasswordResetEmail, consumePasswordResetToken } from "./passwordReset.js";
 import { verifyTurnstileResponse } from "../../lib/turnstile.js";
 import { backfillMeetForUserAfterCalendarConnect } from "../video/calendarBackfill.js";
@@ -57,7 +58,7 @@ const registerSchema = z
     email: z.string().email(),
     password: z.string().min(8),
     fullName: z.string().min(2),
-    role: z.enum(["PATIENT", "PROFESSIONAL", "ADMIN"]),
+    role: z.enum(["PATIENT", "PROFESSIONAL"]),
     timezone: z.string().optional(),
     isTestUser: z.boolean().optional(),
     /** Obligatorio si `role === PATIENT`: país de residencia (ISO2); el mercado se deriva de acá. */
@@ -507,6 +508,19 @@ function setGoogleCalendarReturnPathCookie(res: Response, value: string | null):
 }
 
 authRouter.post("/register", async (req, res) => {
+  const requestedRole = requestedRegisterRole(req.body);
+  if (isBlockedPublicRegisterRole(requestedRole)) {
+    const rawEmail = typeof req.body?.email === "string" ? req.body.email : "";
+    writeSecurityAuditLog({
+      category: SECURITY_AUDIT_CATEGORY.AUTH_REGISTER_ADMIN_BLOCKED,
+      message: "Public register rejected ADMIN role",
+      ip: getRequestIp(req),
+      userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+      metadata: { emailMask: maskEmailHint(rawEmail) }
+    });
+    return res.status(403).json({ error: "This role cannot be registered" });
+  }
+
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
@@ -519,9 +533,7 @@ authRouter.post("/register", async (req, res) => {
   }
 
   const turnstileSecret = env.TURNSTILE_SECRET_KEY?.trim();
-  const roleNeedsTurnstile =
-    turnstileSecret && (parsed.data.role === "PROFESSIONAL" || parsed.data.role === "PATIENT");
-  if (roleNeedsTurnstile) {
+  if (turnstileSecret) {
     const cfConnecting = req.headers["cf-connecting-ip"];
     const remoteip =
       typeof cfConnecting === "string" && cfConnecting.trim()
@@ -594,8 +606,7 @@ authRouter.post("/register", async (req, res) => {
                 cancellationHours: 24
               }
             }
-          : undefined,
-      admin: parsed.data.role === "ADMIN" ? { create: {} } : undefined
+          : undefined
     },
     include: {
       patient: { select: { id: true } },

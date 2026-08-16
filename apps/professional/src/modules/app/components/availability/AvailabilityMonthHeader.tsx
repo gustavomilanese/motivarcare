@@ -25,9 +25,9 @@ export function AvailabilityMonthHeader(props: {
             to="/horarios"
             className="schedule-back availability-month-back"
             aria-label={t(props.language, {
-              es: "Volver a Mi Agenda",
-              en: "Back to My agenda",
-              pt: "Voltar para Minha agenda"
+              es: "Volver a Horarios",
+              en: "Back to Availability",
+              pt: "Voltar para Horários"
             })}
           >
             ‹

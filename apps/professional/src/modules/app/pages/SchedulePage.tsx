@@ -540,9 +540,9 @@ export function SchedulePage(props: {
     if (!professionalId) {
       setError(
         t(props.language, {
-          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Agenda y reintentá.",
-          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Agenda again and retry.",
-          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra a Agenda de novo."
+          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Horarios y reintentá.",
+          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Availability again and retry.",
+          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra Horários de novo."
         })
       );
       return;
@@ -585,9 +585,9 @@ export function SchedulePage(props: {
     if (!professionalId) {
       setError(
         t(props.language, {
-          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Agenda y reintentá.",
-          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Agenda again and retry.",
-          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra a Agenda de novo."
+          es: "Todavía no cargamos tu perfil profesional. Actualizá la página o volvé a Horarios y reintentá.",
+          en: "Your professional profile hasn’t loaded yet. Refresh the page or open Availability again and retry.",
+          pt: "Seu perfil profissional ainda nao carregou. Atualize a pagina ou abra Horários de novo."
         })
       );
       return;

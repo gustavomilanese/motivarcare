@@ -76,9 +76,9 @@ function welcomeHtml(language: AppLanguage): string {
         pt: "Vou te mostrar todo o portal"
       })}</h2>
       <p class="pro-tour-maca-hero__lead">${t(language, {
-        es: "Recorreremos <strong>Dashboard</strong>, <strong>Mi Agenda</strong>, <strong>Pacientes</strong>, <strong>Chat</strong> e <strong>Ingresos</strong>. En cada sección cambia el color del recuadro para que veas dónde estás.",
-        en: "We'll walk through <strong>Dashboard</strong>, <strong>My agenda</strong>, <strong>Patients</strong>, <strong>Chat</strong>, and <strong>Earnings</strong>. Each section uses a different highlight color so you always know where you are.",
-        pt: "Vamos percorrer <strong>Dashboard</strong>, <strong>Minha agenda</strong>, <strong>Pacientes</strong>, <strong>Chat</strong> e <strong>Receitas</strong>. Cada secao muda a cor do destaque."
+        es: "Recorreremos <strong>Dashboard</strong>, <strong>Horarios</strong>, <strong>Pacientes</strong>, <strong>Chat</strong> e <strong>Ingresos</strong>. En cada sección cambia el color del recuadro para que veas dónde estás.",
+        en: "We'll walk through <strong>Dashboard</strong>, <strong>Availability</strong>, <strong>Patients</strong>, <strong>Chat</strong>, and <strong>Earnings</strong>. Each section uses a different highlight color so you always know where you are.",
+        pt: "Vamos percorrer <strong>Dashboard</strong>, <strong>Horários</strong>, <strong>Pacientes</strong>, <strong>Chat</strong> e <strong>Receitas</strong>. Cada secao muda a cor do destaque."
       })}</p>
       <p class="pro-tour-maca-hero__fine">${t(language, {
         es: "Podés saltear con la × cuando quieras.",
@@ -93,7 +93,7 @@ function welcomeHtml(language: AppLanguage): string {
 function sectionIntroHtml(language: AppLanguage, section: Exclude<TourSection, "welcome" | "done">, lead: LocalizedText): string {
   const labels: Record<typeof section, LocalizedText> = {
     dashboard: { es: "Dashboard", en: "Dashboard", pt: "Dashboard" },
-    agenda: { es: "Mi Agenda", en: "My agenda", pt: "Minha agenda" },
+    agenda: { es: "Horarios", en: "Availability", pt: "Horários" },
     pacientes: { es: "Pacientes", en: "Patients", pt: "Pacientes" },
     chat: { es: "Chat", en: "Chat", pt: "Chat" },
     ingresos: { es: "Ingresos", en: "Earnings", pt: "Receitas" }
@@ -280,9 +280,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       navKey: "dashboard",
       title: { es: "", en: "", pt: "" },
       description: sectionIntroDescription("dashboard", {
-        es: "Tu centro de mando: ingresos del período, sesiones agendadas, pacientes activos y lo pendiente de cobrar.",
-        en: "Your command center: period earnings, scheduled sessions, active patients, and pending payouts.",
-        pt: "Seu centro de comando: receitas do periodo, sessoes agendadas, pacientes ativos e pendencias."
+        es: "Acá está tu día: quién sigue, Meet y marcar las sesiones que ya hiciste. Más abajo, un resumen de ingresos y pacientes.",
+        en: "This is your day: who’s next, Meet, and mark sessions you’ve already done. Earnings and patient counts sit below.",
+        pt: "Aqui está o seu dia: quem vem agora, Meet e marcar as sessoes que ja fez. Receitas e pacientes ficam mais abaixo."
       }),
       side: "right"
     },
@@ -306,32 +306,18 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       align: "end"
     },
     {
-      id: "dashboard-kpis",
-      route: "/",
-      section: "dashboard",
-      selectors: ['[data-tour="pro-tour-kpis"]'],
-      title: { es: "Indicadores del Dashboard", en: "Dashboard metrics", pt: "Indicadores do Dashboard" },
-      description: {
-        es: "<strong>Dinero ejecutado</strong> · sesiones ya realizadas.<br><strong>Sesiones agendadas</strong> · confirmadas en el período.<br><strong>Pacientes activos</strong> · en tu consultorio.<br><strong>A cobrar</strong> · neto pendiente de payout.<br><br>Tocá una tarjeta para ir al detalle.",
-        en: "<strong>Executed revenue</strong> · completed sessions.<br><strong>Scheduled sessions</strong> · confirmed in the period.<br><strong>Active patients</strong> · in your practice.<br><strong>To collect</strong> · net pending payout.<br><br>Tap a card for details.",
-        pt: "<strong>Receita executada</strong> · sessoes concluidas.<br><strong>Sessoes agendadas</strong> · confirmadas no periodo.<br><strong>Pacientes ativos</strong> · na sua carteira.<br><strong>A receber</strong> · liquido pendente.<br><br>Toque um cartao para ver detalhes."
-      },
-      side: "bottom",
-      align: "center"
-    },
-    {
       id: "dashboard-bookings",
       route: "/",
       section: "dashboard",
       selectors: ['[data-tour="pro-tour-bookings"]'],
       optional: true,
-      title: { es: "Próximas reservas", en: "Upcoming bookings", pt: "Proximas reservas" },
+      title: { es: "Próximas sesiones", en: "Upcoming sessions", pt: "Próximas sessoes" },
       description: {
-        es: "Acá ves quién te espera y cuándo. Podés reprogramar o cancelar desde cada fila.",
-        en: "See who is coming and when. Reschedule or cancel from each row.",
-        pt: "Veja quem vem e quando. Reagende ou cancele em cada linha."
+        es: "Lo primero del home: quién te espera y cuándo. Podés entrar a Meet, reprogramar o cancelar desde cada fila.",
+        en: "First on the home: who is coming and when. Join Meet, reschedule, or cancel from each row.",
+        pt: "O primeiro da home: quem vem e quando. Entre no Meet, reagende ou cancele em cada linha."
       },
-      side: "top",
+      side: "bottom",
       align: "center"
     },
     {
@@ -345,6 +331,20 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
         es: "Cuando llegue la hora, este botón abre la videollamada con tu paciente.",
         en: "When it's time, this button opens the video call with your patient.",
         pt: "Na hora, este botao abre a videochamada com seu paciente."
+      },
+      side: "bottom",
+      align: "center"
+    },
+    {
+      id: "dashboard-kpis",
+      route: "/",
+      section: "dashboard",
+      selectors: ['[data-tour="pro-tour-kpis"]'],
+      title: { es: "Resumen de ingresos", en: "Earnings snapshot", pt: "Resumo de receitas" },
+      description: {
+        es: "Más abajo: <strong>Dinero ejecutado</strong>, <strong>Sesiones agendadas</strong>, <strong>Pacientes activos</strong> y <strong>A cobrar</strong>. Tocá una tarjeta para ir al detalle.",
+        en: "Below: <strong>Executed revenue</strong>, <strong>Scheduled sessions</strong>, <strong>Active patients</strong>, and <strong>To collect</strong>. Tap a card for details.",
+        pt: "Mais abaixo: <strong>Receita executada</strong>, <strong>Sessoes agendadas</strong>, <strong>Pacientes ativos</strong> e <strong>A receber</strong>. Toque um cartao para ver detalhes."
       },
       side: "bottom",
       align: "center"
@@ -368,7 +368,7 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       route: "/horarios",
       section: "agenda",
       selectors: ['[data-tour="pro-tour-agenda-tabs"]'],
-      title: { es: "Dos vistas de agenda", en: "Two agenda views", pt: "Duas visoes da agenda" },
+      title: { es: "Plantilla y slots", en: "Template and slots", pt: "Modelo e horarios" },
       description: {
         es: "<strong>Horarios de trabajo</strong> · plantilla semanal (días y franjas).<br><strong>Disponibilidad configurada</strong> · slots publicados mes a mes.",
         en: "<strong>Work hours</strong> · weekly template (days and time blocks).<br><strong>Configured availability</strong> · published slots month by month.",

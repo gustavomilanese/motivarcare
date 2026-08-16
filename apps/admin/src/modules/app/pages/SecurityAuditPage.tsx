@@ -27,7 +27,8 @@ const CATEGORY_FILTERS = [
   "AUTH_LOGIN_FAILED",
   "AUTH_LOGIN_RATE_LIMITED",
   "AUTH_REGISTER_TURNSTILE_FAILED",
-  "AUTH_REGISTER_TURNSTILE_MISSING"
+  "AUTH_REGISTER_TURNSTILE_MISSING",
+  "AUTH_REGISTER_ADMIN_BLOCKED"
 ] as const;
 
 export function SecurityAuditPage(props: { token: string; language: AppLanguage }) {
@@ -83,7 +84,7 @@ export function SecurityAuditPage(props: { token: string; language: AppLanguage 
         </header>
         <p className="settings-section-lead">
           {t(props.language, {
-            es: "Eventos en base de datos (complemento a Railway/Vercel): intentos de login fallidos, límites de frecuencia y Turnstile en alta de cuenta.",
+            es: "Eventos en base de datos (complemento a Railway/Vercel): intentos de login fallidos, límites de frecuencia, Turnstile en alta de cuenta e intentos de registrarse como admin.",
             en: "Database events (alongside Railway/Vercel): failed logins, rate limits, and Turnstile on registration.",
             pt: "Eventos na base (alem de Railway/Vercel): logins falhos, rate limit e Turnstile no cadastro."
           })}
