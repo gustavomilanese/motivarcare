@@ -4905,6 +4905,58 @@ ul {
   flex-wrap: wrap;
 }
 
+.pro-portal-page-head--with-center .pro-portal-page-head-end {
+  flex: 0 0 auto;
+}
+
+.pro-portal-page-head-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.pro-session-status-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  color: #64748b;
+  cursor: help;
+}
+
+.pro-session-status-flow-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.pro-session-status-flow-chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #475569;
+}
+
+.pro-session-status-flow-arrow {
+  font-size: 12px;
+  font-weight: 400;
+  color: #c4b5fd;
+  line-height: 1;
+}
+
 .pro-portal-page-toolbar,
 .pro-portal-page-actions,
 .pro-dashboard-toolbar-mount {
@@ -5788,6 +5840,10 @@ select.pro-dashboard-revenue-control {
     gap: 16px 20px;
   }
 
+  .pro-portal-page-head--with-center {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
   .pro-portal-page-head-start,
   .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
     min-width: 0;
@@ -5828,6 +5884,19 @@ select.pro-dashboard-revenue-control {
     align-items: center;
     column-gap: 10px;
     row-gap: 10px;
+  }
+
+  .pro-portal-page-head--with-center {
+    grid-template-areas:
+      "title actions"
+      "flow flow"
+      "filters filters";
+  }
+
+  .pro-portal-page-head-center {
+    grid-area: flow;
+    justify-content: flex-start;
+    flex: none;
   }
 
   .pro-portal-page-head-start,

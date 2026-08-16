@@ -13,6 +13,7 @@ import { RevenueMonthPicker } from "../components/RevenueMonthPicker";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
+import { SessionStatusFlowLegend } from "../components/SessionStatusFlowLegend";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import { PendingExecutionSessionsList, type SessionListFilter } from "../components/agenda/PendingExecutionSessionsList";
 import {
@@ -382,6 +383,10 @@ export function DashboardPage(props: {
   );
 
   const pageTitle = t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
+  const statusFlowLegend = useMemo(
+    () => <SessionStatusFlowLegend language={props.language} />,
+    [props.language]
+  );
 
   const diaryReportByPatientId = useMemo(() => {
     const map = new Map<string, EmotionalDiarySentReportItem>();
@@ -397,6 +402,7 @@ export function DashboardPage(props: {
 
   useProPortalChrome({
     title: pageTitle,
+    center: statusFlowLegend,
     toolbar: periodFilters
   });
 

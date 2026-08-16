@@ -306,6 +306,21 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       align: "end"
     },
     {
+      id: "dashboard-status-flow",
+      route: "/",
+      section: "dashboard",
+      selectors: ['[data-tour="pro-tour-status-flow"]'],
+      optional: true,
+      title: { es: "Estados de una sesión", en: "Session states", pt: "Estados de uma sessao" },
+      description: {
+        es: "<strong>Reservada</strong> → <strong>Realizada</strong> (se puede deshacer) → <strong>En cobro</strong> (no se deshace) → <strong>Pagada</strong> cuando Admin deposita.",
+        en: "<strong>Reserved</strong> → <strong>Completed</strong> (can undo) → <strong>In payout</strong> (cannot undo) → <strong>Paid</strong> when Admin deposits.",
+        pt: "<strong>Reservada</strong> → <strong>Realizada</strong> (se desfaz) → <strong>Em cobranca</strong> (nao se desfaz) → <strong>Paga</strong> quando o Admin deposita."
+      },
+      side: "bottom",
+      align: "center"
+    },
+    {
       id: "dashboard-bookings",
       route: "/",
       section: "dashboard",

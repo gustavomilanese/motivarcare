@@ -16,6 +16,8 @@ import { ProPortalPageHeader } from "./ProPortalPageHeader";
 export type ProPortalChromeConfig = {
   title?: string;
   titleId?: string;
+  /** Entre el título y el toolbar (p. ej. leyenda de estados). */
+  center?: ReactNode;
   toolbar?: ReactNode;
   /** Si true, no se renderiza el header de página: el contenido lo embebe (p. ej. Dashboard). */
   suppressPageHeader?: boolean;
@@ -33,6 +35,7 @@ function chromeEquals(a: ProPortalChromeConfig, b: ProPortalChromeConfig): boole
   return (
     a.title === b.title
     && a.titleId === b.titleId
+    && a.center === b.center
     && a.toolbar === b.toolbar
     && a.suppressPageHeader === b.suppressPageHeader
   );
@@ -79,6 +82,7 @@ export function ProPortalChromeProvider(props: {
         <ProPortalPageHeader
           title={title}
           titleId={override.titleId}
+          center={override.center}
           toolbar={override.toolbar}
           actions={props.headerActions}
           backButton={backButton}
@@ -97,14 +101,14 @@ export function useProPortalChrome(config: ProPortalChromeConfig) {
     throw new Error("useProPortalChrome must be used within ProPortalChromeProvider");
   }
 
-  const { title, titleId, toolbar, suppressPageHeader } = config;
+  const { title, titleId, center, toolbar, suppressPageHeader } = config;
 
   const { setChrome, clearChrome } = context;
 
   useLayoutEffect(() => {
-    setChrome({ title, titleId, toolbar, suppressPageHeader });
+    setChrome({ title, titleId, center, toolbar, suppressPageHeader });
     return () => clearChrome();
-  }, [setChrome, clearChrome, title, titleId, toolbar, suppressPageHeader]);
+  }, [setChrome, clearChrome, title, titleId, center, toolbar, suppressPageHeader]);
 }
 
 export function useProPortalHeaderActions(): ReactNode {

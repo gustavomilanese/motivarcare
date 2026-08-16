@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 export function ProPortalPageHeader(props: {
   title: string;
   titleId?: string;
+  center?: ReactNode;
   toolbar?: ReactNode;
   actions?: ReactNode;
   backButton?: ReactNode;
@@ -12,7 +13,7 @@ export function ProPortalPageHeader(props: {
   }
 
   return (
-    <header className="pro-portal-page-head">
+    <header className={`pro-portal-page-head${props.center ? " pro-portal-page-head--with-center" : ""}`}>
       <div className="pro-portal-page-head-start">
         {props.backButton}
         {props.title ? (
@@ -21,6 +22,7 @@ export function ProPortalPageHeader(props: {
           </h1>
         ) : null}
       </div>
+      {props.center ? <div className="pro-portal-page-head-center">{props.center}</div> : null}
       <div className="pro-portal-page-head-end">
         {props.toolbar ? <div className="pro-portal-page-toolbar">{props.toolbar}</div> : null}
         {props.actions ? <div className="pro-portal-page-actions">{props.actions}</div> : null}
