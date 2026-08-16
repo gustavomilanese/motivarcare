@@ -64,7 +64,7 @@ function isSelectableSession(session: UpcomingReservationItem): boolean {
   return !isLockedSession(session);
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 8;
 
 export type SessionListFilter = "all" | "reserved" | "executed" | "submitted" | "paid" | "liquidated";
 

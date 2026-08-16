@@ -6986,6 +6986,27 @@ select.pro-dashboard-revenue-control {
   padding: 8px 0 2px;
 }
 
+.agenda-session-more {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid #e8e4f8;
+  border-radius: 0;
+  background: transparent;
+  color: #6d63a8;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.agenda-session-more:hover,
+.agenda-session-more:focus-visible {
+  color: #4c35c7;
+  outline: none;
+}
+
 .agenda-session-inbox-pagination {
   display: flex;
   align-items: center;

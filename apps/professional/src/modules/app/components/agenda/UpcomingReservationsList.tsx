@@ -1,7 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { PatientAvatarImage } from "../PatientAvatarImage";
 import { ProPageLoader } from "../ProPageLoader";
 import { resolveApiAssetUrl } from "../../services/api";
+
+const PREVIEW_SIZE = 6;
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -103,6 +106,33 @@ export function UpcomingReservationsList(props: {
     pt: "Cancelar esta reserva (sem limite de 24 h). O credito volta ao paciente se ainda nao comecou."
   });
 
+  const [expanded, setExpanded] = useState(false);
+
+  const liveReservations = useMemo(
+    () =>
+      props.reservations.filter((booking) => {
+        const status = booking.status.toLowerCase();
+        return status === "confirmed" || status === "requested";
+      }),
+    [props.reservations]
+  );
+
+  const hiddenCount = Math.max(0, liveReservations.length - PREVIEW_SIZE);
+  const visibleReservations = expanded ? liveReservations : liveReservations.slice(0, PREVIEW_SIZE);
+
+  useEffect(() => {
+    const targetIds = [props.highlightJoinPulseBookingId, props.joinTourTargetBookingId].filter(
+      (id): id is string => Boolean(id)
+    );
+    if (targetIds.length === 0) {
+      return;
+    }
+    const index = liveReservations.findIndex((booking) => targetIds.includes(booking.id));
+    if (index >= PREVIEW_SIZE) {
+      setExpanded(true);
+    }
+  }, [liveReservations, props.highlightJoinPulseBookingId, props.joinTourTargetBookingId]);
+
   if (loading) {
     return <ProPageLoader language={props.language} layout="inline" />;
   }
@@ -110,11 +140,6 @@ export function UpcomingReservationsList(props: {
   if (error) {
     return <p className="pro-error">{error}</p>;
   }
-
-  const liveReservations = props.reservations.filter((booking) => {
-    const status = booking.status.toLowerCase();
-    return status === "confirmed" || status === "requested";
-  });
 
   if (liveReservations.length === 0) {
     return (
@@ -134,7 +159,7 @@ export function UpcomingReservationsList(props: {
         <span>{t(props.language, { es: "Acciones", en: "Actions", pt: "Acoes" })}</span>
       </div>
       <div className="agenda-session-table-body">
-        {liveReservations.map((booking) => {
+        {visibleReservations.map((booking) => {
           const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
           const joinTrim = typeof booking.joinUrl === "string" ? booking.joinUrl.trim() : "";
           const pulseJoin =
@@ -238,6 +263,21 @@ export function UpcomingReservationsList(props: {
           );
         })}
       </div>
+      {hiddenCount > 0 ? (
+        <button
+          type="button"
+          className="agenda-session-more"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded
+            ? t(props.language, { es: "Mostrar menos", en: "Show less", pt: "Mostrar menos" })
+            : t(props.language, {
+                es: `Mostrar ${hiddenCount} más`,
+                en: `Show ${hiddenCount} more`,
+                pt: `Mostrar mais ${hiddenCount}`
+              })}
+        </button>
+      ) : null}
     </div>
   );
 }
