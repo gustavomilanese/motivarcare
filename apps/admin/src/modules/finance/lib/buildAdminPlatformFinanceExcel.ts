@@ -127,9 +127,9 @@ function buildMetaRows(input: { meta: AdminPlatformExportMeta; rowCount: number 
           pt: "MotivarCare — Sessoes executadas (Admin)"
         })
       : t(input.meta.language, {
-          es: "MotivarCare — Ventas (Admin)",
-          en: "MotivarCare — Sales (Admin)",
-          pt: "MotivarCare — Vendas (Admin)"
+          es: "MotivarCare — Paquetes vendidos (Admin)",
+          en: "MotivarCare — Packages sold (Admin)",
+          pt: "MotivarCare — Pacotes vendidos (Admin)"
         });
 
   const metaRows: string[] = [];
@@ -145,7 +145,7 @@ function buildMetaRows(input: { meta: AdminPlatformExportMeta; rowCount: number 
   const countLabel =
     input.meta.tab === "executed"
       ? t(input.meta.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })
-      : t(input.meta.language, { es: "Ventas", en: "Sales", pt: "Vendas" });
+      : t(input.meta.language, { es: "Paquetes", en: "Packages", pt: "Pacotes" });
   metaRows.push(`USD · ${countLabel}: ${input.rowCount}`);
   if (input.meta.filtersSummary) {
     metaRows.push(input.meta.filtersSummary);
@@ -271,14 +271,13 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
   workbook.created = input.meta.generatedAt;
 
   const sheet = workbook.addWorksheet(
-    t(input.meta.language, { es: "Ventas", en: "Sales", pt: "Vendas" })
+    t(input.meta.language, { es: "Paquetes", en: "Packages", pt: "Pacotes" })
   );
   sheet.columns = [
     { key: "date", width: 14 },
     { key: "professional", width: 24 },
     { key: "patient", width: 24 },
     { key: "package", width: 28 },
-    { key: "credits", width: 12 },
     { key: "gross", width: 14 },
     { key: "fee", width: 14 },
     { key: "net", width: 14 }
@@ -289,10 +288,10 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
     rowCount: input.purchases.length
   });
 
-  sheet.mergeCells("A1:H1");
+  sheet.mergeCells("A1:G1");
   sheet.getCell("A1").value = title;
   sheet.getCell("A1").font = TITLE_FONT;
-  writeMetaRows(sheet, metaRows, headerRowIndex, "H");
+  writeMetaRows(sheet, metaRows, headerRowIndex, "G");
 
   const headerRow = sheet.getRow(headerRowIndex);
   headerRow.values = [
@@ -300,12 +299,11 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
     t(input.meta.language, { es: "Profesional", en: "Professional", pt: "Profissional" }),
     t(input.meta.language, { es: "Paciente", en: "Patient", pt: "Paciente" }),
     t(input.meta.language, { es: "Paquete", en: "Package", pt: "Pacote" }),
-    t(input.meta.language, { es: "Créditos", en: "Credits", pt: "Creditos" }),
     t(input.meta.language, { es: "Vendido", en: "Sold", pt: "Vendido" }),
     t(input.meta.language, { es: "Comisión", en: "Fee", pt: "Comissao" }),
     t(input.meta.language, { es: "Neto", en: "Net", pt: "Liquido" })
   ];
-  styleHeaderRow(headerRow, 8);
+  styleHeaderRow(headerRow, 7);
 
   let grossTotal = 0;
   let feeTotal = 0;
@@ -326,12 +324,11 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
       purchase.professionalName,
       purchase.patientName,
       purchase.packageName,
-      `${purchase.remainingCredits}/${purchase.totalCredits}`,
       gross,
       fee,
       net
     ];
-    styleDataRow(excelRow, rowIndex, [6, 7, 8]);
+    styleDataRow(excelRow, rowIndex, [5, 6, 7]);
     rowIndex += 1;
   }
 
@@ -342,7 +339,6 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
     "",
     "",
     "",
-    input.purchases.length,
     grossTotal,
     feeTotal,
     netTotal
@@ -358,13 +354,13 @@ export async function downloadAdminPlatformPurchasesExcel(input: {
       top: { style: "thin", color: { argb: "FF93C5FD" } }
     };
   });
+  totalRow.getCell(5).numFmt = amountFormat;
   totalRow.getCell(6).numFmt = amountFormat;
   totalRow.getCell(7).numFmt = amountFormat;
-  totalRow.getCell(8).numFmt = amountFormat;
 
   sheet.autoFilter = {
     from: { row: headerRowIndex, column: 1 },
-    to: { row: headerRowIndex, column: 8 }
+    to: { row: headerRowIndex, column: 7 }
   };
 
   await downloadWorkbook(workbook, input.filenameStem);

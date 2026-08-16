@@ -16078,6 +16078,47 @@ button.sessions-balance {
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
 }
 
+.portal-home-ml-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.in-app-back {
+  appearance: none;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #5f44eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.in-app-back:hover {
+  background: rgba(95, 68, 235, 0.08);
+  color: #4c31d8;
+}
+
+.in-app-back--main {
+  margin: 10px 16px 0;
+}
+
+@media (min-width: 1081px) {
+  .portal-shell--home-ml .in-app-back--main {
+    display: none;
+  }
+}
+
 /* Rail izquierdo: colapsado, se abre al hover con movimiento delicado */
 .portal-home-ml-rail {
   --portal-home-ml-rail-collapsed: 58px;

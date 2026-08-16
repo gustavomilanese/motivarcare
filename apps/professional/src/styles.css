@@ -4847,6 +4847,42 @@ ul {
   margin-bottom: 14px;
 }
 
+.pro-portal-page-head-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.pro-portal-page-head--back-only {
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.in-app-back {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #5f44eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.in-app-back:hover {
+  background: rgba(95, 68, 235, 0.08);
+  color: #4c31d8;
+}
+
 .pro-portal-page-title,
 .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
   flex: 0 0 auto;
@@ -5752,7 +5788,7 @@ select.pro-dashboard-revenue-control {
     gap: 16px 20px;
   }
 
-  .pro-portal-page-head > .pro-portal-page-title,
+  .pro-portal-page-head-start,
   .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
     min-width: 0;
   }
@@ -5794,7 +5830,7 @@ select.pro-dashboard-revenue-control {
     row-gap: 10px;
   }
 
-  .pro-portal-page-head > .pro-portal-page-title,
+  .pro-portal-page-head-start,
   .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
     grid-area: title;
   }
@@ -6621,6 +6657,19 @@ select.pro-dashboard-revenue-control {
   font-weight: 700;
   color: #5f44eb;
   margin-right: 4px;
+}
+
+.agenda-session-bulk-combo {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.agenda-session-bulk-status {
+  max-width: 180px;
+}
+
+.agenda-session-status-select option:disabled {
+  color: #94a3b8;
 }
 
 .agenda-session-select-clear {

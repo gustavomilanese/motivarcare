@@ -6,6 +6,7 @@ import { FinancesPage } from "../../finance";
 import { links } from "../constants";
 import { AdminNavIcon } from "../components/AdminNavIcon";
 import { ModulePlaceholderPage } from "../components/ModulePlaceholderPage";
+import { useInAppBack } from "../hooks/useInAppBack";
 import { AdminDashboardPage } from "./AdminDashboardPage";
 import { InfoPage } from "./InfoPage";
 import { PatientsOpsPage } from "./PatientsOpsPage";
@@ -30,6 +31,7 @@ export function AdminPortal(props: {
   onCurrencyChange: (currency: SupportedCurrency) => void;
 }) {
   const location = useLocation();
+  const { canGoBack, goBack } = useInAppBack();
   const [railNavLocked, setRailNavLocked] = useState(false);
   const [pendingRiskTriageCount, setPendingRiskTriageCount] = useState(0);
   const [pendingProfRegistrationCount, setPendingProfRegistrationCount] = useState(0);
@@ -271,6 +273,11 @@ export function AdminPortal(props: {
         </nav>
 
         <main>
+          {canGoBack ? (
+            <button type="button" className="in-app-back" onClick={goBack}>
+              ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+            </button>
+          ) : null}
           <Routes>
             <Route
               path="/"

@@ -764,6 +764,30 @@ button.danger:active:not(:disabled) {
   gap: 12px;
 }
 
+.in-app-back {
+  appearance: none;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 6px 10px 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #5f44eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.in-app-back:hover {
+  background: rgba(95, 68, 235, 0.08);
+  color: #4c31d8;
+}
+
 .header {
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: var(--portal-blur);
@@ -1576,6 +1600,23 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.sessions-ops-heading {
+  align-items: flex-start;
+}
+
+.sessions-ops-heading h2 {
+  margin: 0;
+}
+
+.sessions-ops-heading p {
+  margin: 4px 0 0;
+  max-width: 46rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #64748b;
+  font-weight: 400;
 }
 
 .patient-section-head-right {
@@ -3372,7 +3413,8 @@ label {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 1180px;
+  width: 100%;
+  max-width: none;
   padding-bottom: 8px;
 }
 
@@ -4079,6 +4121,23 @@ label {
 
 .dashboard-stat-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-overview-row {
+  display: grid;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (min-width: 1180px) {
+  .dashboard-overview-row {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr);
+  }
+
+  .dashboard-overview-row > .dashboard-section {
+    min-width: 0;
+    height: 100%;
+  }
 }
 
 .dashboard-stat-grid--4 {
@@ -7094,6 +7153,26 @@ button.primary.finance-hero-search {
 .admin-platform-finance-list {
   display: grid;
   gap: 12px;
+}
+
+.admin-platform-finance-list-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-platform-finance-list-heading h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: #111827;
+}
+
+.admin-platform-finance-list-heading p {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .admin-platform-finance-list-toolbar {

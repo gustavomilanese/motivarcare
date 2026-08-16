@@ -423,6 +423,7 @@ function OverviewPage(props: OverviewPageProps) {
 
       {k === undefined ? null : (
         <>
+      <div className="dashboard-overview-row">
       <section className="dashboard-section dashboard-section--highlight dashboard-section--tone-pkg" aria-labelledby="dash-pkg">
         <h2
           id="dash-pkg"
@@ -519,6 +520,7 @@ function OverviewPage(props: OverviewPageProps) {
           />
         </div>
       </section>
+      </div>
 
       <section
         className="dashboard-section dashboard-section--tone-sess"

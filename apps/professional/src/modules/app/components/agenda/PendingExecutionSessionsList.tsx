@@ -138,6 +138,8 @@ export function PendingExecutionSessionsList(props: {
   );
   const selectedReserved = selectedSessions.filter((session) => !isCompletedBooking(session));
   const selectedExecuted = selectedSessions.filter((session) => isExecutedPendingSession(session));
+  const bulkAllReserved = selectedSessions.length > 0 && selectedReserved.length === selectedSessions.length;
+  const bulkAllExecuted = selectedSessions.length > 0 && selectedExecuted.length === selectedSessions.length;
 
   const rangeStart = filteredSessions.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredSessions.length);
@@ -211,34 +213,35 @@ export function PendingExecutionSessionsList(props: {
                   pt: `${selectedSessions.length} selecionadas`
                 })}
               </span>
-              {selectedReserved.length > 0 ? (
-                <button
-                  type="button"
-                  className="agenda-session-bulk-btn"
+              <label className="agenda-session-bulk-combo">
+                <span className="sr-only">
+                  {t(props.language, { es: "Cambiar estado", en: "Change status", pt: "Mudar status" })}
+                </span>
+                <select
+                  className="agenda-session-status-select agenda-session-bulk-status"
+                  value=""
                   disabled={busyAll}
-                  onClick={() => props.onRequestBulkComplete(selectedReserved)}
+                  aria-label={t(props.language, { es: "Cambiar estado", en: "Change status", pt: "Mudar status" })}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    if (next === "executed" && selectedReserved.length > 0) {
+                      props.onRequestBulkComplete(selectedReserved);
+                    } else if (next === "reserved" && selectedExecuted.length > 0) {
+                      props.onRequestBulkUncomplete(selectedExecuted);
+                    }
+                  }}
                 >
-                  {t(props.language, {
-                    es: "Marcar como ejecutadas",
-                    en: "Mark as executed",
-                    pt: "Marcar como executadas"
-                  })}
-                </button>
-              ) : null}
-              {selectedExecuted.length > 0 ? (
-                <button
-                  type="button"
-                  className="agenda-session-bulk-btn agenda-session-bulk-btn--ghost"
-                  disabled={busyAll}
-                  onClick={() => props.onRequestBulkUncomplete(selectedExecuted)}
-                >
-                  {t(props.language, {
-                    es: "Volver a reservadas",
-                    en: "Revert to reserved",
-                    pt: "Voltar para reservadas"
-                  })}
-                </button>
-              ) : null}
+                  <option value="" disabled>
+                    {t(props.language, { es: "Cambiar estado", en: "Change status", pt: "Mudar status" })}
+                  </option>
+                  <option value="reserved" disabled={bulkAllReserved}>
+                    {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
+                  </option>
+                  <option value="executed" disabled={bulkAllExecuted}>
+                    {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
+                  </option>
+                </select>
+              </label>
               <button
                 type="button"
                 className="agenda-session-select-clear"
@@ -413,10 +416,10 @@ export function PendingExecutionSessionsList(props: {
                             }
                           }}
                         >
-                          <option value="reserved">
+                          <option value="reserved" disabled={!executed}>
                             {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
                           </option>
-                          <option value="executed">
+                          <option value="executed" disabled={executed}>
                             {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
                           </option>
                         </select>

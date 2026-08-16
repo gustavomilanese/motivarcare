@@ -8,8 +8,9 @@ import {
   useState
 } from "react";
 import { useLocation } from "react-router-dom";
-import { type AppLanguage } from "@therapy/i18n-config";
+import { type AppLanguage, textByLanguage } from "@therapy/i18n-config";
 import { resolvePortalPageTitle } from "../lib/portalPageTitles";
+import { useInAppBack } from "../hooks/useInAppBack";
 import { ProPortalPageHeader } from "./ProPortalPageHeader";
 
 export type ProPortalChromeConfig = {
@@ -43,6 +44,7 @@ export function ProPortalChromeProvider(props: {
   children: ReactNode;
 }) {
   const location = useLocation();
+  const { canGoBack, goBack } = useInAppBack();
   const [override, setOverride] = useState<ProPortalChromeConfig>({});
 
   const setChrome = useCallback((config: ProPortalChromeConfig) => {
@@ -65,6 +67,11 @@ export function ProPortalChromeProvider(props: {
 
   const title = override.title ?? defaultTitle;
   const suppressPageHeader = Boolean(override.suppressPageHeader);
+  const backButton = canGoBack ? (
+    <button type="button" className="in-app-back" onClick={goBack}>
+      ← {textByLanguage(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+    </button>
+  ) : null;
 
   return (
     <ProPortalChromeContext.Provider value={contextValue}>
@@ -74,7 +81,10 @@ export function ProPortalChromeProvider(props: {
           titleId={override.titleId}
           toolbar={override.toolbar}
           actions={props.headerActions}
+          backButton={backButton}
         />
+      ) : backButton ? (
+        <div className="pro-portal-page-head pro-portal-page-head--back-only">{backButton}</div>
       ) : null}
       {props.children}
     </ProPortalChromeContext.Provider>

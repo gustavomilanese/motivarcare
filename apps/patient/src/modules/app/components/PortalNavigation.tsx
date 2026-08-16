@@ -9,6 +9,7 @@ import { type ChangeEvent, type ReactNode, type SyntheticEvent, useEffect, useId
 import { createPortal } from "react-dom";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDiaryPortalToolbarMountElement } from "../../emotional-diary/context/DiaryPortalToolbarMount";
+import { useInAppBack } from "../hooks/useInAppBack";
 import { PortalHelpLegalMenuSection } from "./PortalHelpLegalLinks";
 import { PATIENT_FAVORITES_ENABLED } from "../constants";
 import { useMobilePortal } from "../hooks/useMobilePortal";
@@ -213,6 +214,7 @@ export function PortalNavigation(props: {
   const avatarInputId = useId();
   const location = useLocation();
   const navigate = useNavigate();
+  const { canGoBack, goBack } = useInAppBack();
   const diaryImmersive = location.pathname.startsWith("/diario") && !props.homeMlChrome;
   const diaryHomeImmersive = location.pathname === "/diario" && !props.homeMlChrome;
   const diarySubpageImmersive = diaryImmersive && !diaryHomeImmersive;
@@ -974,7 +976,13 @@ export function PortalNavigation(props: {
         </aside>
 
         <header className="portal-home-ml-bar" data-tour="patient-tour-home-ml-chrome">
-          <NavLink to="/" className="portal-home-ml-brand" end onClick={goHomeToTop}>
+          <div className="portal-home-ml-lead">
+            {canGoBack ? (
+              <button type="button" className="in-app-back" onClick={goBack}>
+                ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+              </button>
+            ) : null}
+            <NavLink to="/" className="portal-home-ml-brand" end onClick={goHomeToTop}>
             <img
               className="portal-home-ml-brand-mark"
               src="/brand/motivarcare-mark.png"
@@ -984,6 +992,7 @@ export function PortalNavigation(props: {
             />
             <span className="portal-home-ml-brand-text">MotivarCare</span>
           </NavLink>
+          </div>
 
           <nav className="portal-home-ml-nav" aria-label={t(props.language, { es: "Secciones", en: "Sections", pt: "Secoes" })}>
             <NavLink
@@ -1164,6 +1173,11 @@ export function PortalNavigation(props: {
         className={`portal-main${diaryHomeImmersive ? " portal-main--diary-home" : ""}${dashboardHomeImmersive ? " portal-main--dashboard-home" : ""}${props.homeMlChrome ? " portal-main--home-ml" : ""}${sessionsHomeImmersive ? " portal-main--sessions-home" : ""}${wellbeingRelaxImmersive ? " portal-main--wellbeing-relax" : ""}${chatImmersive ? " portal-main--chat" : ""}`}
       >
         {props.homeMlChrome ? renderHomeMlChrome() : null}
+        {canGoBack ? (
+          <button type="button" className="in-app-back in-app-back--main" onClick={goBack}>
+            ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+          </button>
+        ) : null}
         {!immersivePortalHome ? (
           <header className="portal-header">
             <div

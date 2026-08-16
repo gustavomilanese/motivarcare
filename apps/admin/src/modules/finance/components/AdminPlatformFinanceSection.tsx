@@ -493,7 +493,7 @@ export function AdminPlatformFinanceSection(props: {
             className={tab === "purchases" ? "active" : ""}
             onClick={() => setTab("purchases")}
           >
-            {t(props.language, { es: "Ventas", en: "Sales", pt: "Vendas" })}
+            {t(props.language, { es: "Paquetes vendidos", en: "Packages sold", pt: "Pacotes vendidos" })}
           </button>
         </div>
       </div>
@@ -547,6 +547,16 @@ export function AdminPlatformFinanceSection(props: {
 
       {tab === "executed" && executed ? (
         <section className="admin-platform-finance-list">
+          <header className="admin-platform-finance-list-heading">
+            <h3>{t(props.language, { es: "Sesiones ejecutadas", en: "Executed sessions", pt: "Sessoes executadas" })}</h3>
+            <p>
+              {t(props.language, {
+                es: "Cada fila es un turno ya completado. El # Sesión indica cuál del paquete fue (por ejemplo 3/8).",
+                en: "Each row is a completed session. # Session shows which one in the package it was (for example 3/8).",
+                pt: "Cada linha e uma sessao ja concluida. O # Sessao indica qual do pacote foi (por exemplo 3/8)."
+              })}
+            </p>
+          </header>
           <div className="admin-platform-finance-list-toolbar admin-platform-finance-list-toolbar--executed">
             <input
               type="search"
@@ -654,6 +664,16 @@ export function AdminPlatformFinanceSection(props: {
 
       {tab === "purchases" && purchases ? (
         <section className="admin-platform-finance-list">
+          <header className="admin-platform-finance-list-heading">
+            <h3>{t(props.language, { es: "Paquetes vendidos", en: "Packages sold", pt: "Pacotes vendidos" })}</h3>
+            <p>
+              {t(props.language, {
+                es: "Cada fila es un checkout: cuando el paciente compró el paquete o la sesión de prueba. No son las sesiones que el profesional ya dio.",
+                en: "Each row is a checkout: when the patient bought the package or the trial session. These are not the sessions the professional already delivered.",
+                pt: "Cada linha e um checkout: quando o paciente comprou o pacote ou a sessao de teste. Nao sao as sessoes que o profissional ja realizou."
+              })}
+            </p>
+          </header>
           <div className="admin-platform-finance-list-toolbar">
             <input
               type="search"
@@ -700,7 +720,6 @@ export function AdminPlatformFinanceSection(props: {
                       <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
                       <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
                       <th>{t(props.language, { es: "Paquete", en: "Package", pt: "Pacote" })}</th>
-                      <th>{t(props.language, { es: "Créditos", en: "Credits", pt: "Creditos" })}</th>
                       <th>{t(props.language, { es: "Vendido", en: "Sold", pt: "Vendido" })}</th>
                       <th>{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}</th>
                       <th>{t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}</th>
@@ -713,9 +732,6 @@ export function AdminPlatformFinanceSection(props: {
                         <td>{row.professionalName}</td>
                         <td>{row.patientName}</td>
                         <td>{row.packageName}</td>
-                        <td>
-                          {row.remainingCredits}/{row.totalCredits}
-                        </td>
                         <td className="num">{formatAdminFinanceUsd(row.grossCents, props.language)}</td>
                         <td className="num">{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</td>
                         <td className="num">{formatAdminFinanceUsd(row.professionalNetCents, props.language)}</td>

@@ -454,8 +454,17 @@ export function SessionsOpsPage(props: { token: string; language: AppLanguage })
   return (
     <div className="ops-page sessions-ops">
       <section className="card stack sessions-ops-panel">
-        <header className="patient-section-head">
-          <h2>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}</h2>
+        <header className="patient-section-head sessions-ops-heading">
+          <div>
+            <h2>{t(props.language, { es: "Agenda de sesiones", en: "Session agenda", pt: "Agenda de sessoes" })}</h2>
+            <p>
+              {t(props.language, {
+                es: "Acá están todos los turnos: solicitados, confirmados, ejecutados, cancelados y ausencias. Los montos en USD están en Finanzas.",
+                en: "This is every booking: requested, confirmed, executed, cancelled, and no-shows. USD amounts live in Finance.",
+                pt: "Aqui estao todos os turnos: solicitados, confirmados, executados, cancelados e faltas. Os valores em USD ficam em Financas."
+              })}
+            </p>
+          </div>
         </header>
 
         <div className="ops-filter-toolbar">
