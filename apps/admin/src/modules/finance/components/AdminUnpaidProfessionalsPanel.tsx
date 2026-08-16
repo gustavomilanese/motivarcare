@@ -14,12 +14,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
 
 type SortKey = "name_az" | "sessions_desc" | "net_desc";
 
-function averageSessionCents(row: AdminUnpaidProfessional): number {
-  if (row.sessionsCount <= 0) {
-    return 0;
-  }
-  return Math.round(row.grossCents / row.sessionsCount);
-}
+const PAGE_SIZE = 10;
 
 function formatSessionDay(value: string | null, language: AppLanguage): string {
   if (!value) return "—";
@@ -93,8 +88,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
-  const [expandedLoading, setExpandedLoading] = useState(false);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [page, setPage] = useState(1);
 
   const selectedMonths = useMemo(() => expandMonthKeysInRange(monthFrom, monthTo), [monthFrom, monthTo]);
   const monthsKey = selectedMonths.join(",");
@@ -118,49 +114,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
   }, [load]);
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
-    const ids = rows.map((row) => row.professionalId);
-    setExpandedIds(new Set(ids));
-    if (ids.length === 0) {
-      setExpandedDetails({});
-      return;
-    }
-
-    let cancelled = false;
-    setExpandedLoading(true);
-    setError("");
-    void Promise.all(
-      rows.map((row) => fetchUnpaidProfessionalDetail(props.token, row.professionalId, selectedMonths))
-    )
-      .then((details) => {
-        if (cancelled) {
-          return;
-        }
-        const next: Record<string, UnpaidProfessionalDetailResponse> = {};
-        details.forEach((detail, index) => {
-          next[rows[index].professionalId] = detail;
-        });
-        setExpandedDetails(next);
-      })
-      .catch((requestError) => {
-        if (cancelled) {
-          return;
-        }
-        const raw = requestError instanceof Error ? requestError.message : "";
-        setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setExpandedLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loading, rows, monthsKey, props.language, props.token, selectedMonths]);
+    setPage(1);
+    setExpandedIds(new Set());
+  }, [search, sortKey, monthsKey]);
 
   const filteredSorted = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -193,6 +149,12 @@ export function AdminUnpaidProfessionalsPanel(props: {
     );
   }, [filteredSorted]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = filteredSorted.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, filteredSorted.length);
+  const pageRows = filteredSorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   const maxMonth = useMemo(() => currentUtcMonthKey(), []);
   const hasMonthFilter = Boolean(monthFrom || monthTo);
 
@@ -215,7 +177,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
     if (expandedDetails[row.professionalId]) {
       return;
     }
-    setExpandedLoading(true);
+    setDetailLoadingId(row.professionalId);
     setError("");
     try {
       const detail = await fetchUnpaidProfessionalDetail(props.token, row.professionalId, selectedMonths);
@@ -229,7 +191,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
         return next;
       });
     } finally {
-      setExpandedLoading(false);
+      setDetailLoadingId(null);
     }
   };
 
@@ -260,27 +222,45 @@ export function AdminUnpaidProfessionalsPanel(props: {
       <section className={`admin-unpaid-professionals${props.compact ? " admin-unpaid-professionals--compact" : ""}`}>
         <header className="admin-unpaid-professionals-head">
           <div className="admin-unpaid-professionals-head-copy">
-            <h2 className="dashboard-page-heading">
+            <h2
+              className="dashboard-section-title"
+              title={t(props.language, {
+                es: "Sesiones que el profesional ya envió a cobro. Abrí un nombre para ver el detalle y pagar.",
+                en: "Sessions the professional already sent for payout. Expand a name to review and pay.",
+                pt: "Sessoes que o profissional ja enviou a cobranca. Abra um nome para ver o detalhe e pagar."
+              })}
+            >
               {t(props.language, {
-                es: "Pendiente de pagar a profesionales",
-                en: "Pending professional payouts",
-                pt: "Pendente de pagar a profissionais"
+                es: "Pendiente de pagar",
+                en: "Pending payouts",
+                pt: "Pendente de pagar"
               })}
             </h2>
-            {!loading && filteredSorted.length > 0 ? (
-              <p className="admin-unpaid-professionals-head-total">
-                <strong>{formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}</strong>
-                <span>
-                  {t(props.language, {
-                    es: `${filteredSorted.length === 1 ? "1 profesional" : `${filteredSorted.length} profesionales`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "sesión" : "sesiones"}`,
-                    en: `${filteredSorted.length === 1 ? "1 professional" : `${filteredSorted.length} professionals`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "session" : "sessions"}`,
-                    pt: `${filteredSorted.length === 1 ? "1 profissional" : `${filteredSorted.length} profissionais`} · ${listTotals.sessionsCount} ${listTotals.sessionsCount === 1 ? "sessão" : "sessões"}`
-                  })}
-                </span>
-              </p>
-            ) : null}
+            <p className="admin-unpaid-professionals-lead">
+              {t(props.language, {
+                es: "Sesiones enviadas a cobro. Abrí un nombre para pagar.",
+                en: "Sessions sent for payout. Expand a name to pay.",
+                pt: "Sessoes enviadas a cobranca. Abra um nome para pagar."
+              })}
+            </p>
           </div>
           <div className="admin-unpaid-professionals-head-actions">
+            <input
+              type="search"
+              className="admin-unpaid-search"
+              value={search}
+              placeholder={t(props.language, {
+                es: "Buscar profesional…",
+                en: "Search professional…",
+                pt: "Buscar profissional…"
+              })}
+              aria-label={t(props.language, {
+                es: "Buscar profesional",
+                en: "Search professional",
+                pt: "Buscar profissional"
+              })}
+              onChange={(event) => setSearch(event.target.value)}
+            />
             <button
               type="button"
               className={`admin-unpaid-filters-toggle${filtersOpen || hasMonthFilter ? " is-active" : ""}`}
@@ -311,24 +291,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
             </button>
           </div>
         </header>
-
-        <div className="admin-unpaid-professionals-toolbar">
-          <input
-            type="search"
-            value={search}
-            placeholder={t(props.language, {
-              es: "Buscar profesional…",
-              en: "Search professional…",
-              pt: "Buscar profissional…"
-            })}
-            aria-label={t(props.language, {
-              es: "Buscar profesional",
-              en: "Search professional",
-              pt: "Buscar profissional"
-            })}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
 
         {filtersOpen ? (
           <div className="admin-unpaid-professionals-filters">
@@ -398,9 +360,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
         ) : filteredSorted.length === 0 ? (
           <p>
             {t(props.language, {
-              es: "No hay pagos pendientes a profesionales.",
-              en: "No pending payouts to professionals.",
-              pt: "Nao ha pagamentos pendentes a profissionais."
+              es: "Nadie envió sesiones a cobro.",
+              en: "No sessions have been sent for payout.",
+              pt: "Ninguem enviou sessoes a cobranca."
             })}
           </p>
         ) : (
@@ -445,11 +407,13 @@ export function AdminUnpaidProfessionalsPanel(props: {
                 </tr>
               </thead>
               <tbody>
-                {filteredSorted.map((row) => {
+                {pageRows.map((row) => {
                   const expanded = expandedIds.has(row.professionalId);
                   const expandedDetail = expandedDetails[row.professionalId] ?? null;
-                  const unit = averageSessionCents(row);
-                  const rowLoading = expanded && !expandedDetail && expandedLoading;
+                  const pendingSessions = (expandedDetail?.sessions ?? []).filter(
+                    (session) => session.payoutStatus === "pending"
+                  );
+                  const rowLoading = expanded && !expandedDetail && detailLoadingId === row.professionalId;
                   return (
                     <Fragment key={row.professionalId}>
                       <tr
@@ -495,20 +459,6 @@ export function AdminUnpaidProfessionalsPanel(props: {
                       {expanded ? (
                         <tr className="admin-unpaid-detail-row">
                           <td colSpan={4}>
-                            <div className="admin-unpaid-row-metrics">
-                              <span>
-                                {t(props.language, { es: "Valor / sesión", en: "Value / session", pt: "Valor / sessão" })}
-                                <strong>{formatAdminFinanceUsd(unit, props.language)}</strong>
-                              </span>
-                              <span>
-                                {t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}
-                                <strong>{formatAdminFinanceUsd(row.grossCents, props.language)}</strong>
-                              </span>
-                              <span>
-                                {t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}
-                                <strong>{formatAdminFinanceUsd(row.platformFeeCents, props.language)}</strong>
-                              </span>
-                            </div>
                             {rowLoading ? (
                               <p className="admin-unpaid-detail-loading">
                                 {t(props.language, {
@@ -517,7 +467,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                   pt: "Carregando sessões…"
                                 })}
                               </p>
-                            ) : expandedDetail ? (
+                            ) : pendingSessions.length > 0 ? (
                               <div className="admin-unpaid-session-detail">
                                 <table className="admin-unpaid-session-table">
                                   <thead>
@@ -534,7 +484,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {expandedDetail.sessions.map((session) => {
+                                    {pendingSessions.map((session) => {
                                       const isPaid = session.payoutStatus === "paid";
                                       const awaitingSubmit = session.payoutStatus === "not_submitted";
                                       return (
@@ -626,6 +576,14 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                   </tbody>
                                 </table>
                               </div>
+                            ) : expandedDetail ? (
+                              <p className="admin-unpaid-detail-empty">
+                                {t(props.language, {
+                                  es: "No hay sesiones en cobro para este profesional.",
+                                  en: "No sessions in payout for this professional.",
+                                  pt: "Nao ha sessoes em cobranca para este profissional."
+                                })}
+                              </p>
                             ) : null}
                           </td>
                         </tr>
@@ -634,7 +592,61 @@ export function AdminUnpaidProfessionalsPanel(props: {
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr className="admin-unpaid-totals-row">
+                  <td>
+                    {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+                    <span className="admin-unpaid-totals-count">
+                      {" "}
+                      {t(props.language, {
+                        es: `· ${filteredSorted.length} ${filteredSorted.length === 1 ? "profesional" : "profesionales"}`,
+                        en: `· ${filteredSorted.length} ${filteredSorted.length === 1 ? "professional" : "professionals"}`,
+                        pt: `· ${filteredSorted.length} ${filteredSorted.length === 1 ? "profissional" : "profissionais"}`
+                      })}
+                    </span>
+                  </td>
+                  <td className="num">{listTotals.sessionsCount}</td>
+                  <td className="num admin-unpaid-net">
+                    {formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
             </table>
+            {filteredSorted.length > PAGE_SIZE ? (
+              <div
+                className="admin-unpaid-pager"
+                aria-label={t(props.language, { es: "Paginación", en: "Pagination", pt: "Paginacao" })}
+              >
+                <span className="admin-unpaid-pager-range">
+                  {t(props.language, {
+                    es: `${pageStart}–${pageEnd} de ${filteredSorted.length}`,
+                    en: `${pageStart}–${pageEnd} of ${filteredSorted.length}`,
+                    pt: `${pageStart}–${pageEnd} de ${filteredSorted.length}`
+                  })}
+                </span>
+                <div className="admin-unpaid-pager-nav">
+                  <button
+                    type="button"
+                    className="admin-unpaid-pager-btn"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    aria-label={t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-unpaid-pager-btn"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    aria-label={t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>

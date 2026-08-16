@@ -315,6 +315,8 @@ type OverviewPageProps = {
   currency: SupportedCurrency;
   pendingProfessionalRegistrationCount?: number;
   onNotificationCenterClick?: () => void;
+  canGoBack?: boolean;
+  onBack?: () => void;
 };
 
 function OverviewPage(props: OverviewPageProps) {
@@ -370,9 +372,16 @@ function OverviewPage(props: OverviewPageProps) {
   return (
     <div className="dashboard-page">
       <header className="dashboard-page-toolbar">
-        <h1 className="dashboard-page-heading">
-          {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
-        </h1>
+        <div className="dashboard-page-toolbar-start">
+          {props.canGoBack ? (
+            <button type="button" className="in-app-back in-app-back--inline" onClick={props.onBack}>
+              ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
+            </button>
+          ) : null}
+          <h1 className="dashboard-page-heading">
+            {t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" })}
+          </h1>
+        </div>
         <div className="dashboard-header-actions">
           {typeof props.onNotificationCenterClick === "function" ? (
             <button
@@ -394,16 +403,6 @@ function OverviewPage(props: OverviewPageProps) {
               ) : null}
             </button>
           ) : null}
-          <div className="dashboard-month-field">
-            <input
-              className="dashboard-month-input"
-              type="month"
-              value={selectedMonth}
-              max={maxMonth}
-              onChange={(event) => setSelectedMonth(event.target.value)}
-              aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
-            />
-          </div>
         </div>
       </header>
 
@@ -413,18 +412,29 @@ function OverviewPage(props: OverviewPageProps) {
         </section>
       ) : null}
 
+      <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
+
+      <AdminUnpaidProfessionalsPanel
+        token={props.token}
+        language={props.language}
+        initialRows={unpaidRows}
+        onChanged={() => setRefreshToken((value) => value + 1)}
+      />
+
       {!response && !error ? (
         <section className="card">
-          <p>{t(props.language, { es: "Cargando overview...", en: "Loading overview...", pt: "Carregando visao geral..." })}</p>
+          <p>{t(props.language, { es: "Cargando resumen...", en: "Loading summary...", pt: "Carregando resumo..." })}</p>
         </section>
       ) : null}
 
-      <DashboardPendingProfessionalApprovals token={props.token} language={props.language} />
-
       {k === undefined ? null : (
-        <>
+        <div className="dashboard-summary-block">
+      <p className="dashboard-section-kicker">
+        {t(props.language, { es: "Resumen", en: "Snapshot", pt: "Resumo" })}
+      </p>
       <div className="dashboard-overview-row">
       <section className="dashboard-section dashboard-section--highlight dashboard-section--tone-pkg" aria-labelledby="dash-pkg">
+        <div className="dashboard-section-head">
         <h2
           id="dash-pkg"
           className="dashboard-section-title"
@@ -440,6 +450,17 @@ function OverviewPage(props: OverviewPageProps) {
             pt: "Receita do mes"
           })}
         </h2>
+        <div className="dashboard-month-field">
+          <input
+            className="dashboard-month-input"
+            type="month"
+            value={selectedMonth}
+            max={maxMonth}
+            onChange={(event) => setSelectedMonth(event.target.value)}
+            aria-label={t(props.language, { es: "Mes del resumen", en: "Summary month", pt: "Mes do resumo" })}
+          />
+        </div>
+        </div>
         <div className="dashboard-stat-grid dashboard-stat-grid--3">
           <StatCard
             label={t(props.language, { es: "Bruto cobrado", en: "Gross collected", pt: "Bruto cobrado" })}
@@ -521,19 +542,7 @@ function OverviewPage(props: OverviewPageProps) {
         </div>
       </section>
       </div>
-
-      <section
-        className="dashboard-section dashboard-section--tone-sess"
-        aria-labelledby="dash-unpaid"
-      >
-        <AdminUnpaidProfessionalsPanel
-          token={props.token}
-          language={props.language}
-          initialRows={unpaidRows}
-          onChanged={() => setRefreshToken((value) => value + 1)}
-        />
-      </section>
-        </>
+        </div>
       )}
     </div>
   );
@@ -547,6 +556,8 @@ export function AdminDashboardPage(props: OverviewPageProps) {
       currency={props.currency}
       pendingProfessionalRegistrationCount={props.pendingProfessionalRegistrationCount}
       onNotificationCenterClick={props.onNotificationCenterClick}
+      canGoBack={props.canGoBack}
+      onBack={props.onBack}
     />
   );
 }

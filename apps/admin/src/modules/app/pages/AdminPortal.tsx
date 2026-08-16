@@ -273,7 +273,7 @@ export function AdminPortal(props: {
         </nav>
 
         <main>
-          {canGoBack ? (
+          {canGoBack && location.pathname !== "/" ? (
             <button type="button" className="in-app-back" onClick={goBack}>
               ← {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
             </button>
@@ -288,6 +288,8 @@ export function AdminPortal(props: {
                   currency={props.currency}
                   pendingProfessionalRegistrationCount={pendingProfRegistrationCount}
                   onNotificationCenterClick={handleNotificationCenterClick}
+                  canGoBack={canGoBack}
+                  onBack={goBack}
                 />
               }
             />
