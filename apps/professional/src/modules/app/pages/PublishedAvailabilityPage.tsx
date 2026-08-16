@@ -47,7 +47,7 @@ function formatBookingStatus(status: string, language: AppLanguage): string {
     return t(language, { es: "Solicitada", en: "Requested", pt: "Solicitada" });
   }
   if (status === "completed") {
-    return t(language, { es: "Completada", en: "Completed", pt: "Concluida" });
+    return t(language, { es: "Realizada", en: "Completed", pt: "Realizada" });
   }
   if (status === "cancelled") {
     return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });
@@ -561,7 +561,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
           <strong>{summary.upcoming}</strong>
         </article>
         <article className="pro-kpi-card">
-          <span>{t(props.language, { es: "Completadas", en: "Completed", pt: "Concluidas" })}</span>
+          <span>{t(props.language, { es: "Realizadas", en: "Completed", pt: "Realizadas" })}</span>
           <strong>{summary.completed}</strong>
         </article>
         <article className="pro-kpi-card">

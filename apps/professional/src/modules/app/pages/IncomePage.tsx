@@ -28,7 +28,7 @@ import { apiRequest } from "../services/api";
 import { professionalPortalGreetingDisplayName } from "../lib/portalGreetingDisplayName";
 import type { AuthUser, EarningsMovement, EarningsResponse } from "../types";
 
-const EXECUTED_SESSIONS_SECTION_ID = "sesiones-ejecutadas";
+const EXECUTED_SESSIONS_SECTION_ID = "sesiones-realizadas";
 const MOVEMENTS_PAGE_SIZE = 25;
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -311,9 +311,9 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
       <section className="pro-card pro-dashboard-revenue" data-tour="pro-tour-income-summary">
         <p className="pro-dashboard-revenue-lead pro-dashboard-revenue-lead--page">
           {t(props.language, {
-            es: "Totales de sesiones completadas, según el precio de compra del paciente.",
+            es: "Totales de sesiones realizadas, según el precio de compra del paciente.",
             en: "Totals from completed sessions, based on the patient's purchase price.",
-            pt: "Totais de sessoes concluidas, conforme o preco de compra do paciente."
+            pt: "Totais de sessoes realizadas, conforme o preco de compra do paciente."
           })}
         </p>
 
@@ -325,13 +325,13 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
           <>
             <div className="pro-kpi-grid pro-kpi-grid--revenue" data-tour="pro-tour-income-kpis">
               <button type="button" className="pro-kpi-card pro-kpi-card--drilldown" onClick={scrollToExecutedSessions}>
-                <span>{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</span>
+                <span>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</span>
                 <strong>{formatDisplay(summary.grossCents)}</strong>
                 <small className="pro-kpi-card-hint">
                   {t(props.language, {
-                    es: `${summary.completedSessions} sesión(es) completadas · ver detalle`,
+                    es: `${summary.completedSessions} sesión(es) realizadas · ver detalle`,
                     en: `${summary.completedSessions} completed session(s) · view detail`,
-                    pt: `${summary.completedSessions} sessao(oes) concluidas · ver detalhe`
+                    pt: `${summary.completedSessions} sessao(oes) realizadas · ver detalhe`
                   })}
                 </small>
               </button>
@@ -341,9 +341,9 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
                 <small className="pro-kpi-card-hint">
                   {summary.platformCommissionPercent != null
                     ? t(props.language, {
-                        es: `MotivarCare · ${summary.platformCommissionPercent}% del ejecutado`,
-                        en: `MotivarCare · ${summary.platformCommissionPercent}% of executed`,
-                        pt: `MotivarCare · ${summary.platformCommissionPercent}% do executado`
+                        es: `MotivarCare · ${summary.platformCommissionPercent}% del bruto`,
+                        en: `MotivarCare · ${summary.platformCommissionPercent}% of gross`,
+                        pt: `MotivarCare · ${summary.platformCommissionPercent}% do bruto`
                       })
                     : t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
                 </small>
@@ -369,9 +369,9 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
                 <div id="pro-income-tip-pending" role="tooltip" className="pro-dashboard-kpi-tooltip">
                   <p>
                     {t(props.language, {
-                      es: "Ejecutado - Comisión - Cobrado",
-                      en: "Executed - Fee - Collected",
-                      pt: "Executado - Comissao - Recebido"
+                      es: "Neto aún no depositado. Si todavía no las enviaste a cobro, hacelo desde el Dashboard.",
+                      en: "Net not deposited yet. If you have not sent them for payout, do that from the Dashboard.",
+                      pt: "Liquido ainda nao depositado. Se ainda nao enviou a cobranca, faca isso no Dashboard."
                     })}
                   </p>
                 </div>
@@ -383,7 +383,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
 
       <section className="pro-card income-details-card" id={EXECUTED_SESSIONS_SECTION_ID} data-tour="pro-tour-income-sessions">
         <div className="pro-income-movements-heading">
-          <h2>{t(props.language, { es: "Sesiones ejecutadas", en: "Completed sessions", pt: "Sessoes executadas" })}</h2>
+          <h2>{t(props.language, { es: "Sesiones realizadas", en: "Completed sessions", pt: "Sessoes realizadas" })}</h2>
           <DashboardRevenuePeriodControl
             language={props.language}
             preset={revenuePreset}

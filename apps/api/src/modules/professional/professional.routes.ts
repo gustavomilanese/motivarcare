@@ -5,6 +5,7 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
+import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
 import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
 import { buildProfessionalPracticeHealth } from "../../lib/professionalPracticeHealth.js";
 import {
@@ -393,7 +394,16 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
           }
         },
         videoSession: true,
-        financeRecord: { select: { payoutLineId: true } }
+        financeRecord: {
+          select: {
+            payoutLineId: true,
+            submittedForPayoutAt: true,
+            professionalNetCents: true,
+            currency: true,
+            purchase: { select: { fxArsPerUsdSnapshot: true } },
+            payoutLine: { select: { status: true } }
+          }
+        }
       },
       orderBy: { startsAt: "desc" },
       take: 250
@@ -438,8 +448,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.financeSessionRecord.aggregate({
       where: {
         professionalId: actor.professionalProfileId,
-        bookingStatus: BOOKING_STATUS.COMPLETED,
-        payoutLineId: null
+        ...payoutEligibleSessionWhere
       },
       _sum: {
         professionalNetCents: true
@@ -448,8 +457,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.financeSessionRecord.findMany({
       where: {
         professionalId: actor.professionalProfileId,
-        bookingStatus: BOOKING_STATUS.COMPLETED,
-        payoutLineId: null
+        ...payoutEligibleSessionWhere
       },
       select: {
         currency: true,
@@ -687,6 +695,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     display: {
       currency: financeDisplay.currency,
       executedGrossCents: financeDisplay.grossCents,
+      executedNetCents: financeDisplay.professionalNetCents,
       pendingToCollectCents: pendingToCollectDisplayCents
     },
     trialSession: trialBooking
@@ -713,19 +722,52 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       joinUrl: booking.videoSession?.joinUrlProfessional ?? null
     })),
     pendingExecutionSessions: pendingExecutionBookings
-      .map((booking: any) => ({
-        id: booking.id,
-        patientId: booking.patientId,
-        patientName: booking.patient.user.fullName,
-        patientEmail: booking.patient.user.email,
-        patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
-        startsAt: booking.startsAt,
-        endsAt: booking.endsAt,
-        status: booking.status.toLowerCase(),
-        joinUrl: booking.videoSession?.joinUrlProfessional ?? null,
-        canUncomplete:
-          booking.status === BOOKING_STATUS.COMPLETED && !booking.financeRecord?.payoutLineId
-      }))
+      .map((booking: any) => {
+        const completed = booking.status === BOOKING_STATUS.COMPLETED;
+        const finance = booking.financeRecord as {
+          payoutLineId: string | null;
+          submittedForPayoutAt: Date | null;
+          professionalNetCents: number;
+          currency: string;
+          purchase: { fxArsPerUsdSnapshot: unknown } | null;
+          payoutLine: { status: string } | null;
+        } | null;
+        const sentForPayout = Boolean(finance?.submittedForPayoutAt || finance?.payoutLineId);
+        const payoutPaid = finance?.payoutLine?.status === "PAID";
+        let netDisplayCents: number | null = null;
+        if (finance) {
+          const mapped = mapFinanceRecordForDisplay({
+            currency: finance.currency,
+            sessionPriceCents: 0,
+            platformFeeCents: 0,
+            professionalNetCents: finance.professionalNetCents,
+            purchase: finance.purchase
+          });
+          const fx = resolveFxForFinanceRecord(mapped, financeDisplay.currency, liveFx);
+          netDisplayCents = convertFinanceMinorToDisplayMinor(
+            finance.professionalNetCents,
+            finance.currency,
+            financeDisplay.currency,
+            fx,
+            liveFx
+          );
+        }
+        return {
+          id: booking.id,
+          patientId: booking.patientId,
+          patientName: booking.patient.user.fullName,
+          patientEmail: booking.patient.user.email,
+          patientAvatarUrl: booking.patient.user.avatarUrl ?? null,
+          startsAt: booking.startsAt,
+          endsAt: booking.endsAt,
+          status: booking.status.toLowerCase(),
+          joinUrl: booking.videoSession?.joinUrlProfessional ?? null,
+          canUncomplete: completed && !sentForPayout,
+          submittedForPayout: completed && sentForPayout && !payoutPaid,
+          payoutPaid: completed && payoutPaid,
+          netDisplayCents
+        };
+      })
       .sort((a: { status: string; startsAt: string | Date }, b: { status: string; startsAt: string | Date }) => {
         const aDone = a.status === "completed" ? 1 : 0;
         const bDone = b.status === "completed" ? 1 : 0;

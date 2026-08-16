@@ -80,7 +80,7 @@ export function AdminPage(props: { token: string; language: AppLanguage }) {
           <h3>{t(props.language, { es: "Datos de cobro", en: "Payout details", pt: "Dados de recebimento" })}</h3>
           <p>
             {t(props.language, {
-              es: "Estos datos los usamos para transferirte el neto de tus sesiones ejecutadas.",
+              es: "Estos datos los usamos para transferirte el neto de tus sesiones realizadas.",
               en: "We use these details to transfer your net earnings from completed sessions.",
               pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
             })}

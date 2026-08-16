@@ -235,7 +235,7 @@ export function ProfessionalBankDetailsSection(props: {
           language={props.language}
           title={t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
           lead={t(props.language, {
-            es: "Estos datos se usan para transferirte el neto de tus sesiones ejecutadas.",
+            es: "Estos datos se usan para transferirte el neto de tus sesiones realizadas.",
             en: "We use these details to transfer your net earnings from completed sessions.",
             pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
           })}

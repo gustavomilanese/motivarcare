@@ -161,7 +161,7 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
             <dd>{formatDateOnly(patient.firstSessionAt, props.language)}</dd>
           </div>
           <div>
-            <dt>{t(props.language, { es: "Última sesión completada", en: "Last completed session", pt: "Ultima sessao concluida" })}</dt>
+            <dt>{t(props.language, { es: "Última sesión realizada", en: "Last completed session", pt: "Ultima sessao realizada" })}</dt>
             <dd>{formatDateOnly(patient.lastCompletedSessionAt, props.language)}</dd>
           </div>
           <div>
@@ -245,9 +245,9 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
         {paymentMovements.length === 0 ? (
           <p className="pro-muted">
             {t(props.language, {
-              es: "Todavía no hay sesiones completadas con liquidación para este paciente.",
+              es: "Todavía no hay sesiones realizadas con liquidación para este paciente.",
               en: "No completed sessions with payout records for this patient yet.",
-              pt: "Ainda nao ha sessoes concluidas com liquidacao para este paciente."
+              pt: "Ainda nao ha sessoes realizadas com liquidacao para este paciente."
             })}
           </p>
         ) : (

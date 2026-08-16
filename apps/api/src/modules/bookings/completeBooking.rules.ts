@@ -40,7 +40,7 @@ export function evaluateUncompleteBooking(
     | {
         professionalId: string;
         status: string;
-        financeRecord?: { payoutLineId: string | null } | null;
+        financeRecord?: { payoutLineId: string | null; submittedForPayoutAt?: Date | string | null } | null;
       }
     | null,
   professionalProfileId: string
@@ -54,11 +54,50 @@ export function evaluateUncompleteBooking(
   if (booking.status !== BOOKING_STATUS.COMPLETED) {
     return { ok: false, httpStatus: 409, error: "Only completed sessions can be reverted" };
   }
-  if (booking.financeRecord?.payoutLineId) {
+  if (booking.financeRecord?.payoutLineId || booking.financeRecord?.submittedForPayoutAt) {
     return {
       ok: false,
       httpStatus: 409,
-      error: "This session is already in a payout. Contact Admin to adjust it."
+      error: "This session was already sent for payout and cannot be undone."
+    };
+  }
+  return { ok: true };
+}
+
+export function evaluateSubmitForPayout(
+  booking:
+    | {
+        professionalId: string;
+        status: string;
+        financeRecord?: { payoutLineId: string | null; submittedForPayoutAt?: Date | string | null } | null;
+      }
+    | null,
+  professionalProfileId: string
+): CompleteBookingGate {
+  if (!booking) {
+    return { ok: false, httpStatus: 404, error: "Booking not found" };
+  }
+  if (booking.professionalId !== professionalProfileId) {
+    return { ok: false, httpStatus: 403, error: "Forbidden" };
+  }
+  if (booking.status !== BOOKING_STATUS.COMPLETED) {
+    return { ok: false, httpStatus: 409, error: "Only completed sessions can be sent for payout" };
+  }
+  if (!booking.financeRecord) {
+    return { ok: false, httpStatus: 409, error: "This session has no finance record yet" };
+  }
+  if (booking.financeRecord.payoutLineId) {
+    return {
+      ok: false,
+      httpStatus: 409,
+      error: "This session is already in a payout"
+    };
+  }
+  if (booking.financeRecord.submittedForPayoutAt) {
+    return {
+      ok: false,
+      httpStatus: 409,
+      error: "This session was already sent for payout"
     };
   }
   return { ok: true };

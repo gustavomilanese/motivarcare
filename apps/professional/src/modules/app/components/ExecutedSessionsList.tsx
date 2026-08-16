@@ -249,8 +249,8 @@ export function ExecutedSessionsList(props: {
               >
                 <option value="date_desc">{t(props.language, { es: "Más reciente", en: "Newest first", pt: "Mais recente" })}</option>
                 <option value="date_asc">{t(props.language, { es: "Más antigua", en: "Oldest first", pt: "Mais antiga" })}</option>
-                <option value="gross_desc">{t(props.language, { es: "Mayor ejecutado", en: "Highest executed", pt: "Maior executado" })}</option>
-                <option value="gross_asc">{t(props.language, { es: "Menor ejecutado", en: "Lowest executed", pt: "Menor executado" })}</option>
+                <option value="gross_desc">{t(props.language, { es: "Mayor realizado", en: "Highest completed", pt: "Maior realizado" })}</option>
+                <option value="gross_asc">{t(props.language, { es: "Menor realizado", en: "Lowest completed", pt: "Menor realizado" })}</option>
               </select>
             </label>
           </div>
@@ -263,9 +263,9 @@ export function ExecutedSessionsList(props: {
         <p>
           {total === 0
             ? t(props.language, {
-                es: "Sin sesiones completadas en este período.",
+                es: "Sin sesiones realizadas en este período.",
                 en: "No completed sessions in this period.",
-                pt: "Sem sessoes concluidas neste periodo."
+                pt: "Sem sessoes realizadas neste periodo."
               })
             : t(props.language, {
                 es: "Ninguna sesión coincide con los filtros.",
@@ -282,7 +282,7 @@ export function ExecutedSessionsList(props: {
                 <span>{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</span>
                 <span>{t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}</span>
                 <span>{t(props.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" })}</span>
-                <span>{t(props.language, { es: "Ejecutado", en: "Executed", pt: "Executado" })}</span>
+                <span>{t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}</span>
                 <span>{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}</span>
                 <span>{t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}</span>
               </div>

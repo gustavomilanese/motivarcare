@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
+import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
 import { financeRepository } from "./finance.repository.js";
 import {
   isTrialBookingForFinance,
@@ -60,11 +61,11 @@ export async function upsertFinanceRecordForBooking(bookingId: string): Promise<
   if (booking.status !== "COMPLETED") {
     const existingFinance = await prisma.financeSessionRecord.findUnique({
       where: { bookingId },
-      select: { payoutLineId: true }
+      select: { payoutLineId: true, submittedForPayoutAt: true }
     });
-    if (existingFinance?.payoutLineId) {
+    if (existingFinance?.payoutLineId || existingFinance?.submittedForPayoutAt) {
       throw new Error(
-        "Cannot reverse an executed session that is already linked to a payout. Unlink or adjust the payout first."
+        "Cannot reverse an executed session that was already sent for payout. Unlink or adjust the payout first."
       );
     }
     await financeRepository.deleteFinanceRecordByBooking(bookingId);
@@ -555,13 +556,13 @@ export async function createPayoutRun(params: {
 
   const periodStart = new Date(params.periodStart);
   const periodEnd = new Date(params.periodEnd);
-  const eligibleWhere: any = {
-    bookingStatus: "COMPLETED",
+  const eligibleWhere = {
+    ...payoutEligibleSessionWhere,
     bookingCompletedAt: {
       gte: periodStart,
       lte: periodEnd
     },
-    ...(params.includePreviouslyPaid ? {} : { payoutLineId: null })
+    ...(params.includePreviouslyPaid ? { payoutLineId: undefined } : {})
   };
 
   const eligibleRecords = await prisma.financeSessionRecord.findMany({
@@ -779,8 +780,7 @@ export async function payProfessionalUnpaidBalance(
   let eligibleRecords = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId,
-      bookingStatus: "COMPLETED",
-      payoutLineId: null
+      ...payoutEligibleSessionWhere
     },
     orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }]
   });

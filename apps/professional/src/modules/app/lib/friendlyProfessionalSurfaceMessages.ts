@@ -133,6 +133,7 @@ export type ProfessionalSurfaceContext =
   | "dashboard-complete-batch"
   | "dashboard-uncomplete-booking"
   | "dashboard-uncomplete-batch"
+  | "dashboard-submit-payout"
   | "chat-threads"
   | "chat-messages"
   | "chat-send"
@@ -318,9 +319,14 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     pt: "Nao foi possivel desfazer o registro. Se ja entrou numa liquidacao, peca ajuste ao Admin."
   },
   "dashboard-uncomplete-batch": {
-    es: "No pudimos revertir todas las sesiones. Reintentá; las que ya están en una liquidación no se tocan.",
-    en: "We couldn’t revert every session. Retry; ones already in a payout are left unchanged.",
-    pt: "Nao foi possivel reverter todas as sessoes. Tente de novo; as que ja estao numa liquidacao nao mudam."
+    es: "No pudimos revertir todas las sesiones. Reintentá; las que ya están en cobro no se tocan.",
+    en: "We couldn’t revert every session. Retry; ones already sent for payout are left unchanged.",
+    pt: "Nao foi possivel reverter todas as sessoes. Tente de novo; as que ja estao em cobranca nao mudam."
+  },
+  "dashboard-submit-payout": {
+    es: "No pudimos enviar las sesiones a cobro. Reintentá; las que ya se enviaron quedan igual.",
+    en: "We couldn’t send the sessions for payout. Retry; ones already sent stay as they are.",
+    pt: "Nao foi possivel enviar as sessoes a cobranca. Tente de novo; as que ja foram enviadas seguem iguais."
   },
   "chat-threads": {
     es: "No cargaron las conversaciones. Tirá para actualizar o salí del chat y volvé a entrar.",

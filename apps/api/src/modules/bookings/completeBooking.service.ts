@@ -3,6 +3,7 @@ import { upsertFinanceRecordForBooking } from "../finance/finance.service.js";
 import {
   COMPLETE_BOOKING_BATCH_MAX,
   evaluateCompleteBooking,
+  evaluateSubmitForPayout,
   evaluateUncompleteBooking,
   uniqueBookingIds
 } from "./completeBooking.rules.js";
@@ -15,7 +16,7 @@ const BOOKING_STATUS = {
   NO_SHOW: "NO_SHOW"
 } as const;
 
-export { COMPLETE_BOOKING_BATCH_MAX, evaluateCompleteBooking, evaluateUncompleteBooking };
+export { COMPLETE_BOOKING_BATCH_MAX, evaluateCompleteBooking, evaluateSubmitForPayout, evaluateUncompleteBooking };
 
 export class CompleteBookingError extends Error {
   httpStatus: number;
@@ -113,7 +114,7 @@ export async function uncompleteProfessionalBooking(params: {
   const booking = await prisma.booking.findUnique({
     where: { id: params.bookingId },
     include: {
-      financeRecord: { select: { payoutLineId: true } }
+      financeRecord: { select: { payoutLineId: true, submittedForPayoutAt: true } }
     }
   });
   const gate = evaluateUncompleteBooking(booking, params.professionalProfileId);
@@ -211,4 +212,50 @@ export async function uncompleteProfessionalBookingsBatch(params: {
   }
 
   return { reverted, failed };
+}
+
+export async function submitProfessionalSessionsForPayout(params: {
+  bookingIds: string[];
+  professionalProfileId: string;
+  now?: Date;
+}): Promise<{
+  submitted: Array<{ id: string; professionalNetCents: number; currency: string }>;
+  failed: Array<{ bookingId: string; error: string }>;
+}> {
+  const now = params.now ?? new Date();
+  const bookingIds = uniqueBookingIds(params.bookingIds);
+  const submitted: Array<{ id: string; professionalNetCents: number; currency: string }> = [];
+  const failed: Array<{ bookingId: string; error: string }> = [];
+
+  for (const bookingId of bookingIds) {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          financeRecord: { select: { id: true, payoutLineId: true, submittedForPayoutAt: true, professionalNetCents: true, currency: true } }
+        }
+      });
+      const gate = evaluateSubmitForPayout(booking, params.professionalProfileId);
+      if (!gate.ok || !booking?.financeRecord) {
+        throw new CompleteBookingError(gate.ok ? 404 : gate.httpStatus, gate.ok ? "Booking not found" : gate.error);
+      }
+
+      await prisma.financeSessionRecord.update({
+        where: { id: booking.financeRecord.id },
+        data: { submittedForPayoutAt: now }
+      });
+      submitted.push({
+        id: booking.id,
+        professionalNetCents: booking.financeRecord.professionalNetCents,
+        currency: booking.financeRecord.currency
+      });
+    } catch (error) {
+      failed.push({
+        bookingId,
+        error: error instanceof Error ? error.message : "Could not send session for payout"
+      });
+    }
+  }
+
+  return { submitted, failed };
 }

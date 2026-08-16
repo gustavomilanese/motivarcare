@@ -198,9 +198,9 @@ export function DashboardRevenuePeriodControl(props: {
           {props.preset === "all" ? (
             <p className="pro-dashboard-period-control-all-note">
               {t(props.language, {
-                es: "Incluye todas las sesiones ejecutadas registradas.",
+                es: "Incluye todas las sesiones realizadas registradas.",
                 en: "Includes all recorded completed sessions.",
-                pt: "Inclui todas as sessoes executadas registradas."
+                pt: "Inclui todas as sessoes realizadas registradas."
               })}
             </p>
           ) : null}

@@ -37,23 +37,36 @@ function isCompletedBooking(session: UpcomingReservationItem): boolean {
   return session.status.toLowerCase() === "completed";
 }
 
-/** Ejecutada ya tomada por una corrida de payout: solo lectura. */
-function isLiquidatedSession(session: UpcomingReservationItem): boolean {
-  return isCompletedBooking(session) && session.canUncomplete === false;
+/** Realizada reversible: todavía no se envió a cobro. */
+function isReadyForCobroSession(session: UpcomingReservationItem): boolean {
+  return (
+    isCompletedBooking(session) &&
+    session.canUncomplete !== false &&
+    !session.submittedForPayout &&
+    !session.payoutPaid
+  );
 }
 
-/** Ejecutada y aún reversible (pendiente de liquidación). */
-function isExecutedPendingSession(session: UpcomingReservationItem): boolean {
-  return isCompletedBooking(session) && session.canUncomplete !== false;
+function isEnCobroSession(session: UpcomingReservationItem): boolean {
+  return isCompletedBooking(session) && Boolean(session.submittedForPayout) && !session.payoutPaid;
+}
+
+function isPagadaSession(session: UpcomingReservationItem): boolean {
+  return isCompletedBooking(session) && Boolean(session.payoutPaid);
+}
+
+/** Realizada bloqueada (en cobro o pagada), incluido el payload viejo sin flags nuevos. */
+function isLockedSession(session: UpcomingReservationItem): boolean {
+  return isCompletedBooking(session) && !isReadyForCobroSession(session);
 }
 
 function isSelectableSession(session: UpcomingReservationItem): boolean {
-  return !isLiquidatedSession(session);
+  return !isLockedSession(session);
 }
 
 const PAGE_SIZE = 20;
 
-export type SessionListFilter = "all" | "reserved" | "executed" | "liquidated";
+export type SessionListFilter = "all" | "reserved" | "executed" | "submitted" | "paid" | "liquidated";
 
 export function PendingExecutionSessionsList(props: {
   language: AppLanguage;
@@ -76,10 +89,16 @@ export function PendingExecutionSessionsList(props: {
       return props.sessions.filter((session) => !isCompletedBooking(session));
     }
     if (props.filter === "executed") {
-      return props.sessions.filter((session) => isExecutedPendingSession(session));
+      return props.sessions.filter((session) => isReadyForCobroSession(session));
+    }
+    if (props.filter === "submitted") {
+      return props.sessions.filter((session) => isEnCobroSession(session));
+    }
+    if (props.filter === "paid") {
+      return props.sessions.filter((session) => isPagadaSession(session));
     }
     if (props.filter === "liquidated") {
-      return props.sessions.filter((session) => isLiquidatedSession(session));
+      return props.sessions.filter((session) => isLockedSession(session));
     }
     return props.sessions;
   }, [props.filter, props.sessions]);
@@ -137,7 +156,7 @@ export function PendingExecutionSessionsList(props: {
     [filteredSessions, selectedSet]
   );
   const selectedReserved = selectedSessions.filter((session) => !isCompletedBooking(session));
-  const selectedExecuted = selectedSessions.filter((session) => isExecutedPendingSession(session));
+  const selectedExecuted = selectedSessions.filter((session) => isReadyForCobroSession(session));
   const bulkAllReserved = selectedSessions.length > 0 && selectedReserved.length === selectedSessions.length;
   const bulkAllExecuted = selectedSessions.length > 0 && selectedExecuted.length === selectedSessions.length;
 
@@ -185,21 +204,27 @@ export function PendingExecutionSessionsList(props: {
                 })
               : props.filter === "executed"
                 ? t(props.language, {
-                    es: "No hay sesiones ejecutadas pendientes de pago",
-                    en: "No executed sessions pending payout",
-                    pt: "Nao ha sessoes executadas pendentes de pagamento"
+                    es: "No hay sesiones realizadas listas para cobro",
+                    en: "No completed sessions ready for payout",
+                    pt: "Nao ha sessoes realizadas prontas para cobranca"
                   })
-                : props.filter === "liquidated"
+                : props.filter === "submitted"
                   ? t(props.language, {
-                      es: "No hay sesiones liquidadas",
-                      en: "No settled sessions",
-                      pt: "Nao ha sessoes liquidadas"
+                      es: "No hay sesiones en cobro",
+                      en: "No sessions in payout",
+                      pt: "Nao ha sessoes em cobranca"
                     })
-                  : t(props.language, {
-                      es: "No hay sesiones",
-                      en: "No sessions",
-                      pt: "Nao ha sessoes"
-                    })}
+                  : props.filter === "paid" || props.filter === "liquidated"
+                    ? t(props.language, {
+                        es: "No hay sesiones pagadas",
+                        en: "No paid sessions",
+                        pt: "Nao ha sessoes pagas"
+                      })
+                    : t(props.language, {
+                        es: "No hay sesiones",
+                        en: "No sessions",
+                        pt: "Nao ha sessoes"
+                      })}
           </strong>
         </div>
       ) : (
@@ -238,7 +263,7 @@ export function PendingExecutionSessionsList(props: {
                     {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
                   </option>
                   <option value="executed" disabled={bulkAllExecuted}>
-                    {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
+                    {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
                   </option>
                 </select>
               </label>
@@ -329,11 +354,14 @@ export function PendingExecutionSessionsList(props: {
               {pageSessions.map((booking) => {
                 const patientPhotoSrc = resolveApiAssetUrl(booking.patientAvatarUrl ?? null);
                 const busy = props.busyBookingId === booking.id || busyAll;
-                const liquidated = isLiquidatedSession(booking);
-                const executed = isExecutedPendingSession(booking);
+                const locked = isLockedSession(booking);
+                const executed = isReadyForCobroSession(booking);
                 const selectable = isSelectableSession(booking);
                 const selected = selectedSet.has(booking.id);
-                const statusValue = executed || liquidated ? "executed" : "reserved";
+                const statusValue = executed || locked ? "executed" : "reserved";
+                const lockedLabel = isPagadaSession(booking)
+                  ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
+                  : t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" });
 
                 return (
                   <article
@@ -393,9 +421,9 @@ export function PendingExecutionSessionsList(props: {
                       <span className="agenda-upcoming-cell-label">
                         {t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
                       </span>
-                      {liquidated ? (
+                      {locked ? (
                         <span className="agenda-session-status-locked agenda-session-status-locked--liquidated">
-                          {t(props.language, { es: "Liquidada", en: "Settled", pt: "Liquidada" })}
+                          {lockedLabel}
                         </span>
                       ) : (
                         <select
@@ -420,7 +448,7 @@ export function PendingExecutionSessionsList(props: {
                             {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
                           </option>
                           <option value="executed" disabled={executed}>
-                            {t(props.language, { es: "Ejecutada", en: "Executed", pt: "Executada" })}
+                            {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
                           </option>
                         </select>
                       )}

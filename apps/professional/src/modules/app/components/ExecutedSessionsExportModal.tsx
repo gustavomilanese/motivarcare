@@ -149,9 +149,9 @@ export function ExecutedSessionsExportModal(props: ExecutedSessionsExportModalPr
         <div className="pro-export-modal-body">
           <p className="pro-export-modal-lead">
             {t(props.language, {
-              es: "Elegí el rango de fechas y generá un Excel (.xlsx) con las sesiones ejecutadas, incluyendo totales al final.",
+              es: "Elegí el rango de fechas y generá un Excel (.xlsx) con las sesiones realizadas, incluyendo totales al final.",
               en: "Choose the date range and generate an Excel (.xlsx) with completed sessions, including totals at the bottom.",
-              pt: "Escolha o intervalo de datas e gere um Excel (.xlsx) com as sessoes executadas, incluindo totais ao final."
+              pt: "Escolha o intervalo de datas e gere um Excel (.xlsx) com as sessoes realizadas, incluindo totais ao final."
             })}
           </p>
 

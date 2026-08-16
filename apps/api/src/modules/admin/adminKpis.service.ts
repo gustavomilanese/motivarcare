@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
 import {
   convertFinanceMinorToUsdMinor,
   readSessionFxArsPerUsdSnapshot,
@@ -81,8 +82,7 @@ export async function getAdminUnpaidProfessionalsUsd(input?: {
   const liveFx = await resolveLiveFx();
   const rows = await prisma.financeSessionRecord.findMany({
     where: {
-      bookingStatus: "COMPLETED",
-      payoutLineId: null,
+      ...payoutEligibleSessionWhere,
       ...(input?.professionalId ? { professionalId: input.professionalId } : {}),
       ...(input?.patientId ? { patientId: input.patientId } : {})
     },
@@ -254,8 +254,7 @@ export async function getAdminKpisUsd(input: {
     }),
     prisma.financeSessionRecord.findMany({
       where: {
-        bookingStatus: "COMPLETED",
-        payoutLineId: null,
+        ...payoutEligibleSessionWhere,
         ...financeRecordScope
       },
       select: financeRecordUsdSelect

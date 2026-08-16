@@ -10,6 +10,7 @@ import {
 } from "../../lib/professionalFinanceDisplay.js";
 import { isDlocalGoConfigured } from "../../lib/dlocalGoPayouts.js";
 import { prisma } from "../../lib/prisma.js";
+import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
 import {
   buildPackageSessionIndexByBookingId,
   formatPackageSessionSourceLabel
@@ -106,10 +107,7 @@ export async function listUnpaidProfessionalsOverview(input?: {
   const liveFx = await resolveLiveFx();
 
   const rows = await prisma.financeSessionRecord.findMany({
-    where: {
-      bookingStatus: "COMPLETED",
-      payoutLineId: null
-    },
+    where: payoutEligibleSessionWhere,
     select: {
       currency: true,
       sessionPriceCents: true,
@@ -206,8 +204,8 @@ export type UnpaidProfessionalSessionRow = {
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
   monthKey: string;
-  /** `pending` = aún no liquidada al profesional; `paid` = ya incluida en un payout pagado. */
-  payoutStatus: "pending" | "paid";
+  /** `pending` = enviada a cobro; `not_submitted` = realizada sin enviar; `paid` = depositada. */
+  payoutStatus: "pending" | "not_submitted" | "paid";
   payoutPaidAt: string | null;
   isTrial: boolean;
   sourceKind: "trial" | "package";
@@ -385,10 +383,15 @@ export async function getUnpaidProfessionalDetail(
 
     const line = record.payoutLine;
     const isPaid = Boolean(line && (line.status === "PAID" || line.paidAt != null));
-    const payoutStatus = isPaid ? ("paid" as const) : ("pending" as const);
+    const submittedForPayout = Boolean(record.submittedForPayoutAt || line);
+    const payoutStatus = isPaid
+      ? ("paid" as const)
+      : submittedForPayout
+        ? ("pending" as const)
+        : ("not_submitted" as const);
     if (isPaid) {
       paidSessionsCount += 1;
-    } else {
+    } else if (submittedForPayout) {
       pendingSessionsCount += 1;
       pendingGrossUsdCents += sessionPriceUsdCents;
       pendingPlatformFeeUsdCents += feeUsdCents;

@@ -145,17 +145,17 @@ function practiceHealthTooltipLines(language: AppLanguage, item: PracticeHealthI
             pt: `Contatos nao cancelados: ${base} (abaixo de ${minBase} nao aplicamos a meta de conversao).`
           }),
           t(language, {
-            es: `Sesiones completadas en el historial: ${completed}.`,
+            es: `Sesiones realizadas en el historial: ${completed}.`,
             en: `Completed sessions in history: ${completed}.`,
-            pt: `Sessoes concluidas no historico: ${completed}.`
+            pt: `Sessoes realizadas no historico: ${completed}.`
           })
         ];
       }
       return [
         t(language, {
-          es: `Completadas / base (no canceladas): ${completed} / ${base} → ${rate}%.`,
+          es: `Realizadas / base (no canceladas): ${completed} / ${base} → ${rate}%.`,
           en: `Completed / base (non-cancelled): ${completed} / ${base} → ${rate}%.`,
-          pt: `Concluidas / base (nao canceladas): ${completed} / ${base} → ${rate}%.`
+          pt: `Realizadas / base (nao canceladas): ${completed} / ${base} → ${rate}%.`
         }),
         t(language, {
           es: `Meta con datos suficientes: ≥ ${thr}%.`,

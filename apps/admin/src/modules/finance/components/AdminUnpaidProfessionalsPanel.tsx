@@ -536,8 +536,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                   <tbody>
                                     {expandedDetail.sessions.map((session) => {
                                       const isPaid = session.payoutStatus === "paid";
+                                      const awaitingSubmit = session.payoutStatus === "not_submitted";
                                       return (
-                                      <tr key={session.id} className={isPaid ? "is-paid" : "is-pending"}>
+                                      <tr key={session.id} className={isPaid ? "is-paid" : awaitingSubmit ? "is-waiting" : "is-pending"}>
                                         <td>
                                           {formatSessionDay(
                                             session.bookingCompletedAt ?? session.bookingStartsAt,
@@ -546,15 +547,27 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                         </td>
                                         <td>
                                           <span
-                                            className={`admin-unpaid-status${isPaid ? " admin-unpaid-status--paid" : " admin-unpaid-status--pending"}`}
+                                            className={`admin-unpaid-status${
+                                              isPaid
+                                                ? " admin-unpaid-status--paid"
+                                                : awaitingSubmit
+                                                  ? " admin-unpaid-status--waiting"
+                                                  : " admin-unpaid-status--pending"
+                                            }`}
                                           >
                                             {isPaid
                                               ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
-                                              : t(props.language, {
-                                                  es: "Pendiente",
-                                                  en: "Pending",
-                                                  pt: "Pendente"
-                                                })}
+                                              : awaitingSubmit
+                                                ? t(props.language, {
+                                                    es: "No enviada",
+                                                    en: "Not sent",
+                                                    pt: "Nao enviada"
+                                                  })
+                                                : t(props.language, {
+                                                    es: "En cobro",
+                                                    en: "In payout",
+                                                    pt: "Em cobranca"
+                                                  })}
                                           </span>
                                         </td>
                                         <td>{session.patient.fullName}</td>

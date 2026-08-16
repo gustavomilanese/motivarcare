@@ -7706,6 +7706,12 @@ button.primary.finance-hero-search {
   border: 1px solid #fdba74;
 }
 
+.admin-unpaid-status--waiting {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
 .admin-unpaid-status--paid {
   background: #ecfdf5;
   color: #047857;

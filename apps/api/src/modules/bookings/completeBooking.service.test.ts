@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateCompleteBooking,
+  evaluateSubmitForPayout,
   evaluateUncompleteBooking,
   uniqueBookingIds
 } from "./completeBooking.rules.js";
@@ -88,11 +89,64 @@ describe("evaluateUncompleteBooking", () => {
       {
         professionalId,
         status: "COMPLETED",
-        financeRecord: { payoutLineId: null }
+        financeRecord: { payoutLineId: null, submittedForPayoutAt: null }
       },
       professionalId
     );
     expect(result).toEqual({ ok: true });
+  });
+
+  it("blocks sessions already sent for payout", () => {
+    const result = evaluateUncompleteBooking(
+      {
+        professionalId,
+        status: "COMPLETED",
+        financeRecord: { payoutLineId: null, submittedForPayoutAt: "2026-08-16T12:00:00.000Z" }
+      },
+      professionalId
+    );
+    expect(result).toMatchObject({ ok: false, httpStatus: 409 });
+  });
+});
+
+describe("evaluateSubmitForPayout", () => {
+  it("allows a completed session that was not sent yet", () => {
+    expect(
+      evaluateSubmitForPayout(
+        {
+          professionalId,
+          status: "COMPLETED",
+          financeRecord: { payoutLineId: null, submittedForPayoutAt: null }
+        },
+        professionalId
+      )
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects a session already sent for payout", () => {
+    expect(
+      evaluateSubmitForPayout(
+        {
+          professionalId,
+          status: "COMPLETED",
+          financeRecord: { payoutLineId: null, submittedForPayoutAt: "2026-08-16T12:00:00.000Z" }
+        },
+        professionalId
+      )
+    ).toMatchObject({ ok: false, httpStatus: 409 });
+  });
+
+  it("rejects a reserved session", () => {
+    expect(
+      evaluateSubmitForPayout(
+        {
+          professionalId,
+          status: "CONFIRMED",
+          financeRecord: { payoutLineId: null, submittedForPayoutAt: null }
+        },
+        professionalId
+      )
+    ).toMatchObject({ ok: false, httpStatus: 409 });
   });
 });
 

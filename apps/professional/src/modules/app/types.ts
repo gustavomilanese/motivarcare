@@ -111,6 +111,7 @@ export interface DashboardResponse {
   display?: {
     currency: string;
     executedGrossCents: number;
+    executedNetCents?: number;
     pendingToCollectCents: number;
   };
   trialSession: {
@@ -134,7 +135,7 @@ export interface DashboardResponse {
     status: string;
     joinUrl?: string | null;
   }>;
-  /** Sesiones ya iniciadas pendientes de confirmar + ejecutadas recientes (Lista de sesiones). */
+  /** Sesiones ya iniciadas pendientes de confirmar + realizadas recientes (Lista de sesiones). */
   pendingExecutionSessions?: Array<{
     id: string;
     patientId: string;
@@ -145,8 +146,11 @@ export interface DashboardResponse {
     endsAt: string;
     status: string;
     joinUrl?: string | null;
-    /** false si ya está en una liquidación/payout. */
+    /** false si ya se envió a cobro o está en un pago. */
     canUncomplete?: boolean;
+    submittedForPayout?: boolean;
+    payoutPaid?: boolean;
+    netDisplayCents?: number | null;
   }>;
 }
 

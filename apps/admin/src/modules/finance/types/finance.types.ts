@@ -286,7 +286,7 @@ export type UnpaidProfessionalSessionDetail = {
   bookingStartsAt: string;
   bookingCompletedAt: string | null;
   monthKey?: string;
-  payoutStatus?: "pending" | "paid";
+  payoutStatus?: "pending" | "not_submitted" | "paid";
   payoutPaidAt?: string | null;
   isTrial: boolean;
   sourceKind: "trial" | "package";

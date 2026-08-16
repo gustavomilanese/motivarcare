@@ -287,16 +287,25 @@ export function FinanceProfessionalPayoutReview(props: {
                   <tbody>
                     {detail.sessions.map((session) => {
                       const isPaid = session.payoutStatus === "paid";
+                      const awaitingSubmit = session.payoutStatus === "not_submitted";
                       return (
                       <tr key={session.id}>
                         <td>{formatSessionDate(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}</td>
                         <td>
                           <span
-                            className={`admin-unpaid-status${isPaid ? " admin-unpaid-status--paid" : " admin-unpaid-status--pending"}`}
+                            className={`admin-unpaid-status${
+                              isPaid
+                                ? " admin-unpaid-status--paid"
+                                : awaitingSubmit
+                                  ? " admin-unpaid-status--waiting"
+                                  : " admin-unpaid-status--pending"
+                            }`}
                           >
                             {isPaid
                               ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
-                              : t(props.language, { es: "Pendiente", en: "Pending", pt: "Pendente" })}
+                              : awaitingSubmit
+                                ? t(props.language, { es: "No enviada", en: "Not sent", pt: "Nao enviada" })
+                                : t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" })}
                           </span>
                         </td>
                         <td>

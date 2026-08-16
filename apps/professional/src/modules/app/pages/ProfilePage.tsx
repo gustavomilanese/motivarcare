@@ -597,7 +597,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                 step="02"
                 title={t(props.language, { es: "Datos bancarios", en: "Bank details", pt: "Dados bancarios" })}
                 description={t(props.language, {
-                  es: "Para recibir el pago de tus sesiones ejecutadas.",
+                  es: "Para recibir el pago de tus sesiones realizadas.",
                   en: "Used to pay you for completed sessions.",
                   pt: "Para receber o pagamento das sessoes realizadas."
                 })}

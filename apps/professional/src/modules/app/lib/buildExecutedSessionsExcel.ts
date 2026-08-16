@@ -154,9 +154,9 @@ export async function downloadExecutedSessionsExcel(input: {
   ];
 
   const title = t(input.meta.language, {
-    es: "MotivarCare — Sesiones ejecutadas",
+    es: "MotivarCare — Sesiones realizadas",
     en: "MotivarCare — Completed sessions",
-    pt: "MotivarCare — Sessoes executadas"
+    pt: "MotivarCare — Sessoes realizadas"
   });
   const periodLabel = t(input.meta.language, {
     es: "Período",
@@ -215,7 +215,7 @@ export async function downloadExecutedSessionsExcel(input: {
     t(input.meta.language, { es: "Fecha", en: "Date", pt: "Data" }),
     t(input.meta.language, { es: "Horario", en: "Time", pt: "Horario" }),
     t(input.meta.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" }),
-    t(input.meta.language, { es: "Ejecutado", en: "Executed", pt: "Executado" }),
+    t(input.meta.language, { es: "Realizado", en: "Completed", pt: "Realizado" }),
     t(input.meta.language, { es: "Comisión", en: "Fee", pt: "Comissao" }),
     t(input.meta.language, { es: "Neto", en: "Net", pt: "Liquido" })
   ];

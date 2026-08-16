@@ -298,9 +298,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       optional: true,
       title: { es: "Período de análisis", en: "Analysis period", pt: "Periodo de analise" },
       description: {
-        es: "Arriba a la derecha, junto a las notificaciones: elegí día, semana, mes o año. Los KPIs de abajo se recalculan con este filtro.",
-        en: "Top right, next to notifications: pick day, week, month, or year. The KPIs below recalculate from this filter.",
-        pt: "No canto superior direito, ao lado das notificacoes: escolha dia, semana, mes ou ano. Os KPIs abaixo recalculam com este filtro."
+        es: "Arriba a la derecha: elegí día, semana, mes o año. Solo el KPI <strong>Realizado</strong> usa este filtro.",
+        en: "Top right: pick day, week, month, or year. Only the <strong>Completed</strong> KPI uses this filter.",
+        pt: "No canto superior direito: escolha dia, semana, mes ou ano. So o KPI <strong>Realizado</strong> usa este filtro."
       },
       side: "bottom",
       align: "end"
@@ -316,6 +316,21 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
         es: "Lo primero del home: quién te espera y cuándo. Podés entrar a Meet, reprogramar o cancelar desde cada fila.",
         en: "First on the home: who is coming and when. Join Meet, reschedule, or cancel from each row.",
         pt: "O primeiro da home: quem vem e quando. Entre no Meet, reagende ou cancele em cada linha."
+      },
+      side: "bottom",
+      align: "center"
+    },
+    {
+      id: "dashboard-settle",
+      route: "/",
+      section: "dashboard",
+      selectors: ['[data-tour="pro-tour-settle-tab"]'],
+      optional: true,
+      title: { es: "Marcar y cobrar", en: "Mark and collect", pt: "Marcar e cobrar" },
+      description: {
+        es: "Marcá las que ya hiciste. Cuando esté listo, <strong>Enviar a cobro</strong>: no se deshace, y Admin solo paga esas.",
+        en: "Mark the ones you’ve already done. When ready, <strong>Send for payout</strong>: it can’t be undone, and Admin only pays those.",
+        pt: "Marque as que ja fez. Quando estiver pronto, <strong>Enviar a cobranca</strong>: nao se desfaz, e o Admin so paga essas."
       },
       side: "bottom",
       align: "center"
@@ -340,11 +355,11 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       route: "/",
       section: "dashboard",
       selectors: ['[data-tour="pro-tour-kpis"]'],
-      title: { es: "Resumen de ingresos", en: "Earnings snapshot", pt: "Resumo de receitas" },
+      title: { es: "Resumen", en: "Snapshot", pt: "Resumo" },
       description: {
-        es: "Más abajo: <strong>Dinero ejecutado</strong>, <strong>Sesiones agendadas</strong>, <strong>Pacientes activos</strong> y <strong>A cobrar</strong>. Tocá una tarjeta para ir al detalle.",
-        en: "Below: <strong>Executed revenue</strong>, <strong>Scheduled sessions</strong>, <strong>Active patients</strong>, and <strong>To collect</strong>. Tap a card for details.",
-        pt: "Mais abaixo: <strong>Receita executada</strong>, <strong>Sessoes agendadas</strong>, <strong>Pacientes ativos</strong> e <strong>A receber</strong>. Toque um cartao para ver detalhes."
+        es: "Información, no trabajo: <strong>Pacientes</strong>, <strong>Próximas</strong>, <strong>Realizado</strong> (tu neto) y <strong>A cobrar</strong> (lo ya enviado). Tocá una tarjeta para ir al detalle.",
+        en: "Info, not work: <strong>Patients</strong>, <strong>Upcoming</strong>, <strong>Completed</strong> (your net), and <strong>To collect</strong> (already sent). Tap a card for details.",
+        pt: "Informacao, nao trabalho: <strong>Pacientes</strong>, <strong>Próximas</strong>, <strong>Realizado</strong> (seu liquido) e <strong>A receber</strong> (ja enviado). Toque um cartao para ver detalhes."
       },
       side: "bottom",
       align: "center"
@@ -484,9 +499,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       navKey: "ingresos",
       title: { es: "", en: "", pt: "" },
       description: sectionIntroDescription("ingresos", {
-        es: "Detalle financiero: lo ejecutado, comisión de plataforma y lo que falta cobrar.",
-        en: "Financial detail: executed amounts, platform fee, and pending payout.",
-        pt: "Detalhe financeiro: executado, comissao da plataforma e pendente a receber."
+        es: "Detalle financiero: lo realizado, comisión de plataforma y lo que falta cobrar.",
+        en: "Financial detail: completed amounts, platform fee, and pending payout.",
+        pt: "Detalhe financeiro: realizado, comissao da plataforma e pendente a receber."
       }),
       side: "right"
     },
@@ -498,9 +513,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       optional: true,
       title: { es: "Resumen del período", en: "Period summary", pt: "Resumo do periodo" },
       description: {
-        es: "<strong>Ejecutado</strong> · bruto de sesiones completadas.<br><strong>Comisión</strong> · fee de MotivarCare.<br><strong>Pendiente</strong> · neto aún no cobrado.",
-        en: "<strong>Executed</strong> · gross from completed sessions.<br><strong>Fee</strong> · MotivarCare commission.<br><strong>Pending</strong> · net not yet paid out.",
-        pt: "<strong>Executado</strong> · bruto de sessoes concluidas.<br><strong>Comissao</strong> · fee MotivarCare.<br><strong>Pendente</strong> · liquido nao recebido."
+        es: "<strong>Bruto</strong> · precio de las sesiones realizadas.<br><strong>Comisión</strong> · fee de MotivarCare.<br><strong>Pendiente</strong> · neto aún no depositado.",
+        en: "<strong>Gross</strong> · price of completed sessions.<br><strong>Fee</strong> · MotivarCare commission.<br><strong>Pending</strong> · net not yet paid out.",
+        pt: "<strong>Bruto</strong> · preco das sessoes realizadas.<br><strong>Comissao</strong> · fee MotivarCare.<br><strong>Pendente</strong> · liquido nao recebido."
       },
       side: "bottom",
       align: "center"
@@ -510,11 +525,11 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       route: "/ingresos",
       section: "ingresos",
       selectors: ['[data-tour="pro-tour-income-sessions"]'],
-      title: { es: "Sesiones ejecutadas", en: "Completed sessions", pt: "Sessoes executadas" },
+      title: { es: "Sesiones realizadas", en: "Completed sessions", pt: "Sessoes realizadas" },
       description: {
         es: "Tabla con búsqueda, filtros y exportación. Cada fila es una sesión ya realizada con monto y estado de cobro.",
         en: "Table with search, filters, and export. Each row is a completed session with amount and payout status.",
-        pt: "Tabela com busca, filtros e exportacao. Cada linha e uma sessao concluida com valor e status."
+        pt: "Tabela com busca, filtros e exportacao. Cada linha e uma sessao realizada com valor e status."
       },
       side: "top",
       align: "center"

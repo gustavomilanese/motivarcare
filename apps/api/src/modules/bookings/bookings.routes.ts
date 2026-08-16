@@ -15,6 +15,7 @@ import {
   COMPLETE_BOOKING_BATCH_MAX,
   completeProfessionalBooking,
   completeProfessionalBookingsBatch,
+  submitProfessionalSessionsForPayout,
   uncompleteProfessionalBooking,
   uncompleteProfessionalBookingsBatch
 } from "./completeBooking.service.js";
@@ -1641,6 +1642,35 @@ bookingsRouter.post("/batch/uncomplete", requireAuth, async (req: AuthenticatedR
     revertedCount: result.reverted.length,
     failedCount: result.failed.length,
     reverted: result.reverted.map(serializeCompletedBooking),
+    failed: result.failed
+  });
+});
+
+bookingsRouter.post("/batch/submit-payout", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = completeBookingBatchSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payout payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PROFESSIONAL" || !actor.professionalProfileId) {
+    return res.status(403).json({ error: "Only professionals can send sessions for payout" });
+  }
+
+  const result = await submitProfessionalSessionsForPayout({
+    bookingIds: parsed.data.bookingIds,
+    professionalProfileId: actor.professionalProfileId
+  });
+
+  return res.json({
+    message: "Batch submit payout finished",
+    submittedCount: result.submitted.length,
+    failedCount: result.failed.length,
+    submitted: result.submitted,
     failed: result.failed
   });
 });
