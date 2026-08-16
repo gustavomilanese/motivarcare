@@ -4918,16 +4918,34 @@ ul {
 }
 
 .pro-session-status-flow {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0;
+  gap: 10px 12px;
   margin: 0;
   min-width: 0;
   max-width: 100%;
+  padding: 5px 8px 5px 12px;
   overflow-x: auto;
-  color: #64748b;
+  border: 1px solid #e8e4f8;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fcfbff 0%, #f7f5ff 100%);
   cursor: help;
+}
+
+.pro-session-status-flow-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b83b0;
+  white-space: nowrap;
+}
+
+.pro-session-status-flow-steps {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .pro-session-status-flow-item {
@@ -4938,16 +4956,38 @@ ul {
 }
 
 .pro-session-status-flow-chip {
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid transparent;
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.01em;
   line-height: 1.2;
   white-space: nowrap;
-  color: #475569;
+}
+
+.pro-session-status-flow-chip.is-reserved {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.pro-session-status-flow-chip.is-completed {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.pro-session-status-flow-chip.is-payout {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.pro-session-status-flow-chip.is-paid {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #047857;
 }
 
 .pro-session-status-flow-arrow {
@@ -5897,6 +5937,13 @@ select.pro-dashboard-revenue-control {
     grid-area: flow;
     justify-content: flex-start;
     flex: none;
+  }
+
+  .pro-session-status-flow {
+    max-width: 100%;
+    flex-wrap: wrap;
+    border-radius: 16px;
+    padding: 7px 10px;
   }
 
   .pro-portal-page-head-start,
