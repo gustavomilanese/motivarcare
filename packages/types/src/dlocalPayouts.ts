@@ -342,7 +342,16 @@ export function resolveDlocalAccountRule(
     return config.accountRule;
   }
   const alternative = (config.accountRuleAlternatives ?? []).find((rule) => matchesRule(raw, rule));
-  return alternative ?? config.accountRule;
+  if (alternative) {
+    return alternative;
+  }
+  // Incomplete alias (e.g. "g" or "gus.fer") must not fall back to numeric — that strips letters
+  // on every keystroke in the bank form.
+  const alphanumericAlt = (config.accountRuleAlternatives ?? []).find((rule) => rule.kind === "alphanumeric");
+  if (alphanumericAlt && /[a-zA-Z.\-]/.test(raw)) {
+    return alphanumericAlt;
+  }
+  return config.accountRule;
 }
 
 /** Normaliza el valor de la cuenta usando la regla (primaria o alternativa) que matchea. */

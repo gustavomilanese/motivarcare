@@ -5,6 +5,7 @@ import {
   getDlocalPayoutCountryConfig,
   isDlocalPayoutCountry,
   normalizePayoutCountry,
+  normalizeDlocalAccountValue,
   validateDlocalPayoutProfile
 } from "./dlocalPayouts.js";
 import { dlocalPayoutBankCodeMode, isKnownDlocalBankCode } from "./dlocalPayoutBankCodes.js";
@@ -76,6 +77,17 @@ describe("validateDlocalPayoutProfile", () => {
     expect(
       validateDlocalPayoutProfile({ ...validAr, bankAccount: "ana.garcia.mp" })
     ).toBeNull();
+  });
+
+  it("does not strip letters while an Argentine alias is still being typed", () => {
+    const config = getDlocalPayoutCountryConfig("AR");
+    expect(config).toBeTruthy();
+    if (!config) {
+      return;
+    }
+    expect(normalizeDlocalAccountValue("g", config)).toBe("g");
+    expect(normalizeDlocalAccountValue("gus.fer", config)).toBe("gus.fer");
+    expect(normalizeDlocalAccountValue("123", config)).toBe("123");
   });
 
   it("rejects an unsupported payout country", () => {

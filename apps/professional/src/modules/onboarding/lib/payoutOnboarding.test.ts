@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPayoutAdminFromFormFields, adminToPayoutFormFields, preparePayoutBankEditorDraft, resolvePayoutEditorProvider } from "./buildPayoutAdminFromFormFields";
+import { buildPayoutAdminFromFormFields, adminToPayoutFormFields, preparePayoutBankEditorDraft, resolvePayoutEditorProvider, applyIdentityNamesToPayoutFields } from "./buildPayoutAdminFromFormFields";
 import { fiscalIdHintForCountry } from "./fiscalIdByCountry";
 import { inferPayoutProviderFromResidencyCountry } from "./inferPayoutProvider";
 import {
@@ -111,6 +111,24 @@ describe("buildPayoutAdminFromFormFields", () => {
     expect(admin.payoutBankAccount?.beneficiaryFirstName).toBe("Gustavo");
     expect(admin.payoutBankAccount?.beneficiaryLastName).toBe("Milanese");
     expect(admin.legalName).toBe("Gustavo Milanese");
+  });
+
+  it("uses identity first and last name for dLocal beneficiary fields", () => {
+    const fields = applyIdentityNamesToPayoutFields(
+      adminToPayoutFormFields({
+        legalName: "",
+        payoutMethod: "dlocal",
+        payoutBankAccount: {
+          transferType: "alias",
+          accountValue: "gus.fer.milan",
+          accountHolderName: "",
+          payoutCountry: "AR"
+        }
+      }),
+      { firstName: "Gustavo", lastName: "Milanese" }
+    );
+    expect(fields.beneficiaryFirstName).toBe("Gustavo");
+    expect(fields.beneficiaryLastName).toBe("Milanese");
   });
 });
 

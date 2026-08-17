@@ -13,6 +13,7 @@ import { ProfileEditModal } from "./ProfileEditModal";
 import { DlocalPayoutCountryFields } from "../../onboarding/components/DlocalPayoutCountryFields";
 import {
   adminToPayoutFormFields,
+  applyIdentityNamesToPayoutFields,
   buildPayoutAdminFromFormFields,
   preparePayoutBankEditorDraft,
   resolvePayoutEditorProvider
@@ -165,6 +166,8 @@ export function ProfessionalBankDetailsSection(props: {
   editing: boolean;
   onEditingChange: (editing: boolean) => void;
   residencyCountry?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
 }) {
   const [form, setForm] = useState<AdminData>(EMPTY_ADMIN);
   const [draft, setDraft] = useState<AdminData | null>(null);
@@ -203,10 +206,13 @@ export function ProfessionalBankDetailsSection(props: {
       setDraft(null);
       return;
     }
-    setDraft((current) => current ?? preparePayoutBankEditorDraft(form, props.residencyCountry));
+    setDraft((current) => current ?? preparePayoutBankEditorDraft(form, props.residencyCountry, {
+      firstName: props.firstName,
+      lastName: props.lastName
+    }));
     setError("");
     setFieldErrors({});
-  }, [props.editing, form, props.residencyCountry]);
+  }, [props.editing, form, props.residencyCountry, props.firstName, props.lastName]);
 
   const bank = form.payoutBankAccount;
   const accountValue = bank?.accountValue ?? form.payoutAccount ?? "";
@@ -238,12 +244,20 @@ export function ProfessionalBankDetailsSection(props: {
       return {
         ...current,
         ...built,
+        taxId: fields.taxId,
         payoutMethod: "dlocal",
         payoutStatus: current.payoutStatus,
         payoutSubmittedAt: current.payoutSubmittedAt,
         legalAcceptedAt: current.legalAcceptedAt,
         acceptedDocuments: current.acceptedDocuments,
-        notes: current.notes
+        notes: current.notes,
+        payoutBankAccount: built.payoutBankAccount
+          ? {
+              ...built.payoutBankAccount,
+              accountValue: fields.bankAccountValue,
+              document: fields.taxId
+            }
+          : built.payoutBankAccount
       };
     });
   };
@@ -263,7 +277,10 @@ export function ProfessionalBankDetailsSection(props: {
     }
     const lang = payoutLang(props.language);
     const provider = resolvePayoutEditorProvider(draft, props.residencyCountry);
-    const fields = adminToPayoutFormFields(draft);
+    const fields = applyIdentityNamesToPayoutFields(adminToPayoutFormFields(draft), {
+      firstName: props.firstName,
+      lastName: props.lastName
+    });
     const nextFieldErrors = collectPayoutFieldErrors(provider, fields, lang);
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -331,30 +348,17 @@ export function ProfessionalBankDetailsSection(props: {
             </span>
           </dd>
         </div>
-        <div>
-          <dt>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</dt>
-          <dd>{displayValue(bank?.beneficiaryFirstName || form.legalName?.trim().split(/\s+/)[0])}</dd>
-        </div>
-        <div>
-          <dt>{t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}</dt>
-          <dd>
-            {displayValue(
-              bank?.beneficiaryLastName
-              || form.legalName?.trim().split(/\s+/).slice(1).join(" ")
-            )}
-          </dd>
-        </div>
         {form.payoutMethod === "dlocal" ? null : (
-          <div>
-            <dt>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</dt>
-            <dd>{displayValue(form.taxId)}</dd>
-          </div>
-        )}
-        {form.payoutMethod === "dlocal" ? null : (
-          <div>
-            <dt>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</dt>
-            <dd>{transferTypeLabel(props.language, bank?.transferType)}</dd>
-          </div>
+          <>
+            <div>
+              <dt>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</dt>
+              <dd>{displayValue(form.taxId)}</dd>
+            </div>
+            <div>
+              <dt>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</dt>
+              <dd>{transferTypeLabel(props.language, bank?.transferType)}</dd>
+            </div>
+          </>
         )}
         <div>
           <dt>{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</dt>
@@ -403,6 +407,7 @@ export function ProfessionalBankDetailsSection(props: {
                     onFormChange={applyDlocalFields}
                     residencyCountry={props.residencyCountry}
                     fieldErrors={fieldErrors}
+                    hideBeneficiaryNameFields={Boolean(props.firstName?.trim() && props.lastName?.trim())}
                   />
                 </div>
               ) : (

@@ -128,16 +128,36 @@ function matchBankCode(country: string, bankName: string, currentCode: string): 
   return exact ? { code: exact.code, name: exact.name } : null;
 }
 
+export function applyIdentityNamesToPayoutFields(
+  fields: PayoutFormFields,
+  identity?: { firstName?: string | null; lastName?: string | null }
+): PayoutFormFields {
+  const first = (identity?.firstName ?? "").trim();
+  const last = (identity?.lastName ?? "").trim();
+  if (!first && !last) {
+    return fields;
+  }
+  const full = `${first} ${last}`.trim();
+  return {
+    ...fields,
+    beneficiaryFirstName: first || fields.beneficiaryFirstName,
+    beneficiaryLastName: last || fields.beneficiaryLastName,
+    legalName: full || fields.legalName,
+    accountHolderName: full || fields.accountHolderName
+  };
+}
+
 /** Abre el editor con país/banco dLocal ya encaminados (AR + Mercado Pago/CVU). */
 export function preparePayoutBankEditorDraft(
   admin: ProfessionalPayoutAdminData,
-  residencyCountry?: string | null
+  residencyCountry?: string | null,
+  identity?: { firstName?: string | null; lastName?: string | null }
 ): ProfessionalPayoutAdminData {
   const provider = resolvePayoutEditorProvider(admin, residencyCountry);
   if (provider !== "dlocal") {
     return admin;
   }
-  const fields = adminToPayoutFormFields(admin);
+  const fields = applyIdentityNamesToPayoutFields(adminToPayoutFormFields(admin), identity);
   if (!isDlocalPayoutCountry(fields.payoutCountry)) {
     fields.payoutCountry = isDlocalPayoutCountry(residencyCountry) ? residencyCountry : "AR";
   }

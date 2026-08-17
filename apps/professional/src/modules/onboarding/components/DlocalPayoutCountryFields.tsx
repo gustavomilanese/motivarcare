@@ -97,6 +97,8 @@ export function DlocalPayoutCountryFields(props: {
   /** Residencia del profesional: se usa para prellenar el email a soporte. */
   residencyCountry?: string | null;
   fieldErrors?: Partial<Record<PayoutFieldErrorKey, string>>;
+  /** Si ya están en Identidad, no los volvemos a pedir acá. */
+  hideBeneficiaryNameFields?: boolean;
 }) {
   const { language, fields, onFormChange } = props;
   const errors = props.fieldErrors ?? {};
@@ -109,6 +111,7 @@ export function DlocalPayoutCountryFields(props: {
 
   return (
     <div className="pro-payout-dlocal">
+      {props.hideBeneficiaryNameFields ? null : (
       <div className="pro-payout-card__grid">
         <label className={errors.beneficiaryFirstName ? "is-invalid" : undefined}>
           <span>{t(language, { es: "Nombre (como en el DNI)", en: "First name (as on ID)", pt: "Nome (como no documento)" })}</span>
@@ -129,6 +132,7 @@ export function DlocalPayoutCountryFields(props: {
           <FieldNote error={errors.beneficiaryLastName} />
         </label>
       </div>
+      )}
 
       <label className={errors.payoutCountry ? "is-invalid" : undefined}>
         <span>

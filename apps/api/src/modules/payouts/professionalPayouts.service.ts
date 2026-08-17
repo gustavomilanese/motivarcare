@@ -61,7 +61,49 @@ export async function loadProfessionalPayoutAdmin(
   if (!config?.value || typeof config.value !== "object" || Array.isArray(config.value)) {
     return null;
   }
-  return config.value as ProfessionalPayoutAdminData;
+  const admin = config.value as ProfessionalPayoutAdminData;
+  const professional = await prisma.professionalProfile.findUnique({
+    where: { id: professionalProfileId },
+    select: { user: { select: { firstName: true, lastName: true, fullName: true } } }
+  });
+  return applyIdentityNameToPayoutAdmin(admin, professional?.user ?? null);
+}
+
+function identityNames(user: { firstName?: string | null; lastName?: string | null; fullName?: string | null } | null): {
+  first: string;
+  last: string;
+} {
+  const first = (user?.firstName ?? "").trim();
+  const last = (user?.lastName ?? "").trim();
+  if (first && last) {
+    return { first, last };
+  }
+  const parts = (user?.fullName ?? "").trim().split(/\s+/).filter(Boolean);
+  return { first: first || parts[0] || "", last: last || parts.slice(1).join(" ") };
+}
+
+/** El titular del payout es el profesional: usamos nombre/apellido de identidad, no un segundo formulario. */
+export function applyIdentityNameToPayoutAdmin(
+  admin: ProfessionalPayoutAdminData,
+  user: { firstName?: string | null; lastName?: string | null; fullName?: string | null } | null
+): ProfessionalPayoutAdminData {
+  const { first, last } = identityNames(user);
+  if (!first && !last) {
+    return admin;
+  }
+  const full = `${first} ${last}`.trim();
+  return {
+    ...admin,
+    legalName: full || admin.legalName,
+    payoutBankAccount: admin.payoutBankAccount
+      ? {
+          ...admin.payoutBankAccount,
+          beneficiaryFirstName: first || admin.payoutBankAccount.beneficiaryFirstName,
+          beneficiaryLastName: last || admin.payoutBankAccount.beneficiaryLastName,
+          accountHolderName: full || admin.payoutBankAccount.accountHolderName
+        }
+      : admin.payoutBankAccount
+  };
 }
 
 /**
