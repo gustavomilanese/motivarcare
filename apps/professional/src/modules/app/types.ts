@@ -112,6 +112,7 @@ export interface DashboardResponse {
     currency: string;
     executedGrossCents: number;
     executedNetCents?: number;
+    readyToSendCents?: number;
     pendingToCollectCents: number;
   };
   trialSession: {

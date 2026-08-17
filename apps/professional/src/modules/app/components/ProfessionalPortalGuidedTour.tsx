@@ -287,25 +287,6 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       side: "right"
     },
     {
-      id: "dashboard-period",
-      route: "/",
-      section: "dashboard",
-      selectors: [
-        '[data-tour="pro-tour-period-trigger"]',
-        '[data-tour="pro-tour-period"]',
-        ".pro-dashboard-period-control-trigger"
-      ],
-      optional: true,
-      title: { es: "Período de análisis", en: "Analysis period", pt: "Periodo de analise" },
-      description: {
-        es: "Arriba a la derecha: elegí día, semana, mes o año. Solo el KPI <strong>Realizado</strong> usa este filtro.",
-        en: "Top right: pick day, week, month, or year. Only the <strong>Completed</strong> KPI uses this filter.",
-        pt: "No canto superior direito: escolha dia, semana, mes ou ano. So o KPI <strong>Realizado</strong> usa este filtro."
-      },
-      side: "bottom",
-      align: "end"
-    },
-    {
       id: "dashboard-status-flow",
       route: "/",
       section: "dashboard",
@@ -372,9 +353,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       selectors: ['[data-tour="pro-tour-kpis"]'],
       title: { es: "Resumen", en: "Snapshot", pt: "Resumo" },
       description: {
-        es: "Información, no trabajo: <strong>Pacientes</strong>, <strong>Próximas</strong>, <strong>Realizado</strong> (tu neto) y <strong>A cobrar</strong> (lo ya enviado). Tocá una tarjeta para ir al detalle.",
-        en: "Info, not work: <strong>Patients</strong>, <strong>Upcoming</strong>, <strong>Completed</strong> (your net), and <strong>To collect</strong> (already sent). Tap a card for details.",
-        pt: "Informacao, nao trabalho: <strong>Pacientes</strong>, <strong>Próximas</strong>, <strong>Realizado</strong> (seu liquido) e <strong>A receber</strong> (ja enviado). Toque um cartao para ver detalhes."
+        es: "Información, no trabajo: <strong>Pacientes</strong>, <strong>Próximas</strong> y el <strong>dinero de las realizadas</strong> (por enviar o ya en cobro). Tocá una tarjeta para ir al detalle.",
+        en: "Info, not work: <strong>Patients</strong>, <strong>Upcoming</strong>, and <strong>money from completed sessions</strong> (to send or already in payout). Tap a card for details.",
+        pt: "Informacao, nao trabalho: <strong>Pacientes</strong>, <strong>Próximas</strong> e o <strong>dinheiro das realizadas</strong> (por enviar ou ja em cobranca). Toque um cartao para ver detalhes."
       },
       side: "bottom",
       align: "center"

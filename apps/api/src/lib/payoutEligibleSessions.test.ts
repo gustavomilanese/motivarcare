@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { awaitingPayoutDepositWhere, payoutEligibleSessionWhere } from "./payoutEligibleSessions.js";
+import {
+  awaitingPayoutDepositWhere,
+  payoutEligibleSessionWhere,
+  readyToSendForPayoutWhere
+} from "./payoutEligibleSessions.js";
+
+describe("readyToSendForPayoutWhere", () => {
+  it("keeps completed sessions that were not sent for payout yet", () => {
+    expect(readyToSendForPayoutWhere).toEqual({
+      bookingStatus: "COMPLETED",
+      submittedForPayoutAt: null,
+      payoutLineId: null
+    });
+  });
+});
 
 describe("payoutEligibleSessionWhere", () => {
   it("requires completed sessions that the professional already sent for payout", () => {

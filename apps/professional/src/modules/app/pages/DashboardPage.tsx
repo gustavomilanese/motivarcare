@@ -8,7 +8,6 @@ import {
   formatDateWithLocale,
   textByLanguage
 } from "@therapy/i18n-config";
-import { DashboardRevenuePeriodControl } from "../components/DashboardRevenuePeriodControl";
 import { RevenueMonthPicker } from "../components/RevenueMonthPicker";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
@@ -19,12 +18,9 @@ import { PendingExecutionSessionsList, type SessionListFilter } from "../compone
 import {
   buildProfessionalStatsQuery,
   buildSessionsMonthQuery,
-  type RevenuePreset,
-  ymLocal,
-  ymdLocal
+  ymLocal
 } from "../lib/professionalStatsRangeQuery";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
-import { formatRevenuePeriodLabel } from "../lib/formatRevenuePeriodLabel";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { isReadyForCobroSession, readyForCobroNetsKnown, sumReadyForCobroNetCents } from "../lib/sessionLifecycle";
 import { rangesOverlap } from "../lib/timeRanges";
@@ -73,10 +69,18 @@ function firstProUpcomingSpotlightStorageKey(userId: string): string {
   return `motivarcare.pro.firstUpcomingSpotlight.v1.${userId}`;
 }
 
-function KpiWithTooltip(props: { tipId: string; tooltip: string; focusable?: boolean; children: ReactNode }) {
+function KpiWithTooltip(props: {
+  tipId: string;
+  tooltip: string;
+  focusable?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <div
-      className={`pro-dashboard-kpi-tip-wrap${props.focusable ? " pro-dashboard-kpi-tip-wrap--focusable" : ""}`}
+      className={`pro-dashboard-kpi-tip-wrap${props.focusable ? " pro-dashboard-kpi-tip-wrap--focusable" : ""}${
+        props.className ? ` ${props.className}` : ""
+      }`}
       tabIndex={props.focusable ? 0 : undefined}
       aria-describedby={props.tipId}
     >
@@ -109,10 +113,7 @@ export function DashboardPage(props: {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelTargetBooking, setCancelTargetBooking] = useState<UpcomingReservationItem | null>(null);
   const [cancelReason, setCancelReason] = useState("");
-  const [revenuePreset, setRevenuePreset] = useState<RevenuePreset>("month");
-  const [revenueDay, setRevenueDay] = useState(() => ymdLocal(new Date()));
-  const [revenueMonth, setRevenueMonth] = useState(() => ymLocal(new Date()));
-  const [revenueYear, setRevenueYear] = useState(() => String(new Date().getFullYear()));
+  const [revenueMonth] = useState(() => ymLocal(new Date()));
   const [dashboardReloadKey, setDashboardReloadKey] = useState(0);
   /** Solo la card «Dinero realizado»: moneda del mercado (API display). */
   const [profileSavedNotice, setProfileSavedNotice] = useState("");
@@ -133,7 +134,7 @@ export function DashboardPage(props: {
   const dashboardSpotlightBlockersRef = useRef(false);
   dashboardSpotlightBlockersRef.current = isRescheduleModalOpen || isCancelModalOpen;
 
-  const revenueQuery = buildProfessionalStatsQuery(revenuePreset, revenueDay, revenueMonth, revenueYear);
+  const revenueQuery = buildProfessionalStatsQuery("month", "", revenueMonth, revenueMonth.slice(0, 4));
   const dashboardQuery = `${revenueQuery}&${buildSessionsMonthQuery(sessionListMonth)}`;
 
   useEffect(() => {
@@ -367,26 +368,6 @@ export function DashboardPage(props: {
     }
   }, [upcomingSpotlightRing]);
 
-  const periodGroupLabel = t(props.language, { es: "Periodo de ingresos", en: "Revenue period", pt: "Periodo de receita" });
-
-  const periodFilters = useMemo(
-    () => (
-      <DashboardRevenuePeriodControl
-        language={props.language}
-        preset={revenuePreset}
-        day={revenueDay}
-        month={revenueMonth}
-        year={revenueYear}
-        groupLabel={periodGroupLabel}
-        onPresetChange={setRevenuePreset}
-        onDayChange={setRevenueDay}
-        onMonthChange={setRevenueMonth}
-        onYearChange={setRevenueYear}
-      />
-    ),
-    [props.language, periodGroupLabel, revenuePreset, revenueDay, revenueMonth, revenueYear]
-  );
-
   const pageTitle = t(props.language, { es: "Dashboard", en: "Dashboard", pt: "Dashboard" });
   const statusFlowLegend = useMemo(
     () => <SessionStatusFlowLegend language={props.language} />,
@@ -407,8 +388,7 @@ export function DashboardPage(props: {
 
   useProPortalChrome({
     title: pageTitle,
-    center: statusFlowLegend,
-    toolbar: periodFilters
+    center: statusFlowLegend
   });
 
   if (error) {
@@ -445,8 +425,8 @@ export function DashboardPage(props: {
   }
 
   const displayCurrency = data.display?.currency ?? props.currency.toLowerCase();
-  const executedAmountLabel = formatRecordedFinanceMinor(
-    data.display?.executedNetCents ?? data.revenueStats.professionalNetCents,
+  const readyToSendLabel = formatRecordedFinanceMinor(
+    data.display?.readyToSendCents ?? 0,
     displayCurrency,
     props.language
   );
@@ -863,22 +843,10 @@ export function DashboardPage(props: {
     }
   };
 
-  const revenuePeriodLabel = formatRevenuePeriodLabel({
-    language: props.language,
-    preset: revenuePreset,
-    dayStr: revenueDay,
-    monthStr: revenueMonth,
-    yearStr: revenueYear
-  }).label;
-  const executedMoneyTooltip = t(props.language, {
-    es: `Tu neto de sesiones realizadas en ${revenuePeriodLabel}. El bruto está en Ingresos.`,
-    en: `Your net from completed sessions in ${revenuePeriodLabel}. Gross is in Earnings.`,
-    pt: `Seu liquido das sessoes realizadas em ${revenuePeriodLabel}. O bruto esta em Receitas.`
-  });
-  const pendingCollectTooltip = t(props.language, {
-    es: "Neto ya enviado a cobro que todavía no te depositaron, de cualquier período.",
-    en: "Net already sent for payout that has not been deposited yet, from any period.",
-    pt: "Liquido ja enviado a cobranca que ainda nao depositaram, de qualquer periodo."
+  const sessionMoneyTooltip = t(props.language, {
+    es: "Es el mismo dinero, en dos estados. Por enviar: ya las marcaste realizadas. En cobro: las mandaste y estás esperando el depósito.",
+    en: "Same money, two states. To send: you marked them completed. In payout: you sent them and you’re waiting for the deposit.",
+    pt: "O mesmo dinheiro, em dois estados. Por enviar: voce marcou realizadas. Em cobranca: enviou e espera o deposito."
   });
   const scheduledSessionsTooltip = t(props.language, {
     es: "Turnos reservados de acá en adelante. Tocá para ver la lista.",
@@ -1138,27 +1106,31 @@ export function DashboardPage(props: {
               <em>{t(props.language, { es: "Ver agenda", en: "View schedule", pt: "Ver agenda" })}</em>
             </NavLink>
           </KpiWithTooltip>
-          <KpiWithTooltip tipId="pro-dashboard-tip-ejecutado" tooltip={executedMoneyTooltip} focusable>
-            <NavLink className="pro-kpi-card pro-kpi-card-link pro-kpi-card--executed-revenue" to="/ingresos#sesiones-realizadas">
-              <span className="pro-executed-revenue-label">
-                {t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}
-              </span>
-              <strong className="pro-kpi-executed-amount">{executedAmountLabel}</strong>
-              <small className="pro-kpi-executed-meta">
+          <KpiWithTooltip
+            tipId="pro-dashboard-tip-dinero"
+            tooltip={sessionMoneyTooltip}
+            focusable
+            className="pro-dashboard-kpi-tip-wrap--session-money"
+          >
+            <NavLink className="pro-kpi-card pro-kpi-card-link pro-kpi-card--session-money" to="/ingresos">
+              <span>
                 {t(props.language, {
-                  es: `${revenuePeriodLabel} · ${data.revenueStats.completedSessions} sesiones`,
-                  en: `${revenuePeriodLabel} · ${data.revenueStats.completedSessions} sessions`,
-                  pt: `${revenuePeriodLabel} · ${data.revenueStats.completedSessions} sessoes`
+                  es: "Dinero por sesiones realizadas",
+                  en: "Money from completed sessions",
+                  pt: "Dinheiro das sessoes realizadas"
                 })}
-              </small>
+              </span>
+              <div className="pro-kpi-money-split">
+                <div className="pro-kpi-money-split-pane">
+                  <small>{t(props.language, { es: "Por enviar", en: "To send", pt: "Por enviar" })}</small>
+                  <strong>{readyToSendLabel}</strong>
+                </div>
+                <div className="pro-kpi-money-split-pane">
+                  <small>{t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" })}</small>
+                  <strong>{pendingCollectLabel}</strong>
+                </div>
+              </div>
               <em>{t(props.language, { es: "Ver ingresos", en: "View earnings", pt: "Ver receitas" })}</em>
-            </NavLink>
-          </KpiWithTooltip>
-          <KpiWithTooltip tipId="pro-dashboard-tip-cobrar" tooltip={pendingCollectTooltip}>
-            <NavLink className="pro-kpi-card pro-kpi-card-link" to="/ingresos">
-              <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
-              <strong>{pendingCollectLabel}</strong>
-              <em>{t(props.language, { es: "Revisar cobros", en: "Review payouts", pt: "Revisar recebimentos" })}</em>
             </NavLink>
           </KpiWithTooltip>
         </div>

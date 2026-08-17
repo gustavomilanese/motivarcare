@@ -222,6 +222,36 @@ export function buildProfessionalFinanceDisplay(params: {
   };
 }
 
+export function sumProfessionalNetDisplayCents(
+  rows: Array<{
+    currency: string;
+    professionalNetCents: number;
+    purchase?: { fxArsPerUsdSnapshot?: unknown } | null;
+  }>,
+  displayCurrency: SupportedCurrency,
+  liveFx: DisplayFxRates
+): number {
+  let total = 0;
+  for (const row of rows) {
+    const mapped = mapFinanceRecordForDisplay({
+      currency: row.currency,
+      sessionPriceCents: 0,
+      platformFeeCents: 0,
+      professionalNetCents: row.professionalNetCents,
+      purchase: row.purchase
+    });
+    const fx = resolveFxForFinanceRecord(mapped, displayCurrency, liveFx);
+    total += convertFinanceMinorToDisplayMinor(
+      row.professionalNetCents,
+      row.currency,
+      displayCurrency,
+      fx,
+      liveFx
+    );
+  }
+  return total;
+}
+
 export function mapFinanceRecordForDisplay(row: {
   currency: string;
   sessionPriceCents: number;

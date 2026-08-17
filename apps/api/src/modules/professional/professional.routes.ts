@@ -5,7 +5,7 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
-import { awaitingPayoutDepositWhere } from "../../lib/payoutEligibleSessions.js";
+import { awaitingPayoutDepositWhere, readyToSendForPayoutWhere } from "../../lib/payoutEligibleSessions.js";
 import {
   pendingExecutionBookingsWhere,
   upcomingReservationsWhere,
@@ -28,7 +28,8 @@ import {
   convertFinanceMinorToDisplayMinor,
   mapFinanceRecordForDisplay,
   readSessionFxArsPerUsdSnapshot,
-  resolveFxForFinanceRecord
+  resolveFxForFinanceRecord,
+  sumProfessionalNetDisplayCents
 } from "../../lib/professionalFinanceDisplay.js";
 import { getFinanceRules } from "../finance/finance.service.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
@@ -205,6 +206,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     futureSlots,
     pendingPayoutSummary,
     pendingPayoutRows,
+    readyToSendRows,
     revenueStats,
     revenueStatsByCurrency,
     revenueFxRows,
@@ -301,6 +303,21 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
         }
       }
     }),
+    prisma.financeSessionRecord.findMany({
+      where: {
+        professionalId: actor.professionalProfileId,
+        ...readyToSendForPayoutWhere
+      },
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
     prisma.financeSessionRecord.aggregate({
       where: revenueWhere,
       _sum: {
@@ -325,6 +342,8 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       select: {
         currency: true,
         sessionPriceCents: true,
+        professionalNetCents: true,
+        platformFeeCents: true,
         purchase: {
           select: {
             fxArsPerUsdSnapshot: true
@@ -388,32 +407,24 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       mapFinanceRecordForDisplay({
         currency: row.currency,
         sessionPriceCents: row.sessionPriceCents,
-        platformFeeCents: 0,
-        professionalNetCents: 0,
+        platformFeeCents: row.platformFeeCents,
+        professionalNetCents: row.professionalNetCents,
         purchase: row.purchase
       })
     ),
     lifetimeRecords: []
   });
 
-  let pendingToCollectDisplayCents = 0;
-  for (const row of pendingPayoutRows) {
-    const mapped = mapFinanceRecordForDisplay({
-      currency: row.currency,
-      sessionPriceCents: 0,
-      platformFeeCents: 0,
-      professionalNetCents: row.professionalNetCents,
-      purchase: row.purchase
-    });
-    const fx = resolveFxForFinanceRecord(mapped, financeDisplay.currency, liveFx);
-    pendingToCollectDisplayCents += convertFinanceMinorToDisplayMinor(
-      row.professionalNetCents,
-      row.currency,
-      financeDisplay.currency,
-      fx,
-      liveFx
-    );
-  }
+  const pendingToCollectDisplayCents = sumProfessionalNetDisplayCents(
+    pendingPayoutRows,
+    financeDisplay.currency,
+    liveFx
+  );
+  const readyToSendDisplayCents = sumProfessionalNetDisplayCents(
+    readyToSendRows,
+    financeDisplay.currency,
+    liveFx
+  );
 
   let usdHardCents = 0;
   for (const row of revenueFxRows) {
@@ -527,6 +538,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       currency: financeDisplay.currency,
       executedGrossCents: financeDisplay.grossCents,
       executedNetCents: financeDisplay.professionalNetCents,
+      readyToSendCents: readyToSendDisplayCents,
       pendingToCollectCents: pendingToCollectDisplayCents
     },
     trialSession: trialBooking
