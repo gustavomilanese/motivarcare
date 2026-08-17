@@ -4,8 +4,12 @@ import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLangu
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
-import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals } from "../services/financeApi";
-import type { AdminUnpaidProfessional, UnpaidProfessionalDetailResponse } from "../types/finance.types";
+import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals, fetchDlocalPayouts } from "../services/financeApi";
+import type {
+  AdminDlocalPayoutTransfer,
+  AdminUnpaidProfessional,
+  UnpaidProfessionalDetailResponse
+} from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -13,6 +17,7 @@ function t(language: AppLanguage, values: LocalizedText): string {
 }
 
 type SortKey = "name_az" | "sessions_desc" | "net_desc";
+type PayoutTab = "pending" | "sent";
 
 const PAGE_SIZE = 10;
 
@@ -56,6 +61,68 @@ function expandMonthKeysInRange(from: string, to: string): string[] {
   return keys;
 }
 
+function emptyPendingCopy(input: {
+  language: AppLanguage;
+  hasSearch: boolean;
+  hasMonthFilter: boolean;
+}): string {
+  if (input.hasSearch) {
+    return t(input.language, {
+      es: "Ningún profesional coincide con la búsqueda.",
+      en: "No professional matches that search.",
+      pt: "Nenhum profissional corresponde a essa busca."
+    });
+  }
+  if (input.hasMonthFilter) {
+    return t(input.language, {
+      es: "En ese período no hay sesiones listas para pagar.",
+      en: "No sessions are ready to pay in that period.",
+      pt: "Nesse período nao ha sessoes prontas para pagar."
+    });
+  }
+  return t(input.language, {
+    es: "No hay sesiones listas para pagar. Cuando un profesional las envíe a cobro, van a aparecer acá para transferir por dLocal.",
+    en: "No sessions are ready to pay. When a professional submits them for payout, they’ll show up here for a dLocal transfer.",
+    pt: "Nao ha sessoes prontas para pagar. Quando um profissional enviar a cobranca, elas aparecem aqui para transferir via dLocal."
+  });
+}
+
+function emptySentCopy(input: {
+  language: AppLanguage;
+  hasSearch: boolean;
+  hasMonthFilter: boolean;
+}): string {
+  if (input.hasSearch) {
+    return t(input.language, {
+      es: "Ninguna transferencia coincide con la búsqueda.",
+      en: "No transfer matches that search.",
+      pt: "Nenhuma transferencia corresponde a essa busca."
+    });
+  }
+  if (input.hasMonthFilter) {
+    return t(input.language, {
+      es: "En ese período no hay transferencias enviadas a dLocal.",
+      en: "No dLocal transfers in that period.",
+      pt: "Nesse período nao ha transferencias enviadas ao dLocal."
+    });
+  }
+  return t(input.language, {
+    es: "Todavía no hay transferencias enviadas a dLocal.",
+    en: "No transfers have been sent to dLocal yet.",
+    pt: "Ainda nao ha transferencias enviadas ao dLocal."
+  });
+}
+
+function transferStatusLabel(status: AdminDlocalPayoutTransfer["displayStatus"], language: AppLanguage): string {
+  if (status === "delivered") {
+    return t(language, { es: "Entregada", en: "Delivered", pt: "Entregue" });
+  }
+  if (status === "failed") {
+    return t(language, { es: "No se completó", en: "Didn’t complete", pt: "Nao concluida" });
+  }
+  return t(language, { es: "En camino", en: "In transit", pt: "A caminho" });
+}
+
 function formatMonthKeyLabel(key: string, language: AppLanguage): string {
   if (!/^\d{4}-\d{2}$/.test(key)) return key;
   const [year, month] = key.split("-").map(Number);
@@ -78,9 +145,12 @@ export function AdminUnpaidProfessionalsPanel(props: {
   onChanged?: () => void;
 }) {
   const [rows, setRows] = useState<AdminUnpaidProfessional[]>(props.initialRows ?? []);
+  const [sentTransfers, setSentTransfers] = useState<AdminDlocalPayoutTransfer[]>([]);
+  const [tab, setTab] = useState<PayoutTab>("pending");
   const [monthFrom, setMonthFrom] = useState("");
   const [monthTo, setMonthTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingSent, setLoadingSent] = useState(true);
   const [error, setError] = useState("");
   const [reviewTarget, setReviewTarget] = useState<AdminUnpaidProfessional | null>(null);
   const [search, setSearch] = useState("");
@@ -109,14 +179,32 @@ export function AdminUnpaidProfessionalsPanel(props: {
     }
   }, [props.language, props.token, selectedMonths]);
 
+  const loadSent = useCallback(async () => {
+    setLoadingSent(true);
+    setError("");
+    try {
+      const response = await fetchDlocalPayouts(props.token, selectedMonths);
+      setSentTransfers(response.transfers);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+    } finally {
+      setLoadingSent(false);
+    }
+  }, [props.language, props.token, selectedMonths]);
+
   useEffect(() => {
     void load();
   }, [load]);
 
   useEffect(() => {
+    void loadSent();
+  }, [loadSent]);
+
+  useEffect(() => {
     setPage(1);
     setExpandedIds(new Set());
-  }, [search, sortKey, monthsKey]);
+  }, [search, sortKey, monthsKey, tab]);
 
   const filteredSorted = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -138,7 +226,25 @@ export function AdminUnpaidProfessionalsPanel(props: {
     return next;
   }, [rows, search, sortKey]);
 
+  const filteredSent = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return sentTransfers;
+    }
+    return sentTransfers.filter((row) => row.professionalName.toLowerCase().includes(query));
+  }, [sentTransfers, search]);
+
   const listTotals = useMemo(() => {
+    if (tab === "sent") {
+      return filteredSent.reduce(
+        (acc, row) => {
+          acc.sessionsCount += row.sessionsCount;
+          acc.professionalNetCents += row.professionalNetUsdCents;
+          return acc;
+        },
+        { sessionsCount: 0, professionalNetCents: 0 }
+      );
+    }
     return filteredSorted.reduce(
       (acc, row) => {
         acc.sessionsCount += row.sessionsCount;
@@ -147,13 +253,15 @@ export function AdminUnpaidProfessionalsPanel(props: {
       },
       { sessionsCount: 0, professionalNetCents: 0 }
     );
-  }, [filteredSorted]);
+  }, [tab, filteredSorted, filteredSent]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE));
+  const activeCount = tab === "sent" ? filteredSent.length : filteredSorted.length;
+  const totalPages = Math.max(1, Math.ceil(activeCount / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pageStart = filteredSorted.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(currentPage * PAGE_SIZE, filteredSorted.length);
+  const pageStart = activeCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, activeCount);
   const pageRows = filteredSorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageSentRows = filteredSent.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const maxMonth = useMemo(() => currentUtcMonthKey(), []);
   const hasMonthFilter = Boolean(monthFrom || monthTo);
@@ -225,23 +333,29 @@ export function AdminUnpaidProfessionalsPanel(props: {
             <h2
               className="dashboard-section-title"
               title={t(props.language, {
-                es: "Sesiones que el profesional ya envió a cobro. Abrí un nombre para ver el detalle y pagar.",
-                en: "Sessions the professional already sent for payout. Expand a name to review and pay.",
-                pt: "Sessoes que o profissional ja enviou a cobranca. Abra um nome para ver o detalhe e pagar."
+                es: "Sesiones a cobro pendientes de transferir, y transferencias ya enviadas a dLocal.",
+                en: "Sessions submitted for payout, plus transfers already sent to dLocal.",
+                pt: "Sessoes a cobranca e transferencias ja enviadas ao dLocal."
               })}
             >
               {t(props.language, {
-                es: "Pendiente de pagar",
-                en: "Pending payouts",
-                pt: "Pendente de pagar"
+                es: "Pagos a profesionales",
+                en: "Professional payouts",
+                pt: "Pagamentos a profissionais"
               })}
             </h2>
             <p className="admin-unpaid-professionals-lead">
-              {t(props.language, {
-                es: "Sesiones enviadas a cobro. Abrí un nombre para pagar.",
-                en: "Sessions sent for payout. Expand a name to pay.",
-                pt: "Sessoes enviadas a cobranca. Abra um nome para pagar."
-              })}
+              {tab === "sent"
+                ? t(props.language, {
+                    es: "Transferencias ya enviadas a dLocal. El estado se actualiza cuando confirma la entrega.",
+                    en: "Transfers already sent to dLocal. Status updates when delivery is confirmed.",
+                    pt: "Transferencias ja enviadas ao dLocal. O status atualiza quando a entrega e confirmada."
+                  })
+                : t(props.language, {
+                    es: "Sesiones que el profesional ya mandó a cobro y todavía no se transfirieron.",
+                    en: "Sessions the professional submitted for payout that haven’t been transferred yet.",
+                    pt: "Sessoes que o profissional ja enviou a cobranca e ainda nao foram transferidas."
+                  })}
             </p>
           </div>
           <div className="admin-unpaid-professionals-head-actions">
@@ -273,7 +387,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
             <button
               type="button"
               className="admin-unpaid-excel-btn"
-              disabled={exporting || filteredSorted.length === 0}
+              disabled={exporting || tab !== "pending" || filteredSorted.length === 0}
               onClick={() => void exportExcel()}
               aria-label={
                 exporting
@@ -291,6 +405,33 @@ export function AdminUnpaidProfessionalsPanel(props: {
             </button>
           </div>
         </header>
+
+        <div className="admin-unpaid-tabs" role="tablist" aria-label={t(props.language, {
+          es: "Estado de pagos",
+          en: "Payout status",
+          pt: "Status dos pagamentos"
+        })}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "pending"}
+            className={tab === "pending" ? "is-active" : ""}
+            onClick={() => setTab("pending")}
+          >
+            {t(props.language, { es: "Por enviar", en: "To send", pt: "A enviar" })}
+            {!loading ? <span className="admin-unpaid-tab-count">{rows.length}</span> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "sent"}
+            className={tab === "sent" ? "is-active" : ""}
+            onClick={() => setTab("sent")}
+          >
+            {t(props.language, { es: "Enviado a dLocal", en: "Sent to dLocal", pt: "Enviado ao dLocal" })}
+            {!loadingSent ? <span className="admin-unpaid-tab-count">{sentTransfers.length}</span> : null}
+          </button>
+        </div>
 
         {filtersOpen ? (
           <div className="admin-unpaid-professionals-filters">
@@ -322,7 +463,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                 </button>
               ) : null}
             </div>
-            {props.onCreateLiquidacion ? (
+            {props.onCreateLiquidacion && tab === "pending" ? (
               <button
                 type="button"
                 className="primary"
@@ -355,17 +496,17 @@ export function AdminUnpaidProfessionalsPanel(props: {
         ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}
-        {loading ? (
+        {tab === "pending" && loading ? (
           <p>{t(props.language, { es: "Cargando pendientes…", en: "Loading pending…", pt: "Carregando pendentes…" })}</p>
-        ) : filteredSorted.length === 0 ? (
-          <p>
-            {t(props.language, {
-              es: "Nadie envió sesiones a cobro.",
-              en: "No sessions have been sent for payout.",
-              pt: "Ninguem enviou sessoes a cobranca."
+        ) : tab === "pending" && filteredSorted.length === 0 ? (
+          <p className="admin-unpaid-empty">
+            {emptyPendingCopy({
+              language: props.language,
+              hasSearch: Boolean(search.trim()),
+              hasMonthFilter
             })}
           </p>
-        ) : (
+        ) : tab === "pending" ? (
           <div className="admin-unpaid-professionals-table-wrap">
             <table className="admin-unpaid-professionals-table">
               <colgroup>
@@ -648,6 +789,132 @@ export function AdminUnpaidProfessionalsPanel(props: {
               </div>
             ) : null}
           </div>
+        ) : loadingSent ? (
+          <p>
+            {t(props.language, {
+              es: "Cargando transferencias a dLocal…",
+              en: "Loading dLocal transfers…",
+              pt: "Carregando transferencias dLocal…"
+            })}
+          </p>
+        ) : filteredSent.length === 0 ? (
+          <p className="admin-unpaid-empty">
+            {emptySentCopy({
+              language: props.language,
+              hasSearch: Boolean(search.trim()),
+              hasMonthFilter
+            })}
+          </p>
+        ) : (
+          <div className="admin-unpaid-professionals-table-wrap">
+            <table className="admin-unpaid-professionals-table admin-unpaid-professionals-table--sent">
+              <thead>
+                <tr>
+                  <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
+                  <th>{t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</th>
+                  <th className="num">{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</th>
+                  <th className="num">{t(props.language, { es: "Neto", en: "Net", pt: "Líquido" })}</th>
+                  <th>{t(props.language, { es: "ID dLocal", en: "dLocal ID", pt: "ID dLocal" })}</th>
+                  <th>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageSentRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{formatSessionDay(row.createdAt, props.language)}</td>
+                    <td>
+                      <span className="admin-unpaid-pro-name">{row.professionalName}</span>
+                    </td>
+                    <td className="num">{row.sessionsCount}</td>
+                    <td className="num admin-unpaid-net">
+                      {formatAdminFinanceUsd(row.professionalNetUsdCents, props.language)}
+                    </td>
+                    <td>
+                      {row.dlocalPayoutId ? (
+                        <code className="admin-unpaid-dlocal-id" title={row.dlocalPayoutId}>
+                          {row.dlocalPayoutId}
+                        </code>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={`admin-unpaid-status admin-unpaid-status--${
+                          row.displayStatus === "delivered"
+                            ? "paid"
+                            : row.displayStatus === "failed"
+                              ? "failed"
+                              : "pending"
+                        }`}
+                      >
+                        {transferStatusLabel(row.displayStatus, props.language)}
+                      </span>
+                      {row.displayStatus === "failed" && row.submissionError ? (
+                        <small className="admin-unpaid-transfer-error" title={row.submissionError}>
+                          {row.submissionError}
+                        </small>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="admin-unpaid-totals-row">
+                  <td colSpan={2}>
+                    {t(props.language, { es: "Total", en: "Total", pt: "Total" })}
+                    <span className="admin-unpaid-totals-count">
+                      {" "}
+                      {t(props.language, {
+                        es: `· ${filteredSent.length} ${filteredSent.length === 1 ? "transferencia" : "transferencias"}`,
+                        en: `· ${filteredSent.length} ${filteredSent.length === 1 ? "transfer" : "transfers"}`,
+                        pt: `· ${filteredSent.length} ${filteredSent.length === 1 ? "transferencia" : "transferencias"}`
+                      })}
+                    </span>
+                  </td>
+                  <td className="num">{listTotals.sessionsCount}</td>
+                  <td className="num admin-unpaid-net">
+                    {formatAdminFinanceUsd(listTotals.professionalNetCents, props.language)}
+                  </td>
+                  <td colSpan={2} />
+                </tr>
+              </tfoot>
+            </table>
+            {filteredSent.length > PAGE_SIZE ? (
+              <div
+                className="admin-unpaid-pager"
+                aria-label={t(props.language, { es: "Paginación", en: "Pagination", pt: "Paginacao" })}
+              >
+                <span className="admin-unpaid-pager-range">
+                  {t(props.language, {
+                    es: `${pageStart}–${pageEnd} de ${filteredSent.length}`,
+                    en: `${pageStart}–${pageEnd} of ${filteredSent.length}`,
+                    pt: `${pageStart}–${pageEnd} de ${filteredSent.length}`
+                  })}
+                </span>
+                <div className="admin-unpaid-pager-nav">
+                  <button
+                    type="button"
+                    className="admin-unpaid-pager-btn"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    aria-label={t(props.language, { es: "Anterior", en: "Previous", pt: "Anterior" })}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-unpaid-pager-btn"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    aria-label={t(props.language, { es: "Siguiente", en: "Next", pt: "Seguinte" })}
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         )}
       </section>
 
@@ -662,6 +929,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
           onPaid={() => {
             setReviewTarget(null);
             void load();
+            void loadSent();
             props.onChanged?.();
           }}
         />

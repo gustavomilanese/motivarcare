@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   type AppLanguage,
   type LocalizedText,
@@ -54,6 +55,7 @@ export function FinanceProfessionalPayoutReview(props: {
   const [detail, setDetail] = useState<UnpaidProfessionalDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<"" | "ledger" | "dlocal">("");
+  const [confirmMethod, setConfirmMethod] = useState<"" | "ledger" | "dlocal">("");
   const [reference, setReference] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -80,42 +82,19 @@ export function FinanceProfessionalPayoutReview(props: {
     void load();
   }, [load]);
 
-  const handlePay = async (method: "ledger" | "dlocal") => {
-    const label =
-      method === "dlocal"
-        ? t(props.language, {
-            es: "transferir vía dLocal",
-            en: "transfer via dLocal",
-            pt: "transferir via dLocal"
-          })
-        : t(props.language, {
-            es: "registrar el pago en el ledger",
-            en: "record the payment in the ledger",
-            pt: "registrar o pagamento no ledger"
-          });
+  const payoutAmountLabel =
+    confirmMethod === "dlocal" && detail?.payout.estimatedLocal
+      ? formatLocalAmount(
+          detail.payout.estimatedLocal.amount,
+          detail.payout.estimatedLocal.currency,
+          props.language
+        )
+      : detail
+        ? formatAdminFinanceUsd(detail.totals.pendingProfessionalNetUsdCents, props.language)
+        : "";
 
-    const amountLabel =
-      method === "dlocal" && detail?.payout.estimatedLocal
-        ? formatLocalAmount(
-            detail.payout.estimatedLocal.amount,
-            detail.payout.estimatedLocal.currency,
-            props.language
-          )
-        : detail
-          ? formatAdminFinanceUsd(detail.totals.pendingProfessionalNetUsdCents, props.language)
-          : "";
-
-    const confirmed = window.confirm(
-      t(props.language, {
-        es: `¿Confirmás ${label} a ${props.professionalName} por ${amountLabel}?`,
-        en: `Confirm ${label} to ${props.professionalName} for ${amountLabel}?`,
-        pt: `Confirmar ${label} para ${props.professionalName} por ${amountLabel}?`
-      })
-    );
-    if (!confirmed) {
-      return;
-    }
-
+  const executePay = async (method: "ledger" | "dlocal") => {
+    setConfirmMethod("");
     setPaying(method);
     setError("");
     setSuccess("");
@@ -142,11 +121,24 @@ export function FinanceProfessionalPayoutReview(props: {
       window.setTimeout(() => props.onClose(), 1400);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
-      setError(adminSurfaceMessage("finance-run-detail", props.language, raw));
+      setError(adminSurfaceMessage("finance-payout-transfer", props.language, raw));
     } finally {
       setPaying("");
     }
   };
+
+  useEffect(() => {
+    if (!confirmMethod) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setConfirmMethod("");
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [confirmMethod]);
 
   const canDlocal =
     Boolean(detail?.payout.dlocalConfigured) &&
@@ -155,6 +147,7 @@ export function FinanceProfessionalPayoutReview(props: {
     (detail?.totals.pendingSessionsCount ?? 0) > 0;
 
   return (
+    <>
     <div className="finance-payout-review-backdrop" role="presentation" onClick={props.onClose}>
       <aside
         className="finance-payout-review-drawer"
@@ -373,7 +366,7 @@ export function FinanceProfessionalPayoutReview(props: {
                   type="button"
                   className="secondary"
                   disabled={Boolean(paying) || detail.totals.pendingSessionsCount === 0}
-                  onClick={() => void handlePay("ledger")}
+                  onClick={() => setConfirmMethod("ledger")}
                 >
                   {paying === "ledger"
                     ? t(props.language, { es: "Registrando…", en: "Recording…", pt: "Registrando…" })
@@ -398,7 +391,7 @@ export function FinanceProfessionalPayoutReview(props: {
                         ? (detail.payout.reason ?? undefined)
                         : undefined
                   }
-                  onClick={() => void handlePay("dlocal")}
+                  onClick={() => setConfirmMethod("dlocal")}
                 >
                   {paying === "dlocal"
                     ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
@@ -417,5 +410,47 @@ export function FinanceProfessionalPayoutReview(props: {
         {success ? <p className="finance-payout-review-success finance-payout-review-footer-msg">{success}</p> : null}
       </aside>
     </div>
+    {confirmMethod
+      ? createPortal(
+          <div
+            className="finance-payout-confirm-backdrop"
+            role="presentation"
+            onClick={() => setConfirmMethod("")}
+          >
+            <section
+              className="finance-payout-confirm"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="finance-payout-confirm-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="finance-payout-confirm-kicker">
+                {confirmMethod === "dlocal"
+                  ? t(props.language, { es: "dLocal", en: "dLocal", pt: "dLocal" })
+                  : t(props.language, { es: "Pago manual", en: "Manual payment", pt: "Pagamento manual" })}
+              </p>
+              <h3 id="finance-payout-confirm-title">
+                {confirmMethod === "dlocal"
+                  ? t(props.language, { es: "¿Transferimos ahora?", en: "Send the transfer now?", pt: "Transferir agora?" })
+                  : t(props.language, { es: "¿Registramos el pago?", en: "Record this payment?", pt: "Registrar o pagamento?" })}
+              </h3>
+              <p className="finance-payout-confirm-name">{props.professionalName}</p>
+              <p className="finance-payout-confirm-amount">{payoutAmountLabel}</p>
+              <div className="finance-payout-confirm-actions">
+                <button type="button" className="secondary" onClick={() => setConfirmMethod("")}>
+                  {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+                </button>
+                <button type="button" className="primary" onClick={() => void executePay(confirmMethod)}>
+                  {confirmMethod === "dlocal"
+                    ? t(props.language, { es: "Transferir", en: "Transfer", pt: "Transferir" })
+                    : t(props.language, { es: "Registrar", en: "Record", pt: "Registrar" })}
+                </button>
+              </div>
+            </section>
+          </div>,
+          document.body
+        )
+      : null}
+    </>
   );
 }

@@ -424,6 +424,28 @@ financeRouter.get("/unpaid-professionals", async (req, res) => {
   });
 });
 
+financeRouter.get("/dlocal-payouts", async (req, res) => {
+  const parsed = unpaidProfessionalsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return sendApiError({
+      res,
+      status: 400,
+      code: "BAD_REQUEST",
+      message: "Invalid query params",
+      details: parsed.error.flatten()
+    });
+  }
+  const { listDlocalPayoutTransfers, parseUnpaidMonthKeys } = await import("./adminUnpaidProfessional.service.js");
+  const overview = await listDlocalPayoutTransfers({
+    months: parseUnpaidMonthKeys(parsed.data.months)
+  });
+  return res.json({
+    currency: "usd",
+    selectedMonths: overview.selectedMonths,
+    transfers: overview.transfers
+  });
+});
+
 financeRouter.get("/unpaid-professionals/:professionalId", async (req, res) => {
   const parsed = unpaidProfessionalsQuerySchema.safeParse(req.query);
   if (!parsed.success) {
@@ -483,6 +505,12 @@ financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res)
     });
   } catch (error) {
     if (error instanceof ProfessionalPayoutError) {
+      console.error("[finance-payout] pay endpoint rejected", {
+        professionalId: req.params.professionalId,
+        method: parsed.data.method,
+        code: error.code,
+        message: error.message
+      });
       const status = error.code === "dlocal_not_configured" ? 501 : 422;
       return sendApiError({
         res,
@@ -492,6 +520,11 @@ financeRouter.post("/unpaid-professionals/:professionalId/pay", async (req, res)
         details: { payoutErrorCode: error.code }
       });
     }
+    console.error("[finance-payout] pay endpoint failed", {
+      professionalId: req.params.professionalId,
+      method: parsed.data.method,
+      message: error instanceof Error ? error.message : String(error)
+    });
     throw error;
   }
 });

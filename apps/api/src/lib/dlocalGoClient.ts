@@ -114,14 +114,19 @@ const DLOCALGO_REQUEST_TIMEOUT_MS = 8000;
  * Request de bajo nivel a la API de dLocal Go (auth + parseo + manejo de errores).
  * Reutilizado por payments y payouts para no duplicar la infraestructura HTTP.
  */
-export async function dlocalGoRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function dlocalGoRequest<T>(
+  path: string,
+  init?: RequestInit & { timeoutMs?: number }
+): Promise<T> {
+  const timeoutMs = init?.timeoutMs ?? DLOCALGO_REQUEST_TIMEOUT_MS;
+  const { timeoutMs: _timeoutMs, ...fetchInit } = init ?? {};
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DLOCALGO_REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl()}${path}`, {
-      ...init,
+      ...fetchInit,
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +136,7 @@ export async function dlocalGoRequest<T>(path: string, init?: RequestInit): Prom
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`dLocal Go API timeout after ${DLOCALGO_REQUEST_TIMEOUT_MS}ms`);
+      throw new Error(`dLocal Go API timeout after ${timeoutMs}ms`);
     }
     throw sanitizeOutboundDlocalError(error);
   } finally {

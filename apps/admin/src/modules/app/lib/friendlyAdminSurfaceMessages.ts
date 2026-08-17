@@ -116,6 +116,7 @@ export type AdminSurfaceContext =
   | "finance-run-detail"
   | "finance-rules-save"
   | "finance-payout-create"
+  | "finance-payout-transfer"
   | "finance-mark-paid"
   | "finance-close-run"
   | "finance-stripe-retry";
@@ -361,6 +362,11 @@ const SURFACE: Record<AdminSurfaceContext, LocalizedText> = {
     en: "Payout run wasn’t created. Check dates and for another run in progress.",
     pt: "A corrida de liquidacao nao foi criada. Confira as datas."
   },
+  "finance-payout-transfer": {
+    es: "dLocal no aceptó la transferencia. Las sesiones siguen pendientes; podés reintentar.",
+    en: "dLocal rejected the transfer. Sessions stay pending so you can retry.",
+    pt: "O dLocal recusou a transferência. As sessões seguem pendentes; tente de novo."
+  },
   "finance-mark-paid": {
     es: "No marcamos la línea como pagada. Reintentá o recargá el detalle.",
     en: "Line wasn’t marked paid. Retry or reload the detail.",
@@ -421,7 +427,8 @@ const SAVE_CONTEXTS_SHOWING_RAW_DETAIL: ReadonlySet<AdminSurfaceContext> = new S
   "patients-update",
   "patients-booking-update",
   "patients-triage",
-  "finance-rules-save"
+  "finance-rules-save",
+  "finance-payout-transfer"
 ]);
 
 export function adminSurfaceMessage(context: AdminSurfaceContext, language: AppLanguage, raw?: string): string {

@@ -3,6 +3,7 @@ import type {
   AdminPlatformExecutedResponse,
   AdminPlatformPurchasesResponse,
   AdminUnpaidProfessionalsResponse,
+  AdminDlocalPayoutsResponse,
   PayUnpaidProfessionalResponse,
   UnpaidProfessionalDetailResponse,
   FinanceOverviewResponse,
@@ -154,6 +155,14 @@ export async function fetchUnpaidProfessionals(
 ): Promise<AdminUnpaidProfessionalsResponse> {
   const query = months.length > 0 ? `?months=${encodeURIComponent(months.join(","))}` : "";
   return apiRequest<AdminUnpaidProfessionalsResponse>(`/api/admin/finance/unpaid-professionals${query}`, token);
+}
+
+export async function fetchDlocalPayouts(
+  token: string,
+  months: string[] = []
+): Promise<AdminDlocalPayoutsResponse> {
+  const query = months.length > 0 ? `?months=${encodeURIComponent(months.join(","))}` : "";
+  return apiRequest<AdminDlocalPayoutsResponse>(`/api/admin/finance/dlocal-payouts${query}`, token);
 }
 
 export async function fetchUnpaidProfessionalDetail(

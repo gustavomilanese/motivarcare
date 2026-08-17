@@ -280,6 +280,30 @@ export type AdminUnpaidProfessionalsResponse = {
   professionals: AdminUnpaidProfessional[];
 };
 
+export type AdminDlocalTransferDisplayStatus = "in_transit" | "delivered" | "failed";
+
+export type AdminDlocalPayoutTransfer = {
+  id: string;
+  professionalId: string;
+  professionalName: string;
+  sessionsCount: number;
+  professionalNetUsdCents: number;
+  status: string;
+  displayStatus: AdminDlocalTransferDisplayStatus;
+  dlocalPayoutId: string | null;
+  dlocalStatus: string | null;
+  submissionError: string | null;
+  payoutReference: string | null;
+  createdAt: string;
+  paidAt: string | null;
+};
+
+export type AdminDlocalPayoutsResponse = {
+  currency: "usd";
+  selectedMonths: string[];
+  transfers: AdminDlocalPayoutTransfer[];
+};
+
 export type UnpaidProfessionalSessionDetail = {
   id: string;
   bookingId: string;

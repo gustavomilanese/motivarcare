@@ -223,25 +223,43 @@ export async function createProfessionalPayout(params: {
     amount: params.amount
   });
 
-  const payout = await createDlocalGoPayout({
-    transferAmount: params.amount,
-    transferCountry: country,
-    currencyToPay: currency,
-    flowType: "B2C",
-    purpose: DLOCAL_PAYOUT_PURPOSE,
-    beneficiaryFirstName: bank.beneficiaryFirstName ?? "",
-    beneficiaryLastName: bank.beneficiaryLastName ?? "",
-    beneficiaryEmail: params.beneficiaryEmail ?? null,
-    beneficiaryDocument: bank.document ?? "",
-    beneficiaryDocumentType: bank.documentType ?? "",
-    bankCode: bank.bankCode ?? "",
-    bankAccount: bank.accountValue,
-    bankBranch: config.requiresBranch ? bank.bankBranch ?? null : null,
-    bankAccountType: config.requiresAccountType ? bank.accountType ?? null : null,
-    description: params.description ?? "MotivarCare - pago de sesiones",
-    notificationUrl: payoutNotificationUrl(),
-    externalReference: params.externalReference ?? null
-  });
+  let payout: DlocalGoPayout;
+  try {
+    payout = await createDlocalGoPayout({
+      transferAmount: params.amount,
+      transferCountry: country,
+      currencyToPay: currency,
+      flowType: "B2C",
+      purpose: DLOCAL_PAYOUT_PURPOSE,
+      beneficiaryFirstName: bank.beneficiaryFirstName ?? "",
+      beneficiaryLastName: bank.beneficiaryLastName ?? "",
+      beneficiaryEmail: params.beneficiaryEmail ?? null,
+      beneficiaryDocument: bank.document ?? "",
+      beneficiaryDocumentType: bank.documentType ?? "",
+      bankCode: bank.bankCode ?? "",
+      bankAccount: bank.accountValue,
+      bankBranch: config.requiresBranch ? bank.bankBranch ?? null : null,
+      bankAccountType: config.requiresAccountType ? bank.accountType ?? null : null,
+      description: params.description ?? "MotivarCare - pago de sesiones",
+      notificationUrl: payoutNotificationUrl(),
+      externalReference: params.externalReference ?? null
+    });
+  } catch (error) {
+    if (error instanceof ProfessionalPayoutError) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`${LOG_PREFIX} payout creation failed`, {
+      professionalProfileId: params.professionalProfileId,
+      ref: params.externalReference ?? null,
+      payoutLineId: params.payoutLineId ?? null,
+      message
+    });
+    throw new ProfessionalPayoutError(
+      "dlocal_rejected",
+      message.startsWith("dLocal") ? message : `dLocal rechazó el pago: ${message}`
+    );
+  }
 
   const now = new Date().toISOString();
   const record: StoredPayoutRecord = {

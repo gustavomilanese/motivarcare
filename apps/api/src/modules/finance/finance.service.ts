@@ -557,12 +557,13 @@ export async function createPayoutRun(params: {
   const periodStart = new Date(params.periodStart);
   const periodEnd = new Date(params.periodEnd);
   const eligibleWhere = {
-    ...payoutEligibleSessionWhere,
+    bookingStatus: payoutEligibleSessionWhere.bookingStatus,
+    submittedForPayoutAt: payoutEligibleSessionWhere.submittedForPayoutAt,
     bookingCompletedAt: {
       gte: periodStart,
       lte: periodEnd
     },
-    ...(params.includePreviouslyPaid ? { payoutLineId: undefined } : {})
+    ...(params.includePreviouslyPaid ? {} : { OR: payoutEligibleSessionWhere.OR })
   };
 
   const eligibleRecords = await prisma.financeSessionRecord.findMany({
@@ -795,6 +796,14 @@ export async function payProfessionalUnpaidBalance(
   if (eligibleRecords.length === 0) {
     return { noRecords: true as const };
   }
+
+  console.info("[finance-payout] reserving unpaid sessions", {
+    professionalId,
+    sessionsCount: eligibleRecords.length,
+    sessionIds: eligibleRecords.map((record) => record.id),
+    bookingIds: eligibleRecords.map((record) => record.bookingId),
+    markPaidImmediately
+  });
 
   const periodStart =
     eligibleRecords[0]?.bookingCompletedAt ?? eligibleRecords[0]?.bookingStartsAt ?? new Date();

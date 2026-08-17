@@ -7835,6 +7835,91 @@ button.primary.finance-hero-search {
   line-height: 1.4;
 }
 
+.admin-unpaid-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.admin-unpaid-tabs button {
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 7px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  color: #6d28d9;
+  cursor: pointer;
+}
+
+.admin-unpaid-tabs button:hover,
+.admin-unpaid-tabs button:focus-visible {
+  background: #fff;
+  border-color: #ddd6fe;
+}
+
+.admin-unpaid-tabs button.is-active {
+  background: #5b21b6;
+  color: #fff;
+  border-color: #5b21b6;
+}
+
+.admin-unpaid-tab-count {
+  display: inline-flex;
+  min-width: 1.25rem;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+}
+
+.admin-unpaid-tabs button:not(.is-active) .admin-unpaid-tab-count {
+  background: rgba(91, 33, 182, 0.1);
+  color: #5b21b6;
+}
+
+.admin-unpaid-empty {
+  margin: 4px 0 2px;
+  padding: 18px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #4c1d95;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.admin-unpaid-dlocal-id {
+  display: inline-block;
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  vertical-align: bottom;
+}
+
+.admin-unpaid-transfer-error {
+  display: block;
+  margin-top: 4px;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #9f1239;
+  font-size: 12px;
+}
+
+.admin-unpaid-status--failed {
+  background: #ffe4e6;
+  color: #9f1239;
+  border: 1px solid #fda4af;
+}
+
 .admin-unpaid-professionals-total {
   font-size: 18px;
   color: #1e3a8a;
@@ -8668,6 +8753,81 @@ button.primary.finance-hero-search {
 .finance-payout-review-success {
   color: #15803d;
   font-weight: 600;
+}
+
+.finance-payout-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 8, 28, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.finance-payout-confirm {
+  width: min(400px, 100%);
+  padding: 28px 26px 22px;
+  border-radius: 22px;
+  background: #12101f;
+  color: #f8f7ff;
+  box-shadow: 0 24px 60px rgba(8, 6, 22, 0.45);
+  text-align: center;
+}
+
+.finance-payout-confirm-kicker {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a78bfa;
+}
+
+.finance-payout-confirm h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.finance-payout-confirm-name {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: #c4b5fd;
+}
+
+.finance-payout-confirm-amount {
+  margin: 6px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.finance-payout-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.finance-payout-confirm-actions button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.finance-payout-confirm-actions button.secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #e2e8f0;
+}
+
+.finance-payout-confirm-actions button.secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 @media (max-width: 860px) {

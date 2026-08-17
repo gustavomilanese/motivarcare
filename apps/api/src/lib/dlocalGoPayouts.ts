@@ -165,7 +165,8 @@ export async function createDlocalGoPayout(request: DlocalGoPayoutRequest): Prom
   try {
     const payout = await dlocalGoRequest<DlocalGoPayout>("/v1/payouts", {
       method: "POST",
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      timeoutMs: 25_000
     });
     const payoutId =
       typeof payout?.payout_id === "string" && payout.payout_id.trim()

@@ -10,7 +10,7 @@ import {
 } from "../../lib/professionalFinanceDisplay.js";
 import { isDlocalGoConfigured } from "../../lib/dlocalGoPayouts.js";
 import { prisma } from "../../lib/prisma.js";
-import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
+import { payoutEligibleSessionWhere, shouldReleaseSessionsAfterDlocalFailure } from "../../lib/payoutEligibleSessions.js";
 import {
   buildPackageSessionIndexByBookingId,
   formatPackageSessionSourceLabel
@@ -25,6 +25,8 @@ import {
 } from "../payouts/professionalPayouts.service.js";
 import { applyDlocalStatusToPayoutLine } from "./payoutRunDlocal.service.js";
 import { payProfessionalUnpaidBalance } from "./finance.service.js";
+
+const LOG_PREFIX = "[finance-payout]";
 
 async function resolveLiveFx() {
   const liveArsPerUsd = await getResilientUsdArsRate().catch(() => null);
@@ -181,6 +183,133 @@ export async function listUnpaidProfessionalsOverview(input?: {
     totals: selectionTotals,
     professionals
   };
+}
+
+/** Líneas que Admin debe ver como “enviado / intentado vía dLocal”. */
+export const dlocalSentPayoutLineWhere = {
+  OR: [
+    { dlocalPayoutId: { not: null } },
+    { status: "SUBMITTED" },
+    { AND: [{ status: "FAILED" }, { submissionError: { not: null } }] }
+  ]
+};
+
+export type DlocalTransferDisplayStatus = "in_transit" | "delivered" | "failed";
+
+export function resolveDlocalTransferDisplayStatus(input: {
+  status: string;
+  dlocalStatus: string | null;
+}): DlocalTransferDisplayStatus {
+  const dlocal = (input.dlocalStatus ?? "").trim().toUpperCase();
+  if (
+    input.status === "PAID"
+    || dlocal === "DELIVERED"
+    || dlocal === "COMPLETED"
+  ) {
+    return "delivered";
+  }
+  if (
+    input.status === "FAILED"
+    || dlocal === "FAILED"
+    || dlocal === "REJECTED"
+    || dlocal === "CANCELLED"
+  ) {
+    return "failed";
+  }
+  return "in_transit";
+}
+
+export type DlocalPayoutTransferRow = {
+  id: string;
+  professionalId: string;
+  professionalName: string;
+  sessionsCount: number;
+  professionalNetUsdCents: number;
+  status: string;
+  displayStatus: DlocalTransferDisplayStatus;
+  dlocalPayoutId: string | null;
+  dlocalStatus: string | null;
+  submissionError: string | null;
+  payoutReference: string | null;
+  createdAt: string;
+  paidAt: string | null;
+};
+
+export async function listDlocalPayoutTransfers(input?: {
+  months?: string[];
+}): Promise<{ selectedMonths: string[]; transfers: DlocalPayoutTransferRow[] }> {
+  const selectedMonths = [...new Set((input?.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  const liveFx = await resolveLiveFx();
+
+  const lines = await prisma.financePayoutLine.findMany({
+    where: dlocalSentPayoutLineWhere,
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    include: {
+      professional: { select: { user: { select: { fullName: true } } } },
+      sessionRecords: {
+        select: {
+          currency: true,
+          sessionPriceCents: true,
+          platformFeeCents: true,
+          professionalNetCents: true,
+          bookingCompletedAt: true,
+          bookingStartsAt: true,
+          purchase: { select: { fxArsPerUsdSnapshot: true } }
+        }
+      }
+    }
+  });
+
+  const transfers: DlocalPayoutTransferRow[] = [];
+  for (const line of lines) {
+    const createdMonth = utcMonthKeyFromDate(line.createdAt);
+    if (selectedMonths.length > 0 && !selectedMonths.includes(createdMonth)) {
+      continue;
+    }
+
+    let professionalNetUsdCents = 0;
+    if (line.sessionRecords.length > 0) {
+      for (const row of line.sessionRecords) {
+        const fx = readSessionFxArsPerUsdSnapshot({
+          currency: row.currency,
+          sessionPriceCents: row.sessionPriceCents,
+          platformFeeCents: row.platformFeeCents,
+          professionalNetCents: row.professionalNetCents,
+          fxArsPerUsdSnapshot: row.purchase?.fxArsPerUsdSnapshot ?? null
+        });
+        professionalNetUsdCents += convertFinanceMinorToUsdMinor(
+          row.professionalNetCents,
+          row.currency,
+          fx,
+          liveFx
+        );
+      }
+    } else {
+      professionalNetUsdCents = line.professionalNetCents;
+    }
+
+    transfers.push({
+      id: line.id,
+      professionalId: line.professionalId,
+      professionalName: line.professional.user.fullName,
+      sessionsCount: line.sessionsCount,
+      professionalNetUsdCents,
+      status: line.status,
+      displayStatus: resolveDlocalTransferDisplayStatus({
+        status: line.status,
+        dlocalStatus: line.dlocalStatus
+      }),
+      dlocalPayoutId: line.dlocalPayoutId,
+      dlocalStatus: line.dlocalStatus,
+      submissionError: line.submissionError,
+      payoutReference: line.payoutReference,
+      createdAt: line.createdAt.toISOString(),
+      paidAt: line.paidAt?.toISOString() ?? null
+    });
+  }
+
+  return { selectedMonths, transfers };
 }
 
 function maskAccount(value: string): string {
@@ -385,6 +514,10 @@ export async function getUnpaidProfessionalDetail(
     const line = record.payoutLine;
     const isPaid = Boolean(line && (line.status === "PAID" || line.paidAt != null));
     const submittedForPayout = Boolean(record.submittedForPayoutAt || line);
+    const eligibleToPay =
+      Boolean(record.submittedForPayoutAt)
+      && !isPaid
+      && (line == null || line.status === "FAILED");
     const payoutStatus = isPaid
       ? ("paid" as const)
       : submittedForPayout
@@ -392,7 +525,7 @@ export async function getUnpaidProfessionalDetail(
         : ("not_submitted" as const);
     if (isPaid) {
       paidSessionsCount += 1;
-    } else if (submittedForPayout) {
+    } else if (eligibleToPay) {
       pendingSessionsCount += 1;
       pendingGrossUsdCents += sessionPriceUsdCents;
       pendingPlatformFeeUsdCents += feeUsdCents;
@@ -532,19 +665,40 @@ export async function payUnpaidProfessional(input: {
   months?: string[];
 }) {
   const months = [...new Set((input.months ?? []).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort();
+  console.info(`${LOG_PREFIX} pay start`, {
+    professionalId: input.professionalId,
+    method: input.method,
+    months,
+    hasReference: Boolean(input.payoutReference?.trim())
+  });
+
   const detail = await getUnpaidProfessionalDetail(input.professionalId, { months });
   if ("notFound" in detail) {
+    console.warn(`${LOG_PREFIX} pay aborted: professional not found`, { professionalId: input.professionalId });
     return { notFound: true as const };
   }
   if (detail.totals.pendingSessionsCount === 0) {
+    console.warn(`${LOG_PREFIX} pay aborted: no eligible sessions`, {
+      professionalId: input.professionalId,
+      method: input.method
+    });
     return { noRecords: true as const };
   }
 
   if (input.method === "ledger") {
-    return payProfessionalUnpaidBalance(input.professionalId, input.payoutReference, {
+    const ledger = await payProfessionalUnpaidBalance(input.professionalId, input.payoutReference, {
       months,
       markPaidImmediately: true
     });
+    console.info(`${LOG_PREFIX} ledger payment recorded`, {
+      professionalId: input.professionalId,
+      result: "notFound" in ledger || "noRecords" in ledger ? ledger : {
+        payoutLineId: ledger.payoutLineId,
+        sessionsCount: ledger.sessionsCount,
+        professionalNetCents: ledger.professionalNetCents
+      }
+    });
+    return ledger;
   }
 
   if (!detail.payout.dlocalConfigured) {
@@ -563,56 +717,189 @@ export async function payUnpaidProfessional(input: {
     );
   }
 
-  // 1) Reservar sesiones en una corrida DRAFT (línea SUBMITTED sin dLocal aún).
+  const expectedSessions = detail.totals.pendingSessionsCount;
+  const estimatedLocal = detail.payout.estimatedLocal;
+  console.info(`${LOG_PREFIX} reserving sessions before dLocal`, {
+    professionalId: input.professionalId,
+    expectedSessions,
+    pendingNetUsdCents: detail.totals.pendingProfessionalNetUsdCents,
+    estimatedLocal
+  });
+
   const ledger = await payProfessionalUnpaidBalance(input.professionalId, undefined, {
     months,
     markPaidImmediately: false,
     notes: "Pago dLocal desde pendientes (awaiting webhook)"
   });
   if ("notFound" in ledger || "noRecords" in ledger) {
+    console.warn(`${LOG_PREFIX} reservation returned empty`, {
+      professionalId: input.professionalId,
+      ledger
+    });
     return ledger;
   }
 
+  if (ledger.sessionsCount !== expectedSessions) {
+    console.error(`${LOG_PREFIX} session count mismatch; releasing reservation (no dLocal call)`, {
+      professionalId: input.professionalId,
+      payoutLineId: ledger.payoutLineId,
+      expectedSessions,
+      reservedSessions: ledger.sessionsCount
+    });
+    await releaseReservedSessions(ledger.payoutLineId, "session_count_mismatch: reservation did not match eligible sessions");
+    throw new ProfessionalPayoutError(
+      "session_count_mismatch",
+      "El lote a pagar cambió mientras se armaba la transferencia. No se envió nada a dLocal; recargá y reintentá."
+    );
+  }
+
+  const externalReference = `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`;
+  let createdPayoutId: string | null = null;
   try {
+    console.info(`${LOG_PREFIX} calling dLocal`, {
+      professionalId: input.professionalId,
+      payoutLineId: ledger.payoutLineId,
+      payoutRunId: ledger.payoutRunId,
+      sessionsCount: ledger.sessionsCount,
+      amount: estimatedLocal.amount,
+      currency: estimatedLocal.currency,
+      ref: externalReference
+    });
+
     const { payout, record } = await createProfessionalPayout({
       professionalProfileId: input.professionalId,
-      amount: detail.payout.estimatedLocal.amount,
-      externalReference: `mc-unpaid-${input.professionalId.slice(0, 8)}-${Date.now()}`,
+      amount: estimatedLocal.amount,
+      externalReference,
       beneficiaryEmail: detail.professional.email,
-      description: `MotivarCare · ${detail.totals.pendingSessionsCount} sesiones${months.length ? ` · ${months.join(",")}` : ""}`,
+      description: `MotivarCare · ${ledger.sessionsCount} sesiones${months.length ? ` · ${months.join(",")}` : ""}`,
       payoutLineId: ledger.payoutLineId
     });
+    createdPayoutId = payout.payout_id;
 
-    await prisma.financePayoutLine.update({
-      where: { id: ledger.payoutLineId },
-      data: {
+    try {
+      await prisma.financePayoutLine.update({
+        where: { id: ledger.payoutLineId },
+        data: {
+          dlocalPayoutId: payout.payout_id,
+          dlocalStatus: record.status,
+          payoutReference: input.payoutReference?.trim() || `dlocal:${payout.payout_id}`,
+          submissionError: null
+        }
+      });
+
+      await applyDlocalStatusToPayoutLine({
+        payoutId: payout.payout_id,
+        status: String(record.status)
+      });
+    } catch (persistError) {
+      console.error(`${LOG_PREFIX} dLocal created payout but local persist failed; sessions stay reserved`, {
+        professionalId: input.professionalId,
+        payoutLineId: ledger.payoutLineId,
         dlocalPayoutId: payout.payout_id,
         dlocalStatus: record.status,
-        payoutReference: input.payoutReference?.trim() || `dlocal:${payout.payout_id}`,
-        submissionError: null
-      }
-    });
+        message: persistError instanceof Error ? persistError.message : String(persistError)
+      });
+      throw persistError;
+    }
 
-    await applyDlocalStatusToPayoutLine({
-      payoutId: payout.payout_id,
-      status: String(record.status)
+    console.info(`${LOG_PREFIX} dLocal payout accepted`, {
+      professionalId: input.professionalId,
+      payoutLineId: ledger.payoutLineId,
+      dlocalPayoutId: payout.payout_id,
+      dlocalStatus: record.status,
+      sessionsCount: ledger.sessionsCount,
+      amount: estimatedLocal.amount,
+      currency: estimatedLocal.currency,
+      ref: externalReference
     });
 
     return {
       ...ledger,
       dlocalPayoutId: payout.payout_id,
       dlocalStatus: record.status,
-      dlocalAmount: detail.payout.estimatedLocal.amount,
-      dlocalCurrency: detail.payout.estimatedLocal.currency
+      dlocalAmount: estimatedLocal.amount,
+      dlocalCurrency: estimatedLocal.currency
     };
   } catch (error) {
-    await prisma.financePayoutLine.update({
+    const submissionError = (error instanceof Error ? error.message : String(error)).slice(0, 2000);
+    const line = await prisma.financePayoutLine.findUnique({
       where: { id: ledger.payoutLineId },
+      select: { id: true, dlocalPayoutId: true, status: true }
+    });
+    const knownPayoutId = createdPayoutId || line?.dlocalPayoutId || null;
+
+    if (!shouldReleaseSessionsAfterDlocalFailure({ dlocalPayoutId: knownPayoutId })) {
+      console.error(`${LOG_PREFIX} dLocal payout already exists; NOT releasing sessions`, {
+        professionalId: input.professionalId,
+        payoutLineId: ledger.payoutLineId,
+        dlocalPayoutId: knownPayoutId,
+        lineStatus: line?.status ?? null,
+        message: submissionError
+      });
+      if (line && !line.dlocalPayoutId) {
+        await prisma.financePayoutLine.update({
+          where: { id: ledger.payoutLineId },
+          data: {
+            dlocalPayoutId: knownPayoutId,
+            submissionError: submissionError.slice(0, 2000)
+          }
+        }).catch((persistError: unknown) => {
+          console.error(`${LOG_PREFIX} could not persist known dLocal payout id`, {
+            payoutLineId: ledger.payoutLineId,
+            dlocalPayoutId: knownPayoutId,
+            message: persistError instanceof Error ? persistError.message : String(persistError)
+          });
+        });
+      }
+    } else {
+      const timedOut = /timeout/i.test(submissionError);
+      if (timedOut) {
+        console.error(`${LOG_PREFIX} dLocal timed out before payout_id; releasing sessions. If dLocal created it anyway, check the sandbox dashboard before retrying.`, {
+          professionalId: input.professionalId,
+          payoutLineId: ledger.payoutLineId,
+          ref: externalReference,
+          message: submissionError
+        });
+      } else {
+        console.error(`${LOG_PREFIX} dLocal did not create a payout; releasing sessions back to pending`, {
+          professionalId: input.professionalId,
+          payoutLineId: ledger.payoutLineId,
+          ref: externalReference,
+          message: submissionError
+        });
+      }
+      await releaseReservedSessions(ledger.payoutLineId, submissionError);
+    }
+
+    if (error instanceof ProfessionalPayoutError) {
+      throw error;
+    }
+    throw new ProfessionalPayoutError("dlocal_rejected", submissionError);
+  }
+}
+
+async function releaseReservedSessions(payoutLineId: string, submissionError: string): Promise<void> {
+  const attached = await prisma.financeSessionRecord.findMany({
+    where: { payoutLineId },
+    select: { id: true, bookingId: true, professionalNetCents: true }
+  });
+  await prisma.$transaction([
+    prisma.financeSessionRecord.updateMany({
+      where: { payoutLineId },
+      data: { payoutLineId: null }
+    }),
+    prisma.financePayoutLine.update({
+      where: { id: payoutLineId },
       data: {
         status: "FAILED",
-        submissionError: (error instanceof Error ? error.message : String(error)).slice(0, 2000)
+        submissionError: submissionError.slice(0, 2000)
       }
-    });
-    throw error;
-  }
+    })
+  ]);
+  console.warn(`${LOG_PREFIX} released reserved sessions`, {
+    payoutLineId,
+    releasedCount: attached.length,
+    sessionIds: attached.map((row) => row.id),
+    bookingIds: attached.map((row) => row.bookingId)
+  });
 }
