@@ -87,6 +87,31 @@ describe("buildPayoutAdminFromFormFields", () => {
     expect(admin.payoutBankAccount?.accountValue).toBe("DE89370400440532013000");
     expect(adminToPayoutFormFields(admin).legalName).toBe("Ana Perez");
   });
+
+  it("splits a combined legal name into dLocal first and last name", () => {
+    const fields = adminToPayoutFormFields({
+      legalName: "Gustavo Milanese",
+      payoutMethod: "dlocal",
+      payoutBankAccount: {
+        transferType: "alias",
+        accountValue: "gus.fer.milan",
+        accountHolderName: "",
+        payoutCountry: "AR"
+      }
+    });
+    expect(fields.beneficiaryFirstName).toBe("Gustavo");
+    expect(fields.beneficiaryLastName).toBe("Milanese");
+    const admin = buildPayoutAdminFromFormFields("dlocal", {
+      ...fields,
+      documentType: "CUIT",
+      taxId: "20232619687",
+      bankCode: "000",
+      payoutTermsAccepted: true
+    });
+    expect(admin.payoutBankAccount?.beneficiaryFirstName).toBe("Gustavo");
+    expect(admin.payoutBankAccount?.beneficiaryLastName).toBe("Milanese");
+    expect(admin.legalName).toBe("Gustavo Milanese");
+  });
 });
 
 describe("collectPayoutFieldErrors", () => {
@@ -96,7 +121,7 @@ describe("collectPayoutFieldErrors", () => {
       stripeFields({
         legalName: "Mercado Pago",
         payoutCountry: "AR",
-        beneficiaryFirstName: "Gustavo",
+        beneficiaryFirstName: "G",
         beneficiaryLastName: "Milanese",
         documentType: "CUIT",
         taxId: "20232619687",
@@ -107,7 +132,7 @@ describe("collectPayoutFieldErrors", () => {
       "es"
     );
     expect(legalNameLooksLikeBank("Mercado Pago")).toBe(true);
-    expect(errors.legalName).toMatch(/tu nombre/i);
+    expect(errors.beneficiaryFirstName).toMatch(/nombre/i);
     expect(errors.bankAccountValue).toBeUndefined();
   });
 

@@ -16,18 +16,24 @@ import {
 export function adminToPayoutFormFields(admin: ProfessionalPayoutAdminData): PayoutFormFields {
   const bank = admin.payoutBankAccount;
   const holder = bank?.accountHolderName?.trim() ?? "";
-  const nameParts = holder.split(/\s+/).filter(Boolean);
+  const legal = admin.legalName?.trim() ?? "";
+  const source = [holder, legal].sort((a, b) => b.split(/\s+/).filter(Boolean).length - a.split(/\s+/).filter(Boolean).length)[0] ?? "";
+  const nameParts = source.split(/\s+/).filter(Boolean);
+  const firstFromSource = nameParts[0] ?? "";
+  const lastFromSource = nameParts.slice(1).join(" ");
+  const savedFirst = (bank?.beneficiaryFirstName ?? "").trim();
+  const savedLast = (bank?.beneficiaryLastName ?? "").trim();
   return {
-    legalName: admin.legalName ?? "",
+    legalName: legal || source,
     taxId: bank?.document ?? admin.taxId ?? "",
-    accountHolderName: holder,
+    accountHolderName: holder || source,
     bankTransferType: bank?.transferType ?? "cbu",
     bankAccountValue: bank?.accountValue ?? admin.payoutAccount ?? "",
     bankName: bank?.bankName ?? "",
     payoutTermsAccepted: true,
     payoutCountry: bank?.payoutCountry ?? "",
-    beneficiaryFirstName: bank?.beneficiaryFirstName ?? nameParts[0] ?? "",
-    beneficiaryLastName: bank?.beneficiaryLastName ?? nameParts.slice(1).join(" "),
+    beneficiaryFirstName: savedFirst || firstFromSource,
+    beneficiaryLastName: savedLast || lastFromSource,
     documentType: bank?.documentType ?? "",
     bankCode: bank?.bankCode ?? "",
     bankBranch: bank?.bankBranch ?? "",
@@ -49,7 +55,7 @@ export function buildPayoutAdminFromFormFields(
     const fullName = `${dlocal.beneficiaryFirstName} ${dlocal.beneficiaryLastName}`.trim();
     return {
       taxId: dlocal.document,
-      legalName: fields.legalName.trim() || fullName,
+      legalName: fullName,
       payoutMethod: "dlocal",
       payoutStatus: "pending_review",
       payoutSubmittedAt: new Date().toISOString(),

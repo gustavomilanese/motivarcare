@@ -109,6 +109,27 @@ export function DlocalPayoutCountryFields(props: {
 
   return (
     <div className="pro-payout-dlocal">
+      <div className="pro-payout-card__grid">
+        <label className={errors.beneficiaryFirstName ? "is-invalid" : undefined}>
+          <span>{t(language, { es: "Nombre (como en el DNI)", en: "First name (as on ID)", pt: "Nome (como no documento)" })}</span>
+          <input
+            value={fields.beneficiaryFirstName}
+            onChange={(event) => onFormChange({ beneficiaryFirstName: event.target.value })}
+            autoComplete="given-name"
+          />
+          <FieldNote error={errors.beneficiaryFirstName} />
+        </label>
+        <label className={errors.beneficiaryLastName ? "is-invalid" : undefined}>
+          <span>{t(language, { es: "Apellido (como en el DNI)", en: "Last name (as on ID)", pt: "Sobrenome (como no documento)" })}</span>
+          <input
+            value={fields.beneficiaryLastName}
+            onChange={(event) => onFormChange({ beneficiaryLastName: event.target.value })}
+            autoComplete="family-name"
+          />
+          <FieldNote error={errors.beneficiaryLastName} />
+        </label>
+      </div>
+
       <label className={errors.payoutCountry ? "is-invalid" : undefined}>
         <span>
           {t(language, {
@@ -179,27 +200,6 @@ export function DlocalPayoutCountryFields(props: {
 
       {config ? (
         <>
-          <div className="pro-payout-card__grid">
-            <label className={errors.beneficiaryFirstName ? "is-invalid" : undefined}>
-              <span>{t(language, { es: "Nombre del titular de la cuenta", en: "Account holder first name", pt: "Nome do titular da conta" })}</span>
-              <input
-                value={fields.beneficiaryFirstName}
-                onChange={(event) => onFormChange({ beneficiaryFirstName: event.target.value })}
-                autoComplete="given-name"
-              />
-              <FieldNote error={errors.beneficiaryFirstName} />
-            </label>
-            <label className={errors.beneficiaryLastName ? "is-invalid" : undefined}>
-              <span>{t(language, { es: "Apellido del titular de la cuenta", en: "Account holder last name", pt: "Sobrenome do titular da conta" })}</span>
-              <input
-                value={fields.beneficiaryLastName}
-                onChange={(event) => onFormChange({ beneficiaryLastName: event.target.value })}
-                autoComplete="family-name"
-              />
-              <FieldNote error={errors.beneficiaryLastName} />
-            </label>
-          </div>
-
           <div className="pro-payout-card__grid">
             <label className={errors.documentType ? "is-invalid" : undefined}>
               <span>{t(language, { es: "Tipo de documento", en: "Document type", pt: "Tipo de documento" })}</span>

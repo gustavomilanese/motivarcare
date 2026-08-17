@@ -304,21 +304,21 @@ export function collectPayoutFieldErrors(
 ): Partial<Record<PayoutFieldErrorKey, string>> {
   const errors: Partial<Record<PayoutFieldErrorKey, string>> = {};
 
-  if (fields.legalName.trim().length < 3) {
-    errors.legalName = copy(language, {
-      es: "Ingresá tu nombre y apellido como figuran en el DNI o CUIT.",
-      en: "Enter your first and last name as they appear on your ID.",
-      pt: "Informe nome e sobrenome como no documento."
-    });
-  } else if (legalNameLooksLikeBank(fields.legalName)) {
-    errors.legalName = copy(language, {
-      es: "Acá va tu nombre, no el banco. El banco se elige más abajo.",
-      en: "This is your name, not the bank. Choose the bank below.",
-      pt: "Aqui vai o seu nome, nao o banco. O banco se escolhe abaixo."
-    });
-  }
-
   if (provider === "dlocal") {
+    if (fields.beneficiaryFirstName.trim().length < 2) {
+      errors.beneficiaryFirstName = copy(language, {
+        es: "Ingresá tu nombre, como en el DNI.",
+        en: "Enter your first name, as on your ID.",
+        pt: "Informe seu nome, como no documento."
+      });
+    }
+    if (fields.beneficiaryLastName.trim().length < 2) {
+      errors.beneficiaryLastName = copy(language, {
+        es: "Ingresá tu apellido, como en el DNI.",
+        en: "Enter your last name, as on your ID.",
+        pt: "Informe seu sobrenome, como no documento."
+      });
+    }
     if (!isDlocalPayoutCountry(fields.payoutCountry)) {
       errors.payoutCountry = copy(language, {
         es: "Elegí el país donde tenés la cuenta para cobrar.",
@@ -329,20 +329,6 @@ export function collectPayoutFieldErrors(
     }
     const profile = payoutFormToDlocalProfile(fields);
     const config = getDlocalPayoutCountryConfig(fields.payoutCountry);
-    if (profile.beneficiaryFirstName.trim().length < 2) {
-      errors.beneficiaryFirstName = copy(language, {
-        es: "Nombre del titular, como en el banco o Mercado Pago.",
-        en: "Account holder first name, as at the bank or Mercado Pago.",
-        pt: "Nome do titular, como no banco ou Mercado Pago."
-      });
-    }
-    if (profile.beneficiaryLastName.trim().length < 2) {
-      errors.beneficiaryLastName = copy(language, {
-        es: "Apellido del titular, como en el banco o Mercado Pago.",
-        en: "Account holder last name, as at the bank or Mercado Pago.",
-        pt: "Sobrenome do titular, como no banco ou Mercado Pago."
-      });
-    }
     if (!config?.documentTypes.some((option) => option.value === profile.documentType)) {
       errors.documentType = copy(language, {
         es: "Elegí CUIT o CUIL (u otro documento del país).",
@@ -397,6 +383,19 @@ export function collectPayoutFieldErrors(
     return errors;
   }
 
+  if (fields.legalName.trim().length < 3) {
+    errors.legalName = copy(language, {
+      es: "Ingresá tu nombre y apellido como figuran en el DNI o CUIT.",
+      en: "Enter your first and last name as they appear on your ID.",
+      pt: "Informe nome e sobrenome como no documento."
+    });
+  } else if (legalNameLooksLikeBank(fields.legalName)) {
+    errors.legalName = copy(language, {
+      es: "Acá va tu nombre, no el banco. El banco se elige más abajo.",
+      en: "This is your name, not the bank. Choose the bank below.",
+      pt: "Aqui vai o seu nome, nao o banco. O banco se escolhe abaixo."
+    });
+  }
   if (!isValidTaxId(provider, fields.taxId)) {
     errors.taxId = copy(language, {
       es: "Ingresá tu documento o identificación fiscal.",

@@ -230,7 +230,9 @@ export function ProfessionalBankDetailsSection(props: {
       }
       const fields = { ...adminToPayoutFormFields(current), ...patch };
       if (patch.beneficiaryFirstName !== undefined || patch.beneficiaryLastName !== undefined) {
-        fields.accountHolderName = `${fields.beneficiaryFirstName} ${fields.beneficiaryLastName}`.trim();
+        const fullName = `${fields.beneficiaryFirstName} ${fields.beneficiaryLastName}`.trim();
+        fields.accountHolderName = fullName;
+        fields.legalName = fullName;
       }
       const built = buildPayoutAdminFromFormFields("dlocal", fields);
       return {
@@ -330,8 +332,17 @@ export function ProfessionalBankDetailsSection(props: {
           </dd>
         </div>
         <div>
-          <dt>{t(props.language, { es: "Nombre y apellido (DNI)", en: "Legal name (ID)", pt: "Nome e sobrenome (documento)" })}</dt>
-          <dd>{displayValue(form.legalName)}</dd>
+          <dt>{t(props.language, { es: "Nombre", en: "First name", pt: "Nome" })}</dt>
+          <dd>{displayValue(bank?.beneficiaryFirstName || form.legalName?.trim().split(/\s+/)[0])}</dd>
+        </div>
+        <div>
+          <dt>{t(props.language, { es: "Apellido", en: "Last name", pt: "Sobrenome" })}</dt>
+          <dd>
+            {displayValue(
+              bank?.beneficiaryLastName
+              || form.legalName?.trim().split(/\s+/).slice(1).join(" ")
+            )}
+          </dd>
         </div>
         {form.payoutMethod === "dlocal" ? null : (
           <div>
@@ -339,10 +350,6 @@ export function ProfessionalBankDetailsSection(props: {
             <dd>{displayValue(form.taxId)}</dd>
           </div>
         )}
-        <div>
-          <dt>{t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}</dt>
-          <dd>{displayValue(bank?.accountHolderName)}</dd>
-        </div>
         {form.payoutMethod === "dlocal" ? null : (
           <div>
             <dt>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</dt>
@@ -388,6 +395,18 @@ export function ProfessionalBankDetailsSection(props: {
           onSave={() => void handleSave()}
         >
             <div className="pro-profile-fields">
+              {isDlocal && dlocalFields ? (
+                <div className="pro-profile-field pro-profile-field--wide">
+                  <DlocalPayoutCountryFields
+                    language={props.language}
+                    fields={dlocalFields}
+                    onFormChange={applyDlocalFields}
+                    residencyCountry={props.residencyCountry}
+                    fieldErrors={fieldErrors}
+                  />
+                </div>
+              ) : (
+                <>
               <label className={`pro-profile-field pro-profile-field--sentence${fieldErrors.legalName ? " is-invalid" : ""}`}>
                 <span>{t(props.language, { es: "Nombre y Apellido (como en el DNI)", en: "First and last name (as on ID)", pt: "Nome e sobrenome (como no documento)" })}</span>
                 <input
@@ -406,18 +425,6 @@ export function ProfessionalBankDetailsSection(props: {
                 />
                 <FieldError message={fieldErrors.legalName} />
               </label>
-              {isDlocal && dlocalFields ? (
-                <div className="pro-profile-field pro-profile-field--wide">
-                  <DlocalPayoutCountryFields
-                    language={props.language}
-                    fields={dlocalFields}
-                    onFormChange={applyDlocalFields}
-                    residencyCountry={props.residencyCountry}
-                    fieldErrors={fieldErrors}
-                  />
-                </div>
-              ) : (
-                <>
               <label className={`pro-profile-field${fieldErrors.taxId ? " is-invalid" : ""}`}>
                 <span>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</span>
                 <input
