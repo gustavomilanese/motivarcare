@@ -109,6 +109,16 @@ export function DashboardPage(props: {
   const [rescheduleTargetBooking, setRescheduleTargetBooking] = useState<UpcomingReservationItem | null>(null);
   const [rescheduleSlots, setRescheduleSlots] = useState<AvailabilitySlot[]>([]);
   const [selectedRescheduleSlotKey, setSelectedRescheduleSlotKey] = useState("");
+  const [isRescheduleSlotSheetOpen, setIsRescheduleSlotSheetOpen] = useState(false);
+  const selectedRescheduleSlotLabel = useMemo(() => {
+    const slot = rescheduleSlots.find(
+      (item) => buildSlotKey(item.startsAt, item.endsAt) === selectedRescheduleSlotKey
+    );
+    if (!slot) {
+      return "";
+    }
+    return `${formatDateTime(slot.startsAt, props.language)} · ${formatTime(slot.endsAt, props.language)}`;
+  }, [props.language, rescheduleSlots, selectedRescheduleSlotKey]);
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelTargetBooking, setCancelTargetBooking] = useState<UpcomingReservationItem | null>(null);
@@ -249,22 +259,28 @@ export function DashboardPage(props: {
 
   useEffect(() => {
     if (!isRescheduleModalOpen) {
+      setIsRescheduleSlotSheetOpen(false);
       return;
     }
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsRescheduleModalOpen(false);
-        setRescheduleTargetBooking(null);
-        setRescheduleSlots([]);
-        setSelectedRescheduleSlotKey("");
-        setRescheduleReason("");
+      if (event.key !== "Escape") {
+        return;
       }
+      if (isRescheduleSlotSheetOpen) {
+        setIsRescheduleSlotSheetOpen(false);
+        return;
+      }
+      setIsRescheduleModalOpen(false);
+      setRescheduleTargetBooking(null);
+      setRescheduleSlots([]);
+      setSelectedRescheduleSlotKey("");
+      setRescheduleReason("");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isRescheduleModalOpen]);
+  }, [isRescheduleModalOpen, isRescheduleSlotSheetOpen]);
 
   useEffect(() => {
     if (!isCancelModalOpen) {
@@ -925,6 +941,9 @@ export function DashboardPage(props: {
         tabIndex={-1}
         data-tour="pro-tour-bookings"
       >
+        <h2 className="pro-dashboard-sessions-hub-title">
+          {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessoes" })}
+        </h2>
         <nav
           className="pro-schedule-hub-tabs pro-dashboard-sessions-hub-tabs"
           aria-label={t(props.language, {
@@ -989,10 +1008,23 @@ export function DashboardPage(props: {
             <div className="agenda-upcoming-head agenda-session-panel-head pro-dashboard-sessions-hub-toolbar">
               <p className="agenda-session-lead">
                 {t(props.language, {
-                  es: "Marcá las que ya hiciste. Cuando esté listo, envialas a cobro: esa acción no se puede deshacer.",
-                  en: "Mark the ones you’ve already done. When you’re ready, send them for payout — that can’t be undone.",
-                  pt: "Marque as que ja fez. Quando estiver pronto, envie a cobranca: essa acao nao se desfaz."
+                  es: "Seleccioná las sesiones realizadas y envialas para su pago.",
+                  en: "Select the completed sessions and send them for payout.",
+                  pt: "Selecione as sessoes realizadas e envie para pagamento."
                 })}
+                {"\n"}
+                {t(props.language, {
+                  es: "Una vez enviadas, ",
+                  en: "Once sent, ",
+                  pt: "Depois de enviadas, "
+                })}
+                <strong>
+                  {t(props.language, {
+                    es: "no podrás modificarlas.",
+                    en: "you won’t be able to change them.",
+                    pt: "nao podera altera-las."
+                  })}
+                </strong>
               </p>
               <div className="agenda-session-panel-filters">
                 <RevenueMonthPicker
@@ -1147,32 +1179,41 @@ export function DashboardPage(props: {
 
         <section className="pro-card pro-dashboard-availability-shortcut" aria-labelledby="pro-dashboard-availability-title">
           <div className="pro-dashboard-availability-shortcut-copy">
-            <h2 id="pro-dashboard-availability-title">
-              {t(props.language, {
-                es: "Publicá tu disponibilidad",
-                en: "Publish your availability",
-                pt: "Publique sua disponibilidade"
-              })}
-            </h2>
-            <p>
-              {t(props.language, {
-                es: "Armá tu plantilla semanal en Horarios para que los pacientes puedan reservar turnos.",
-                en: "Set your weekly template in Availability so patients can book slots.",
-                pt: "Monte seu modelo semanal em Horários para os pacientes reservarem horarios."
-              })}
-            </p>
+            <span className="pro-dashboard-availability-shortcut-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+                <path d="M4 10h16M8 3.5v3M16 3.5v3" />
+              </svg>
+            </span>
+            <div className="pro-dashboard-availability-shortcut-text">
+              <h2 id="pro-dashboard-availability-title">
+                {t(props.language, {
+                  es: "Publicá tu disponibilidad",
+                  en: "Publish your availability",
+                  pt: "Publique sua disponibilidade"
+                })}
+              </h2>
+              <p>
+                {t(props.language, {
+                  es: "Armá tu plantilla semanal en Horarios para que los pacientes puedan reservar turnos.",
+                  en: "Set your weekly template in Availability so patients can book slots.",
+                  pt: "Monte seu modelo semanal em Horários para os pacientes reservarem horarios."
+                })}
+              </p>
+            </div>
           </div>
           <NavLink to="/horarios" className="pro-dashboard-availability-shortcut-cta">
             {t(props.language, {
-              es: "Ir a Horarios",
-              en: "Go to Availability",
-              pt: "Ir para Horários"
+              es: "Armá tu semana",
+              en: "Set your week",
+              pt: "Monte sua semana"
             })}
           </NavLink>
         </section>
       </div>
 
       {isRescheduleModalOpen ? (
+        <>
         <div className="pro-reschedule-modal-backdrop" role="presentation" onClick={() => setIsRescheduleModalOpen(false)}>
           <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <header>
@@ -1181,14 +1222,18 @@ export function DashboardPage(props: {
             </header>
             <p className="pro-reschedule-modal-lead">
               {t(props.language, {
-                es: "Podés mover la sesión a cualquier horario libre de tu agenda, incluso si faltan menos de 24 horas. El paciente recibe el aviso del cambio.",
-                en: "You can move the session to any free slot on your schedule, even within 24 hours. The patient is notified of the change.",
-                pt: "Voce pode mover a sessao para qualquer horario livre da sua agenda, mesmo com menos de 24 horas. O paciente recebe o aviso da mudanca."
+                es: "Elegí otro hueco libre. Le avisamos al paciente. No hay tope de 24 horas.",
+                en: "Pick another open slot. We notify the patient. No 24-hour limit.",
+                pt: "Escolha outro horario livre. Avisamos o paciente. Sem limite de 24 horas."
               })}
             </p>
-            <label>
+            <label className="pro-reschedule-slot-field">
               <span>{t(props.language, { es: "Nuevo horario", en: "New time", pt: "Novo horario" })}</span>
-              <select value={selectedRescheduleSlotKey} onChange={(event) => setSelectedRescheduleSlotKey(event.target.value)}>
+              <select
+                className="pro-reschedule-slot-select"
+                value={selectedRescheduleSlotKey}
+                onChange={(event) => setSelectedRescheduleSlotKey(event.target.value)}
+              >
                 <option value="">
                   {rescheduleSlots.length === 0
                     ? t(props.language, { es: "Sin horarios disponibles", en: "No available slots", pt: "Sem horarios disponiveis" })
@@ -1200,6 +1245,18 @@ export function DashboardPage(props: {
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                className="pro-reschedule-slot-trigger"
+                disabled={rescheduleSlots.length === 0}
+                aria-haspopup="dialog"
+                onClick={() => setIsRescheduleSlotSheetOpen(true)}
+              >
+                {selectedRescheduleSlotLabel ||
+                  (rescheduleSlots.length === 0
+                    ? t(props.language, { es: "Sin horarios disponibles", en: "No available slots", pt: "Sem horarios disponiveis" })
+                    : t(props.language, { es: "Elegí un horario", en: "Pick a time", pt: "Escolha um horario" }))}
+              </button>
             </label>
             <label>
               <span>{t(props.language, { es: "Motivo (opcional)", en: "Reason (optional)", pt: "Motivo (opcional)" })}</span>
@@ -1221,6 +1278,47 @@ export function DashboardPage(props: {
             </div>
           </section>
         </div>
+        {isRescheduleSlotSheetOpen ? (
+          <div
+            className="pro-sheet-backdrop agenda-status-sheet-backdrop"
+            role="presentation"
+            onClick={() => setIsRescheduleSlotSheetOpen(false)}
+          >
+            <div
+              className="agenda-status-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t(props.language, { es: "Nuevo horario", en: "New time", pt: "Novo horario" })}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="agenda-status-sheet-title">
+                {t(props.language, { es: "Elegí un horario", en: "Pick a time", pt: "Escolha um horario" })}
+              </p>
+              <div className="agenda-status-sheet-actions agenda-status-sheet-actions--scroll">
+                {rescheduleSlots.map((slot) => {
+                  const slotKey = buildSlotKey(slot.startsAt, slot.endsAt);
+                  return (
+                    <button
+                      key={slotKey}
+                      type="button"
+                      className={slotKey === selectedRescheduleSlotKey ? "is-current" : ""}
+                      onClick={() => {
+                        setSelectedRescheduleSlotKey(slotKey);
+                        setIsRescheduleSlotSheetOpen(false);
+                      }}
+                    >
+                      {formatDateTime(slot.startsAt, props.language)} · {formatTime(slot.endsAt, props.language)}
+                    </button>
+                  );
+                })}
+              </div>
+              <button type="button" className="agenda-status-sheet-cancel" onClick={() => setIsRescheduleSlotSheetOpen(false)}>
+                {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+              </button>
+            </div>
+          </div>
+        ) : null}
+        </>
       ) : null}
 
       {isCancelModalOpen ? (

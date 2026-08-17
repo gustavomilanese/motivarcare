@@ -198,6 +198,7 @@ export function ProfessionalPortal(props: {
     onCloseNotifications: () => setNotificationsOpen(false),
     onOpenPreferences: openPreferences,
     onLogout: props.onLogout,
+    user: props.user,
     listingVisibility:
       listingVisibility.ready && listingVisibility.visible !== null && listingVisibility.registrationApproval
         ? (

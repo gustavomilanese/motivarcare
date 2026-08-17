@@ -2,8 +2,10 @@ import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState }
 import { subscribeDocumentVisibleInterval } from "@therapy/auth";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { useSearchParams } from "react-router-dom";
+import { useProPortalChrome } from "../components/ProPortalChromeContext";
+import { PatientAvatarImage } from "../components/PatientAvatarImage";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
-import { apiRequest } from "../services/api";
+import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import type { AuthUser, ThreadMessage, ThreadSummary } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
@@ -24,6 +26,74 @@ function formatDateTime(value: string, language: AppLanguage): string {
   });
 }
 
+function formatBubbleTime(value: string, language: AppLanguage): string {
+  return formatDateWithLocale({
+    value,
+    language,
+    options: {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }
+  });
+}
+
+function formatThreadTime(value: string, language: AppLanguage): string {
+  const date = new Date(value);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  return formatDateWithLocale({
+    value,
+    language,
+    options: sameDay
+      ? { hour: "2-digit", minute: "2-digit", hour12: false }
+      : { day: "numeric", month: "short" }
+  });
+}
+
+function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 1).toUpperCase();
+  }
+  return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
+}
+
+function useCompactChatLayout(): boolean {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 1100px)").matches : false
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1100px)");
+    const onChange = () => setCompact(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return compact;
+}
+
+function ChatAvatar(props: { name: string; photoUrl?: string | null; className?: string }) {
+  const src = resolveApiAssetUrl(props.photoUrl ?? null);
+  return (
+    <div className={`pro-chat-avatar${props.className ? ` ${props.className}` : ""}`} aria-hidden="true">
+      {src ? (
+        <PatientAvatarImage
+          src={src}
+          imgClassName="pro-chat-avatar-img"
+          emptyClassName="pro-chat-avatar-img pro-chat-avatar-img--empty"
+        />
+      ) : (
+        <span className="pro-chat-avatar-img pro-chat-avatar-img--empty">{nameInitials(props.name)}</span>
+      )}
+    </div>
+  );
+}
+
 function mergeThreadsByCounterpart(threads: ThreadSummary[]): ThreadSummary[] {
   const grouped = new Map<string, ThreadSummary>();
 
@@ -39,6 +109,9 @@ function mergeThreadsByCounterpart(threads: ThreadSummary[]): ThreadSummary[] {
     const nextActivityAt = thread.lastMessage?.createdAt ?? thread.createdAt;
 
     current.unreadCount += thread.unreadCount;
+    if (!current.counterpartPhotoUrl && thread.counterpartPhotoUrl) {
+      current.counterpartPhotoUrl = thread.counterpartPhotoUrl;
+    }
     if (new Date(nextActivityAt).getTime() > new Date(currentActivityAt).getTime()) {
       current.id = thread.id;
       current.lastMessage = thread.lastMessage;
@@ -62,17 +135,30 @@ export function ChatPage(props: {
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPatientId = searchParams.get("patientId")?.trim() ?? "";
+  const isCompactChat = useCompactChatLayout();
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string>("");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const selectedThreadRef = useRef<string>("");
+  const messagesPaneRef = useRef<HTMLDivElement>(null);
+  const conversationOpen = Boolean(selectedThreadId);
 
-  const selectedThread = useMemo(
-    () => threads.find((thread) => thread.id === selectedThreadId) ?? threads[0] ?? null,
-    [threads, selectedThreadId]
-  );
+  useProPortalChrome({
+    suppressPageHeader: isCompactChat && conversationOpen
+  });
+
+  const selectedThread = useMemo(() => {
+    const found = threads.find((thread) => thread.id === selectedThreadId);
+    if (found) {
+      return found;
+    }
+    if (isCompactChat) {
+      return null;
+    }
+    return threads[0] ?? null;
+  }, [threads, selectedThreadId, isCompactChat]);
 
   useEffect(() => {
     selectedThreadRef.current = selectedThreadId;
@@ -102,9 +188,12 @@ export function ChatPage(props: {
       if (current && mergedThreads.some((thread) => thread.id === current)) {
         return current;
       }
+      if (isCompactChat) {
+        return "";
+      }
       return mergedThreads[0]?.id ?? "";
     });
-  }, [props.portalThreads]);
+  }, [props.portalThreads, isCompactChat]);
 
   const loadMessages = useCallback(async (threadId: string) => {
     try {
@@ -151,6 +240,14 @@ export function ChatPage(props: {
     };
   }, [selectedThread?.id, props.token, loadMessages]);
 
+  useEffect(() => {
+    const pane = messagesPaneRef.current;
+    if (!pane) {
+      return;
+    }
+    pane.scrollTop = pane.scrollHeight;
+  }, [messages, selectedThread?.id]);
+
   const handleSend = async () => {
     if (!draft.trim() || !selectedThread) {
       return;
@@ -177,8 +274,18 @@ export function ChatPage(props: {
     }
   };
 
+  const closeConversation = () => {
+    setSelectedThreadId("");
+    setDraft("");
+  };
+
+  const emptyPreview = t(props.language, { es: "Sin mensajes", en: "No messages", pt: "Sem mensagens" });
+
   return (
-    <section className="pro-chat-shell" data-tour="pro-tour-chat-shell">
+    <section
+      className={`pro-chat-shell${isCompactChat ? (conversationOpen ? " pro-chat-shell--conversation" : " pro-chat-shell--inbox") : ""}`}
+      data-tour="pro-tour-chat-shell"
+    >
       <aside className="pro-chat-sidebar" data-tour="pro-tour-chat-threads">
         <header>
           <h3>{t(props.language, { es: "Conversaciones", en: "Conversations", pt: "Conversas" })}</h3>
@@ -189,37 +296,73 @@ export function ChatPage(props: {
               {t(props.language, { es: "No hay conversaciones activas.", en: "No active conversations.", pt: "Nao ha conversas ativas." })}
             </p>
           ) : null}
-          {threads.map((thread) => (
-            <button
-              key={thread.id}
-              className={thread.id === selectedThread?.id ? "pro-thread active" : "pro-thread"}
-              type="button"
-              onClick={() => setSelectedThreadId(thread.id)}
-            >
-              <div title={thread.counterpartName}>
-                <strong>{thread.counterpartName}</strong>
-                <p>{thread.lastMessage?.body ?? t(props.language, { es: "Sin mensajes", en: "No messages", pt: "Sem mensagens" })}</p>
-              </div>
-              {thread.unreadCount > 0 ? <span className="pro-badge">{thread.unreadCount}</span> : null}
-            </button>
-          ))}
+          {threads.map((thread) => {
+            const activityAt = thread.lastMessage?.createdAt ?? thread.createdAt;
+            return (
+              <button
+                key={thread.id}
+                className={thread.id === selectedThread?.id ? "pro-thread active" : "pro-thread"}
+                type="button"
+                onClick={() => setSelectedThreadId(thread.id)}
+              >
+                <ChatAvatar
+                  name={thread.counterpartName}
+                  photoUrl={thread.counterpartPhotoUrl}
+                />
+                <div title={thread.counterpartName}>
+                  <strong>{thread.counterpartName}</strong>
+                  <p>{thread.lastMessage?.body ?? emptyPreview}</p>
+                </div>
+                <span className="pro-thread-meta">
+                  {activityAt ? <time>{formatThreadTime(activityAt, props.language)}</time> : null}
+                  {thread.unreadCount > 0 ? <span className="pro-badge">{thread.unreadCount}</span> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </aside>
 
       <div className="pro-chat-main">
         <header className="pro-chat-main-header">
-          <h3>{selectedThread?.counterpartName ?? t(props.language, { es: "Selecciona un chat", en: "Select a chat", pt: "Selecione um chat" })}</h3>
+          {isCompactChat ? (
+            <button
+              type="button"
+              className="pro-chat-back"
+              onClick={closeConversation}
+              aria-label={t(props.language, { es: "Volver a chats", en: "Back to chats", pt: "Voltar aos chats" })}
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+            </button>
+          ) : null}
+          {selectedThread ? (
+            <ChatAvatar
+              name={selectedThread.counterpartName}
+              photoUrl={selectedThread.counterpartPhotoUrl}
+              className="pro-chat-avatar--header"
+            />
+          ) : null}
+          <h3>
+            {selectedThread?.counterpartName
+              ?? t(props.language, { es: "Selecciona un chat", en: "Select a chat", pt: "Selecione um chat" })}
+          </h3>
         </header>
 
-        <div className="pro-chat-messages">
-          {messages.length === 0 ? <p className="pro-muted">{t(props.language, { es: "Todavía no hay mensajes.", en: "There are no messages yet.", pt: "Ainda nao ha mensagens." })}</p> : null}
+        <div className="pro-chat-messages" ref={messagesPaneRef}>
+          {selectedThread && messages.length === 0 ? (
+            <p className="pro-muted">
+              {t(props.language, { es: "Todavía no hay mensajes.", en: "There are no messages yet.", pt: "Ainda nao ha mensagens." })}
+            </p>
+          ) : null}
           {messages.map((message) => (
             <article
               className={message.senderUserId === props.user.id ? "pro-message outgoing" : "pro-message incoming"}
               key={message.id}
             >
               <p>{message.body}</p>
-              <time>{formatDateTime(message.createdAt, props.language)}</time>
+              <time>{isCompactChat ? formatBubbleTime(message.createdAt, props.language) : formatDateTime(message.createdAt, props.language)}</time>
             </article>
           ))}
         </div>
@@ -228,7 +371,7 @@ export function ChatPage(props: {
           <textarea
             value={draft}
             placeholder={t(props.language, { es: "Escribe un mensaje", en: "Write a message", pt: "Escreva uma mensagem" })}
-            rows={2}
+            rows={1}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleComposerKeyDown}
           />

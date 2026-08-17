@@ -1,7 +1,11 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { professionalPortalGreetingDisplayName } from "../lib/portalGreetingDisplayName";
 import type { PatientMessageNotificationItem } from "../lib/portalPatientNotifications";
+import { resolveApiAssetUrl } from "../services/api";
+import type { AuthUser } from "../types";
+import { PatientAvatarImage } from "./PatientAvatarImage";
 import {
   ProHeaderIconAgendaSettings,
   ProHeaderIconBell,
@@ -30,6 +34,7 @@ export function ProPortalHeaderActions(props: {
   onOpenPreferences: () => void;
   onLogout: () => void;
   listingVisibility?: ReactNode;
+  user?: Pick<AuthUser, "fullName" | "firstName" | "lastName" | "email" | "avatarUrl">;
 }) {
   const navigate = useNavigate();
   const variant = props.variant ?? "default";
@@ -37,6 +42,10 @@ export function ProPortalHeaderActions(props: {
   const menuRef = useRef<HTMLDivElement>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const isDashboardToolbar = variant === "dashboard-toolbar";
+  const displayName = props.user ? professionalPortalGreetingDisplayName(props.user) : "";
+  const firstName = (props.user?.firstName ?? "").trim() || displayName.split(/\s+/)[0] || "";
+  const avatarSrc = resolveApiAssetUrl(props.user?.avatarUrl ?? null);
+  const avatarInitials = (firstName || displayName || "P").slice(0, 1).toUpperCase();
 
   useEffect(() => {
     if (!accountMenuOpen) {
@@ -57,9 +66,11 @@ export function ProPortalHeaderActions(props: {
 
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    document.body.classList.add("pro-nav-drawer-open");
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("pro-nav-drawer-open");
     };
   }, [accountMenuOpen]);
 
@@ -179,8 +190,8 @@ export function ProPortalHeaderActions(props: {
           <button
             type="button"
             className={`pro-header-icon-link pro-header-menu-trigger${accountMenuOpen ? " active" : ""}`}
-            aria-label={t(props.language, { es: "Menú de cuenta", en: "Account menu", pt: "Menu da conta" })}
-            aria-haspopup="menu"
+            aria-label={t(props.language, { es: "Menú", en: "Menu", pt: "Menu" })}
+            aria-haspopup="dialog"
             aria-expanded={accountMenuOpen}
             aria-controls={menuId}
             onClick={toggleAccountMenu}
@@ -188,72 +199,113 @@ export function ProPortalHeaderActions(props: {
             <ProHeaderIconMore className="pro-header-svg-icon pro-header-svg-icon--more" />
           </button>
           {accountMenuOpen ? (
-            <div id={menuId} className="pro-header-account-dropdown" role="menu">
-              <NavLink
-                to="/perfil"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
-                onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconUser className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
-              </NavLink>
-              <NavLink
-                to="/ajustes"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
-                onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
-              </NavLink>
+            <>
               <button
                 type="button"
-                role="menuitem"
-                className="pro-header-account-dropdown-item pro-header-account-dropdown-item--value"
-                onClick={openPreferences}
-              >
-                <ProHeaderIconLocale className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                <span className="pro-header-account-dropdown-copy">
-                  <strong>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</strong>
-                  <small>
-                    {props.languageSummary} · {props.currencySummary}
-                  </small>
-                </span>
-              </button>
-              <div className="menu-sep" role="separator" />
-              <NavLink
-                to="/agenda/ajustes"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                className="pro-header-nav-backdrop"
+                aria-label={t(props.language, { es: "Cerrar menú", en: "Close menu", pt: "Fechar menu" })}
                 onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconAgendaSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" })}
-              </NavLink>
-              <NavLink
-                to="/reportes"
-                role="menuitem"
-                className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
-                onClick={() => setAccountMenuOpen(false)}
-              >
-                <ProHeaderIconReports className="pro-header-svg-icon pro-header-svg-icon--menu" />
-                {t(props.language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
-              </NavLink>
-              <div className="menu-sep" role="separator" />
-              <button
-                type="button"
-                role="menuitem"
-                className="pro-header-account-dropdown-item pro-header-account-dropdown-item--danger"
-                onClick={() => {
-                  setAccountMenuOpen(false);
-                  props.onLogout();
-                }}
-              >
-                <ProHeaderIconLogOut className="pro-header-svg-icon pro-header-svg-icon--menu pro-header-svg-icon--danger" />
-                {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
-              </button>
-            </div>
+              />
+              <div id={menuId} className="pro-header-account-dropdown" role="dialog" aria-modal="true">
+                <NavLink
+                  to="/perfil"
+                  className="pro-header-nav-drawer-head"
+                  onClick={() => setAccountMenuOpen(false)}
+                >
+                  {avatarSrc ? (
+                    <PatientAvatarImage
+                      src={avatarSrc}
+                      imgClassName="pro-header-nav-drawer-avatar"
+                      emptyClassName="pro-header-nav-drawer-avatar pro-header-nav-drawer-avatar--empty"
+                    />
+                  ) : (
+                    <span className="pro-header-nav-drawer-avatar pro-header-nav-drawer-avatar--empty">
+                      {avatarInitials}
+                    </span>
+                  )}
+                  <span className="pro-header-nav-drawer-identity">
+                    <strong>{firstName || displayName || t(props.language, { es: "Profesional", en: "Professional", pt: "Profissional" })}</strong>
+                    <em>
+                      {t(props.language, { es: "Mi perfil", en: "My profile", pt: "Meu perfil" })} ›
+                    </em>
+                  </span>
+                </NavLink>
+                <div className="pro-header-nav-drawer-body">
+                  <p className="pro-header-account-dropdown-label">
+                    {t(props.language, { es: "Consultorio", en: "Practice", pt: "Consultorio" })}
+                  </p>
+                  <NavLink
+                    to="/reportes"
+                    role="menuitem"
+                    className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    <ProHeaderIconReports className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                    {t(props.language, { es: "Reportes", en: "Reports", pt: "Relatórios" })}
+                  </NavLink>
+                  <NavLink
+                    to="/agenda/ajustes"
+                    role="menuitem"
+                    className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    <ProHeaderIconAgendaSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                    {t(props.language, { es: "Ajustes de agenda", en: "Schedule preferences", pt: "Ajustes da agenda" })}
+                  </NavLink>
+                  <div className="menu-sep" role="separator" />
+                  <p className="pro-header-account-dropdown-label">
+                    {t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}
+                  </p>
+                  <NavLink
+                    to="/perfil"
+                    role="menuitem"
+                    className={({ isActive }) =>
+                      `pro-header-account-dropdown-item pro-header-account-dropdown-item--drawer-profile${isActive ? " active" : ""}`
+                    }
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    <ProHeaderIconUser className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                    {t(props.language, { es: "Perfil", en: "Profile", pt: "Perfil" })}
+                  </NavLink>
+                  <NavLink
+                    to="/ajustes"
+                    role="menuitem"
+                    className={({ isActive }) => `pro-header-account-dropdown-item${isActive ? " active" : ""}`}
+                    onClick={() => setAccountMenuOpen(false)}
+                  >
+                    <ProHeaderIconSettings className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                    {t(props.language, { es: "Ajustes", en: "Settings", pt: "Configuracoes" })}
+                  </NavLink>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="pro-header-account-dropdown-item pro-header-account-dropdown-item--value"
+                    onClick={openPreferences}
+                  >
+                    <ProHeaderIconLocale className="pro-header-svg-icon pro-header-svg-icon--menu" />
+                    <span className="pro-header-account-dropdown-copy">
+                      <strong>{t(props.language, { es: "Idioma y moneda", en: "Language and currency", pt: "Idioma e moeda" })}</strong>
+                      <small>
+                        {props.languageSummary} · {props.currencySummary}
+                      </small>
+                    </span>
+                  </button>
+                  <div className="menu-sep" role="separator" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="pro-header-account-dropdown-item pro-header-account-dropdown-item--danger"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      props.onLogout();
+                    }}
+                  >
+                    <ProHeaderIconLogOut className="pro-header-svg-icon pro-header-svg-icon--menu pro-header-svg-icon--danger" />
+                    {t(props.language, { es: "Salir", en: "Sign out", pt: "Sair" })}
+                  </button>
+                </div>
+              </div>
+            </>
           ) : null}
         </div>
       ) : null}

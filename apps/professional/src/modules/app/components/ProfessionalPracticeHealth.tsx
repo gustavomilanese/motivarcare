@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import type { PracticeHealthVariant } from "../types";
 
@@ -181,53 +182,72 @@ function practiceHealthTooltipLines(language: AppLanguage, item: PracticeHealthI
   }
 }
 
-const GAUGE_R = 17;
-const GAUGE_C = 2 * Math.PI * GAUGE_R;
+function PracticeSignalIcon(props: { kind: string; ok: boolean }) {
+  const strokeProps = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const
+  };
+  let glyph: ReactNode;
+  switch (props.kind) {
+    case "listing_live":
+      glyph = (
+        <>
+          <circle cx="12" cy="8" r="3.1" />
+          <path d="M5.2 18.8c1.1-3.1 3.3-4.6 6.8-4.6s5.7 1.5 6.8 4.6" />
+        </>
+      );
+      break;
+    case "availability_week":
+      glyph = (
+        <>
+          <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+          <path d="M4 10h16M8 3.5v3M16 3.5v3" />
+        </>
+      );
+      break;
+    case "agenda_active":
+      glyph = (
+        <>
+          <rect x="4" y="5" width="16" height="15" rx="2" />
+          <path d="M8 3.2v3.6M16 3.2v3.6M8 13h8M8 16.5h5" />
+        </>
+      );
+      break;
+    case "conversion_sound":
+      glyph = (
+        <>
+          <path d="M4.5 16.5 9 12l3.2 3.2L19.5 7" />
+          <path d="M14 7h5.5v5.5" />
+        </>
+      );
+      break;
+    default:
+      glyph = (
+        <>
+          <circle cx="9" cy="8.4" r="2.5" />
+          <path d="M4.6 18.2c.7-2.3 2.3-3.5 4.4-3.5s3.7 1.2 4.4 3.5" />
+          <circle cx="16.2" cy="9" r="2.1" />
+          <path d="M14.4 18.2c.5-1.6 1.6-2.5 3.2-2.5 1.4 0 2.5.8 3.1 2.1" />
+        </>
+      );
+  }
+  return (
+    <span className={`pro-signal-gauge-icon${props.ok ? " is-ok" : " is-warn"}`} aria-hidden>
+      <svg viewBox="0 0 24 24" {...strokeProps}>
+        {glyph}
+      </svg>
+    </span>
+  );
+}
 
-/** Medidor circular compacto (mobile-friendly): lectura rápida ok vs atención. */
-function PracticeSignalGauge(props: { ok: boolean; label: string; metric: string }) {
-  const { ok, label, metric } = props;
-  const arcLen = ok ? GAUGE_C : GAUGE_C * 0.38;
+function PracticeSignalGauge(props: { kind: string; ok: boolean; label: string; metric: string }) {
+  const { kind, ok, label, metric } = props;
   return (
     <div className="pro-signal-gauge">
-      <div className="pro-signal-gauge-dial" aria-hidden>
-        <svg className="pro-signal-gauge-svg" viewBox="0 0 44 44">
-          {/* Marcas tipo reloj (12h) */}
-          {Array.from({ length: 12 }, (_, i) => {
-            const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
-            const x1 = 22 + Math.cos(a) * 14.5;
-            const y1 = 22 + Math.sin(a) * 14.5;
-            const x2 = 22 + Math.cos(a) * 16.8;
-            const y2 = 22 + Math.sin(a) * 16.8;
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className="pro-signal-gauge-tick" />;
-          })}
-          <circle className="pro-signal-gauge-track" cx="22" cy="22" r={GAUGE_R} fill="none" />
-          <circle
-            className={ok ? "pro-signal-gauge-ring pro-signal-gauge-ring--ok" : "pro-signal-gauge-ring pro-signal-gauge-ring--warn"}
-            cx="22"
-            cy="22"
-            r={GAUGE_R}
-            fill="none"
-            strokeDasharray={`${arcLen} ${GAUGE_C}`}
-            transform="rotate(-90 22 22)"
-          />
-          <circle className="pro-signal-gauge-hub" cx="22" cy="22" r="3.2" />
-          <line
-            className="pro-signal-gauge-hand pro-signal-gauge-hand--hour"
-            x1="22"
-            y1="22"
-            x2="22"
-            y2={ok ? "12.5" : "15"}
-          />
-          <line
-            className="pro-signal-gauge-hand pro-signal-gauge-hand--minute"
-            x1="22"
-            y1="22"
-            x2={ok ? "30" : "26"}
-            y2="22"
-          />
-        </svg>
-      </div>
+      <PracticeSignalIcon kind={kind} ok={ok} />
       <span className="pro-signal-gauge-label">{label}</span>
       <span className={`pro-signal-gauge-metric${ok ? "" : " pro-signal-gauge-metric--warn"}`}>{metric}</span>
     </div>
@@ -343,6 +363,7 @@ export function ProfessionalPracticeHealth(props: {
               aria-describedby={tipId}
             >
               <PracticeSignalGauge
+                kind={item.id}
                 ok={item.ok}
                 label={ITEM_LABELS[item.id] ? t(props.language, ITEM_LABELS[item.id]) : item.id}
                 metric={metric}

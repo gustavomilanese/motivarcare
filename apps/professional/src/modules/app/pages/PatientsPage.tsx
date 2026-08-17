@@ -145,7 +145,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
       ) : null}
 
       {data && data.patients.length > 0 ? (
-        <>
+        <div className="pro-patients-panel">
           <div className="pro-patients-toolbar" data-tour="pro-tour-patients-toolbar">
             <div className="pro-patients-filters" role="tablist" aria-label={t(props.language, { es: "Filtrar por estado", en: "Filter by status", pt: "Filtrar por estado" })}>
               {filterOptions.map((option) => (
@@ -251,7 +251,7 @@ export function PatientsPage(props: { token: string; language: AppLanguage }) {
               })}
             </ul>
           )}
-        </>
+        </div>
       ) : null}
     </div>
   );

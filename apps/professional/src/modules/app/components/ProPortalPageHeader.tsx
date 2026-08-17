@@ -16,6 +16,13 @@ export function ProPortalPageHeader(props: {
     <header className={`pro-portal-page-head${props.center ? " pro-portal-page-head--with-center" : ""}`}>
       <div className="pro-portal-page-head-start">
         {props.backButton}
+        <img
+          className="pro-portal-page-mark"
+          src="/brand/motivarcare-mark.png"
+          alt="MotivarCare"
+          width={32}
+          height={32}
+        />
         {props.title ? (
           <h1 id={props.titleId} className="pro-portal-page-title">
             {props.title}

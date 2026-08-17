@@ -1,0 +1,25 @@
+---
+description: Corners poco redondeados en UI MotivarCare (web y mobile)
+alwaysApply: true
+---
+
+# Esquinas: poco redondeo
+
+Gustavo no quiere controles ni botones “pastilla” (muy redondos). Vale para **web y mobile**, apps nuevas y cambios en las existentes.
+
+## Radios
+
+- **Botones, chips, inputs, selects, icon-buttons:** `8px`. Nunca `999px` ni `50%` en un botón rectangular.
+- **Cards / paneles:** `10px`–`12px`.
+- **Avatares en listas mobile:** cuadrado con `8px`, no círculo.
+- **Bottom sheets nativos (Cancelar, action sheet):** se puede dejar el radio del contenedor (~14px arriba); los botones de acción adentro siguen en `8px` si son controles nuestros.
+
+```css
+/* ❌ */
+.btn { border-radius: 999px; }
+
+/* ✅ */
+.btn { border-radius: 8px; }
+```
+
+Si un diseño existente en desktop ya es pill, no lo “arregles” de paso. En **mobile** y en **UI nueva**, usá este patrón.

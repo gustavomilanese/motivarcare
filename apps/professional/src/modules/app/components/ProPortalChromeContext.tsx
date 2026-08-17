@@ -70,7 +70,17 @@ export function ProPortalChromeProvider(props: {
 
   const title = override.title ?? defaultTitle;
   const suppressPageHeader = Boolean(override.suppressPageHeader);
-  const backButton = canGoBack ? (
+  const isTopLevelPortalPath = [
+    "/",
+    "/horarios",
+    "/pacientes",
+    "/chat",
+    "/ingresos",
+    "/reportes",
+    "/perfil",
+    "/ajustes"
+  ].includes(location.pathname);
+  const backButton = canGoBack && !isTopLevelPortalPath ? (
     <button type="button" className="in-app-back" onClick={goBack}>
       ← {textByLanguage(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
     </button>

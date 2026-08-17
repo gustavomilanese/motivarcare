@@ -61,6 +61,9 @@ export function PendingExecutionSessionsList(props: {
   onRequestBulkComplete: (bookings: UpcomingReservationItem[]) => void;
   onRequestBulkUncomplete: (bookings: UpcomingReservationItem[]) => void;
 }) {
+  const [statusSheet, setStatusSheet] = useState<
+    { kind: "row"; booking: UpcomingReservationItem } | { kind: "bulk" } | null
+  >(null);
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
@@ -233,6 +236,14 @@ export function PendingExecutionSessionsList(props: {
                     {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
                   </option>
                 </select>
+                <button
+                  type="button"
+                  className="agenda-session-status-trigger agenda-session-status-trigger--bulk"
+                  disabled={busyAll}
+                  onClick={() => setStatusSheet({ kind: "bulk" })}
+                >
+                  {t(props.language, { es: "Cambiar estado", en: "Change status", pt: "Mudar status" })}
+                </button>
               </label>
               <button
                 type="button"
@@ -395,31 +406,49 @@ export function PendingExecutionSessionsList(props: {
                           {lockedLabel}
                         </span>
                       ) : (
-                        <select
-                          className={`agenda-session-status-select${executed ? " is-executed" : " is-reserved"}`}
-                          value={statusValue}
-                          disabled={busy}
-                          aria-label={t(props.language, {
-                            es: `Estado de la sesión con ${booking.patientName || "paciente"}`,
-                            en: `Status for session with ${booking.patientName || "patient"}`,
-                            pt: `Status da sessao com ${booking.patientName || "paciente"}`
-                          })}
-                          onChange={(event) => {
-                            const next = event.target.value;
-                            if (next === "executed" && !executed) {
-                              props.onMarkExecuted(booking);
-                            } else if (next === "reserved" && executed) {
-                              props.onUndoExecuted(booking);
-                            }
-                          }}
-                        >
-                          <option value="reserved" disabled={!executed}>
-                            {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
-                          </option>
-                          <option value="executed" disabled={executed}>
-                            {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
-                          </option>
-                        </select>
+                        <>
+                          <select
+                            className={`agenda-session-status-select${executed ? " is-executed" : " is-reserved"}`}
+                            value={statusValue}
+                            disabled={busy}
+                            aria-label={t(props.language, {
+                              es: `Estado de la sesión con ${booking.patientName || "paciente"}`,
+                              en: `Status for session with ${booking.patientName || "patient"}`,
+                              pt: `Status da sessao com ${booking.patientName || "paciente"}`
+                            })}
+                            onChange={(event) => {
+                              const next = event.target.value;
+                              if (next === "executed" && !executed) {
+                                props.onMarkExecuted(booking);
+                              } else if (next === "reserved" && executed) {
+                                props.onUndoExecuted(booking);
+                              }
+                            }}
+                          >
+                            <option value="reserved" disabled={!executed}>
+                              {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
+                            </option>
+                            <option value="executed" disabled={executed}>
+                              {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
+                            </option>
+                          </select>
+                          <button
+                            type="button"
+                            className={`agenda-session-status-trigger${executed ? " is-executed" : " is-reserved"}`}
+                            disabled={busy}
+                            aria-haspopup="dialog"
+                            aria-label={t(props.language, {
+                              es: `Estado de la sesión con ${booking.patientName || "paciente"}`,
+                              en: `Status for session with ${booking.patientName || "patient"}`,
+                              pt: `Status da sessao com ${booking.patientName || "paciente"}`
+                            })}
+                            onClick={() => setStatusSheet({ kind: "row", booking })}
+                          >
+                            {executed
+                              ? t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })
+                              : t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
+                          </button>
+                        </>
                       )}
                     </div>
                   </article>
@@ -472,6 +501,101 @@ export function PendingExecutionSessionsList(props: {
             pt: "Ha mais sessoes neste mes do que esta lista mostra."
           })}
         </p>
+      ) : null}
+
+      {statusSheet ? (
+        <div
+          className="pro-sheet-backdrop agenda-status-sheet-backdrop"
+          role="presentation"
+          onClick={() => setStatusSheet(null)}
+        >
+          <div
+            className="agenda-status-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t(props.language, { es: "Cambiar estado", en: "Change status", pt: "Mudar status" })}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="agenda-status-sheet-title">
+              {statusSheet.kind === "row"
+                ? statusSheet.booking.patientName ||
+                  t(props.language, { es: "Sesión", en: "Session", pt: "Sessao" })
+                : t(props.language, {
+                    es: `${selectedSessions.length} seleccionadas`,
+                    en: `${selectedSessions.length} selected`,
+                    pt: `${selectedSessions.length} selecionadas`
+                  })}
+            </p>
+            <div className="agenda-status-sheet-actions">
+              <button
+                type="button"
+                className={
+                  statusSheet.kind === "row"
+                    ? !isReadyForCobroSession(statusSheet.booking) && !isLockedSession(statusSheet.booking)
+                      ? "is-current"
+                      : ""
+                    : bulkAllReserved
+                      ? "is-current"
+                      : ""
+                }
+                disabled={
+                  statusSheet.kind === "row"
+                    ? busyAll ||
+                      props.busyBookingId === statusSheet.booking.id ||
+                      (!isReadyForCobroSession(statusSheet.booking) && !isLockedSession(statusSheet.booking))
+                    : busyAll || bulkAllReserved || selectedExecuted.length === 0
+                }
+                onClick={() => {
+                  if (statusSheet.kind === "row") {
+                    if (isReadyForCobroSession(statusSheet.booking)) {
+                      props.onUndoExecuted(statusSheet.booking);
+                    }
+                  } else if (selectedExecuted.length > 0) {
+                    props.onRequestBulkUncomplete(selectedExecuted);
+                  }
+                  setStatusSheet(null);
+                }}
+              >
+                {t(props.language, { es: "Reservada", en: "Reserved", pt: "Reservada" })}
+              </button>
+              <button
+                type="button"
+                className={
+                  statusSheet.kind === "row"
+                    ? isReadyForCobroSession(statusSheet.booking) || isLockedSession(statusSheet.booking)
+                      ? "is-current"
+                      : ""
+                    : bulkAllExecuted
+                      ? "is-current"
+                      : ""
+                }
+                disabled={
+                  statusSheet.kind === "row"
+                    ? busyAll ||
+                      props.busyBookingId === statusSheet.booking.id ||
+                      isReadyForCobroSession(statusSheet.booking) ||
+                      isLockedSession(statusSheet.booking)
+                    : busyAll || bulkAllExecuted || selectedReserved.length === 0
+                }
+                onClick={() => {
+                  if (statusSheet.kind === "row") {
+                    if (!isReadyForCobroSession(statusSheet.booking) && !isLockedSession(statusSheet.booking)) {
+                      props.onMarkExecuted(statusSheet.booking);
+                    }
+                  } else if (selectedReserved.length > 0) {
+                    props.onRequestBulkComplete(selectedReserved);
+                  }
+                  setStatusSheet(null);
+                }}
+              >
+                {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
+              </button>
+            </div>
+            <button type="button" className="agenda-status-sheet-cancel" onClick={() => setStatusSheet(null)}>
+              {t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })}
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
   );

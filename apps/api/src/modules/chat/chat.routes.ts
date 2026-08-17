@@ -122,6 +122,7 @@ type ThreadRow = {
     user: {
       id: string;
       fullName: string;
+      avatarUrl: string | null;
     };
   };
   professional: {
@@ -210,7 +211,8 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
           user: {
             select: {
               id: true,
-              fullName: true
+              fullName: true,
+              avatarUrl: true
             }
           }
         }
@@ -300,7 +302,9 @@ chatRouter.get("/threads", requireAuth, async (req: AuthenticatedRequest, res) =
     const counterpartName = actor.role === "PATIENT" ? thread.professional.user.fullName : thread.patient.user.fullName;
     const counterpartUserId = actor.role === "PATIENT" ? thread.professional.user.id : thread.patient.user.id;
     const counterpartPhotoUrl =
-      actor.role === "PATIENT" ? thread.professional.photoUrl ?? null : null;
+      actor.role === "PATIENT"
+        ? thread.professional.photoUrl ?? null
+        : thread.patient.user.avatarUrl ?? null;
     const threadLastMessage = thread.messages[0]
       ? {
           id: thread.messages[0].id,

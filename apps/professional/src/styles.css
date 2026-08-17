@@ -4855,6 +4855,10 @@ ul {
   min-width: 0;
 }
 
+.pro-portal-page-mark {
+  display: none;
+}
+
 .pro-portal-page-head--back-only {
   justify-content: flex-start;
   margin-bottom: 8px;
@@ -5086,6 +5090,14 @@ ul {
   display: none;
 }
 
+.pro-header-nav-backdrop {
+  display: none;
+}
+
+.pro-header-nav-drawer-head {
+  display: none;
+}
+
 .pro-header-account-dropdown {
   position: absolute;
   z-index: 60;
@@ -5093,7 +5105,7 @@ ul {
   right: 0;
   min-width: 236px;
   padding: 6px;
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
   background: #fff;
   box-shadow:
@@ -5109,7 +5121,7 @@ ul {
   min-height: 40px;
   padding: 8px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: #334155;
   font-size: 14px;
@@ -5126,6 +5138,10 @@ ul {
 }
 
 .pro-header-account-dropdown-item--danger {
+  color: #dc2626;
+}
+
+.pro-header-account-dropdown-item--danger .pro-header-svg-icon--menu {
   color: #dc2626;
 }
 
@@ -5158,6 +5174,171 @@ ul {
 
 .pro-header-account-dropdown .menu-sep {
   margin: 4px 8px;
+}
+
+.pro-header-account-dropdown-label {
+  margin: 8px 12px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pro-header-nav-drawer-body > .pro-header-account-dropdown-label:first-child {
+  margin-top: 4px;
+}
+
+.pro-header-account-dropdown-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pro-header-account-dropdown-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #5f44eb;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@keyframes pro-nav-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pro-nav-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  body.pro-nav-drawer-open {
+    overflow: hidden;
+  }
+
+  .pro-header-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(15, 23, 42, 0.45);
+    cursor: pointer;
+    animation: pro-nav-backdrop-in 0.2s ease;
+  }
+
+  .pro-header-account-dropdown {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: min(90vw, 360px);
+    min-width: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 121;
+    background: #fff;
+    box-shadow: 8px 0 40px rgba(15, 23, 42, 0.22);
+    animation: pro-nav-drawer-in 0.22s ease;
+  }
+
+  .pro-header-nav-drawer-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding: 18px 16px 16px;
+    padding-top: max(18px, env(safe-area-inset-top, 0px));
+    background: #5f44eb;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .pro-header-nav-drawer-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .pro-header-nav-drawer-avatar--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .pro-header-nav-drawer-identity {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .pro-header-nav-drawer-identity strong {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pro-header-nav-drawer-identity em {
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .pro-header-nav-drawer-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 8px max(16px, env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pro-header-account-dropdown-item {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+
+  .pro-header-nav-drawer-body > .pro-header-account-dropdown-label:first-child {
+    margin-top: 8px;
+  }
+
+  .pro-header-account-dropdown-item--drawer-profile {
+    display: none;
+  }
 }
 
 .pro-header-actions--dashboard-toolbar .pro-header-account-menu {
@@ -5933,26 +6114,27 @@ select.pro-dashboard-revenue-control {
   .pro-portal-page-head--with-center {
     grid-template-areas:
       "title actions"
-      "flow flow"
       "filters filters";
   }
 
-  .pro-portal-page-head-center {
-    grid-area: flow;
-    justify-content: flex-start;
-    flex: none;
-  }
-
+  .pro-portal-page-head-center,
   .pro-session-status-flow {
-    max-width: 100%;
-    flex-wrap: wrap;
-    border-radius: 16px;
-    padding: 7px 10px;
+    display: none;
   }
 
   .pro-portal-page-head-start,
   .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
     grid-area: title;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .pro-portal-page-mark {
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
   }
 
   .pro-portal-page-head-end,
@@ -6000,6 +6182,9 @@ select.pro-dashboard-revenue-control {
 
   .pro-portal-page-title,
   .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
+    min-width: 0;
+    margin-right: 8px;
+    padding-inline: 2px;
     font-size: 20px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6015,12 +6200,30 @@ select.pro-dashboard-revenue-control {
 
   .pro-listing-visibility-toggle--header {
     min-height: 38px;
-    padding: 0 8px;
+    padding: 0 2px;
     gap: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 8px;
+  }
+
+  .pro-listing-visibility-toggle--header:hover {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .pro-listing-visibility-toggle--header .pro-listing-visibility-toggle-label {
     display: none;
+  }
+
+  .pro-header-icon-link.pro-notifications-trigger,
+  .pro-header-icon-link.pro-notifications-trigger.active,
+  .pro-notifications-wrap .pro-header-icon-link.active {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .pro-main--dashboard-home > .pro-mobile-nav {
@@ -6599,6 +6802,12 @@ select.pro-dashboard-revenue-control {
   font-size: 13px;
   line-height: 1.4;
   max-width: none;
+  white-space: pre-line;
+}
+
+.agenda-session-lead strong {
+  font-weight: 700;
+  color: #334155;
 }
 
 .agenda-session-title,
@@ -6617,6 +6826,10 @@ select.pro-dashboard-revenue-control {
   background: #ffffff !important;
   border-color: #e4e7f0;
   box-shadow: 0 8px 24px rgba(55, 65, 100, 0.05);
+}
+
+.pro-dashboard-sessions-hub-title {
+  display: none;
 }
 
 .pro-dashboard-sessions-hub .agenda-session-table-head {
@@ -6752,11 +6965,24 @@ select.pro-dashboard-revenue-control {
     flex: 1 1 auto;
   }
 
-  .pro-dashboard-sessions-hub-toolbar .agenda-session-panel-filters,
-  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter,
-  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter select,
-  .pro-dashboard-sessions-hub-toolbar .pro-revenue-month-picker {
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-panel-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
     width: 100%;
+    gap: 8px;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .pro-revenue-month-picker {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter,
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter select {
+    width: auto;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
@@ -7056,6 +7282,90 @@ select.pro-dashboard-revenue-control {
   border: 1px solid #bbf7d0;
 }
 
+.agenda-session-status-trigger {
+  display: none;
+}
+
+.agenda-status-sheet-backdrop {
+  z-index: 240;
+}
+
+.agenda-status-sheet {
+  background: #f2f2f7;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 8px;
+}
+
+.agenda-status-sheet-title {
+  margin: 4px 8px 2px;
+  color: #8e8e93;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-status-sheet-actions {
+  display: grid;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.agenda-status-sheet-actions button {
+  min-height: 56px;
+  border: 0;
+  border-bottom: 1px solid #e5e5ea;
+  background: #fff;
+  color: #5f44eb;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.agenda-status-sheet-actions button:last-child {
+  border-bottom: 0;
+}
+
+.agenda-status-sheet-actions button.is-current {
+  font-weight: 700;
+}
+
+.agenda-status-sheet-actions button:disabled {
+  opacity: 1;
+}
+
+.agenda-status-sheet-actions button:disabled:not(.is-current) {
+  color: #c7c7cc;
+}
+
+.agenda-status-sheet-cancel {
+  min-height: 56px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: #5f44eb;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.agenda-status-sheet-actions--scroll {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agenda-status-sheet-actions--scroll button {
+  min-height: 52px;
+  padding: 0 16px;
+  font-size: 17px;
+  text-align: left;
+}
+
 .agenda-session-empty {
   padding: 8px 0 2px;
 }
@@ -7164,11 +7474,15 @@ select.pro-dashboard-revenue-control {
   }
 
   .agenda-session-table--upcoming .agenda-session-table-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "patient status"
+      "patient"
       "date time"
       "actions actions";
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--status {
+    display: none;
   }
 
   .agenda-session-cell--date {
@@ -7259,11 +7573,15 @@ select.pro-dashboard-revenue-control {
   }
 
   .agenda-session-table--upcoming .agenda-session-table-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "patient status"
+      "patient"
       "date time"
       "actions actions";
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--status {
+    display: none;
   }
 
   .agenda-session-cell--date {
@@ -7344,7 +7662,6 @@ select.pro-dashboard-revenue-control {
       "patient"
       "date"
       "time"
-      "status"
       "actions";
   }
 
@@ -7388,7 +7705,6 @@ select.pro-dashboard-revenue-control {
       "patient"
       "date"
       "time"
-      "status"
       "actions";
   }
 
@@ -7914,6 +8230,10 @@ select.pro-dashboard-revenue-control {
   border-color: transparent;
   background: linear-gradient(135deg, #cf2a2a 0%, #e54343 100%);
   color: #fff;
+}
+
+.pro-reschedule-slot-trigger {
+  display: none;
 }
 
 .agenda-quick-modal-backdrop {
@@ -9182,10 +9502,35 @@ select.pro-dashboard-revenue-control {
 }
 
 .pro-dashboard-availability-shortcut-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.pro-dashboard-availability-shortcut-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #5f44eb;
+  background: #efeafc;
+}
+
+.pro-dashboard-availability-shortcut-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.pro-dashboard-availability-shortcut-text {
   display: grid;
   gap: 4px;
   min-width: 0;
-  flex: 1 1 240px;
 }
 
 .pro-dashboard-availability-shortcut-copy h2 {
@@ -9209,7 +9554,7 @@ select.pro-dashboard-revenue-control {
   justify-content: center;
   min-height: 40px;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #5f44eb;
   color: #ffffff;
   font-size: 13px;
@@ -12629,8 +12974,8 @@ button:disabled {
   padding: 12px;
   text-align: left;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 10px;
   align-items: center;
   border-radius: 0;
 }
@@ -12671,6 +13016,50 @@ button:disabled {
   white-space: nowrap;
 }
 
+.pro-thread-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pro-thread-meta time {
+  font-size: 12px;
+  font-weight: 500;
+  color: #667781;
+  white-space: nowrap;
+}
+
+.pro-chat-avatar {
+  display: block;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.pro-chat-avatar-img,
+.pro-chat-avatar-img--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #dbe4ee;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pro-chat-avatar--header,
+.pro-chat-avatar--header .pro-chat-avatar-img,
+.pro-chat-avatar--header .pro-chat-avatar-img--empty {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
 .pro-badge {
   min-width: 20px;
   height: 20px;
@@ -12694,14 +13083,26 @@ button:disabled {
   background: #f0f2f5;
   border-bottom: 1px solid #d8dee8;
   padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .pro-chat-main-header h3 {
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
   font-size: 15px;
   font-weight: 600;
   color: #1e293b;
   letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pro-chat-back {
+  display: none;
 }
 
 .pro-chat-messages {
@@ -16832,6 +17233,10 @@ button:disabled {
   padding: 16px;
 }
 
+.pro-patients-panel {
+  display: contents;
+}
+
 @media (max-width: 820px) {
   .pro-patient-card {
     grid-template-columns: 1fr;
@@ -17920,7 +18325,7 @@ button:disabled {
   .pro-executed-session-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "name payout"
+      "name name"
       "day time"
       "session session"
       "gross fee"
@@ -18452,9 +18857,40 @@ button:disabled {
   width: 100%;
 }
 
+.pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) .pro-signal-gauge {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) .pro-signal-gauge-label,
+.pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) .pro-signal-gauge-metric {
+  max-width: none;
+}
+
 @media (min-width: 640px) {
   .pro-practice-health-gauges {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .pro-practice-health-gauges > .pro-signal-gauge-wrap:last-child:nth-child(odd) .pro-signal-gauge {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    gap: 8px;
+    padding: 14px 10px 12px;
   }
 }
 
@@ -18538,7 +18974,7 @@ button:disabled {
   text-align: center;
   gap: 8px;
   padding: 14px 10px 12px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: #fff;
   border: 1px solid #e8ecf4;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.045);
@@ -18547,53 +18983,30 @@ button:disabled {
   box-sizing: border-box;
 }
 
-.pro-signal-gauge-dial {
-  position: relative;
+.pro-signal-gauge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
-.pro-signal-gauge-svg {
-  width: 52px;
-  height: 52px;
+.pro-signal-gauge-icon svg {
+  width: 20px;
+  height: 20px;
   display: block;
 }
 
-.pro-signal-gauge-tick {
-  stroke: #d4dbe8;
-  stroke-width: 1.25;
-  stroke-linecap: round;
+.pro-signal-gauge-icon.is-ok {
+  color: #15803d;
+  background: #ecfdf3;
 }
 
-.pro-signal-gauge-track {
-  stroke: #eef1f7;
-  stroke-width: 3.2;
-  fill: none;
-}
-
-.pro-signal-gauge-ring {
-  stroke-width: 3.2;
-  fill: none;
-  stroke-linecap: round;
-}
-
-.pro-signal-gauge-ring--ok {
-  stroke: #22c55e;
-}
-
-.pro-signal-gauge-ring--warn {
-  stroke: #fb923c;
-}
-
-.pro-signal-gauge-hub {
-  fill: #fff;
-  stroke: #cbd5e1;
-  stroke-width: 1;
-}
-
-.pro-signal-gauge-hand {
-  stroke: #1e293b;
-  stroke-width: 1.65;
-  stroke-linecap: round;
+.pro-signal-gauge-icon.is-warn {
+  color: #c2410c;
+  background: #fff7ed;
 }
 
 .pro-signal-gauge-label {
@@ -19647,48 +20060,231 @@ body.pro-tour-zone-done .driver-active-element {
   }
 }
 
-/* Mobile catalog: títulos y filas como un listado de marketplace (avatar + copy + divisor). */
+/* Mobile catalog: títulos de card como encabezado de marketplace (blanco, gris, divisor a borde). */
 @media (max-width: 720px) {
+  body {
+    background: #ededed;
+  }
+
+  .pro-dashboard-work > .pro-dashboard-section-kicker {
+    display: none;
+  }
+
+  .pro-dashboard-home .pro-dashboard-overview {
+    margin: 4px 0 8px;
+    padding: 14px 12px 16px;
+    border-radius: 10px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+  }
+
+  .pro-dashboard-overview > .pro-dashboard-section-kicker {
+    margin: 0 4px 12px;
+    color: #312e81;
+  }
+
   .pro-dashboard-section-kicker {
-    margin: 2px 4px 8px;
+    margin: 4px 4px 10px;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.02em;
     text-transform: none;
-    color: #171717;
+    color: #333333;
+  }
+
+  .pro-card,
+  .pro-settings-block,
+  .pro-profile-block,
+  .pro-chat-sidebar,
+  .pro-chat-main {
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    box-shadow: none;
   }
 
   .pro-card {
-    padding: 14px 14px 10px;
-    border-radius: 12px;
-    gap: 10px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .pro-card > h2,
+  .pro-card > header,
+  .pro-card > .pro-dashboard-diary-reports-head,
+  .pro-card > .pro-practice-health-head,
+  .pro-card > .agenda-upcoming-head,
+  .pro-card > .pro-income-movements-heading,
+  .pro-card > .availability-month-title,
+  .pro-card > .availability-month-head,
+  .pro-card > .schedule-work-head,
+  .pro-card > .pro-treatment-reports-header,
+  .pro-settings-block__head,
+  .pro-profile-block__head-row {
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    margin: -16px -16px 0;
+    padding: 16px;
+    border-bottom: 1px solid #eeeeee;
   }
 
   .pro-card h2,
   .pro-card.pro-patients-card h2,
+  .pro-card h2.pro-section-kicker,
   .income-details-card h2,
   .schedule-home-card h2,
   .schedule-work-card h2,
   .availability-month-card h2,
   .availability-month-title h2,
   .pro-upcoming-sessions-head h2,
-  .pro-dashboard-diary-reports-head h2 {
-    margin: 0 0 4px;
-    padding: 4px 2px 12px;
+  .pro-dashboard-diary-reports-head h2,
+  .agenda-session-title,
+  .agenda-session-panel-head h2,
+  .pro-dashboard-sessions-hub-title,
+  .pro-settings-block__head h2,
+  .pro-profile-block__head h2,
+  .pro-chat-sidebar header h3,
+  .pro-chat-main-header h3 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    width: auto;
+    max-width: 100%;
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.25;
-    color: #171717;
+    color: #333333;
+    text-transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pro-card > h2 {
+    margin: -16px -16px 0;
+    padding: 16px;
+    border-bottom: 1px solid #eeeeee;
+    white-space: normal;
   }
 
   .pro-card > p.pro-muted,
-  .pro-dashboard-diary-reports-head .pro-muted {
-    margin: 0 2px 12px;
+  .pro-dashboard-diary-reports-head .pro-muted,
+  .pro-dashboard-availability-shortcut-copy p,
+  .pro-practice-health-lead,
+  .pro-settings-block__head p,
+  .pro-profile-block__head p {
+    margin: 4px 0 0;
     font-size: 13px;
     line-height: 1.35;
     color: #737373;
+  }
+
+  .pro-dashboard-sessions-hub {
+    padding: 0 0 8px !important;
+    border-color: #e6e6e6 !important;
+    box-shadow: none !important;
+  }
+
+  .pro-card.pro-dashboard-sessions-hub > .pro-dashboard-sessions-hub-title {
+    display: block;
+    margin: 0;
+    padding: 16px;
+    border-bottom: 1px solid #eeeeee;
+    white-space: nowrap;
+  }
+
+  .pro-dashboard-sessions-hub > .pro-schedule-hub-tabs.pro-dashboard-sessions-hub-tabs {
+    padding: 8px 12px 8px;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar {
+    padding: 8px 16px 0;
+    margin: 0;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-panel-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .pro-revenue-month-picker,
+  .pro-dashboard-sessions-hub-toolbar .pro-revenue-month-picker--compact .pro-revenue-month-picker-trigger {
+    width: auto;
+    flex: 0 0 auto;
+    max-width: none;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+  }
+
+  .pro-dashboard-sessions-hub-toolbar .agenda-session-filter select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pro-dashboard-cobro-bar {
+    margin: 8px 16px 12px;
+  }
+
+  .pro-dashboard-home .pro-card.pro-dashboard-availability-shortcut {
+    padding: 16px;
+    gap: 14px;
+    background: #f4f0ff;
+    border-color: #ddd6fe;
+  }
+
+  .pro-dashboard-availability-shortcut {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pro-dashboard-availability-shortcut-copy {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .pro-dashboard-availability-shortcut-copy h2 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    padding: 0;
+    border: 0;
+    font-size: 17px;
+    color: #1e1b4b;
+  }
+
+  .pro-dashboard-availability-shortcut-cta {
+    align-self: stretch;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+
+  .pro-settings-block,
+  .pro-profile-block {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .pro-profile-block:not(.is-collapsed) .pro-profile-block__head {
+    margin-bottom: 0;
+  }
+
+  .pro-chat-sidebar header,
+  .pro-chat-main-header {
+    margin: 0;
+    padding: 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #eeeeee;
   }
 
   .pro-dashboard-kpi-row {
@@ -19700,66 +20296,508 @@ body.pro-tour-zone-done .driver-active-element {
     grid-column: 1 / -1;
   }
 
+  .pro-kpi-card,
+  .pro-kpi-card-link,
   .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card,
   .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card-link,
   .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card--executed-revenue {
-    border-radius: 12px;
-    padding: 12px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    box-shadow: none;
+    padding: 0 0 12px;
+    gap: 0;
   }
 
-  .agenda-session-table-row,
-  .agenda-session-table--upcoming .agenda-session-table-row {
-    padding: 14px 2px;
-    gap: 6px 12px;
-    border-bottom: 1px solid #ededed;
+  .pro-kpi-card > span,
+  .pro-kpi-card-link > span,
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card > span,
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card-link > span {
+    display: block;
+    margin: 0;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eeeeee;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    text-transform: none;
+    color: #333333;
+    white-space: normal;
+  }
+
+  .pro-kpi-card > strong,
+  .pro-kpi-card-link > strong,
+  .pro-kpi-card > .pro-kpi-money-split,
+  .pro-kpi-card-link > .pro-kpi-money-split {
+    padding: 10px 12px 0;
+    color: #333333;
+  }
+
+  .pro-kpi-card-link > em {
+    margin: 8px 16px 0;
+  }
+
+  .pro-kpi-card-hint {
+    padding: 4px 16px 0;
+  }
+
+  .pro-dashboard-home .pro-kpi-money-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .pro-kpi-money-split-pane {
+    min-height: 76px;
+    padding: 14px 12px;
+    align-content: center;
+    border-radius: 8px;
+    background: #6366f1;
+    border: 1px solid #4f46e5;
+  }
+
+  .pro-kpi-money-split-pane small {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-money-split-pane strong,
+  .pro-kpi-money-split-pane strong {
+    padding: 0;
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 650;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .agenda-session-table-row:last-child {
     border-bottom: 0;
   }
 
-  .agenda-upcoming-patient-inner {
+  .agenda-session-table--upcoming .agenda-session-table-row {
+    display: grid;
+    grid-template-columns: 68px auto minmax(0, 1fr);
+    grid-template-areas:
+      "patient patient patient"
+      ". date time"
+      ". actions actions";
+    column-gap: 0;
+    row-gap: 2px;
+    align-items: start;
+    padding: 12px 8px;
+    border-bottom: 1px solid #ededed;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--patient {
+    grid-area: patient;
+    min-width: 0;
+  }
+
+  .agenda-session-table--upcoming .agenda-upcoming-patient-inner {
+    display: flex;
     align-items: flex-start;
     gap: 12px;
+    min-width: 0;
   }
 
-  .agenda-patient-avatar,
-  .agenda-patient-avatar--empty {
-    width: 72px;
-    height: 72px;
-    border-radius: 10px;
+  .agenda-session-table--upcoming .agenda-patient-avatar,
+  .agenda-session-table--upcoming .agenda-patient-avatar--empty {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    flex-shrink: 0;
   }
 
-  .agenda-upcoming-patient-text strong {
+  .agenda-session-table--upcoming .agenda-upcoming-patient-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .agenda-session-table--upcoming .agenda-upcoming-patient-text strong {
+    display: block;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 500;
     color: #171717;
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .agenda-upcoming-patient-text small {
+  .agenda-session-table--upcoming .agenda-upcoming-patient-text small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: #737373;
   }
 
-  .agenda-session-cell--date strong,
-  .agenda-session-cell--time > span {
+  .pro-dashboard-sessions-hub .agenda-upcoming-patient-text small {
+    display: none;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--date {
+    grid-area: date;
+    min-width: 0;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--time {
+    grid-area: time;
+    display: flex;
+    align-items: baseline;
+    justify-self: start;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--date + .agenda-session-cell--time::before {
+    content: "·";
+    margin-right: 6px;
+    color: #a3a3a3;
+    font-weight: 700;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--date strong,
+  .agenda-session-table--upcoming .agenda-session-cell--time > span:not(.agenda-upcoming-cell-label),
+  .agenda-session-table--upcoming .agenda-session-cell--date + .agenda-session-cell--time::before {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0;
+    color: #737373;
+    white-space: nowrap;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--actions {
+    grid-area: actions;
+    min-width: 0;
+  }
+
+  .agenda-session-table--upcoming .agenda-session-cell--actions .agenda-row-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 0 0;
+    border-top: 0;
+  }
+
+  .agenda-session-table--upcoming .agenda-join-button,
+  .agenda-session-table--upcoming .agenda-no-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .agenda-session-table--upcoming .agenda-action-btn,
+  .agenda-session-table--upcoming .agenda-row-actions .icon-only {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  /* Home: columnas reales — check, foto, copy. Sin absolute que pega el checkbox. */
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-table-row {
+    position: relative;
+    grid-template-columns: 72px auto minmax(0, 1fr);
+    grid-template-areas:
+      "photo name name"
+      "photo date time"
+      "photo actions actions";
+    padding: 12px 16px;
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--patient,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-upcoming-patient-inner {
+    display: contents;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-patient-avatar,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-patient-avatar--empty {
+    grid-area: photo;
+    position: static;
+    left: auto;
+    top: auto;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    align-self: center;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-upcoming-patient-text {
+    grid-area: name;
+    min-width: 0;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-upcoming-patient-text strong {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--date {
+    grid-area: date;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--time {
+    grid-area: time;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--date,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--time {
     font-size: 13px;
     font-weight: 400;
     color: #737373;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--date strong,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--time > span:not(.agenda-upcoming-cell-label),
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--date + .agenda-session-cell--time::before {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0;
+    color: #737373;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--actions {
+    grid-area: actions;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-session-cell--actions .agenda-row-actions {
+    padding-top: 2px;
+    gap: 8px;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-join-button,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-no-link {
+    flex: 1 1 auto;
+    height: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-action-btn,
+  .pro-dashboard-sessions-hub .agenda-session-table--upcoming .agenda-row-actions .icon-only {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-select-master {
+    padding: 4px 8px 8px;
+    gap: 10px;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-table-row {
+    position: relative;
+    grid-template-columns: 22px 48px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check photo name status"
+      "check photo date time";
+    padding: 12px 16px;
+    column-gap: 10px;
+    row-gap: 3px;
+    align-items: center;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--check {
+    grid-area: check;
+    align-self: center;
+    padding-top: 0;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-check {
+    width: 22px;
+    min-height: 22px;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--patient,
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-upcoming-patient-inner {
+    display: contents;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-patient-avatar,
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-patient-avatar--empty {
+    grid-area: photo;
+    position: static;
+    left: auto;
+    top: auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    align-self: start;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-upcoming-patient-text {
+    grid-area: name;
+    min-width: 0;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--date {
+    grid-area: date;
+    margin-left: 0;
+    min-width: 0;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--time {
+    grid-area: time;
+    display: flex;
+    align-items: baseline;
+    justify-self: start;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--status {
+    grid-area: status;
+    margin-left: 0;
+    min-width: 0;
+    padding-top: 0;
+    justify-self: end;
+    align-self: start;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-upcoming-patient-text strong {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--date strong,
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--time > span:not(.agenda-upcoming-cell-label),
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-cell--date + .agenda-session-cell--time::before {
+    font-size: 13px;
+    font-weight: 400;
+    color: #737373;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-status-select,
+  .pro-dashboard-sessions-hub .agenda-session-table--settle .agenda-session-status-locked {
+    width: auto;
+    max-width: 100%;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .agenda-session-status-select,
+  .agenda-session-bulk-status {
+    display: none;
+  }
+
+  .agenda-session-status-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    max-width: 100%;
+    min-height: 32px;
+    height: 32px;
+    padding: 0 8px 0 10px;
+    border-radius: 8px;
+    border: 1px solid #d4dced;
+    background: #fff;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    gap: 6px;
+  }
+
+  .agenda-session-status-trigger::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-1px);
+    opacity: 0.55;
+  }
+
+  .agenda-session-status-trigger.is-reserved {
+    border-color: #ddd6fe;
+    background: #f5f3ff;
+    color: #5f44eb;
+  }
+
+  .agenda-session-status-trigger.is-executed {
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  .agenda-session-status-trigger--bulk {
+    width: 100%;
+    min-height: 36px;
+    height: 36px;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 0 12px;
+  }
+
+  .agenda-session-table--settle .agenda-session-table-row {
+    grid-template-columns: 24px 68px auto minmax(0, 1fr);
+    grid-template-areas:
+      "check patient patient patient"
+      "check . date time"
+      "check . status status";
+    column-gap: 0;
+    row-gap: 2px;
+    align-items: start;
+    padding: 12px 8px;
+    border-bottom: 1px solid #ededed;
+  }
+
+  .agenda-session-table--settle .agenda-upcoming-patient-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .agenda-session-table--settle .agenda-patient-avatar,
+  .agenda-session-table--settle .agenda-patient-avatar--empty {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .agenda-session-table--settle .agenda-session-cell--date + .agenda-session-cell--time::before {
+    content: "·";
+    margin-right: 6px;
+    color: #a3a3a3;
+    font-weight: 700;
+  }
+
+  .agenda-session-table--settle .agenda-session-status-select,
+  .agenda-session-table--settle .agenda-session-status-locked {
+    width: auto;
+    max-width: 100%;
   }
 
   .agenda-status,
-  .agenda-status-reserved {
-    font-size: 13px;
-    font-weight: 600;
-    color: #00a650;
-    background: transparent;
-    border: 0;
-    padding: 0;
+  .agenda-status-reserved,
+  .agenda-session-table--upcoming .agenda-session-cell--status,
+  .pro-executed-session-cell--payout,
+  .pro-executed-session-payout-badge {
+    display: none;
   }
 
   .agenda-session-more {
@@ -19767,7 +20805,7 @@ body.pro-tour-zone-done .driver-active-element {
     align-items: center;
     justify-content: space-between;
     margin: 0;
-    padding: 14px 4px 8px;
+    padding: 12px 8px 8px;
     border-top: 1px solid #ededed;
     color: #3483fa;
     font-size: 14px;
@@ -19782,20 +20820,88 @@ body.pro-tour-zone-done .driver-active-element {
     color: #3483fa;
   }
 
+  .pro-patients-page {
+    gap: 0;
+  }
+
+  .pro-patients-lead {
+    display: none;
+  }
+
+  .pro-patients-panel {
+    display: grid;
+    gap: 0;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+  }
+
+  .pro-patients-toolbar {
+    display: grid;
+    gap: 8px;
+    padding: 12px 0 8px;
+  }
+
+  .pro-patients-filters {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pro-patients-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pro-patients-filter {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .pro-patients-filter-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .pro-patients-toolbar-meta {
+    padding: 0 16px;
+    font-size: 12px;
+  }
+
+  .pro-patients-empty-state--inline {
+    margin: 0;
+    padding: 16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   .pro-patients-list {
     gap: 0;
   }
 
   .pro-patient-card {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 6px 12px;
+    align-items: center;
     margin: 0;
-    padding: 14px 2px;
+    padding: 12px 16px;
     border: 0;
-    border-bottom: 1px solid #ededed;
+    border-bottom: 1px solid #eeeeee;
     border-radius: 0;
     box-shadow: none;
-    background: transparent;
+    background: #ffffff;
   }
 
   .pro-patient-card:last-child {
@@ -19807,33 +20913,93 @@ body.pro-tour-zone-done .driver-active-element {
     box-shadow: none;
   }
 
+  .pro-patient-card-main {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+  }
+
   .pro-patient-avatar--card {
     width: 72px;
     height: 72px;
-    border-radius: 10px;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .pro-patient-card-copy {
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .pro-patient-card-title-row {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
   .pro-patient-card-name {
-    font-size: 14px;
-    font-weight: 400;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
     color: #171717;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .pro-patient-card-email,
+  .pro-patient-card-email {
+    display: none;
+  }
+
+  .pro-patient-status {
+    flex-shrink: 0;
+    padding: 3px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .pro-patient-card-metrics {
+    margin-top: 0;
+    gap: 8px;
+  }
+
+  .pro-patient-card-metric,
+  .pro-patient-card-metric-value,
   .pro-patient-card-metric-label,
   .pro-patient-card-metric--soft {
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
     color: #737373;
   }
 
-  .pro-patient-card-metric-value {
-    font-size: 16px;
-    font-weight: 700;
-    color: #171717;
+  .pro-patient-card-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    grid-column: 2;
+    gap: 8px;
+    padding-top: 2px;
+    border-top: 0;
   }
 
-  .pro-patient-card-actions {
-    padding-top: 8px;
-    border-top: 0;
+  .pro-patient-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 8px;
+    box-shadow: none;
   }
 
   .pro-executed-sessions-list {
@@ -19845,7 +21011,7 @@ body.pro-tour-zone-done .driver-active-element {
     border: 0;
     border-bottom: 1px solid #ededed;
     border-radius: 0;
-    padding: 14px 2px;
+    padding: 12px 8px;
     background: transparent;
   }
 
@@ -19874,7 +21040,7 @@ body.pro-tour-zone-done .driver-active-element {
     border: 0;
     border-bottom: 1px solid #ededed;
     border-radius: 0;
-    padding: 14px 2px;
+    padding: 12px 8px;
     background: transparent;
   }
 
@@ -19899,11 +21065,274 @@ body.pro-tour-zone-done .driver-active-element {
   .pro-dashboard-diary-report-item {
     border-bottom: 1px solid #ededed;
     border-radius: 0;
-    padding: 14px 2px;
+    padding: 12px 8px;
   }
 
   .pro-portal-page-head,
   .pro-dashboard-hero-head {
     margin-bottom: 10px;
+  }
+
+  .agenda-join-button,
+  .agenda-no-link,
+  .agenda-action-btn,
+  .agenda-row-actions .icon-only,
+  .agenda-session-status-trigger,
+  .agenda-session-status-locked,
+  .agenda-today-button,
+  .pro-btn,
+  .pro-primary,
+  .pro-patient-action-btn,
+  .pro-executed-session-payout-badge {
+    border-radius: 8px;
+  }
+
+  .pro-reschedule-slot-select {
+    display: none;
+  }
+
+  .pro-reschedule-slot-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid #d3ddef;
+    background: #fff;
+    color: #171717;
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    gap: 8px;
+  }
+
+  .pro-reschedule-slot-trigger::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid #737373;
+    border-bottom: 2px solid #737373;
+    transform: rotate(45deg) translateY(-2px);
+    flex-shrink: 0;
+  }
+
+  .pro-reschedule-slot-trigger:disabled {
+    color: #737373;
+  }
+
+  .pro-reschedule-modal {
+    width: 100%;
+    border-radius: 12px;
+    align-self: end;
+  }
+
+  .pro-reschedule-modal-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .pro-reschedule-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pro-reschedule-modal-actions button {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 8px;
+  }
+
+  .pro-reschedule-modal select,
+  .pro-reschedule-modal textarea {
+    border-radius: 8px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .pro-main:has(.pro-chat-shell--conversation) {
+    padding-bottom: 0;
+  }
+
+  .pro-main:has(.pro-chat-shell--conversation) .pro-mobile-nav {
+    display: none;
+  }
+
+  .pro-chat-shell {
+    grid-template-columns: 1fr;
+    min-height: calc(var(--viewport-h) - 132px);
+    border: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .pro-chat-shell--inbox .pro-chat-main {
+    display: none;
+  }
+
+  .pro-chat-shell--conversation {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    min-height: 100dvh;
+    border-radius: 0;
+    background: #efeae2;
+  }
+
+  .pro-chat-shell--conversation .pro-chat-sidebar {
+    display: none;
+  }
+
+  .pro-chat-sidebar {
+    max-height: none;
+    border-right: 0;
+    background: #fff;
+  }
+
+  .pro-chat-sidebar,
+  .pro-chat-main {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .pro-chat-sidebar header {
+    display: none;
+  }
+
+  .pro-chat-sidebar header,
+  .pro-chat-main-header {
+    margin: 0;
+    padding: 10px 12px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #d1d7db;
+  }
+
+  .pro-thread {
+    padding: 12px 16px;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 12px;
+    background: #fff;
+  }
+
+  .pro-thread.active {
+    background: #fff;
+  }
+
+  .pro-chat-avatar,
+  .pro-chat-avatar-img,
+  .pro-chat-avatar-img--empty {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+  }
+
+  .pro-thread strong {
+    -webkit-line-clamp: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: #111b21;
+    white-space: nowrap;
+  }
+
+  .pro-thread p {
+    font-size: 14px;
+    color: #667781;
+  }
+
+  .pro-thread:has(.pro-badge) .pro-thread-meta time {
+    color: #25d366;
+    font-weight: 600;
+  }
+
+  .pro-badge {
+    min-width: 20px;
+    height: 20px;
+    border-radius: 8px;
+    background: #25d366;
+  }
+
+  .pro-chat-main {
+    min-height: 0;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: #efeae2;
+  }
+
+  .pro-chat-main-header {
+    min-height: 56px;
+    padding: 8px 10px 8px 4px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+  }
+
+  .pro-chat-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #54656f;
+    cursor: pointer;
+  }
+
+  .pro-chat-avatar--header,
+  .pro-chat-avatar--header .pro-chat-avatar-img,
+  .pro-chat-avatar--header .pro-chat-avatar-img--empty {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pro-chat-main-header h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #111b21;
+    white-space: nowrap;
+  }
+
+  .pro-chat-messages {
+    min-height: 0;
+    padding: 10px 8px 12px;
+  }
+
+  .pro-message {
+    max-width: 86%;
+    border-radius: 8px;
+  }
+
+  .pro-chat-composer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 8px;
+    align-items: end;
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom, 0px));
+    background: #f0f2f5;
+    border-top: 1px solid #d1d7db;
+  }
+
+  .pro-chat-composer textarea {
+    min-height: 44px;
+    max-height: 120px;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+
+  .pro-chat-composer button,
+  .pro-chat-composer .wa-send {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    border-radius: 8px;
   }
 }
