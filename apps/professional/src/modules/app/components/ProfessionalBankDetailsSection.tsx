@@ -382,11 +382,6 @@ export function ProfessionalBankDetailsSection(props: {
           language={props.language}
           wide
           title={t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
-          lead={t(props.language, {
-            es: "Usamos estos datos para transferirte el neto de tus sesiones. El nombre es el tuyo (como en el DNI), no el del banco. En Argentina podés cobrar por CBU, CVU o alias.",
-            en: "We use these details to transfer your net earnings. The name is yours (as on your ID), not the bank’s. In Argentina you can get paid via CBU, CVU, or alias.",
-            pt: "Usamos esses dados para transferir seu líquido. O nome é o seu (como no documento), não o do banco. Na Argentina você pode receber por CBU, CVU ou alias."
-          })}
           saving={saving}
           error={error}
           onClose={closeEditor}
@@ -394,7 +389,7 @@ export function ProfessionalBankDetailsSection(props: {
         >
             <div className="pro-profile-fields">
               <label className={`pro-profile-field pro-profile-field--sentence${fieldErrors.legalName ? " is-invalid" : ""}`}>
-                <span>{t(props.language, { es: "Tu nombre y apellido, como en el DNI", en: "Your first and last name, as on your ID", pt: "Seu nome e sobrenome, como no documento" })}</span>
+                <span>{t(props.language, { es: "Nombre y Apellido (como en el DNI)", en: "First and last name (as on ID)", pt: "Nome e sobrenome (como no documento)" })}</span>
                 <input
                   value={draft.legalName ?? ""}
                   aria-invalid={Boolean(fieldErrors.legalName)}
@@ -409,15 +404,7 @@ export function ProfessionalBankDetailsSection(props: {
                       : setDraft((current) => (current ? { ...current, legalName: event.target.value } : current));
                   }}
                 />
-                {fieldErrors.legalName ? <FieldError message={fieldErrors.legalName} /> : (
-                  <FieldHint
-                    message={t(props.language, {
-                      es: "No pongas «Mercado Pago» ni el nombre del banco. Eso va más abajo.",
-                      en: "Don’t put “Mercado Pago” or the bank name here. That’s below.",
-                      pt: "Não coloque “Mercado Pago” nem o nome do banco. Isso vai abaixo."
-                    })}
-                  />
-                )}
+                <FieldError message={fieldErrors.legalName} />
               </label>
               {isDlocal && dlocalFields ? (
                 <div className="pro-profile-field pro-profile-field--wide">

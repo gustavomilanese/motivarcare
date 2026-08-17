@@ -187,14 +187,7 @@ export function DlocalPayoutCountryFields(props: {
                 onChange={(event) => onFormChange({ beneficiaryFirstName: event.target.value })}
                 autoComplete="given-name"
               />
-              <FieldNote
-                error={errors.beneficiaryFirstName}
-                hint={t(language, {
-                  es: "Como figura en el banco o en Mercado Pago. No es el nombre de la app.",
-                  en: "As it appears at the bank or Mercado Pago. Not the app name.",
-                  pt: "Como aparece no banco ou Mercado Pago. Nao e o nome do app."
-                })}
-              />
+              <FieldNote error={errors.beneficiaryFirstName} />
             </label>
             <label className={errors.beneficiaryLastName ? "is-invalid" : undefined}>
               <span>{t(language, { es: "Apellido del titular de la cuenta", en: "Account holder last name", pt: "Sobrenome do titular da conta" })}</span>
