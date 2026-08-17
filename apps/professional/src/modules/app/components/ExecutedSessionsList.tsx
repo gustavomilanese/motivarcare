@@ -4,6 +4,7 @@ import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLangu
 import { formatRecordedFinanceAmountOnly } from "../lib/formatRecordedFinanceMinor";
 import { downloadExecutedSessionsExcel } from "../lib/buildExecutedSessionsExcel";
 import { formatExportDateRangeLabel } from "../lib/formatRevenuePeriodLabel";
+import { resolveSessionPayoutStatus, sessionPayoutStatusLabel } from "../lib/sessionPayoutStatus";
 import { ExecutedSessionsExportModal, type ExportDateRange } from "./ExecutedSessionsExportModal";
 import { ProPageLoader } from "./ProPageLoader";
 import type { EarningsMovement, EarningsResponse } from "../types";
@@ -282,6 +283,7 @@ export function ExecutedSessionsList(props: {
                 <span>{t(props.language, { es: "Día", en: "Day", pt: "Dia" })}</span>
                 <span>{t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}</span>
                 <span>{t(props.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" })}</span>
+                <span>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
                 <span>{t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}</span>
                 <span>{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}</span>
                 <span>{t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}</span>
@@ -300,13 +302,22 @@ export function ExecutedSessionsList(props: {
                           <span className="pro-executed-session-patient-name">{movement.patientName}</span>
                         )}
                       </div>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--day">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--day"
+                        data-label={t(props.language, { es: "Día", en: "Day", pt: "Dia" })}
+                      >
                         {formatSessionDay(movement.startsAt, props.language)}
                       </span>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--time">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--time"
+                        data-label={t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}
+                      >
                         {formatSessionTimeRange(movement.startsAt, movement.endsAt, props.language)}
                       </span>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--session">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--session"
+                        data-label={t(props.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" })}
+                      >
                         {sessionNumber.isBadge ? (
                           <span
                             className={`pro-executed-session-session-badge${
@@ -319,13 +330,32 @@ export function ExecutedSessionsList(props: {
                           sessionNumber.label
                         )}
                       </span>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--money">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--payout"
+                        data-label={t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
+                      >
+                        <span
+                          className={`pro-executed-session-payout-badge pro-executed-session-payout-badge--${resolveSessionPayoutStatus(movement)}`}
+                        >
+                          {sessionPayoutStatusLabel(props.language, resolveSessionPayoutStatus(movement))}
+                        </span>
+                      </span>
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--gross"
+                        data-label={t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}
+                      >
                         {formatAmount(movement.grossCents)}
                       </span>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--money">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--fee"
+                        data-label={t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}
+                      >
                         {formatAmount(movement.platformFeeCents)}
                       </span>
-                      <span className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--net">
+                      <span
+                        className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--net"
+                        data-label={t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}
+                      >
                         {formatAmount(movement.amountCents)}
                       </span>
                     </li>

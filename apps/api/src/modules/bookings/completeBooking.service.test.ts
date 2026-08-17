@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  evaluateCancelBookingStatus,
   evaluateCompleteBooking,
   evaluateSubmitForPayout,
   evaluateUncompleteBooking,
@@ -153,5 +154,33 @@ describe("evaluateSubmitForPayout", () => {
 describe("uniqueBookingIds", () => {
   it("dedupes, trims and caps the batch", () => {
     expect(uniqueBookingIds([" a ", "a", "b", ""], 2)).toEqual(["a", "b"]);
+  });
+});
+
+describe("evaluateCancelBookingStatus", () => {
+  it("allows reserved sessions", () => {
+    expect(evaluateCancelBookingStatus("CONFIRMED")).toEqual({ ok: true });
+    expect(evaluateCancelBookingStatus("REQUESTED")).toEqual({ ok: true });
+  });
+
+  it("rejects already cancelled bookings", () => {
+    expect(evaluateCancelBookingStatus("CANCELLED")).toMatchObject({
+      ok: false,
+      httpStatus: 409,
+      error: "Booking already cancelled"
+    });
+  });
+
+  it("rejects completed and no-show sessions", () => {
+    expect(evaluateCancelBookingStatus("COMPLETED")).toMatchObject({
+      ok: false,
+      httpStatus: 409,
+      error: "Cannot cancel a completed session"
+    });
+    expect(evaluateCancelBookingStatus("NO_SHOW")).toMatchObject({
+      ok: false,
+      httpStatus: 409,
+      error: "Cannot cancel a completed session"
+    });
   });
 });

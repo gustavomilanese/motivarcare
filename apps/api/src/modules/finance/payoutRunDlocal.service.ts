@@ -179,9 +179,13 @@ function monthLabelFromPeriod(periodStart: Date, periodEnd: Date): string {
 export async function applyDlocalStatusToPayoutLine(params: {
   payoutId: string;
   status: string;
+  payoutLineId?: string | null;
 }): Promise<{ updated: boolean; lineId?: string; lineStatus?: string }> {
+  const payoutId = params.payoutId.trim();
   const line = await prisma.financePayoutLine.findFirst({
-    where: { dlocalPayoutId: params.payoutId },
+    where: params.payoutLineId
+      ? { OR: [{ dlocalPayoutId: payoutId }, { id: params.payoutLineId }] }
+      : { dlocalPayoutId: payoutId },
     include: { payoutRun: { select: { id: true, status: true } } }
   });
   if (!line) {
@@ -190,18 +194,18 @@ export async function applyDlocalStatusToPayoutLine(params: {
   if (line.payoutRun.status === "CLOSED" || line.status === "PAID") {
     await prisma.financePayoutLine.update({
       where: { id: line.id },
-      data: { dlocalStatus: params.status }
+      data: { dlocalPayoutId: payoutId, dlocalStatus: params.status }
     });
     return { updated: true, lineId: line.id, lineStatus: line.status };
   }
 
   const upper = String(params.status).trim().toUpperCase();
   if (isDlocalGoPayoutSettled(upper)) {
-    const marked = await markPayoutLinePaid(line.id, `dlocal:${params.payoutId}`);
+    const marked = await markPayoutLinePaid(line.id, `dlocal:${payoutId}`);
     if (marked?.payoutLine) {
       await prisma.financePayoutLine.update({
         where: { id: line.id },
-        data: { dlocalStatus: upper, submissionError: null }
+        data: { dlocalPayoutId: payoutId, dlocalStatus: upper, submissionError: null }
       });
       return { updated: true, lineId: line.id, lineStatus: "PAID" };
     }
@@ -213,6 +217,7 @@ export async function applyDlocalStatusToPayoutLine(params: {
       where: { id: line.id },
       data: {
         status: "FAILED",
+        dlocalPayoutId: payoutId,
         dlocalStatus: upper,
         submissionError: `dLocal status: ${upper}`
       }
@@ -222,7 +227,11 @@ export async function applyDlocalStatusToPayoutLine(params: {
 
   await prisma.financePayoutLine.update({
     where: { id: line.id },
-    data: { dlocalStatus: upper, status: line.status === "PENDING" ? "SUBMITTED" : line.status }
+    data: {
+      dlocalPayoutId: payoutId,
+      dlocalStatus: upper,
+      status: line.status === "PENDING" ? "SUBMITTED" : line.status
+    }
   });
   return { updated: true, lineId: line.id, lineStatus: "SUBMITTED" };
 }
@@ -334,12 +343,7 @@ async function submitOneLine(params: {
       }
     });
 
-    // Si dLocal ya devolvió settled (raro en create), liquidar de una.
-    if (isDlocalGoPayoutSettled(record.status)) {
-      await applyDlocalStatusToPayoutLine({ payoutId: payout.payout_id, status: record.status });
-    } else if (isDlocalGoPayoutFailed(record.status)) {
-      await applyDlocalStatusToPayoutLine({ payoutId: payout.payout_id, status: record.status });
-    }
+    await applyDlocalStatusToPayoutLine({ payoutId: payout.payout_id, status: record.status });
 
     return {
       lineId: line.id,

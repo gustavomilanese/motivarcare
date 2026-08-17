@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { PatientAvatarImage } from "../PatientAvatarImage";
 import { ProPageLoader } from "../ProPageLoader";
+import { formatPortalBookingStatus } from "../../lib/sessionLifecycle";
 import { resolveApiAssetUrl } from "../../services/api";
 
 const PREVIEW_SIZE = 6;
@@ -34,23 +35,6 @@ function formatTime(value: string, language: AppLanguage): string {
   });
 }
 
-function formatBookingStatus(status: string, language: AppLanguage): string {
-  const normalized = status.toLowerCase();
-  if (normalized === "confirmed") {
-    return t(language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
-  }
-  if (normalized === "requested") {
-    return t(language, { es: "Solicitada", en: "Requested", pt: "Solicitada" });
-  }
-  if (normalized === "completed") {
-    return t(language, { es: "Realizada", en: "Completed", pt: "Realizada" });
-  }
-  if (normalized === "cancelled") {
-    return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });
-  }
-  return t(language, { es: "Programada", en: "Scheduled", pt: "Agendada" });
-}
-
 export type UpcomingReservationItem = {
   id: string;
   startsAt: string;
@@ -81,6 +65,8 @@ export function UpcomingReservationsList(props: {
   joinTourTargetBookingId?: string | null;
   /** Informes de diario enviados por paciente (para etiqueta en agenda). */
   diaryReportByPatientId?: Map<string, { unread: boolean }>;
+  /** La API recortó el listado; el KPI puede ser mayor. */
+  truncated?: boolean;
 }) {
   const loading = Boolean(props.loading);
   const error = props.error ?? "";
@@ -207,8 +193,8 @@ export function UpcomingReservationsList(props: {
               </div>
               <div className="agenda-session-cell agenda-session-cell--status">
                 <span className="agenda-upcoming-cell-label">{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</span>
-                <span className={`agenda-status agenda-status-${booking.status.toLowerCase()}`}>
-                  {formatBookingStatus(booking.status, props.language)}
+                <span className="agenda-status agenda-status-reserved">
+                  {formatPortalBookingStatus(booking.status, props.language)}
                 </span>
               </div>
               <div className="agenda-session-cell agenda-session-cell--actions">
@@ -277,6 +263,15 @@ export function UpcomingReservationsList(props: {
                 pt: `Mostrar mais ${hiddenCount}`
               })}
         </button>
+      ) : null}
+      {props.truncated ? (
+        <p className="pro-muted agenda-session-truncated">
+          {t(props.language, {
+            es: "Hay más reservas próximas de las que se listan acá. El recuento del resumen incluye todas.",
+            en: "There are more upcoming bookings than this list shows. The summary count includes all of them.",
+            pt: "Ha mais reservas proximas do que esta lista mostra. O resumo inclui todas."
+          })}
+        </p>
       ) : null}
     </div>
   );

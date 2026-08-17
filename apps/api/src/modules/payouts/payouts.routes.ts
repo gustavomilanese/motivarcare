@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth, requireRole, type AuthenticatedRequest } from "../../lib/auth.js";
 import { getActorContext } from "../../lib/actor.js";
 import {
+  extractDlocalPayoutNotificationId,
   isDlocalGoConfigured,
   verifyDlocalGoPayoutNotificationSignature
 } from "../../lib/dlocalGoPayouts.js";
@@ -47,14 +48,7 @@ payoutsRouter.post(
       return res.status(401).json({ error: "Invalid dLocal Go notification signature" });
     }
 
-    let payoutId: string | null = null;
-    try {
-      const parsed = JSON.parse(rawBody) as { payout_id?: unknown };
-      payoutId = typeof parsed.payout_id === "string" ? parsed.payout_id.trim() : null;
-    } catch {
-      return res.status(400).json({ error: "Invalid notification payload" });
-    }
-
+    const payoutId = extractDlocalPayoutNotificationId(rawBody);
     if (!payoutId) {
       return res.status(400).json({ error: "Missing payout_id" });
     }

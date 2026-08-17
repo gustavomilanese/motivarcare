@@ -5,7 +5,8 @@ import {
   evaluateCompleteBooking,
   evaluateSubmitForPayout,
   evaluateUncompleteBooking,
-  uniqueBookingIds
+  uniqueBookingIds,
+  evaluateCancelBookingStatus
 } from "./completeBooking.rules.js";
 
 const BOOKING_STATUS = {
@@ -16,7 +17,7 @@ const BOOKING_STATUS = {
   NO_SHOW: "NO_SHOW"
 } as const;
 
-export { COMPLETE_BOOKING_BATCH_MAX, evaluateCompleteBooking, evaluateSubmitForPayout, evaluateUncompleteBooking };
+export { COMPLETE_BOOKING_BATCH_MAX, evaluateCancelBookingStatus, evaluateCompleteBooking, evaluateSubmitForPayout, evaluateUncompleteBooking };
 
 export class CompleteBookingError extends Error {
   httpStatus: number;

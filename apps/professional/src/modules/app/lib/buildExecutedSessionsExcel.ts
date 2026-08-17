@@ -6,6 +6,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import type { EarningsMovement } from "../types";
+import { resolveSessionPayoutStatus, sessionPayoutStatusLabel } from "./sessionPayoutStatus";
 
 export type ExecutedSessionsExportMeta = {
   periodLabel: string;
@@ -78,6 +79,7 @@ export type ExecutedSessionExportRow = {
   sessionDate: string;
   sessionTime: string;
   sessionNumber: string;
+  payoutStatus: string;
   grossMajor: number;
   feeMajor: number;
   netMajor: number;
@@ -92,6 +94,7 @@ export function buildExecutedSessionExportRows(input: {
     sessionDate: formatSessionDate(movement.startsAt, input.language),
     sessionTime: formatSessionTimeRange(movement.startsAt, movement.endsAt, input.language),
     sessionNumber: sessionNumberLabel(input.language, movement),
+    payoutStatus: sessionPayoutStatusLabel(input.language, resolveSessionPayoutStatus(movement)),
     grossMajor: minorToMajor(movement.grossCents),
     feeMajor: minorToMajor(movement.platformFeeCents),
     netMajor: minorToMajor(movement.amountCents)
@@ -148,6 +151,7 @@ export async function downloadExecutedSessionsExcel(input: {
     { key: "date", width: 14 },
     { key: "time", width: 16 },
     { key: "session", width: 12 },
+    { key: "status", width: 14 },
     { key: "gross", width: 16 },
     { key: "fee", width: 16 },
     { key: "net", width: 16 }
@@ -184,7 +188,7 @@ export async function downloadExecutedSessionsExcel(input: {
     pt: "Profissional"
   });
 
-  sheet.mergeCells("A1:G1");
+  sheet.mergeCells("A1:H1");
   sheet.getCell("A1").value = title;
   sheet.getCell("A1").font = TITLE_FONT;
 
@@ -202,7 +206,7 @@ export async function downloadExecutedSessionsExcel(input: {
 
   metaRows.forEach((value, index) => {
     const rowNumber = index + 2;
-    sheet.mergeCells(`A${rowNumber}:G${rowNumber}`);
+    sheet.mergeCells(`A${rowNumber}:H${rowNumber}`);
     const cell = sheet.getCell(`A${rowNumber}`);
     cell.value = value;
     cell.font = META_FONT;
@@ -215,6 +219,7 @@ export async function downloadExecutedSessionsExcel(input: {
     t(input.meta.language, { es: "Fecha", en: "Date", pt: "Data" }),
     t(input.meta.language, { es: "Horario", en: "Time", pt: "Horario" }),
     t(input.meta.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" }),
+    t(input.meta.language, { es: "Estado", en: "Status", pt: "Status" }),
     t(input.meta.language, { es: "Realizado", en: "Completed", pt: "Realizado" }),
     t(input.meta.language, { es: "Comisión", en: "Fee", pt: "Comissao" }),
     t(input.meta.language, { es: "Neto", en: "Net", pt: "Liquido" })
@@ -238,17 +243,18 @@ export async function downloadExecutedSessionsExcel(input: {
       row.sessionDate,
       row.sessionTime,
       row.sessionNumber,
+      row.payoutStatus,
       row.grossMajor,
       row.feeMajor,
       row.netMajor
     ];
-    excelRow.getCell(5).numFmt = amountFormat;
     excelRow.getCell(6).numFmt = amountFormat;
     excelRow.getCell(7).numFmt = amountFormat;
+    excelRow.getCell(8).numFmt = amountFormat;
     excelRow.eachCell((cell, colNumber) => {
       cell.alignment = {
         vertical: "middle",
-        horizontal: colNumber >= 5 ? "right" : "left"
+        horizontal: colNumber >= 6 ? "right" : "left"
       };
       if (rowIndex % 2 === 0) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFAFAFA" } };
@@ -264,6 +270,7 @@ export async function downloadExecutedSessionsExcel(input: {
     "",
     "",
     rows.length,
+    "",
     totals.grossMajor,
     totals.feeMajor,
     totals.netMajor
@@ -279,13 +286,13 @@ export async function downloadExecutedSessionsExcel(input: {
       top: { style: "thin", color: { argb: "FF93C5FD" } }
     };
   });
-  totalRow.getCell(5).numFmt = amountFormat;
   totalRow.getCell(6).numFmt = amountFormat;
   totalRow.getCell(7).numFmt = amountFormat;
+  totalRow.getCell(8).numFmt = amountFormat;
 
   sheet.autoFilter = {
     from: { row: headerRowIndex, column: 1 },
-    to: { row: headerRowIndex, column: 7 }
+    to: { row: headerRowIndex, column: 8 }
   };
 
   const buffer = await workbook.xlsx.writeBuffer();

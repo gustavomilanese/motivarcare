@@ -314,9 +314,9 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     pt: "Nao foi possivel marcar todas as sessoes. Tente de novo; as que falharam seguem reservadas."
   },
   "dashboard-uncomplete-booking": {
-    es: "No pudimos deshacer el registro. Si ya entró en una liquidación, pedile ajuste a Admin.",
-    en: "We couldn’t undo the recording. If it’s already in a payout, ask Admin to adjust it.",
-    pt: "Nao foi possivel desfazer o registro. Se ja entrou numa liquidacao, peca ajuste ao Admin."
+    es: "No pudimos deshacer el registro. Si ya la enviaste a cobro, no se puede revertir.",
+    en: "We couldn’t undo the recording. If you already sent it for payout, it can’t be reverted.",
+    pt: "Nao foi possivel desfazer o registro. Se ja enviou a cobranca, nao se reverte."
   },
   "dashboard-uncomplete-batch": {
     es: "No pudimos revertir todas las sesiones. Reintentá; las que ya están en cobro no se tocan.",

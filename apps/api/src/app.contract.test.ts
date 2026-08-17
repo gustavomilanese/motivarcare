@@ -1,6 +1,9 @@
+import { createHmac } from "node:crypto";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app } from "./app.js";
+import { env } from "./config/env.js";
+import { isDlocalGoConfigured } from "./lib/dlocalGoClient.js";
 
 describe("API contract basics", () => {
   it("GET / responde servicio activo", async () => {
@@ -74,5 +77,34 @@ describe("API contract basics", () => {
     expect(response.body.message).toBe("Invalid verification token");
     expect(typeof response.body.requestId).toBe("string");
     expect(response.body.requestId.length).toBeGreaterThan(0);
+  });
+
+  it("POST /api/payouts/dlocal/webhook acepta JSON crudo (501 sin credenciales, 401 sin firma)", async () => {
+    const raw = JSON.stringify({ payout_id: "po-contract-test" });
+    const response = await request(app)
+      .post("/api/payouts/dlocal/webhook")
+      .set("Content-Type", "application/json")
+      .send(raw);
+
+    expect([401, 501]).toContain(response.status);
+    expect(response.status).not.toBe(400);
+  });
+
+  it("POST /api/payouts/dlocal/webhook verifica HMAC sobre el JSON crudo", async () => {
+    if (!isDlocalGoConfigured()) {
+      return;
+    }
+    const raw = JSON.stringify({ payout_id: "po-hmac-raw-body" });
+    const signature = createHmac("sha256", env.DLOCALGO_API_SECRET)
+      .update(`${env.DLOCALGO_API_KEY}${raw}`, "utf8")
+      .digest("hex");
+    const response = await request(app)
+      .post("/api/payouts/dlocal/webhook")
+      .set("Content-Type", "application/json")
+      .set("Authorization", `V2-HMAC-SHA256, Signature: ${signature}`)
+      .send(raw);
+
+    expect(response.status).not.toBe(401);
+    expect(response.status).not.toBe(400);
   });
 });

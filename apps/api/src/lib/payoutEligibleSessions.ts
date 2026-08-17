@@ -4,3 +4,10 @@ export const payoutEligibleSessionWhere = {
   submittedForPayoutAt: { not: null },
   payoutLineId: null
 };
+
+/** Sesiones En cobro para el profesional: enviadas, todavía no depositadas. */
+export const awaitingPayoutDepositWhere = {
+  bookingStatus: "COMPLETED" as const,
+  submittedForPayoutAt: { not: null },
+  OR: [{ payoutLineId: null }, { payoutLine: { status: { not: "PAID" } } }]
+};

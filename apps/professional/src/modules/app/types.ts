@@ -152,6 +152,8 @@ export interface DashboardResponse {
     payoutPaid?: boolean;
     netDisplayCents?: number | null;
   }>;
+  upcomingSessionsHasMore?: boolean;
+  pendingExecutionSessionsHasMore?: boolean;
 }
 
 export interface AvailabilitySlot {
@@ -203,7 +205,7 @@ export interface PatientDetailResponse {
     status: "active" | "pause" | "cancelled" | "trial";
     firstSessionAt: string | null;
     lastCompletedSessionAt: string | null;
-    /** Neto y sesiones liquidadas por moneda (sin mezclar centavos entre monedas). */
+    /** Neto y sesiones realizadas con registro de cobro, por moneda. */
     lifetimeTotals?: Array<{ currency: string; netCents: number; sessions: number }>;
   };
   paymentMovements: Array<{
@@ -215,6 +217,8 @@ export interface PatientDetailResponse {
     platformFeeCents: number;
     amountCents: number;
     status: string;
+    submittedForPayout?: boolean;
+    payoutPaid?: boolean;
     currency: string;
   }>;
 }
@@ -304,6 +308,8 @@ export type EarningsMovement = {
   platformFeeCents: number;
   amountCents: number;
   status: string;
+  submittedForPayout?: boolean;
+  payoutPaid?: boolean;
   currency: string;
   sourceCurrency?: string;
 };

@@ -57,41 +57,46 @@ export function buildMovementsWhere(input: {
   professionalId?: string;
   patientId?: string;
 }) {
-  return {
-    ...input.baseCompleted,
-    ...financeCompletedReferenceWhere(input.statsFrom, input.statsTo),
-    ...(input.professionalId ? { professionalId: input.professionalId } : {}),
-    ...(input.patientId ? { patientId: input.patientId } : {}),
-    ...(input.movements.pricing === "package"
-      ? { packageId: { not: null } }
-      : input.movements.pricing === "list"
-        ? { packageId: null }
-        : {}),
-    ...(input.movements.search
-      ? {
-          OR: [
-            {
-              patient: {
-                user: {
-                  fullName: { contains: input.movements.search, mode: "insensitive" as const }
-                }
-              }
-            },
-            {
-              professional: {
-                user: {
-                  fullName: { contains: input.movements.search, mode: "insensitive" as const }
-                }
-              }
-            },
-            {
-              package: {
-                name: { contains: input.movements.search, mode: "insensitive" as const }
-              }
+  const and: Record<string, unknown>[] = [
+    input.baseCompleted,
+    financeCompletedReferenceWhere(input.statsFrom, input.statsTo)
+  ];
+  if (input.professionalId) {
+    and.push({ professionalId: input.professionalId });
+  }
+  if (input.patientId) {
+    and.push({ patientId: input.patientId });
+  }
+  if (input.movements.pricing === "package") {
+    and.push({ packageId: { not: null } });
+  } else if (input.movements.pricing === "list") {
+    and.push({ packageId: null });
+  }
+  if (input.movements.search) {
+    and.push({
+      OR: [
+        {
+          patient: {
+            user: {
+              fullName: { contains: input.movements.search, mode: "insensitive" as const }
             }
-          ]
+          }
+        },
+        {
+          professional: {
+            user: {
+              fullName: { contains: input.movements.search, mode: "insensitive" as const }
+            }
+          }
+        },
+        {
+          package: {
+            name: { contains: input.movements.search, mode: "insensitive" as const }
+          }
         }
-      : {})
-  };
+      ]
+    });
+  }
+  return { AND: and };
 }
 

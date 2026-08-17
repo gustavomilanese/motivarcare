@@ -126,9 +126,9 @@ function practiceHealthTooltipLines(language: AppLanguage, item: PracticeHealthI
           pt: `Reservas com inicio nos proximos 7 dias: ${Number(d.weeklySessions) || 0}.`
         }),
         t(language, {
-          es: `Próximas reservas activas (confirmadas o pedidas): ${Number(d.upcomingBookings) || 0}.`,
-          en: `Upcoming active bookings (confirmed or requested): ${Number(d.upcomingBookings) || 0}.`,
-          pt: `Proximas reservas ativas (confirmadas ou pedidas): ${Number(d.upcomingBookings) || 0}.`
+          es: `Próximas reservas activas (reservadas): ${Number(d.upcomingBookings) || 0}.`,
+          en: `Upcoming active bookings (reserved): ${Number(d.upcomingBookings) || 0}.`,
+          pt: `Proximas reservas ativas (reservadas): ${Number(d.upcomingBookings) || 0}.`
         })
       ];
     case "conversion_sound": {

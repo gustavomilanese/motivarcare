@@ -15,6 +15,7 @@ import {
   COMPLETE_BOOKING_BATCH_MAX,
   completeProfessionalBooking,
   completeProfessionalBookingsBatch,
+  evaluateCancelBookingStatus,
   submitProfessionalSessionsForPayout,
   uncompleteProfessionalBooking,
   uncompleteProfessionalBookingsBatch
@@ -1454,8 +1455,9 @@ bookingsRouter.post("/:bookingId/cancel", requireAuth, async (req: Authenticated
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  if (booking.status === BOOKING_STATUS.CANCELLED) {
-    return res.status(409).json({ error: "Booking already cancelled" });
+  const cancelGate = evaluateCancelBookingStatus(booking.status);
+  if (!cancelGate.ok) {
+    return res.status(cancelGate.httpStatus).json({ error: cancelGate.error });
   }
 
   const isTrialBooking = booking.consumedPurchaseId === null || booking.consumedCredits === 0;

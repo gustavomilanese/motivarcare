@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
-import type { ProfessionalPayoutBankTransferType } from "@therapy/types";
+import {
+  dlocalPayoutBankCodes,
+  dlocalPayoutCountryOptions,
+  isDlocalPayoutCountry,
+  type ProfessionalPayoutBankTransferType
+} from "@therapy/types";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminData } from "../types";
 import { ProfileEditModal } from "./ProfileEditModal";
+import { DlocalPayoutCountryFields } from "../../onboarding/components/DlocalPayoutCountryFields";
+import {
+  adminToPayoutFormFields,
+  buildPayoutAdminFromFormFields
+} from "../../onboarding/lib/buildPayoutAdminFromFormFields";
+import type { PayoutFormFields } from "../../onboarding/lib/professionalPayoutValidation";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -15,7 +26,7 @@ function payoutStatusLabel(language: AppLanguage, status: AdminData["payoutStatu
     case "pending_review":
       return t(language, { es: "En revisión", en: "Under review", pt: "Em revisao" });
     case "active":
-      return t(language, { es: "Activo", en: "Active", pt: "Ativo" });
+      return t(language, { es: "Listo para cobrar", en: "Ready to receive", pt: "Pronto para receber" });
     case "rejected":
       return t(language, { es: "Rechazado", en: "Rejected", pt: "Rejeitado" });
     default:
@@ -55,6 +66,31 @@ const EMPTY_ADMIN: AdminData = {
 function displayValue(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : "—";
+}
+
+function payoutCountryLabel(language: AppLanguage, code: string | null | undefined): string {
+  const normalized = (code ?? "").trim().toUpperCase();
+  if (!normalized) {
+    return "—";
+  }
+  const match = dlocalPayoutCountryOptions(language as "es" | "en" | "pt").find((option) => option.code === normalized);
+  return match?.label ?? normalized;
+}
+
+function payoutBankLabel(country: string | null | undefined, code: string | null | undefined, fallbackName?: string | null): string {
+  const bankCode = (code ?? "").trim();
+  const countryCode = (country ?? "").trim().toUpperCase();
+  if (bankCode && isDlocalPayoutCountry(countryCode)) {
+    const match = dlocalPayoutBankCodes(countryCode)?.find((bank) => bank.code === bankCode);
+    if (match?.name) {
+      return match.name;
+    }
+  }
+  const name = fallbackName?.trim() ?? "";
+  if (name) {
+    return name;
+  }
+  return bankCode || "—";
 }
 
 function mergeAdmin(data: AdminData): AdminData {
@@ -144,6 +180,31 @@ export function ProfessionalBankDetailsSection(props: {
   const accountValue = bank?.accountValue ?? form.payoutAccount ?? "";
   const draftBank = draft?.payoutBankAccount;
   const draftAccountValue = draftBank?.accountValue ?? draft?.payoutAccount ?? "";
+  const isDlocal = (draft?.payoutMethod ?? form.payoutMethod) === "dlocal";
+  const dlocalFields = draft && isDlocal ? adminToPayoutFormFields(draft) : null;
+
+  const applyDlocalFields = (patch: Partial<PayoutFormFields>) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const fields = { ...adminToPayoutFormFields(current), ...patch };
+      if (patch.beneficiaryFirstName !== undefined || patch.beneficiaryLastName !== undefined) {
+        fields.accountHolderName = `${fields.beneficiaryFirstName} ${fields.beneficiaryLastName}`.trim();
+      }
+      const built = buildPayoutAdminFromFormFields("dlocal", fields);
+      return {
+        ...current,
+        ...built,
+        payoutMethod: "dlocal",
+        payoutStatus: current.payoutStatus,
+        payoutSubmittedAt: current.payoutSubmittedAt,
+        legalAcceptedAt: current.legalAcceptedAt,
+        acceptedDocuments: current.acceptedDocuments,
+        notes: current.notes
+      };
+    });
+  };
 
   const closeEditor = () => {
     if (saving) {
@@ -204,26 +265,44 @@ export function ProfessionalBankDetailsSection(props: {
           <dt>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</dt>
           <dd>{displayValue(form.legalName)}</dd>
         </div>
-        <div>
-          <dt>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</dt>
-          <dd>{displayValue(form.taxId)}</dd>
-        </div>
+        {form.payoutMethod === "dlocal" ? null : (
+          <div>
+            <dt>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</dt>
+            <dd>{displayValue(form.taxId)}</dd>
+          </div>
+        )}
         <div>
           <dt>{t(props.language, { es: "Titular", en: "Account holder", pt: "Titular" })}</dt>
           <dd>{displayValue(bank?.accountHolderName)}</dd>
         </div>
-        <div>
-          <dt>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</dt>
-          <dd>{transferTypeLabel(props.language, bank?.transferType)}</dd>
-        </div>
+        {form.payoutMethod === "dlocal" ? null : (
+          <div>
+            <dt>{t(props.language, { es: "Tipo", en: "Type", pt: "Tipo" })}</dt>
+            <dd>{transferTypeLabel(props.language, bank?.transferType)}</dd>
+          </div>
+        )}
         <div>
           <dt>{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</dt>
           <dd>{displayValue(accountValue)}</dd>
         </div>
-        {bank?.bankName?.trim() ? (
+        {form.payoutMethod === "dlocal" ? (
+          <>
+            <div>
+              <dt>{t(props.language, { es: "País de cobro", en: "Payout country", pt: "Pais de cobranca" })}</dt>
+              <dd>{payoutCountryLabel(props.language, bank?.payoutCountry)}</dd>
+            </div>
+            <div>
+              <dt>{t(props.language, { es: "Documento", en: "Document", pt: "Documento" })}</dt>
+              <dd>
+                {[bank?.documentType, bank?.document ?? form.taxId].filter((part) => Boolean(part?.trim())).join(" ") || "—"}
+              </dd>
+            </div>
+          </>
+        ) : null}
+        {bank?.bankName?.trim() || bank?.bankCode?.trim() ? (
           <div>
             <dt>{t(props.language, { es: "Banco", en: "Bank", pt: "Banco" })}</dt>
-            <dd>{bank.bankName}</dd>
+            <dd>{payoutBankLabel(bank?.payoutCountry, bank?.bankCode, bank?.bankName)}</dd>
           </div>
         ) : null}
       </dl>
@@ -249,9 +328,23 @@ export function ProfessionalBankDetailsSection(props: {
                 <span>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</span>
                 <input
                   value={draft.legalName ?? ""}
-                  onChange={(event) => setDraft((current) => (current ? { ...current, legalName: event.target.value } : current))}
+                  onChange={(event) =>
+                    isDlocal
+                      ? applyDlocalFields({ legalName: event.target.value })
+                      : setDraft((current) => (current ? { ...current, legalName: event.target.value } : current))
+                  }
                 />
               </label>
+              {isDlocal && dlocalFields ? (
+                <div className="pro-profile-field pro-profile-field--wide">
+                  <DlocalPayoutCountryFields
+                    language={props.language}
+                    fields={dlocalFields}
+                    onFormChange={applyDlocalFields}
+                  />
+                </div>
+              ) : (
+                <>
               <label className="pro-profile-field">
                 <span>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</span>
                 <input
@@ -307,6 +400,8 @@ export function ProfessionalBankDetailsSection(props: {
                   }
                 />
               </label>
+                </>
+              )}
             </div>
         </ProfileEditModal>
       ) : null}

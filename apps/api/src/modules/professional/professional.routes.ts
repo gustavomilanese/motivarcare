@@ -5,8 +5,23 @@ import { getActorContext } from "../../lib/actor.js";
 import { requireAuth, type AuthenticatedRequest } from "../../lib/auth.js";
 import { sendApiError } from "../../lib/http.js";
 import { prisma } from "../../lib/prisma.js";
-import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
+import { awaitingPayoutDepositWhere } from "../../lib/payoutEligibleSessions.js";
+import {
+  pendingExecutionBookingsWhere,
+  upcomingReservationsWhere,
+  weeklyUpcomingCountWhere
+} from "../../lib/professionalDashboardSessionLists.js";
 import { buildPackageSessionIndexByBookingId } from "../../lib/packageSessionAttribution.js";
+import {
+  buildMovementsWhere,
+  movementsOrderBy,
+  parseMovementsListQuery
+} from "../../lib/financeMovementsQuery.js";
+import {
+  financeCompletedReferenceWhere,
+  firstQueryString,
+  parseProfessionalStatsRange
+} from "../../lib/financeStatsRange.js";
 import { buildProfessionalPracticeHealth } from "../../lib/professionalPracticeHealth.js";
 import {
   buildProfessionalFinanceDisplay,
@@ -47,35 +62,6 @@ const BOOKING_STATUS = {
   NO_SHOW: "NO_SHOW"
 } as const;
 
-/** Completed session "economic" date: completion when set, else scheduled start (matches finance rollups). */
-function financeCompletedReferenceWhere(from: Date | null, to: Date) {
-  const byCompleted = from
-    ? { bookingCompletedAt: { gte: from, lte: to } }
-    : { bookingCompletedAt: { lte: to } };
-  const byStartFallback = from
-    ? { AND: [{ bookingCompletedAt: null }, { bookingStartsAt: { gte: from, lte: to } }] }
-    : { AND: [{ bookingCompletedAt: null }, { bookingStartsAt: { lte: to } }] };
-  return { OR: [byCompleted, byStartFallback] };
-}
-
-function utcStartOfMonth(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0, 0));
-}
-
-function utcEndOfDayFromDate(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999));
-}
-
-function firstQueryString(value: unknown): string | undefined {
-  if (typeof value === "string" && value.length > 0) {
-    return value;
-  }
-  if (Array.isArray(value) && typeof value[0] === "string" && value[0].length > 0) {
-    return value[0];
-  }
-  return undefined;
-}
-
 function parseSessionsMonthBounds(
   query: Record<string, unknown>,
   now: Date
@@ -98,133 +84,6 @@ function parseSessionsMonthBounds(
   const monthStart = new Date(safeYear, safeMonth, 1, 0, 0, 0, 0);
   const monthEnd = new Date(safeYear, safeMonth + 1, 0, 23, 59, 59, 999);
   return { monthStart, monthEnd };
-}
-
-function parseProfessionalStatsRange(query: Record<string, unknown>): {
-  statsFrom: Date | null;
-  statsTo: Date;
-  statsAll: boolean;
-} {
-  const now = new Date();
-  const statsAll =
-    firstQueryString(query.statsAll) === "1" || firstQueryString(query.statsAll) === "true";
-  let statsFrom: Date | null = null;
-  let statsTo: Date = utcEndOfDayFromDate(now);
-
-  if (statsAll) {
-    statsFrom = null;
-    const toStr = firstQueryString(query.statsTo);
-    if (toStr) {
-      const parsed = new Date(toStr);
-      if (!Number.isNaN(parsed.getTime())) {
-        statsTo = parsed;
-      }
-    }
-  } else {
-    const fromStr = firstQueryString(query.statsFrom);
-    const toStr = firstQueryString(query.statsTo);
-    if (fromStr && toStr) {
-      const from = new Date(fromStr);
-      const to = new Date(toStr);
-      if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
-        statsFrom = from;
-        statsTo = to;
-      } else {
-        statsFrom = utcStartOfMonth(now);
-        statsTo = utcEndOfDayFromDate(now);
-      }
-    } else {
-      statsFrom = utcStartOfMonth(now);
-      statsTo = utcEndOfDayFromDate(now);
-    }
-  }
-
-  return { statsFrom, statsTo, statsAll };
-}
-
-type MovementsPricingFilter = "all" | "package" | "list";
-type MovementsSortKey = "date_desc" | "date_asc" | "gross_desc" | "gross_asc";
-
-function parseMovementsListQuery(query: Record<string, unknown>): {
-  page: number;
-  pageSize: number;
-  search: string;
-  pricing: MovementsPricingFilter;
-  sort: MovementsSortKey;
-} {
-  const pageRaw = Number.parseInt(firstQueryString(query.movementsPage) ?? "1", 10);
-  const pageSizeRaw = Number.parseInt(firstQueryString(query.movementsPageSize) ?? "25", 10);
-  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
-  const pageSize =
-    Number.isFinite(pageSizeRaw) && pageSizeRaw > 0 ? Math.min(100, pageSizeRaw) : 25;
-
-  const pricingRaw = firstQueryString(query.movementsPricing);
-  const pricing: MovementsPricingFilter =
-    pricingRaw === "package" || pricingRaw === "list" ? pricingRaw : "all";
-
-  const sortRaw = firstQueryString(query.movementsSort);
-  const sort: MovementsSortKey =
-    sortRaw === "date_asc" || sortRaw === "gross_desc" || sortRaw === "gross_asc"
-      ? sortRaw
-      : "date_desc";
-
-  return {
-    page,
-    pageSize,
-    search: firstQueryString(query.movementsSearch)?.trim() ?? "",
-    pricing,
-    sort
-  };
-}
-
-function buildMovementsWhere(
-  baseCompleted: Record<string, unknown>,
-  statsFrom: Date | null,
-  statsTo: Date,
-  movements: ReturnType<typeof parseMovementsListQuery>
-) {
-  const rangeWhere = {
-    ...baseCompleted,
-    ...financeCompletedReferenceWhere(statsFrom, statsTo),
-    ...(movements.pricing === "package"
-      ? { packageId: { not: null } }
-      : movements.pricing === "list"
-        ? { packageId: null }
-        : {}),
-    ...(movements.search
-      ? {
-          OR: [
-            {
-              patient: {
-                user: {
-                  fullName: { contains: movements.search, mode: "insensitive" as const }
-                }
-              }
-            },
-            {
-              package: {
-                name: { contains: movements.search, mode: "insensitive" as const }
-              }
-            }
-          ]
-        }
-      : {})
-  };
-
-  return rangeWhere;
-}
-
-function movementsOrderBy(sort: MovementsSortKey) {
-  switch (sort) {
-    case "date_asc":
-      return [{ bookingCompletedAt: "asc" as const }, { bookingStartsAt: "asc" as const }];
-    case "gross_desc":
-      return [{ sessionPriceCents: "desc" as const }, { bookingCompletedAt: "desc" as const }];
-    case "gross_asc":
-      return [{ sessionPriceCents: "asc" as const }, { bookingCompletedAt: "desc" as const }];
-    default:
-      return [{ bookingCompletedAt: "desc" as const }, { bookingStartsAt: "desc" as const }];
-  }
 }
 
 type PatientStatus = "active" | "pause" | "cancelled" | "trial";
@@ -326,8 +185,6 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
   }
 
   const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
   const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   const { statsFrom, statsTo, statsAll } = parseProfessionalStatsRange(req.query as Record<string, unknown>);
@@ -354,11 +211,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     professionalProfileSnippet
   ] = await Promise.all([
     prisma.booking.findMany({
-      where: {
-        professionalId: actor.professionalProfileId,
-        status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
-        endsAt: { gte: now }
-      },
+      where: upcomingReservationsWhere(actor.professionalProfileId, now),
       include: {
         patient: {
           include: {
@@ -371,22 +224,12 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       take: 100
     }),
     prisma.booking.findMany({
-      where: {
-        professionalId: actor.professionalProfileId,
-        startsAt: {
-          gte: sessionsMonthBounds.monthStart,
-          lte: sessionsMonthBounds.monthEnd
-        },
-        OR: [
-          {
-            status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
-            startsAt: { lte: now }
-          },
-          {
-            status: BOOKING_STATUS.COMPLETED
-          }
-        ]
-      },
+      where: pendingExecutionBookingsWhere(
+        actor.professionalProfileId,
+        now,
+        sessionsMonthBounds.monthStart,
+        sessionsMonthBounds.monthEnd
+      ),
       include: {
         patient: {
           include: {
@@ -409,21 +252,10 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
       take: 250
     }),
     prisma.booking.count({
-      where: {
-        professionalId: actor.professionalProfileId,
-        status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
-        endsAt: { gte: now }
-      }
+      where: upcomingReservationsWhere(actor.professionalProfileId, now)
     }),
     prisma.booking.count({
-      where: {
-        professionalId: actor.professionalProfileId,
-        status: { in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.CONFIRMED] },
-        startsAt: {
-          gte: now,
-          lte: nextWeek
-        }
-      }
+      where: weeklyUpcomingCountWhere(actor.professionalProfileId, now, nextWeek)
     }),
     prisma.booking.findMany({
       where: {
@@ -448,7 +280,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.financeSessionRecord.aggregate({
       where: {
         professionalId: actor.professionalProfileId,
-        ...payoutEligibleSessionWhere
+        ...awaitingPayoutDepositWhere
       },
       _sum: {
         professionalNetCents: true
@@ -457,7 +289,7 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
     prisma.financeSessionRecord.findMany({
       where: {
         professionalId: actor.professionalProfileId,
-        ...payoutEligibleSessionWhere
+        ...awaitingPayoutDepositWhere
       },
       select: {
         currency: true,
@@ -610,7 +442,6 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
 
   const trialBooking = upcomingBookings.find((booking: any) => (activeBookingsByPatient.get(booking.patientId) ?? 0) <= 1) ?? null;
   const upcomingSessions = upcomingBookings
-    .filter((booking) => booking.startsAt >= startOfToday)
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
   const patientStatusCounts = {
@@ -710,6 +541,8 @@ professionalRouter.get("/dashboard", async (req: AuthenticatedRequest, res) => {
           status: trialBooking.status.toLowerCase()
         }
       : null,
+    upcomingSessionsHasMore: upcomingBookingsCount > upcomingSessions.length,
+    pendingExecutionSessionsHasMore: pendingExecutionBookings.length >= 250,
     upcomingSessions: upcomingSessions.map((booking: any) => ({
       id: booking.id,
       patientId: booking.patientId,
@@ -970,7 +803,7 @@ professionalRouter.get("/patients/:patientId", async (req: AuthenticatedRequest,
           )
         );
 
-  const [paymentMovements, lifetimeTotalsRows] = await Promise.all([
+  const [paymentMovements, lifetimeRows, professionalProfileMarket] = await Promise.all([
     prisma.financeSessionRecord.findMany({
       where: {
         professionalId: profId,
@@ -984,26 +817,76 @@ professionalRouter.get("/patients/:patientId", async (req: AuthenticatedRequest,
           include: {
             user: { select: { fullName: true } }
           }
+        },
+        payoutLine: {
+          select: { status: true }
+        },
+        purchase: {
+          select: { fxArsPerUsdSnapshot: true }
         }
       }
     }),
-    prisma.financeSessionRecord.groupBy({
-      by: ["currency"],
+    prisma.financeSessionRecord.findMany({
       where: {
         professionalId: profId,
         patientId,
         bookingStatus: BOOKING_STATUS.COMPLETED
       },
-      _sum: { professionalNetCents: true },
-      _count: true
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: { fxArsPerUsdSnapshot: true }
+        }
+      }
+    }),
+    prisma.professionalProfile.findUnique({
+      where: { id: profId },
+      select: { market: true, residencyCountry: true }
     })
   ]);
 
-  const lifetimeTotals = lifetimeTotalsRows.map((row) => ({
-    currency: row.currency,
-    netCents: row._sum.professionalNetCents ?? 0,
-    sessions: row._count
-  }));
+  const liveArsPerUsd = await getResilientUsdArsRate().catch(() => null);
+  const liveFx = liveArsPerUsd != null && liveArsPerUsd > 0 ? { arsPerUsd: liveArsPerUsd } : {};
+  const displayMarket =
+    professionalProfileMarket?.market
+    ?? professionalProfileMarket?.residencyCountry
+    ?? "US";
+  const financeDisplay = buildProfessionalFinanceDisplay({
+    market: displayMarket,
+    liveFx,
+    rangeRecords: [],
+    lifetimeRecords: []
+  });
+
+  let lifetimeNetDisplayCents = 0;
+  for (const row of lifetimeRows) {
+    const mapped = mapFinanceRecordForDisplay({
+      currency: row.currency,
+      sessionPriceCents: 0,
+      platformFeeCents: 0,
+      professionalNetCents: row.professionalNetCents,
+      purchase: row.purchase
+    });
+    const fx = resolveFxForFinanceRecord(mapped, financeDisplay.currency, liveFx);
+    lifetimeNetDisplayCents += convertFinanceMinorToDisplayMinor(
+      row.professionalNetCents,
+      row.currency,
+      financeDisplay.currency,
+      fx,
+      liveFx
+    );
+  }
+
+  const lifetimeTotals = lifetimeRows.length
+    ? [
+        {
+          currency: financeDisplay.currency,
+          netCents: lifetimeNetDisplayCents,
+          sessions: lifetimeRows.length
+        }
+      ]
+    : [];
 
   return res.json({
     patient: {
@@ -1020,17 +903,41 @@ professionalRouter.get("/patients/:patientId", async (req: AuthenticatedRequest,
       lastCompletedSessionAt: lastCompletedSessionAt?.toISOString() ?? null,
       lifetimeTotals
     },
-    paymentMovements: paymentMovements.map((record) => ({
-      bookingId: record.bookingId,
-      patientName: record.patient.user.fullName,
-      startsAt: record.bookingStartsAt.toISOString(),
-      completedAt: record.bookingCompletedAt?.toISOString() ?? null,
-      grossCents: record.sessionPriceCents,
-      platformFeeCents: record.platformFeeCents,
-      amountCents: record.professionalNetCents,
-      status: record.bookingStatus.toLowerCase(),
-      currency: record.currency
-    }))
+    paymentMovements: paymentMovements.map((record) => {
+      const mapped = mapFinanceRecordForDisplay(record);
+      const fx = resolveFxForFinanceRecord(mapped, financeDisplay.currency, liveFx);
+      return {
+        bookingId: record.bookingId,
+        patientName: record.patient.user.fullName,
+        startsAt: record.bookingStartsAt.toISOString(),
+        completedAt: record.bookingCompletedAt?.toISOString() ?? null,
+        grossCents: convertFinanceMinorToDisplayMinor(
+          record.sessionPriceCents,
+          record.currency,
+          financeDisplay.currency,
+          fx,
+          liveFx
+        ),
+        platformFeeCents: convertFinanceMinorToDisplayMinor(
+          record.platformFeeCents,
+          record.currency,
+          financeDisplay.currency,
+          fx,
+          liveFx
+        ),
+        amountCents: convertFinanceMinorToDisplayMinor(
+          record.professionalNetCents,
+          record.currency,
+          financeDisplay.currency,
+          fx,
+          liveFx
+        ),
+        status: record.bookingStatus.toLowerCase(),
+        submittedForPayout: Boolean(record.submittedForPayoutAt || record.payoutLineId),
+        payoutPaid: record.payoutLine?.status === "PAID",
+        currency: financeDisplay.currency.toLowerCase()
+      };
+    })
   });
 });
 
@@ -1059,7 +966,12 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
     ...financeCompletedReferenceWhere(statsFrom, statsTo)
   };
 
-  const movementsWhere = buildMovementsWhere(baseCompleted, statsFrom, statsTo, movementsQuery);
+  const movementsWhere = buildMovementsWhere({
+    baseCompleted,
+    statsFrom,
+    statsTo,
+    movements: movementsQuery
+  });
   const movementsSkip = (movementsQuery.page - 1) * movementsQuery.pageSize;
 
   const financeRecordSelect = {
@@ -1084,6 +996,7 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
     rangeDisplayRows,
     lifetimeDisplayRows,
     collectedDisplayRows,
+    pendingDepositDisplayRows,
     professionalProfileMarket,
     financeRules
   ] = await Promise.all([
@@ -1124,6 +1037,9 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
             endsAt: true,
             packageSessionOrdinal: true
           }
+        },
+        payoutLine: {
+          select: { status: true }
         }
       },
       orderBy: movementsOrderBy(movementsQuery.sort),
@@ -1172,6 +1088,20 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       where: {
         ...rangeWhere,
         payoutLine: { status: "PAID" }
+      },
+      select: {
+        currency: true,
+        professionalNetCents: true,
+        purchase: {
+          select: {
+            fxArsPerUsdSnapshot: true
+          }
+        }
+      }
+    }),
+    prisma.financeSessionRecord.findMany({
+      where: {
+        AND: [baseCompleted, awaitingPayoutDepositWhere]
       },
       select: {
         currency: true,
@@ -1253,7 +1183,22 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
       liveFx
     );
   }
-  const pendingToCollectCents = Math.max(0, display.professionalNetCents - collectedNetDisplayCents);
+  let pendingToCollectCents = 0;
+  for (const row of pendingDepositDisplayRows) {
+    const mapped = mapFinanceRecordForDisplay({
+      ...row,
+      sessionPriceCents: 0,
+      platformFeeCents: 0
+    });
+    const fx = resolveFxForFinanceRecord(mapped, display.currency, liveFx);
+    pendingToCollectCents += convertFinanceMinorToDisplayMinor(
+      row.professionalNetCents,
+      row.currency,
+      display.currency,
+      fx,
+      liveFx
+    );
+  }
 
   return res.json({
     summary: {
@@ -1329,6 +1274,8 @@ professionalRouter.get("/earnings", async (req: AuthenticatedRequest, res) => {
           liveFx
         ),
         status: record.bookingStatus.toLowerCase(),
+        submittedForPayout: Boolean(record.submittedForPayoutAt || record.payoutLineId),
+        payoutPaid: record.payoutLine?.status === "PAID",
         currency: display.currency.toLowerCase(),
         sourceCurrency: record.currency
       };

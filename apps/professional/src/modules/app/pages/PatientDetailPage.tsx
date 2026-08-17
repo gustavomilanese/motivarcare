@@ -5,6 +5,7 @@ import { PatientAvatarImage } from "../components/PatientAvatarImage";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
+import { resolveSessionPayoutStatus, sessionPayoutStatusLabel } from "../lib/sessionPayoutStatus";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import { PatientEmotionalDiaryPanel } from "../../patients/components/PatientEmotionalDiaryPanel";
@@ -27,7 +28,7 @@ function patientStatusLabel(
   if (status === "cancelled") {
     return t(language, { es: "Cancelado", en: "Cancelled", pt: "Cancelado" });
   }
-  return t(language, { es: "De prueba", en: "Trial", pt: "Teste" });
+  return t(language, { es: "Prueba", en: "Trial", pt: "Teste" });
 }
 
 function formatDateOnly(value: string | null, language: AppLanguage): string {
@@ -173,16 +174,16 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
           <div className="pro-patient-finance-strip">
             <h3 className="pro-patient-finance-strip__title">
               {t(props.language, {
-                es: "Cobros registrados",
-                en: "Recorded payouts",
-                pt: "Pagamentos registrados"
+                es: "Neto con este paciente",
+                en: "Net with this patient",
+                pt: "Liquido com este paciente"
               })}
             </h3>
             <p className="pro-patient-finance-strip__hint">
               {t(props.language, {
-                es: "Neto profesional según las liquidaciones en la plataforma.",
-                en: "Your net from platform payout records.",
-                pt: "Liquido profissional nas liquidacoes da plataforma."
+                es: "Neto profesional de las sesiones ya realizadas con este paciente.",
+                en: "Your net from completed sessions with this patient.",
+                pt: "Liquido profissional das sessoes ja realizadas com este paciente."
               })}
             </p>
             <ul className="pro-patient-finance-rows">
@@ -196,9 +197,9 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
                   </div>
                   <span className="pro-patient-finance-row__meta">
                     {t(props.language, {
-                      es: `${row.sessions} sesión(es) liquidadas`,
-                      en: `${row.sessions} paid session(s)`,
-                      pt: `${row.sessions} sessao(oes) liquidadas`
+                      es: `${row.sessions} sesión(es) realizadas`,
+                      en: `${row.sessions} completed session(s)`,
+                      pt: `${row.sessions} sessao(oes) realizadas`
                     })}
                   </span>
                 </li>
@@ -241,13 +242,13 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
       />
 
       <section className="pro-card pro-patient-payments-preview">
-        <h2>{t(props.language, { es: "Últimos cobros", en: "Recent payouts", pt: "Ultimos cobros" })}</h2>
+        <h2>{t(props.language, { es: "Últimas sesiones realizadas", en: "Recent completed sessions", pt: "Ultimas sessoes realizadas" })}</h2>
         {paymentMovements.length === 0 ? (
           <p className="pro-muted">
             {t(props.language, {
-              es: "Todavía no hay sesiones realizadas con liquidación para este paciente.",
-              en: "No completed sessions with payout records for this patient yet.",
-              pt: "Ainda nao ha sessoes realizadas com liquidacao para este paciente."
+              es: "Todavía no hay sesiones realizadas con este paciente.",
+              en: "No completed sessions with this patient yet.",
+              pt: "Ainda nao ha sessoes realizadas com este paciente."
             })}
           </p>
         ) : (
@@ -262,6 +263,11 @@ export function PatientDetailPage(props: { token: string; language: AppLanguage;
                   <strong>{formatDateWithLocale({ value: movement.startsAt, language: props.language, options: { dateStyle: "medium" } })}</strong>
                   <span className="pro-income-movement-dateline">
                     <span className="pro-currency-chip">{movement.currency.toUpperCase()}</span>
+                    <span
+                      className={`pro-executed-session-payout-badge pro-executed-session-payout-badge--${resolveSessionPayoutStatus(movement)}`}
+                    >
+                      {sessionPayoutStatusLabel(props.language, resolveSessionPayoutStatus(movement))}
+                    </span>
                   </span>
                 </div>
                 <div className="pro-income-movement-amounts">

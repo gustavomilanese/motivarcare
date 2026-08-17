@@ -102,7 +102,7 @@ export function FinanceProfessionalPayoutReview(props: {
             props.language
           )
         : detail
-          ? formatAdminFinanceUsd(detail.totals.professionalNetUsdCents, props.language)
+          ? formatAdminFinanceUsd(detail.totals.pendingProfessionalNetUsdCents, props.language)
           : "";
 
     const confirmed = window.confirm(
@@ -149,10 +149,10 @@ export function FinanceProfessionalPayoutReview(props: {
   };
 
   const canDlocal =
-    detail?.payout.dlocalConfigured &&
-    detail.payout.ready &&
-    detail.payout.estimatedLocal != null &&
-    detail.totals.sessionsCount > 0;
+    Boolean(detail?.payout.dlocalConfigured) &&
+    Boolean(detail?.payout.ready) &&
+    detail?.payout.estimatedLocal != null &&
+    (detail?.totals.pendingSessionsCount ?? 0) > 0;
 
   return (
     <div className="finance-payout-review-backdrop" role="presentation" onClick={props.onClose}>
@@ -200,7 +200,7 @@ export function FinanceProfessionalPayoutReview(props: {
               </article>
               <article className="finance-payout-review-metric finance-payout-review-metric--accent">
                 <span>{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}</span>
-                <strong>{formatAdminFinanceUsd(detail.totals.professionalNetUsdCents, props.language)}</strong>
+                <strong>{formatAdminFinanceUsd(detail.totals.pendingProfessionalNetUsdCents, props.language)}</strong>
               </article>
             </div>
 
@@ -372,7 +372,7 @@ export function FinanceProfessionalPayoutReview(props: {
                 <button
                   type="button"
                   className="secondary"
-                  disabled={Boolean(paying) || detail.totals.sessionsCount === 0}
+                  disabled={Boolean(paying) || detail.totals.pendingSessionsCount === 0}
                   onClick={() => void handlePay("ledger")}
                 >
                   {paying === "ledger"

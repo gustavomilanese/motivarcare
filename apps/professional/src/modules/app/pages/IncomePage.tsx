@@ -354,8 +354,8 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
                 aria-describedby="pro-income-tip-pending"
               >
                 <article className="pro-kpi-card">
-                  <span>{t(props.language, { es: "Pendiente de cobrar", en: "Pending payout", pt: "Pendente de receber" })}</span>
-                  <strong>{formatDisplay(summary.pendingToCollectCents ?? summary.professionalNetCents)}</strong>
+                  <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
+                  <strong>{formatDisplay(summary.pendingToCollectCents ?? 0)}</strong>
                   {summary.collectedNetCents != null && summary.collectedNetCents > 0 ? (
                     <small className="pro-kpi-card-hint">
                       {t(props.language, {
@@ -369,9 +369,9 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
                 <div id="pro-income-tip-pending" role="tooltip" className="pro-dashboard-kpi-tooltip">
                   <p>
                     {t(props.language, {
-                      es: "Neto aún no depositado. Si todavía no las enviaste a cobro, hacelo desde el Dashboard.",
-                      en: "Net not deposited yet. If you have not sent them for payout, do that from the Dashboard.",
-                      pt: "Liquido ainda nao depositado. Se ainda nao enviou a cobranca, faca isso no Dashboard."
+                      es: "Neto ya enviado a cobro que todavía no te depositaron, de cualquier período. Las realizadas sin enviar no entran acá.",
+                      en: "Net already sent for payout that has not been deposited yet, from any period. Completed sessions not submitted are not included.",
+                      pt: "Liquido ja enviado a cobranca que ainda nao depositaram, de qualquer periodo. Sessoes realizadas sem enviar nao entram aqui."
                     })}
                   </p>
                 </div>

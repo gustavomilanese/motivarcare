@@ -103,6 +103,16 @@ export function evaluateSubmitForPayout(
   return { ok: true };
 }
 
+export function evaluateCancelBookingStatus(status: string): CompleteBookingGate {
+  if (status === BOOKING_STATUS.CANCELLED) {
+    return { ok: false, httpStatus: 409, error: "Booking already cancelled" };
+  }
+  if (status === BOOKING_STATUS.COMPLETED || status === BOOKING_STATUS.NO_SHOW) {
+    return { ok: false, httpStatus: 409, error: "Cannot cancel a completed session" };
+  }
+  return { ok: true };
+}
+
 export function uniqueBookingIds(bookingIds: string[], max = COMPLETE_BOOKING_BATCH_MAX): string[] {
   const seen = new Set<string>();
   const unique: string[] = [];

@@ -4,6 +4,9 @@ import { InlineBadge } from "@therapy/ui";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import { ProPageLoader } from "../components/ProPageLoader";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { formatPortalBookingStatus, isUpcomingListSession } from "../lib/sessionLifecycle";
+import { rangesOverlap } from "../lib/timeRanges";
+import { getCalendarDayKey, getStartOfWeek, getWeekCalendarDays } from "../lib/weekCalendar";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 
@@ -37,48 +40,6 @@ function formatTime(value: string, language: AppLanguage): string {
 
 function buildSlotKey(startsAt: string, endsAt: string): string {
   return `${startsAt}__${endsAt}`;
-}
-
-function formatBookingStatus(status: string, language: AppLanguage): string {
-  if (status === "confirmed") {
-    return t(language, { es: "Confirmada", en: "Confirmed", pt: "Confirmada" });
-  }
-  if (status === "requested") {
-    return t(language, { es: "Solicitada", en: "Requested", pt: "Solicitada" });
-  }
-  if (status === "completed") {
-    return t(language, { es: "Realizada", en: "Completed", pt: "Realizada" });
-  }
-  if (status === "cancelled") {
-    return t(language, { es: "Cancelada", en: "Cancelled", pt: "Cancelada" });
-  }
-  return status;
-}
-
-function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
-  return new Date(startA).getTime() < new Date(endB).getTime() && new Date(endA).getTime() > new Date(startB).getTime();
-}
-
-function getStartOfWeek(date: Date): Date {
-  const start = new Date(date);
-  const weekday = (start.getDay() + 6) % 7;
-  start.setDate(start.getDate() - weekday);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
-function getWeekCalendarDays(viewDate: Date): Date[] {
-  const startDate = getStartOfWeek(viewDate);
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(startDate);
-    day.setDate(startDate.getDate() + index);
-    return day;
-  });
-}
-
-function getCalendarDayKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function getTwoWeekLabel(date: Date, language: AppLanguage): string {
@@ -324,10 +285,8 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
     [props.language]
   );
   const summary = useMemo(() => {
-    const upcoming = bookings.filter(
-      (booking) =>
-        new Date(booking.endsAt).getTime() >= now &&
-        (booking.status === "confirmed" || booking.status === "requested")
+    const upcoming = bookings.filter((booking) =>
+      isUpcomingListSession(booking.status, booking.startsAt, new Date(now))
     ).length;
     const completed = bookings.filter((booking) => booking.status === "completed").length;
     const cancelled = bookings.filter((booking) => booking.status === "cancelled").length;
@@ -338,11 +297,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
   const upcomingReservations = useMemo(
     () =>
       bookings
-        .filter(
-          (booking) =>
-            new Date(booking.endsAt).getTime() >= now &&
-            (booking.status === "confirmed" || booking.status === "requested")
-        )
+        .filter((booking) => isUpcomingListSession(booking.status, booking.startsAt, new Date(now)))
         .sort((left, right) => new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime()),
     [bookings, now]
   );
@@ -648,7 +603,7 @@ export function AgendaPage(props: { token: string; language: AppLanguage }) {
                       <strong>{booking.counterpartName ?? "-"}</strong>
                       <small>{booking.counterpartEmail ?? ""}</small>
                     </div>
-                    <span className={`agenda-status agenda-status-${booking.status}`}>{formatBookingStatus(booking.status, props.language)}</span>
+                    <span className="agenda-status agenda-status-reserved">{formatPortalBookingStatus(booking.status, props.language)}</span>
                     {(booking.status === "confirmed" || booking.status === "requested") && booking.joinUrl ? (
                       <a href={booking.joinUrl} target="_blank" rel="noreferrer" className="agenda-join-button">
                         {t(props.language, { es: "Abrir sesión", en: "Open session", pt: "Abrir sessão" })}

@@ -336,21 +336,6 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       align: "center"
     },
     {
-      id: "dashboard-settle",
-      route: "/",
-      section: "dashboard",
-      selectors: ['[data-tour="pro-tour-settle-tab"]'],
-      optional: true,
-      title: { es: "Marcar y cobrar", en: "Mark and collect", pt: "Marcar e cobrar" },
-      description: {
-        es: "Marcá las que ya hiciste. Cuando esté listo, <strong>Enviar a cobro</strong>: no se deshace, y Admin solo paga esas.",
-        en: "Mark the ones you’ve already done. When ready, <strong>Send for payout</strong>: it can’t be undone, and Admin only pays those.",
-        pt: "Marque as que ja fez. Quando estiver pronto, <strong>Enviar a cobranca</strong>: nao se desfaz, e o Admin so paga essas."
-      },
-      side: "bottom",
-      align: "center"
-    },
-    {
       id: "dashboard-meet",
       route: "/",
       section: "dashboard",
@@ -361,6 +346,21 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
         es: "Cuando llegue la hora, este botón abre la videollamada con tu paciente.",
         en: "When it's time, this button opens the video call with your patient.",
         pt: "Na hora, este botao abre a videochamada com seu paciente."
+      },
+      side: "bottom",
+      align: "center"
+    },
+    {
+      id: "dashboard-settle",
+      route: "/",
+      section: "dashboard",
+      selectors: ['[data-tour="pro-tour-settle-tab"]'],
+      optional: true,
+      title: { es: "Marcar y cobrar", en: "Mark and collect", pt: "Marcar e cobrar" },
+      description: {
+        es: "Marcá las que ya hiciste. Cuando esté listo, <strong>Enviar a cobro</strong>: no se deshace, y Admin solo paga esas.",
+        en: "Mark the ones you’ve already done. When ready, <strong>Send for payout</strong>: it can’t be undone, and Admin only pays those.",
+        pt: "Marque as que ja fez. Quando estiver pronto, <strong>Enviar a cobranca</strong>: nao se desfaz, e o Admin so paga essas."
       },
       side: "bottom",
       align: "center"
@@ -528,9 +528,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       optional: true,
       title: { es: "Resumen del período", en: "Period summary", pt: "Resumo do periodo" },
       description: {
-        es: "<strong>Bruto</strong> · precio de las sesiones realizadas.<br><strong>Comisión</strong> · fee de MotivarCare.<br><strong>Pendiente</strong> · neto aún no depositado.",
-        en: "<strong>Gross</strong> · price of completed sessions.<br><strong>Fee</strong> · MotivarCare commission.<br><strong>Pending</strong> · net not yet paid out.",
-        pt: "<strong>Bruto</strong> · preco das sessoes realizadas.<br><strong>Comissao</strong> · fee MotivarCare.<br><strong>Pendente</strong> · liquido nao recebido."
+        es: "<strong>Bruto</strong> · precio de las sesiones realizadas.<br><strong>Comisión</strong> · fee de MotivarCare.<br><strong>A cobrar</strong> · neto ya enviado a cobro, aún no depositado.",
+        en: "<strong>Gross</strong> · price of completed sessions.<br><strong>Fee</strong> · MotivarCare commission.<br><strong>To collect</strong> · net already sent for payout, not deposited yet.",
+        pt: "<strong>Bruto</strong> · preco das sessoes realizadas.<br><strong>Comissao</strong> · fee MotivarCare.<br><strong>A receber</strong> · liquido ja enviado a cobranca, ainda nao depositado."
       },
       side: "bottom",
       align: "center"

@@ -1,10 +1,33 @@
 import type {
+  DlocalPayoutAccountType,
   ProfessionalPayoutAdminData,
   ProfessionalPayoutBankTransferType,
   ProfessionalPayoutProvider
 } from "@therapy/types";
 import { isDlocalPayoutCountry } from "@therapy/types";
 import { normalizeBankAccountValue, payoutFormToDlocalProfile, type PayoutFormFields } from "./professionalPayoutValidation";
+
+export function adminToPayoutFormFields(admin: ProfessionalPayoutAdminData): PayoutFormFields {
+  const bank = admin.payoutBankAccount;
+  const holder = bank?.accountHolderName?.trim() ?? "";
+  const nameParts = holder.split(/\s+/).filter(Boolean);
+  return {
+    legalName: admin.legalName ?? "",
+    taxId: bank?.document ?? admin.taxId ?? "",
+    accountHolderName: holder,
+    bankTransferType: bank?.transferType ?? "cbu",
+    bankAccountValue: bank?.accountValue ?? admin.payoutAccount ?? "",
+    bankName: bank?.bankName ?? "",
+    payoutTermsAccepted: true,
+    payoutCountry: bank?.payoutCountry ?? "",
+    beneficiaryFirstName: bank?.beneficiaryFirstName ?? nameParts[0] ?? "",
+    beneficiaryLastName: bank?.beneficiaryLastName ?? nameParts.slice(1).join(" "),
+    documentType: bank?.documentType ?? "",
+    bankCode: bank?.bankCode ?? "",
+    bankBranch: bank?.bankBranch ?? "",
+    accountType: (bank?.accountType ?? "") as "" | DlocalPayoutAccountType
+  };
+}
 
 /**
  * Construye el `ProfessionalPayoutAdminData` que se envía a `/api/professional/admin` a partir

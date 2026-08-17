@@ -47,7 +47,8 @@ export type DlocalGoPayoutRequest = {
   bankBranch?: string | null;
   bankAccountType?: DlocalPayoutAccountType | null;
   description?: string | null;
-  notificationUrl?: string | null;
+  /** URL pública donde dLocal avisa el resultado (`notification_url`). Obligatorio. */
+  notificationUrl: string;
   /** Identificador interno para correlacionar logs (no se envía a dLocal). */
   externalReference?: string | null;
 };
@@ -76,7 +77,12 @@ function maskTail(value: string | null | undefined): string {
   return `***${raw.slice(-4)}`;
 }
 
-function buildPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown> {
+export function buildDlocalGoPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown> {
+  const notificationUrl = request.notificationUrl?.trim() ?? "";
+  if (!notificationUrl) {
+    throw new Error("dLocal payout requires notification_url so we can receive the result.");
+  }
+
   const body: Record<string, unknown> = {
     transfer_amount: Number(request.transferAmount.toFixed(2)),
     transfer_country: request.transferCountry.trim().toUpperCase(),
@@ -88,7 +94,8 @@ function buildPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown
     beneficiary_document: request.beneficiaryDocument.replace(/\s+/g, ""),
     beneficiary_document_type: request.beneficiaryDocumentType.trim().toUpperCase(),
     bank_code: request.bankCode.trim(),
-    bank_account: request.bankAccount.replace(/\s+/g, "")
+    bank_account: request.bankAccount.replace(/\s+/g, ""),
+    notification_url: notificationUrl
   };
 
   if (request.beneficiaryEmail && request.beneficiaryEmail.trim()) {
@@ -103,11 +110,33 @@ function buildPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown
   if (request.description && request.description.trim()) {
     body.description = request.description.trim().slice(0, 200);
   }
-  if (request.notificationUrl && request.notificationUrl.trim()) {
-    body.notification_url = request.notificationUrl.trim();
-  }
 
   return body;
+}
+
+/** dLocal Go manda `{ payout_id }`; el payouts clásico usa `id`. */
+export function extractDlocalPayoutNotificationId(rawBody: string): string | null {
+  try {
+    const parsed = JSON.parse(rawBody) as Record<string, unknown>;
+    const nested = parsed.payout && typeof parsed.payout === "object"
+      ? (parsed.payout as Record<string, unknown>)
+      : null;
+    const candidates = [
+      parsed.payout_id,
+      parsed.payoutId,
+      nested?.payout_id,
+      nested?.id,
+      parsed.id
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -115,7 +144,7 @@ function buildPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown
  * cualquier error. `externalReference` sirve para correlacionar con la liquidación interna.
  */
 export async function createDlocalGoPayout(request: DlocalGoPayoutRequest): Promise<DlocalGoPayout> {
-  const body = buildPayoutBody(request);
+  const body = buildDlocalGoPayoutBody(request);
   const logContext = {
     ref: request.externalReference ?? null,
     country: body.transfer_country,
@@ -127,7 +156,8 @@ export async function createDlocalGoPayout(request: DlocalGoPayoutRequest): Prom
     documentType: body.beneficiary_document_type,
     accountType: body.bank_account_type ?? null,
     branch: body.bank_branch ? maskTail(request.bankBranch) : null,
-    purpose: body.purpose
+    purpose: body.purpose,
+    notificationUrl: body.notification_url
   };
 
   console.info(`${LOG_PREFIX} creating payout`, logContext);
@@ -137,6 +167,16 @@ export async function createDlocalGoPayout(request: DlocalGoPayoutRequest): Prom
       method: "POST",
       body: JSON.stringify(body)
     });
+    const payoutId =
+      typeof payout?.payout_id === "string" && payout.payout_id.trim()
+        ? payout.payout_id.trim()
+        : typeof (payout as { id?: unknown })?.id === "string"
+          ? String((payout as unknown as { id: string }).id).trim()
+          : "";
+    if (!payoutId) {
+      throw new Error("dLocal payout response is missing payout_id.");
+    }
+    payout.payout_id = payoutId;
     console.info(`${LOG_PREFIX} payout created`, {
       ref: request.externalReference ?? null,
       payoutId: payout.payout_id,

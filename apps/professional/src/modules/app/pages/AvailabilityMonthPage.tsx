@@ -7,6 +7,8 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { rangesOverlap } from "../lib/timeRanges";
+import { getCalendarDayKey, getMonthCalendarDays } from "../lib/weekCalendar";
 import { apiRequest } from "../services/api";
 import type { AvailabilitySlot, ProfessionalBookingsResponse } from "../types";
 import { AvailabilityMonthHeader } from "../components/availability/AvailabilityMonthHeader";
@@ -72,29 +74,13 @@ function formatTime(value: string, language: AppLanguage) {
   });
 }
 
-function normalizeDateKey(value: Date) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-}
-
-function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
-  return new Date(startA).getTime() < new Date(endB).getTime() && new Date(endA).getTime() > new Date(startB).getTime();
-}
-
 function timeLabelFromIso(value: string) {
   const date = new Date(value);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function buildMonthDays(monthDate: Date) {
-  const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-  const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-  const days: Date[] = [];
-
-  for (let current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
-    days.push(new Date(current));
-  }
-
-  return days;
+  return getMonthCalendarDays(monthDate);
 }
 
 type DaySlotRecord = AvailabilitySlot & {
@@ -201,7 +187,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   const configuredMonthDays = useMemo(
     () =>
       monthDays.filter((date) => {
-        const daySlots = daySlotsMap.get(normalizeDateKey(date)) ?? [];
+        const daySlots = daySlotsMap.get(getCalendarDayKey(date)) ?? [];
         return daySlots.some((slot) => isVisibleSlot(slot));
       }),
     [daySlotsMap, monthDays]
@@ -209,7 +195,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   const configuredMonthSlotsCount = useMemo(
     () =>
       monthDays.reduce((total, date) => {
-        const daySlots = daySlotsMap.get(normalizeDateKey(date)) ?? [];
+        const daySlots = daySlotsMap.get(getCalendarDayKey(date)) ?? [];
         return total + daySlots.filter((slot) => isSlotAvailable(slot)).length;
       }, 0),
     [daySlotsMap, monthDays]
@@ -221,7 +207,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   const visibleRemovableSlots = useMemo(() => {
     const result: DaySlotRecord[] = [];
     for (const date of configuredMonthDays) {
-      const key = normalizeDateKey(date);
+      const key = getCalendarDayKey(date);
       if (vacationDayKeys.has(key)) {
         continue;
       }
@@ -294,7 +280,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   }, [removableSlotById]);
 
   useEffect(() => {
-    const visibleDayKeys = new Set(configuredMonthDays.map((date) => normalizeDateKey(date)));
+    const visibleDayKeys = new Set(configuredMonthDays.map((date) => getCalendarDayKey(date)));
     setExpandedDayKeys((current) => {
       let changed = false;
       const next = new Set<string>();
@@ -583,8 +569,8 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
         {!loading ? (
           <div className="availability-month-list">
             {configuredMonthDays.map((date) => {
-              const key = normalizeDateKey(date);
-              const isToday = key === normalizeDateKey(new Date());
+              const key = getCalendarDayKey(date);
+              const isToday = key === getCalendarDayKey(new Date());
               const daySlots = (daySlotsMap.get(key) ?? []).filter((slot) => isVisibleSlot(slot));
               const vacationSlots = daySlots.filter((slot) => isVacationSlot(slot));
               const hasVacation = vacationSlots.length > 0;

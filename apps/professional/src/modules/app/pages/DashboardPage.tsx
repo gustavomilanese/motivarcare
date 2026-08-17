@@ -26,6 +26,8 @@ import {
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { formatRevenuePeriodLabel } from "../lib/formatRevenuePeriodLabel";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { isReadyForCobroSession, readyForCobroNetsKnown, sumReadyForCobroNetCents } from "../lib/sessionLifecycle";
+import { rangesOverlap } from "../lib/timeRanges";
 import { apiRequest } from "../services/api";
 import { fetchEmotionalDiarySentReports } from "../../patients/services/emotionalDiaryApi";
 import type { AuthUser, AvailabilitySlot, DashboardResponse } from "../types";
@@ -63,10 +65,6 @@ function formatTime(value: string, language: AppLanguage): string {
 
 function buildSlotKey(startsAt: string, endsAt: string): string {
   return `${startsAt}__${endsAt}`;
-}
-
-function rangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
-  return new Date(startA).getTime() < new Date(endB).getTime() && new Date(endA).getTime() > new Date(startB).getTime();
 }
 
 type DashboardLocationState = { profileUpdated?: boolean };
@@ -124,6 +122,7 @@ export function DashboardPage(props: {
   const [bulkConfirmAction, setBulkConfirmAction] = useState<null | "complete" | "uncomplete" | "submit-payout">(null);
   const [bulkTargetBookings, setBulkTargetBookings] = useState<UpcomingReservationItem[]>([]);
   const [selectionEpoch, setSelectionEpoch] = useState(0);
+  const [payoutReadiness, setPayoutReadiness] = useState<{ ready: boolean; reason: string | null } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,13 +141,19 @@ export function DashboardPage(props: {
 
     const load = async () => {
       try {
-        const [response, reports] = await Promise.all([
+        const [response, reports, readiness] = await Promise.all([
           apiRequest<DashboardResponse>(`/api/professional/dashboard${dashboardQuery}`, props.token),
-          fetchEmotionalDiarySentReports(props.token).catch(() => [] as EmotionalDiarySentReportItem[])
+          fetchEmotionalDiarySentReports(props.token).catch(() => [] as EmotionalDiarySentReportItem[]),
+          apiRequest<{ ready: boolean; reason: string | null }>("/api/payouts/me/readiness", props.token).catch(
+            () => null
+          )
         ]);
         if (active) {
           setData(response);
           setDiaryReports(Array.isArray(reports) ? reports : []);
+          if (readiness) {
+            setPayoutReadiness({ ready: Boolean(readiness.ready), reason: readiness.reason ?? null });
+          }
           setUpcomingReservations(
             (response.upcomingSessions ?? []).map((session) => ({
               id: session.id,
@@ -450,15 +455,22 @@ export function DashboardPage(props: {
     displayCurrency,
     props.language
   );
-  const readyForCobroSessions = pendingExecutionSessions.filter((session) => {
-    const completed = session.status.toLowerCase() === "completed";
-    return completed && session.canUncomplete !== false && !session.submittedForPayout && !session.payoutPaid;
-  });
+  const readyForCobroSessions = pendingExecutionSessions.filter(isReadyForCobroSession);
+  const readyForCobroNetsReady = readyForCobroNetsKnown(pendingExecutionSessions);
   const readyForCobroNetLabel = formatRecordedFinanceMinor(
-    readyForCobroSessions.reduce((sum, session) => sum + (session.netDisplayCents ?? 0), 0),
+    sumReadyForCobroNetCents(readyForCobroSessions),
     displayCurrency,
     props.language
   );
+  const payoutReady = payoutReadiness?.ready !== false;
+  const payoutBlockedReason = payoutReadiness && !payoutReadiness.ready
+    ? payoutReadiness.reason?.trim() ||
+      t(props.language, {
+        es: "Completá tus datos de cobro en Perfil para poder enviar sesiones.",
+        en: "Complete your payout details in Profile before sending sessions.",
+        pt: "Complete seus dados de cobranca no Perfil para enviar sessoes."
+      })
+    : "";
   const openRescheduleModal = async (booking: UpcomingReservationItem) => {
     setBookingActionError("");
     setBookingActionInProgressId(booking.id);
@@ -628,6 +640,7 @@ export function DashboardPage(props: {
             return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
           })
       );
+      setUpcomingReservations((current) => current.filter((item) => item.id !== booking.id));
       setDashboardReloadKey((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -659,6 +672,16 @@ export function DashboardPage(props: {
             return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
           })
       );
+      if (new Date(booking.startsAt).getTime() >= Date.now()) {
+        setUpcomingReservations((current) => {
+          if (current.some((item) => item.id === booking.id)) {
+            return current;
+          }
+          return [...current, { ...booking, status: "confirmed", canUncomplete: undefined }].sort(
+            (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+          );
+        });
+      }
       setDashboardReloadKey((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -688,6 +711,7 @@ export function DashboardPage(props: {
             return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
           })
       );
+      setUpcomingReservations((current) => current.filter((item) => !completedSet.has(item.id)));
       setDashboardReloadKey((value) => value + 1);
     }
     if (failed.length > 0) {
@@ -830,6 +854,7 @@ export function DashboardPage(props: {
       }
       setBulkConfirmAction(null);
       setBulkTargetBookings([]);
+      setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setBookingActionError(professionalSurfaceMessage("dashboard-submit-payout", props.language, raw));
@@ -851,14 +876,14 @@ export function DashboardPage(props: {
     pt: `Seu liquido das sessoes realizadas em ${revenuePeriodLabel}. O bruto esta em Receitas.`
   });
   const pendingCollectTooltip = t(props.language, {
-    es: "Neto ya enviado a cobro que todavía no te depositaron.",
-    en: "Net already sent for payout that has not been deposited yet.",
-    pt: "Liquido ja enviado a cobranca que ainda nao depositaram."
+    es: "Neto ya enviado a cobro que todavía no te depositaron, de cualquier período.",
+    en: "Net already sent for payout that has not been deposited yet, from any period.",
+    pt: "Liquido ja enviado a cobranca que ainda nao depositaram, de qualquer periodo."
   });
   const scheduledSessionsTooltip = t(props.language, {
-    es: "Turnos confirmados o pedidos de acá en adelante. Tocá para ver la lista.",
-    en: "Confirmed or requested sessions from now on. Tap to see the list.",
-    pt: "Horarios confirmados ou pedidos daqui pra frente. Toque para ver a lista."
+    es: "Turnos reservados de acá en adelante. Tocá para ver la lista.",
+    en: "Reserved sessions from now on. Tap to see the list.",
+    pt: "Horarios reservados daqui pra frente. Toque para ver a lista."
   });
   const activePatientsTooltip = t(props.language, {
     es: "Pacientes con actividad reciente en tu consultorio. Tocá para ver el listado.",
@@ -984,6 +1009,7 @@ export function DashboardPage(props: {
               highlightJoinPulseBookingId={highlightJoinPulseBookingId}
               joinTourTargetBookingId={firstMeetBookingId}
               diaryReportByPatientId={diaryReportByPatientId}
+              truncated={Boolean(data.upcomingSessionsHasMore)}
             />
           </div>
         ) : (
@@ -1039,12 +1065,16 @@ export function DashboardPage(props: {
                       pt: `${readyForCobroSessions.length} sessao${readyForCobroSessions.length === 1 ? "" : "oes"} pronta${readyForCobroSessions.length === 1 ? "" : "s"} para cobranca`
                     })}
                   </strong>
-                  <span>{readyForCobroNetLabel}</span>
+                  {readyForCobroNetsReady ? <span>{readyForCobroNetLabel}</span> : null}
+                  {!payoutReady && payoutBlockedReason ? (
+                    <span className="pro-dashboard-cobro-bar-blocked">{payoutBlockedReason}</span>
+                  ) : null}
                 </div>
                 <button
                   type="button"
                   className="pro-btn pro-dashboard-cobro-bar-cta"
-                  disabled={bulkBusy}
+                  disabled={bulkBusy || !payoutReady}
+                  title={!payoutReady ? payoutBlockedReason : undefined}
                   onClick={() => {
                     setBulkTargetBookings(readyForCobroSessions);
                     setBulkConfirmAction("submit-payout");
@@ -1064,6 +1094,8 @@ export function DashboardPage(props: {
               busyBookingId={bulkBusy ? "__bulk__" : bookingActionInProgressId}
               filter={sessionListFilter}
               selectionEpoch={selectionEpoch}
+              listMonth={sessionListMonth}
+              truncated={Boolean(data.pendingExecutionSessionsHasMore)}
               onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
               onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
               onRequestBulkComplete={(bookings) => {
@@ -1308,9 +1340,15 @@ export function DashboardPage(props: {
                   })
                 : bulkConfirmAction === "submit-payout"
                   ? t(props.language, {
-                      es: `Vas a enviar ${bulkTargetBookings.length} sesiones a cobro (${readyForCobroNetLabel}). Esta acción no se puede deshacer.`,
-                      en: `You will send ${bulkTargetBookings.length} sessions for payout (${readyForCobroNetLabel}). This cannot be undone.`,
-                      pt: `Voce vai enviar ${bulkTargetBookings.length} sessoes a cobranca (${readyForCobroNetLabel}). Esta acao nao se desfaz.`
+                      es: readyForCobroNetsReady
+                        ? `Vas a enviar ${bulkTargetBookings.length} sesiones a cobro (${readyForCobroNetLabel}). Esta acción no se puede deshacer.`
+                        : `Vas a enviar ${bulkTargetBookings.length} sesiones a cobro. Esta acción no se puede deshacer.`,
+                      en: readyForCobroNetsReady
+                        ? `You will send ${bulkTargetBookings.length} sessions for payout (${readyForCobroNetLabel}). This cannot be undone.`
+                        : `You will send ${bulkTargetBookings.length} sessions for payout. This cannot be undone.`,
+                      pt: readyForCobroNetsReady
+                        ? `Voce vai enviar ${bulkTargetBookings.length} sessoes a cobranca (${readyForCobroNetLabel}). Esta acao nao se desfaz.`
+                        : `Voce vai enviar ${bulkTargetBookings.length} sessoes a cobranca. Esta acao nao se desfaz.`
                     })
                   : t(props.language, {
                       es: `Vas a volver ${bulkTargetBookings.length} sesiones realizadas a reservadas. Solo las que todavía no enviaste a cobro.`,
@@ -1332,7 +1370,7 @@ export function DashboardPage(props: {
               <button
                 type="button"
                 className="primary"
-                disabled={bulkBusy}
+                disabled={bulkBusy || (bulkConfirmAction === "submit-payout" && !payoutReady)}
                 onClick={() =>
                   void (bulkConfirmAction === "complete"
                     ? submitBulkComplete()

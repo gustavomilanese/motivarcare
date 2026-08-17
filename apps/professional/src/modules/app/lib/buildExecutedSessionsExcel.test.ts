@@ -31,9 +31,23 @@ describe("buildExecutedSessionExportRows", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.patientName).toBe("Camila Morales");
     expect(rows[0]?.sessionNumber).toBe("2/4");
+    expect(rows[0]?.payoutStatus).toBe("Realizada");
     expect(rows[0]?.grossMajor).toBe(5800);
     expect(rows[0]?.feeMajor).toBe(1450);
     expect(rows[0]?.netMajor).toBe(4350);
+  });
+
+  it("mapea En cobro y Pagada desde flags de payout", () => {
+    const submitted = buildExecutedSessionExportRows({
+      movements: [{ ...sampleMovement, submittedForPayout: true }],
+      language: "es"
+    });
+    const paid = buildExecutedSessionExportRows({
+      movements: [{ ...sampleMovement, submittedForPayout: true, payoutPaid: true }],
+      language: "es"
+    });
+    expect(submitted[0]?.payoutStatus).toBe("En cobro");
+    expect(paid[0]?.payoutStatus).toBe("Pagada");
   });
 
   it("suma totales de columnas monetarias", () => {

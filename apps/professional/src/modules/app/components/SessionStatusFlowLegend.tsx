@@ -1,15 +1,9 @@
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { PORTAL_SESSION_FLOW } from "../lib/sessionLifecycle";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
 }
-
-const STEPS: Array<{ id: "reserved" | "completed" | "payout" | "paid"; label: LocalizedText }> = [
-  { id: "reserved", label: { es: "Reservada", en: "Reserved", pt: "Reservada" } },
-  { id: "completed", label: { es: "Realizada", en: "Completed", pt: "Realizada" } },
-  { id: "payout", label: { es: "En cobro", en: "In payout", pt: "Em cobranca" } },
-  { id: "paid", label: { es: "Pagada", en: "Paid", pt: "Paga" } }
-];
 
 export function SessionStatusFlowLegend(props: { language: AppLanguage }) {
   return (
@@ -37,7 +31,7 @@ export function SessionStatusFlowLegend(props: { language: AppLanguage }) {
           pt: "Reservada, Realizada, Em cobranca, Paga"
         })}
       >
-        {STEPS.map((step, index) => (
+        {PORTAL_SESSION_FLOW.map((step, index) => (
           <span key={step.id} className="pro-session-status-flow-item">
             {index > 0 ? (
               <span className="pro-session-status-flow-arrow" aria-hidden>

@@ -23,6 +23,7 @@ import {
   loadProfessionalPayoutAdmin,
   ProfessionalPayoutError
 } from "../payouts/professionalPayouts.service.js";
+import { applyDlocalStatusToPayoutLine } from "./payoutRunDlocal.service.js";
 import { payProfessionalUnpaidBalance } from "./finance.service.js";
 
 async function resolveLiveFx() {
@@ -590,6 +591,11 @@ export async function payUnpaidProfessional(input: {
         payoutReference: input.payoutReference?.trim() || `dlocal:${payout.payout_id}`,
         submissionError: null
       }
+    });
+
+    await applyDlocalStatusToPayoutLine({
+      payoutId: payout.payout_id,
+      status: String(record.status)
     });
 
     return {

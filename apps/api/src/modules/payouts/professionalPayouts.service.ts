@@ -104,7 +104,19 @@ export function assessPayoutReadiness(admin: ProfessionalPayoutAdminData | null)
 
 function payoutNotificationUrl(): string {
   const base = (env.API_PUBLIC_URL || "").replace(/\/+$/, "");
-  return `${base}/api/payouts/dlocal/webhook`;
+  if (!base) {
+    throw new ProfessionalPayoutError(
+      "dlocal_not_configured",
+      "Falta API_PUBLIC_URL para que dLocal pueda notificar el resultado del payout."
+    );
+  }
+  const url = `${base}/api/payouts/dlocal/webhook`;
+  if (/localhost|127\.0\.0\.1/i.test(base)) {
+    console.warn(`${LOG_PREFIX} notification_url is local; dLocal cannot reach it from sandbox/prod`, { url });
+  } else if (!/^https:/i.test(url)) {
+    console.warn(`${LOG_PREFIX} notification_url should be HTTPS for dLocal`, { url });
+  }
+  return url;
 }
 
 async function upsertPayoutRecord(record: StoredPayoutRecord): Promise<void> {
@@ -208,6 +220,23 @@ export async function createProfessionalPayout(params: {
   return { payout, record };
 }
 
+async function applyLedgerForPayout(params: {
+  payoutId: string;
+  status: string;
+  payoutLineId?: string | null;
+  requireLine: boolean;
+}): Promise<void> {
+  const { applyDlocalStatusToPayoutLine } = await import("../finance/payoutRunDlocal.service.js");
+  const applied = await applyDlocalStatusToPayoutLine({
+    payoutId: params.payoutId,
+    status: params.status,
+    payoutLineId: params.payoutLineId
+  });
+  if (!applied.updated && params.requireLine) {
+    throw new Error("Payout line not linked yet");
+  }
+}
+
 /**
  * Refresca el estado de un payout consultando a dLocal y persiste el resultado.
  * Idempotente: pensado para el webhook (puede recibir la misma notificación varias veces).
@@ -221,40 +250,42 @@ export async function syncPayoutStatus(payoutId: string): Promise<StoredPayoutRe
       payoutId,
       status: payout.status
     });
+    await applyLedgerForPayout({
+      payoutId,
+      status: String(payout.status),
+      requireLine: true
+    });
     return null;
   }
 
-  if (existing.status === payout.status) {
+  const statusChanged = existing.status !== payout.status;
+  const updated: StoredPayoutRecord = statusChanged
+    ? {
+        ...existing,
+        status: payout.status,
+        bankName: payout.bank_name ?? existing.bankName ?? null,
+        updatedAt: new Date().toISOString()
+      }
+    : existing;
+
+  if (statusChanged) {
+    await upsertPayoutRecord(updated);
+    console.info(`${LOG_PREFIX} payout status updated`, {
+      payoutId,
+      from: existing.status,
+      to: payout.status,
+      professionalProfileId: existing.professionalProfileId
+    });
+  } else {
     console.info(`${LOG_PREFIX} payout status unchanged`, { payoutId, status: payout.status });
-    return existing;
   }
 
-  const updated: StoredPayoutRecord = {
-    ...existing,
-    status: payout.status,
-    bankName: payout.bank_name ?? existing.bankName ?? null,
-    updatedAt: new Date().toISOString()
-  };
-  await upsertPayoutRecord(updated);
-  console.info(`${LOG_PREFIX} payout status updated`, {
+  await applyLedgerForPayout({
     payoutId,
-    from: existing.status,
-    to: payout.status,
-    professionalProfileId: existing.professionalProfileId
+    status: String(payout.status),
+    payoutLineId: existing.payoutLineId,
+    requireLine: Boolean(existing.payoutLineId)
   });
-
-  try {
-    const { applyDlocalStatusToPayoutLine } = await import("../finance/payoutRunDlocal.service.js");
-    await applyDlocalStatusToPayoutLine({
-      payoutId,
-      status: String(payout.status)
-    });
-  } catch (error) {
-    console.error(`${LOG_PREFIX} ledger sync failed`, {
-      payoutId,
-      message: error instanceof Error ? error.message : String(error)
-    });
-  }
 
   return updated;
 }

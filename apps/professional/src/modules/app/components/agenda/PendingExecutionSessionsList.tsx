@@ -2,6 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLanguage } from "@therapy/i18n-config";
 import { PatientAvatarImage } from "../PatientAvatarImage";
 import { ProPageLoader } from "../ProPageLoader";
+import {
+  filterSettleSessions,
+  isCompletedBooking,
+  isLockedSession,
+  isPagadaSession,
+  isReadyForCobroSession,
+  isSelectableSession,
+  type SessionListFilter
+} from "../../lib/sessionLifecycle";
+import { sessionPayoutStatusLabel } from "../../lib/sessionPayoutStatus";
 import { resolveApiAssetUrl } from "../../services/api";
 import type { UpcomingReservationItem } from "./UpcomingReservationsList";
 
@@ -33,40 +43,9 @@ function formatTime(value: string, language: AppLanguage): string {
   });
 }
 
-function isCompletedBooking(session: UpcomingReservationItem): boolean {
-  return session.status.toLowerCase() === "completed";
-}
-
-/** Realizada reversible: todavía no se envió a cobro. */
-function isReadyForCobroSession(session: UpcomingReservationItem): boolean {
-  return (
-    isCompletedBooking(session) &&
-    session.canUncomplete !== false &&
-    !session.submittedForPayout &&
-    !session.payoutPaid
-  );
-}
-
-function isEnCobroSession(session: UpcomingReservationItem): boolean {
-  return isCompletedBooking(session) && Boolean(session.submittedForPayout) && !session.payoutPaid;
-}
-
-function isPagadaSession(session: UpcomingReservationItem): boolean {
-  return isCompletedBooking(session) && Boolean(session.payoutPaid);
-}
-
-/** Realizada bloqueada (en cobro o pagada), incluido el payload viejo sin flags nuevos. */
-function isLockedSession(session: UpcomingReservationItem): boolean {
-  return isCompletedBooking(session) && !isReadyForCobroSession(session);
-}
-
-function isSelectableSession(session: UpcomingReservationItem): boolean {
-  return !isLockedSession(session);
-}
-
 const PAGE_SIZE = 8;
 
-export type SessionListFilter = "all" | "reserved" | "executed" | "submitted" | "paid" | "liquidated";
+export type { SessionListFilter };
 
 export function PendingExecutionSessionsList(props: {
   language: AppLanguage;
@@ -75,6 +54,8 @@ export function PendingExecutionSessionsList(props: {
   busyBookingId?: string | null;
   filter: SessionListFilter;
   selectionEpoch?: number;
+  listMonth?: string;
+  truncated?: boolean;
   onMarkExecuted: (booking: UpcomingReservationItem) => void;
   onUndoExecuted: (booking: UpcomingReservationItem) => void;
   onRequestBulkComplete: (bookings: UpcomingReservationItem[]) => void;
@@ -84,31 +65,17 @@ export function PendingExecutionSessionsList(props: {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
-  const filteredSessions = useMemo(() => {
-    if (props.filter === "reserved") {
-      return props.sessions.filter((session) => !isCompletedBooking(session));
-    }
-    if (props.filter === "executed") {
-      return props.sessions.filter((session) => isReadyForCobroSession(session));
-    }
-    if (props.filter === "submitted") {
-      return props.sessions.filter((session) => isEnCobroSession(session));
-    }
-    if (props.filter === "paid") {
-      return props.sessions.filter((session) => isPagadaSession(session));
-    }
-    if (props.filter === "liquidated") {
-      return props.sessions.filter((session) => isLockedSession(session));
-    }
-    return props.sessions;
-  }, [props.filter, props.sessions]);
+  const filteredSessions = useMemo(
+    () => filterSettleSessions(props.sessions, props.filter),
+    [props.filter, props.sessions]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredSessions.length / PAGE_SIZE));
 
   useEffect(() => {
     setPage(1);
     setSelectedIds([]);
-  }, [props.filter, props.selectionEpoch]);
+  }, [props.filter, props.selectionEpoch, props.listMonth]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -144,7 +111,7 @@ export function PendingExecutionSessionsList(props: {
   }, [somePageSelected]);
 
   useEffect(() => {
-    const valid = new Set(filteredSessions.map((session) => session.id));
+    const valid = new Set(filteredSessions.filter(isSelectableSession).map((session) => session.id));
     setSelectedIds((current) => {
       const next = current.filter((id) => valid.has(id));
       return next.length === current.length ? current : next;
@@ -214,7 +181,7 @@ export function PendingExecutionSessionsList(props: {
                       en: "No sessions in payout",
                       pt: "Nao ha sessoes em cobranca"
                     })
-                  : props.filter === "paid" || props.filter === "liquidated"
+                  : props.filter === "paid"
                     ? t(props.language, {
                         es: "No hay sesiones pagadas",
                         en: "No paid sessions",
@@ -359,9 +326,11 @@ export function PendingExecutionSessionsList(props: {
                 const selectable = isSelectableSession(booking);
                 const selected = selectedSet.has(booking.id);
                 const statusValue = executed || locked ? "executed" : "reserved";
-                const lockedLabel = isPagadaSession(booking)
-                  ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
-                  : t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" });
+                const lockedLabel = sessionPayoutStatusLabel(
+                  props.language,
+                  isPagadaSession(booking) ? "paid" : "submitted"
+                );
+                const lockedTone = isPagadaSession(booking) ? "paid" : "payout";
 
                 return (
                   <article
@@ -422,7 +391,7 @@ export function PendingExecutionSessionsList(props: {
                         {t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
                       </span>
                       {locked ? (
-                        <span className="agenda-session-status-locked agenda-session-status-locked--liquidated">
+                        <span className={`agenda-session-status-locked agenda-session-status-locked--${lockedTone}`}>
                           {lockedLabel}
                         </span>
                       ) : (
@@ -495,6 +464,15 @@ export function PendingExecutionSessionsList(props: {
           ) : null}
         </>
       )}
+      {props.truncated ? (
+        <p className="pro-muted agenda-session-truncated">
+          {t(props.language, {
+            es: "Hay más sesiones de este mes de las que se listan acá.",
+            en: "There are more sessions this month than this list shows.",
+            pt: "Ha mais sessoes neste mes do que esta lista mostra."
+          })}
+        </p>
+      ) : null}
     </div>
   );
 }

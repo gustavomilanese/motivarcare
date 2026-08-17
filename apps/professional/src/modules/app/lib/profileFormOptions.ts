@@ -14,11 +14,13 @@ export function profileTitleOptions(language: AppLanguage): Array<{ value: strin
         ? t(language, { es: "Psicólogo", en: "Psychologist", pt: "Psicologo" })
         : title === "Psiquiatra"
           ? t(language, { es: "Psiquiatra", en: "Psychiatrist", pt: "Psiquiatra" })
-          : title === "Sexólogo"
+            : title === "Sexólogo"
             ? t(language, { es: "Sexólogo", en: "Sexologist", pt: "Sexologo" })
-            : title === "Coach"
-              ? t(language, { es: "Coach", en: "Coach", pt: "Coach" })
-              : t(language, { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" })
+            : title === "Sociólogo"
+              ? t(language, { es: "Sociólogo", en: "Sociologist", pt: "Sociologo" })
+              : title === "Coach"
+                ? t(language, { es: "Coach", en: "Coach", pt: "Coach" })
+                : t(language, { es: "Nutricionista", en: "Nutritionist", pt: "Nutricionista" })
   }));
 }
 

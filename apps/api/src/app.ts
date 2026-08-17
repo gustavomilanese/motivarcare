@@ -108,14 +108,20 @@ app.use(
     optionsSuccessStatus: 204
   })
 );
+function isRawBodyWebhookPath(path: string): boolean {
+  return (
+    path === "/api/payments/stripe/webhook"
+    || path === "/api/v1/payments/stripe/webhook"
+    || path === "/api/payments/dlocal/webhook"
+    || path === "/api/v1/payments/dlocal/webhook"
+    || path === "/api/payouts/dlocal/webhook"
+    || path === "/api/v1/payouts/dlocal/webhook"
+  );
+}
+
 const jsonParser = express.json({ limit: "35mb" });
 app.use((req, res, next) => {
-  if (
-    req.path === "/api/payments/stripe/webhook"
-    || req.path === "/api/v1/payments/stripe/webhook"
-    || req.path === "/api/payments/dlocal/webhook"
-    || req.path === "/api/v1/payments/dlocal/webhook"
-  ) {
+  if (isRawBodyWebhookPath(req.path)) {
     next();
     return;
   }
