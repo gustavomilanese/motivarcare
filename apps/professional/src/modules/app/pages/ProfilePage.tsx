@@ -619,6 +619,7 @@ export function ProfilePage(props: { token: string; user: AuthUser; language: Ap
                   language={props.language}
                   editing={bankEditing}
                   onEditingChange={setBankEditing}
+                  residencyCountry={profile?.residencyCountry}
                 />
               </ProfileCollapsibleSection>
 

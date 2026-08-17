@@ -4,8 +4,14 @@ import type {
   ProfessionalPayoutBankTransferType,
   ProfessionalPayoutProvider
 } from "@therapy/types";
-import { isDlocalPayoutCountry } from "@therapy/types";
-import { normalizeBankAccountValue, payoutFormToDlocalProfile, type PayoutFormFields } from "./professionalPayoutValidation";
+import { dlocalPayoutBankCodes, isDlocalPayoutCountry } from "@therapy/types";
+import { inferPayoutProviderFromResidencyCountry } from "./inferPayoutProvider";
+import {
+  legalNameLooksLikeBank,
+  normalizeBankAccountValue,
+  payoutFormToDlocalProfile,
+  type PayoutFormFields
+} from "./professionalPayoutValidation";
 
 export function adminToPayoutFormFields(admin: ProfessionalPayoutAdminData): PayoutFormFields {
   const bank = admin.payoutBankAccount;
@@ -76,5 +82,85 @@ export function buildPayoutAdminFromFormFields(
       accountHolderName: fields.accountHolderName.trim(),
       bankName: fields.bankName.trim() || null
     }
+  };
+}
+
+export function resolvePayoutEditorProvider(
+  admin: ProfessionalPayoutAdminData,
+  residencyCountry?: string | null
+): ProfessionalPayoutProvider {
+  if (admin.payoutMethod === "dlocal") {
+    return "dlocal";
+  }
+  const transfer = admin.payoutBankAccount?.transferType;
+  if (transfer === "cbu" || transfer === "cvu" || transfer === "alias") {
+    return "dlocal";
+  }
+  if (isDlocalPayoutCountry(admin.payoutBankAccount?.payoutCountry)) {
+    return "dlocal";
+  }
+  return inferPayoutProviderFromResidencyCountry(residencyCountry ?? "");
+}
+
+function matchBankCode(country: string, bankName: string, currentCode: string): { code: string; name: string } | null {
+  if (currentCode.trim()) {
+    return null;
+  }
+  const list = isDlocalPayoutCountry(country) ? dlocalPayoutBankCodes(country) : null;
+  if (!list) {
+    return null;
+  }
+  const n = bankName.trim().toLowerCase();
+  if (!n) {
+    return null;
+  }
+  if (country === "AR" && /mercado\s*pago|cvu/.test(n)) {
+    const cvu = list.find((bank) => bank.code === "000");
+    return cvu ? { code: cvu.code, name: cvu.name } : null;
+  }
+  const exact = list.find((bank) => bank.name.toLowerCase() === n);
+  return exact ? { code: exact.code, name: exact.name } : null;
+}
+
+/** Abre el editor con país/banco dLocal ya encaminados (AR + Mercado Pago/CVU). */
+export function preparePayoutBankEditorDraft(
+  admin: ProfessionalPayoutAdminData,
+  residencyCountry?: string | null
+): ProfessionalPayoutAdminData {
+  const provider = resolvePayoutEditorProvider(admin, residencyCountry);
+  if (provider !== "dlocal") {
+    return admin;
+  }
+  const fields = adminToPayoutFormFields(admin);
+  if (!isDlocalPayoutCountry(fields.payoutCountry)) {
+    fields.payoutCountry = isDlocalPayoutCountry(residencyCountry) ? residencyCountry : "AR";
+  }
+  const matched = matchBankCode(fields.payoutCountry, fields.bankName, fields.bankCode);
+  if (matched) {
+    fields.bankCode = matched.code;
+    fields.bankName = matched.name;
+  }
+  if (!fields.documentType && fields.payoutCountry === "AR") {
+    fields.documentType = "CUIT";
+  }
+  const holder = fields.accountHolderName.trim();
+  if ((!fields.legalName.trim() || legalNameLooksLikeBank(fields.legalName)) && holder.length >= 3) {
+    fields.legalName = holder;
+  }
+  const account = fields.bankAccountValue.trim();
+  if (/[a-zA-Z]/.test(account) && /^[a-zA-Z0-9.]{6,20}$/.test(account)) {
+    fields.bankTransferType = "alias";
+  } else if (account.replace(/\D/g, "").length === 22 && fields.bankCode === "000") {
+    fields.bankTransferType = "cvu";
+  }
+  const built = buildPayoutAdminFromFormFields("dlocal", { ...fields, payoutTermsAccepted: true });
+  return {
+    ...admin,
+    ...built,
+    payoutStatus: admin.payoutStatus,
+    payoutSubmittedAt: admin.payoutSubmittedAt,
+    legalAcceptedAt: admin.legalAcceptedAt,
+    acceptedDocuments: admin.acceptedDocuments,
+    notes: admin.notes
   };
 }

@@ -6,19 +6,45 @@ import {
   isDlocalPayoutCountry,
   type ProfessionalPayoutBankTransferType
 } from "@therapy/types";
-import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
+import { professionalSurfaceMessage, softNetworkOrHttp } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AdminData } from "../types";
 import { ProfileEditModal } from "./ProfileEditModal";
 import { DlocalPayoutCountryFields } from "../../onboarding/components/DlocalPayoutCountryFields";
 import {
   adminToPayoutFormFields,
-  buildPayoutAdminFromFormFields
+  buildPayoutAdminFromFormFields,
+  preparePayoutBankEditorDraft,
+  resolvePayoutEditorProvider
 } from "../../onboarding/lib/buildPayoutAdminFromFormFields";
-import type { PayoutFormFields } from "../../onboarding/lib/professionalPayoutValidation";
+import {
+  collectPayoutFieldErrors,
+  firstPayoutFieldError,
+  mapPayoutApiError,
+  type PayoutFieldErrorKey,
+  type PayoutFormFields
+} from "../../onboarding/lib/professionalPayoutValidation";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
+}
+
+function payoutLang(language: AppLanguage): "es" | "en" | "pt" {
+  return language === "en" || language === "pt" ? language : "es";
+}
+
+function FieldError(props: { message?: string }) {
+  if (!props.message) {
+    return null;
+  }
+  return <p className="pro-profile-field-error">{props.message}</p>;
+}
+
+function FieldHint(props: { message?: string }) {
+  if (!props.message) {
+    return null;
+  }
+  return <p className="pro-profile-field-hint">{props.message}</p>;
 }
 
 function payoutStatusLabel(language: AppLanguage, status: AdminData["payoutStatus"]): string {
@@ -80,6 +106,9 @@ function payoutCountryLabel(language: AppLanguage, code: string | null | undefin
 function payoutBankLabel(country: string | null | undefined, code: string | null | undefined, fallbackName?: string | null): string {
   const bankCode = (code ?? "").trim();
   const countryCode = (country ?? "").trim().toUpperCase();
+  if (countryCode === "AR" && bankCode === "000") {
+    return "Mercado Pago / CVU (cuenta virtual)";
+  }
   if (bankCode && isDlocalPayoutCountry(countryCode)) {
     const match = dlocalPayoutBankCodes(countryCode)?.find((bank) => bank.code === bankCode);
     if (match?.name) {
@@ -135,11 +164,13 @@ export function ProfessionalBankDetailsSection(props: {
   language: AppLanguage;
   editing: boolean;
   onEditingChange: (editing: boolean) => void;
+  residencyCountry?: string | null;
 }) {
   const [form, setForm] = useState<AdminData>(EMPTY_ADMIN);
   const [draft, setDraft] = useState<AdminData | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<PayoutFieldErrorKey, string>>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -172,18 +203,27 @@ export function ProfessionalBankDetailsSection(props: {
       setDraft(null);
       return;
     }
-    setDraft((current) => current ?? form);
+    setDraft((current) => current ?? preparePayoutBankEditorDraft(form, props.residencyCountry));
     setError("");
-  }, [props.editing, form]);
+    setFieldErrors({});
+  }, [props.editing, form, props.residencyCountry]);
 
   const bank = form.payoutBankAccount;
   const accountValue = bank?.accountValue ?? form.payoutAccount ?? "";
   const draftBank = draft?.payoutBankAccount;
   const draftAccountValue = draftBank?.accountValue ?? draft?.payoutAccount ?? "";
-  const isDlocal = (draft?.payoutMethod ?? form.payoutMethod) === "dlocal";
+  const isDlocal = (draft?.payoutMethod ?? form.payoutMethod) === "dlocal"
+    || resolvePayoutEditorProvider(draft ?? form, props.residencyCountry) === "dlocal";
   const dlocalFields = draft && isDlocal ? adminToPayoutFormFields(draft) : null;
 
   const applyDlocalFields = (patch: Partial<PayoutFormFields>) => {
+    setFieldErrors((current) => {
+      const next = { ...current };
+      for (const key of Object.keys(patch) as PayoutFieldErrorKey[]) {
+        delete next[key];
+      }
+      return next;
+    });
     setDraft((current) => {
       if (!current) {
         return current;
@@ -211,6 +251,7 @@ export function ProfessionalBankDetailsSection(props: {
       return;
     }
     setError("");
+    setFieldErrors({});
     props.onEditingChange(false);
   };
 
@@ -218,13 +259,32 @@ export function ProfessionalBankDetailsSection(props: {
     if (!draft) {
       return;
     }
+    const lang = payoutLang(props.language);
+    const provider = resolvePayoutEditorProvider(draft, props.residencyCountry);
+    const fields = adminToPayoutFormFields(draft);
+    const nextFieldErrors = collectPayoutFieldErrors(provider, fields, lang);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(
+        firstPayoutFieldError(nextFieldErrors)
+        ?? t(props.language, {
+          es: "Revisá los campos marcados en rojo y tocá guardar otra vez.",
+          en: "Check the fields marked in red and save again.",
+          pt: "Confira os campos em vermelho e salve de novo."
+        })
+      );
+      return;
+    }
     setSaving(true);
     try {
+      const payload = provider === "dlocal"
+        ? { ...draft, ...buildPayoutAdminFromFormFields("dlocal", { ...fields, payoutTermsAccepted: true }), payoutStatus: draft.payoutStatus, payoutSubmittedAt: draft.payoutSubmittedAt, legalAcceptedAt: draft.legalAcceptedAt, acceptedDocuments: draft.acceptedDocuments, notes: draft.notes }
+        : draft;
       const response = await apiRequest<{ message: string; data?: AdminData }>("/api/professional/admin", props.token, {
         method: "PUT",
-        body: JSON.stringify(draft)
+        body: JSON.stringify(payload)
       });
-      setForm(response.data ? mergeAdmin(response.data) : draft);
+      setForm(response.data ? mergeAdmin(response.data) : mergeAdmin(payload));
       setMessage(
         t(props.language, {
           es: "Datos bancarios guardados.",
@@ -233,10 +293,18 @@ export function ProfessionalBankDetailsSection(props: {
         })
       );
       setError("");
+      setFieldErrors({});
       props.onEditingChange(false);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
-      setError(professionalSurfaceMessage("admin-tab-save", props.language, raw));
+      const net = softNetworkOrHttp(props.language, raw);
+      if (net) {
+        setError(net);
+        return;
+      }
+      const mapped = mapPayoutApiError(raw, lang);
+      setFieldErrors(mapped.field ? { [mapped.field]: mapped.message } : {});
+      setError(mapped.message);
     } finally {
       setSaving(false);
     }
@@ -262,7 +330,7 @@ export function ProfessionalBankDetailsSection(props: {
           </dd>
         </div>
         <div>
-          <dt>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</dt>
+          <dt>{t(props.language, { es: "Nombre y apellido (DNI)", en: "Legal name (ID)", pt: "Nome e sobrenome (documento)" })}</dt>
           <dd>{displayValue(form.legalName)}</dd>
         </div>
         {form.payoutMethod === "dlocal" ? null : (
@@ -272,7 +340,7 @@ export function ProfessionalBankDetailsSection(props: {
           </div>
         )}
         <div>
-          <dt>{t(props.language, { es: "Titular", en: "Account holder", pt: "Titular" })}</dt>
+          <dt>{t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}</dt>
           <dd>{displayValue(bank?.accountHolderName)}</dd>
         </div>
         {form.payoutMethod === "dlocal" ? null : (
@@ -312,11 +380,12 @@ export function ProfessionalBankDetailsSection(props: {
       {props.editing && draft ? (
         <ProfileEditModal
           language={props.language}
+          wide
           title={t(props.language, { es: "Editar datos bancarios", en: "Edit bank details", pt: "Editar dados bancarios" })}
           lead={t(props.language, {
-            es: "Estos datos se usan para transferirte el neto de tus sesiones realizadas.",
-            en: "We use these details to transfer your net earnings from completed sessions.",
-            pt: "Usamos esses dados para transferir seu liquido das sessoes realizadas."
+            es: "Usamos estos datos para transferirte el neto de tus sesiones. El nombre es el tuyo (como en el DNI), no el del banco. En Argentina podés cobrar por CBU, CVU o alias.",
+            en: "We use these details to transfer your net earnings. The name is yours (as on your ID), not the bank’s. In Argentina you can get paid via CBU, CVU, or alias.",
+            pt: "Usamos esses dados para transferir seu líquido. O nome é o seu (como no documento), não o do banco. Na Argentina você pode receber por CBU, CVU ou alias."
           })}
           saving={saving}
           error={error}
@@ -324,16 +393,31 @@ export function ProfessionalBankDetailsSection(props: {
           onSave={() => void handleSave()}
         >
             <div className="pro-profile-fields">
-              <label className="pro-profile-field">
-                <span>{t(props.language, { es: "Nombre legal", en: "Legal name", pt: "Nome legal" })}</span>
+              <label className={`pro-profile-field pro-profile-field--sentence${fieldErrors.legalName ? " is-invalid" : ""}`}>
+                <span>{t(props.language, { es: "Tu nombre y apellido, como en el DNI", en: "Your first and last name, as on your ID", pt: "Seu nome e sobrenome, como no documento" })}</span>
                 <input
                   value={draft.legalName ?? ""}
-                  onChange={(event) =>
+                  aria-invalid={Boolean(fieldErrors.legalName)}
+                  onChange={(event) => {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.legalName;
+                      return next;
+                    });
                     isDlocal
                       ? applyDlocalFields({ legalName: event.target.value })
-                      : setDraft((current) => (current ? { ...current, legalName: event.target.value } : current))
-                  }
+                      : setDraft((current) => (current ? { ...current, legalName: event.target.value } : current));
+                  }}
                 />
+                {fieldErrors.legalName ? <FieldError message={fieldErrors.legalName} /> : (
+                  <FieldHint
+                    message={t(props.language, {
+                      es: "No pongas «Mercado Pago» ni el nombre del banco. Eso va más abajo.",
+                      en: "Don’t put “Mercado Pago” or the bank name here. That’s below.",
+                      pt: "Não coloque “Mercado Pago” nem o nome do banco. Isso vai abaixo."
+                    })}
+                  />
+                )}
               </label>
               {isDlocal && dlocalFields ? (
                 <div className="pro-profile-field pro-profile-field--wide">
@@ -341,28 +425,46 @@ export function ProfessionalBankDetailsSection(props: {
                     language={props.language}
                     fields={dlocalFields}
                     onFormChange={applyDlocalFields}
+                    residencyCountry={props.residencyCountry}
+                    fieldErrors={fieldErrors}
                   />
                 </div>
               ) : (
                 <>
-              <label className="pro-profile-field">
+              <label className={`pro-profile-field${fieldErrors.taxId ? " is-invalid" : ""}`}>
                 <span>{t(props.language, { es: "CUIT / CUIL / Tax ID", en: "Tax ID", pt: "Identificador fiscal" })}</span>
                 <input
                   value={draft.taxId ?? ""}
-                  onChange={(event) => setDraft((current) => (current ? { ...current, taxId: event.target.value } : current))}
+                  aria-invalid={Boolean(fieldErrors.taxId)}
+                  onChange={(event) => {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.taxId;
+                      return next;
+                    });
+                    setDraft((current) => (current ? { ...current, taxId: event.target.value } : current));
+                  }}
                 />
+                <FieldError message={fieldErrors.taxId} />
               </label>
-              <label className="pro-profile-field">
-                <span>{t(props.language, { es: "Titular de la cuenta", en: "Account holder", pt: "Titular da conta" })}</span>
+              <label className={`pro-profile-field${fieldErrors.accountHolderName ? " is-invalid" : ""}`}>
+                <span>{t(props.language, { es: "Titular de la cuenta bancaria", en: "Bank account holder", pt: "Titular da conta bancária" })}</span>
                 <input
                   value={draftBank?.accountHolderName ?? ""}
-                  onChange={(event) =>
-                    setDraft((current) => (current ? patchBankAccount(current, { accountHolderName: event.target.value }) : current))
-                  }
+                  aria-invalid={Boolean(fieldErrors.accountHolderName)}
+                  onChange={(event) => {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.accountHolderName;
+                      return next;
+                    });
+                    setDraft((current) => (current ? patchBankAccount(current, { accountHolderName: event.target.value }) : current));
+                  }}
                 />
+                <FieldError message={fieldErrors.accountHolderName} />
               </label>
               <label className="pro-profile-field">
-                <span>{t(props.language, { es: "Tipo de cuenta", en: "Account type", pt: "Tipo de conta" })}</span>
+                <span>{t(props.language, { es: "Tipo de identificador", en: "Identifier type", pt: "Tipo de identificador" })}</span>
                 <select
                   value={draftBank?.transferType ?? "cbu"}
                   onChange={(event) =>
@@ -375,30 +477,85 @@ export function ProfessionalBankDetailsSection(props: {
                     )
                   }
                 >
-                  <option value="cbu">CBU</option>
-                  <option value="cvu">CVU</option>
-                  <option value="alias">Alias</option>
+                  <option value="cbu">CBU (22 dígitos)</option>
+                  <option value="cvu">CVU (22 dígitos, Mercado Pago)</option>
+                  <option value="alias">Alias (ej. gus.fer.milan)</option>
                   <option value="iban">IBAN</option>
                   <option value="ach">{t(props.language, { es: "Cuenta", en: "Account", pt: "Conta" })}</option>
                 </select>
               </label>
-              <label className="pro-profile-field pro-profile-field--wide">
-                <span>{t(props.language, { es: "CBU / CVU / Alias / IBAN", en: "Account identifier", pt: "Identificador da conta" })}</span>
+              <label className={`pro-profile-field pro-profile-field--wide${fieldErrors.bankAccountValue ? " is-invalid" : ""}`}>
+                <span>
+                  {(draftBank?.transferType ?? "cbu") === "alias"
+                    ? t(props.language, { es: "Alias de la cuenta", en: "Account alias", pt: "Alias da conta" })
+                    : (draftBank?.transferType ?? "cbu") === "cbu"
+                      ? "CBU (22 números)"
+                      : (draftBank?.transferType ?? "cbu") === "cvu"
+                        ? "CVU (22 números)"
+                        : t(props.language, { es: "CBU / CVU / Alias / IBAN", en: "Account identifier", pt: "Identificador da conta" })}
+                </span>
                 <input
                   value={draftAccountValue}
-                  onChange={(event) =>
-                    setDraft((current) => (current ? patchBankAccount(current, { accountValue: event.target.value }) : current))
+                  aria-invalid={Boolean(fieldErrors.bankAccountValue)}
+                  placeholder={
+                    (draftBank?.transferType ?? "cbu") === "alias" ? "gus.fer.milan" : undefined
                   }
+                  onChange={(event) => {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.bankAccountValue;
+                      return next;
+                    });
+                    setDraft((current) => (current ? patchBankAccount(current, { accountValue: event.target.value }) : current));
+                  }}
                 />
+                {fieldErrors.bankAccountValue ? (
+                  <FieldError message={fieldErrors.bankAccountValue} />
+                ) : (
+                  <FieldHint
+                    message={
+                      (draftBank?.transferType ?? "cbu") === "alias"
+                        ? t(props.language, {
+                            es: "6 a 20 caracteres: letras, números y puntos. No es un CBU.",
+                            en: "6 to 20 characters: letters, numbers, and dots. Not a CBU.",
+                            pt: "6 a 20 caracteres: letras, números e pontos. Não é um CBU."
+                          })
+                        : (draftBank?.transferType ?? "cbu") === "cbu" || (draftBank?.transferType ?? "cbu") === "cvu"
+                          ? t(props.language, {
+                              es: "Exactamente 22 números. Si tenés un alias, cambiá el tipo a Alias.",
+                              en: "Exactly 22 digits. If you have an alias, switch the type to Alias.",
+                              pt: "Exatamente 22 números. Se tiver um alias, mude o tipo para Alias."
+                            })
+                          : undefined
+                    }
+                  />
+                )}
               </label>
-              <label className="pro-profile-field pro-profile-field--wide">
-                <span>{t(props.language, { es: "Banco (opcional)", en: "Bank (optional)", pt: "Banco (opcional)" })}</span>
+              <label className={`pro-profile-field pro-profile-field--wide pro-profile-field--sentence${fieldErrors.bankName ? " is-invalid" : ""}`}>
+                <span>{t(props.language, { es: "Banco de la cuenta", en: "Account bank", pt: "Banco da conta" })}</span>
                 <input
                   value={draftBank?.bankName ?? ""}
-                  onChange={(event) =>
-                    setDraft((current) => (current ? patchBankAccount(current, { bankName: event.target.value || null }) : current))
-                  }
+                  aria-invalid={Boolean(fieldErrors.bankName)}
+                  onChange={(event) => {
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.bankName;
+                      return next;
+                    });
+                    setDraft((current) => (current ? patchBankAccount(current, { bankName: event.target.value || null }) : current));
+                  }}
                 />
+                {fieldErrors.bankName ? (
+                  <FieldError message={fieldErrors.bankName} />
+                ) : (
+                  <FieldHint
+                    message={t(props.language, {
+                      es: "Obligatorio. Si cobrás con Mercado Pago, escribí Mercado Pago.",
+                      en: "Required. For Mercado Pago, type Mercado Pago.",
+                      pt: "Obrigatório. No Mercado Pago, escreva Mercado Pago."
+                    })}
+                  />
+                )}
               </label>
                 </>
               )}
