@@ -320,14 +320,14 @@ export type UnpaidProfessionalDetailResponse = {
   selectedMonths?: string[];
   totals: {
     sessionsCount: number;
-    pendingSessionsCount?: number;
-    paidSessionsCount?: number;
+    pendingSessionsCount: number;
+    paidSessionsCount: number;
     grossUsdCents: number;
     platformFeeUsdCents: number;
     professionalNetUsdCents: number;
-    pendingGrossUsdCents?: number;
-    pendingPlatformFeeUsdCents?: number;
-    pendingProfessionalNetUsdCents?: number;
+    pendingGrossUsdCents: number;
+    pendingPlatformFeeUsdCents: number;
+    pendingProfessionalNetUsdCents: number;
   };
   sessions: UnpaidProfessionalSessionDetail[];
   payout: {
