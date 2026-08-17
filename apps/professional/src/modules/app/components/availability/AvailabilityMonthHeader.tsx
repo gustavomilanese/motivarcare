@@ -1,4 +1,3 @@
-import { NavLink } from "react-router-dom";
 import type { RefObject } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 
@@ -21,17 +20,6 @@ export function AvailabilityMonthHeader(props: {
     <header className="availability-month-head">
       <div className="availability-month-title">
         <div className="availability-month-topline">
-          <NavLink
-            to="/horarios"
-            className="schedule-back availability-month-back"
-            aria-label={t(props.language, {
-              es: "Volver a Horarios",
-              en: "Back to Availability",
-              pt: "Voltar para Horários"
-            })}
-          >
-            ‹
-          </NavLink>
           <h2>{props.monthLabel}</h2>
           <div className="availability-month-nav">
             <button

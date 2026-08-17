@@ -55,6 +55,32 @@ function formatDayWithMonth(value: Date, language: AppLanguage) {
   });
 }
 
+function formatDayShort(value: Date, language: AppLanguage) {
+  return formatDateWithLocale({
+    value: value.toISOString(),
+    language,
+    options: {
+      day: "numeric",
+      month: "short"
+    }
+  });
+}
+
+function useNarrowSchedule(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 720px)").matches : false
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const onChange = () => setNarrow(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return narrow;
+}
+
 function capitalizeFirst(value: string) {
   if (!value) {
     return value;
@@ -87,6 +113,54 @@ type DaySlotRecord = AvailabilitySlot & {
   reservation: ProfessionalBookingsResponse["bookings"][number] | null;
 };
 
+function AvailabilityDaySlotRows(props: {
+  language: AppLanguage;
+  slots: DaySlotRecord[];
+  selectedSlotIds: Set<string>;
+  isRemoving: boolean;
+  removingSlotId: string | null;
+  onToggleSlot: (slot: DaySlotRecord) => void;
+  onRemoveSlot: (slot: DaySlotRecord) => void;
+}) {
+  return (
+    <>
+      {props.slots.map((slot) => {
+        const slotLabel = `${formatTime(slot.startsAt, props.language)} - ${formatTime(slot.endsAt, props.language)}`;
+        return (
+          <article key={slot.id} className={`availability-day-slot-row ${props.selectedSlotIds.has(slot.id) ? "selected" : ""}`}>
+            <div className="availability-day-slot-main">
+              <span className="availability-day-slot-time-inline">{slotLabel}</span>
+            </div>
+            <button
+              type="button"
+              className="availability-day-slot-remove"
+              disabled={props.isRemoving}
+              onClick={() => props.onRemoveSlot(slot)}
+            >
+              {props.removingSlotId === slot.id
+                ? t(props.language, { es: "Quitando...", en: "Removing...", pt: "Removendo..." })
+                : t(props.language, { es: "Quitar", en: "Remove", pt: "Remover" })}
+            </button>
+            <label className="availability-day-slot-check column">
+              <input
+                type="checkbox"
+                checked={props.selectedSlotIds.has(slot.id)}
+                disabled={props.isRemoving}
+                aria-label={t(props.language, {
+                  es: "Seleccionar horario",
+                  en: "Select slot",
+                  pt: "Selecionar horario"
+                })}
+                onChange={() => props.onToggleSlot(slot)}
+              />
+            </label>
+          </article>
+        );
+      })}
+    </>
+  );
+}
+
 function isSlotAvailable(slot: DaySlotRecord) {
   return !slot.reservation && !slot.isBlocked;
 }
@@ -104,6 +178,7 @@ function isSlotRemovable(slot: DaySlotRecord) {
 }
 
 export function AvailabilityMonthPage(props: { token: string; language: AppLanguage }) {
+  const isNarrow = useNarrowSchedule();
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [bookings, setBookings] = useState<ProfessionalBookingsResponse["bookings"]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +191,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   const [message, setMessage] = useState("");
   const [monthDate, setMonthDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(() => new Set());
+  const [sheetDayKey, setSheetDayKey] = useState<string | null>(null);
   const [editingDayKey, setEditingDayKey] = useState<string | null>(null);
   const [editingSelection, setEditingSelection] = useState<Set<string>>(() => new Set());
   const selectAllRef = useRef<HTMLInputElement | null>(null);
@@ -143,19 +219,24 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   }, [props.token]);
 
   useEffect(() => {
-    if (!pendingRemovalSlots) {
+    if (!pendingRemovalSlots && !sheetDayKey) {
       return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !removingSlotId && !removingBatch) {
-        setPendingRemovalSlots(null);
+      if (event.key !== "Escape" || removingSlotId || removingBatch) {
+        return;
       }
+      if (pendingRemovalSlots) {
+        setPendingRemovalSlots(null);
+        return;
+      }
+      setSheetDayKey(null);
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [pendingRemovalSlots, removingBatch, removingSlotId]);
+  }, [pendingRemovalSlots, removingBatch, removingSlotId, sheetDayKey]);
 
   const daySlotsMap = useMemo(() => {
     const activeBookings = bookings.filter((booking) => booking.status === "confirmed" || booking.status === "requested");
@@ -204,6 +285,23 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
     () => `${formatMonthLabel(monthDate, props.language)} (${configuredMonthSlotsCount})`,
     [monthDate, props.language, configuredMonthSlotsCount]
   );
+  const sheetDay = useMemo(() => {
+    if (!sheetDayKey) {
+      return null;
+    }
+    const date = configuredMonthDays.find((item) => getCalendarDayKey(item) === sheetDayKey);
+    if (!date) {
+      return null;
+    }
+    const daySlots = (daySlotsMap.get(sheetDayKey) ?? []).filter((slot) => isVisibleSlot(slot));
+    const hasVacation = daySlots.some((slot) => isVacationSlot(slot));
+    return {
+      weekdayLabel: capitalizeFirst(formatWeekday(date, props.language)),
+      dayShortLabel: capitalizeFirst(formatDayShort(date, props.language)),
+      hasVacation,
+      availableSlots: hasVacation ? [] : daySlots.filter((slot) => isSlotAvailable(slot))
+    };
+  }, [configuredMonthDays, daySlotsMap, props.language, sheetDayKey]);
   const visibleRemovableSlots = useMemo(() => {
     const result: DaySlotRecord[] = [];
     for (const date of configuredMonthDays) {
@@ -293,6 +391,7 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
       }
       return changed ? next : current;
     });
+    setSheetDayKey((current) => (current && visibleDayKeys.has(current) ? current : null));
   }, [configuredMonthDays]);
 
   const startEditingDay = (key: string) => {
@@ -490,6 +589,10 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
   };
 
   const toggleDayCollapse = (dayKey: string) => {
+    if (isNarrow) {
+      setSheetDayKey(dayKey);
+      return;
+    }
     setExpandedDayKeys((current) => {
       const next = new Set(current);
       if (next.has(dayKey)) {
@@ -578,16 +681,24 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
               const isVacationOnlyDay = hasVacation;
               const weekdayLabel = capitalizeFirst(formatWeekday(date, props.language));
               const dayWithMonthLabel = capitalizeFirst(formatDayWithMonth(date, props.language));
+              const dayShortLabel = capitalizeFirst(formatDayShort(date, props.language));
               const isCollapsed = !expandedDayKeys.has(key);
+              const dayMeta = (
+                <span className="availability-day-group-meta">
+                  <span className="availability-day-group-label">{`${dayWithMonthLabel} - ${weekdayLabel}`}</span>
+                  <span className="availability-day-group-copy">
+                    <span className="availability-day-group-title">{weekdayLabel}</span>
+                    <span className="availability-day-group-sub">{dayShortLabel}</span>
+                  </span>
+                </span>
+              );
 
               return (
                 <article key={key} className={`availability-month-day ${isToday ? "today" : ""}`}>
                   <div className="availability-month-content">
                     {isVacationOnlyDay ? (
                       <div className="availability-day-group-toggle static vacation">
-                        <span className="availability-day-group-meta">
-                          <span className="availability-day-group-label">{`${dayWithMonthLabel} - ${weekdayLabel}`}</span>
-                        </span>
+                        {dayMeta}
                         <span className="availability-day-group-right">
                           <span className="availability-day-group-badge unavailable">
                             {t(props.language, { es: "Vacaciones", en: "Vacation", pt: "Ferias" })}
@@ -599,15 +710,16 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
                         type="button"
                         className="availability-day-group-toggle"
                         onClick={() => toggleDayCollapse(key)}
-                        aria-expanded={!isCollapsed}
+                        aria-expanded={isNarrow ? sheetDayKey === key : !isCollapsed}
                       >
-                        <span className="availability-day-group-meta">
-                          <span className="availability-day-group-label">{`${dayWithMonthLabel} - ${weekdayLabel}`}</span>
-                        </span>
+                        {dayMeta}
                         <span className="availability-day-group-right">
                           <span className="availability-day-group-badge">{availableSlots.length}</span>
-                          <span className="availability-day-group-caret" aria-hidden="true">
+                          <span className="availability-day-group-caret availability-day-group-caret--expand" aria-hidden="true">
                             {isCollapsed ? "▸" : "▾"}
+                          </span>
+                          <span className="availability-day-group-caret availability-day-group-caret--sheet" aria-hidden="true">
+                            ›
                           </span>
                         </span>
                       </button>
@@ -615,39 +727,15 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
 
                     {!isVacationOnlyDay && !isCollapsed ? (
                       <div className="availability-day-slot-list">
-                        {availableSlots.map((slot) => {
-                          const slotLabel = `${formatTime(slot.startsAt, props.language)} - ${formatTime(slot.endsAt, props.language)}`;
-                          return (
-                            <article key={slot.id} className={`availability-day-slot-row ${selectedSlotIds.has(slot.id) ? "selected" : ""}`}>
-                              <div className="availability-day-slot-main">
-                                <span className="availability-day-slot-time-inline">{slotLabel}</span>
-                              </div>
-                              <button
-                                type="button"
-                                className="availability-day-slot-remove"
-                                disabled={isRemoving}
-                                onClick={() => requestSlotRemoval(slot)}
-                              >
-                                {removingSlotId === slot.id
-                                  ? t(props.language, { es: "Quitando...", en: "Removing...", pt: "Removendo..." })
-                                  : t(props.language, { es: "Quitar", en: "Remove", pt: "Remover" })}
-                              </button>
-                              <label className="availability-day-slot-check column">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedSlotIds.has(slot.id)}
-                                  disabled={isRemoving}
-                                  aria-label={t(props.language, {
-                                    es: "Seleccionar horario",
-                                    en: "Select slot",
-                                    pt: "Selecionar horario"
-                                  })}
-                                  onChange={() => toggleSlotSelection(slot)}
-                                />
-                              </label>
-                            </article>
-                          );
-                        })}
+                        <AvailabilityDaySlotRows
+                          language={props.language}
+                          slots={availableSlots}
+                          selectedSlotIds={selectedSlotIds}
+                          isRemoving={isRemoving}
+                          removingSlotId={removingSlotId}
+                          onToggleSlot={toggleSlotSelection}
+                          onRemoveSlot={requestSlotRemoval}
+                        />
                       </div>
                     ) : null}
 
@@ -696,6 +784,46 @@ export function AvailabilityMonthPage(props: { token: string; language: AppLangu
           isRemoving={isRemoving}
           onRemoveSelected={requestBulkRemoval}
         />
+      ) : null}
+
+      {isNarrow && sheetDay ? (
+        <div
+          className="pro-sheet-backdrop availability-day-sheet-backdrop"
+          role="presentation"
+          onClick={() => setSheetDayKey(null)}
+        >
+          <div
+            className="availability-day-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="availability-day-sheet-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p id="availability-day-sheet-title" className="availability-day-sheet-title">
+              {`${sheetDay.weekdayLabel} · ${sheetDay.dayShortLabel}`}
+            </p>
+            {sheetDay.hasVacation ? (
+              <p className="availability-day-sheet-empty">
+                {t(props.language, { es: "Vacaciones", en: "Vacation", pt: "Ferias" })}
+              </p>
+            ) : (
+              <div className="availability-day-sheet-list">
+                <AvailabilityDaySlotRows
+                  language={props.language}
+                  slots={sheetDay.availableSlots}
+                  selectedSlotIds={selectedSlotIds}
+                  isRemoving={isRemoving}
+                  removingSlotId={removingSlotId}
+                  onToggleSlot={toggleSlotSelection}
+                  onRemoveSlot={requestSlotRemoval}
+                />
+              </div>
+            )}
+            <button type="button" className="agenda-status-sheet-cancel" onClick={() => setSheetDayKey(null)}>
+              {t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+            </button>
+          </div>
+        </div>
       ) : null}
 
       <AvailabilityRemoveModal

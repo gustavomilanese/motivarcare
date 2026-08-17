@@ -1398,18 +1398,6 @@ export function SchedulePage(props: {
           })}
         </div>
 
-        {weekTemplate[selectedDayIndex].size > 0 ? (
-          <div className="schedule-work-selection-actions">
-            <button type="button" className="schedule-work-clear" onClick={clearSelectedDayHours}>
-              {t(props.language, {
-                es: "Eliminar selección del día",
-                en: "Clear day selection",
-                pt: "Remover seleção do dia"
-              })}
-            </button>
-          </div>
-        ) : null}
-
         <div className="schedule-work-grid">
           {TIME_OPTIONS.map((timeLabel) => {
             const selected = weekTemplate[selectedDayIndex].has(timeLabel);
@@ -1438,11 +1426,30 @@ export function SchedulePage(props: {
               { weeks: String(forwardWeeks) }
             )}
           </p>
-          <button type="button" className="pro-primary schedule-save" disabled={saving || loading} onClick={() => void handleSaveTemplate()}>
-            {saving
-              ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
-              : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
-          </button>
+          <div className="schedule-work-footer-actions">
+            <button
+              type="button"
+              className="schedule-work-clear"
+              disabled={weekTemplate[selectedDayIndex].size === 0 || saving || loading}
+              onClick={clearSelectedDayHours}
+            >
+              <span className="schedule-work-clear-label-full">
+                {t(props.language, {
+                  es: "Eliminar selección del día",
+                  en: "Clear day selection",
+                  pt: "Remover seleção do dia"
+                })}
+              </span>
+              <span className="schedule-work-clear-label-short">
+                {t(props.language, { es: "Limpiar día", en: "Clear day", pt: "Limpar dia" })}
+              </span>
+            </button>
+            <button type="button" className="pro-primary schedule-save" disabled={saving || loading} onClick={() => void handleSaveTemplate()}>
+              {saving
+                ? t(props.language, { es: "Guardando...", en: "Saving...", pt: "Salvando..." })
+                : t(props.language, { es: "Guardar", en: "Save", pt: "Salvar" })}
+            </button>
+          </div>
         </footer>
 
         {error ? <p className="pro-error">{error}</p> : null}

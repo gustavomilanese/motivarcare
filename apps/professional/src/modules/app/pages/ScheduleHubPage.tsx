@@ -21,21 +21,31 @@ export function ScheduleHubPage(props: { language: AppLanguage }) {
               end
               className={({ isActive }) => `pro-schedule-hub-tab${isActive ? " active" : ""}`}
             >
-              {t(props.language, {
-                es: "Configurar horarios de trabajo",
-                en: "Configure work hours",
-                pt: "Configurar horários de trabalho"
-              })}
+              <span className="pro-schedule-hub-tab-label-full">
+                {t(props.language, {
+                  es: "Configurar horarios de trabajo",
+                  en: "Configure work hours",
+                  pt: "Configurar horários de trabalho"
+                })}
+              </span>
+              <span className="pro-schedule-hub-tab-label-short">
+                {t(props.language, { es: "Plantilla", en: "Template", pt: "Modelo" })}
+              </span>
             </NavLink>
             <NavLink
               to="/horarios/disponibilidad"
               className={({ isActive }) => `pro-schedule-hub-tab${isActive ? " active" : ""}`}
             >
-              {t(props.language, {
-                es: "Disponibilidad configurada",
-                en: "Configured availability",
-                pt: "Disponibilidade configurada"
-              })}
+              <span className="pro-schedule-hub-tab-label-full">
+                {t(props.language, {
+                  es: "Disponibilidad configurada",
+                  en: "Configured availability",
+                  pt: "Disponibilidade configurada"
+                })}
+              </span>
+              <span className="pro-schedule-hub-tab-label-short">
+                {t(props.language, { es: "Publicados", en: "Published", pt: "Publicados" })}
+              </span>
             </NavLink>
           </div>
         </nav>

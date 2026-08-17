@@ -6963,6 +6963,7 @@ select.pro-dashboard-revenue-control {
 
   .pro-dashboard-sessions-hub-toolbar .agenda-session-lead {
     flex: 1 1 auto;
+    white-space: normal;
   }
 
   .pro-dashboard-sessions-hub-toolbar .agenda-session-panel-filters {
@@ -11334,6 +11335,11 @@ button.schedule-home-item {
     0 4px 14px rgba(95, 68, 235, 0.1);
 }
 
+.pro-schedule-hub-tab-label-short,
+.schedule-work-clear-label-short {
+  display: none;
+}
+
 .pro-schedule-hub-body {
   min-width: 0;
   border-top: none;
@@ -11354,24 +11360,315 @@ button.schedule-home-item {
 
 @media (max-width: 640px) {
   .pro-schedule-hub-tabs {
-    padding: 14px 14px 0;
+    padding: 12px 12px 0;
   }
 
   .pro-schedule-hub-tabs-track {
-    border-radius: 10px;
-  }
-
-  .pro-schedule-hub-tab {
-    flex: 1 1 100%;
-    min-height: 40px;
-    padding: 9px 12px;
-    font-size: 0.78rem;
+    border-radius: 8px;
   }
 
   .pro-schedule-hub-body .pro-card.schedule-work-card,
   .pro-schedule-hub-body .pro-card.availability-month-card {
-    padding: 14px 14px 18px;
+    padding: 12px 12px 16px;
   }
+}
+
+@media (max-width: 720px) {
+  .pro-schedule-hub-frame {
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .pro-schedule-hub-tabs {
+    padding: 12px 12px 0;
+  }
+
+  .pro-schedule-hub-tabs-track {
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 8px;
+  }
+
+  .pro-schedule-hub-tab {
+    flex: 1 1 50%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 650;
+  }
+
+  .pro-schedule-hub-tab-label-full {
+    display: none;
+  }
+
+  .pro-schedule-hub-tab-label-short {
+    display: inline;
+  }
+
+  .pro-schedule-hub-body .pro-card.schedule-work-card,
+  .pro-schedule-hub-body .pro-card.availability-month-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .pro-schedule-hub-body .pro-card.schedule-work-card {
+    padding-bottom: 88px;
+  }
+
+  .schedule-work-days {
+    gap: 6px;
+  }
+
+  .schedule-work-days button {
+    min-height: 40px;
+    padding: 0 2px;
+    border-radius: 8px;
+    border-color: #e5e5e5;
+    background: #fff;
+    color: #171717;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+  }
+
+  .schedule-work-days button:hover {
+    transform: none;
+    border-color: #d4d4d4;
+    box-shadow: none;
+  }
+
+  .schedule-work-days button.active {
+    color: #fff;
+    border-color: #171717;
+    background: #171717;
+    box-shadow: none;
+  }
+
+  .schedule-work-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .schedule-work-grid button {
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .schedule-work-footer {
+    position: sticky;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    margin: 8px -16px -16px;
+    padding: 10px 16px 12px;
+    background: #fff;
+    border-top: 1px solid #eeeeee;
+  }
+
+  .schedule-work-footer .pro-muted {
+    display: none;
+  }
+
+  .schedule-work-footer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .schedule-work-clear-label-full {
+    display: none;
+  }
+
+  .schedule-work-clear-label-short {
+    display: inline;
+  }
+
+  .schedule-work-clear,
+  .schedule-work-footer .schedule-save {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .availability-month-list {
+    gap: 0;
+    margin: 0 -16px;
+  }
+
+  .availability-month-day {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid #eeeeee;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .availability-month-day:last-child {
+    border-bottom: 0;
+  }
+
+  .availability-month-day:hover {
+    border-color: #eeeeee;
+    box-shadow: none;
+  }
+
+  .availability-month-content {
+    gap: 0;
+  }
+
+  .availability-day-group-toggle,
+  .availability-day-group-toggle.vacation {
+    min-height: 56px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+  }
+
+  .availability-day-group-label,
+  .availability-day-group-caret--expand {
+    display: none;
+  }
+
+  .availability-day-group-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .availability-day-group-title {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: #171717;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .availability-day-group-sub {
+    font-size: 13px;
+    font-weight: 400;
+    color: #737373;
+  }
+
+  .availability-day-group-badge {
+    min-width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .availability-day-group-badge.unavailable {
+    min-width: 0;
+    padding: 0 8px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .availability-day-group-caret--sheet {
+    display: inline;
+    color: #a3a3a3;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .availability-month-day .availability-day-slot-list,
+  .availability-day-editor {
+    display: none;
+  }
+
+  .availability-bulk-sticky {
+    position: sticky;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    margin: 0 -16px;
+    padding: 8px 16px 10px;
+    background: #fff;
+    border-top: 1px solid #eeeeee;
+  }
+
+  .availability-bulk-sticky-inner {
+    flex-direction: row;
+    align-items: center;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .availability-bulk-sticky .pro-primary {
+    width: auto;
+    min-height: 40px;
+    border-radius: 8px;
+  }
+}
+
+.availability-day-sheet-backdrop {
+  z-index: 240;
+}
+
+.availability-day-sheet {
+  display: grid;
+  gap: 8px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  background: #f2f2f7;
+}
+
+.availability-day-sheet-title {
+  margin: 4px 8px 2px;
+  color: #8e8e93;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.availability-day-sheet-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #737373;
+  font-size: 15px;
+  text-align: center;
+}
+
+.availability-day-sheet-list {
+  display: grid;
+  overflow: hidden;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.availability-day-sheet-list .availability-day-slot-row {
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #e5e5ea;
+  border-radius: 0;
+  background: #fff;
+}
+
+.availability-day-sheet-list .availability-day-slot-row:last-child {
+  border-bottom: 0;
+}
+
+.availability-day-sheet-list .availability-day-slot-remove {
+  border-radius: 8px;
 }
 
 .schedule-work-days {
@@ -11422,26 +11719,47 @@ button.schedule-home-item {
     0 8px 16px rgba(24, 26, 31, 0.28);
 }
 
-.schedule-work-selection-actions {
+.schedule-work-footer {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-work-footer-actions {
   display: flex;
   justify-content: flex-end;
-  margin: 4px 0 2px;
+  align-items: stretch;
+  gap: 8px;
 }
 
 .schedule-work-clear {
-  border: 0;
-  background: transparent;
-  color: #b42318;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #b91c1c;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
-  padding: 6px 4px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
-.schedule-work-clear:hover {
-  color: #912018;
+.schedule-work-clear:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.schedule-work-clear:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.schedule-work-footer .schedule-save {
+  justify-self: auto;
+  border-radius: 8px;
 }
 
 .schedule-work-grid {
@@ -11472,15 +11790,6 @@ button.schedule-home-item {
   border-color: #b9a5fa;
   background: linear-gradient(135deg, #f8f5ff 0%, #efe9ff 100%);
   color: #4d35ab;
-}
-
-.schedule-work-footer {
-  display: grid;
-  gap: 10px;
-}
-
-.schedule-work-footer .schedule-save {
-  justify-self: end;
 }
 
 .schedule-notice-copy {
@@ -11899,6 +12208,11 @@ button.schedule-home-item {
   display: inline-flex;
   align-items: center;
   min-width: 0;
+}
+
+.availability-day-group-copy,
+.availability-day-group-caret--sheet {
+  display: none;
 }
 
 .availability-day-group-label {
@@ -16380,6 +16694,20 @@ button:disabled {
     letter-spacing: 0.02em;
   }
 
+  .schedule-work-footer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .schedule-work-clear,
+  .schedule-work-footer .schedule-save {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
   .schedule-work-grid button {
     min-height: 46px;
     font-size: 15px;
@@ -16394,12 +16722,17 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr) var(--availability-remove-col) var(--availability-check-col);
   }
 
-  .availability-day-group-toggle {
-    padding: 5px 6px;
+  .availability-day-group-toggle,
+  .availability-day-group-toggle.vacation {
+    min-height: 56px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
   }
 
   .availability-day-group-label {
-    font-size: 14px;
+    display: none;
   }
 
   .availability-day-group-badge {
@@ -17888,6 +18221,12 @@ button:disabled {
   min-width: 0;
 }
 
+.pro-executed-session-when,
+.pro-executed-session-chips,
+.pro-executed-session-money {
+  display: contents;
+}
+
 .pro-executed-session-cell--day {
   color: #475569;
   white-space: nowrap;
@@ -17908,7 +18247,7 @@ button:disabled {
   justify-content: center;
   min-width: 2.25rem;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #f1f5f9;
   color: #475569;
   font-size: 12px;
@@ -17930,7 +18269,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 650;
   line-height: 1.2;
@@ -18031,6 +18370,10 @@ button:disabled {
 .pro-executed-sessions-export:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.pro-executed-sessions-export-label-short {
+  display: none;
 }
 
 .pro-export-modal-backdrop {
@@ -18286,8 +18629,10 @@ button:disabled {
   }
 
   .pro-executed-sessions-toolbar {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: stretch;
+    gap: 8px;
   }
 
   .pro-executed-sessions-control--search,
@@ -18295,13 +18640,49 @@ button:disabled {
   .pro-executed-sessions-control--filter,
   .pro-executed-sessions-control--sort,
   .pro-executed-sessions-export {
-    width: 100%;
+    width: auto;
     min-width: 0;
+    min-height: 44px;
+    height: 44px;
+    border-radius: 8px;
+  }
+
+  .pro-executed-sessions-control--search {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    padding: 0 12px;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .pro-executed-sessions-filters-toggle,
+  .pro-executed-sessions-export {
+    flex: 0 0 auto;
+    padding: 0 12px;
+  }
+
+  .pro-executed-sessions-export-label-full {
+    display: none;
+  }
+
+  .pro-executed-sessions-export-label-short {
+    display: inline;
   }
 
   .pro-executed-sessions-filters-panel,
   .pro-executed-sessions-filter-field {
     width: 100%;
+  }
+
+  .pro-executed-sessions-table {
+    margin: 0 -16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
   }
 
   .pro-executed-sessions-table-scroll {
@@ -18318,84 +18699,167 @@ button:disabled {
   }
 
   .pro-executed-sessions-list {
-    gap: 10px;
-    padding: 10px;
+    gap: 0;
+    padding: 0;
   }
 
   .pro-executed-session-row {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "name name"
-      "day time"
-      "session session"
-      "gross fee"
-      "net net";
-    gap: 8px 10px;
-    padding: 12px 14px;
-    border: 1px solid #e8ecf4;
-    border-radius: 12px;
-    background: #fff;
+      "name net"
+      "when when"
+      "chips chips"
+      "money money";
+    column-gap: 12px;
+    row-gap: 5px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 0;
+    border-bottom: 1px solid #eeeeee;
+    border-radius: 0;
+    background: transparent;
   }
 
   .pro-executed-session-row:last-child {
-    border-bottom: 1px solid #e8ecf4;
+    border-bottom: 0;
+  }
+
+  .pro-executed-session-row:hover {
+    background: transparent;
   }
 
   .pro-executed-session-cell--name {
     grid-area: name;
+    min-width: 0;
   }
 
-  .pro-executed-session-cell--payout {
-    grid-area: payout;
-    justify-self: end;
-    align-self: start;
-  }
-
-  .pro-executed-session-cell--day {
-    grid-area: day;
-  }
-
-  .pro-executed-session-cell--time {
-    grid-area: time;
-  }
-
-  .pro-executed-session-cell--session {
-    grid-area: session;
-  }
-
-  .pro-executed-session-cell--gross {
-    grid-area: gross;
-  }
-
-  .pro-executed-session-cell--fee {
-    grid-area: fee;
+  .pro-executed-session-patient-link,
+  .pro-executed-session-patient-name,
+  .pro-executed-session-patient-link:hover {
+    display: block;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: #171717;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .pro-executed-session-cell--net {
     grid-area: net;
+    align-self: start;
+    padding-top: 1px;
+    font-size: 15px;
+    font-weight: 650;
+    color: #171717;
+    text-align: right;
   }
 
-  .pro-executed-session-cell[data-label] {
-    display: grid;
-    gap: 2px;
+  .pro-executed-session-when,
+  .pro-executed-session-chips,
+  .pro-executed-session-money {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .pro-executed-session-when {
+    grid-area: when;
+    gap: 0 6px;
+  }
+
+  .pro-executed-session-chips {
+    grid-area: chips;
+    gap: 6px;
+  }
+
+  .pro-executed-session-money {
+    grid-area: money;
+    gap: 0 6px;
+  }
+
+  .pro-executed-session-cell--day,
+  .pro-executed-session-cell--time {
+    font-size: 13px;
+    font-weight: 400;
+    color: #737373;
+  }
+
+  .pro-executed-session-cell--time::before {
+    content: "·";
+    margin-right: 6px;
+    color: #a3a3a3;
+    font-weight: 700;
+  }
+
+  .pro-executed-session-cell--gross,
+  .pro-executed-session-cell--fee {
+    font-size: 12px;
+    font-weight: 400;
+    color: #737373;
     text-align: left;
   }
 
-  .pro-executed-session-cell[data-label]::before {
-    content: attr(data-label);
-    font-size: 10px;
+  .pro-executed-session-cell--fee::before {
+    content: "·";
+    margin-right: 6px;
+    color: #a3a3a3;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #94a3b8;
+  }
+
+  .pro-executed-session-session-badge,
+  .pro-executed-session-payout-badge {
+    display: inline-flex;
+    border-radius: 8px;
+    padding: 3px 7px;
+    font-size: 11px;
+  }
+
+  .pro-executed-session-cell[data-label] {
+    display: block;
+    text-align: inherit;
+  }
+
+  .pro-executed-session-cell[data-label]::before {
+    content: none;
+  }
+
+  .pro-executed-session-cell--time[data-label]::before,
+  .pro-executed-session-cell--fee[data-label]::before {
+    content: "·";
+    margin-right: 6px;
+    color: #a3a3a3;
+    font-weight: 700;
+  }
+
+  .pro-executed-session-cell--session-empty,
+  .pro-executed-session-cell--session-empty[data-label] {
+    display: none;
   }
 
   .pro-executed-session-cell--money,
   .pro-executed-session-patient-link,
   .pro-executed-session-patient-name {
-    white-space: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pro-executed-session-cell--net,
+  .pro-executed-session-cell--fee {
     overflow: visible;
     text-overflow: unset;
+  }
+
+  .pro-executed-sessions-pagination {
+    justify-content: space-between;
+    padding: 10px 16px 4px;
+    border-top: 1px solid #eeeeee;
+    background: transparent;
   }
 }
 
@@ -20236,7 +20700,7 @@ body.pro-tour-zone-done .driver-active-element {
 
   .pro-dashboard-home .pro-card.pro-dashboard-availability-shortcut {
     padding: 16px;
-    gap: 14px;
+    gap: 12px;
     background: #f4f0ff;
     border-color: #ddd6fe;
   }
@@ -20244,9 +20708,11 @@ body.pro-tour-zone-done .driver-active-element {
   .pro-dashboard-availability-shortcut {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
   }
 
   .pro-dashboard-availability-shortcut-copy {
+    flex: 0 0 auto;
     margin: 0;
     padding: 0;
     border: 0;
@@ -20794,9 +21260,7 @@ body.pro-tour-zone-done .driver-active-element {
 
   .agenda-status,
   .agenda-status-reserved,
-  .agenda-session-table--upcoming .agenda-session-cell--status,
-  .pro-executed-session-cell--payout,
-  .pro-executed-session-payout-badge {
+  .agenda-session-table--upcoming .agenda-session-cell--status {
     display: none;
   }
 
@@ -21007,31 +21471,6 @@ body.pro-tour-zone-done .driver-active-element {
     padding: 0;
   }
 
-  .pro-executed-session-row {
-    border: 0;
-    border-bottom: 1px solid #ededed;
-    border-radius: 0;
-    padding: 12px 8px;
-    background: transparent;
-  }
-
-  .pro-executed-session-row:last-child {
-    border-bottom: 0;
-  }
-
-  .pro-executed-session-patient-link,
-  .pro-executed-session-patient-name {
-    font-size: 14px;
-    font-weight: 400;
-    color: #171717;
-  }
-
-  .pro-executed-session-cell--net {
-    font-size: 18px;
-    font-weight: 700;
-    color: #171717;
-  }
-
   .pro-list {
     gap: 0;
   }
@@ -21148,6 +21587,35 @@ body.pro-tour-zone-done .driver-active-element {
   .pro-reschedule-modal textarea {
     border-radius: 8px;
     font-size: 16px;
+  }
+
+  .schedule-work-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .schedule-work-days button,
+  .schedule-work-grid button {
+    border-radius: 8px;
+  }
+
+  .availability-day-group-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .availability-day-group-label,
+  .availability-day-group-caret--expand {
+    display: none;
+  }
+
+  .availability-day-group-caret--sheet {
+    display: inline;
+  }
+
+  .availability-month-day .availability-day-slot-list,
+  .availability-day-editor {
+    display: none;
   }
 }
 

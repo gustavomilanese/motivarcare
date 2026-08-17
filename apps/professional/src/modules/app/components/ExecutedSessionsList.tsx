@@ -219,10 +219,20 @@ export function ExecutedSessionsList(props: {
             className="pro-dashboard-revenue-control pro-executed-sessions-export"
             disabled={exporting}
             onClick={() => setExportModalOpen(true)}
+            aria-label={t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
           >
-            {exporting
-              ? t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
-              : t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+            {exporting ? (
+              t(props.language, { es: "Exportando…", en: "Exporting…", pt: "Exportando…" })
+            ) : (
+              <>
+                <span className="pro-executed-sessions-export-label-full">
+                  {t(props.language, { es: "Exportar Excel", en: "Export Excel", pt: "Exportar Excel" })}
+                </span>
+                <span className="pro-executed-sessions-export-label-short">
+                  {t(props.language, { es: "Excel", en: "Excel", pt: "Excel" })}
+                </span>
+              </>
+            )}
           </button>
         </div>
         {filtersOpen ? (
@@ -302,56 +312,64 @@ export function ExecutedSessionsList(props: {
                           <span className="pro-executed-session-patient-name">{movement.patientName}</span>
                         )}
                       </div>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--day"
-                        data-label={t(props.language, { es: "Día", en: "Day", pt: "Dia" })}
-                      >
-                        {formatSessionDay(movement.startsAt, props.language)}
-                      </span>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--time"
-                        data-label={t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}
-                      >
-                        {formatSessionTimeRange(movement.startsAt, movement.endsAt, props.language)}
-                      </span>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--session"
-                        data-label={t(props.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" })}
-                      >
-                        {sessionNumber.isBadge ? (
-                          <span
-                            className={`pro-executed-session-session-badge${
-                              sessionNumber.variant === "trial" ? " pro-executed-session-session-badge--trial" : ""
-                            }`}
-                          >
-                            {sessionNumber.label}
-                          </span>
-                        ) : (
-                          sessionNumber.label
-                        )}
-                      </span>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--payout"
-                        data-label={t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
-                      >
+                      <div className="pro-executed-session-when">
                         <span
-                          className={`pro-executed-session-payout-badge pro-executed-session-payout-badge--${resolveSessionPayoutStatus(movement)}`}
+                          className="pro-executed-session-cell pro-executed-session-cell--day"
+                          data-label={t(props.language, { es: "Día", en: "Day", pt: "Dia" })}
                         >
-                          {sessionPayoutStatusLabel(props.language, resolveSessionPayoutStatus(movement))}
+                          {formatSessionDay(movement.startsAt, props.language)}
                         </span>
-                      </span>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--gross"
-                        data-label={t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}
-                      >
-                        {formatAmount(movement.grossCents)}
-                      </span>
-                      <span
-                        className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--fee"
-                        data-label={t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}
-                      >
-                        {formatAmount(movement.platformFeeCents)}
-                      </span>
+                        <span
+                          className="pro-executed-session-cell pro-executed-session-cell--time"
+                          data-label={t(props.language, { es: "Horario", en: "Time", pt: "Horario" })}
+                        >
+                          {formatSessionTimeRange(movement.startsAt, movement.endsAt, props.language)}
+                        </span>
+                      </div>
+                      <div className="pro-executed-session-chips">
+                        <span
+                          className={`pro-executed-session-cell pro-executed-session-cell--session${
+                            sessionNumber.isBadge ? "" : " pro-executed-session-cell--session-empty"
+                          }`}
+                          data-label={t(props.language, { es: "# Sesión", en: "# Session", pt: "# Sessao" })}
+                        >
+                          {sessionNumber.isBadge ? (
+                            <span
+                              className={`pro-executed-session-session-badge${
+                                sessionNumber.variant === "trial" ? " pro-executed-session-session-badge--trial" : ""
+                              }`}
+                            >
+                              {sessionNumber.label}
+                            </span>
+                          ) : (
+                            sessionNumber.label
+                          )}
+                        </span>
+                        <span
+                          className="pro-executed-session-cell pro-executed-session-cell--payout"
+                          data-label={t(props.language, { es: "Estado", en: "Status", pt: "Status" })}
+                        >
+                          <span
+                            className={`pro-executed-session-payout-badge pro-executed-session-payout-badge--${resolveSessionPayoutStatus(movement)}`}
+                          >
+                            {sessionPayoutStatusLabel(props.language, resolveSessionPayoutStatus(movement))}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="pro-executed-session-money">
+                        <span
+                          className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--gross"
+                          data-label={t(props.language, { es: "Realizado", en: "Completed", pt: "Realizado" })}
+                        >
+                          {formatAmount(movement.grossCents)}
+                        </span>
+                        <span
+                          className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--fee"
+                          data-label={t(props.language, { es: "Comisión", en: "Fee", pt: "Comissao" })}
+                        >
+                          {formatAmount(movement.platformFeeCents)}
+                        </span>
+                      </div>
                       <span
                         className="pro-executed-session-cell pro-executed-session-cell--money pro-executed-session-cell--net"
                         data-label={t(props.language, { es: "Neto", en: "Net", pt: "Liquido" })}
