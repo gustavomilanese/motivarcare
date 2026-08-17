@@ -5023,8 +5023,12 @@ ul {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+}
+
+.pro-header-actions > * {
+  flex-shrink: 0;
 }
 
 .pro-header-actions--dashboard-toolbar {
@@ -5160,10 +5164,10 @@ ul {
   display: block;
 }
 
-@media (min-width: 900px) {
-  .pro-header-actions--dashboard-toolbar .pro-header-direct-action {
-    display: none;
-  }
+/* El menú ⋯ ya incluye perfil, ajustes, idioma y salir.
+   Mostrar esos iconos sueltos en mobile los superponía con el título. */
+.pro-header-actions--dashboard-toolbar .pro-header-direct-action {
+  display: none;
 }
 
 .pro-header-actions--dashboard-toolbar .pro-header-logout {
@@ -5994,19 +5998,29 @@ select.pro-dashboard-revenue-control {
     max-width: none;
   }
 
-  .pro-header-actions--dashboard-toolbar .pro-header-logout-label {
+  .pro-portal-page-title,
+  .pro-dashboard-hero-head > .pro-dashboard-revenue-title--page {
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pro-header-actions,
+  .pro-header-actions--dashboard-toolbar {
+    flex-wrap: nowrap;
+    gap: 6px;
+    max-width: 100%;
+  }
+
+  .pro-listing-visibility-toggle--header {
+    min-height: 38px;
+    padding: 0 8px;
+    gap: 0;
+  }
+
+  .pro-listing-visibility-toggle--header .pro-listing-visibility-toggle-label {
     display: none;
-  }
-
-  .pro-header-actions--dashboard-toolbar .pro-header-logout {
-    width: 42px;
-    min-width: 42px;
-    padding: 0;
-    position: relative;
-  }
-
-  .pro-header-direct-action-only-mobile {
-    display: block;
   }
 
   .pro-main--dashboard-home > .pro-mobile-nav {
@@ -19630,5 +19644,266 @@ body.pro-tour-zone-done .driver-active-element {
 
   .pro-patient-diary-actions-btn {
     width: 100%;
+  }
+}
+
+/* Mobile catalog: títulos y filas como un listado de marketplace (avatar + copy + divisor). */
+@media (max-width: 720px) {
+  .pro-dashboard-section-kicker {
+    margin: 2px 4px 8px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-transform: none;
+    color: #171717;
+  }
+
+  .pro-card {
+    padding: 14px 14px 10px;
+    border-radius: 12px;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .pro-card h2,
+  .pro-card.pro-patients-card h2,
+  .income-details-card h2,
+  .schedule-home-card h2,
+  .schedule-work-card h2,
+  .availability-month-card h2,
+  .availability-month-title h2,
+  .pro-upcoming-sessions-head h2,
+  .pro-dashboard-diary-reports-head h2 {
+    margin: 0 0 4px;
+    padding: 4px 2px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: #171717;
+  }
+
+  .pro-card > p.pro-muted,
+  .pro-dashboard-diary-reports-head .pro-muted {
+    margin: 0 2px 12px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #737373;
+  }
+
+  .pro-dashboard-kpi-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .pro-dashboard-kpi-tip-wrap--session-money {
+    grid-column: 1 / -1;
+  }
+
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card,
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card-link,
+  .pro-dashboard-home .pro-dashboard-kpi-row .pro-kpi-card--executed-revenue {
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .agenda-session-table-row,
+  .agenda-session-table--upcoming .agenda-session-table-row {
+    padding: 14px 2px;
+    gap: 6px 12px;
+    border-bottom: 1px solid #ededed;
+  }
+
+  .agenda-session-table-row:last-child {
+    border-bottom: 0;
+  }
+
+  .agenda-upcoming-patient-inner {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .agenda-patient-avatar,
+  .agenda-patient-avatar--empty {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+  }
+
+  .agenda-upcoming-patient-text strong {
+    font-size: 14px;
+    font-weight: 400;
+    color: #171717;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .agenda-upcoming-patient-text small {
+    color: #737373;
+  }
+
+  .agenda-session-cell--date strong,
+  .agenda-session-cell--time > span {
+    font-size: 13px;
+    font-weight: 400;
+    color: #737373;
+  }
+
+  .agenda-status,
+  .agenda-status-reserved {
+    font-size: 13px;
+    font-weight: 600;
+    color: #00a650;
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+
+  .agenda-session-more {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    padding: 14px 4px 8px;
+    border-top: 1px solid #ededed;
+    color: #3483fa;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .agenda-session-more::after {
+    content: "›";
+    font-size: 22px;
+    line-height: 1;
+    color: #3483fa;
+  }
+
+  .pro-patients-list {
+    gap: 0;
+  }
+
+  .pro-patient-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 0;
+    padding: 14px 2px;
+    border: 0;
+    border-bottom: 1px solid #ededed;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .pro-patient-card:last-child {
+    border-bottom: 0;
+  }
+
+  .pro-patient-card:hover {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .pro-patient-avatar--card {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+  }
+
+  .pro-patient-card-name {
+    font-size: 14px;
+    font-weight: 400;
+    color: #171717;
+  }
+
+  .pro-patient-card-email,
+  .pro-patient-card-metric-label,
+  .pro-patient-card-metric--soft {
+    color: #737373;
+  }
+
+  .pro-patient-card-metric-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #171717;
+  }
+
+  .pro-patient-card-actions {
+    padding-top: 8px;
+    border-top: 0;
+  }
+
+  .pro-executed-sessions-list {
+    gap: 0;
+    padding: 0;
+  }
+
+  .pro-executed-session-row {
+    border: 0;
+    border-bottom: 1px solid #ededed;
+    border-radius: 0;
+    padding: 14px 2px;
+    background: transparent;
+  }
+
+  .pro-executed-session-row:last-child {
+    border-bottom: 0;
+  }
+
+  .pro-executed-session-patient-link,
+  .pro-executed-session-patient-name {
+    font-size: 14px;
+    font-weight: 400;
+    color: #171717;
+  }
+
+  .pro-executed-session-cell--net {
+    font-size: 18px;
+    font-weight: 700;
+    color: #171717;
+  }
+
+  .pro-list {
+    gap: 0;
+  }
+
+  .pro-list li {
+    border: 0;
+    border-bottom: 1px solid #ededed;
+    border-radius: 0;
+    padding: 14px 2px;
+    background: transparent;
+  }
+
+  .pro-list li:last-child {
+    border-bottom: 0;
+  }
+
+  .pro-income-movement-hero-net {
+    font-size: 18px;
+    font-weight: 700;
+    color: #171717;
+  }
+
+  .pro-dashboard-diary-reports-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .pro-dashboard-diary-report-item {
+    border-bottom: 1px solid #ededed;
+    border-radius: 0;
+    padding: 14px 2px;
+  }
+
+  .pro-portal-page-head,
+  .pro-dashboard-hero-head {
+    margin-bottom: 10px;
   }
 }
