@@ -92,10 +92,13 @@ const stripe = env.STRIPE_SECRET_KEY
   ? new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" })
   : null;
 
+const checkoutTimezoneSchema = z.string().trim().min(1).max(120).optional();
+
 const createDlocalCheckoutSchema = z.object({
   packageId: z.string().trim().min(1),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
+  timezone: checkoutTimezoneSchema,
   idempotencyKey: z.string().trim().min(8).max(120).optional()
 });
 
@@ -104,6 +107,7 @@ const createDlocalIndividualCheckoutSchema = z.object({
   professionalId: z.string().trim().min(1).optional(),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
+  timezone: checkoutTimezoneSchema,
   idempotencyKey: z.string().trim().min(8).max(120).optional()
 });
 
@@ -348,7 +352,8 @@ paymentsRouter.post("/dlocal/checkout", requireAuth, async (req: AuthenticatedRe
       patientId: actor.patientProfileId,
       packageId: parsed.data.packageId,
       successUrl: parsed.data.successUrl,
-      backUrl: parsed.data.cancelUrl
+      backUrl: parsed.data.cancelUrl,
+      timezone: parsed.data.timezone
     });
 
     const responsePayload = {
@@ -456,7 +461,8 @@ paymentsRouter.post("/dlocal/checkout-individual", requireAuth, async (req: Auth
       sessionCount: parsed.data.sessionCount,
       professionalId: parsed.data.professionalId ?? null,
       successUrl: parsed.data.successUrl,
-      backUrl: parsed.data.cancelUrl
+      backUrl: parsed.data.cancelUrl,
+      timezone: parsed.data.timezone
     });
 
     const responsePayload = {

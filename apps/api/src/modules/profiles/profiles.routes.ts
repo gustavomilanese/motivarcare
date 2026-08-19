@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry } from "@therapy/types";
+import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry, resolveHealedDlocalResidencyCountry } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { env } from "../../config/env.js";
@@ -1019,11 +1019,22 @@ profilesRouter.patch("/me/timezone", requireAuth, async (req: AuthenticatedReque
   const persistPreference = parsed.data.persistPreference === true;
 
   if (actor.role === "PATIENT" && actor.patientProfileId) {
+    const existing = await prisma.patientProfile.findUnique({
+      where: { id: actor.patientProfileId },
+      select: { residencyCountry: true }
+    });
+    const healed = resolveHealedDlocalResidencyCountry({
+      existingResidency: existing?.residencyCountry,
+      timezone
+    });
     const updated = await prisma.patientProfile.update({
       where: { id: actor.patientProfileId },
       data: {
         lastSeenTimezone: timezone,
-        ...(persistPreference ? { timezone } : {})
+        ...(persistPreference ? { timezone } : {}),
+        ...(healed
+          ? { residencyCountry: healed, market: marketFromResidencyCountry(healed) }
+          : {})
       },
       select: {
         id: true,

@@ -54,7 +54,8 @@ export async function startPackageCheckout(params: {
       packageId: params.pkg.id,
       idempotencyKey,
       successUrl,
-      cancelUrl
+      cancelUrl,
+      timezone: deviceTimeZone()
     });
 
     const checkoutUrl = checkout.checkoutUrl?.trim() ?? "";

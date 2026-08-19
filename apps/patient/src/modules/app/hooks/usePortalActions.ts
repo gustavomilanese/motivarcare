@@ -32,10 +32,11 @@ function t(language: PatientAppState["language"], values: { es: string; en: stri
 /** Solo en dev local permitimos créditos/reservas ficticias si el API falla. */
 const allowLocalDemoFallback = import.meta.env.DEV;
 
-function usesDlocalCheckout(state: PatientAppState): boolean {
+function usesDlocalCheckout(state: PatientAppState, timezone?: string): boolean {
   return patientUsesDlocalCheckout({
     patientMarket: state.patientMarket,
-    residencyCountry: state.profileResidencyCountry
+    residencyCountry: state.profileResidencyCountry,
+    timezone
   });
 }
 
@@ -96,7 +97,7 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
-      if (usesDlocalCheckout(params.state)) {
+      if (usesDlocalCheckout(params.state, params.sessionTimezone)) {
         try {
           const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
           const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(dlocalPackageIdempotencyScope(plan.id));
@@ -108,6 +109,7 @@ export function usePortalActions(params: {
               body: JSON.stringify({
                 packageId: plan.id,
                 idempotencyKey,
+                timezone: params.sessionTimezone,
                 successUrl: `${origin}/?payment=success&purchase=package`,
                 cancelUrl: `${origin}/?payment=cancel&purchase=package`
               })
@@ -130,7 +132,7 @@ export function usePortalActions(params: {
         }
       }
 
-      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
+      if (!usesDlocalCheckout(params.state, params.sessionTimezone) && !allowLocalDemoFallback) {
         return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
       }
 
@@ -206,7 +208,7 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
-      if (usesDlocalCheckout(params.state)) {
+      if (usesDlocalCheckout(params.state, params.sessionTimezone)) {
         const idempotencyScope = dlocalIndividualIdempotencyScope(sessionCount);
         try {
           const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
@@ -220,6 +222,7 @@ export function usePortalActions(params: {
                 sessionCount,
                 ...(pricingProfessionalId ? { professionalId: pricingProfessionalId } : {}),
                 idempotencyKey,
+                timezone: params.sessionTimezone,
                 successUrl: `${origin}/?payment=success&purchase=individual`,
                 cancelUrl: `${origin}/?payment=cancel&purchase=individual`
               })
@@ -249,7 +252,7 @@ export function usePortalActions(params: {
         }
       }
 
-      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
+      if (!usesDlocalCheckout(params.state, params.sessionTimezone) && !allowLocalDemoFallback) {
         return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
       }
 
@@ -325,7 +328,7 @@ export function usePortalActions(params: {
       };
     }
 
-    if (!usesDlocalCheckout(params.state)) {
+    if (!usesDlocalCheckout(params.state, params.sessionTimezone)) {
       return {
         ok: false,
         error: t(params.state.language, {

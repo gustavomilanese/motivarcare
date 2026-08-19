@@ -159,7 +159,7 @@ async function persistDlocalOrderPaymentId(orderId: string, paymentId: string): 
   await storeDlocalOrderContext(orderId, { ...context, paymentId });
 }
 
-async function loadPatientForDlocalCheckout(patientId: string) {
+async function loadPatientForDlocalCheckout(patientId: string, requestTimezone?: string | null) {
   const patient = await prisma.patientProfile.findUnique({
     where: { id: patientId },
     select: {
@@ -181,16 +181,19 @@ async function loadPatientForDlocalCheckout(patientId: string) {
   if (!patient) {
     return null;
   }
-  const healed = healedResidencyForPatient(patient);
+  const patientWithRequestTz = requestTimezone?.trim()
+    ? { ...patient, lastSeenTimezone: requestTimezone.trim() }
+    : patient;
+  const healed = healedResidencyForPatient(patientWithRequestTz);
   if (!healed) {
-    return patient;
+    return patientWithRequestTz;
   }
   const market = marketFromResidencyCountry(healed);
   await prisma.patientProfile.update({
     where: { id: patient.id },
     data: { residencyCountry: healed, market }
   });
-  return { ...patient, residencyCountry: healed, market };
+  return { ...patientWithRequestTz, residencyCountry: healed, market };
 }
 
 function buildOrderId(patientId: string, packageId: string): string {
@@ -266,6 +269,7 @@ export async function createDlocalCheckoutForPackage(params: {
   packageId: string;
   successUrl: string;
   backUrl: string;
+  timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
   return withDlocalProductCheckoutDedupe({
     scopeKey: `pkg:${params.patientId}:${params.packageId}`,
@@ -281,8 +285,9 @@ async function createDlocalCheckoutForPackageCore(params: {
   packageId: string;
   successUrl: string;
   backUrl: string;
+  timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId);
+  const patient = await loadPatientForDlocalCheckout(params.patientId, params.timezone);
   if (!patient) {
     throw new Error("Patient profile not found");
   }
@@ -457,6 +462,7 @@ export async function createDlocalCheckoutForIndividualSessions(params: {
   professionalId?: string | null;
   successUrl: string;
   backUrl: string;
+  timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
   return withDlocalProductCheckoutDedupe({
     scopeKey: `ind:${params.patientId}:${params.sessionCount}`,
@@ -473,8 +479,9 @@ async function createDlocalCheckoutForIndividualSessionsCore(params: {
   professionalId?: string | null;
   successUrl: string;
   backUrl: string;
+  timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId);
+  const patient = await loadPatientForDlocalCheckout(params.patientId, params.timezone);
   if (!patient) {
     throw new Error("Patient profile not found");
   }
@@ -561,7 +568,7 @@ export async function createDlocalCheckoutForTrialSession(params: {
   successUrl: string;
   backUrl: string;
 }): Promise<{ checkoutUrl: string; paymentId: string; orderId: string }> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId);
+  const patient = await loadPatientForDlocalCheckout(params.patientId, params.patientTimezone);
   if (!patient) {
     throw new Error("Patient profile not found");
   }

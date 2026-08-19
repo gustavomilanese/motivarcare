@@ -564,6 +564,7 @@ export async function createDlocalPackageCheckout(params: {
   idempotencyKey: string;
   successUrl: string;
   cancelUrl: string;
+  timezone?: string;
 }) {
   return requestJson<{ checkoutUrl: string; paymentId?: string; orderId?: string }>({
     path: "/api/payments/dlocal/checkout",
@@ -573,7 +574,8 @@ export async function createDlocalPackageCheckout(params: {
       packageId: params.packageId,
       idempotencyKey: params.idempotencyKey,
       successUrl: params.successUrl,
-      cancelUrl: params.cancelUrl
+      cancelUrl: params.cancelUrl,
+      ...(params.timezone ? { timezone: params.timezone } : {})
     }
   });
 }

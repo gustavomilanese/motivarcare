@@ -1737,10 +1737,14 @@ export function App() {
       token: state.authToken,
       timezone: sessionTimezone,
       persistPreference: false
-    }).catch((error) => {
-      console.error("Could not sync patient timezone from session", error);
-    });
-  }, [sessionId, sessionTimezone, state.authToken]);
+    })
+      .then(() => {
+        requestPortalResync();
+      })
+      .catch((error) => {
+        console.error("Could not sync patient timezone from session", error);
+      });
+  }, [sessionId, sessionTimezone, state.authToken, requestPortalResync]);
 
   useEffect(() => {
     const sessionUserId = state.session?.id;
