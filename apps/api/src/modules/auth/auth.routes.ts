@@ -4,7 +4,7 @@ import { google } from "googleapis";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { joinFirstLastToFullName, marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
+import { joinFirstLastToFullName, marketFromResidencyCountry, resolveHealedDlocalResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
@@ -79,8 +79,9 @@ const registerSchema = z
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  /** Opcional: si el paciente elige país en el login, actualizamos `PatientProfile`. */
+  /** Opcional: solo se usa para backfill si el perfil todavía no tiene país. */
   residencyCountry: residencyCountryIso2Schema.optional(),
+  timezone: z.string().trim().min(1).max(80).optional(),
   turnstileToken: z.string().trim().max(4096).optional()
 });
 
@@ -1198,7 +1199,7 @@ authRouter.post("/login", async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        patient: { select: { id: true } },
+        patient: { select: { id: true, residencyCountry: true, timezone: true, lastSeenTimezone: true } },
         professional: { select: professionalAuthSelect }
       }
     });
@@ -1330,14 +1331,21 @@ authRouter.post("/login", async (req, res) => {
       }
     }
 
-    if (user.role === "PATIENT" && parsed.data.residencyCountry && user.patient?.id) {
-      await prisma.patientProfile.update({
-        where: { id: user.patient.id },
-        data: {
-          residencyCountry: parsed.data.residencyCountry,
-          market: marketFromResidencyCountry(parsed.data.residencyCountry)
-        }
+    if (user.role === "PATIENT" && user.patient?.id) {
+      const healed = resolveHealedDlocalResidencyCountry({
+        existingResidency: user.patient.residencyCountry,
+        requestedResidency: parsed.data.residencyCountry,
+        timezone: parsed.data.timezone || user.patient.lastSeenTimezone || user.patient.timezone
       });
+      if (healed) {
+        await prisma.patientProfile.update({
+          where: { id: user.patient.id },
+          data: {
+            residencyCountry: healed,
+            market: marketFromResidencyCountry(healed)
+          }
+        });
+      }
     }
 
     setNoStoreJsonResponse(res);

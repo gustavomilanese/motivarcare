@@ -44,41 +44,13 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
-import { PATIENT_PORTAL_RESIDENCY_CODES } from "@therapy/types";
+import { inferPatientPortalResidencyIso2 } from "@therapy/types";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, SessionUser } from "../types";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
-}
-
-const PATIENT_RESIDENCY_SET = new Set<string>(PATIENT_PORTAL_RESIDENCY_CODES);
-
-/**
- * La API exige ISO2; sin selector en auth inferimos locale/zona. Corrección en intake/onboarding.
- */
-function inferPatientPortalResidencyIso2(): string {
-  try {
-    const locales = [navigator.language, ...(navigator.languages ?? [])];
-    for (const loc of locales) {
-      const m = loc.match(/-([A-Za-z]{2})$/);
-      if (m) {
-        const region = m[1].toUpperCase();
-        if (PATIENT_RESIDENCY_SET.has(region)) return region;
-      }
-    }
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
-    if (/Argentina|Buenos_Aires|Cordoba|Mendoza|Ushuaia|Salta/i.test(tz)) return "AR";
-    if (/Sao_Paulo|Fortaleza|Recife|Bahia|Belem|Manaus|Brazil/i.test(tz)) return "BR";
-    if (/Bogota/i.test(tz)) return "CO";
-    if (/New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Honolulu|Detroit|Indianapolis/i.test(tz)) {
-      return "US";
-    }
-  } catch {
-    // ignore
-  }
-  return "AR";
 }
 
 export function AuthScreen(props: {
@@ -140,8 +112,12 @@ export function AuthScreen(props: {
       return;
     }
 
-    /** País en auth: inferido (locale/zona); el paciente puede corregir en onboarding / intake. */
-    const residencyIso = inferPatientPortalResidencyIso2();
+    /** País en registro: zona horaria primero (Chrome en-US en AR no debe mandar US). */
+    const sessionTimezone = detectBrowserTimezone();
+    const residencyIso = inferPatientPortalResidencyIso2({
+      locales: [navigator.language, ...(navigator.languages ?? [])],
+      timezone: sessionTimezone
+    });
 
     if (mode === "register") {
       const given = firstName.trim();
@@ -204,14 +180,14 @@ export function AuthScreen(props: {
               email: email.trim().toLowerCase(),
               password,
               role: "PATIENT",
-              timezone: detectBrowserTimezone(),
+              timezone: sessionTimezone,
               residencyCountry: residencyIso,
               ...(resolvedTurnstileForRegister ? { turnstileToken: resolvedTurnstileForRegister } : {})
             }
           : {
               email: email.trim().toLowerCase(),
               password,
-              residencyCountry: residencyIso
+              timezone: sessionTimezone
             };
 
       const response = await apiRequest<AuthApiResponse>(endpoint, {

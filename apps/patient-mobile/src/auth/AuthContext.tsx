@@ -133,7 +133,11 @@ export function AuthProvider(props: PropsWithChildren) {
       emailVerificationRequired,
       needsEmailVerification,
       signIn: async (email, password) => {
-        const response = await login({ email: email.trim().toLowerCase(), password });
+        const response = await login({
+          email: email.trim().toLowerCase(),
+          password,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        });
         await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
         setToken(response.token);
         setUser(response.user);

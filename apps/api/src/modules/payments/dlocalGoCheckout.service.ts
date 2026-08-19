@@ -1,5 +1,5 @@
 import type { Market, PaymentCheckoutKind } from "@prisma/client";
-import { billingCurrencyCodeForMarket } from "@therapy/types";
+import { billingCurrencyCodeForMarket, marketFromResidencyCountry } from "@therapy/types";
 import { env } from "../../config/env.js";
 import { createDlocalGoPayment, getDlocalGoPayment, isDlocalGoPaymentPaid } from "../../lib/dlocalGoClient.js";
 import { setIdempotencyValue, getIdempotencyValue } from "../../lib/idempotencyStore.js";
@@ -12,7 +12,10 @@ import { getFinanceRules } from "../finance/finance.service.js";
 import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackageMarketAccess.js";
 import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSessionPurchase.js";
 import { resolveDlocalChargeAmount } from "../../lib/dlocalChargeAmount.js";
-import { assertPatientDlocalCheckoutAllowed } from "../../lib/dlocalPatientCheckout.js";
+import {
+  assertPatientDlocalCheckoutAllowed,
+  healedResidencyForPatient
+} from "../../lib/dlocalPatientCheckout.js";
 import { fulfillPaidIndividualSessionsPurchase, fulfillPaidPackagePurchase } from "./packagePurchaseFulfillment.js";
 import { formatTrialPaymentDescription } from "../../lib/formatTrialPaymentDescription.js";
 import type {
@@ -157,12 +160,14 @@ async function persistDlocalOrderPaymentId(orderId: string, paymentId: string): 
 }
 
 async function loadPatientForDlocalCheckout(patientId: string) {
-  return prisma.patientProfile.findUnique({
+  const patient = await prisma.patientProfile.findUnique({
     where: { id: patientId },
     select: {
       id: true,
       market: true,
       residencyCountry: true,
+      timezone: true,
+      lastSeenTimezone: true,
       user: {
         select: {
           fullName: true,
@@ -173,6 +178,19 @@ async function loadPatientForDlocalCheckout(patientId: string) {
       }
     }
   });
+  if (!patient) {
+    return null;
+  }
+  const healed = healedResidencyForPatient(patient);
+  if (!healed) {
+    return patient;
+  }
+  const market = marketFromResidencyCountry(healed);
+  await prisma.patientProfile.update({
+    where: { id: patient.id },
+    data: { residencyCountry: healed, market }
+  });
+  return { ...patient, residencyCountry: healed, market };
 }
 
 function buildOrderId(patientId: string, packageId: string): string {

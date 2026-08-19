@@ -400,6 +400,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     if (editingUserId === user.id) {
       setEditingUserId(null);
       setEditError("");
+      setEditSuccess("");
       delete editMediaBaselineRef.current[user.id];
       return;
     }
@@ -416,13 +417,13 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
     setEditError("");
     setEditSuccess("");
 
-    if (!draft.firstName.trim() || !draft.lastName.trim()) {
+    if (!draft.firstName.trim()) {
       setSaveLoading(false);
       setEditError(
         t(props.language, {
-          es: "Completá nombre y apellido.",
-          en: "Enter first name and last name.",
-          pt: "Preencha nome e sobrenome."
+          es: "Completá el nombre.",
+          en: "Enter a first name.",
+          pt: "Preencha o nome."
         })
       );
       return;
@@ -478,6 +479,16 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
           es: "Las contraseñas no coinciden.",
           en: "Passwords do not match.",
           pt: "As senhas nao coincidem."
+        })
+      );
+      return;
+    } else if (passwordTrim.length < 8) {
+      setSaveLoading(false);
+      setEditError(
+        t(props.language, {
+          es: "La nueva contraseña debe tener al menos 8 caracteres.",
+          en: "The new password must be at least 8 characters.",
+          pt: "A nova senha deve ter pelo menos 8 caracteres."
         })
       );
       return;
@@ -681,35 +692,29 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       );
 
       setEditSuccess(
-        t(props.language, {
-          es: "Usuario actualizado.",
-          en: "User updated.",
-          pt: "Usuario atualizado."
-        })
+        payload.password
+          ? t(props.language, {
+              es: "Cambios guardados. La contraseña ya está actualizada.",
+              en: "Changes saved. The password is now updated.",
+              pt: "Alteracoes salvas. A senha ja foi atualizada."
+            })
+          : t(props.language, {
+              es: "Usuario actualizado.",
+              en: "User updated.",
+              pt: "Usuario atualizado."
+            })
       );
-      setEditingUserId(null);
-      delete editMediaBaselineRef.current[user.id];
-      setEditDrafts((current) => {
-        if (!current[user.id]) {
-          return current;
-        }
-        const next = { ...current };
-        delete next[user.id];
-        return next;
-      });
+      editMediaBaselineRef.current[user.id] = adminUserMediaBaseline(response.user);
+      setEditDrafts((current) => ({
+        ...current,
+        [user.id]: buildEditDraft(response.user)
+      }));
       setUsers((current) =>
         current.map((item) => (item.id === user.id ? stripAdminUserListMedia(response.user) : item))
       );
     } catch (requestError) {
-      setEditError(
-        requestError instanceof Error
-          ? requestError.message
-          : t(props.language, {
-              es: "No se pudo actualizar el usuario.",
-              en: "Could not update the user.",
-              pt: "Nao foi possivel atualizar o usuario."
-            })
-      );
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setEditError(adminSurfaceMessage("users-update", props.language, raw));
     } finally {
       setSaveLoading(false);
     }
@@ -852,6 +857,7 @@ export function UsersPage(props: { token: string; language: AppLanguage; embedde
       setEditDrafts={setEditDrafts}
       setEditingUserId={setEditingUserId}
       setEditError={setEditError}
+      setEditSuccess={setEditSuccess}
       roleLabel={roleLabelForList}
       patientStatusLabel={patientStatusLabelForList}
       yesNoLabel={yesNoLabelForList}

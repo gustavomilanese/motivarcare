@@ -71,7 +71,7 @@ async function requestJson<T>(params: {
 
 export { apiBaseUrl } from "./apiBase";
 
-export async function login(params: { email: string; password: string }) {
+export async function login(params: { email: string; password: string; timezone?: string }) {
   return requestJson<LoginResponse>({
     path: "/api/auth/login",
     method: "POST",

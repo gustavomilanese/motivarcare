@@ -43,6 +43,9 @@ export {
   DLOCAL_CHECKOUT_UNAVAILABLE_ERROR,
   normalizeResidencyCountryIso2,
   isDlocalGoPayerCountry,
+  inferDlocalPayerCountryFromTimezone,
+  inferPatientPortalResidencyIso2,
+  resolveHealedDlocalResidencyCountry,
   resolveDlocalPayerCountry,
   isDlocalGoCheckoutAvailable
 } from "./dlocalGoCoverage.js";

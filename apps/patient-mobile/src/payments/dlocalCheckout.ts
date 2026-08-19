@@ -1,6 +1,7 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { isDlocalGoCheckoutAvailable, marketFromResidencyCountry } from "@therapy/types";
+import { deviceTimeZone } from "../utils/date";
 import {
   createDlocalPackageCheckout,
   purchasePackage,
@@ -21,7 +22,8 @@ export function patientUsesDlocalCheckout(residencyCountry: string | null | unde
   const market = marketFromResidencyCountry(residencyCountry);
   return isDlocalGoCheckoutAvailable({
     market,
-    residencyCountry: residencyCountry ?? null
+    residencyCountry: residencyCountry ?? null,
+    timezone: deviceTimeZone()
   });
 }
 

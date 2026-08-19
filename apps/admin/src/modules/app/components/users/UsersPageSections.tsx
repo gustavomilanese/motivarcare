@@ -269,6 +269,7 @@ function UsersListSectionComponent(props: {
   setEditDrafts: Dispatch<SetStateAction<Record<string, EditUserDraft>>>;
   setEditingUserId: Dispatch<SetStateAction<string | null>>;
   setEditError: Dispatch<SetStateAction<string>>;
+  setEditSuccess: Dispatch<SetStateAction<string>>;
   roleLabel: (role: Role) => string;
   patientStatusLabel: (status: PatientStatus | string) => string;
   yesNoLabel: (value: boolean) => string;
@@ -322,7 +323,7 @@ function UsersListSectionComponent(props: {
       </header>
 
       {props.listError ? <p className="error-text">{props.listError}</p> : null}
-      {props.editError || props.editSuccess ? (
+      {!props.editingUserId && (props.editError || props.editSuccess) ? (
         <div
           id="admin-users-edit-feedback"
           className="users-admin-edit-feedback"
@@ -1123,6 +1124,18 @@ function UsersListSectionComponent(props: {
                       ) : null}
                     </div>
 
+                    {props.editError || props.editSuccess ? (
+                      <div
+                        id="admin-users-edit-feedback"
+                        className="users-admin-edit-feedback user-edit-inline-feedback"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        {props.editError ? <p className="error-text">{props.editError}</p> : null}
+                        {props.editSuccess ? <p className="success-text">{props.editSuccess}</p> : null}
+                      </div>
+                    ) : null}
+
                     <div className="user-edit-actions" role="toolbar" aria-label={props.t({ es: "Acciones del usuario", en: "User actions", pt: "Ações do usuario" })}>
                       <div className="user-edit-actions__primary">
                         <button
@@ -1144,6 +1157,7 @@ function UsersListSectionComponent(props: {
                             event.stopPropagation();
                             props.setEditingUserId(null);
                             props.setEditError("");
+                            props.setEditSuccess("");
                           }}
                         >
                           {props.t({ es: "Cancelar", en: "Cancel", pt: "Cancelar" })}

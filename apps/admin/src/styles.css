@@ -1429,6 +1429,19 @@ label {
   gap: 6px;
 }
 
+.user-edit-inline-feedback {
+  margin: 0 16px 10px;
+  padding: 10px 12px;
+  border: 1px solid #e4daf0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.user-edit-inline-feedback .error-text,
+.user-edit-inline-feedback .success-text {
+  margin: 0;
+}
+
 .admin-media-display-label {
   overflow: hidden;
   text-overflow: ellipsis;
