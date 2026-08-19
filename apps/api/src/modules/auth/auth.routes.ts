@@ -242,6 +242,13 @@ const professionalAuthSelect = {
   createdAt: true
 } as const;
 
+const patientLoginSelect = {
+  id: true,
+  residencyCountry: true,
+  timezone: true,
+  lastSeenTimezone: true
+} as const;
+
 function shapeUserResponse(user: {
   id: string;
   email: string;
@@ -1199,7 +1206,7 @@ authRouter.post("/login", async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        patient: { select: { id: true, residencyCountry: true, timezone: true, lastSeenTimezone: true } },
+        patient: { select: patientLoginSelect },
         professional: { select: professionalAuthSelect }
       }
     });
@@ -1271,7 +1278,7 @@ authRouter.post("/login", async (req, res) => {
       const refreshed = await prisma.user.findUnique({
         where: { id: user.id },
         include: {
-          patient: { select: { id: true } },
+          patient: { select: patientLoginSelect },
           professional: { select: professionalAuthSelect }
         }
       });
