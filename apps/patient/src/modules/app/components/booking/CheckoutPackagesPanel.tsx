@@ -18,6 +18,7 @@ import {
   PackageChooseProfessionalCta
 } from "./PackageCatalogSectionExtras";
 import type { PackagePlan } from "../../types";
+import { PatientResidencyConfirm } from "../PatientResidencyConfirm";
 
 function t(language: AppLanguage, values: LocalizedText): string {
   return textByLanguage(language, values);
@@ -41,10 +42,14 @@ export function CheckoutPackagesPanel(props: {
   onRequireProfessional: () => void;
   paymentLoading?: boolean;
   paymentError?: string;
+  needsResidencyConfirm?: boolean;
+  residencySaving?: boolean;
+  onConfirmResidency?: (iso: string) => Promise<void> | void;
   /** Cuando el panel vive dentro de otro modal (Inicio), oculta el chrome duplicado. */
   hideChrome?: boolean;
 }) {
   const isMobilePortal = useMobilePortal();
+  const payBlocked = Boolean(props.needsResidencyConfirm) || Boolean(props.paymentLoading);
   const singleSessionPlan = props.packagePlans.find((plan) => plan.credits === 1) ?? null;
   const bundlePlans = props.packagePlans.filter((plan) => plan.credits > 1);
   const canIndividualCta =
@@ -61,7 +66,7 @@ export function CheckoutPackagesPanel(props: {
     <button
       type="button"
       className="checkout-packages-individual-bottom-link"
-      disabled={!canIndividualCta}
+      disabled={!canIndividualCta || props.needsResidencyConfirm}
       onClick={() => props.onIndividualPurchase()}
     >
       {individualLinkLabel}
@@ -107,7 +112,14 @@ export function CheckoutPackagesPanel(props: {
       </>
     )}
 
-      {props.paymentError ? (
+      {props.needsResidencyConfirm ? (
+        <PatientResidencyConfirm
+          language={props.language}
+          currentIso={props.residencyCountry}
+          saving={props.residencySaving}
+          onConfirm={(iso) => props.onConfirmResidency?.(iso)}
+        />
+      ) : props.paymentError ? (
         <p className="availability-status-message booking-soft-notice checkout-packages-payment-error" role="alert">
           {props.paymentError}
         </p>
@@ -260,10 +272,10 @@ export function CheckoutPackagesPanel(props: {
                       <button
                         className="deal-select-button"
                         type="button"
-                        disabled={props.paymentLoading}
+                        disabled={payBlocked}
                         onClick={(event) => {
                           event.stopPropagation();
-                          if (props.paymentLoading) {
+                          if (payBlocked) {
                             return;
                           }
                           if (!props.pricingReady) {

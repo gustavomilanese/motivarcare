@@ -139,6 +139,7 @@ export function BookingPage(props: {
   onCancelBooking?: (bookingId: string, reason: string) => Promise<{ ok: boolean; error?: string }>;
   onOpenBookingDetail: (bookingId: string) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
+  onConfirmResidency?: (iso: string) => Promise<{ ok: boolean; error?: string }>;
   onPurchaseIndividualSessions: (sessionCount: number) => Promise<PortalPurchaseResult>;
   onSyncDlocalPayment?: (params: {
     paymentId?: string | null;
@@ -177,6 +178,7 @@ export function BookingPage(props: {
   const [checkoutPaymentPlanId, setCheckoutPaymentPlanId] = useState<string | null>(null);
   const [checkoutPaymentLoading, setCheckoutPaymentLoading] = useState(false);
   const [checkoutPaymentError, setCheckoutPaymentError] = useState("");
+  const [residencySaving, setResidencySaving] = useState(false);
   const [individualQtyOpen, setIndividualQtyOpen] = useState(false);
   const [individualQtyDraft, setIndividualQtyDraft] = useState("1");
   const [individualQuoteLoading, setIndividualQuoteLoading] = useState(false);
@@ -588,15 +590,6 @@ export function BookingPage(props: {
     packageCatalogFromApi,
     usesDlocalCheckout,
     onPurchasePackage: props.onPurchasePackage,
-    onNonDlocalCheckout: (plan) => {
-      if (import.meta.env.DEV) {
-        void confirmPackagePurchase(plan);
-        return;
-      }
-      setPackageCheckoutError(
-        friendlyCheckoutPackageMessage(DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, props.language)
-      );
-    },
     onGateBlocked: openAssignProfessionalPrompt
   });
 
@@ -1318,7 +1311,7 @@ export function BookingPage(props: {
   }, [pendingSessions, showNoCreditsAlert]);
 
   const handlePurchasePlan = (plan: PackagePlan) => {
-    if (checkoutPaymentLoading || packageCheckoutLoading) {
+    if (checkoutPaymentLoading || packageCheckoutLoading || !usesDlocalCheckout) {
       return;
     }
     void startPackageCheckout(plan);
@@ -1831,6 +1824,25 @@ export function BookingPage(props: {
             onRequireProfessional={openAssignProfessionalPrompt}
             paymentLoading={checkoutPaymentLoading || packageCheckoutLoading}
             paymentError={checkoutPaymentError || packageCheckoutError}
+            needsResidencyConfirm={!usesDlocalCheckout}
+            residencySaving={residencySaving}
+            onConfirmResidency={async (iso) => {
+              if (!props.onConfirmResidency) {
+                return;
+              }
+              setResidencySaving(true);
+              try {
+                const result = await props.onConfirmResidency(iso);
+                if (!result.ok) {
+                  setCheckoutPaymentError(result.error ?? "");
+                } else {
+                  setCheckoutPaymentError("");
+                  setPackageCheckoutError("");
+                }
+              } finally {
+                setResidencySaving(false);
+              }
+            }}
           />
         </section>
       ) : null}

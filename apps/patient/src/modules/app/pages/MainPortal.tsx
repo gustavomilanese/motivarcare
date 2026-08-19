@@ -353,6 +353,7 @@ export function MainPortal(props: {
     planTrialFromDashboard,
     sendMessage,
     markThreadAsRead,
+    updatePatientResidency,
     toggleFavoriteProfessional
   } = usePortalActions({
     state: props.state,
@@ -577,6 +578,7 @@ export function MainPortal(props: {
             cancelBooking={cancelBooking}
             planTrialFromDashboard={planTrialFromDashboard}
             addPackage={addPackage}
+            updatePatientResidency={updatePatientResidency}
             purchaseIndividualSessions={purchaseIndividualSessions}
             syncDlocalPayment={syncDlocalPayment}
             onRefreshPortalFromApi={props.onRefreshPortalFromApi}

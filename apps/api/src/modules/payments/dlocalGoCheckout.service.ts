@@ -1,5 +1,5 @@
 import type { Market, PaymentCheckoutKind } from "@prisma/client";
-import { billingCurrencyCodeForMarket, marketFromResidencyCountry } from "@therapy/types";
+import { billingCurrencyCodeForMarket } from "@therapy/types";
 import { env } from "../../config/env.js";
 import { createDlocalGoPayment, getDlocalGoPayment, isDlocalGoPaymentPaid } from "../../lib/dlocalGoClient.js";
 import { setIdempotencyValue, getIdempotencyValue } from "../../lib/idempotencyStore.js";
@@ -12,10 +12,7 @@ import { getFinanceRules } from "../finance/finance.service.js";
 import { sessionPackageAvailableForPatientMarket } from "../../lib/sessionPackageMarketAccess.js";
 import { resolveIndividualSessionsPurchaseQuote } from "../../lib/individualSessionPurchase.js";
 import { resolveDlocalChargeAmount } from "../../lib/dlocalChargeAmount.js";
-import {
-  assertPatientDlocalCheckoutAllowed,
-  healedResidencyForPatient
-} from "../../lib/dlocalPatientCheckout.js";
+import { assertPatientDlocalCheckoutAllowed } from "../../lib/dlocalPatientCheckout.js";
 import { fulfillPaidIndividualSessionsPurchase, fulfillPaidPackagePurchase } from "./packagePurchaseFulfillment.js";
 import { formatTrialPaymentDescription } from "../../lib/formatTrialPaymentDescription.js";
 import type {
@@ -159,15 +156,13 @@ async function persistDlocalOrderPaymentId(orderId: string, paymentId: string): 
   await storeDlocalOrderContext(orderId, { ...context, paymentId });
 }
 
-async function loadPatientForDlocalCheckout(patientId: string, requestTimezone?: string | null) {
-  const patient = await prisma.patientProfile.findUnique({
+async function loadPatientForDlocalCheckout(patientId: string) {
+  return prisma.patientProfile.findUnique({
     where: { id: patientId },
     select: {
       id: true,
       market: true,
       residencyCountry: true,
-      timezone: true,
-      lastSeenTimezone: true,
       user: {
         select: {
           fullName: true,
@@ -178,22 +173,6 @@ async function loadPatientForDlocalCheckout(patientId: string, requestTimezone?:
       }
     }
   });
-  if (!patient) {
-    return null;
-  }
-  const patientWithRequestTz = requestTimezone?.trim()
-    ? { ...patient, lastSeenTimezone: requestTimezone.trim() }
-    : patient;
-  const healed = healedResidencyForPatient(patientWithRequestTz);
-  if (!healed) {
-    return patientWithRequestTz;
-  }
-  const market = marketFromResidencyCountry(healed);
-  await prisma.patientProfile.update({
-    where: { id: patient.id },
-    data: { residencyCountry: healed, market }
-  });
-  return { ...patientWithRequestTz, residencyCountry: healed, market };
 }
 
 function buildOrderId(patientId: string, packageId: string): string {
@@ -287,7 +266,7 @@ async function createDlocalCheckoutForPackageCore(params: {
   backUrl: string;
   timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId, params.timezone);
+  const patient = await loadPatientForDlocalCheckout(params.patientId);
   if (!patient) {
     throw new Error("Patient profile not found");
   }
@@ -481,7 +460,7 @@ async function createDlocalCheckoutForIndividualSessionsCore(params: {
   backUrl: string;
   timezone?: string | null;
 }): Promise<DlocalCheckoutResult> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId, params.timezone);
+  const patient = await loadPatientForDlocalCheckout(params.patientId);
   if (!patient) {
     throw new Error("Patient profile not found");
   }
@@ -568,7 +547,7 @@ export async function createDlocalCheckoutForTrialSession(params: {
   successUrl: string;
   backUrl: string;
 }): Promise<{ checkoutUrl: string; paymentId: string; orderId: string }> {
-  const patient = await loadPatientForDlocalCheckout(params.patientId, params.patientTimezone);
+  const patient = await loadPatientForDlocalCheckout(params.patientId);
   if (!patient) {
     throw new Error("Patient profile not found");
   }

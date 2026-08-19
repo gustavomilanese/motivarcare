@@ -4,6 +4,7 @@ import type { Market } from "@therapy/types";
 import { patientUsesDlocalCheckout } from "../../app/lib/patientDlocalCheckout";
 import { professionalPhotoSrc } from "../../app/services/api";
 import { MotivarCarePageLoader } from "../../app/components/MotivarCarePageLoader";
+import { PatientResidencyConfirm } from "../../app/components/PatientResidencyConfirm";
 import { effectiveSessionListMajorUnits, formatSessionListMajorPrice } from "../lib/sessionListPrice";
 import type { MatchCardProfessional, MatchTimeSlot } from "../types";
 
@@ -36,6 +37,8 @@ export function BookingSummaryModal(props: {
   onChangeTime: () => void;
   onClose: () => void;
   onContinue: () => void;
+  onConfirmResidency?: (iso: string) => Promise<{ ok: boolean; error?: string }>;
+  residencySaving?: boolean;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const listMajor = effectiveSessionListMajorUnits(props.professional, props.patientMarket);
@@ -215,41 +218,63 @@ export function BookingSummaryModal(props: {
           })}
         </p>
 
-        {props.error ? (
-          <p className="trial-checkout-error" role="alert">
-            {props.error}
-          </p>
-        ) : null}
+        {usesDlocalCheckout ? (
+          <>
+            {props.error ? (
+              <p className="trial-checkout-error" role="alert">
+                {props.error}
+              </p>
+            ) : null}
 
-        <footer className="trial-checkout-footer">
-          <button
-            type="button"
-            className="matching-flow-primary trial-checkout-primary"
-            disabled={props.continueLoading || holdSecondsLeft === 0}
-            onClick={props.onContinue}
-          >
-            {props.continueLoading
-              ? t(props.language, {
-                  es: "Abriendo pago seguro...",
-                  en: "Opening secure checkout...",
-                  pt: "Abrindo pagamento seguro..."
-                })
-              : usesDlocalCheckout
-                ? t(props.language, {
-                    es: "Continuar al pago seguro",
-                    en: "Continue to secure payment",
-                    pt: "Continuar para pagamento seguro"
-                  })
-                : t(props.language, { es: "Ir al pago", en: "Go to payment", pt: "Ir para pagamento" })}
-          </button>
-          <button type="button" className="trial-checkout-secondary" onClick={() => props.onChangeTime()}>
-            {t(props.language, {
-              es: "Elegir otro horario",
-              en: "Choose another time",
-              pt: "Escolher outro horario"
-            })}
-          </button>
-        </footer>
+            <footer className="trial-checkout-footer">
+              <button
+                type="button"
+                className="matching-flow-primary trial-checkout-primary"
+                disabled={props.continueLoading || holdSecondsLeft === 0}
+                onClick={props.onContinue}
+              >
+                {props.continueLoading
+                  ? t(props.language, {
+                      es: "Abriendo pago seguro...",
+                      en: "Opening secure checkout...",
+                      pt: "Abrindo pagamento seguro..."
+                    })
+                  : t(props.language, {
+                      es: "Continuar al pago seguro",
+                      en: "Continue to secure payment",
+                      pt: "Continuar para pagamento seguro"
+                    })}
+              </button>
+              <button type="button" className="trial-checkout-secondary" onClick={() => props.onChangeTime()}>
+                {t(props.language, {
+                  es: "Elegir otro horario",
+                  en: "Choose another time",
+                  pt: "Escolher outro horario"
+                })}
+              </button>
+            </footer>
+          </>
+        ) : (
+          <>
+            <PatientResidencyConfirm
+              language={props.language}
+              currentIso={props.residencyCountry}
+              saving={props.residencySaving}
+              onConfirm={async (iso) => {
+                await props.onConfirmResidency?.(iso);
+              }}
+            />
+            <footer className="trial-checkout-footer">
+              <button type="button" className="trial-checkout-secondary" onClick={() => props.onChangeTime()}>
+                {t(props.language, {
+                  es: "Elegir otro horario",
+                  en: "Choose another time",
+                  pt: "Escolher outro horario"
+                })}
+              </button>
+            </footer>
+          </>
+        )}
 
         {props.continueLoading ? (
           <div className="trial-checkout-loading" role="status" aria-live="polite">

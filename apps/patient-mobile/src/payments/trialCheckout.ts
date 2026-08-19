@@ -10,6 +10,7 @@ import { patientUsesDlocalCheckout } from "./dlocalCheckout";
 import { acquireDlocalCheckoutIdempotencyKey } from "./checkoutDlocalReturn";
 import { clearPendingTrialBooking, writePendingTrialBooking } from "./pendingTrialBooking";
 import { deviceTimeZone } from "../utils/date";
+import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -38,17 +39,7 @@ export async function startTrialCheckout(params: {
       : new Date(params.slot.endsAt).toISOString();
 
   if (!patientUsesDlocalCheckout(params.residencyCountry)) {
-    // Mercados sin dLocal: la API permite trial sin cobro (p. ej. no-AR).
-    await createBooking({
-      token: params.token,
-      professionalId: params.professionalId,
-      startsAt,
-      endsAt,
-      holdId: params.holdId,
-      patientTimezone: deviceTimeZone(),
-      idempotencyKey: `booking-${params.professionalId}-${startsAt}-${endsAt}`
-    });
-    return { ok: true, mode: "direct" };
+    return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, mode: "dlocal" };
   }
 
   const scope = `trial:${params.professionalId}:${startsAt}`;

@@ -45,7 +45,6 @@ export {
   isDlocalGoPayerCountry,
   inferDlocalPayerCountryFromTimezone,
   inferPatientPortalResidencyIso2,
-  resolveHealedDlocalResidencyCountry,
   resolveDlocalPayerCountry,
   isDlocalGoCheckoutAvailable
 } from "./dlocalGoCoverage.js";

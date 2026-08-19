@@ -98,6 +98,7 @@ const createDlocalCheckoutSchema = z.object({
   packageId: z.string().trim().min(1),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
+  /** Ignorado. El país de cobro sale del perfil, no de esta computadora. */
   timezone: checkoutTimezoneSchema,
   idempotencyKey: z.string().trim().min(8).max(120).optional()
 });

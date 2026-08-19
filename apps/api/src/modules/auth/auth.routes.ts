@@ -4,7 +4,7 @@ import { google } from "googleapis";
 import { ProfessionalRegistrationApproval } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
-import { joinFirstLastToFullName, marketFromResidencyCountry, resolveHealedDlocalResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
+import { joinFirstLastToFullName, marketFromResidencyCountry, userNamePartsFromFullNameString } from "@therapy/types";
 import { sendApiError } from "../../lib/http.js";
 import { authLoginRateLimiter } from "../../lib/rateLimiter.js";
 import { createAuthToken, hashPassword, requireAuth, type AuthenticatedRequest, verifyPassword } from "../../lib/auth.js";
@@ -79,7 +79,7 @@ const registerSchema = z
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  /** Opcional: solo se usa para backfill si el perfil todavía no tiene país. */
+  /** Ignorado: el país de cobro no se infiere en login. */
   residencyCountry: residencyCountryIso2Schema.optional(),
   timezone: z.string().trim().min(1).max(80).optional(),
   turnstileToken: z.string().trim().max(4096).optional()
@@ -240,13 +240,6 @@ const professionalAuthSelect = {
   id: true,
   registrationApproval: true,
   createdAt: true
-} as const;
-
-const patientLoginSelect = {
-  id: true,
-  residencyCountry: true,
-  timezone: true,
-  lastSeenTimezone: true
 } as const;
 
 function shapeUserResponse(user: {
@@ -1203,10 +1196,12 @@ authRouter.post("/login", async (req, res) => {
     }
 
     const email = parsed.data.email.trim().toLowerCase();
+    // Invariant: never write PatientProfile.residencyCountry or market on login.
+    // Country is declared identity (register, intake, PATCH /profiles/me/residency, admin).
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        patient: { select: patientLoginSelect },
+        patient: { select: { id: true } },
         professional: { select: professionalAuthSelect }
       }
     });
@@ -1278,7 +1273,7 @@ authRouter.post("/login", async (req, res) => {
       const refreshed = await prisma.user.findUnique({
         where: { id: user.id },
         include: {
-          patient: { select: patientLoginSelect },
+          patient: { select: { id: true } },
           professional: { select: professionalAuthSelect }
         }
       });
@@ -1335,23 +1330,6 @@ authRouter.post("/login", async (req, res) => {
         }
       } catch (verificationError) {
         console.error("Could not send email verification link on login", verificationError);
-      }
-    }
-
-    if (user.role === "PATIENT" && user.patient?.id) {
-      const healed = resolveHealedDlocalResidencyCountry({
-        existingResidency: user.patient.residencyCountry,
-        requestedResidency: parsed.data.residencyCountry,
-        timezone: parsed.data.timezone || user.patient.lastSeenTimezone || user.patient.timezone
-      });
-      if (healed) {
-        await prisma.patientProfile.update({
-          where: { id: user.patient.id },
-          data: {
-            residencyCountry: healed,
-            market: marketFromResidencyCountry(healed)
-          }
-        });
       }
     }
 

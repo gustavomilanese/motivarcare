@@ -54,6 +54,7 @@ function OnboardingFinalMatching(p: {
   handleChatFromAnywhere: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;
   onRefreshPortalFromApi?: () => void | Promise<void>;
+  updatePatientResidency?: (iso: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   return (
     <MatchingPage
@@ -127,6 +128,7 @@ function OnboardingFinalMatching(p: {
       }}
       onStartTrialCheckout={p.startTrialCheckout}
       onSyncTrialPayment={p.syncTrialPayment}
+      onConfirmResidency={p.updatePatientResidency}
       onReserve={p.handleReserveFromAnywhere}
       onChat={p.handleChatFromAnywhere}
       onImageFallback={p.onImageFallback}
@@ -183,6 +185,7 @@ export function PortalRoutes(props: {
   onRefreshPortalFromApi?: () => void;
   sendMessage: (professionalId: string, text: string) => void;
   markThreadAsRead: (professionalId: string) => void;
+  updatePatientResidency: (iso: string) => Promise<{ ok: boolean; error?: string }>;
   onBookingSelectProfessional: (professionalId: string) => void;
   showPatientGoogleCalendarReconnectCta?: boolean;
   onOpenPatientGoogleCalendarConnect?: () => void;
@@ -297,6 +300,7 @@ export function PortalRoutes(props: {
                   onPlanTrialFromDashboard={props.planTrialFromDashboard}
                   onStartPackagePurchase={startPackagePurchase}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
+                  onConfirmResidency={props.updatePatientResidency}
                   onNavigateToSessionsCheckout={startSessionsCheckoutFromDashboard}
                   onNavigateToIndividualSessions={startIndividualSessionsFromDashboard}
                   onNavigateToBookTrial={() => props.navigate("/book/trial")}
@@ -364,6 +368,7 @@ export function PortalRoutes(props: {
                   onReserve={props.handleReserveFromAnywhere}
                   onChat={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
+                  onConfirmResidency={props.updatePatientResidency}
                 />
               )
         }
@@ -392,6 +397,7 @@ export function PortalRoutes(props: {
                   handleChatFromAnywhere={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
                   onRefreshPortalFromApi={props.onRefreshPortalFromApi}
+                  updatePatientResidency={props.updatePatientResidency}
                 />
               )
             : <Navigate replace to="/" />
@@ -421,6 +427,7 @@ export function PortalRoutes(props: {
                     handleChatFromAnywhere={props.handleChatFromAnywhere}
                     onImageFallback={props.onImageFallback}
                     onRefreshPortalFromApi={props.onRefreshPortalFromApi}
+                    updatePatientResidency={props.updatePatientResidency}
                   />
                 )
         }
@@ -459,6 +466,7 @@ export function PortalRoutes(props: {
                   onReserve={props.handleReserveFromAnywhere}
                   onChat={props.handleChatFromAnywhere}
                   onImageFallback={props.onImageFallback}
+                  onConfirmResidency={props.updatePatientResidency}
                 />
               )
         }
@@ -484,6 +492,7 @@ export function PortalRoutes(props: {
                   onCancelBooking={props.cancelBooking}
                   onOpenBookingDetail={(bookingId) => props.setSelectedBookingId(bookingId)}
                   onPurchasePackage={async (plan) => props.addPackage(plan, "checkout_button")}
+                  onConfirmResidency={props.updatePatientResidency}
                   onPurchaseIndividualSessions={props.purchaseIndividualSessions}
                   onSyncDlocalPayment={props.syncDlocalPayment}
                   onRefreshPortalFromApi={props.onRefreshPortalFromApi}

@@ -1,8 +1,8 @@
 import type { Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, marketFromResidencyCountry } from "@therapy/types";
+import { billingCurrencyCodeForMarket } from "@therapy/types";
 import { prisma } from "./prisma.js";
 import { resolveDlocalChargeAmount } from "./dlocalChargeAmount.js";
-import { assertPatientDlocalCheckoutAllowed, healedResidencyForPatient } from "./dlocalPatientCheckout.js";
+import { assertPatientDlocalCheckoutAllowed } from "./dlocalPatientCheckout.js";
 import { listPriceMajorUnitsForPackageMarket } from "./professionalSessionListPrice.js";
 import {
   normalizeCatalogFallbackToUsdCents,
@@ -153,32 +153,12 @@ export async function resolveIndividualSessionsPurchaseQuote(params: {
     throw new Error("Invalid session count");
   }
 
-  const loaded = await prisma.patientProfile.findUnique({
+  const patient = await prisma.patientProfile.findUnique({
     where: { id: params.patientId },
-    select: {
-      id: true,
-      market: true,
-      residencyCountry: true,
-      timezone: true,
-      lastSeenTimezone: true
-    }
+    select: { id: true, market: true, residencyCountry: true }
   });
-  if (!loaded) {
+  if (!patient) {
     throw new Error("Patient profile not found");
-  }
-  const healed = healedResidencyForPatient(loaded);
-  const patient = healed
-    ? {
-        ...loaded,
-        residencyCountry: healed,
-        market: marketFromResidencyCountry(healed)
-      }
-    : loaded;
-  if (healed) {
-    await prisma.patientProfile.update({
-      where: { id: patient.id },
-      data: { residencyCountry: healed, market: patient.market }
-    });
   }
   const payerCountry = assertPatientDlocalCheckoutAllowed(patient);
 

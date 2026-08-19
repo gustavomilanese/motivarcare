@@ -3126,40 +3126,48 @@
   }
 
   .payment-modal--success.matching-flow-modal {
+    width: min(420px, calc(100% - 32px));
+    margin-bottom: max(16px, var(--safe-bottom));
+    padding: 28px 20px 20px;
     text-align: center;
-    padding-top: 28px;
+    border-radius: 12px;
+  }
+
+  .payment-success-hero {
+    width: 84px;
+    height: 84px;
+    margin-bottom: 16px;
   }
 
   .payment-success-icon {
-    width: 56px;
-    height: 56px;
-    margin: 0 auto;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    font-size: 28px;
-    font-weight: 700;
-    color: #166534;
-    background: rgba(34, 197, 94, 0.14);
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(145deg, #6d54f4 0%, #5f44eb 58%, #22c55e 140%);
+  }
+
+  .payment-success-kicker {
+    color: #5f44eb;
   }
 
   .payment-success-title {
-    margin: 16px 0 0;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
+    margin: 8px 0 0;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
     color: var(--mobile-text-primary);
   }
 
   .payment-success-detail {
-    margin: 8px 0 0;
+    margin: 10px auto 0;
     font-size: 15px;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--mobile-text-secondary);
   }
 
   .payment-modal--success .payment-modal-footer {
-    margin-top: 8px;
+    margin-top: 20px;
   }
 
   /* —— Portrait mobile: unified immersive heroes (match Inicio) —— */

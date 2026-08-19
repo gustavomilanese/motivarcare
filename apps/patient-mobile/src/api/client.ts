@@ -153,6 +153,18 @@ export async function syncTimezone(params: { token: string; timezone: string; pe
   });
 }
 
+export async function patchPatientResidency(params: { token: string; residencyCountry: string }) {
+  return requestJson<{
+    role: "PATIENT";
+    profile: { id: string; residencyCountry: string | null; market: string };
+  }>({
+    path: "/api/profiles/me/residency",
+    method: "PATCH",
+    token: params.token,
+    body: { residencyCountry: params.residencyCountry.trim().toUpperCase() }
+  });
+}
+
 export async function submitPatientIntake(params: {
   token: string;
   answers: Record<string, string>;

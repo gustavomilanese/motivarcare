@@ -154,6 +154,7 @@ export interface MatchingPageProps {
   ) => Promise<PortalPurchaseResult>;
   /** Confirma el pago al volver de dLocal antes de reservar la prueba. */
   onSyncTrialPayment?: (paymentId: string) => Promise<{ ok: boolean; error?: string }>;
+  onConfirmResidency?: (iso: string) => Promise<{ ok: boolean; error?: string }>;
   onReserve: (professionalId: string) => void;
   onChat: (professionalId: string) => void;
   onImageFallback: (event: SyntheticEvent<HTMLImageElement>) => void;

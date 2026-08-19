@@ -72,6 +72,7 @@ export function PatientMatchingPage(props: MatchingPageProps) {
   const bookingProfessionalIdRef = useRef("");
   const checkoutRedirectingRef = useRef(false);
   const trialReturnHandledRef = useRef(false);
+  const [residencySaving, setResidencySaving] = useState(false);
   const viewerTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const usesDlocalCheckout = useMemo(
     () =>
@@ -751,6 +752,18 @@ export function PatientMatchingPage(props: MatchingPageProps) {
           onContinue={() => {
             void handleSummaryContinue();
           }}
+          onConfirmResidency={async (iso) => {
+            if (!props.onConfirmResidency) {
+              return { ok: false, error: "Unavailable" };
+            }
+            setResidencySaving(true);
+            try {
+              return await props.onConfirmResidency(iso);
+            } finally {
+              setResidencySaving(false);
+            }
+          }}
+          residencySaving={residencySaving}
           onImageFallback={props.onImageFallback}
         />
       ) : null}

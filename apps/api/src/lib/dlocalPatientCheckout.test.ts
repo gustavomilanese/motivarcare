@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
-import {
-  assertPatientDlocalCheckoutAllowed,
-  healedResidencyForPatient,
-  resolvePatientDlocalPayerCountry
-} from "./dlocalPatientCheckout.js";
+import { assertPatientDlocalCheckoutAllowed, resolvePatientDlocalPayerCountry } from "./dlocalPatientCheckout.js";
 
 describe("dlocalPatientCheckout", () => {
   it("uses Colombia residency for payer country", () => {
@@ -13,26 +9,16 @@ describe("dlocalPatientCheckout", () => {
     ).toBe("CO");
   });
 
-  it("rejects unsupported residency", () => {
+  it("rejects explicit US residency even if the commercial market is still AR", () => {
+    expect(
+      resolvePatientDlocalPayerCountry({ market: "AR", residencyCountry: "US" })
+    ).toBeNull();
     expect(() =>
-      assertPatientDlocalCheckoutAllowed({ market: "US", residencyCountry: "US" })
+      assertPatientDlocalCheckoutAllowed({ market: "AR", residencyCountry: "US" })
     ).toThrow(DLOCAL_CHECKOUT_UNAVAILABLE_ERROR);
   });
 
-  it("allows Argentina timezone when residency was stored as US", () => {
-    expect(
-      resolvePatientDlocalPayerCountry({
-        market: "US",
-        residencyCountry: "US",
-        lastSeenTimezone: "America/Argentina/Buenos_Aires"
-      })
-    ).toBe("AR");
-    expect(
-      healedResidencyForPatient({
-        market: "US",
-        residencyCountry: "US",
-        lastSeenTimezone: "America/Argentina/Buenos_Aires"
-      })
-    ).toBe("AR");
+  it("falls back to AR market when residency is missing", () => {
+    expect(resolvePatientDlocalPayerCountry({ market: "AR", residencyCountry: null })).toBe("AR");
   });
 });

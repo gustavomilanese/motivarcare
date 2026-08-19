@@ -26,6 +26,9 @@ export function DashboardHomePurchaseModal(props: {
   unitPriceMajor: number | null;
   paymentLoading?: boolean;
   paymentError?: string;
+  needsResidencyConfirm?: boolean;
+  residencySaving?: boolean;
+  onConfirmResidency?: (iso: string) => Promise<void> | void;
   onClose: () => void;
   onSelectPlan: (plan: PackagePlan) => void;
   onIndividualPurchase: () => void;
@@ -110,6 +113,9 @@ export function DashboardHomePurchaseModal(props: {
             onRequireProfessional={props.onRequireProfessional}
             paymentLoading={props.paymentLoading}
             paymentError={props.paymentError}
+            needsResidencyConfirm={props.needsResidencyConfirm}
+            residencySaving={props.residencySaving}
+            onConfirmResidency={props.onConfirmResidency}
             hideChrome
           />
         </div>

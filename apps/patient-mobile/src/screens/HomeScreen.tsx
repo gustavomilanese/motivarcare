@@ -21,7 +21,7 @@ import {
   resolvePatientPricingProfessionalId,
   type SessionPackagePlan
 } from "@therapy/patient-core";
-import { getBookingsMine, getMatchingProfessionals, getSessionPackages } from "../api/client";
+import { getBookingsMine, getMatchingProfessionals, getSessionPackages, patchPatientResidency } from "../api/client";
 import type { BookingItem, SessionPackage } from "../api/types";
 import { filterUpcomingPatientBookings } from "../utils/bookingUpcoming";
 import { useAuth } from "../auth/AuthContext";
@@ -40,7 +40,7 @@ import { UpcomingSessionCard } from "../components/UpcomingSessionCard";
 import { NotificationsSheet } from "../components/NotificationsSheet";
 import { usePatientNotifications } from "../notifications/usePatientNotifications";
 import type { PortalNotificationItem } from "@therapy/patient-core";
-import { startPackageCheckout } from "../payments/dlocalCheckout";
+import { patientUsesDlocalCheckout, startPackageCheckout } from "../payments/dlocalCheckout";
 
 type HomeNav = BottomTabNavigationProp<PatientTabParamList>;
 
@@ -545,6 +545,7 @@ export function HomeScreen() {
   const [hasProfessionalsOnPortal, setHasProfessionalsOnPortal] = useState(true);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [mcarePurchasing, setMcarePurchasing] = useState(false);
+  const [residencySaving, setResidencySaving] = useState(false);
   const [mcarePurchaseFlow, setMcarePurchaseFlow] = useState<McarePurchaseFlow | null>(null);
 
   const displayName = useMemo(() => (user?.fullName ?? "").trim() || " ", [user?.fullName]);
@@ -910,9 +911,42 @@ export function HomeScreen() {
         openProfessionalMatching();
         return;
       }
+      if (!patientUsesDlocalCheckout(profile?.residencyCountry)) {
+        setMcarePurchaseFlow({ kind: "residency", pkg });
+        return;
+      }
       setMcarePurchaseFlow({ kind: "confirm", pkg });
     },
-    [mcarePurchasing, openProfessionalMatching, pricingReady]
+    [mcarePurchasing, openProfessionalMatching, pricingReady, profile?.residencyCountry]
+  );
+
+  const confirmMcareResidency = useCallback(
+    async (iso: string, pkg: SessionPackage) => {
+      if (!token) {
+        return;
+      }
+      setResidencySaving(true);
+      try {
+        await patchPatientResidency({ token, residencyCountry: iso });
+        await refreshProfile();
+        if (patientUsesDlocalCheckout(iso)) {
+          setMcarePurchaseFlow({ kind: "confirm", pkg });
+          return;
+        }
+        setMcarePurchaseFlow({
+          kind: "error",
+          message: "El pago en línea aún no está disponible para ese país de residencia."
+        });
+      } catch (residencyError) {
+        setMcarePurchaseFlow({
+          kind: "error",
+          message: residencyError instanceof Error ? residencyError.message : "No pudimos guardar el país."
+        });
+      } finally {
+        setResidencySaving(false);
+      }
+    },
+    [refreshProfile, token]
   );
 
   const closeMcarePurchaseFlow = useCallback(() => {
@@ -1298,7 +1332,10 @@ export function HomeScreen() {
         flow={mcarePurchaseFlow}
         onClose={closeMcarePurchaseFlow}
         onConfirmPurchase={runMcarePurchase}
+        onConfirmResidency={confirmMcareResidency}
         confirming={mcarePurchasing}
+        residencySaving={residencySaving}
+        currentResidencyIso={profile?.residencyCountry}
       />
     </SafeAreaView>
   );

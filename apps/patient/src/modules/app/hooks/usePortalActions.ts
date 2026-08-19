@@ -1,5 +1,5 @@
-import { type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
-import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
+import { defaultDisplayCurrencyForPatient, type LocalizedText, replaceTemplate, textByLanguage } from "@therapy/i18n-config";
+import { DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, isMarket } from "@therapy/types";
 import { mergeRescheduledBooking, sortBookingsByStartsAtAsc, type BookingMutationApiItem } from "../../booking/bookingMappers";
 import { apiRequest } from "../services/api";
 import { POST_TRIAL_CALENDAR_PENDING_SESSION_KEY } from "../constants";
@@ -32,11 +32,10 @@ function t(language: PatientAppState["language"], values: { es: string; en: stri
 /** Solo en dev local permitimos créditos/reservas ficticias si el API falla. */
 const allowLocalDemoFallback = import.meta.env.DEV;
 
-function usesDlocalCheckout(state: PatientAppState, timezone?: string): boolean {
+function usesDlocalCheckout(state: PatientAppState): boolean {
   return patientUsesDlocalCheckout({
     patientMarket: state.patientMarket,
-    residencyCountry: state.profileResidencyCountry,
-    timezone
+    residencyCountry: state.profileResidencyCountry
   });
 }
 
@@ -97,7 +96,7 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
-      if (usesDlocalCheckout(params.state, params.sessionTimezone)) {
+      if (usesDlocalCheckout(params.state)) {
         try {
           const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
           const idempotencyKey = acquireDlocalCheckoutIdempotencyKey(dlocalPackageIdempotencyScope(plan.id));
@@ -132,7 +131,7 @@ export function usePortalActions(params: {
         }
       }
 
-      if (!usesDlocalCheckout(params.state, params.sessionTimezone) && !allowLocalDemoFallback) {
+      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
         return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
       }
 
@@ -208,7 +207,7 @@ export function usePortalActions(params: {
     let lastError = "";
 
     if (authToken) {
-      if (usesDlocalCheckout(params.state, params.sessionTimezone)) {
+      if (usesDlocalCheckout(params.state)) {
         const idempotencyScope = dlocalIndividualIdempotencyScope(sessionCount);
         try {
           const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
@@ -252,7 +251,7 @@ export function usePortalActions(params: {
         }
       }
 
-      if (!usesDlocalCheckout(params.state, params.sessionTimezone) && !allowLocalDemoFallback) {
+      if (!usesDlocalCheckout(params.state) && !allowLocalDemoFallback) {
         return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR };
       }
 
@@ -328,7 +327,7 @@ export function usePortalActions(params: {
       };
     }
 
-    if (!usesDlocalCheckout(params.state, params.sessionTimezone)) {
+    if (!usesDlocalCheckout(params.state)) {
       return {
         ok: false,
         error: t(params.state.language, {
@@ -1067,6 +1066,45 @@ export function usePortalActions(params: {
     }, 900);
   };
 
+  const updatePatientResidency = async (
+    residencyCountry: string
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const authToken = params.state.authToken;
+    if (!authToken) {
+      return { ok: false, error: "Unauthorized" };
+    }
+    try {
+      const response = await apiRequest<{
+        profile: { residencyCountry: string | null; market: string };
+      }>(
+        "/api/profiles/me/residency",
+        {
+          method: "PATCH",
+          body: JSON.stringify({ residencyCountry: residencyCountry.trim().toUpperCase() })
+        },
+        authToken
+      );
+      const nextResidency = (response.profile.residencyCountry ?? residencyCountry).trim().toUpperCase();
+      const nextMarket = isMarket(response.profile.market) ? response.profile.market : params.state.patientMarket;
+      params.onStateChange((current) => ({
+        ...current,
+        profileResidencyCountry: nextResidency,
+        patientMarket: nextMarket,
+        currency: defaultDisplayCurrencyForPatient({
+          residencyCountry: nextResidency,
+          market: nextMarket
+        })
+      }));
+      void params.onRefreshPortalFromApi?.();
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not update residency"
+      };
+    }
+  };
+
   const markThreadAsRead = (professionalId: string) => {
     params.onStateChange((current) => ({
       ...current,
@@ -1105,6 +1143,7 @@ export function usePortalActions(params: {
     planTrialFromDashboard,
     sendMessage,
     markThreadAsRead,
+    updatePatientResidency,
     toggleFavoriteProfessional
   };
 }

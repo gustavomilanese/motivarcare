@@ -139,6 +139,7 @@ export function HomePage(props: {
   ) => Promise<{ ok: boolean; error?: string }> | { ok: boolean; error?: string };
   onStartPackagePurchase: (plan: PackagePlan) => void;
   onPurchasePackage: (plan: PackagePlan) => Promise<PortalPurchaseResult>;
+  onConfirmResidency?: (iso: string) => Promise<{ ok: boolean; error?: string }>;
   /** Sesiones → checkout de paquetes (sin plan concreto; el catálogo carga en destino). */
   onNavigateToSessionsCheckout: () => void;
   /** Abre Sesiones en checkout enfocado en compra suelta (misma UX que el panel de paquetes). */
@@ -211,6 +212,7 @@ export function HomePage(props: {
   const [liveTrialSlotsLoading, setLiveTrialSlotsLoading] = useState(false);
   const [acquireSessionsModalOpen, setAcquireSessionsModalOpen] = useState(false);
   const [homePurchaseModalOpen, setHomePurchaseModalOpen] = useState(false);
+  const [residencySaving, setResidencySaving] = useState(false);
   const [noSessionsRedirectModalOpen, setNoSessionsRedirectModalOpen] = useState(false);
   const [homeChatModalOpen, setHomeChatModalOpen] = useState(false);
   const [homeProfileModalOpen, setHomeProfileModalOpen] = useState(false);
@@ -555,21 +557,23 @@ export function HomePage(props: {
     [props.state.patientMarket, props.state.profileResidencyCountry]
   );
 
-  const { packageCheckoutLoading, packageCheckoutError, startPackageCheckout } = usePackageCheckout({
+  const { packageCheckoutLoading, packageCheckoutError, setPackageCheckoutError, startPackageCheckout } = usePackageCheckout({
     language: props.language,
     pricingReady,
     packageCatalogFromApi,
     usesDlocalCheckout,
     onPurchasePackage: props.onPurchasePackage,
-    onNonDlocalCheckout: (plan) => props.onStartPackagePurchase(plan),
     onGateBlocked: () => setAssignProModalOpen(true)
   });
 
   const handleStartPackagePurchase = useCallback(
     (plan: PackagePlan) => {
+      if (!usesDlocalCheckout) {
+        return;
+      }
       void startPackageCheckout(plan);
     },
-    [startPackageCheckout]
+    [startPackageCheckout, usesDlocalCheckout]
   );
 
   const pricingProfessional = pricingProfessionalId
@@ -1293,6 +1297,22 @@ export function HomePage(props: {
           unitPriceMajor={individualUnitHome}
           paymentLoading={packageCheckoutLoading}
           paymentError={packageCheckoutError || undefined}
+          needsResidencyConfirm={!usesDlocalCheckout}
+          residencySaving={residencySaving}
+          onConfirmResidency={async (iso) => {
+            if (!props.onConfirmResidency) {
+              return;
+            }
+            setResidencySaving(true);
+            try {
+              const result = await props.onConfirmResidency(iso);
+              if (!result.ok) {
+                setPackageCheckoutError(result.error ?? "");
+              }
+            } finally {
+              setResidencySaving(false);
+            }
+          }}
           onClose={() => setHomePurchaseModalOpen(false)}
           onSelectPlan={(plan) => {
             handleStartPackagePurchase(plan);

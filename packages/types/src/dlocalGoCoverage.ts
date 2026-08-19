@@ -105,41 +105,22 @@ export function inferPatientPortalResidencyIso2(params?: {
 }
 
 /**
- * Si la residencia guardada no es dLocal (US/ES/vacía) y la TZ sí lo es, devolver el ISO a persistir.
- * No pisa una residencia dLocal ya correcta.
- */
-export function resolveHealedDlocalResidencyCountry(params: {
-  existingResidency: string | null | undefined;
-  requestedResidency?: string | null;
-  timezone?: string | null;
-}): string | null {
-  const existing = normalizeResidencyCountryIso2(params.existingResidency);
-  if (existing && DLOCAL_GO_PAYER_COUNTRIES.has(existing)) {
-    return null;
-  }
-  const fromTz = inferDlocalPayerCountryFromTimezone(params.timezone);
-  if (fromTz && fromTz !== existing) {
-    return fromTz;
-  }
-  if (!existing) {
-    return normalizeResidencyCountryIso2(params.requestedResidency);
-  }
-  return null;
-}
-
-/**
  * País que se envía a dLocal Go (`country` en POST /v1/payments).
- * Prioriza residencia declarada; si falta, infiere AR/BR desde el mercado comercial;
- * si la residencia es US/ES por locale del browser, recupera el país dLocal desde la TZ.
+ *
+ * Identidad declarada, no inferida:
+ * - Si hay residencia, esa ISO decide. US/ES u otro país fuera de dLocal → no hay cobro.
+ * - Si falta residencia (perfiles viejos), el mercado comercial AR/BR puede completar.
+ * - Nunca locale, IP ni timezone. Un Chrome en-US en Argentina no puede cambiar el país.
  */
 export function resolveDlocalPayerCountry(params: {
   residencyCountry: string | null | undefined;
   market: Market;
+  /** Ignorado. Queda en la firma por llamadas viejas; no define el país de cobro. */
   timezone?: string | null;
 }): string | null {
   const residency = normalizeResidencyCountryIso2(params.residencyCountry);
-  if (residency && DLOCAL_GO_PAYER_COUNTRIES.has(residency)) {
-    return residency;
+  if (residency) {
+    return DLOCAL_GO_PAYER_COUNTRIES.has(residency) ? residency : null;
   }
   if (params.market === "AR") {
     return "AR";
@@ -147,7 +128,7 @@ export function resolveDlocalPayerCountry(params: {
   if (params.market === "BR") {
     return "BR";
   }
-  return inferDlocalPayerCountryFromTimezone(params.timezone);
+  return null;
 }
 
 export function isDlocalGoCheckoutAvailable(params: {

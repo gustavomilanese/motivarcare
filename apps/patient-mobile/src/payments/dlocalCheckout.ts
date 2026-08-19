@@ -1,10 +1,8 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { isDlocalGoCheckoutAvailable, marketFromResidencyCountry } from "@therapy/types";
-import { deviceTimeZone } from "../utils/date";
+import { isDlocalGoCheckoutAvailable, marketFromResidencyCountry, DLOCAL_CHECKOUT_UNAVAILABLE_ERROR } from "@therapy/types";
 import {
   createDlocalPackageCheckout,
-  purchasePackage,
   syncDlocalPayment
 } from "../api/client";
 import type { SessionPackage } from "../api/types";
@@ -22,8 +20,7 @@ export function patientUsesDlocalCheckout(residencyCountry: string | null | unde
   const market = marketFromResidencyCountry(residencyCountry);
   return isDlocalGoCheckoutAvailable({
     market,
-    residencyCountry: residencyCountry ?? null,
-    timezone: deviceTimeZone()
+    residencyCountry: residencyCountry ?? null
   });
 }
 
@@ -43,8 +40,11 @@ export async function startPackageCheckout(params: {
 }): Promise<{ ok: boolean; error?: string; mode: "dlocal" | "direct"; remainingCredits?: number }> {
   const usesDlocal = patientUsesDlocalCheckout(params.residencyCountry);
 
-  if (usesDlocal) {
-    const scope = dlocalPackageIdempotencyScope(params.pkg.id);
+  if (!usesDlocal) {
+    return { ok: false, error: DLOCAL_CHECKOUT_UNAVAILABLE_ERROR, mode: "dlocal" };
+  }
+
+  const scope = dlocalPackageIdempotencyScope(params.pkg.id);
     const idempotencyKey = await acquireDlocalCheckoutIdempotencyKey(scope);
     const successUrl = paymentReturnUrl({ payment: "success", purchase: "package" });
     const cancelUrl = paymentReturnUrl({ payment: "cancel", purchase: "package" });
@@ -54,8 +54,7 @@ export async function startPackageCheckout(params: {
       packageId: params.pkg.id,
       idempotencyKey,
       successUrl,
-      cancelUrl,
-      timezone: deviceTimeZone()
+      cancelUrl
     });
 
     const checkoutUrl = checkout.checkoutUrl?.trim() ?? "";
@@ -78,14 +77,6 @@ export async function startPackageCheckout(params: {
     }
     // Return URL handling is done by useDlocalCheckoutReturn (also parses result.url if present).
     return { ok: true, mode: "dlocal" };
-  }
-
-  const res = await purchasePackage({ token: params.token, packageId: params.pkg.id });
-  return {
-    ok: true,
-    mode: "direct",
-    remainingCredits: res.purchase.remainingCredits
-  };
 }
 
 export async function fulfillPendingDlocalCheckout(params: {

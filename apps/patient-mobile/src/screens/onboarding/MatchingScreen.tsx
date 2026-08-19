@@ -20,6 +20,7 @@ import {
   createBooking,
   getMatchingProfessionals,
   getProfessionalAvailabilitySlots,
+  patchPatientResidency,
   releaseBookingSlotHold,
   setActiveProfessional
 } from "../../api/client";
@@ -30,6 +31,7 @@ import { useBookingsRefresh } from "../../context/BookingsRefreshContext";
 import { usePatientProfile } from "../../context/PatientProfileContext";
 import { PersonAvatar } from "../../components/PersonAvatar";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
+import { ResidencyConfirmBlock } from "../../components/ResidencyConfirmBlock";
 import { patientUsesDlocalCheckout } from "../../payments/dlocalCheckout";
 import { startTrialCheckout } from "../../payments/trialCheckout";
 import type { AppThemeColors } from "../../theme/colors";
@@ -241,6 +243,7 @@ export function MatchingScreen() {
   const [liveNoticeHours, setLiveNoticeHours] = useState(0);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [summary, setSummary] = useState<SummaryState | null>(null);
+  const [residencySaving, setResidencySaving] = useState(false);
   const holdIdRef = useRef<string | null>(null);
 
   const releaseCurrentHold = useCallback(async () => {
@@ -560,10 +563,36 @@ export function MatchingScreen() {
                       ? "Usamos tu crédito de sesión de prueba ya pagado."
                       : usesDlocal
                         ? "Vas a pagar la sesión de prueba en dLocal y después confirmamos el turno."
-                        : "Reservamos tu sesión de prueba sin cobro en línea para tu país."}
+                        : "Confirmá el país de residencia para poder pagar la sesión de prueba."}
                   </Text>
                 </View>
-                <PrimaryButton label={trialCtaLabel} loading={booking} onPress={() => void confirmSummary()} />
+                {!profile?.trialRebookAvailable && !usesDlocal ? (
+                  <ResidencyConfirmBlock
+                    currentIso={profile?.residencyCountry}
+                    saving={residencySaving}
+                    onConfirm={async (iso) => {
+                      if (!token) {
+                        return;
+                      }
+                      setResidencySaving(true);
+                      setError("");
+                      try {
+                        await patchPatientResidency({ token, residencyCountry: iso });
+                        await refresh();
+                      } catch (residencyError) {
+                        setError(
+                          residencyError instanceof Error
+                            ? residencyError.message
+                            : "No pudimos guardar el país."
+                        );
+                      } finally {
+                        setResidencySaving(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <PrimaryButton label={trialCtaLabel} loading={booking} onPress={() => void confirmSummary()} />
+                )}
                 <PrimaryButton
                   label="Elegir otro horario"
                   variant="ghost"

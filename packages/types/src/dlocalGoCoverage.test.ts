@@ -4,8 +4,7 @@ import {
   inferDlocalPayerCountryFromTimezone,
   inferPatientPortalResidencyIso2,
   isDlocalGoCheckoutAvailable,
-  resolveDlocalPayerCountry,
-  resolveHealedDlocalResidencyCountry
+  resolveDlocalPayerCountry
 } from "./dlocalGoCoverage.js";
 
 describe("dlocalGoCoverage", () => {
@@ -29,21 +28,21 @@ describe("dlocalGoCoverage", () => {
     expect(isDlocalGoCheckoutAvailable({ residencyCountry: "US", market: "US" })).toBe(false);
   });
 
-  it("recovers Argentina from timezone when residency was stored as US", () => {
+  it("does not infer payer country from timezone when residency is US or ES", () => {
     expect(
       resolveDlocalPayerCountry({
         residencyCountry: "US",
         market: "US",
         timezone: "America/Argentina/Buenos_Aires"
       })
-    ).toBe("AR");
+    ).toBeNull();
     expect(
       isDlocalGoCheckoutAvailable({
         residencyCountry: "US",
         market: "US",
         timezone: "America/Argentina/Buenos_Aires"
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("maps IANA timezones to dLocal payer countries", () => {
@@ -67,27 +66,12 @@ describe("dlocalGoCoverage", () => {
     ).toBe("US");
   });
 
-  it("heals US residency when timezone is a dLocal country", () => {
+  it("does not let AR/BR market override an explicit non-dLocal residency", () => {
     expect(
-      resolveHealedDlocalResidencyCountry({
-        existingResidency: "US",
-        requestedResidency: "US",
-        timezone: "America/Argentina/Buenos_Aires"
-      })
-    ).toBe("AR");
-    expect(
-      resolveHealedDlocalResidencyCountry({
-        existingResidency: "AR",
-        requestedResidency: "US",
-        timezone: "America/Argentina/Buenos_Aires"
-      })
+      resolveDlocalPayerCountry({ residencyCountry: "US", market: "AR" })
     ).toBeNull();
     expect(
-      resolveHealedDlocalResidencyCountry({
-        existingResidency: "US",
-        requestedResidency: "US",
-        timezone: "America/New_York"
-      })
+      resolveDlocalPayerCountry({ residencyCountry: "ES", market: "BR" })
     ).toBeNull();
   });
 

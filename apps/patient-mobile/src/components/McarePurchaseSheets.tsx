@@ -16,8 +16,10 @@ import type { AppGradients } from "../theme/ThemeContext";
 import { useThemeMode } from "../theme/ThemeContext";
 import { formatMoneyFromCents } from "../utils/date";
 import { PrimaryButton } from "./ui/PrimaryButton";
+import { ResidencyConfirmBlock } from "./ResidencyConfirmBlock";
 
 export type McarePurchaseFlow =
+  | { kind: "residency"; pkg: SessionPackage }
   | { kind: "confirm"; pkg: SessionPackage }
   | { kind: "success"; credits: number }
   | { kind: "error"; message: string };
@@ -26,7 +28,10 @@ type Props = {
   flow: McarePurchaseFlow | null;
   onClose: () => void;
   onConfirmPurchase: (pkg: SessionPackage) => void | Promise<void>;
+  onConfirmResidency?: (iso: string, pkg: SessionPackage) => void | Promise<void>;
   confirming: boolean;
+  residencySaving?: boolean;
+  currentResidencyIso?: string | null;
 };
 
 type SheetStyles = ReturnType<typeof buildMcareSheetStyles>;
@@ -232,7 +237,7 @@ function packageUnitCents(pkg: SessionPackage): number {
 }
 
 export function McarePurchaseSheets(props: Props) {
-  const { flow, onClose, onConfirmPurchase, confirming } = props;
+  const { flow, onClose, onConfirmPurchase, onConfirmResidency, confirming, residencySaving, currentResidencyIso } = props;
   const { colors, gradients } = useThemeMode();
   const sheetStyles = useMemo(() => buildMcareSheetStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -250,6 +255,24 @@ export function McarePurchaseSheets(props: Props) {
               <View style={sheetStyles.handle} />
             </View>
 
+            {flow.kind === "residency" ? (
+              <>
+                <View style={sheetStyles.heroRow}>
+                  <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={sheetStyles.heroIcon}>
+                    <Ionicons name="earth-outline" size={26} color="#FFFFFF" />
+                  </LinearGradient>
+                  <View style={sheetStyles.heroText}>
+                    <Text style={sheetStyles.eyebrow}>País de cobro</Text>
+                    <Text style={sheetStyles.title}>Confirmá tu país</Text>
+                  </View>
+                </View>
+                <ResidencyConfirmBlock
+                  currentIso={currentResidencyIso}
+                  saving={residencySaving}
+                  onConfirm={(iso) => void onConfirmResidency?.(iso, flow.pkg)}
+                />
+              </>
+            ) : null}
             {flow.kind === "confirm" ? (
               <ConfirmBody
                 pkg={flow.pkg}

@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { Prisma, ProfessionalRegistrationApproval, type Market } from "@prisma/client";
-import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry, resolveHealedDlocalResidencyCountry } from "@therapy/types";
+import { billingCurrencyCodeForMarket, getEmergencyResources, marketFromResidencyCountry, PATIENT_PORTAL_RESIDENCY_CODES } from "@therapy/types";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { env } from "../../config/env.js";
@@ -194,6 +194,9 @@ const purchaseIndividualSessionsSchema = z.object({
 });
 const patchPatientMarketSchema = z.object({
   market: z.enum(["AR", "US", "BR", "ES"])
+});
+const patchPatientResidencySchema = z.object({
+  residencyCountry: z.enum(PATIENT_PORTAL_RESIDENCY_CODES)
 });
 const matchingQuerySchema = z.object({
   language: z.enum(["es", "en", "pt"]).optional()
@@ -1019,22 +1022,11 @@ profilesRouter.patch("/me/timezone", requireAuth, async (req: AuthenticatedReque
   const persistPreference = parsed.data.persistPreference === true;
 
   if (actor.role === "PATIENT" && actor.patientProfileId) {
-    const existing = await prisma.patientProfile.findUnique({
-      where: { id: actor.patientProfileId },
-      select: { residencyCountry: true }
-    });
-    const healed = resolveHealedDlocalResidencyCountry({
-      existingResidency: existing?.residencyCountry,
-      timezone
-    });
     const updated = await prisma.patientProfile.update({
       where: { id: actor.patientProfileId },
       data: {
         lastSeenTimezone: timezone,
-        ...(persistPreference ? { timezone } : {}),
-        ...(healed
-          ? { residencyCountry: healed, market: marketFromResidencyCountry(healed) }
-          : {})
+        ...(persistPreference ? { timezone } : {})
       },
       select: {
         id: true,
@@ -1086,6 +1078,42 @@ profilesRouter.patch("/me/market", requireAuth, async (req: AuthenticatedRequest
     data: { market: parsed.data.market },
     select: { id: true, market: true }
   });
+
+  return res.json({ role: "PATIENT" as const, profile: updated });
+});
+
+profilesRouter.patch("/me/residency", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const parsed = patchPatientResidencySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid residency payload", details: parsed.error.flatten() });
+  }
+
+  const actor = await getActorContext(req.auth);
+  if (!actor || actor.role !== "PATIENT" || !actor.patientProfileId) {
+    return res.status(403).json({ error: "Only patients can update residency" });
+  }
+
+  const residencyCountry = parsed.data.residencyCountry;
+  const market = marketFromResidencyCountry(residencyCountry);
+  const updated = await prisma.patientProfile.update({
+    where: { id: actor.patientProfileId },
+    data: { residencyCountry, market },
+    select: { id: true, residencyCountry: true, market: true }
+  });
+
+  console.info(
+    JSON.stringify({
+      event: "patient_residency_updated",
+      patientId: actor.patientProfileId,
+      residencyCountry,
+      market,
+      timestamp: new Date().toISOString()
+    })
+  );
 
   return res.json({ role: "PATIENT" as const, profile: updated });
 });
