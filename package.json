@@ -24,6 +24,8 @@
     "dev:patient": "npm run dev -w @therapy/patient",
     "dev:patient-mobile": "npm run start -w @therapy/patient-mobile",
     "dev:patient-mobile:clear": "npm run start:clear -w @therapy/patient-mobile",
+    "dev:professional-mobile": "npm run start -w @therapy/professional-mobile",
+    "dev:professional-mobile:clear": "npm run start:clear -w @therapy/professional-mobile",
     "dev:professional": "npm run dev -w @therapy/professional",
     "dev:admin": "npm run dev -w @therapy/admin",
     "build": "npm run build --workspaces --if-present",

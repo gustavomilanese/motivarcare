@@ -348,11 +348,7 @@ export function IncomePage(props: { token: string; language: AppLanguage; user: 
                     : t(props.language, { es: "MotivarCare.", en: "MotivarCare.", pt: "MotivarCare." })}
                 </small>
               </article>
-              <div
-                className="pro-dashboard-kpi-tip-wrap pro-dashboard-kpi-tip-wrap--focusable"
-                tabIndex={0}
-                aria-describedby="pro-income-tip-pending"
-              >
+              <div className="pro-dashboard-kpi-tip-wrap" aria-describedby="pro-income-tip-pending">
                 <article className="pro-kpi-card">
                   <span>{t(props.language, { es: "A cobrar", en: "To collect", pt: "A receber" })}</span>
                   <strong>{formatDisplay(summary.pendingToCollectCents ?? 0)}</strong>

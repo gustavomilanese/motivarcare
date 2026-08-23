@@ -1,0 +1,82 @@
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+
+const API_PORT = 4000;
+const PRODUCTION_API_DEFAULT = "https://api.motivarcare.com";
+
+function trimTrailingSlash(u: string): string {
+  return u.replace(/\/$/, "");
+}
+
+function productionApiFromConfig(): string | null {
+  const extra = Constants.expoConfig?.extra as { apiUrl?: string } | undefined;
+  const fromExtra = extra?.apiUrl?.trim();
+  return fromExtra ? trimTrailingSlash(fromExtra) : null;
+}
+
+function hostFromPackagerUri(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) {
+    return null;
+  }
+  try {
+    if (s.includes("://")) {
+      const hostname = new URL(s).hostname;
+      return hostname || null;
+    }
+    const idx = s.lastIndexOf(":");
+    if (idx > 0 && /^\d+$/.test(s.slice(idx + 1))) {
+      return s.slice(0, idx);
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
+function expoPackagerSource(): string | null {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    return hostUri;
+  }
+  const go = Constants.expoGoConfig as { debuggerHost?: string } | null;
+  if (go?.debuggerHost) {
+    return go.debuggerHost;
+  }
+  const legacy = Constants.manifest as { debuggerHost?: string } | null;
+  return legacy?.debuggerHost ?? null;
+}
+
+function isLoopbackHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
+export function resolveApiBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (fromEnv) {
+    return trimTrailingSlash(fromEnv);
+  }
+
+  if (!__DEV__) {
+    return productionApiFromConfig() ?? PRODUCTION_API_DEFAULT;
+  }
+
+  if (Platform.OS === "web") {
+    return `http://localhost:${API_PORT}`;
+  }
+
+  const raw = expoPackagerSource();
+  const host = raw ? hostFromPackagerUri(raw) : null;
+
+  if (host && !isLoopbackHost(host)) {
+    return `http://${host}:${API_PORT}`;
+  }
+
+  if (Platform.OS === "android") {
+    return `http://10.0.2.2:${API_PORT}`;
+  }
+
+  return `http://localhost:${API_PORT}`;
+}
+
+export const apiBaseUrl = resolveApiBaseUrl();

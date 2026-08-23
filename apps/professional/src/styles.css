@@ -18051,12 +18051,6 @@ button:disabled {
   background: linear-gradient(180deg, #fbfbff 0%, #f4f6fb 100%);
   font: inherit;
   color: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.pro-kpi-card--drilldown:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
 }
 
 .pro-executed-sessions-controls {
@@ -18199,15 +18193,10 @@ button:disabled {
   border-bottom: 1px solid #f1f5f9;
   border-radius: 0;
   background: transparent;
-  transition: background 0.12s ease;
 }
 
 .pro-executed-session-row:last-child {
   border-bottom: none;
-}
-
-.pro-executed-session-row:hover {
-  background: #f8fafc;
 }
 
 .pro-executed-session-cell {
@@ -18324,11 +18313,6 @@ button:disabled {
   background: none;
   padding: 0;
   cursor: pointer;
-}
-
-.pro-executed-session-patient-link:hover {
-  color: #0842a0;
-  text-decoration: underline;
 }
 
 .pro-executed-session-detail-link {
@@ -18708,17 +18692,16 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "name net"
-      "when when"
-      "chips chips"
-      "money money";
+      "when chips";
     column-gap: 12px;
-    row-gap: 5px;
-    align-items: center;
-    padding: 14px 16px;
+    row-gap: 4px;
+    align-items: baseline;
+    padding: 16px 4px;
     border: 0;
-    border-bottom: 1px solid #eeeeee;
+    border-bottom: 1px solid #e5e5e5;
     border-radius: 0;
     background: transparent;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .pro-executed-session-row:last-child {
@@ -18735,12 +18718,11 @@ button:disabled {
   }
 
   .pro-executed-session-patient-link,
-  .pro-executed-session-patient-name,
-  .pro-executed-session-patient-link:hover {
+  .pro-executed-session-patient-name {
     display: block;
     overflow: hidden;
-    font-size: 15px;
-    font-weight: 650;
+    font-size: 16px;
+    font-weight: 600;
     letter-spacing: -0.02em;
     color: #171717;
     text-decoration: none;
@@ -18750,36 +18732,36 @@ button:disabled {
 
   .pro-executed-session-cell--net {
     grid-area: net;
-    align-self: start;
-    padding-top: 1px;
-    font-size: 15px;
-    font-weight: 650;
+    padding-top: 0;
+    font-size: 16px;
+    font-weight: 700;
     color: #171717;
     text-align: right;
-  }
-
-  .pro-executed-session-when,
-  .pro-executed-session-chips,
-  .pro-executed-session-money {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    min-width: 0;
+    font-variant-numeric: tabular-nums;
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .pro-executed-session-when {
     grid-area: when;
-    gap: 0 6px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    min-width: 0;
+    gap: 0;
   }
 
   .pro-executed-session-chips {
     grid-area: chips;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
     gap: 6px;
   }
 
   .pro-executed-session-money {
-    grid-area: money;
-    gap: 0 6px;
+    display: none;
   }
 
   .pro-executed-session-cell--day,
@@ -18791,22 +18773,7 @@ button:disabled {
 
   .pro-executed-session-cell--time::before {
     content: "·";
-    margin-right: 6px;
-    color: #a3a3a3;
-    font-weight: 700;
-  }
-
-  .pro-executed-session-cell--gross,
-  .pro-executed-session-cell--fee {
-    font-size: 12px;
-    font-weight: 400;
-    color: #737373;
-    text-align: left;
-  }
-
-  .pro-executed-session-cell--fee::before {
-    content: "·";
-    margin-right: 6px;
+    margin: 0 6px;
     color: #a3a3a3;
     font-weight: 700;
   }
@@ -18819,6 +18786,11 @@ button:disabled {
     font-size: 11px;
   }
 
+  .pro-executed-session-session-badge:not(.pro-executed-session-session-badge--trial),
+  .pro-executed-session-cell--session:not(:has(.pro-executed-session-session-badge--trial)) {
+    display: none;
+  }
+
   .pro-executed-session-cell[data-label] {
     display: block;
     text-align: inherit;
@@ -18828,10 +18800,9 @@ button:disabled {
     content: none;
   }
 
-  .pro-executed-session-cell--time[data-label]::before,
-  .pro-executed-session-cell--fee[data-label]::before {
+  .pro-executed-session-cell--time[data-label]::before {
     content: "·";
-    margin-right: 6px;
+    margin: 0 6px;
     color: #a3a3a3;
     font-weight: 700;
   }
@@ -18841,18 +18812,23 @@ button:disabled {
     display: none;
   }
 
-  .pro-executed-session-cell--money,
-  .pro-executed-session-patient-link,
-  .pro-executed-session-patient-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .pro-dashboard-kpi-tooltip,
+  .pro-dashboard-kpi-tip-wrap .pro-dashboard-kpi-tooltip {
+    display: none !important;
   }
 
-  .pro-executed-session-cell--net,
-  .pro-executed-session-cell--fee {
-    overflow: visible;
-    text-overflow: unset;
+  .pro-dashboard-kpi-tip-wrap {
+    cursor: default;
+  }
+
+  .pro-kpi-card--drilldown:hover {
+    border-color: #d8deea;
+    box-shadow: none;
+  }
+
+  .pro-executed-session-patient-link:hover {
+    color: #171717;
+    text-decoration: none;
   }
 
   .pro-executed-sessions-pagination {
@@ -19061,17 +19037,42 @@ button:disabled {
   color: #ffffff;
 }
 
-.pro-dashboard-kpi-tip-wrap:hover .pro-dashboard-kpi-tooltip,
-.pro-dashboard-kpi-tip-wrap:focus-within .pro-dashboard-kpi-tooltip {
+.pro-dashboard-kpi-tip-wrap:focus-visible .pro-dashboard-kpi-tooltip {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
 }
 
-.pro-dashboard-kpi-tip-wrap:last-child:hover .pro-dashboard-kpi-tooltip,
-.pro-dashboard-kpi-tip-wrap:last-child:focus-within .pro-dashboard-kpi-tooltip {
+.pro-dashboard-kpi-tip-wrap:last-child:focus-visible .pro-dashboard-kpi-tooltip {
   transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pro-kpi-card--drilldown:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+  }
+
+  .pro-executed-session-row:hover {
+    background: #f8fafc;
+  }
+
+  .pro-executed-session-patient-link:hover {
+    color: #0842a0;
+    text-decoration: underline;
+  }
+
+  .pro-dashboard-kpi-tip-wrap:hover .pro-dashboard-kpi-tooltip {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .pro-dashboard-kpi-tip-wrap:last-child:hover .pro-dashboard-kpi-tooltip {
+    transform: translateY(0);
+  }
 }
 
 .pro-kpi-card--session-money {
