@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+export { McButton } from "./McButton";
 export {
   MotivarCareLoader,
   MotivarCarePageLoader,

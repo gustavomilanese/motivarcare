@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton } from "@therapy/ui";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
@@ -124,11 +125,11 @@ export function ResetPasswordScreen(props: { language: AppLanguage }) {
               </p>
             ) : null}
 
-            <button className="pro-primary" type="submit" disabled={loading}>
+            <McButton type="submit" disabled={loading}>
               {loading
                 ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
                 : t(props.language, { es: "Guardar contraseña", en: "Save password", pt: "Salvar senha" })}
-            </button>
+            </McButton>
           </form>
         )}
       </section>

@@ -1,0 +1,6 @@
+@import "@therapy/ui/motivarCareLoader.css";
+@import "@therapy/ui/mcButton.css";
+@import "./legacy.css";
+@import "../modules/emotional-diary/emotional-diary.css";
+@import "../mobile-portal-flat.css";
+/* Pantallas nuevas: @import "./booking.css"; — no agregar reglas acá ni en legacy.css. */

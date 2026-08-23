@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton } from "@therapy/ui";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
 
@@ -103,9 +104,9 @@ export function PatientResetPasswordScreen(props: { language: AppLanguage }) {
                   pt: "Sua senha foi atualizada. Voce ja pode entrar."
                 })}
               </p>
-              <button className="primary auth-submit" type="button" onClick={() => navigate("/", { replace: true })}>
+              <McButton type="button" onClick={() => navigate("/", { replace: true })}>
                 {t(props.language, { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" })}
-              </button>
+              </McButton>
             </div>
           ) : (
             <form className="stack auth-form auth-narrow-form" onSubmit={handleSubmit}>
@@ -147,11 +148,11 @@ export function PatientResetPasswordScreen(props: { language: AppLanguage }) {
                 </p>
               ) : null}
 
-              <button className="primary auth-submit" type="submit" disabled={loading}>
+              <McButton type="submit" disabled={loading}>
                 {loading
                   ? t(props.language, { es: "Guardando…", en: "Saving…", pt: "Salvando…" })
                   : t(props.language, { es: "Guardar contraseña", en: "Save password", pt: "Salvar senha" })}
-              </button>
+              </McButton>
             </form>
           )}
         </div>

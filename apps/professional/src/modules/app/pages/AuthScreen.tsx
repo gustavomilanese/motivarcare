@@ -4,6 +4,7 @@ import { FormEvent, SyntheticEvent, useCallback, useEffect, useRef, useState } f
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
+import { McButton } from "@therapy/ui";
 import {
   professionalAuthSurfaceMessage,
   professionalAuthValidationMessage
@@ -451,7 +452,7 @@ export function AuthScreen(props: {
               </p>
             ) : null}
 
-            <button className="pro-primary auth-submit" type="submit" disabled={loading}>
+            <McButton type="submit" disabled={loading}>
               {loading
                 ? mode === "register"
                   ? t(props.language, { es: "Creando cuenta...", en: "Creating account...", pt: "Criando conta..." })
@@ -459,7 +460,7 @@ export function AuthScreen(props: {
                 : mode === "register"
                   ? t(props.language, { es: "Crear cuenta", en: "Create account", pt: "Criar conta" })
                   : t(props.language, { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" })}
-            </button>
+            </McButton>
           </form>
 
           <footer className="auth-card-footer">

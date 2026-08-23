@@ -1,0 +1,35 @@
+/* CTA primario MotivarCare (login / crear cuenta). Un solo look en todas las webs. */
+.mc-btn {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-align: center;
+  cursor: pointer;
+}
+
+.mc-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  box-shadow: 0 12px 28px rgba(95, 68, 235, 0.32);
+}
+
+.mc-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
+}
+
+.mc-btn--primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

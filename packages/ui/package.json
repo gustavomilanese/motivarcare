@@ -6,7 +6,8 @@
   "main": "src/index.tsx",
   "exports": {
     ".": "./src/index.tsx",
-    "./motivarCareLoader.css": "./src/motivarCareLoader.css"
+    "./motivarCareLoader.css": "./src/motivarCareLoader.css",
+    "./mcButton.css": "./src/mcButton.css"
   },
   "dependencies": {
     "@therapy/i18n-config": "0.1.0"

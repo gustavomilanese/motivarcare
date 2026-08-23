@@ -1,0 +1,4 @@
+@import "@therapy/ui/motivarCareLoader.css";
+@import "@therapy/ui/mcButton.css";
+@import "./legacy.css";
+/* Pantallas nuevas: @import "./cobro.css"; — no agregar reglas acá ni en legacy.css. */

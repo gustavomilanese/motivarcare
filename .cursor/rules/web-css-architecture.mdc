@@ -1,0 +1,31 @@
+---
+description: CSS web por pantalla; no hinchar styles/legacy.css
+globs: apps/{patient,professional,admin}/**/*.{css,tsx}
+alwaysApply: false
+---
+
+# CSS: un archivo por pantalla, no un cajón único
+
+Las apps web ya no usan un `styles.css` gigante como destino. El look viejo vive en `styles/legacy.css`. **No agregues reglas nuevas ahí.**
+
+## Dónde va el CSS
+
+| Qué | Dónde |
+|---|---|
+| Estilo de una pantalla o bloque nuevo | `apps/<app>/src/styles/<nombre>.css` y un `@import "./<nombre>.css";` en `styles/index.css` |
+| Loader / tokens compartidos | `packages/ui` o el `@import` que ya está en `index.css` |
+| Look que ya existía | `styles/legacy.css` — solo si estás corrigiendo un bug de ese bloque |
+
+## Cómo escribirlo
+
+- CSS anidado nativo (sin Sass). Agrupá por pantalla: `.pro-cobro-prompt-modal { h3 { } }`.
+- Las clases siguen el prefijo de la app (`.pro-`, etc.). No hace falta BEM con `__`.
+- Reutilizá variables de `:root` (`--brand`, radios). No inventes otro violeta.
+- Botones nuevos: `border-radius: 8px`. Cards: `10px`–`12px`.
+- CTA de login / crear cuenta: componente `McButton` de `@therapy/ui`, no un `button.primary` más.
+
+## Prohibido
+
+- Pegar 200 líneas más al final de `legacy.css`.
+- Instalar Tailwind o Bootstrap en estas apps.
+- Reescribir `legacy.css` entero de un saque (rompe el producto). Se extrae un bloque cuando se toca esa pantalla.

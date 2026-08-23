@@ -1,0 +1,3 @@
+@import "@therapy/ui/mcButton.css";
+@import "./legacy.css";
+/* Pantallas nuevas: @import "./finance.css"; — no agregar reglas acá ni en legacy.css. */

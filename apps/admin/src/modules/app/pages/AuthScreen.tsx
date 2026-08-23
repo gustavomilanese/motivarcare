@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton } from "@therapy/ui";
 import { adminAuthSurfaceMessage } from "../lib/friendlyAdminSurfaceMessages";
 import { apiRequest } from "../services/api";
 import type { AuthApiResponse, AuthUser } from "../types";
@@ -112,11 +113,11 @@ export function AuthScreen(props: {
               {error}
             </p>
           ) : null}
-          <button className="primary admin-auth-submit" type="submit" disabled={loading}>
+          <McButton type="submit" disabled={loading}>
             {loading
               ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
               : t(props.language, { es: "Ingresar", en: "Sign in", pt: "Entrar" })}
-          </button>
+          </McButton>
         </form>
       </section>
     </div>

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type AppLanguage, type LocalizedText, textByLanguage } from "@therapy/i18n-config";
+import { McButton } from "@therapy/ui";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
 import { apiRequest } from "../services/api";
 
@@ -97,11 +98,11 @@ export function ForgotPasswordScreen(props: { language: AppLanguage }) {
             </p>
           ) : null}
 
-          <button className="pro-primary" type="submit" disabled={loading}>
+          <McButton type="submit" disabled={loading}>
             {loading
               ? t(props.language, { es: "Enviando…", en: "Sending…", pt: "Enviando…" })
               : t(props.language, { es: "Enviar enlace", en: "Send link", pt: "Enviar link" })}
-          </button>
+          </McButton>
         </form>
       </section>
     </div>

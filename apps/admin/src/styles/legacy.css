@@ -320,13 +320,6 @@ button.danger:active:not(:disabled) {
   font-weight: 600;
 }
 
-.admin-auth-submit {
-  min-height: var(--touch-min);
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .primary-link {
   text-decoration: none;
   display: inline-flex;

@@ -1,5 +1,3 @@
-@import "@therapy/ui/motivarCareLoader.css";
-
 /* Fonts loaded via index.html so this sheet applies immediately (avoids blank auth layout on first paint). */
 
 :root {
@@ -890,22 +888,6 @@ ul {
 .auth-form input:not(.auth-input-inset):focus {
   border-color: #7a63f4;
   box-shadow: 0 0 0 4px rgba(122, 99, 244, 0.15);
-}
-
-.auth-form button.primary {
-  margin-top: 4px;
-  min-height: var(--mc-cta-min-height);
-  width: 100%;
-  border-radius: var(--mc-cta-radius);
-  font-size: 16px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
-  box-shadow: var(--mc-cta-shadow);
-}
-
-.auth-form button.primary:hover {
-  background: linear-gradient(135deg, #5038d8 0%, #6b4ef2 100%);
 }
 
 .auth-switch-inline {
@@ -14465,10 +14447,6 @@ button.sessions-balance {
   width: 100%;
   min-height: 72px;
   margin-top: 4px;
-}
-
-.auth-submit {
-  min-height: var(--touch-min);
 }
 
 .auth-error {

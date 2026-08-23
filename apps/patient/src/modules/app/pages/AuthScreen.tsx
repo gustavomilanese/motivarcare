@@ -44,6 +44,7 @@ import {
   textByLanguage
 } from "@therapy/i18n-config";
 import { detectBrowserTimezone } from "@therapy/auth";
+import { McButton } from "@therapy/ui";
 import { inferPatientPortalResidencyIso2 } from "@therapy/types";
 import { friendlyAuthSurfaceMessage } from "../lib/friendlyPatientMessages";
 import { apiRequest } from "../services/api";
@@ -454,13 +455,13 @@ export function AuthScreen(props: {
             ) : null}
 
             {error ? <p className="error-text auth-error" role="status">{error}</p> : null}
-            <button className="primary auth-submit" type="submit" disabled={loading}>
+            <McButton type="submit" disabled={loading}>
               {loading
                 ? t(props.language, { es: "Validando...", en: "Validating...", pt: "Validando..." })
                 : mode === "register"
                   ? t(props.language, { es: "Crear cuenta", en: "Create account", pt: "Criar conta" })
                   : t(props.language, { es: "Entrar", en: "Sign in", pt: "Entrar" })}
-            </button>
+            </McButton>
           </form>
 
           <footer className="auth-card-footer">

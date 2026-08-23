@@ -3,9 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { redirectLegacyPatientHostToCanonical } from "./canonicalPatientOrigin";
 import { App } from "./App";
-import "./styles.css";
-import "./modules/emotional-diary/emotional-diary.css";
-import "./mobile-portal-flat.css";
+import "./styles/index.css";
 
 redirectLegacyPatientHostToCanonical();
 
