@@ -77,6 +77,56 @@ function maskTail(value: string | null | undefined): string {
   return `***${raw.slice(-4)}`;
 }
 
+const AR_CBU_DIGITS = /^\d{22}$/;
+
+/**
+ * Valores que dLocal Go acepta en `bank_account_type`. El DTO de la API es `@NotNull`
+ * para todos los países; omitir el campo devuelve "must not be null".
+ */
+export type DlocalGoBankAccountType =
+  | "CHECKING"
+  | "SAVINGS"
+  | "SALARY"
+  | "VISTA"
+  | "MASTER"
+  | "MAESTRA"
+  | "ALIAS"
+  | "CBU";
+
+/** Argentina: CBU/CVU (22 dígitos) o ALIAS. Otros países: CHECKING/SAVINGS o CHECKING por defecto. */
+export function resolveDlocalGoBankAccountType(
+  request: Pick<DlocalGoPayoutRequest, "transferCountry" | "bankAccount" | "bankAccountType">
+): DlocalGoBankAccountType {
+  const country = request.transferCountry.trim().toUpperCase();
+  const account = request.bankAccount.replace(/\s+/g, "");
+  if (country === "AR") {
+    return AR_CBU_DIGITS.test(account) ? "CBU" : "ALIAS";
+  }
+  if (request.bankAccountType === "SAVINGS" || request.bankAccountType === "CHECKING") {
+    return request.bankAccountType;
+  }
+  return "CHECKING";
+}
+
+/**
+ * `bank_branch` también es `@NotNull` en el DTO. Si el país no pide sucursal, mandamos un
+ * placeholder; en AR con CBU usamos los 4 dígitos de sucursal embebidos (posiciones 4-7).
+ */
+export function resolveDlocalGoBankBranch(
+  request: Pick<DlocalGoPayoutRequest, "transferCountry" | "bankAccount" | "bankBranch">
+): string {
+  const stored = request.bankBranch?.trim() ?? "";
+  if (stored) {
+    return stored;
+  }
+  const country = request.transferCountry.trim().toUpperCase();
+  const account = request.bankAccount.replace(/\s+/g, "");
+  if (country === "AR" && AR_CBU_DIGITS.test(account)) {
+    return account.slice(3, 7);
+  }
+  return "0000";
+}
+
 export function buildDlocalGoPayoutBody(request: DlocalGoPayoutRequest): Record<string, unknown> {
   const notificationUrl = request.notificationUrl?.trim() ?? "";
   if (!notificationUrl) {
@@ -95,17 +145,13 @@ export function buildDlocalGoPayoutBody(request: DlocalGoPayoutRequest): Record<
     beneficiary_document_type: request.beneficiaryDocumentType.trim().toUpperCase(),
     bank_code: request.bankCode.trim(),
     bank_account: request.bankAccount.replace(/\s+/g, ""),
+    bank_branch: resolveDlocalGoBankBranch(request),
+    bank_account_type: resolveDlocalGoBankAccountType(request),
     notification_url: notificationUrl
   };
 
   if (request.beneficiaryEmail && request.beneficiaryEmail.trim()) {
     body.beneficiary_email = request.beneficiaryEmail.trim();
-  }
-  if (request.bankBranch && request.bankBranch.trim()) {
-    body.bank_branch = request.bankBranch.trim();
-  }
-  if (request.bankAccountType) {
-    body.bank_account_type = request.bankAccountType;
   }
   if (request.description && request.description.trim()) {
     body.description = request.description.trim().slice(0, 200);
@@ -155,7 +201,7 @@ export async function createDlocalGoPayout(request: DlocalGoPayoutRequest): Prom
     document: maskTail(request.beneficiaryDocument),
     documentType: body.beneficiary_document_type,
     accountType: body.bank_account_type ?? null,
-    branch: body.bank_branch ? maskTail(request.bankBranch) : null,
+    branch: maskTail(String(body.bank_branch ?? "")),
     purpose: body.purpose,
     notificationUrl: body.notification_url
   };

@@ -33,6 +33,41 @@ describe("buildDlocalGoPayoutBody", () => {
     expect(body.flow_type).toBe("B2C");
   });
 
+  it("always sends bank_account_type and bank_branch so dLocal does not return must not be null", () => {
+    const cbuBody = buildDlocalGoPayoutBody(baseRequest);
+    expect(cbuBody.bank_account_type).toBe("CBU");
+    expect(cbuBody.bank_branch).toBe("0003");
+
+    const aliasBody = buildDlocalGoPayoutBody({
+      ...baseRequest,
+      bankAccount: "giuliano.mp"
+    });
+    expect(aliasBody.bank_account_type).toBe("ALIAS");
+    expect(aliasBody.bank_branch).toBe("0000");
+
+    const mexicoBody = buildDlocalGoPayoutBody({
+      ...baseRequest,
+      transferCountry: "MX",
+      currencyToPay: "MXN",
+      bankAccount: "032180000118359719"
+    });
+    expect(mexicoBody.bank_account_type).toBe("CHECKING");
+    expect(mexicoBody.bank_branch).toBe("0000");
+  });
+
+  it("keeps a stored branch and CHECKING/SAVINGS type for countries that collect them", () => {
+    const body = buildDlocalGoPayoutBody({
+      ...baseRequest,
+      transferCountry: "BR",
+      currencyToPay: "BRL",
+      bankAccount: "123456",
+      bankBranch: "0001",
+      bankAccountType: "SAVINGS"
+    });
+    expect(body.bank_account_type).toBe("SAVINGS");
+    expect(body.bank_branch).toBe("0001");
+  });
+
   it("rejects a payout without notification_url", () => {
     expect(() =>
       buildDlocalGoPayoutBody({

@@ -62,24 +62,67 @@ function normalizeDlocalProviderMessage(raw: string): string {
   return message;
 }
 
-function extractDlocalGoErrorMessage(body: unknown, status: number): string {
+function firstNonEmptyString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function dlocalFieldConstraintMessages(record: Record<string, unknown>): string[] {
+  const buckets = [record.errors, record.violations, record.fieldErrors];
+  const messages: string[] = [];
+  for (const bucket of buckets) {
+    if (!Array.isArray(bucket)) {
+      continue;
+    }
+    for (const item of bucket) {
+      if (typeof item === "string" && item.trim()) {
+        messages.push(item.trim());
+        continue;
+      }
+      if (typeof item !== "object" || item == null) {
+        continue;
+      }
+      const row = item as Record<string, unknown>;
+      const field = firstNonEmptyString(row.field, row.fieldName, row.param, row.property);
+      const msg = firstNonEmptyString(row.defaultMessage, row.message, row.reason);
+      if (field && msg) {
+        messages.push(`${field}: ${msg}`);
+      } else if (msg) {
+        messages.push(msg);
+      } else if (field) {
+        messages.push(field);
+      }
+    }
+  }
+  return messages;
+}
+
+export function extractDlocalGoErrorMessage(body: unknown, status: number): string {
   if (typeof body === "string" && body.trim().length > 0) {
     return normalizeDlocalProviderMessage(body);
   }
   if (typeof body === "object" && body != null) {
     const record = body as Record<string, unknown>;
-    if (typeof record.message === "string" && record.message.trim().length > 0) {
-      return normalizeDlocalProviderMessage(record.message);
-    }
-    if (typeof record.error === "string" && record.error.trim().length > 0) {
-      return normalizeDlocalProviderMessage(record.error);
-    }
+    const fieldMessages = dlocalFieldConstraintMessages(record);
     const payload = record.payload;
-    if (typeof payload === "object" && payload != null) {
-      const payloadRecord = payload as Record<string, unknown>;
-      if (typeof payloadRecord.message === "string" && payloadRecord.message.trim().length > 0) {
-        return normalizeDlocalProviderMessage(payloadRecord.message);
+    const payloadSummary =
+      typeof payload === "object" && payload != null
+        ? firstNonEmptyString((payload as Record<string, unknown>).message)
+        : "";
+    const top = firstNonEmptyString(record.message, record.error, payloadSummary);
+    if (fieldMessages.length > 0) {
+      const joined = fieldMessages.join("; ");
+      if (!top || /must not be null/i.test(top) || /validation failed/i.test(top)) {
+        return normalizeDlocalProviderMessage(joined);
       }
+      return normalizeDlocalProviderMessage(`${top} (${joined})`);
+    }
+    if (top) {
+      return normalizeDlocalProviderMessage(top);
     }
   }
   return `dLocal Go API error (${status})`;

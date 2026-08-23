@@ -238,8 +238,8 @@ export async function createProfessionalPayout(params: {
       beneficiaryDocumentType: bank.documentType ?? "",
       bankCode: bank.bankCode ?? "",
       bankAccount: bank.accountValue,
-      bankBranch: config.requiresBranch ? bank.bankBranch ?? null : null,
-      bankAccountType: config.requiresAccountType ? bank.accountType ?? null : null,
+      bankBranch: bank.bankBranch ?? null,
+      bankAccountType: bank.accountType ?? null,
       description: params.description ?? "MotivarCare - pago de sesiones",
       notificationUrl: payoutNotificationUrl(),
       externalReference: params.externalReference ?? null
