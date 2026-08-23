@@ -37,7 +37,7 @@ describe("PORTAL_SESSION_FLOW", () => {
     expect(PORTAL_SESSION_FLOW.map((step) => step.label.es)).toEqual([
       "Reservada",
       "Realizada",
-      "En cobro",
+      "Pendiente de cobro",
       "Pagada"
     ]);
   });
@@ -74,7 +74,7 @@ describe("payout chips", () => {
     expect(isPagadaSession(paid)).toBe(true);
     expect(isLockedSession(submitted)).toBe(true);
     expect(isSelectableSession(paid)).toBe(false);
-    expect(sessionPayoutStatusLabel("es", resolveSessionPayoutStatus(submitted))).toBe("En cobro");
+    expect(sessionPayoutStatusLabel("es", resolveSessionPayoutStatus(submitted))).toBe("Pendiente de cobro");
     expect(sessionPayoutStatusLabel("es", resolveSessionPayoutStatus(paid))).toBe("Pagada");
   });
 

@@ -6,7 +6,7 @@ export const PORTAL_SESSION_FLOW: Array<{
 }> = [
   { id: "reserved", label: { es: "Reservada", en: "Reserved", pt: "Reservada" } },
   { id: "completed", label: { es: "Realizada", en: "Completed", pt: "Realizada" } },
-  { id: "payout", label: { es: "En cobro", en: "In payout", pt: "Em cobranca" } },
+  { id: "payout", label: { es: "Pendiente de cobro", en: "Pending payout", pt: "Pendente de cobranca" } },
   { id: "paid", label: { es: "Pagada", en: "Paid", pt: "Paga" } }
 ];
 

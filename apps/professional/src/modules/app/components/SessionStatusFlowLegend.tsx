@@ -11,9 +11,9 @@ export function SessionStatusFlowLegend(props: { language: AppLanguage }) {
       className="pro-session-status-flow"
       data-tour="pro-tour-status-flow"
       title={t(props.language, {
-        es: "Realizada se puede deshacer. Enviar a cobro no: Admin solo paga esas y después quedan Pagada.",
-        en: "Completed can be undone. Sending for payout cannot: Admin only pays those, then they become Paid.",
-        pt: "Realizada se desfaz. Enviar a cobranca nao: o Admin so paga essas e depois ficam Paga."
+        es: "Al marcar Realizada confirmás el cobro: pasa a Pendiente de cobro y no se deshace. Pagada cuando Admin deposita.",
+        en: "Marking Completed confirms payout: it becomes Pending payout and cannot be undone. Paid when Admin deposits.",
+        pt: "Ao marcar Realizada voce confirma a cobranca: fica Pendente de cobranca e nao se desfaz. Paga quando o Admin deposita."
       })}
     >
       <span className="pro-session-status-flow-label">
@@ -26,9 +26,9 @@ export function SessionStatusFlowLegend(props: { language: AppLanguage }) {
       <span
         className="pro-session-status-flow-steps"
         aria-label={t(props.language, {
-          es: "Reservada, Realizada, En cobro, Pagada",
-          en: "Reserved, Completed, In payout, Paid",
-          pt: "Reservada, Realizada, Em cobranca, Paga"
+          es: "Reservada, Realizada, Pendiente de cobro, Pagada",
+          en: "Reserved, Completed, Pending payout, Paid",
+          pt: "Reservada, Realizada, Pendente de cobranca, Paga"
         })}
       >
         {PORTAL_SESSION_FLOW.map((step, index) => (

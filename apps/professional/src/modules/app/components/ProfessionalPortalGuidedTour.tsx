@@ -294,9 +294,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       optional: true,
       title: { es: "Estados de una sesión", en: "Session states", pt: "Estados de uma sessao" },
       description: {
-        es: "<strong>Reservada</strong> → <strong>Realizada</strong> (se puede deshacer) → <strong>En cobro</strong> (no se deshace) → <strong>Pagada</strong> cuando Admin deposita.",
-        en: "<strong>Reserved</strong> → <strong>Completed</strong> (can undo) → <strong>In payout</strong> (cannot undo) → <strong>Paid</strong> when Admin deposits.",
-        pt: "<strong>Reservada</strong> → <strong>Realizada</strong> (se desfaz) → <strong>Em cobranca</strong> (nao se desfaz) → <strong>Paga</strong> quando o Admin deposita."
+        es: "<strong>Reservada</strong> → al marcar <strong>Realizada</strong> confirmás el cobro (no se deshace) → <strong>Pendiente de cobro</strong> → <strong>Pagada</strong> cuando Admin deposita.",
+        en: "<strong>Reserved</strong> → marking <strong>Completed</strong> confirms payout (cannot undo) → <strong>Pending payout</strong> → <strong>Paid</strong> when Admin deposits.",
+        pt: "<strong>Reservada</strong> → ao marcar <strong>Realizada</strong> voce confirma a cobranca (nao se desfaz) → <strong>Pendente de cobranca</strong> → <strong>Paga</strong> quando o Admin deposita."
       },
       side: "bottom",
       align: "center"
@@ -339,9 +339,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       optional: true,
       title: { es: "Marcar y cobrar", en: "Mark and collect", pt: "Marcar e cobrar" },
       description: {
-        es: "Marcá las que ya hiciste. Cuando esté listo, <strong>Enviar a cobro</strong>: no se deshace, y Admin solo paga esas.",
-        en: "Mark the ones you’ve already done. When ready, <strong>Send for payout</strong>: it can’t be undone, and Admin only pays those.",
-        pt: "Marque as que ja fez. Quando estiver pronto, <strong>Enviar a cobranca</strong>: nao se desfaz, e o Admin so paga essas."
+        es: "Marcá las que ya hiciste. En el mismo paso se envían a cobro: no se deshace, y Admin solo paga esas.",
+        en: "Mark the ones you’ve already done. In the same step they go for payout: it can’t be undone, and Admin only pays those.",
+        pt: "Marque as que ja fez. No mesmo passo vao a cobranca: nao se desfaz, e o Admin so paga essas."
       },
       side: "bottom",
       align: "center"
@@ -353,9 +353,9 @@ function buildStepDefs(language: AppLanguage, booking?: ProfessionalTourBookingC
       selectors: ['[data-tour="pro-tour-kpis"]'],
       title: { es: "Resumen", en: "Snapshot", pt: "Resumo" },
       description: {
-        es: "Información, no trabajo: <strong>Pacientes</strong>, <strong>Próximas</strong> y el <strong>dinero de las realizadas</strong> (por enviar o ya en cobro). Tocá una tarjeta para ir al detalle.",
-        en: "Info, not work: <strong>Patients</strong>, <strong>Upcoming</strong>, and <strong>money from completed sessions</strong> (to send or already in payout). Tap a card for details.",
-        pt: "Informacao, nao trabalho: <strong>Pacientes</strong>, <strong>Próximas</strong> e o <strong>dinheiro das realizadas</strong> (por enviar ou ja em cobranca). Toque um cartao para ver detalhes."
+        es: "Información, no trabajo: <strong>Pacientes</strong>, <strong>Próximas</strong> y el <strong>dinero de las realizadas</strong> (por enviar o pendiente de cobro). Tocá una tarjeta para ir al detalle.",
+        en: "Info, not work: <strong>Patients</strong>, <strong>Upcoming</strong>, and <strong>money from completed sessions</strong> (to send or pending payout). Tap a card for details.",
+        pt: "Informacao, nao trabalho: <strong>Pacientes</strong>, <strong>Próximas</strong> e o <strong>dinheiro das realizadas</strong> (por enviar ou pendente de cobranca). Toque um cartao para ver detalhes."
       },
       side: "bottom",
       align: "center"

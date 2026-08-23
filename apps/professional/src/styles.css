@@ -6949,6 +6949,9 @@ select.pro-dashboard-revenue-control {
 
 .pro-dashboard-cobro-bar-cta {
   flex-shrink: 0;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 @media (max-width: 640px) {
@@ -8231,6 +8234,268 @@ select.pro-dashboard-revenue-control {
   border-color: transparent;
   background: linear-gradient(135deg, #cf2a2a 0%, #e54343 100%);
   color: #fff;
+}
+
+.pro-cobro-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.pro-cobro-prompt-modal {
+  position: relative;
+  width: min(420px, 100%);
+  border-radius: 12px;
+  padding: 28px 22px 20px;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  border: 1px solid #ddd6fe;
+  background:
+    radial-gradient(80% 50% at 50% -10%, rgba(124, 92, 255, 0.16), transparent 58%),
+    linear-gradient(180deg, #ffffff 0%, #f7f5ff 100%);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 28px 64px rgba(30, 27, 75, 0.22);
+}
+
+.pro-cobro-prompt-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: #64748b;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pro-cobro-prompt-close:hover {
+  color: #1e1b4b;
+  background: #f3f0ff;
+}
+
+.pro-cobro-prompt-hero {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+}
+
+.pro-cobro-prompt-icon {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, #6d54f4 0%, #5f44eb 62%, #22c55e 150%);
+  box-shadow:
+    0 12px 28px rgba(95, 68, 235, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.pro-cobro-prompt-kicker {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5f44eb;
+}
+
+.pro-cobro-prompt-modal h3 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.pro-cobro-prompt-lead {
+  margin: 0 auto;
+  max-width: 36ch;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #475569;
+}
+
+.pro-cobro-prompt-amount-card {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 2px;
+  padding: 14px 16px 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd6fe;
+  background: #fff;
+  text-align: center;
+}
+
+.pro-cobro-prompt-amount-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c6bc4;
+}
+
+.pro-cobro-prompt-amount {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #312e81;
+  line-height: 1.1;
+}
+
+.pro-cobro-prompt-amount--pending {
+  font-size: 18px;
+  color: #64748b;
+}
+
+.pro-cobro-prompt-people {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b6478;
+}
+
+.pro-cobro-prompt-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  background: #eef2ff;
+  flex-shrink: 0;
+}
+
+.pro-cobro-prompt-avatar--empty {
+  background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
+}
+
+.pro-cobro-prompt-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-cobro-prompt-flow li {
+  position: relative;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pro-cobro-prompt-flow li + li::before {
+  content: "→";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c4b5fd;
+  font-weight: 800;
+}
+
+.pro-cobro-prompt-flow li + li {
+  margin-left: 10px;
+}
+
+.pro-cobro-prompt-flow li.is-done {
+  border-color: #bbf7d0;
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.pro-cobro-prompt-flow li.is-next {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #5f44eb;
+  box-shadow: 0 0 0 3px rgba(95, 68, 235, 0.12);
+}
+
+.pro-cobro-prompt-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #9a3412;
+  text-align: left;
+}
+
+.pro-cobro-prompt-blocked {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.pro-cobro-prompt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.pro-cobro-prompt-actions button {
+  min-height: 46px;
+  border-radius: 8px;
+  border: 1px solid #d3ddef;
+  background: #fff;
+  color: #31415d;
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.pro-cobro-prompt-actions button.primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, #5f44eb 0%, #7b5bff 100%);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(95, 68, 235, 0.28);
+}
+
+.pro-cobro-prompt-actions button.primary:hover {
+  background: linear-gradient(135deg, #5f44eb 0%, #6d54f4 100%);
+}
+
+.pro-cobro-prompt-actions button.primary:disabled,
+.pro-cobro-prompt-actions button.primary:disabled:hover {
+  background: linear-gradient(135deg, #b9afd8 0%, #c4b5fd 100%);
+  box-shadow: none;
 }
 
 .pro-reschedule-slot-trigger {
@@ -21571,6 +21836,25 @@ body.pro-tour-zone-done .driver-active-element {
   .pro-reschedule-modal-backdrop {
     align-items: end;
     padding: 10px;
+  }
+
+  .pro-cobro-prompt-backdrop {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .pro-cobro-prompt-modal {
+    width: min(420px, 100%);
+    align-self: center;
+    border-radius: 12px;
+  }
+
+  .pro-cobro-prompt-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-cobro-prompt-actions button.primary {
+    order: -1;
   }
 
   .pro-reschedule-modal-actions {

@@ -92,6 +92,20 @@ export function completeBooking(token: string, bookingId: string) {
   });
 }
 
+export function submitBookingsForPayout(token: string, bookingIds: string[]) {
+  return requestJson<{
+    submittedCount: number;
+    failedCount: number;
+    submitted: Array<{ id: string }>;
+    failed: Array<{ bookingId: string; error: string }>;
+  }>({
+    path: "/api/bookings/batch/submit-payout",
+    token,
+    method: "POST",
+    body: { bookingIds }
+  });
+}
+
 export function uncompleteBooking(token: string, bookingId: string) {
   return requestJson<{ message: string }>({
     path: `/api/bookings/${bookingId}/uncomplete`,

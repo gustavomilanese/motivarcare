@@ -8,6 +8,7 @@ import {
 } from "@therapy/i18n-config";
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
+import { adminPendingSessionsHint, adminSessionPayoutStatusCopy } from "../lib/adminSessionPayoutStatus";
 import {
   fetchUnpaidProfessionalDetail,
   payProfessionalUnpaid
@@ -263,12 +264,13 @@ export function FinanceProfessionalPayoutReview(props: {
                   pt: "Sessões incluídas"
                 })}
               </h3>
+              <p className="finance-payout-review-sessions-hint">{adminPendingSessionsHint(props.language)}</p>
               <div className="finance-payout-review-table-wrap">
                 <table className="finance-payout-review-table">
                   <thead>
                     <tr>
                       <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
-                      <th>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</th>
+                      <th>{t(props.language, { es: "Qué falta", en: "Next step", pt: "O que falta" })}</th>
                       <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
                       <th>{t(props.language, { es: "Origen", en: "Source", pt: "Origem" })}</th>
                       <th>{t(props.language, { es: "Precio", en: "Price", pt: "Preço" })}</th>
@@ -279,26 +281,13 @@ export function FinanceProfessionalPayoutReview(props: {
                   </thead>
                   <tbody>
                     {detail.sessions.map((session) => {
-                      const isPaid = session.payoutStatus === "paid";
-                      const awaitingSubmit = session.payoutStatus === "not_submitted";
+                      const statusCopy = adminSessionPayoutStatusCopy(session.payoutStatus, props.language);
                       return (
                       <tr key={session.id}>
                         <td>{formatSessionDate(session.bookingCompletedAt ?? session.bookingStartsAt, props.language)}</td>
                         <td>
-                          <span
-                            className={`admin-unpaid-status${
-                              isPaid
-                                ? " admin-unpaid-status--paid"
-                                : awaitingSubmit
-                                  ? " admin-unpaid-status--waiting"
-                                  : " admin-unpaid-status--pending"
-                            }`}
-                          >
-                            {isPaid
-                              ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
-                              : awaitingSubmit
-                                ? t(props.language, { es: "No enviada", en: "Not sent", pt: "Nao enviada" })
-                                : t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" })}
+                          <span className={`admin-unpaid-status admin-unpaid-status--${statusCopy.tone}`}>
+                            {statusCopy.label}
                           </span>
                         </td>
                         <td>

@@ -15,7 +15,7 @@ function payoutLabel(movement: EarningsMovement) {
     return "Pagada";
   }
   if (movement.submittedForPayout) {
-    return "En cobro";
+    return "Pendiente de cobro";
   }
   return "Realizada";
 }

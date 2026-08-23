@@ -4,6 +4,7 @@ import { type AppLanguage, type LocalizedText, formatDateWithLocale, textByLangu
 import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages";
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
+import { adminPendingSessionsHint, adminSessionPayoutStatusCopy } from "../lib/adminSessionPayoutStatus";
 import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals, fetchDlocalPayouts } from "../services/financeApi";
 import type {
   AdminDlocalPayoutTransfer,
@@ -352,9 +353,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
                     pt: "Transferencias ja enviadas ao dLocal. O status atualiza quando a entrega e confirmada."
                   })
                 : t(props.language, {
-                    es: "Sesiones que el profesional ya mandó a cobro y todavía no se transfirieron.",
-                    en: "Sessions the professional submitted for payout that haven’t been transferred yet.",
-                    pt: "Sessoes que o profissional ja enviou a cobranca e ainda nao foram transferidas."
+                    es: "El profesional ya las mandó a cobro. Falta que Admin las envíe a DLocal (botón Pagar).",
+                    en: "The professional already submitted them for payout. Admin still needs to send them to DLocal (Pay).",
+                    pt: "O profissional ja enviou a cobranca. Falta o Admin enviar ao DLocal (botao Pagar)."
                   })}
             </p>
           </div>
@@ -418,7 +419,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
             className={tab === "pending" ? "is-active" : ""}
             onClick={() => setTab("pending")}
           >
-            {t(props.language, { es: "Por enviar", en: "To send", pt: "A enviar" })}
+            {t(props.language, { es: "Por enviar a DLocal", en: "To send to DLocal", pt: "Por enviar ao DLocal" })}
             {!loading ? <span className="admin-unpaid-tab-count">{rows.length}</span> : null}
           </button>
           <button
@@ -610,11 +611,12 @@ export function AdminUnpaidProfessionalsPanel(props: {
                               </p>
                             ) : pendingSessions.length > 0 ? (
                               <div className="admin-unpaid-session-detail">
+                                <p className="admin-unpaid-session-hint">{adminPendingSessionsHint(props.language)}</p>
                                 <table className="admin-unpaid-session-table">
                                   <thead>
                                     <tr>
                                       <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
-                                      <th>{t(props.language, { es: "Estado", en: "Status", pt: "Status" })}</th>
+                                      <th>{t(props.language, { es: "Qué falta", en: "Next step", pt: "O que falta" })}</th>
                                       <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
                                       <th>{t(props.language, { es: "Origen / paquete", en: "Source / package", pt: "Origem" })}</th>
                                       <th className="num">{t(props.language, { es: "Valor sesión", en: "Session value", pt: "Valor" })}</th>
@@ -626,6 +628,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                   </thead>
                                   <tbody>
                                     {pendingSessions.map((session) => {
+                                      const statusCopy = adminSessionPayoutStatusCopy(session.payoutStatus, props.language);
                                       const isPaid = session.payoutStatus === "paid";
                                       const awaitingSubmit = session.payoutStatus === "not_submitted";
                                       return (
@@ -637,28 +640,8 @@ export function AdminUnpaidProfessionalsPanel(props: {
                                           )}
                                         </td>
                                         <td>
-                                          <span
-                                            className={`admin-unpaid-status${
-                                              isPaid
-                                                ? " admin-unpaid-status--paid"
-                                                : awaitingSubmit
-                                                  ? " admin-unpaid-status--waiting"
-                                                  : " admin-unpaid-status--pending"
-                                            }`}
-                                          >
-                                            {isPaid
-                                              ? t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })
-                                              : awaitingSubmit
-                                                ? t(props.language, {
-                                                    es: "No enviada",
-                                                    en: "Not sent",
-                                                    pt: "Nao enviada"
-                                                  })
-                                                : t(props.language, {
-                                                    es: "En cobro",
-                                                    en: "In payout",
-                                                    pt: "Em cobranca"
-                                                  })}
+                                          <span className={`admin-unpaid-status admin-unpaid-status--${statusCopy.tone}`}>
+                                            {statusCopy.label}
                                           </span>
                                         </td>
                                         <td>{session.patient.fullName}</td>
@@ -720,9 +703,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
                             ) : expandedDetail ? (
                               <p className="admin-unpaid-detail-empty">
                                 {t(props.language, {
-                                  es: "No hay sesiones en cobro para este profesional.",
-                                  en: "No sessions in payout for this professional.",
-                                  pt: "Nao ha sessoes em cobranca para este profissional."
+                                  es: "No hay sesiones pendientes de envío a DLocal para este profesional.",
+                                  en: "No sessions waiting to be sent to DLocal for this professional.",
+                                  pt: "Nao ha sessoes pendentes de envio ao DLocal para este profissional."
                                 })}
                               </p>
                             ) : null}

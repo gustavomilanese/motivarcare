@@ -13,6 +13,7 @@ import { ProPageLoader } from "../components/ProPageLoader";
 import { useProPortalChrome } from "../components/ProPortalChromeContext";
 import { ProfessionalPracticeHealth } from "../components/ProfessionalPracticeHealth";
 import { SessionStatusFlowLegend } from "../components/SessionStatusFlowLegend";
+import { PatientAvatarImage } from "../components/PatientAvatarImage";
 import { type UpcomingReservationItem, UpcomingReservationsList } from "../components/agenda/UpcomingReservationsList";
 import { PendingExecutionSessionsList, type SessionListFilter } from "../components/agenda/PendingExecutionSessionsList";
 import {
@@ -22,9 +23,9 @@ import {
 } from "../lib/professionalStatsRangeQuery";
 import { formatRecordedFinanceMinor } from "../lib/formatRecordedFinanceMinor";
 import { professionalSurfaceMessage } from "../lib/friendlyProfessionalSurfaceMessages";
-import { isReadyForCobroSession, readyForCobroNetsKnown, sumReadyForCobroNetCents } from "../lib/sessionLifecycle";
+import { isCompletedBooking, isReadyForCobroSession, readyForCobroNetsKnown, sumReadyForCobroNetCents } from "../lib/sessionLifecycle";
 import { rangesOverlap } from "../lib/timeRanges";
-import { apiRequest } from "../services/api";
+import { apiRequest, resolveApiAssetUrl } from "../services/api";
 import { fetchEmotionalDiarySentReports } from "../../patients/services/emotionalDiaryApi";
 import type { AuthUser, AvailabilitySlot, DashboardResponse } from "../types";
 import type { EmotionalDiarySentReportItem } from "@therapy/types";
@@ -69,6 +70,24 @@ function firstProUpcomingSpotlightStorageKey(userId: string): string {
   return `motivarcare.pro.firstUpcomingSpotlight.v1.${userId}`;
 }
 
+function uniquePayoutPatients(sessions: UpcomingReservationItem[]) {
+  const byKey = new Map<string, { name: string; avatarUrl: string | null; count: number }>();
+  for (const session of sessions) {
+    const key = session.patientId || session.patientEmail || session.id;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.count += 1;
+      continue;
+    }
+    byKey.set(key, {
+      name: session.patientName.trim() || session.patientEmail || "",
+      avatarUrl: session.patientAvatarUrl ?? null,
+      count: 1
+    });
+  }
+  return [...byKey.values()];
+}
+
 function KpiWithTooltip(props: {
   tipId: string;
   tooltip: string;
@@ -88,6 +107,200 @@ function KpiWithTooltip(props: {
       <div id={props.tipId} role="tooltip" className="pro-dashboard-kpi-tooltip">
         <p>{props.tooltip}</p>
       </div>
+    </div>
+  );
+}
+
+function SubmitPayoutPromptModal(props: {
+  language: AppLanguage;
+  sessions: UpcomingReservationItem[];
+  amountLabel: string;
+  amountReady: boolean;
+  kind: "mark-and-send" | "send-only";
+  busy: boolean;
+  payoutReady: boolean;
+  blockedReason: string;
+  onCancel: () => void;
+  onSubmit: () => void;
+  onMarkOnly?: () => void;
+}) {
+  const patients = uniquePayoutPatients(props.sessions);
+  const sessionCount = props.sessions.length;
+  const patientCaption =
+    patients.length === 1 && patients[0]?.name
+      ? t(props.language, {
+          es: `${sessionCount} sesión${sessionCount === 1 ? "" : "es"} de ${patients[0].name}`,
+          en: `${sessionCount} session${sessionCount === 1 ? "" : "s"} with ${patients[0].name}`,
+          pt: `${sessionCount} sessao${sessionCount === 1 ? "" : "oes"} de ${patients[0].name}`
+        })
+      : t(props.language, {
+          es: `${sessionCount} sesión${sessionCount === 1 ? "" : "es"} · ${patients.length} pacientes`,
+          en: `${sessionCount} session${sessionCount === 1 ? "" : "s"} · ${patients.length} patients`,
+          pt: `${sessionCount} sessao${sessionCount === 1 ? "" : "oes"} · ${patients.length} pacientes`
+        });
+  const markAndSend = props.kind === "mark-and-send";
+
+  return (
+    <div className="pro-cobro-prompt-backdrop" role="presentation">
+      <section
+        className="pro-cobro-prompt-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pro-cobro-prompt-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="pro-cobro-prompt-close"
+          onClick={props.onCancel}
+          disabled={props.busy}
+          aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
+        >
+          ×
+        </button>
+        <div className="pro-cobro-prompt-hero" aria-hidden="true">
+          <div className="pro-cobro-prompt-icon">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
+              <path
+                d="M4 7.5h16v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-11Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path d="M4 7.5 12 13l8-5.5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              <path d="M8 4.5h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+        <p className="pro-cobro-prompt-kicker">
+          {markAndSend
+            ? t(props.language, {
+                es: "Un solo paso",
+                en: "One step",
+                pt: "Um so passo"
+              })
+            : t(props.language, {
+                es: "Pedido de cobro",
+                en: "Payout request",
+                pt: "Pedido de cobranca"
+              })}
+        </p>
+        <h3 id="pro-cobro-prompt-title">
+          {markAndSend
+            ? t(props.language, {
+                es: "Marcar y enviar a cobro",
+                en: "Mark and send for payout",
+                pt: "Marcar e enviar a cobranca"
+              })
+            : t(props.language, {
+                es: "Enviar a cobro",
+                en: "Send for payout",
+                pt: "Enviar a cobranca"
+              })}
+        </h3>
+        <p className="pro-cobro-prompt-lead">
+          {markAndSend
+            ? t(props.language, {
+                es: "Las marcás realizadas y pasan a Pendiente de cobro. Admin las toma para pagarte. Después no se deshace.",
+                en: "You mark them completed and they become Pending payout. Admin takes them to pay you. This cannot be undone.",
+                pt: "Voce marca realizadas e elas ficam Pendente de cobranca. O Admin as recebe para te pagar. Depois nao se desfaz."
+              })
+            : t(props.language, {
+                es: "Estas sesiones ya están realizadas. Envíalas para que pasen a Pendiente de cobro y Admin las pague.",
+                en: "These sessions are already completed. Send them so they become Pending payout and Admin can pay you.",
+                pt: "Essas sessoes ja estao realizadas. Envie para ficarem Pendente de cobranca e o Admin pagar."
+              })}
+        </p>
+        <div className="pro-cobro-prompt-amount-card">
+          <span className="pro-cobro-prompt-amount-label">
+            {t(props.language, { es: "Vas a cobrar", en: "You will receive", pt: "Voce vai receber" })}
+          </span>
+          {props.amountReady ? (
+            <strong className="pro-cobro-prompt-amount">{props.amountLabel}</strong>
+          ) : (
+            <strong className="pro-cobro-prompt-amount pro-cobro-prompt-amount--pending">
+              {t(props.language, {
+                es: "Importe al confirmar",
+                en: "Amount on confirm",
+                pt: "Valor na confirmacao"
+              })}
+            </strong>
+          )}
+          <div className="pro-cobro-prompt-people">
+            {patients.slice(0, 4).map((patient, index) => (
+              <PatientAvatarImage
+                key={`${patient.name}-${index}`}
+                src={resolveApiAssetUrl(patient.avatarUrl)}
+                imgClassName="pro-cobro-prompt-avatar"
+                emptyClassName="pro-cobro-prompt-avatar pro-cobro-prompt-avatar--empty"
+              />
+            ))}
+            <span>{patientCaption}</span>
+          </div>
+        </div>
+        <ol className="pro-cobro-prompt-flow" aria-label={t(props.language, {
+          es: "Realizada pasa a Pendiente de cobro, y después a Pagada",
+          en: "Completed moves to Pending payout, then Paid",
+          pt: "Realizada passa a Pendente de cobranca, e depois a Paga"
+        })}>
+          <li className="is-done">
+            {t(props.language, { es: "Realizada", en: "Completed", pt: "Realizada" })}
+          </li>
+          <li className="is-next">
+            {t(props.language, { es: "Pendiente de cobro", en: "Pending payout", pt: "Pendente de cobranca" })}
+          </li>
+          <li>
+            {t(props.language, { es: "Pagada", en: "Paid", pt: "Paga" })}
+          </li>
+        </ol>
+        {props.payoutReady ? (
+          <p className="pro-cobro-prompt-note">
+            {t(props.language, {
+              es: "No se puede deshacer. Después no vas a poder cambiar ni desmarcar esas sesiones.",
+              en: "This cannot be undone. You won’t be able to change or unmark those sessions afterwards.",
+              pt: "Nao se desfaz. Depois nao podera alterar nem desmarcar essas sessoes."
+            })}
+          </p>
+        ) : props.blockedReason ? (
+          <p className="pro-cobro-prompt-blocked">{props.blockedReason}</p>
+        ) : null}
+        <div className="pro-cobro-prompt-actions">
+          <button type="button" disabled={props.busy} onClick={props.onCancel}>
+            {markAndSend
+              ? t(props.language, { es: "Cancelar", en: "Cancel", pt: "Cancelar" })
+              : t(props.language, { es: "Más tarde", en: "Later", pt: "Mais tarde" })}
+          </button>
+          {markAndSend && !props.payoutReady && props.onMarkOnly ? (
+            <button type="button" disabled={props.busy} onClick={props.onMarkOnly}>
+              {t(props.language, {
+                es: "Solo marcar realizada",
+                en: "Mark completed only",
+                pt: "So marcar realizada"
+              })}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="primary"
+              disabled={props.busy || !props.payoutReady}
+              onClick={props.onSubmit}
+            >
+              {props.busy
+                ? t(props.language, { es: "Enviando...", en: "Sending...", pt: "Enviando..." })
+                : markAndSend
+                  ? t(props.language, {
+                      es: "Confirmar y enviar",
+                      en: "Confirm and send",
+                      pt: "Confirmar e enviar"
+                    })
+                  : t(props.language, {
+                      es: "Enviar a cobro",
+                      en: "Send for payout",
+                      pt: "Enviar a cobranca"
+                    })}
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -130,8 +343,9 @@ export function DashboardPage(props: {
   const [sessionsHubTab, setSessionsHubTab] = useState<"upcoming" | "settle">("upcoming");
   const [sessionListFilter, setSessionListFilter] = useState<SessionListFilter>("all");
   const [sessionListMonth, setSessionListMonth] = useState(() => ymLocal(new Date()));
-  const [bulkConfirmAction, setBulkConfirmAction] = useState<null | "complete" | "uncomplete" | "submit-payout">(null);
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<null | "uncomplete" | "submit-payout">(null);
   const [bulkTargetBookings, setBulkTargetBookings] = useState<UpcomingReservationItem[]>([]);
+  const [payoutPromptKind, setPayoutPromptKind] = useState<"mark-and-send" | "send-only">("send-only");
   const [selectionEpoch, setSelectionEpoch] = useState(0);
   const [payoutReadiness, setPayoutReadiness] = useState<{ ready: boolean; reason: string | null } | null>(null);
   const location = useLocation();
@@ -467,6 +681,13 @@ export function DashboardPage(props: {
         pt: "Complete seus dados de cobranca no Perfil para enviar sessoes."
       })
     : "";
+  const payoutPromptNetReady =
+    bulkTargetBookings.length === 0 || bulkTargetBookings.every((session) => session.netDisplayCents != null);
+  const payoutPromptNetLabel = formatRecordedFinanceMinor(
+    bulkTargetBookings.reduce((sum, session) => sum + (session.netDisplayCents ?? 0), 0),
+    displayCurrency,
+    props.language
+  );
   const openRescheduleModal = async (booking: UpcomingReservationItem) => {
     setBookingActionError("");
     setBookingActionInProgressId(booking.id);
@@ -614,36 +835,38 @@ export function DashboardPage(props: {
     }
   };
 
-  const submitMarkExecuted = async (booking: UpcomingReservationItem) => {
-    setBookingActionError("");
-    setBookingActionInProgressId(booking.id);
-    try {
-      await apiRequest<{ message: string }>(`/api/bookings/${booking.id}/complete`, props.token, {
-        method: "POST",
-        body: JSON.stringify({})
-      });
-      setPendingExecutionSessions((current) =>
-        current
-          .map((item) =>
-            item.id === booking.id ? { ...item, status: "completed", canUncomplete: true } : item
-          )
-          .sort((a, b) => {
-            const aDone = a.status.toLowerCase() === "completed" ? 1 : 0;
-            const bDone = b.status.toLowerCase() === "completed" ? 1 : 0;
-            if (aDone !== bDone) {
-              return aDone - bDone;
-            }
-            return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
-          })
-      );
-      setUpcomingReservations((current) => current.filter((item) => item.id !== booking.id));
-      setDashboardReloadKey((value) => value + 1);
-    } catch (requestError) {
-      const raw = requestError instanceof Error ? requestError.message : "";
-      setBookingActionError(professionalSurfaceMessage("dashboard-complete-booking", props.language, raw));
-    } finally {
-      setBookingActionInProgressId(null);
+  const closeBulkConfirm = () => {
+    if (bulkBusy) {
+      return;
     }
+    setBulkConfirmAction(null);
+    setBulkTargetBookings([]);
+    setPayoutPromptKind("send-only");
+  };
+
+  const openMarkAndSendPrompt = (bookings: UpcomingReservationItem[]) => {
+    const selectedIds = new Set(bookings.map((session) => session.id));
+    const leftover = readyForCobroSessions.filter((session) => !selectedIds.has(session.id));
+    const targets = [...bookings, ...leftover];
+    if (targets.length === 0) {
+      return;
+    }
+    setPayoutPromptKind("mark-and-send");
+    setBulkTargetBookings(targets);
+    setBulkConfirmAction("submit-payout");
+    setSessionsHubTab("settle");
+  };
+
+  const openSendOnlyPrompt = (sessions: UpcomingReservationItem[]) => {
+    const ready = sessions.filter(isReadyForCobroSession);
+    if (ready.length === 0) {
+      closeBulkConfirm();
+      return;
+    }
+    setPayoutPromptKind("send-only");
+    setBulkTargetBookings(ready);
+    setBulkConfirmAction("submit-payout");
+    setSessionsHubTab("settle");
   };
 
   const submitUndoExecuted = async (booking: UpcomingReservationItem) => {
@@ -721,34 +944,79 @@ export function DashboardPage(props: {
     }
   };
 
-  const submitBulkComplete = async () => {
-    const bookingIds = bulkTargetBookings.map((session) => session.id);
+  const completeReservedSessions = async (sessions: UpcomingReservationItem[]) => {
+    const bookingIds = sessions.map((session) => session.id);
     if (bookingIds.length === 0) {
-      setBulkConfirmAction(null);
-      return;
+      return [] as string[];
     }
+    const response = await apiRequest<{
+      completedCount: number;
+      failedCount: number;
+      completed: Array<{ id: string }>;
+      failed: Array<{ bookingId: string; error: string }>;
+    }>("/api/bookings/batch/complete", props.token, {
+      method: "POST",
+      body: JSON.stringify({ bookingIds })
+    });
+    applyBulkCompleteResult(
+      (response.completed ?? []).map((item) => item.id),
+      response.failed ?? []
+    );
+    return (response.completed ?? []).map((item) => item.id);
+  };
+
+  const submitMarkOnly = async () => {
+    const reserved = bulkTargetBookings.filter((session) => !isCompletedBooking(session));
     setBookingActionError("");
     setBookingActionInProgressId("__bulk__");
     try {
-      const response = await apiRequest<{
-        completedCount: number;
-        failedCount: number;
-        completed: Array<{ id: string }>;
-        failed: Array<{ bookingId: string; error: string }>;
-      }>("/api/bookings/batch/complete", props.token, {
-        method: "POST",
-        body: JSON.stringify({ bookingIds })
-      });
-      applyBulkCompleteResult(
-        (response.completed ?? []).map((item) => item.id),
-        response.failed ?? []
-      );
+      await completeReservedSessions(reserved);
       setBulkConfirmAction(null);
       setBulkTargetBookings([]);
+      setPayoutPromptKind("send-only");
       setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
       setBookingActionError(professionalSurfaceMessage("dashboard-complete-batch", props.language, raw));
+    } finally {
+      setBookingActionInProgressId(null);
+    }
+  };
+
+  const confirmPayoutPrompt = async () => {
+    const reserved = bulkTargetBookings.filter((session) => !isCompletedBooking(session));
+    const alreadyReady = bulkTargetBookings.filter(isReadyForCobroSession);
+    setBookingActionError("");
+    setBookingActionInProgressId("__bulk__");
+    try {
+      let completedIds: string[] = [];
+      if (reserved.length > 0) {
+        completedIds = await completeReservedSessions(reserved);
+      }
+      const completedSet = new Set(completedIds);
+      const toSubmit = [
+        ...alreadyReady,
+        ...reserved
+          .filter((session) => completedSet.has(session.id))
+          .map((session) => ({ ...session, status: "completed", canUncomplete: true }))
+      ];
+      if (toSubmit.length === 0) {
+        setBulkConfirmAction(null);
+        setBulkTargetBookings([]);
+        setPayoutPromptKind("send-only");
+        setSelectionEpoch((value) => value + 1);
+        return;
+      }
+      await submitSessionsForPayout(toSubmit);
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setBookingActionError(
+        professionalSurfaceMessage(
+          reserved.length > 0 ? "dashboard-complete-batch" : "dashboard-submit-payout",
+          props.language,
+          raw
+        )
+      );
     } finally {
       setBookingActionInProgressId(null);
     }
@@ -801,6 +1069,7 @@ export function DashboardPage(props: {
       }
       setBulkConfirmAction(null);
       setBulkTargetBookings([]);
+      setPayoutPromptKind("send-only");
       setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -850,6 +1119,7 @@ export function DashboardPage(props: {
       }
       setBulkConfirmAction(null);
       setBulkTargetBookings([]);
+      setPayoutPromptKind("send-only");
       setSelectionEpoch((value) => value + 1);
     } catch (requestError) {
       const raw = requestError instanceof Error ? requestError.message : "";
@@ -860,9 +1130,9 @@ export function DashboardPage(props: {
   };
 
   const sessionMoneyTooltip = t(props.language, {
-    es: "Es el mismo dinero, en dos estados. Por enviar: ya las marcaste realizadas. En cobro: las mandaste y estás esperando el depósito.",
-    en: "Same money, two states. To send: you marked them completed. In payout: you sent them and you’re waiting for the deposit.",
-    pt: "O mesmo dinheiro, em dois estados. Por enviar: voce marcou realizadas. Em cobranca: enviou e espera o deposito."
+    es: "Es el mismo dinero, en dos estados. Por enviar: realizadas que todavía no mandaste. Pendiente de cobro: las mandaste y esperás el depósito.",
+    en: "Same money, two states. To send: completed but not yet submitted. Pending payout: you sent them and you’re waiting for the deposit.",
+    pt: "O mesmo dinheiro, em dois estados. Por enviar: realizadas que ainda nao enviou. Pendente de cobranca: enviou e espera o deposito."
   });
   const scheduledSessionsTooltip = t(props.language, {
     es: "Turnos reservados de acá en adelante. Tocá para ver la lista.",
@@ -1008,15 +1278,9 @@ export function DashboardPage(props: {
             <div className="agenda-upcoming-head agenda-session-panel-head pro-dashboard-sessions-hub-toolbar">
               <p className="agenda-session-lead">
                 {t(props.language, {
-                  es: "Seleccioná las sesiones realizadas y envialas para su pago.",
-                  en: "Select the completed sessions and send them for payout.",
-                  pt: "Selecione as sessoes realizadas e envie para pagamento."
-                })}
-                {"\n"}
-                {t(props.language, {
-                  es: "Una vez enviadas, ",
-                  en: "Once sent, ",
-                  pt: "Depois de enviadas, "
+                  es: "Al marcar realizada las enviás a cobro. Una vez enviadas, ",
+                  en: "Marking completed also sends them for payout. Once sent, ",
+                  pt: "Ao marcar realizada voce envia a cobranca. Depois de enviadas, "
                 })}
                 <strong>
                   {t(props.language, {
@@ -1049,7 +1313,7 @@ export function DashboardPage(props: {
                     <option value="all">{t(props.language, { es: "Todas", en: "All", pt: "Todas" })}</option>
                     <option value="reserved">{t(props.language, { es: "Reservadas", en: "Reserved", pt: "Reservadas" })}</option>
                     <option value="executed">{t(props.language, { es: "Realizadas", en: "Completed", pt: "Realizadas" })}</option>
-                    <option value="submitted">{t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" })}</option>
+                    <option value="submitted">{t(props.language, { es: "Pendiente de cobro", en: "Pending payout", pt: "Pendente de cobranca" })}</option>
                     <option value="paid">{t(props.language, { es: "Pagadas", en: "Paid", pt: "Pagas" })}</option>
                   </select>
                 </label>
@@ -1060,9 +1324,9 @@ export function DashboardPage(props: {
                 <div className="pro-dashboard-cobro-bar-copy">
                   <strong>
                     {t(props.language, {
-                      es: `${readyForCobroSessions.length} sesión${readyForCobroSessions.length === 1 ? "" : "es"} lista${readyForCobroSessions.length === 1 ? "" : "s"} para cobro`,
-                      en: `${readyForCobroSessions.length} session${readyForCobroSessions.length === 1 ? "" : "s"} ready for payout`,
-                      pt: `${readyForCobroSessions.length} sessao${readyForCobroSessions.length === 1 ? "" : "oes"} pronta${readyForCobroSessions.length === 1 ? "" : "s"} para cobranca`
+                      es: `${readyForCobroSessions.length} sesión${readyForCobroSessions.length === 1 ? "" : "es"} realizada${readyForCobroSessions.length === 1 ? "" : "s"} sin enviar`,
+                      en: `${readyForCobroSessions.length} completed session${readyForCobroSessions.length === 1 ? "" : "s"} not yet sent`,
+                      pt: `${readyForCobroSessions.length} sessao${readyForCobroSessions.length === 1 ? "" : "oes"} realizada${readyForCobroSessions.length === 1 ? "" : "s"} sem enviar`
                     })}
                   </strong>
                   {readyForCobroNetsReady ? <span>{readyForCobroNetLabel}</span> : null}
@@ -1072,13 +1336,10 @@ export function DashboardPage(props: {
                 </div>
                 <button
                   type="button"
-                  className="pro-btn pro-dashboard-cobro-bar-cta"
+                  className="pro-primary pro-dashboard-cobro-bar-cta"
                   disabled={bulkBusy || !payoutReady}
                   title={!payoutReady ? payoutBlockedReason : undefined}
-                  onClick={() => {
-                    setBulkTargetBookings(readyForCobroSessions);
-                    setBulkConfirmAction("submit-payout");
-                  }}
+                  onClick={() => openSendOnlyPrompt(readyForCobroSessions)}
                 >
                   {t(props.language, {
                     es: "Enviar a cobro",
@@ -1096,12 +1357,9 @@ export function DashboardPage(props: {
               selectionEpoch={selectionEpoch}
               listMonth={sessionListMonth}
               truncated={Boolean(data.pendingExecutionSessionsHasMore)}
-              onMarkExecuted={(booking) => void submitMarkExecuted(booking)}
+              onMarkExecuted={(booking) => openMarkAndSendPrompt([booking])}
               onUndoExecuted={(booking) => void submitUndoExecuted(booking)}
-              onRequestBulkComplete={(bookings) => {
-                setBulkTargetBookings(bookings);
-                setBulkConfirmAction("complete");
-              }}
+              onRequestBulkComplete={(bookings) => openMarkAndSendPrompt(bookings)}
               onRequestBulkUncomplete={(bookings) => {
                 setBulkTargetBookings(bookings);
                 setBulkConfirmAction("uncomplete");
@@ -1158,7 +1416,7 @@ export function DashboardPage(props: {
                   <strong>{readyToSendLabel}</strong>
                 </div>
                 <div className="pro-kpi-money-split-pane">
-                  <small>{t(props.language, { es: "En cobro", en: "In payout", pt: "Em cobranca" })}</small>
+                  <small>{t(props.language, { es: "Pendiente de cobro", en: "Pending payout", pt: "Pendente de cobranca" })}</small>
                   <strong>{pendingCollectLabel}</strong>
                 </div>
               </div>
@@ -1357,44 +1615,46 @@ export function DashboardPage(props: {
         </div>
       ) : null}
 
-      {bulkConfirmAction ? (
+      {bulkConfirmAction === "submit-payout" ? (
+        <SubmitPayoutPromptModal
+          language={props.language}
+          sessions={bulkTargetBookings}
+          amountLabel={payoutPromptNetLabel}
+          amountReady={payoutPromptNetReady}
+          kind={payoutPromptKind}
+          busy={bulkBusy}
+          payoutReady={payoutReady}
+          blockedReason={payoutBlockedReason}
+          onCancel={closeBulkConfirm}
+          onSubmit={() => void confirmPayoutPrompt()}
+          onMarkOnly={payoutPromptKind === "mark-and-send" ? () => void submitMarkOnly() : undefined}
+        />
+      ) : bulkConfirmAction ? (
         <div
           className="pro-reschedule-modal-backdrop"
           role="presentation"
           onClick={() => {
-            if (!bulkBusy) {
-              setBulkConfirmAction(null);
-              setBulkTargetBookings([]);
-            }
+            closeBulkConfirm();
           }}
         >
-          <section className="pro-reschedule-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+          <section
+            className="pro-reschedule-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pro-bulk-confirm-title"
+            onClick={(event) => event.stopPropagation()}
+          >
             <header>
-              <h3>
-                {bulkConfirmAction === "complete"
-                  ? t(props.language, {
-                      es: "Marcar sesiones como realizadas",
-                      en: "Mark sessions as completed",
-                      pt: "Marcar sessoes como realizadas"
-                    })
-                  : bulkConfirmAction === "submit-payout"
-                    ? t(props.language, {
-                        es: "Enviar a cobro",
-                        en: "Send for payout",
-                        pt: "Enviar a cobranca"
-                      })
-                    : t(props.language, {
-                        es: "Volver sesiones a reservadas",
-                        en: "Revert sessions to reserved",
-                        pt: "Voltar sessoes para reservadas"
-                      })}
+              <h3 id="pro-bulk-confirm-title">
+                {t(props.language, {
+                  es: "Volver sesiones a reservadas",
+                  en: "Revert sessions to reserved",
+                  pt: "Voltar sessoes para reservadas"
+                })}
               </h3>
               <button
                 type="button"
-                onClick={() => {
-                  setBulkConfirmAction(null);
-                  setBulkTargetBookings([]);
-                }}
+                onClick={closeBulkConfirm}
                 disabled={bulkBusy}
                 aria-label={t(props.language, { es: "Cerrar", en: "Close", pt: "Fechar" })}
               >
@@ -1402,58 +1662,25 @@ export function DashboardPage(props: {
               </button>
             </header>
             <p className="pro-reschedule-modal-lead">
-              {bulkConfirmAction === "complete"
-                ? t(props.language, {
-                    es: `Vas a marcar ${bulkTargetBookings.length} sesiones como realizadas. Después vas a poder enviarlas a cobro.`,
-                    en: `You will mark ${bulkTargetBookings.length} sessions as completed. You can send them for payout afterwards.`,
-                    pt: `Voce vai marcar ${bulkTargetBookings.length} sessoes como realizadas. Depois podera envia-las a cobranca.`
-                  })
-                : bulkConfirmAction === "submit-payout"
-                  ? t(props.language, {
-                      es: readyForCobroNetsReady
-                        ? `Vas a enviar ${bulkTargetBookings.length} sesiones a cobro (${readyForCobroNetLabel}). Esta acción no se puede deshacer.`
-                        : `Vas a enviar ${bulkTargetBookings.length} sesiones a cobro. Esta acción no se puede deshacer.`,
-                      en: readyForCobroNetsReady
-                        ? `You will send ${bulkTargetBookings.length} sessions for payout (${readyForCobroNetLabel}). This cannot be undone.`
-                        : `You will send ${bulkTargetBookings.length} sessions for payout. This cannot be undone.`,
-                      pt: readyForCobroNetsReady
-                        ? `Voce vai enviar ${bulkTargetBookings.length} sessoes a cobranca (${readyForCobroNetLabel}). Esta acao nao se desfaz.`
-                        : `Voce vai enviar ${bulkTargetBookings.length} sessoes a cobranca. Esta acao nao se desfaz.`
-                    })
-                  : t(props.language, {
-                      es: `Vas a volver ${bulkTargetBookings.length} sesiones realizadas a reservadas. Solo las que todavía no enviaste a cobro.`,
-                      en: `You will revert ${bulkTargetBookings.length} completed sessions to reserved. Only those not yet sent for payout.`,
-                      pt: `Voce vai voltar ${bulkTargetBookings.length} sessoes realizadas para reservadas. So as que ainda nao enviou a cobranca.`
-                    })}
+              {t(props.language, {
+                es: `Vas a volver ${bulkTargetBookings.length} sesiones realizadas a reservadas. Solo las que todavía no enviaste a cobro.`,
+                en: `You will revert ${bulkTargetBookings.length} completed sessions to reserved. Only those not yet sent for payout.`,
+                pt: `Voce vai voltar ${bulkTargetBookings.length} sessoes realizadas para reservadas. So as que ainda nao enviou a cobranca.`
+              })}
             </p>
             <div className="pro-reschedule-modal-actions">
-              <button
-                type="button"
-                disabled={bulkBusy}
-                onClick={() => {
-                  setBulkConfirmAction(null);
-                  setBulkTargetBookings([]);
-                }}
-              >
+              <button type="button" disabled={bulkBusy} onClick={closeBulkConfirm}>
                 {t(props.language, { es: "Volver", en: "Back", pt: "Voltar" })}
               </button>
               <button
                 type="button"
                 className="primary"
-                disabled={bulkBusy || (bulkConfirmAction === "submit-payout" && !payoutReady)}
-                onClick={() =>
-                  void (bulkConfirmAction === "complete"
-                    ? submitBulkComplete()
-                    : bulkConfirmAction === "submit-payout"
-                      ? submitSessionsForPayout(bulkTargetBookings)
-                      : submitBulkUncomplete())
-                }
+                disabled={bulkBusy}
+                onClick={() => void submitBulkUncomplete()}
               >
                 {bulkBusy
                   ? t(props.language, { es: "Actualizando...", en: "Updating...", pt: "Atualizando..." })
-                  : bulkConfirmAction === "submit-payout"
-                    ? t(props.language, { es: "Enviar a cobro", en: "Send for payout", pt: "Enviar a cobranca" })
-                    : t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })}
+                  : t(props.language, { es: "Confirmar", en: "Confirm", pt: "Confirmar" })}
               </button>
             </div>
           </section>

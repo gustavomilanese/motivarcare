@@ -180,9 +180,9 @@ export function PendingExecutionSessionsList(props: {
                   })
                 : props.filter === "submitted"
                   ? t(props.language, {
-                      es: "No hay sesiones en cobro",
-                      en: "No sessions in payout",
-                      pt: "Nao ha sessoes em cobranca"
+                      es: "No hay sesiones pendiente de cobro",
+                      en: "No sessions pending payout",
+                      pt: "Nao ha sessoes pendentes de cobranca"
                     })
                   : props.filter === "paid"
                     ? t(props.language, {

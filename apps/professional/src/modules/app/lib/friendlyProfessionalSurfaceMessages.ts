@@ -319,7 +319,7 @@ const SURFACE: Record<ProfessionalSurfaceContext, LocalizedText> = {
     pt: "Nao foi possivel desfazer o registro. Se ja enviou a cobranca, nao se reverte."
   },
   "dashboard-uncomplete-batch": {
-    es: "No pudimos revertir todas las sesiones. Reintentá; las que ya están en cobro no se tocan.",
+    es: "No pudimos revertir todas las sesiones. Reintentá; las que ya están pendiente de cobro no se tocan.",
     en: "We couldn’t revert every session. Retry; ones already sent for payout are left unchanged.",
     pt: "Nao foi possivel reverter todas as sessoes. Tente de novo; as que ja estao em cobranca nao mudam."
   },

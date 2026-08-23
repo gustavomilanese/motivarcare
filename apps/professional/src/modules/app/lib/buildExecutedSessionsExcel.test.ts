@@ -37,7 +37,7 @@ describe("buildExecutedSessionExportRows", () => {
     expect(rows[0]?.netMajor).toBe(4350);
   });
 
-  it("mapea En cobro y Pagada desde flags de payout", () => {
+  it("mapea Pendiente de cobro y Pagada desde flags de payout", () => {
     const submitted = buildExecutedSessionExportRows({
       movements: [{ ...sampleMovement, submittedForPayout: true }],
       language: "es"
@@ -46,7 +46,7 @@ describe("buildExecutedSessionExportRows", () => {
       movements: [{ ...sampleMovement, submittedForPayout: true, payoutPaid: true }],
       language: "es"
     });
-    expect(submitted[0]?.payoutStatus).toBe("En cobro");
+    expect(submitted[0]?.payoutStatus).toBe("Pendiente de cobro");
     expect(paid[0]?.payoutStatus).toBe("Pagada");
   });
 

@@ -33,7 +33,7 @@ function payoutLabel(movement: PatientDetailResponse["paymentMovements"][number]
     return "Pagada";
   }
   if (movement.submittedForPayout) {
-    return "En cobro";
+    return "Pendiente de cobro";
   }
   return "Realizada";
 }

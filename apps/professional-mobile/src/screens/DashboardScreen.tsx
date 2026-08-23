@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Pressable,
   RefreshControl,
@@ -10,7 +11,7 @@ import {
   View
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { completeBooking, getDashboard, uncompleteBooking } from "../api/client";
+import { completeBooking, getDashboard, submitBookingsForPayout, uncompleteBooking } from "../api/client";
 import type { DashboardSession } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { AppHeader } from "../components/AppHeader";
@@ -123,7 +124,24 @@ export function DashboardScreen() {
                         if (!token) {
                           return;
                         }
-                        void completeBooking(token, session.id).then(() => load());
+                        Alert.alert(
+                          "Marcar y enviar a cobro",
+                          "La sesión pasa a Pendiente de cobro. No se puede deshacer.",
+                          [
+                            { text: "Cancelar", style: "cancel" },
+                            {
+                              text: "Confirmar y enviar",
+                              onPress: () => {
+                                void completeBooking(token, session.id)
+                                  .then(() => submitBookingsForPayout(token, [session.id]))
+                                  .then(() => load())
+                                  .catch((err: unknown) => {
+                                    setError(err instanceof Error ? err.message : "No se pudo enviar a cobro.");
+                                  });
+                              }
+                            }
+                          ]
+                        );
                       }}
                     />
                   ) : session.canUncomplete !== false ? (
@@ -138,7 +156,7 @@ export function DashboardScreen() {
                       }}
                     />
                   ) : (
-                    <Text style={styles.meta}>En cobro</Text>
+                    <Text style={styles.meta}>Pendiente de cobro</Text>
                   )}
                 </View>
               ) : null}
