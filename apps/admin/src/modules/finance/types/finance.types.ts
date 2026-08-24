@@ -287,6 +287,8 @@ export type AdminDlocalPayoutTransfer = {
   professionalId: string;
   professionalName: string;
   sessionsCount: number;
+  grossUsdCents: number;
+  platformFeeUsdCents: number;
   professionalNetUsdCents: number;
   status: string;
   displayStatus: AdminDlocalTransferDisplayStatus;
@@ -302,6 +304,13 @@ export type AdminDlocalPayoutsResponse = {
   currency: "usd";
   selectedMonths: string[];
   transfers: AdminDlocalPayoutTransfer[];
+};
+
+export type AdminDlocalPayoutTransferDetailResponse = {
+  currency: "usd";
+  transfer: AdminDlocalPayoutTransfer;
+  sessions: UnpaidProfessionalSessionDetail[];
+  sessionsFromSnapshot: boolean;
 };
 
 export type UnpaidProfessionalSessionDetail = {

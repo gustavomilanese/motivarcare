@@ -446,6 +446,15 @@ financeRouter.get("/dlocal-payouts", async (req, res) => {
   });
 });
 
+financeRouter.get("/dlocal-payouts/:lineId", async (req, res) => {
+  const { getDlocalPayoutTransferDetail } = await import("./adminUnpaidProfessional.service.js");
+  const detail = await getDlocalPayoutTransferDetail(req.params.lineId);
+  if ("notFound" in detail) {
+    return sendApiError({ res, status: 404, code: "NOT_FOUND", message: "dLocal transfer not found" });
+  }
+  return res.json({ currency: "usd", ...detail });
+});
+
 financeRouter.get("/unpaid-professionals/:professionalId", async (req, res) => {
   const parsed = unpaidProfessionalsQuerySchema.safeParse(req.query);
   if (!parsed.success) {

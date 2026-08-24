@@ -5,10 +5,11 @@ import { adminSurfaceMessage } from "../../app/lib/friendlyAdminSurfaceMessages"
 import { formatAdminFinanceUsd } from "../lib/formatAdminFinanceUsd";
 import { downloadUnpaidProfessionalsExcel } from "../lib/buildUnpaidProfessionalsExcel";
 import { adminPendingSessionsHint, adminSessionPayoutStatusCopy } from "../lib/adminSessionPayoutStatus";
-import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals, fetchDlocalPayouts } from "../services/financeApi";
+import { fetchUnpaidProfessionalDetail, fetchUnpaidProfessionals, fetchDlocalPayouts, fetchDlocalPayoutDetail } from "../services/financeApi";
 import type {
   AdminDlocalPayoutTransfer,
   AdminUnpaidProfessional,
+  AdminDlocalPayoutTransferDetailResponse,
   UnpaidProfessionalDetailResponse
 } from "../types/finance.types";
 import { FinanceProfessionalPayoutReview } from "./FinanceProfessionalPayoutReview";
@@ -160,6 +161,11 @@ export function AdminUnpaidProfessionalsPanel(props: {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState<Record<string, UnpaidProfessionalDetailResponse>>({});
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
+  const [expandedSentIds, setExpandedSentIds] = useState<Set<string>>(() => new Set());
+  const [expandedSentDetails, setExpandedSentDetails] = useState<Record<string, AdminDlocalPayoutTransferDetailResponse>>(
+    {}
+  );
+  const [sentDetailLoadingId, setSentDetailLoadingId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -205,6 +211,7 @@ export function AdminUnpaidProfessionalsPanel(props: {
   useEffect(() => {
     setPage(1);
     setExpandedIds(new Set());
+    setExpandedSentIds(new Set());
   }, [search, sortKey, monthsKey, tab]);
 
   const filteredSorted = useMemo(() => {
@@ -304,6 +311,38 @@ export function AdminUnpaidProfessionalsPanel(props: {
     }
   };
 
+  const toggleExpandSent = async (row: AdminDlocalPayoutTransfer) => {
+    const isOpen = expandedSentIds.has(row.id);
+    if (isOpen) {
+      setExpandedSentIds((current) => {
+        const next = new Set(current);
+        next.delete(row.id);
+        return next;
+      });
+      return;
+    }
+    setExpandedSentIds((current) => new Set(current).add(row.id));
+    if (expandedSentDetails[row.id]) {
+      return;
+    }
+    setSentDetailLoadingId(row.id);
+    setError("");
+    try {
+      const detail = await fetchDlocalPayoutDetail(props.token, row.id);
+      setExpandedSentDetails((current) => ({ ...current, [row.id]: detail }));
+    } catch (requestError) {
+      const raw = requestError instanceof Error ? requestError.message : "";
+      setError(adminSurfaceMessage("finance-overview-load", props.language, raw));
+      setExpandedSentIds((current) => {
+        const next = new Set(current);
+        next.delete(row.id);
+        return next;
+      });
+    } finally {
+      setSentDetailLoadingId(null);
+    }
+  };
+
   const exportExcel = async () => {
     if (filteredSorted.length === 0 || exporting) {
       return;
@@ -348,9 +387,9 @@ export function AdminUnpaidProfessionalsPanel(props: {
             <p className="admin-unpaid-professionals-lead">
               {tab === "sent"
                 ? t(props.language, {
-                    es: "Transferencias ya enviadas a dLocal. El estado se actualiza cuando confirma la entrega.",
-                    en: "Transfers already sent to dLocal. Status updates when delivery is confirmed.",
-                    pt: "Transferencias ja enviadas ao dLocal. O status atualiza quando a entrega e confirmada."
+                    es: "Transferencias ya enviadas a dLocal. Tocá una fila para ver las sesiones, el bruto y la comisión.",
+                    en: "Transfers already sent to dLocal. Open a row to see sessions, gross, and the fee.",
+                    pt: "Transferencias ja enviadas ao dLocal. Abra uma linha para ver sessoes, bruto e comissao."
                   })
                 : t(props.language, {
                     es: "El profesional ya las mandó a cobro. Falta que Admin las envíe a DLocal (botón Pagar).",
@@ -802,45 +841,177 @@ export function AdminUnpaidProfessionalsPanel(props: {
                 </tr>
               </thead>
               <tbody>
-                {pageSentRows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{formatSessionDay(row.createdAt, props.language)}</td>
-                    <td>
-                      <span className="admin-unpaid-pro-name">{row.professionalName}</span>
-                    </td>
-                    <td className="num">{row.sessionsCount}</td>
-                    <td className="num admin-unpaid-net">
-                      {formatAdminFinanceUsd(row.professionalNetUsdCents, props.language)}
-                    </td>
-                    <td>
-                      {row.dlocalPayoutId ? (
-                        <code className="admin-unpaid-dlocal-id" title={row.dlocalPayoutId}>
-                          {row.dlocalPayoutId}
-                        </code>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`admin-unpaid-status admin-unpaid-status--${
-                          row.displayStatus === "delivered"
-                            ? "paid"
-                            : row.displayStatus === "failed"
-                              ? "failed"
-                              : "pending"
-                        }`}
+                {pageSentRows.map((row) => {
+                  const expanded = expandedSentIds.has(row.id);
+                  const expandedDetail = expandedSentDetails[row.id] ?? null;
+                  const sentSessions = expandedDetail?.sessions ?? [];
+                  const rowLoading = expanded && !expandedDetail && sentDetailLoadingId === row.id;
+                  const grossCents = expandedDetail?.transfer.grossUsdCents ?? row.grossUsdCents ?? 0;
+                  const feeCents = expandedDetail?.transfer.platformFeeUsdCents ?? row.platformFeeUsdCents ?? 0;
+                  const netCents = expandedDetail?.transfer.professionalNetUsdCents ?? row.professionalNetUsdCents ?? 0;
+                  return (
+                    <Fragment key={row.id}>
+                      <tr
+                        className={`admin-unpaid-pro-row${expanded ? " is-expanded" : ""}`}
+                        tabIndex={0}
+                        aria-expanded={expanded}
+                        onClick={() => void toggleExpandSent(row)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            void toggleExpandSent(row);
+                          }
+                        }}
                       >
-                        {transferStatusLabel(row.displayStatus, props.language)}
-                      </span>
-                      {row.displayStatus === "failed" && row.submissionError ? (
-                        <small className="admin-unpaid-transfer-error" title={row.submissionError}>
-                          {row.submissionError}
-                        </small>
+                        <td>{formatSessionDay(row.createdAt, props.language)}</td>
+                        <td>
+                          <span className="admin-unpaid-pro-name">
+                            <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+                            {row.professionalName}
+                          </span>
+                        </td>
+                        <td className="num">{row.sessionsCount}</td>
+                        <td className="num admin-unpaid-net">
+                          {formatAdminFinanceUsd(row.professionalNetUsdCents, props.language)}
+                        </td>
+                        <td>
+                          {row.dlocalPayoutId ? (
+                            <code className="admin-unpaid-dlocal-id" title={row.dlocalPayoutId}>
+                              {row.dlocalPayoutId}
+                            </code>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className={`admin-unpaid-status admin-unpaid-status--${
+                              row.displayStatus === "delivered"
+                                ? "paid"
+                                : row.displayStatus === "failed"
+                                  ? "failed"
+                                  : "pending"
+                            }`}
+                          >
+                            {transferStatusLabel(row.displayStatus, props.language)}
+                          </span>
+                          {row.displayStatus === "failed" && row.submissionError ? (
+                            <small className="admin-unpaid-transfer-error" title={row.submissionError}>
+                              {row.submissionError}
+                            </small>
+                          ) : null}
+                        </td>
+                      </tr>
+                      {expanded ? (
+                        <tr className="admin-unpaid-detail-row">
+                          <td colSpan={6}>
+                            {rowLoading ? (
+                              <p className="admin-unpaid-detail-loading">
+                                {t(props.language, {
+                                  es: "Cargando sesiones de este envío…",
+                                  en: "Loading sessions in this transfer…",
+                                  pt: "Carregando sessoes desta transferencia…"
+                                })}
+                              </p>
+                            ) : (
+                              <div className="admin-unpaid-session-detail">
+                                <dl className="admin-unpaid-transfer-totals">
+                                  <div>
+                                    <dt>{t(props.language, { es: "Bruto", en: "Gross", pt: "Bruto" })}</dt>
+                                    <dd>{formatAdminFinanceUsd(grossCents, props.language)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>
+                                      {t(props.language, { es: "Comisión MotivarCare", en: "MotivarCare fee", pt: "Comissao MotivarCare" })}
+                                    </dt>
+                                    <dd>{formatAdminFinanceUsd(feeCents, props.language)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>{t(props.language, { es: "Neto profesional", en: "Professional net", pt: "Liquido profissional" })}</dt>
+                                    <dd>{formatAdminFinanceUsd(netCents, props.language)}</dd>
+                                  </div>
+                                </dl>
+                                {sentSessions.length > 0 ? (
+                                  <table className="admin-unpaid-session-table">
+                                    <thead>
+                                      <tr>
+                                        <th>{t(props.language, { es: "Fecha", en: "Date", pt: "Data" })}</th>
+                                        <th>{t(props.language, { es: "Paciente", en: "Patient", pt: "Paciente" })}</th>
+                                        <th>{t(props.language, { es: "Origen / paquete", en: "Source / package", pt: "Origem" })}</th>
+                                        <th className="num">{t(props.language, { es: "Valor sesión", en: "Session value", pt: "Valor" })}</th>
+                                        <th className="num">%</th>
+                                        <th className="num">{t(props.language, { es: "Comisión", en: "Fee", pt: "Comissão" })}</th>
+                                        <th className="num">{t(props.language, { es: "Neto", en: "Net", pt: "Líquido" })}</th>
+                                        <th>{t(props.language, { es: "Acción", en: "Action", pt: "Ação" })}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {sentSessions.map((session) => (
+                                        <tr key={session.id}>
+                                          <td>
+                                            {formatSessionDay(
+                                              session.bookingCompletedAt ?? session.bookingStartsAt,
+                                              props.language
+                                            )}
+                                          </td>
+                                          <td>{session.patient.fullName}</td>
+                                          <td>
+                                            <div className="admin-unpaid-source">
+                                              <strong>
+                                                {session.sourceKind === "trial"
+                                                  ? t(props.language, {
+                                                      es: "Sesión de prueba",
+                                                      en: "Trial session",
+                                                      pt: "Sessão teste"
+                                                    })
+                                                  : t(props.language, {
+                                                      es: "Paquete",
+                                                      en: "Package",
+                                                      pt: "Pacote"
+                                                    })}
+                                              </strong>
+                                              <span>{session.sourceLabel}</span>
+                                            </div>
+                                          </td>
+                                          <td className="num">
+                                            {formatAdminFinanceUsd(session.sessionPriceUsdCents, props.language)}
+                                          </td>
+                                          <td className="num">{session.platformCommissionPercent}%</td>
+                                          <td className="num">
+                                            {formatAdminFinanceUsd(session.platformFeeUsdCents, props.language)}
+                                          </td>
+                                          <td className="num">
+                                            {formatAdminFinanceUsd(session.professionalNetUsdCents, props.language)}
+                                          </td>
+                                          <td>
+                                            <Link
+                                              className="admin-unpaid-session-link"
+                                              to={`/sessions?patientId=${encodeURIComponent(session.patient.id)}`}
+                                            >
+                                              {t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}
+                                            </Link>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="admin-unpaid-detail-empty">
+                                    {t(props.language, {
+                                      es: "De este envío quedó el total, pero no el listado de sesiones (envíos anteriores al detalle, o un rechazo de dLocal antes de guardarlas).",
+                                      en: "This transfer kept the totals, but not the session list (older sends, or a dLocal rejection before the snapshot was stored).",
+                                      pt: "Desta transferencia ficaram os totais, mas nao a lista de sessoes."
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
                       ) : null}
-                    </td>
-                  </tr>
-                ))}
+                    </Fragment>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="admin-unpaid-totals-row">

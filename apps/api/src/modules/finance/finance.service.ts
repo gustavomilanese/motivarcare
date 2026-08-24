@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { payoutEligibleSessionWhere } from "../../lib/payoutEligibleSessions.js";
+import { buildPayoutLineSessionSnapshot } from "../../lib/payoutLineSessionSnapshot.js";
 import { financeRepository } from "./finance.repository.js";
 import {
   isTrialBookingForFinance,
@@ -783,7 +784,20 @@ export async function payProfessionalUnpaidBalance(
       professionalId,
       ...payoutEligibleSessionWhere
     },
-    orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }]
+    orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }],
+    include: {
+      patient: { select: { id: true, user: { select: { fullName: true } } } },
+      package: { select: { name: true, credits: true } },
+      purchase: {
+        select: {
+          packageNameSnapshot: true,
+          packageCreditsSnapshot: true,
+          packageDiscountPercentSnapshot: true,
+          fxArsPerUsdSnapshot: true
+        }
+      },
+      booking: { select: { packageSessionOrdinal: true } }
+    }
   });
 
   if (monthFilter.length > 0) {
@@ -846,7 +860,8 @@ export async function payProfessionalUnpaidBalance(
         payoutReference: payoutReference?.trim() || null,
         dlocalPayoutId: options?.dlocalPayoutId ?? null,
         dlocalStatus: options?.dlocalStatus ?? null,
-        submissionError: null
+        submissionError: null,
+        sessionSnapshot: buildPayoutLineSessionSnapshot(eligibleRecords)
       }
     });
     await Promise.all(

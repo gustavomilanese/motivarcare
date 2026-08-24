@@ -591,6 +591,8 @@ model FinancePayoutLine {
   dlocalPayoutId        String?
   dlocalStatus          String?
   submissionError       String?              @db.Text
+  /** Sesiones de este envío: queda aunque dLocal falle y se suelte el FK. */
+  sessionSnapshot       Json?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   payoutRun             FinancePayoutRun     @relation(fields: [payoutRunId], references: [id])

@@ -15,6 +15,10 @@ import {
   buildPackageSessionIndexByBookingId,
   formatPackageSessionSourceLabel
 } from "../../lib/packageSessionAttribution.js";
+import {
+  parsePayoutLineSessionSnapshot,
+  type PayoutLineSessionSnapshotItem
+} from "../../lib/payoutLineSessionSnapshot.js";
 import { getResilientUsdArsRate } from "../../lib/usdArsExchangeResilient.js";
 import { getUsdDisplayFxRates } from "../../lib/usdDisplayFxRates.js";
 import {
@@ -224,6 +228,8 @@ export type DlocalPayoutTransferRow = {
   professionalId: string;
   professionalName: string;
   sessionsCount: number;
+  grossUsdCents: number;
+  platformFeeUsdCents: number;
   professionalNetUsdCents: number;
   status: string;
   displayStatus: DlocalTransferDisplayStatus;
@@ -234,6 +240,37 @@ export type DlocalPayoutTransferRow = {
   createdAt: string;
   paidAt: string | null;
 };
+
+function usdTripleFromFinanceRow(
+  row: {
+    currency: string;
+    sessionPriceCents: number;
+    platformFeeCents: number;
+    professionalNetCents: number;
+    fxArsPerUsdSnapshot?: unknown;
+  },
+  liveFx: Awaited<ReturnType<typeof resolveLiveFx>>
+) {
+  const fx = readSessionFxArsPerUsdSnapshot({
+    currency: row.currency,
+    sessionPriceCents: row.sessionPriceCents,
+    platformFeeCents: row.platformFeeCents,
+    professionalNetCents: row.professionalNetCents,
+    fxArsPerUsdSnapshot: row.fxArsPerUsdSnapshot ?? null
+  });
+  return {
+    grossUsdCents: convertFinanceMinorToUsdMinor(row.sessionPriceCents, row.currency, fx, liveFx),
+    platformFeeUsdCents: convertFinanceMinorToUsdMinor(row.platformFeeCents, row.currency, fx, liveFx),
+    professionalNetUsdCents: convertFinanceMinorToUsdMinor(row.professionalNetCents, row.currency, fx, liveFx)
+  };
+}
+
+function payoutStatusForSentLine(status: string, paidAt: Date | null): UnpaidProfessionalSessionRow["payoutStatus"] {
+  if (status === "PAID" || paidAt != null) {
+    return "paid";
+  }
+  return "pending";
+}
 
 export async function listDlocalPayoutTransfers(input?: {
   months?: string[];
@@ -268,25 +305,39 @@ export async function listDlocalPayoutTransfers(input?: {
       continue;
     }
 
+    let grossUsdCents = 0;
+    let platformFeeUsdCents = 0;
     let professionalNetUsdCents = 0;
     if (line.sessionRecords.length > 0) {
       for (const row of line.sessionRecords) {
-        const fx = readSessionFxArsPerUsdSnapshot({
-          currency: row.currency,
-          sessionPriceCents: row.sessionPriceCents,
-          platformFeeCents: row.platformFeeCents,
-          professionalNetCents: row.professionalNetCents,
-          fxArsPerUsdSnapshot: row.purchase?.fxArsPerUsdSnapshot ?? null
-        });
-        professionalNetUsdCents += convertFinanceMinorToUsdMinor(
-          row.professionalNetCents,
-          row.currency,
-          fx,
+        const usd = usdTripleFromFinanceRow(
+          {
+            currency: row.currency,
+            sessionPriceCents: row.sessionPriceCents,
+            platformFeeCents: row.platformFeeCents,
+            professionalNetCents: row.professionalNetCents,
+            fxArsPerUsdSnapshot: row.purchase?.fxArsPerUsdSnapshot ?? null
+          },
           liveFx
         );
+        grossUsdCents += usd.grossUsdCents;
+        platformFeeUsdCents += usd.platformFeeUsdCents;
+        professionalNetUsdCents += usd.professionalNetUsdCents;
       }
     } else {
-      professionalNetUsdCents = line.professionalNetCents;
+      const snapshot = parsePayoutLineSessionSnapshot(line.sessionSnapshot);
+      if (snapshot.length > 0) {
+        for (const row of snapshot) {
+          const usd = usdTripleFromFinanceRow(row, liveFx);
+          grossUsdCents += usd.grossUsdCents;
+          platformFeeUsdCents += usd.platformFeeUsdCents;
+          professionalNetUsdCents += usd.professionalNetUsdCents;
+        }
+      } else {
+        grossUsdCents = line.grossCents;
+        platformFeeUsdCents = line.platformFeeCents;
+        professionalNetUsdCents = line.professionalNetCents;
+      }
     }
 
     transfers.push({
@@ -294,6 +345,8 @@ export async function listDlocalPayoutTransfers(input?: {
       professionalId: line.professionalId,
       professionalName: line.professional.user.fullName,
       sessionsCount: line.sessionsCount,
+      grossUsdCents,
+      platformFeeUsdCents,
       professionalNetUsdCents,
       status: line.status,
       displayStatus: resolveDlocalTransferDisplayStatus({
@@ -394,6 +447,208 @@ export type UnpaidProfessionalDetail = {
     estimatedLocal: { currency: string; amount: number; ratePerUsd: number } | null;
   };
 };
+
+export type DlocalPayoutTransferDetail = {
+  transfer: DlocalPayoutTransferRow;
+  sessions: UnpaidProfessionalSessionRow[];
+  sessionsFromSnapshot: boolean;
+};
+
+function sessionRowFromSnapshotItem(
+  item: PayoutLineSessionSnapshotItem,
+  line: { status: string; paidAt: Date | null },
+  liveFx: Awaited<ReturnType<typeof resolveLiveFx>>
+): UnpaidProfessionalSessionRow {
+  const usd = usdTripleFromFinanceRow(item, liveFx);
+  const completedAt = item.bookingCompletedAt ? new Date(item.bookingCompletedAt) : null;
+  const startsAt = new Date(item.bookingStartsAt);
+  return {
+    id: item.id,
+    bookingId: item.bookingId,
+    bookingStartsAt: item.bookingStartsAt,
+    bookingCompletedAt: item.bookingCompletedAt,
+    monthKey: financeRecordMonthKey({
+      bookingCompletedAt: completedAt,
+      bookingStartsAt: startsAt
+    }),
+    payoutStatus: payoutStatusForSentLine(line.status, line.paidAt),
+    payoutPaidAt: line.paidAt?.toISOString() ?? null,
+    isTrial: item.isTrial,
+    sourceKind: item.sourceKind,
+    sourceLabel: item.sourceLabel,
+    purchaseId: item.purchaseId,
+    packageSessionNumber: item.packageSessionNumber,
+    packageCredits: item.packageCredits,
+    packageDiscountPercent: item.packageDiscountPercent,
+    paymentCheckoutId: null,
+    currency: item.currency,
+    sessionPriceCents: item.sessionPriceCents,
+    platformCommissionPercent: item.platformCommissionPercent,
+    platformFeeCents: item.platformFeeCents,
+    professionalNetCents: item.professionalNetCents,
+    sessionPriceUsdCents: usd.grossUsdCents,
+    platformFeeUsdCents: usd.platformFeeUsdCents,
+    professionalNetUsdCents: usd.professionalNetUsdCents,
+    patient: { id: item.patientId, fullName: item.patientName, email: "" },
+    package: null
+  };
+}
+
+export async function getDlocalPayoutTransferDetail(
+  lineId: string
+): Promise<DlocalPayoutTransferDetail | { notFound: true }> {
+  const line = await prisma.financePayoutLine.findFirst({
+    where: { id: lineId, ...dlocalSentPayoutLineWhere },
+    include: {
+      professional: { select: { user: { select: { fullName: true } } } },
+      sessionRecords: {
+        orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }],
+        include: {
+          patient: { select: { id: true, user: { select: { fullName: true, email: true } } } },
+          package: { select: { id: true, name: true, credits: true } },
+          purchase: {
+            select: {
+              id: true,
+              packageNameSnapshot: true,
+              packageCreditsSnapshot: true,
+              packageDiscountPercentSnapshot: true,
+              fxArsPerUsdSnapshot: true
+            }
+          },
+          booking: { select: { packageSessionOrdinal: true } }
+        }
+      }
+    }
+  });
+  if (!line) {
+    return { notFound: true };
+  }
+
+  const liveFx = await resolveLiveFx();
+  const displayStatus = resolveDlocalTransferDisplayStatus({
+    status: line.status,
+    dlocalStatus: line.dlocalStatus
+  });
+  let sessions: UnpaidProfessionalSessionRow[] = [];
+  let sessionsFromSnapshot = false;
+
+  if (line.sessionRecords.length > 0) {
+    const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
+      line.sessionRecords.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
+    );
+    sessions = line.sessionRecords.map((record) => {
+      const usd = usdTripleFromFinanceRow(
+        {
+          currency: record.currency,
+          sessionPriceCents: record.sessionPriceCents,
+          platformFeeCents: record.platformFeeCents,
+          professionalNetCents: record.professionalNetCents,
+          fxArsPerUsdSnapshot: record.purchase?.fxArsPerUsdSnapshot ?? null
+        },
+        liveFx
+      );
+      const packageName =
+        record.purchase?.packageNameSnapshot?.trim()
+        || record.package?.name?.trim()
+        || null;
+      const packageCredits =
+        record.purchase?.packageCreditsSnapshot
+        ?? record.package?.credits
+        ?? null;
+      const packageSessionNumber = record.purchaseId
+        ? packageSessionIndexByBookingId.get(record.bookingId)
+          ?? record.booking.packageSessionOrdinal
+          ?? null
+        : null;
+      const sourceKind = record.isTrial ? ("trial" as const) : ("package" as const);
+      return {
+        id: record.id,
+        bookingId: record.bookingId,
+        bookingStartsAt: record.bookingStartsAt.toISOString(),
+        bookingCompletedAt: record.bookingCompletedAt?.toISOString() ?? null,
+        monthKey: financeRecordMonthKey(record),
+        payoutStatus: payoutStatusForSentLine(line.status, line.paidAt),
+        payoutPaidAt: line.paidAt?.toISOString() ?? null,
+        isTrial: record.isTrial,
+        sourceKind,
+        sourceLabel: record.isTrial
+          ? "Rate × sesión"
+          : formatPackageSessionSourceLabel({
+              packageName: packageName ?? "Paquete",
+              packageCredits,
+              packageSessionNumber,
+              discountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null
+            }),
+        purchaseId: record.purchaseId,
+        packageSessionNumber,
+        packageCredits,
+        packageDiscountPercent: record.purchase?.packageDiscountPercentSnapshot ?? null,
+        paymentCheckoutId: null,
+        currency: record.currency,
+        sessionPriceCents: record.sessionPriceCents,
+        platformCommissionPercent: record.platformCommissionPercent,
+        platformFeeCents: record.platformFeeCents,
+        professionalNetCents: record.professionalNetCents,
+        sessionPriceUsdCents: usd.grossUsdCents,
+        platformFeeUsdCents: usd.platformFeeUsdCents,
+        professionalNetUsdCents: usd.professionalNetUsdCents,
+        patient: {
+          id: record.patient.id,
+          fullName: record.patient.user.fullName,
+          email: record.patient.user.email
+        },
+        package: record.package
+          ? {
+              id: record.package.id,
+              name: packageName ?? record.package.name,
+              credits: packageCredits ?? record.package.credits
+            }
+          : null
+      };
+    });
+  } else {
+    const snapshot = parsePayoutLineSessionSnapshot(line.sessionSnapshot);
+    sessions = snapshot.map((item) => sessionRowFromSnapshotItem(item, line, liveFx));
+    sessionsFromSnapshot = snapshot.length > 0;
+  }
+
+  let grossUsdCents = 0;
+  let platformFeeUsdCents = 0;
+  let professionalNetUsdCents = 0;
+  if (sessions.length > 0) {
+    for (const session of sessions) {
+      grossUsdCents += session.sessionPriceUsdCents;
+      platformFeeUsdCents += session.platformFeeUsdCents;
+      professionalNetUsdCents += session.professionalNetUsdCents;
+    }
+  } else {
+    grossUsdCents = line.grossCents;
+    platformFeeUsdCents = line.platformFeeCents;
+    professionalNetUsdCents = line.professionalNetCents;
+  }
+
+  return {
+    transfer: {
+      id: line.id,
+      professionalId: line.professionalId,
+      professionalName: line.professional.user.fullName,
+      sessionsCount: line.sessionsCount,
+      grossUsdCents,
+      platformFeeUsdCents,
+      professionalNetUsdCents,
+      status: line.status,
+      displayStatus,
+      dlocalPayoutId: line.dlocalPayoutId,
+      dlocalStatus: line.dlocalStatus,
+      submissionError: line.submissionError,
+      payoutReference: line.payoutReference,
+      createdAt: line.createdAt.toISOString(),
+      paidAt: line.paidAt?.toISOString() ?? null
+    },
+    sessions,
+    sessionsFromSnapshot
+  };
+}
 
 export async function getUnpaidProfessionalDetail(
   professionalId: string,
