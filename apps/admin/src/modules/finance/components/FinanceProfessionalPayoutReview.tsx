@@ -182,15 +182,15 @@ export function FinanceProfessionalPayoutReview(props: {
             <div className="finance-payout-review-metrics">
               <article className="finance-payout-review-metric">
                 <span>{t(props.language, { es: "Sesiones", en: "Sessions", pt: "Sessões" })}</span>
-                <strong>{detail.totals.sessionsCount}</strong>
+                <strong>{detail.totals.pendingSessionsCount}</strong>
               </article>
               <article className="finance-payout-review-metric">
                 <span>{t(props.language, { es: "Ejecutado", en: "Gross", pt: "Executado" })}</span>
-                <strong>{formatAdminFinanceUsd(detail.totals.grossUsdCents, props.language)}</strong>
+                <strong>{formatAdminFinanceUsd(detail.totals.pendingGrossUsdCents, props.language)}</strong>
               </article>
               <article className="finance-payout-review-metric">
                 <span>{t(props.language, { es: "Comisión", en: "Platform fee", pt: "Comissão" })}</span>
-                <strong>{formatAdminFinanceUsd(detail.totals.platformFeeUsdCents, props.language)}</strong>
+                <strong>{formatAdminFinanceUsd(detail.totals.pendingPlatformFeeUsdCents, props.language)}</strong>
               </article>
               <article className="finance-payout-review-metric finance-payout-review-metric--accent">
                 <span>{t(props.language, { es: "Neto a pagar", en: "Net to pay", pt: "Líquido" })}</span>
@@ -280,7 +280,9 @@ export function FinanceProfessionalPayoutReview(props: {
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.sessions.map((session) => {
+                    {detail.sessions
+                      .filter((session) => session.payoutStatus === "pending")
+                      .map((session) => {
                       const statusCopy = adminSessionPayoutStatusCopy(session.payoutStatus, props.language);
                       return (
                       <tr key={session.id}>

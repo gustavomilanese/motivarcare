@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { adminSessionPayoutStatusCopy } from "./adminSessionPayoutStatus";
 
 describe("adminSessionPayoutStatusCopy", () => {
-  it("labels submitted unpaid sessions as waiting to send to DLocal", () => {
+  it("labels submitted unpaid sessions as ready to pay", () => {
     expect(adminSessionPayoutStatusCopy("pending", "es")).toEqual({
       tone: "pending",
-      label: "Por enviar a DLocal"
+      label: "Por pagar"
     });
   });
 

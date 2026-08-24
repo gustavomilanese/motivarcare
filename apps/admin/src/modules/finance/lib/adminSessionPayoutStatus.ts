@@ -8,7 +8,7 @@ export type AdminSessionPayoutStatus = "pending" | "not_submitted" | "paid";
 
 export type AdminSessionPayoutTone = "pending" | "waiting" | "paid";
 
-/** Copy for Admin: the professional's "Pendiente de cobro" is "waiting to send to DLocal" here. */
+/** Copy for Admin: the professional's "Pendiente de cobro" is "ready to pay" here. */
 export function adminSessionPayoutStatusCopy(
   status: AdminSessionPayoutStatus | undefined,
   language: AppLanguage
@@ -32,17 +32,17 @@ export function adminSessionPayoutStatusCopy(
   return {
     tone: "pending",
     label: t(language, {
-      es: "Por enviar a DLocal",
-      en: "Ready to send to DLocal",
-      pt: "Por enviar ao DLocal"
+      es: "Por pagar",
+      en: "To pay",
+      pt: "A pagar"
     })
   };
 }
 
 export function adminPendingSessionsHint(language: AppLanguage): string {
   return t(language, {
-    es: "El profesional ya las mandó a cobro. Siguiente paso: Pagar para enviarlas a DLocal.",
-    en: "The professional already submitted them for payout. Next: Pay to send them to DLocal.",
-    pt: "O profissional ja enviou a cobranca. Proximo passo: Pagar para enviar ao DLocal."
+    es: "El profesional ya las mandó a cobro. Revisá las sesiones y tocá Pagar.",
+    en: "The professional already submitted them for payout. Review the sessions, then Pay.",
+    pt: "O profissional ja enviou a cobranca. Revise as sessoes e toque em Pagar."
   });
 }

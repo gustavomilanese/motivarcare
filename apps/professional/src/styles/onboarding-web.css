@@ -1,0 +1,39 @@
+/* Espacio entre bloques del alta web (título, campos, secciones, pie). */
+.pro-web-panel {
+  gap: 32px;
+}
+
+.pro-web-fields,
+.pro-web-fields.pro-web-fields--single {
+  gap: 26px;
+}
+
+.pro-web-fields:not(.pro-web-fields--single):not(.pro-web-fields--email-sent) {
+  padding: 20px;
+}
+
+.pro-web-turnstile-wrap {
+  margin-top: 6px;
+  padding-top: 8px;
+}
+
+.pro-web-identity-section {
+  margin-top: 8px;
+  padding-top: 24px;
+  gap: 16px;
+}
+
+.pro-web-actions {
+  padding-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .pro-web-panel {
+    gap: 24px;
+  }
+
+  .pro-web-fields,
+  .pro-web-fields.pro-web-fields--single {
+    gap: 20px;
+  }
+}

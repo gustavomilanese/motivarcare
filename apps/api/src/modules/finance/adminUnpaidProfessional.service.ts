@@ -10,7 +10,11 @@ import {
 } from "../../lib/professionalFinanceDisplay.js";
 import { isDlocalGoConfigured } from "../../lib/dlocalGoPayouts.js";
 import { prisma } from "../../lib/prisma.js";
-import { payoutEligibleSessionWhere, shouldReleaseSessionsAfterDlocalFailure } from "../../lib/payoutEligibleSessions.js";
+import {
+  isSessionEligibleForAdminPayout,
+  payoutEligibleSessionWhere,
+  shouldReleaseSessionsAfterDlocalFailure
+} from "../../lib/payoutEligibleSessions.js";
 import {
   buildPackageSessionIndexByBookingId,
   formatPackageSessionSourceLabel
@@ -189,7 +193,7 @@ export async function listUnpaidProfessionalsOverview(input?: {
   };
 }
 
-/** Líneas que Admin ve en “Enviado a dLocal”: en vuelo o con payout_id. Los FAILED sin ID no: nunca salieron y vuelven a Por enviar. */
+/** Líneas que Admin ve en “Enviados”: en vuelo o con payout_id. Los FAILED sin ID no: nunca salieron y vuelven a Por pagar. */
 export const dlocalSentPayoutLineWhere = {
   OR: [{ dlocalPayoutId: { not: null } }, { status: "SUBMITTED" }]
 };
@@ -664,10 +668,12 @@ export async function getUnpaidProfessionalDetail(
     return { notFound: true };
   }
 
+  // Same eligibility as the Por pagar list: only sessions the professional sent to cobro
+  // that are not already in a SUBMITTED/PAID transfer.
   const allRecords = await prisma.financeSessionRecord.findMany({
     where: {
       professionalId,
-      bookingStatus: "COMPLETED"
+      ...payoutEligibleSessionWhere
     },
     orderBy: [{ bookingCompletedAt: "asc" }, { bookingStartsAt: "asc" }],
     include: {
@@ -691,10 +697,17 @@ export async function getUnpaidProfessionalDetail(
     }
   });
 
-  const records =
+  const records = (
     selectedMonths.length === 0
       ? allRecords
-      : allRecords.filter((record) => selectedMonths.includes(financeRecordMonthKey(record)));
+      : allRecords.filter((record) => selectedMonths.includes(financeRecordMonthKey(record)))
+  ).filter((record) =>
+    isSessionEligibleForAdminPayout({
+      bookingStatus: record.bookingStatus,
+      submittedForPayoutAt: record.submittedForPayoutAt,
+      payoutLineStatus: record.payoutLine?.status ?? null
+    })
+  );
 
   const packageSessionIndexByBookingId = await buildPackageSessionIndexByBookingId(
     records.flatMap((row) => (row.purchaseId ? [row.purchaseId] : []))
@@ -764,14 +777,14 @@ export async function getUnpaidProfessionalDetail(
 
     const line = record.payoutLine;
     const isPaid = Boolean(line && (line.status === "PAID" || line.paidAt != null));
-    const submittedForPayout = Boolean(record.submittedForPayoutAt || line);
-    const eligibleToPay =
-      Boolean(record.submittedForPayoutAt)
-      && !isPaid
-      && (line == null || line.status === "FAILED");
+    const eligibleToPay = isSessionEligibleForAdminPayout({
+      bookingStatus: record.bookingStatus,
+      submittedForPayoutAt: record.submittedForPayoutAt,
+      payoutLineStatus: line?.status ?? null
+    });
     const payoutStatus = isPaid
       ? ("paid" as const)
-      : submittedForPayout
+      : eligibleToPay
         ? ("pending" as const)
         : ("not_submitted" as const);
     if (isPaid) {
